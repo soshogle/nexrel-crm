@@ -6,7 +6,8 @@
     "build": "NODE_OPTIONS=\"--max-old-space-size=4096\" next build",
     "start": "NODE_OPTIONS=\"--max-old-space-size=4096\" next start",
     "lint": "next lint",
-    "typecheck": "NODE_OPTIONS=\"--max-old-space-size=4096\" tsc --noEmit"
+    "typecheck": "NODE_OPTIONS=\"--max-old-space-size=4096\" tsc --noEmit",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/seed.ts"
