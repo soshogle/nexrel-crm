@@ -25,7 +25,7 @@ export async function scrapeZILLOW(config: ZILLOWConfig) {
       data: {
         userId: config.userId,
         name: 'zillow scrape',
-        source: 'ZILLOW_FSBO' as REFSBOSource,
+        source: 'ZILLOW_FSBO',
         sources: ['ZILLOW_FSBO'],
         targetCities: config.targetCities || [],
         minPrice: config.minPrice,

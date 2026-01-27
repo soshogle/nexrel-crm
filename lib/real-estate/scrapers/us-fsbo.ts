@@ -50,7 +50,7 @@ export async function scrapeUSFSBO(config: ScrapeUSFSBOConfig): Promise<{
       data: {
         userId: config.userId,
         name: `US FSBO - ${config.targetStates.join(', ')}`,
-        source: 'FSBO_COM' as REFSBOSource,
+        source: 'FSBO_COM',
         sources: ['FSBO_COM'],
         targetStates: config.targetStates,
         targetCities: config.targetCities || [],

@@ -25,7 +25,7 @@ export async function scrapeCENTRIS(config: CENTRISConfig) {
       data: {
         userId: config.userId,
         name: 'centris scrape',
-        source: 'OTHER' as REFSBOSource,
+        source: 'OTHER',
         sources: ['OTHER'],
         targetCities: config.targetCities || [],
         minPrice: config.minPrice,

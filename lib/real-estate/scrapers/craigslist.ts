@@ -25,7 +25,7 @@ export async function scrapeCRAIGSLIST(config: CRAIGSLISTConfig) {
       data: {
         userId: config.userId,
         name: 'craigslist scrape',
-        source: 'CRAIGSLIST' as REFSBOSource,
+        source: 'CRAIGSLIST',
         sources: ['CRAIGSLIST'],
         targetCities: config.targetCities || [],
         minPrice: config.minPrice,

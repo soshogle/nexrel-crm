@@ -49,7 +49,7 @@ export async function scrapeDuProprio(config: ScrapeDuProprioConfig): Promise<{
       data: {
         userId: config.userId,
         name: `DuProprio - ${config.targetCities.join(', ')}`,
-        source: 'DUPROPRIO' as REFSBOSource,
+        source: 'DUPROPRIO',
         sources: ['DUPROPRIO'],
         targetCities: config.targetCities,
         minPrice: config.minPrice,
@@ -120,8 +120,8 @@ export async function saveDuProprioListings(
         where: { sourceUrl: listing.listingUrl },
         create: {
           assignedUserId: userId,
-          source: 'DUPROPRIO' as REFSBOSource,
-          status: 'NEW' as REFSBOStatus,
+          source: 'DUPROPRIO',
+          status: 'NEW',
           sourceListingId: listing.externalId,
           sourceUrl: listing.listingUrl,
           address: listing.address,
