@@ -1,10 +1,9 @@
 /**
- * Unified Scraper Service - Coordinates all FSBO scrapers
+ * Unified Scraper Service
  */
 
 import { prisma } from '@/lib/db';
 
-// Valid sources from Prisma enum
 const VALID_SOURCES = ['DUPROPRIO', 'PURPLEBRICKS', 'FSBO_COM', 'CRAIGSLIST', 'FACEBOOK_MARKETPLACE', 'KIJIJI', 'ZILLOW_FSBO', 'MANUAL_IMPORT', 'OTHER'] as const;
 type ValidSource = typeof VALID_SOURCES[number];
 
@@ -36,7 +35,6 @@ export async function createScrapingJob(input: ScrapingJobConfig) {
     });
     return { success: true, job };
   } catch (error: any) {
-    console.error('Error creating scraping job:', error);
     return { success: false, error: error.message };
   }
 }
@@ -48,31 +46,28 @@ export async function getScrapingJobs(userId: string) {
       orderBy: { createdAt: 'desc' }
     });
   } catch (error) {
-    console.error('Error fetching scraping jobs:', error);
     return [];
   }
 }
 
 export async function updateJobStatus(
   jobId: string, 
-  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED',
-  results?: { totalFound?: number; newLeads?: number; errors?: string[] }
+  status: string,
+  results?: { totalFound?: number; newLeads?: number }
 ) {
   try {
-    const data: any = { status };
+    const data: any = { status, lastRunStatus: status };
     if (status === 'COMPLETED' || status === 'FAILED') {
-      data.completedAt = new Date();
+      data.lastRunAt = new Date();
     }
-    if (results) {
-      data.totalFound = results.totalFound;
-      data.newLeads = results.newLeads;
-      data.errors = results.errors;
+    if (results?.totalFound) {
+      data.totalListingsFound = results.totalFound;
+    }
+    if (results?.newLeads) {
+      data.totalScraped = results.newLeads;
     }
     
-    await prisma.rEScrapingJob.update({
-      where: { id: jobId },
-      data
-    });
+    await prisma.rEScrapingJob.update({ where: { id: jobId }, data });
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -99,7 +94,6 @@ export async function saveFSBOListing(userId: string, listing: {
   daysOnMarket?: number;
 }) {
   try {
-    // Check for duplicates
     const existing = await prisma.rEFSBOListing.findFirst({
       where: {
         OR: [
@@ -109,9 +103,7 @@ export async function saveFSBOListing(userId: string, listing: {
       }
     });
 
-    if (existing) {
-      return { success: true, listing: existing, duplicate: true };
-    }
+    if (existing) return { success: true, listing: existing, duplicate: true };
 
     const newListing = await prisma.rEFSBOListing.create({
       data: {
@@ -139,7 +131,6 @@ export async function saveFSBOListing(userId: string, listing: {
 
     return { success: true, listing: newListing, duplicate: false };
   } catch (error: any) {
-    console.error('Error saving FSBO listing:', error);
     return { success: false, error: error.message };
   }
 }
@@ -154,7 +145,6 @@ export async function getFSBOListings(userId: string, filters?: {
 }) {
   try {
     const where: any = { assignedUserId: userId };
-    
     if (filters?.status) where.status = filters.status;
     if (filters?.source) where.source = filters.source;
     if (filters?.city) where.city = filters.city;
@@ -167,16 +157,11 @@ export async function getFSBOListings(userId: string, filters?: {
       take: filters?.limit || 100
     });
   } catch (error) {
-    console.error('Error fetching FSBO listings:', error);
     return [];
   }
 }
 
-export async function updateFSBOStatus(
-  listingId: string, 
-  userId: string, 
-  status: 'NEW' | 'CONTACTED' | 'FOLLOW_UP' | 'INTERESTED' | 'NOT_INTERESTED' | 'CONVERTED' | 'DEAD'
-) {
+export async function updateFSBOStatus(listingId: string, userId: string, status: string) {
   try {
     await prisma.rEFSBOListing.updateMany({
       where: { id: listingId, assignedUserId: userId },
