@@ -3,8 +3,8 @@
  * Generates weekly, monthly, and annual market reports
  */
 
-import { prisma } from '../../db';
-import { aiOrchestrator } from '../../ai-employee-orchestrator';
+import { prisma } from '@/lib/db';
+import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
 import { REAIEmployeeType, REPeriodType, REReportType } from '@prisma/client';
 import { getREEmployeeConfig } from './configs';
 

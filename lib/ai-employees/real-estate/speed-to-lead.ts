@@ -3,8 +3,8 @@
  * Instantly responds to new real estate inquiries
  */
 
-import { prisma } from '../../db';
-import { aiOrchestrator } from '../../ai-employee-orchestrator';
+import { prisma } from '@/lib/db';
+import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
 import { REAIEmployeeType } from '@prisma/client';
 import { getREEmployeeConfig } from './configs';
 
