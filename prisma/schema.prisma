@@ -1,7 +1,9 @@
 generator client {
     provider = "prisma-client-js"
-    binaryTargets = ["native", "rhel-openssl-3.0.x"]
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/go_high_or_show_google_crm/nextjs_space/node_modules/.prisma/client"
 }
+
 datasource db {
     provider = "postgresql"
     url      = env("DATABASE_URL")
