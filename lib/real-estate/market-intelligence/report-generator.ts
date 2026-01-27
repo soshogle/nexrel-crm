@@ -1,13 +1,12 @@
 /**
  * Market Report Generator
- * Generates market analysis reports
  */
 
 import { prisma } from '@/lib/db';
 
 export interface GenerateReportInput {
   userId: string;
-  type: 'WEEKLY_MARKET_UPDATE' | 'MONTHLY_MARKET_REPORT' | 'QUARTERLY_ANALYSIS' | 'CUSTOM' | 'CUSTOM';
+  type: 'WEEKLY_MARKET_UPDATE' | 'MONTHLY_MARKET_REPORT' | 'QUARTERLY_ANALYSIS' | 'CUSTOM';
   region: string;
   periodStart: Date;
   periodEnd: Date;
@@ -44,7 +43,6 @@ export async function generateMarketReport(
         socialCaption: content.socialCaption
       }
     });
-
     return { success: true, report };
   } catch (error: any) {
     console.error('Error generating report:', error);
@@ -60,45 +58,32 @@ export async function getUserReports(userId: string, limit = 50) {
       take: limit
     });
   } catch (error) {
-    console.error('Error fetching reports:', error);
     return [];
   }
 }
 
 export async function getReportById(id: string, userId: string) {
   try {
-    return await prisma.rEMarketReport.findFirst({
-      where: { id, userId }
-    });
+    return await prisma.rEMarketReport.findFirst({ where: { id, userId } });
   } catch (error) {
-    console.error('Error fetching report:', error);
     return null;
   }
 }
 
 export async function deleteReport(id: string, userId: string) {
   try {
-    await prisma.rEMarketReport.deleteMany({
-      where: { id, userId }
-    });
+    await prisma.rEMarketReport.deleteMany({ where: { id, userId } });
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
 
-export async function markReportSent(
-  id: string, 
-  userId: string, 
-  recipients: string[]
-) {
+export async function markReportSent(id: string, userId: string, recipients: string[]) {
   try {
     await prisma.rEMarketReport.update({
       where: { id },
-      data: {
-        sentTo: JSON.parse(JSON.stringify(recipients)),
-        sentAt: new Date()
-      }
+      data: { sentTo: JSON.parse(JSON.stringify(recipients)), sentAt: new Date() }
     });
     return { success: true };
   } catch (error: any) {
