@@ -241,6 +241,20 @@ model User {
   docpenSessions              DocpenSession[]
   docpenVoiceAgents           DocpenVoiceAgent[]
   docpenKnowledgeBaseFiles    DocpenKnowledgeBaseFile[]
+  // Real Estate Industry Relations
+  reProperties              REProperty[]                 @relation("REUserProperties")
+  reFsboAssignedListings    REFSBOListing[]              @relation("REFSBOAssignedUser")
+  reScrapingJobs            REScrapingJob[]              @relation("REScrapingJobUser")
+  reMarketStats             REMarketStats[]              @relation("REMarketStatsUser")
+  reMarketReports           REMarketReport[]             @relation("REMarketReportUser")
+  reStaleDiagnostics        REStaleDiagnostic[]          @relation("REStaleDiagnosticUser")
+  reListingPresentations    REListingPresentation[]      @relation("REListingPresentationUser")
+  reSellerNetSheets         RESellerNetSheet[]           @relation("RESellerNetSheetUser")
+  reCMAReports              RECMAReport[]                @relation("RECMAReportUser")
+  reTransactions            RETransaction[]              @relation("RETransactionUser")
+  reBuyerCriteria           REBuyerCriteria[]            @relation("REBuyerCriteriaUser")
+  reExpiredAssignedListings REExpiredListing[]           @relation("REExpiredAssignedUser")
+  reAIEmployeeExecutions    REAIEmployeeExecution[]      @relation("REAIEmployeeExecutionUser")
 }
 
 model Lead {
@@ -298,6 +312,12 @@ model Lead {
   tasks               Task[]
   workflowEnrollments WorkflowEnrollment[]
   docpenSessions      DocpenSession[]
+  // Real Estate Industry Relations
+  rePropertySeller      REProperty[]         @relation("REPropertySeller")
+  reFsboConvertedLead   REFSBOListing[]      @relation("REFSBOConvertedLead")
+  reTransactions        RETransaction[]      @relation("RETransactionLead")
+  reBuyerCriteria       REBuyerCriteria?     @relation("REBuyerCriteriaLead")
+  reExpiredConvertedLead REExpiredListing[]  @relation("REExpiredConvertedLead")
 
   @@index([userId])
   @@index([status])
@@ -6540,4 +6560,640 @@ model DocpenAgentKnowledgeBaseFile {
   @@unique([agentId, fileId])
   @@index([agentId])
   @@index([fileId])
+}
+// ==========================================
+// REAL ESTATE INDUSTRY ENUMS
+// ==========================================
+
+enum REPropertyType {
+  SINGLE_FAMILY
+  CONDO
+  TOWNHOUSE
+  MULTI_FAMILY
+  LAND
+  COMMERCIAL
+  MOBILE_HOME
+  OTHER
+}
+
+enum REListingStatus {
+  ACTIVE
+  PENDING
+  SOLD
+  WITHDRAWN
+  EXPIRED
+  COMING_SOON
+}
+
+enum REFSBOSource {
+  DUPROPRIO
+  PURPLEBRICKS
+  FSBO_COM
+  CRAIGSLIST
+  FACEBOOK_MARKETPLACE
+  KIJIJI
+  ZILLOW_FSBO
+  MANUAL_IMPORT
+  OTHER
+}
+
+enum REFSBOStatus {
+  NEW
+  CONTACTED
+  FOLLOW_UP
+  NOT_INTERESTED
+  CONVERTED
+  DO_NOT_CONTACT
+  INVALID
+}
+
+enum REDNCSource {
+  NATIONAL_REGISTRY
+  STATE_REGISTRY
+  MANUAL_ADD
+  OPT_OUT
+  COMPLAINT
+}
+
+enum REPeriodType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum REReportType {
+  WEEKLY_MARKET_UPDATE
+  MONTHLY_MARKET_REPORT
+  QUARTERLY_ANALYSIS
+  CUSTOM
+}
+
+enum REDiagnosticStatus {
+  PENDING
+  REVIEWED
+  ACTIONED
+  DISMISSED
+}
+
+enum RETransactionType {
+  PURCHASE
+  SALE
+  LEASE
+  DUAL_AGENCY
+}
+
+enum RERepresentingSide {
+  BUYER
+  SELLER
+  DUAL
+  LANDLORD
+  TENANT
+}
+
+enum RETransactionStage {
+  OFFER_SUBMITTED
+  OFFER_ACCEPTED
+  INSPECTION_PERIOD
+  FINANCING_CONTINGENCY
+  APPRAISAL
+  FINAL_WALKTHROUGH
+  CLOSING_SCHEDULED
+  CLOSED
+  TERMINATED
+}
+
+enum REExpiredStatus {
+  NEW
+  CONTACTED
+  FOLLOW_UP
+  NOT_INTERESTED
+  RELISTED
+  CONVERTED
+}
+
+enum REAIEmployeeType {
+  RE_SPEED_TO_LEAD
+  RE_FSBO_OUTREACH
+  RE_EXPIRED_OUTREACH
+  RE_COLD_REACTIVATION
+  RE_DOCUMENT_CHASER
+  RE_SHOWING_CONFIRM
+  RE_SPHERE_NURTURE
+  RE_BUYER_FOLLOWUP
+  RE_MARKET_UPDATE
+  RE_STALE_DIAGNOSTIC
+  RE_LISTING_BOOST
+  RE_CMA_GENERATOR
+}
+
+// ==========================================
+// REAL ESTATE INDUSTRY MODELS
+// ==========================================
+
+model REProperty {
+  id             String                  @id @default(cuid())
+  userId         String
+  address        String
+  unit           String?
+  city           String
+  state          String
+  zip            String
+  country        String                  @default("US")
+  beds           Int?
+  baths          Float?
+  sqft           Int?
+  lotSize        Int?
+  yearBuilt      Int?
+  propertyType   REPropertyType          @default(SINGLE_FAMILY)
+  listingStatus  REListingStatus         @default(ACTIVE)
+  listPrice      Float?
+  soldPrice      Float?
+  mlsNumber      String?
+  daysOnMarket   Int                     @default(0)
+  photos         Json?
+  virtualTourUrl String?
+  description    String?
+  features       String[]                @default([])
+  sellerLeadId   String?
+  listingDate    DateTime?
+  soldDate       DateTime?
+  expirationDate DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  
+  // Relations
+  user           User                    @relation("REUserProperties", fields: [userId], references: [id], onDelete: Cascade)
+  sellerLead     Lead?                   @relation("REPropertySeller", fields: [sellerLeadId], references: [id])
+  cmaReports     RECMAReport[]
+  comps          REComparable[]
+  presentations  REListingPresentation[]
+  netSheets      RESellerNetSheet[]
+  diagnostics    REStaleDiagnostic[]
+  transactions   RETransaction[]
+
+  @@index([userId])
+  @@index([city, state])
+  @@index([listingStatus])
+  @@index([mlsNumber])
+}
+
+model REFSBOListing {
+  id              String       @id @default(cuid())
+  source          REFSBOSource
+  sourceUrl       String       @unique
+  sourceListingId String?
+  address         String
+  city            String
+  state           String
+  zip             String?
+  country         String       @default("CA")
+  listPrice       Float?
+  beds            Int?
+  baths           Float?
+  sqft            Int?
+  lotSize         Int?
+  yearBuilt       Int?
+  propertyType    String?
+  daysOnMarket    Int          @default(0)
+  firstSeenAt     DateTime     @default(now())
+  lastSeenAt      DateTime     @default(now())
+  priceHistory    Json?
+  sellerName      String?
+  sellerPhone     String?
+  sellerEmail     String?
+  photos          Json?
+  description     String?
+  status          REFSBOStatus @default(NEW)
+  assignedUserId  String?
+  lastContactedAt DateTime?
+  contactAttempts Int          @default(0)
+  notes           String?
+  convertedLeadId String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  // Relations
+  assignedUser    User?        @relation("REFSBOAssignedUser", fields: [assignedUserId], references: [id])
+  convertedLead   Lead?        @relation("REFSBOConvertedLead", fields: [convertedLeadId], references: [id])
+
+  @@index([source])
+  @@index([city, state])
+  @@index([status])
+  @@index([assignedUserId])
+  @@index([daysOnMarket])
+}
+
+model REDNCEntry {
+  id          String      @id @default(cuid())
+  phoneNumber String      @unique
+  source      REDNCSource
+  reason      String?
+  country     String      @default("US")
+  addedAt     DateTime    @default(now())
+  expiresAt   DateTime?
+
+  @@index([phoneNumber])
+  @@index([country])
+}
+
+model REScrapingJob {
+  id                 String        @id @default(cuid())
+  userId             String
+  name               String        @default("FSBO Scraping Job")
+  source             REFSBOSource?
+  sources            String[]      @default([])
+  targetCity         String?
+  targetRegion       String?
+  targetCities       String[]      @default([])
+  targetStates       String[]      @default([])
+  targetZips         String[]      @default([])
+  targetZipCodes     String[]      @default([])
+  country            String        @default("CA")
+  propertyTypes      String[]      @default([])
+  minPrice           Int?
+  maxPrice           Int?
+  maxListingsPerRun  Int           @default(100)
+  frequency          String        @default("weekly")
+  isActive           Boolean       @default(true)
+  status             String        @default("IDLE")
+  mlsCredentials     Json?
+  lastRunAt          DateTime?
+  nextRunAt          DateTime?
+  lastRunStatus      String?
+  totalScraped       Int           @default(0)
+  totalListingsFound Int           @default(0)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  
+  // Relations
+  user               User          @relation("REScrapingJobUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+model REMarketStats {
+  id              String       @id @default(cuid())
+  userId          String
+  periodStart     DateTime
+  periodEnd       DateTime
+  periodType      REPeriodType @default(WEEKLY)
+  region          String
+  city            String?
+  state           String?
+  country         String       @default("US")
+  medianSalePrice Float?
+  avgSalePrice    Float?
+  domMedian       Int?
+  domAvg          Float?
+  newListings     Int?
+  closedSales     Int?
+  activeInventory Int?
+  monthsOfSupply  Float?
+  listToSaleRatio Float?
+  priceReductions Int?
+  source          String?
+  rawData         Json?
+  createdAt       DateTime     @default(now())
+  
+  // Relations
+  user            User         @relation("REMarketStatsUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([region])
+  @@index([periodStart, periodEnd])
+}
+
+model REMarketReport {
+  id               String       @id @default(cuid())
+  userId           String
+  type             REReportType
+  title            String
+  region           String
+  periodStart      DateTime
+  periodEnd        DateTime
+  executiveSummary String?
+  keyHighlights    Json?
+  buyerInsights    String?
+  sellerInsights   String?
+  predictions      Json?
+  socialCaption    String?
+  pdfUrl           String?
+  slidesUrl        String?
+  sentTo           Json?
+  sentAt           DateTime?
+  createdAt        DateTime     @default(now())
+  
+  // Relations
+  user             User         @relation("REMarketReportUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([periodStart])
+}
+
+model REStaleDiagnostic {
+  id               String             @id @default(cuid())
+  userId           String
+  propertyId       String?
+  fsboListingId    String?
+  address          String
+  listPrice        Float?
+  daysOnMarket     Int
+  analysisJson     Json
+  topReasons       Json
+  actionPlan       Json
+  clientSummary    String?
+  agentNotes       String?
+  sellerEmailDraft String?
+  callScript       String?
+  pdfUrl           String?
+  status           REDiagnosticStatus @default(PENDING)
+  reviewedAt       DateTime?
+  actionedAt       DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  
+  // Relations
+  user             User               @relation("REStaleDiagnosticUser", fields: [userId], references: [id], onDelete: Cascade)
+  property         REProperty?        @relation(fields: [propertyId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([daysOnMarket])
+}
+
+model REListingPresentation {
+  id              String      @id @default(cuid())
+  userId          String
+  propertyId      String?
+  address         String
+  sellerName      String?
+  sellerGoals     String?
+  timeline        String?
+  concerns        String?
+  pricingStrategy Json?
+  marketingPlan   Json?
+  compsAnalysis   Json?
+  objectionsFAQ   Json?
+  timelinePhases  Json?
+  pdfUrl          String?
+  slidesUrl       String?
+  status          String      @default("draft")
+  presentedAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relations
+  user            User        @relation("REListingPresentationUser", fields: [userId], references: [id], onDelete: Cascade)
+  property        REProperty? @relation(fields: [propertyId], references: [id])
+
+  @@index([userId])
+}
+
+model RESellerNetSheet {
+  id               String      @id @default(cuid())
+  userId           String
+  propertyId       String?
+  address          String
+  salePrice        Float
+  mortgagePayoff   Float?
+  commissionRate   Float       @default(5.0)
+  commissionAmount Float?
+  listingAgentComm Float?
+  buyerAgentComm   Float?
+  closingCosts     Float?
+  titleInsurance   Float?
+  transferTax      Float?
+  repairs          Float?
+  stagingCosts     Float?
+  otherCosts       Float?
+  estimatedNet     Float?
+  pdfUrl           String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  
+  // Relations
+  user             User        @relation("RESellerNetSheetUser", fields: [userId], references: [id], onDelete: Cascade)
+  property         REProperty? @relation(fields: [propertyId], references: [id])
+
+  @@index([userId])
+}
+
+model RECMAReport {
+  id                String      @id @default(cuid())
+  userId            String
+  propertyId        String?
+  address           String
+  beds              Int?
+  baths             Float?
+  sqft              Int?
+  yearBuilt         Int?
+  comparables       Json
+  adjustments       Json
+  suggestedPriceMin Float?
+  suggestedPriceMax Float?
+  suggestedPrice    Float?
+  pricePerSqft      Float?
+  pdfUrl            String?
+  fullPdfUrl        String?
+  createdAt         DateTime    @default(now())
+  
+  // Relations
+  user              User        @relation("RECMAReportUser", fields: [userId], references: [id], onDelete: Cascade)
+  property          REProperty? @relation(fields: [propertyId], references: [id])
+
+  @@index([userId])
+}
+
+model REComparable {
+  id             String     @id @default(cuid())
+  propertyId     String
+  status         String
+  address        String?
+  distance       Float?
+  salePrice      Float?
+  listPrice      Float?
+  closeDate      DateTime?
+  daysOnMarket   Int?
+  beds           Int?
+  baths          Float?
+  sqft           Int?
+  yearBuilt      Int?
+  lotSize        Int?
+  adjustedPrice  Float?
+  adjustments    Json?
+  features       String[]   @default([])
+  conditionScore Int?
+  notes          String?
+  createdAt      DateTime   @default(now())
+  
+  // Relations
+  property       REProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}
+
+model RETransaction {
+  id               String                  @id @default(cuid())
+  userId           String
+  propertyId       String?
+  leadId           String?
+  transactionType  RETransactionType
+  representingSide RERepresentingSide
+  address          String
+  offerPrice       Float?
+  salePrice        Float?
+  listPrice        Float?
+  commissionRate   Float?
+  commissionAmount Float?
+  commissionSplit  Json?
+  contractDate     DateTime?
+  closingDate      DateTime?
+  possessionDate   DateTime?
+  stage            RETransactionStage      @default(OFFER_SUBMITTED)
+  vendorContacts   Json?
+  notes            String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  
+  // Relations
+  user             User                    @relation("RETransactionUser", fields: [userId], references: [id], onDelete: Cascade)
+  property         REProperty?             @relation(fields: [propertyId], references: [id])
+  lead             Lead?                   @relation("RETransactionLead", fields: [leadId], references: [id])
+  activities       RETransactionActivity[]
+  tasks            RETransactionTask[]
+
+  @@index([userId])
+  @@index([stage])
+  @@index([closingDate])
+}
+
+model RETransactionActivity {
+  id            String        @id @default(cuid())
+  transactionId String
+  type          String
+  description   String
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  
+  // Relations
+  transaction   RETransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId])
+}
+
+model RETransactionTask {
+  id            String              @id @default(cuid())
+  transactionId String
+  title         String
+  description   String?
+  dueDate       DateTime?
+  stage         RETransactionStage?
+  isCompleted   Boolean             @default(false)
+  completedAt   DateTime?
+  assignedTo    String?
+  createdAt     DateTime            @default(now())
+  
+  // Relations
+  transaction   RETransaction       @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId])
+  @@index([dueDate])
+}
+
+model REBuyerCriteria {
+  id                  String           @id @default(cuid())
+  leadId              String           @unique
+  userId              String
+  minPrice            Float?
+  maxPrice            Float?
+  minBeds             Int?
+  maxBeds             Int?
+  minBaths            Float?
+  minSqft             Int?
+  maxSqft             Int?
+  targetCities        String[]         @default([])
+  targetZips          String[]         @default([])
+  targetNeighborhoods String[]         @default([])
+  propertyTypes       REPropertyType[]
+  mustHaves           String[]         @default([])
+  dealBreakers        String[]         @default([])
+  notes               String?
+  isPreApproved       Boolean          @default(false)
+  preApprovalAmount   Float?
+  lenderName          String?
+  timeline            String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  
+  // Relations
+  user                User             @relation("REBuyerCriteriaUser", fields: [userId], references: [id], onDelete: Cascade)
+  lead                Lead             @relation("REBuyerCriteriaLead", fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model REExpiredListing {
+  id                String          @id @default(cuid())
+  source            String
+  sourceId          String?
+  address           String
+  city              String
+  state             String
+  zip               String?
+  originalListPrice Float?
+  finalListPrice    Float?
+  daysOnMarket      Int?
+  expiredDate       DateTime?
+  previousAgentName String?
+  previousBrokerage String?
+  ownerName         String?
+  ownerPhone        String?
+  ownerEmail        String?
+  status            REExpiredStatus @default(NEW)
+  assignedUserId    String?
+  lastContactedAt   DateTime?
+  contactAttempts   Int             @default(0)
+  notes             String?
+  convertedLeadId   String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relations
+  assignedUser      User?           @relation("REExpiredAssignedUser", fields: [assignedUserId], references: [id])
+  convertedLead     Lead?           @relation("REExpiredConvertedLead", fields: [convertedLeadId], references: [id])
+
+  @@index([status])
+  @@index([assignedUserId])
+  @@index([expiredDate])
+}
+
+model REAIEmployeeExecution {
+  id           String           @id @default(cuid())
+  userId       String
+  employeeType REAIEmployeeType
+  employeeName String?
+  targetType   String?
+  targetId     String?
+  status       String           @default("pending")
+  startedAt    DateTime?
+  completedAt  DateTime?
+  result       Json?
+  error        String?
+  callMade     Boolean          @default(false)
+  smsSent      Boolean          @default(false)
+  emailSent    Boolean          @default(false)
+  taskCreated  Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  
+  // Relations
+  user         User             @relation("REAIEmployeeExecutionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([employeeType])
+  @@index([status])
+  @@index([createdAt])
 }
