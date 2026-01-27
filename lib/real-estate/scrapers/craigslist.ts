@@ -8,7 +8,7 @@ import type { REFSBOSource } from '../types';
 
 export interface CRAIGSLISTConfig {
   userId: string;
-  location: string;
+  targetCities?: string[];
   minPrice?: number;
   maxPrice?: number;
 }
@@ -24,12 +24,13 @@ export async function scrapeCRAIGSLIST(config: CRAIGSLISTConfig) {
     const job = await prisma.rEScrapingJob.create({
       data: {
         userId: config.userId,
+        name: 'craigslist scrape',
         source: 'CRAIGSLIST' as REFSBOSource,
-        status: 'PENDING',
-        location: config.location,
-        listingsFound: 0,
-        listingsProcessed: 0,
-        isRecurring: false
+        sources: ['CRAIGSLIST'],
+        targetCities: config.targetCities || [],
+        minPrice: config.minPrice,
+        maxPrice: config.maxPrice,
+        status: 'PENDING'
       }
     });
 

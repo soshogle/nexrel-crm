@@ -8,7 +8,7 @@ import type { REFSBOSource } from '../types';
 
 export interface ZILLOWConfig {
   userId: string;
-  location: string;
+  targetCities?: string[];
   minPrice?: number;
   maxPrice?: number;
 }
@@ -24,12 +24,13 @@ export async function scrapeZILLOW(config: ZILLOWConfig) {
     const job = await prisma.rEScrapingJob.create({
       data: {
         userId: config.userId,
+        name: 'zillow scrape',
         source: 'ZILLOW_FSBO' as REFSBOSource,
-        status: 'PENDING',
-        location: config.location,
-        listingsFound: 0,
-        listingsProcessed: 0,
-        isRecurring: false
+        sources: ['ZILLOW_FSBO'],
+        targetCities: config.targetCities || [],
+        minPrice: config.minPrice,
+        maxPrice: config.maxPrice,
+        status: 'PENDING'
       }
     });
 
