@@ -11,7 +11,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { RE_EMPLOYEE_CONFIGS, getAllREEmployeeTypes, isREEmployeeType } from '@/lib/ai-employees/real-estate';
 import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
-import { AIEmployeeType } from '@prisma/client';
+import { REAIEmployeeType } from '@prisma/client';
 
 /**
  * GET - List all Real Estate AI Employees for user
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     const { action, employeeType, jobInput } = body;
 
     // Validate employee type
-    if (!employeeType || !isREEmployeeType(employeeType as AIEmployeeType)) {
+    if (!employeeType || !isREEmployeeType(employeeType as REAIEmployeeType)) {
       return NextResponse.json(
         { error: 'Invalid employee type' },
         { status: 400 }
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
         // Activate/create the employee for this user
         const employee = await aiOrchestrator.ensureEmployee(
           session.user.id,
-          employeeType as AIEmployeeType
+          employeeType as REAIEmployeeType
         );
         return NextResponse.json({
           success: true,
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
 
         const job = await aiOrchestrator.createJob({
           userId: session.user.id,
-          employeeType: employeeType as AIEmployeeType,
+          employeeType: employeeType as REAIEmployeeType,
           jobType: `${employeeType.toLowerCase()}_manual`,
           input: { ...jobInput, userId: session.user.id },
           priority: config.defaultPriority as any,
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
         await prisma.aIEmployee.updateMany({
           where: {
             userId: session.user.id,
-            type: employeeType as AIEmployeeType
+            type: employeeType as REAIEmployeeType
           },
           data: { isActive: false }
         });
