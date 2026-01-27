@@ -1,6 +1,5 @@
 /**
  * Real Estate Scrapers - Main Export
- * Phase 1B will add: Centris, Zillow, Realtor.com, Craigslist, Realtor.ca
  */
 
 // Shared utilities
@@ -31,3 +30,17 @@ export {
   getJobsDueForRun,
   type ScrapingJobConfig
 } from './scraping-job-manager';
+
+// Stub scrapers for future implementation
+export {
+  scrapeCentris,
+  checkCentrisJobStatus,
+  scrapeRealtorCA,
+  checkRealtorCAJobStatus,
+  scrapeRealtorCom,
+  checkRealtorComJobStatus,
+  scrapeZillow,
+  checkZillowJobStatus,
+  scrapeCraigslist,
+  checkCraigslistJobStatus
+} from './stub-scrapers';
