@@ -32,7 +32,7 @@ export {
   type ScrapeUSFSBOConfig
 } from './us-fsbo';
 
-// Other scrapers - basic implementations
+// Other scrapers
 export { scrapeCENTRIS, checkCENTRISJobStatus } from './centris';
 export { scrapeCRAIGSLIST, checkCRAIGSLISTJobStatus } from './craigslist';
 export { scrapeZILLOW, checkZILLOWJobStatus } from './zillow';
