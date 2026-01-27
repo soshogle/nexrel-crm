@@ -3,8 +3,8 @@
  * Contacts For Sale By Owner listings from DuProprio and US FSBO sites
  */
 
-import { prisma } from '../../db';
-import { aiOrchestrator } from '../../ai-employee-orchestrator';
+import { prisma } from '@/lib/db';
+import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
 import { REAIEmployeeType, REFSBOStatus } from '@prisma/client';
 import { getREEmployeeConfig } from './configs';
 
