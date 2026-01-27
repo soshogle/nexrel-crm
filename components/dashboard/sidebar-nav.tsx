@@ -267,6 +267,43 @@ const merchantItems = [
     href: '/dashboard/referrals',
     icon: Repeat,
   },
+  // Real Estate specific items - only visible to REAL_ESTATE industry
+  {
+    id: 'real-estate-dashboard' as MenuItemId,
+    title: 'Real Estate Hub',
+    href: '/dashboard/real-estate',
+    icon: Home,
+  },
+  {
+    id: 'fsbo-leads' as MenuItemId,
+    title: 'FSBO Leads',
+    href: '/dashboard/real-estate/fsbo-leads',
+    icon: UserPlus,
+  },
+  {
+    id: 'cma-tools' as MenuItemId,
+    title: 'CMA Tools',
+    href: '/dashboard/real-estate/cma',
+    icon: TrendingUp,
+  },
+  {
+    id: 'market-insights' as MenuItemId,
+    title: 'Market Insights',
+    href: '/dashboard/real-estate/market-insights',
+    icon: TrendingUp,
+  },
+  {
+    id: 'seller-net-sheet' as MenuItemId,
+    title: 'Seller Net Sheet',
+    href: '/dashboard/real-estate/net-sheet',
+    icon: DollarSign,
+  },
+  {
+    id: 'real-estate-analytics' as MenuItemId,
+    title: 'RE Analytics',
+    href: '/dashboard/real-estate/analytics',
+    icon: TrendingUp,
+  },
 ];
 
 // Admin items - Secure section requiring re-authentication

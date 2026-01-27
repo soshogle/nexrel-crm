@@ -74,7 +74,14 @@ export type MenuItemId =
   | 'booking-settings'
   | 'permissions'
   | 'manage-users'
-  | 'subscriptions';
+  | 'subscriptions'
+  // Real Estate specific
+  | 'real-estate-dashboard'
+  | 'fsbo-leads'
+  | 'cma-tools'
+  | 'market-insights'
+  | 'seller-net-sheet'
+  | 'real-estate-analytics';
 
 // Core menu items visible to ALL industries
 const CORE_MENU_ITEMS: MenuItemId[] = [
@@ -198,6 +205,13 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
     'ecommerce', // For property listings
     'credit-scoring', // For buyer qualification
     'referrals',
+    // Real Estate specific features
+    'real-estate-dashboard', // Real Estate overview dashboard
+    'fsbo-leads', // For Sale By Owner lead generation
+    'cma-tools', // Comparative Market Analysis tools
+    'market-insights', // Market data and insights
+    'seller-net-sheet', // Net sheet calculator for sellers
+    'real-estate-analytics', // Real estate specific analytics
   ],
 
   HOSPITAL: [
@@ -361,5 +375,13 @@ export function getAllFeatures(): {
     { id: 'data-monetization', label: 'Data Monetization', category: 'Advanced' },
     { id: 'referrals', label: 'Referral Program', category: 'Advanced' },
     { id: 'widgets', label: 'Embeddable Widgets', category: 'Advanced' },
+
+    // Real Estate Features
+    { id: 'real-estate-dashboard', label: 'Real Estate Hub', category: 'Real Estate' },
+    { id: 'fsbo-leads', label: 'FSBO Leads', category: 'Real Estate' },
+    { id: 'cma-tools', label: 'CMA Tools', category: 'Real Estate' },
+    { id: 'market-insights', label: 'Market Insights', category: 'Real Estate' },
+    { id: 'seller-net-sheet', label: 'Seller Net Sheet', category: 'Real Estate' },
+    { id: 'real-estate-analytics', label: 'RE Analytics', category: 'Real Estate' },
   ];
 }
