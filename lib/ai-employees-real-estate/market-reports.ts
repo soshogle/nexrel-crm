@@ -5,7 +5,7 @@
 
 import { prisma } from '@/lib/db';
 import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
-import { AIEmployeeType, REPeriodType, REReportType } from '@prisma/client';
+import { REAIEmployeeType, REPeriodType, REReportType } from '@prisma/client';
 import { getREEmployeeConfig } from './configs';
 
 interface MarketReportInput {
@@ -109,12 +109,12 @@ export async function generateMarketReport(input: MarketReportInput): Promise<Ma
 /**
  * Get employee type for period
  */
-function getEmployeeTypeForPeriod(periodType: string): AIEmployeeType {
+function getEmployeeTypeForPeriod(periodType: string): REAIEmployeeType {
   switch (periodType) {
-    case 'WEEKLY': return 'RE_WEEKLY_SNAPSHOT' as AIEmployeeType;
-    case 'MONTHLY': return 'RE_MONTHLY_REPORT' as AIEmployeeType;
-    case 'ANNUAL': return 'RE_ANNUAL_REVIEW' as AIEmployeeType;
-    default: return 'RE_WEEKLY_SNAPSHOT' as AIEmployeeType;
+    case 'WEEKLY': return 'RE_MARKET_UPDATE' as REAIEmployeeType;
+    case 'MONTHLY': return 'RE_MARKET_UPDATE' as REAIEmployeeType;
+    case 'ANNUAL': return 'RE_MARKET_UPDATE' as REAIEmployeeType;
+    default: return 'RE_MARKET_UPDATE' as REAIEmployeeType;
   }
 }
 

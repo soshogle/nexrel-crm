@@ -3,10 +3,10 @@
  * Defines all RE AI employees and their capabilities
  */
 
-import { AIEmployeeType } from '@prisma/client';
+import { REAIEmployeeType } from '@prisma/client';
 
 export interface REEmployeeConfig {
-  type: AIEmployeeType;
+  type: REAIEmployeeType;
   name: string;
   description: string;
   capabilities: string[];
@@ -19,7 +19,7 @@ export interface REEmployeeConfig {
 
 export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   RE_SPEED_TO_LEAD: {
-    type: 'RE_SPEED_TO_LEAD' as AIEmployeeType,
+    type: 'RE_SPEED_TO_LEAD' as REAIEmployeeType,
     name: 'Alex - Speed to Lead Specialist',
     description: 'Instantly responds to new real estate inquiries within seconds. Makes immediate calls and sends personalized texts to capture leads before competitors.',
     capabilities: [
@@ -39,7 +39,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   },
 
   RE_FSBO_OUTREACH: {
-    type: 'RE_FSBO_OUTREACH' as AIEmployeeType,
+    type: 'RE_FSBO_OUTREACH' as REAIEmployeeType,
     name: 'Maya - FSBO Specialist',
     description: 'Proactively reaches out to For Sale By Owner listings from DuProprio, FSBO.com, and other sources. Uses consultative approach to convert FSBOs to listings.',
     capabilities: [
@@ -60,7 +60,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   },
 
   RE_EXPIRED_OUTREACH: {
-    type: 'RE_EXPIRED_OUTREACH' as AIEmployeeType,
+    type: 'RE_EXPIRED_OUTREACH' as REAIEmployeeType,
     name: 'Jordan - Expired Listing Hunter',
     description: 'Contacts owners of expired listings with empathy and a fresh marketing strategy. Identifies why the listing failed and presents solutions.',
     capabilities: [
@@ -80,7 +80,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   },
 
   RE_COLD_REACTIVATION: {
-    type: 'RE_COLD_REACTIVATION' as AIEmployeeType,
+    type: 'RE_COLD_REACTIVATION' as REAIEmployeeType,
     name: 'Sam - Lead Reactivation Expert',
     description: 'Re-engages cold leads who haven\'t responded in 30+ days. Uses market updates and new listings as conversation starters.',
     capabilities: [
@@ -100,7 +100,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   },
 
   RE_DOCUMENT_CHASER: {
-    type: 'RE_DOCUMENT_CHASER' as AIEmployeeType,
+    type: 'RE_DOCUMENT_CHASER' as REAIEmployeeType,
     name: 'Taylor - Transaction Coordinator',
     description: 'Follows up on missing documents during transactions. Sends reminders for signatures, inspections, and deadlines.',
     capabilities: [
@@ -120,7 +120,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   },
 
   RE_SHOWING_CONFIRM: {
-    type: 'RE_SHOWING_CONFIRM' as AIEmployeeType,
+    type: 'RE_SHOWING_CONFIRM' as REAIEmployeeType,
     name: 'Casey - Showing Coordinator',
     description: 'Confirms property showings 24 hours and 2 hours before. Handles rescheduling and provides property access instructions.',
     capabilities: [
@@ -139,7 +139,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   },
 
   RE_SPHERE_NURTURE: {
-    type: 'RE_SPHERE_NURTURE' as AIEmployeeType,
+    type: 'RE_SPHERE_NURTURE' as REAIEmployeeType,
     name: 'Morgan - Sphere of Influence Manager',
     description: 'Maintains relationships with past clients and sphere of influence. Sends market updates, home anniversary cards, and referral requests.',
     capabilities: [
@@ -159,7 +159,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   },
 
   RE_WEEKLY_SNAPSHOT: {
-    type: 'RE_WEEKLY_SNAPSHOT' as AIEmployeeType,
+    type: 'RE_MARKET_UPDATE' as REAIEmployeeType,
     name: 'Riley - Weekly Report Generator',
     description: 'Creates weekly market snapshot reports with AI-generated insights. Perfect for social media and email newsletters.',
     capabilities: [
@@ -180,7 +180,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   },
 
   RE_MONTHLY_REPORT: {
-    type: 'RE_MONTHLY_REPORT' as AIEmployeeType,
+    type: 'RE_MARKET_UPDATE' as REAIEmployeeType,
     name: 'Drew - Monthly Analyst',
     description: 'Generates comprehensive monthly market reports with buyer/seller insights, predictions, and actionable recommendations.',
     capabilities: [
@@ -201,7 +201,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   },
 
   RE_ANNUAL_REVIEW: {
-    type: 'RE_ANNUAL_REVIEW' as AIEmployeeType,
+    type: 'RE_MARKET_UPDATE' as REAIEmployeeType,
     name: 'Avery - Annual Review Specialist',
     description: 'Creates year-in-review market reports perfect for Q1 marketing. Includes predictions and strategic recommendations.',
     capabilities: [
@@ -221,7 +221,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   },
 
   RE_STALE_DIAGNOSTIC: {
-    type: 'RE_STALE_DIAGNOSTIC' as AIEmployeeType,
+    type: 'RE_STALE_DIAGNOSTIC' as REAIEmployeeType,
     name: 'Quinn - Listing Diagnostic Expert',
     description: 'Analyzes listings that haven\'t sold after 21+ days. Identifies issues and generates action plans with scripts for seller conversations.',
     capabilities: [
@@ -242,7 +242,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
   },
 
   RE_LISTING_PRESENTATION: {
-    type: 'RE_LISTING_PRESENTATION' as AIEmployeeType,
+    type: 'RE_CMA_GENERATOR' as REAIEmployeeType,
     name: 'Blake - Presentation Builder',
     description: 'Creates stunning listing presentations with CMAs, marketing plans, and personalized value propositions.',
     capabilities: [
@@ -266,7 +266,7 @@ export const RE_EMPLOYEE_CONFIGS: Record<string, REEmployeeConfig> = {
 /**
  * Get employee config by type
  */
-export function getREEmployeeConfig(type: AIEmployeeType): REEmployeeConfig | null {
+export function getREEmployeeConfig(type: REAIEmployeeType): REEmployeeConfig | null {
   const key = type as string;
   return RE_EMPLOYEE_CONFIGS[key] || null;
 }
@@ -274,13 +274,13 @@ export function getREEmployeeConfig(type: AIEmployeeType): REEmployeeConfig | nu
 /**
  * Get all RE employee types
  */
-export function getAllREEmployeeTypes(): AIEmployeeType[] {
-  return Object.keys(RE_EMPLOYEE_CONFIGS) as AIEmployeeType[];
+export function getAllREEmployeeTypes(): REAIEmployeeType[] {
+  return Object.keys(RE_EMPLOYEE_CONFIGS) as REAIEmployeeType[];
 }
 
 /**
  * Check if an employee type is a Real Estate type
  */
-export function isREEmployeeType(type: AIEmployeeType): boolean {
+export function isREEmployeeType(type: REAIEmployeeType): boolean {
   return type.toString().startsWith('RE_');
 }

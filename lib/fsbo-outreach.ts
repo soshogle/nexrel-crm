@@ -5,7 +5,7 @@
 
 import { prisma } from '@/lib/db';
 import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
-import { AIEmployeeType, REFSBOStatus } from '@prisma/client';
+import { REAIEmployeeType, REFSBOStatus } from '@prisma/client';
 import { getREEmployeeConfig } from './configs';
 
 interface FSBOOutreachInput {
@@ -40,7 +40,7 @@ interface FSBOOutreachOutput {
  * Check DNC and execute FSBO outreach
  */
 export async function executeFSBOOutreach(input: FSBOOutreachInput): Promise<FSBOOutreachOutput> {
-  const config = getREEmployeeConfig('RE_FSBO_OUTREACH' as AIEmployeeType);
+  const config = getREEmployeeConfig('RE_FSBO_OUTREACH' as REAIEmployeeType);
   
   console.log(`🏠 FSBO Outreach: Processing ${input.address} (${input.source})`);
   
@@ -238,7 +238,7 @@ function generateFSBOSMS(input: FSBOOutreachInput): string {
 export async function createFSBOOutreachJob(input: FSBOOutreachInput) {
   return await aiOrchestrator.createJob({
     userId: input.userId,
-    employeeType: 'RE_FSBO_OUTREACH' as AIEmployeeType,
+    employeeType: 'RE_FSBO_OUTREACH' as REAIEmployeeType,
     jobType: 'fsbo_outreach',
     input,
     priority: 'MEDIUM',
