@@ -250,8 +250,10 @@ class WorkflowJobQueue {
 
 export const workflowJobQueue = new WorkflowJobQueue();
 
-// Start the queue on server initialization
-if (typeof window === 'undefined') {
-  workflowJobQueue.start();
-}
+// NOTE: In serverless environments (Vercel), background job processing should be
+// handled via cron jobs or API routes, not auto-started singletons.
+// The queue can be manually started in long-running server contexts if needed.
+// if (typeof window === 'undefined' && process.env.ENABLE_JOB_QUEUE === 'true') {
+//   workflowJobQueue.start();
+// }
 
