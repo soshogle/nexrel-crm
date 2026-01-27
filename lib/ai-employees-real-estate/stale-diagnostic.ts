@@ -5,7 +5,7 @@
 
 import { prisma } from '@/lib/db';
 import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
-import { AIEmployeeType } from '@prisma/client';
+import { REAIEmployeeType } from '@prisma/client';
 import { getREEmployeeConfig } from './configs';
 
 interface StaleDiagnosticInput {
@@ -50,7 +50,7 @@ interface StaleDiagnosticOutput {
  * Run stale listing diagnostic
  */
 export async function runStaleDiagnostic(input: StaleDiagnosticInput): Promise<StaleDiagnosticOutput> {
-  const config = getREEmployeeConfig('RE_STALE_DIAGNOSTIC' as AIEmployeeType);
+  const config = getREEmployeeConfig('RE_STALE_DIAGNOSTIC' as REAIEmployeeType);
   
   console.log(`🔍 Stale Diagnostic: Analyzing ${input.address} (${input.daysOnMarket} DOM)`);
   
@@ -394,7 +394,7 @@ If they resist: "I completely understand. Let me share what the market data is t
 export async function createStaleDiagnosticJob(input: StaleDiagnosticInput) {
   return await aiOrchestrator.createJob({
     userId: input.userId,
-    employeeType: 'RE_STALE_DIAGNOSTIC' as AIEmployeeType,
+    employeeType: 'RE_STALE_DIAGNOSTIC' as REAIEmployeeType,
     jobType: 'stale_listing_diagnostic',
     input,
     priority: 'MEDIUM',

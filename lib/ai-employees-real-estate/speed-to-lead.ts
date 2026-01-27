@@ -5,7 +5,7 @@
 
 import { prisma } from '@/lib/db';
 import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
-import { AIEmployeeType } from '@prisma/client';
+import { REAIEmployeeType } from '@prisma/client';
 import { getREEmployeeConfig } from './configs';
 
 interface SpeedToLeadInput {
@@ -62,7 +62,7 @@ async function checkDNC(phone: string, country: string = 'US'): Promise<{ clean:
  * Execute Speed to Lead workflow
  */
 export async function executeSpeedToLead(input: SpeedToLeadInput): Promise<SpeedToLeadOutput> {
-  const config = getREEmployeeConfig('RE_SPEED_TO_LEAD' as AIEmployeeType);
+  const config = getREEmployeeConfig('RE_SPEED_TO_LEAD' as REAIEmployeeType);
   
   console.log(`🚀 Speed to Lead: Processing ${input.leadName} from ${input.source}`);
   
@@ -186,7 +186,7 @@ function generateLeadSMS(input: SpeedToLeadInput): string {
 export async function createSpeedToLeadJob(input: SpeedToLeadInput) {
   return await aiOrchestrator.createJob({
     userId: input.userId,
-    employeeType: 'RE_SPEED_TO_LEAD' as AIEmployeeType,
+    employeeType: 'RE_SPEED_TO_LEAD' as REAIEmployeeType,
     jobType: 'speed_to_lead_response',
     input,
     priority: 'URGENT',
