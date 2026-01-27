@@ -1,23 +1,5 @@
-/**
- * Market Intelligence Module Exports
- */
-
-export {
-  collectMarketStats,
-  getHistoricalStats,
-  type MarketStats
-} from './market-data-collector';
-
-export {
-  generateMarketReport,
-  getUserReports,
-  scheduleReportGeneration,
-  type MarketReport
-} from './report-generator';
-
-export {
-  analyzeStaleListing,
-  getStaleListings,
-  type ListingData,
-  type StaleDiagnostic
-} from './stale-listing-diagnostic';
+// Stub exports
+export async function analyzeStaleListing() { return { success: false }; }
+export async function getStaleListings() { return []; }
+export async function collectMarketStats() { return { success: false }; }
+export async function generateMarketReport() { return { success: false }; }
