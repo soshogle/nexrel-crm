@@ -25,7 +25,7 @@ export async function scrapeREALTOR_COM(config: REALTOR_COMConfig) {
       data: {
         userId: config.userId,
         name: 'realtor-com scrape',
-        source: 'OTHER' as REFSBOSource,
+        source: 'OTHER',
         sources: ['OTHER'],
         targetCities: config.targetCities || [],
         minPrice: config.minPrice,
