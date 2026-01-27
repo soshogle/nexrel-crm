@@ -76,31 +76,27 @@ export async function updateJobStatus(
 
 export async function saveFSBOListing(userId: string, listing: {
   source: ValidSource;
-  externalId?: string;
+  sourceUrl: string;
+  sourceListingId?: string;
   address: string;
-  city?: string;
-  state?: string;
+  city: string;
+  state: string;
   zip?: string;
-  price?: number;
-  bedrooms?: number;
-  bathrooms?: number;
+  listPrice?: number;
+  beds?: number;
+  baths?: number;
   sqft?: number;
   propertyType?: string;
   sellerName?: string;
   sellerPhone?: string;
   sellerEmail?: string;
   description?: string;
-  listingUrl?: string;
   daysOnMarket?: number;
 }) {
   try {
-    const existing = await prisma.rEFSBOListing.findFirst({
-      where: {
-        OR: [
-          { externalId: listing.externalId },
-          { address: listing.address, assignedUserId: userId }
-        ]
-      }
+    // Check for duplicates by sourceUrl (unique field)
+    const existing = await prisma.rEFSBOListing.findUnique({
+      where: { sourceUrl: listing.sourceUrl }
     });
 
     if (existing) return { success: true, listing: existing, duplicate: true };
@@ -109,21 +105,21 @@ export async function saveFSBOListing(userId: string, listing: {
       data: {
         assignedUserId: userId,
         source: listing.source,
-        externalId: listing.externalId,
+        sourceUrl: listing.sourceUrl,
+        sourceListingId: listing.sourceListingId,
         address: listing.address,
         city: listing.city,
         state: listing.state,
         zip: listing.zip,
-        price: listing.price,
-        bedrooms: listing.bedrooms,
-        bathrooms: listing.bathrooms,
+        listPrice: listing.listPrice,
+        beds: listing.beds,
+        baths: listing.baths,
         sqft: listing.sqft,
         propertyType: listing.propertyType,
         sellerName: listing.sellerName,
         sellerPhone: listing.sellerPhone,
         sellerEmail: listing.sellerEmail,
         description: listing.description,
-        listingUrl: listing.listingUrl,
         daysOnMarket: listing.daysOnMarket || 0,
         status: 'NEW'
       }
@@ -148,8 +144,8 @@ export async function getFSBOListings(userId: string, filters?: {
     if (filters?.status) where.status = filters.status;
     if (filters?.source) where.source = filters.source;
     if (filters?.city) where.city = filters.city;
-    if (filters?.minPrice) where.price = { gte: filters.minPrice };
-    if (filters?.maxPrice) where.price = { ...where.price, lte: filters.maxPrice };
+    if (filters?.minPrice) where.listPrice = { gte: filters.minPrice };
+    if (filters?.maxPrice) where.listPrice = { ...where.listPrice, lte: filters.maxPrice };
 
     return await prisma.rEFSBOListing.findMany({
       where,
