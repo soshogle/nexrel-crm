@@ -9,6 +9,9 @@ import bcrypt from 'bcryptjs';
  * STAFF LOGIN FOR POS
  * Authenticates staff using employee ID and PIN
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

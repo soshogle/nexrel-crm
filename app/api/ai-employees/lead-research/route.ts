@@ -8,6 +8,9 @@ import { authOptions } from '@/lib/auth';
 import { leadResearcher } from '@/lib/ai-employees/lead-researcher';
 import { prisma } from '@/lib/db';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   console.log('[Lead Research API] POST request received');
   try {

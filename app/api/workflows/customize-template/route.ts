@@ -8,6 +8,9 @@ import { getTemplateById } from '@/lib/workflow-templates';
  * POST /api/workflows/customize-template
  * AI-powered template customization
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -6,6 +6,9 @@ import { prisma } from '@/lib/db';
 import { elevenLabsService } from '@/lib/elevenlabs';
 
 // GET /api/outbound-calls/[id] - Get specific outbound call
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

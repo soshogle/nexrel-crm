@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * Allows parents to self-register by providing a club code
  * Creates both a User account and a ClubOSHousehold
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

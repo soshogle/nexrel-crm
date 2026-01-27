@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * UPDATE KITCHEN ITEM STATUS
  * Handles status transitions (PENDING → PREPARING → READY → BUMPED)
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }

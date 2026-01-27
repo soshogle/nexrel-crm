@@ -6,6 +6,9 @@ import { getMessagingProvider } from '@/lib/messaging';
 import { prisma } from '@/lib/db';
 
 // GET /api/messaging/conversations/[id] - Get conversation details
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

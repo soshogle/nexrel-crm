@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * ADJUST INVENTORY STOCK
  * Manually adjust stock levels with reason tracking
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

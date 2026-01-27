@@ -9,6 +9,9 @@ import { elevenLabsService } from '@/lib/elevenlabs';
  * This endpoint receives calls from Twilio and handles the conversation flow
  */
 
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();

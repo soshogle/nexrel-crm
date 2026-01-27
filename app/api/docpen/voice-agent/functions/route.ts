@@ -10,6 +10,9 @@ import { prisma } from '@/lib/db';
 import OpenAI from 'openai';
 
 // Initialize OpenAI client via Abacus AI
+
+export const dynamic = 'force-dynamic';
+
 const openai = new OpenAI({
   apiKey: process.env.ABACUSAI_API_KEY || '',
   baseURL: 'https://routellm.abacus.ai/v1',

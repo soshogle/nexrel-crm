@@ -6,6 +6,9 @@ import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadSta
  * POST /api/webhooks/call-completed
  * Webhook to automatically analyze calls when they complete
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const { callLogId } = await req.json();

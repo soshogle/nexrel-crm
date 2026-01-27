@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { getMessagingProvider } from '@/lib/messaging';
 
 // DELETE /api/messaging/channels/[id] - Disconnect a channel
+
+export const dynamic = 'force-dynamic';
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }

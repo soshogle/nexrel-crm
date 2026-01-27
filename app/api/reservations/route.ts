@@ -6,6 +6,9 @@ import { prisma as db } from '@/lib/db';
 import { ReservationStatus } from '@prisma/client';
 
 // GET /api/reservations - List reservations with filters
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

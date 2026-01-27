@@ -12,6 +12,9 @@ import { prisma } from '@/lib/db';
 import { processAssistantQuery, containsWakeWord, extractQueryAfterWakeWord } from '@/lib/docpen/assistant-service';
 import { sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

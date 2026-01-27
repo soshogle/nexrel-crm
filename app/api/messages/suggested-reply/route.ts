@@ -8,6 +8,9 @@ import { aiResponseService } from '@/lib/ai-response-service';
 /**
  * Generate suggested reply for human agents
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

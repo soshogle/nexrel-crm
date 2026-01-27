@@ -8,6 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { FacebookService } from '@/lib/messaging-sync/facebook-service';
 import { prisma } from '@/lib/db';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   // Facebook webhook verification
   const searchParams = req.nextUrl.searchParams;

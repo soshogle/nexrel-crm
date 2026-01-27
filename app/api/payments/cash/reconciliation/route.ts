@@ -12,6 +12,9 @@ import {
  * GET /api/payments/cash/reconciliation
  * List cash reconciliations with optional filters
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

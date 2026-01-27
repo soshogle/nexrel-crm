@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * GET POS PRODUCTS
  * List all products available for sale in POS
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

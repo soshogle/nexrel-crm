@@ -14,6 +14,9 @@ import {
  * GET /api/workflows/templates
  * Retrieve workflow templates with optional filtering
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

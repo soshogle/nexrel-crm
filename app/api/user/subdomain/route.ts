@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 // GET /api/user/subdomain - Get current user's subdomain
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

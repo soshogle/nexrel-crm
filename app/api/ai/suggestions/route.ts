@@ -8,6 +8,9 @@ import { EntityType } from '@prisma/client';
  * GET /api/ai/suggestions
  * Get AI suggestions for an entity or dashboard
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

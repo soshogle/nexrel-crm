@@ -8,6 +8,9 @@ import { EntityType, RelationshipType } from '@prisma/client';
  * GET /api/relationships
  * Get relationships for an entity
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -8,6 +8,9 @@ import { dataMonetizationService } from '@/lib/payments/data-monetization-servic
  * POST /api/data-monetization/demo
  * Generate demo insights and revenue data for testing
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

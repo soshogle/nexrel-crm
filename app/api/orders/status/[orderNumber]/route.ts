@@ -6,6 +6,9 @@ import { prisma } from '@/lib/db';
  * GET ORDER STATUS (PUBLIC)
  * Get order status by order number - no authentication required
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { orderNumber: string } }

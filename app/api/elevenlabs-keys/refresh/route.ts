@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 
 // POST /api/elevenlabs-keys/refresh - Refresh all API key statuses
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -7,6 +7,9 @@ import {
   CreateDeliveryZoneInput,
 } from '@/lib/delivery-service';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }

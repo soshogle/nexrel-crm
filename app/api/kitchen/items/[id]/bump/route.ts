@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * BUMP KITCHEN ITEM
  * Mark item as complete and picked up
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

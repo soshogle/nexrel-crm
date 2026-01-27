@@ -3,6 +3,9 @@ import { PrismaClient } from '@prisma/client';
 import { validateLead } from '@/lib/lead-generation/data-validation';
 import { scoreAndSaveLead } from '@/lib/lead-generation/lead-scoring-db';
 
+
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 /**

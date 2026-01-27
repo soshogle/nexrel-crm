@@ -11,6 +11,9 @@ import { authOptions } from '@/lib/auth';
 import { BnplService } from '@/lib/payments/bnpl-service';
 import { BnplStatus } from '@prisma/client';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

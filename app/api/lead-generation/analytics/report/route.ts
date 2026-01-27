@@ -7,6 +7,9 @@ import { generateDailyReport } from '@/lib/lead-generation/analytics';
  * GET /api/lead-generation/analytics/report
  * Generate daily report
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

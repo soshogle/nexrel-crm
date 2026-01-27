@@ -6,6 +6,9 @@ import { prisma } from '@/lib/db';
 import { addDays } from 'date-fns';
 
 // GET /api/clubos/parent/dashboard - Get parent dashboard data
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

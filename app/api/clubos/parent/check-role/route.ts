@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * Check if the current user is a parent (has a ClubOS household)
  * GET /api/clubos/parent/check-role
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

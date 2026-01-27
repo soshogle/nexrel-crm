@@ -11,6 +11,9 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { docpenAgentProvisioning } from '@/lib/docpen/agent-provisioning';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);

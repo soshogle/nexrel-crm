@@ -7,6 +7,9 @@ import { processCampaignTriggers } from '@/lib/campaign-triggers';
  * API endpoint to process campaign triggers
  * This can be called when specific events occur in the system
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();

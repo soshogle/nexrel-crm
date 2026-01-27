@@ -8,6 +8,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { soshogleWebhookHandler, verifyWebhookSignature } from '@/lib/payments/webhook-handler';
 
+
+export const dynamic = 'force-dynamic';
+
 const WEBHOOK_SECRET = process.env.SOSHOGLE_PAY_WEBHOOK_SECRET || '';
 
 export async function POST(req: NextRequest) {

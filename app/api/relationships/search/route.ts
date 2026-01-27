@@ -7,6 +7,9 @@ import { relationshipService } from '@/lib/relationship-service';
  * GET /api/relationships/search
  * Unified search across all entities
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

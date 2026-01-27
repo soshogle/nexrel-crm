@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 // Simple encryption helper (in production, use proper encryption)
+
+export const dynamic = 'force-dynamic';
+
 function encrypt(text: string): string {
   // TODO: Implement proper encryption using crypto
   return Buffer.from(text).toString('base64')

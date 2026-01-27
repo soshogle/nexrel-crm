@@ -9,6 +9,9 @@ import bcrypt from 'bcryptjs';
  * GET STAFF
  * List all staff members
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

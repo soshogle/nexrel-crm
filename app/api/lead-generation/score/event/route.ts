@@ -7,6 +7,9 @@ import { updateLeadScoreOnEvent } from '@/lib/lead-generation/lead-scoring-db';
  * POST /api/lead-generation/score/event
  * Update lead score based on engagement event
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

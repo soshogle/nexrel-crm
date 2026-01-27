@@ -10,6 +10,9 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { stripeSubscriptionService } from '@/lib/payments/stripe-subscription-service';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

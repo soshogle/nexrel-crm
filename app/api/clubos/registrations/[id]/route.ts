@@ -13,6 +13,9 @@ import { prisma } from '@/lib/db';
  * GET /api/clubos/registrations/[id]
  * Get single registration details
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }

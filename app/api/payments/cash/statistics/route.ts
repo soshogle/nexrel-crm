@@ -8,6 +8,9 @@ import { getCashStatistics } from '@/lib/payments/cash-service';
  * GET /api/payments/cash/statistics
  * Get cash transaction statistics for a date range
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

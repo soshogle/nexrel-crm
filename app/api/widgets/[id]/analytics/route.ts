@@ -8,6 +8,9 @@ import { widgetService } from '@/lib/ecommerce/widget-service';
  * GET /api/widgets/[id]/analytics
  * Get widget analytics
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }

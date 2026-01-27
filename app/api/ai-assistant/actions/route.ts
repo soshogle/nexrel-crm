@@ -5,6 +5,9 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 // Define available actions
+
+export const dynamic = 'force-dynamic';
+
 const AVAILABLE_ACTIONS = {
   // Setup & Configuration
   SETUP_STRIPE: "setup_stripe",

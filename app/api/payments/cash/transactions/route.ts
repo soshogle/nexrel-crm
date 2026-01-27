@@ -13,6 +13,9 @@ import { CashTransactionType } from '@prisma/client';
  * GET /api/payments/cash/transactions
  * List cash transactions with optional filters
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

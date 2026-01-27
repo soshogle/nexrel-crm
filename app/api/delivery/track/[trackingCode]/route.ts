@@ -7,6 +7,9 @@ import { prisma } from '@/lib/db';
  * Get delivery tracking information by tracking code
  * No authentication required - customers use this to track deliveries
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { trackingCode: string } }

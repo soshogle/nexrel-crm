@@ -8,6 +8,9 @@ type RouteContext = {
 };
 
 // POST /api/campaigns/drip/[id]/pause - Pause campaign
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   context: RouteContext

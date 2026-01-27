@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * 
  * UPDATED: Uses PurchasedPhoneNumber table for reliable user lookup
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();

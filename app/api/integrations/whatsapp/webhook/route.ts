@@ -2,6 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleWhatsAppWebhook } from '@/lib/integrations/whatsapp-service';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.formData();

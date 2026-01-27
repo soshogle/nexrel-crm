@@ -8,6 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { WhatsAppService } from '@/lib/messaging-sync/whatsapp-service';
 import { prisma } from '@/lib/db';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   // WhatsApp webhook verification
   const searchParams = req.nextUrl.searchParams;

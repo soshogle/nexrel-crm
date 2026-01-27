@@ -7,6 +7,9 @@ import { batchDeduplicateLeads, findPotentialDuplicates } from '@/lib/lead-gener
  * POST /api/lead-generation/deduplicate
  * Batch deduplicate leads
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

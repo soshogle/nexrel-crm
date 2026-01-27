@@ -8,6 +8,9 @@ import { processDripEmails } from '@/lib/email-drip-processor';
  * This endpoint should be called by a cron job every 5-10 minutes
  * For security, you can add an API key check here
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     // Optional: Check for cron secret

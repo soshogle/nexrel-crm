@@ -7,6 +7,9 @@ import { clubOSCommunicationService } from '@/lib/clubos-communication-service';
 import { addDays, format } from 'date-fns';
 
 // POST /api/clubos/communications/send-bulk - Send bulk notifications
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

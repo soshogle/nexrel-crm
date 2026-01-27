@@ -8,6 +8,9 @@ import { elevenLabsService } from '@/lib/elevenlabs';
  * GET /api/elevenlabs/voices
  * Fetch available ElevenLabs voices
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);

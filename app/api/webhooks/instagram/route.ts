@@ -8,6 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { InstagramService } from '@/lib/messaging-sync/instagram-service';
 import { prisma } from '@/lib/db';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   // Instagram webhook verification (same as Facebook)
   const searchParams = req.nextUrl.searchParams;

@@ -6,6 +6,9 @@ import { prisma } from '@/lib/db';
 import { getMessagingProvider } from '@/lib/messaging';
 
 // GET /api/messaging/channels - Get all connected channels
+
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);

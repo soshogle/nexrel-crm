@@ -7,6 +7,9 @@ import { createABTest, getActiveTests } from '@/lib/lead-generation/ab-testing';
  * POST /api/lead-generation/ab-test
  * Create new A/B test
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

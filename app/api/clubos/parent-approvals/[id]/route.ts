@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * Parent Approval Action API
  * PUT - Approve/reject/suspend parent household
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }

@@ -7,6 +7,9 @@ import { enrichLead, batchEnrichLeads } from '@/lib/lead-generation/data-enrichm
  * POST /api/lead-generation/enrich
  * Enrich lead data using external APIs
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

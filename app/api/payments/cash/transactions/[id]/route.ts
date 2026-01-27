@@ -13,6 +13,9 @@ import { prisma } from '@/lib/db';
  * PATCH /api/payments/cash/transactions/[id]
  * Update a cash transaction
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }

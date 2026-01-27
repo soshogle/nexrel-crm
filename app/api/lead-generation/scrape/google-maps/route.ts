@@ -8,6 +8,9 @@ import { batchScoreLeads } from '@/lib/lead-generation/lead-scoring-db';
  * POST /api/lead-generation/scrape/google-maps
  * Scrape Google Maps for business leads
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

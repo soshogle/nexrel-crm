@@ -7,6 +7,9 @@ import { monitorLeadsForTasks } from '@/lib/lead-generation/task-automation';
  * POST /api/lead-generation/tasks/auto-create
  * Monitor leads and create tasks automatically
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

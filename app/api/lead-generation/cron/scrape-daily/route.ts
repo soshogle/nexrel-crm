@@ -8,6 +8,9 @@ import { runDailyGoogleMapsScraping, testCronJob } from '@/lib/lead-generation/c
  * This endpoint should be called by a cron job daily at 2 AM
  * Can also be triggered manually for testing
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Check for authorization (optional: add a secret key)

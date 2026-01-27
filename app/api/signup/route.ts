@@ -9,6 +9,9 @@ import { NextRequest, NextResponse } from 'next/server'
  * 
  * Note: Parent signups for sports clubs are still available at /auth/parent/signup
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   return NextResponse.json(
     { 

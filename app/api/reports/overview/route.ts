@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * GET COMPREHENSIVE OVERVIEW REPORT
  * Combines all system metrics into one dashboard
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -7,6 +7,9 @@ import { scoreAndSaveLead, batchScoreLeads } from '@/lib/lead-generation/lead-sc
  * POST /api/lead-generation/score
  * Score a single lead or batch score multiple leads
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -9,6 +9,9 @@ import { prisma } from '@/lib/db';
  * For testing purposes - simulates driver movement from pickup to delivery
  * In production, this would be replaced by actual GPS data from driver's mobile app
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

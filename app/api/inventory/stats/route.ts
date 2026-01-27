@@ -7,6 +7,9 @@ import { prisma } from '@/lib/db';
 /**
  * GET INVENTORY STATISTICS
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -8,6 +8,9 @@ type RouteContext = {
 };
 
 // GET /api/campaigns/drip/[id] - Get specific campaign
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   context: RouteContext

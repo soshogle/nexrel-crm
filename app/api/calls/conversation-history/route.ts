@@ -7,6 +7,9 @@ import { prisma } from '@/lib/db';
 /**
  * Get call history for a specific phone number or conversation
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

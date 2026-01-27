@@ -8,6 +8,9 @@ import { workflowEngine } from '@/lib/workflow-engine';
  * Webhook endpoint for incoming messages from all channels
  * This receives messages from Twilio, Facebook, Instagram, Email, etc.
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

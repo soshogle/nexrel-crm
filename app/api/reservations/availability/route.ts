@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { prisma as db } from '@/lib/db';
 
 // GET /api/reservations/availability - Check available time slots
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

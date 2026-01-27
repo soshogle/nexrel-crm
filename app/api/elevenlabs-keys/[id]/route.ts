@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 
 // DELETE /api/elevenlabs-keys/[id] - Remove an API key
+
+export const dynamic = 'force-dynamic';
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }

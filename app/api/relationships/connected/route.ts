@@ -8,6 +8,9 @@ import { EntityType } from '@prisma/client';
  * GET /api/relationships/connected
  * Find all connected entities (graph traversal)
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

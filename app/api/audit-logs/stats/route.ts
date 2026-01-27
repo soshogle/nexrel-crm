@@ -10,6 +10,9 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { RateLimiters, getClientIdentifier, createRateLimitResponse } from '@/lib/security/rate-limiter';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   // Apply rate limiting
   const clientId = getClientIdentifier(request);

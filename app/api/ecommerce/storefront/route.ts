@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 // GET /api/ecommerce/storefront - Get user's storefront
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)

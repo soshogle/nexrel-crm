@@ -7,6 +7,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { jobId: string } }

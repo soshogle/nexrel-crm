@@ -6,6 +6,9 @@ import { prisma } from '@/lib/db';
 import { workflowEngine } from '@/lib/workflow-engine';
 
 // GET /api/deals - Get all deals
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

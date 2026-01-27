@@ -14,6 +14,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
+
+export const dynamic = 'force-dynamic';
+
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;

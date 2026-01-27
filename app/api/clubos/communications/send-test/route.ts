@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { clubOSCommunicationService } from '@/lib/clubos-communication-service';
 
 // POST /api/clubos/communications/send-test - Send test notification
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

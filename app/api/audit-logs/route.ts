@@ -12,6 +12,9 @@ import { RateLimiters, getClientIdentifier, createRateLimitResponse } from '@/li
 import { sanitizePagination, sanitizeSearchQuery } from '@/lib/security/input-sanitizer';
 import { AuditAction, AuditSeverity } from '@prisma/client';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   // Apply rate limiting
   const clientId = getClientIdentifier(request);

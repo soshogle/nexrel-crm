@@ -10,6 +10,9 @@ import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
  * This endpoint automatically provisions an ElevenLabs conversational AI agent
  * without requiring the user to manually configure it
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

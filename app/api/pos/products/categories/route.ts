@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * GET POS PRODUCT CATEGORIES
  * Get distinct categories with product counts
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

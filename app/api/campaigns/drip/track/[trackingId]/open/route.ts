@@ -6,6 +6,9 @@ type RouteContext = {
 };
 
 // GET /api/campaigns/drip/track/[trackingId]/open - Track email open
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   context: RouteContext

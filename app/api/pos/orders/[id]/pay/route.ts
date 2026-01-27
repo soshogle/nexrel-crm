@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * PROCESS PAYMENT FOR ORDER
  * Integrates with existing payment system (Soshogle Pay)
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

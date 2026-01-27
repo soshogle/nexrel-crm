@@ -8,6 +8,9 @@ import bcrypt from 'bcryptjs';
 /**
  * GET STAFF BY ID
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }

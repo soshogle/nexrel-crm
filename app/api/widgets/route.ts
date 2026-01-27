@@ -8,6 +8,9 @@ import { widgetService } from '@/lib/ecommerce/widget-service';
  * GET /api/widgets
  * List all widgets for the authenticated user
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

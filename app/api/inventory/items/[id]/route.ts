@@ -7,6 +7,9 @@ import { prisma } from '@/lib/db';
 /**
  * GET INVENTORY ITEM BY ID
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }

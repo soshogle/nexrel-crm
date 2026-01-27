@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * GET INVENTORY ITEMS
  * List all inventory items with filtering and search
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

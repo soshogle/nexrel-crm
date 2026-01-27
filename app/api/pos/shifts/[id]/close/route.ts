@@ -7,6 +7,9 @@ import { prisma } from '@/lib/db';
 /**
  * CLOSE SHIFT (CLOCK OUT)
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

@@ -10,6 +10,9 @@ import { authOptions } from '@/lib/auth';
 import { BnplService } from '@/lib/payments/bnpl-service';
 import { prisma } from '@/lib/db';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }

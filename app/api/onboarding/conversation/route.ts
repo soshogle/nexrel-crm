@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { onboardingConversation, onboardingSteps } from '@/lib/onboarding-conversation';
 import { prisma } from '@/lib/db';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

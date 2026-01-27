@@ -7,6 +7,9 @@ import { prisma } from '@/lib/db';
 /**
  * GENERATE RECEIPT
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -11,6 +11,9 @@ import { soshoglePay } from '@/lib/payments';
 import { fraudDetectionClient } from '@/lib/payments/fraud-detection-client';
 import { prisma } from '@/lib/db';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

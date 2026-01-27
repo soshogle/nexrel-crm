@@ -7,6 +7,9 @@ import { validateLead } from '@/lib/lead-generation/data-validation';
  * POST /api/lead-generation/validate
  * Validate lead data quality
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

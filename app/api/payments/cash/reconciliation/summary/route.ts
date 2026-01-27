@@ -8,6 +8,9 @@ import { calculateReconciliationSummary } from '@/lib/payments/cash-service';
  * POST /api/payments/cash/reconciliation/summary
  * Calculate reconciliation summary for a date range (without creating the reconciliation)
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * GET KITCHEN STATIONS
  * List all kitchen stations
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

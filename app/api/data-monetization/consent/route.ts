@@ -8,6 +8,9 @@ import { dataMonetizationService } from '@/lib/payments/data-monetization-servic
  * GET /api/data-monetization/consent
  * Get user's current data sharing consent
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

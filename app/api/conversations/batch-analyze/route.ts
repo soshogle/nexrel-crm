@@ -7,6 +7,9 @@ import { batchAnalyzeUnanalyzedCalls } from '@/lib/auto-analyze-calls';
  * POST /api/conversations/batch-analyze
  * Batch analyze unanalyzed calls
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

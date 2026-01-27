@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * ROUTE POS ORDER TO KITCHEN
  * Creates kitchen items from POS order and assigns to stations
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

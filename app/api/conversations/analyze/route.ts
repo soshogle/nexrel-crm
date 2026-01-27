@@ -8,6 +8,9 @@ import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadSta
  * POST /api/conversations/analyze
  * Analyze a call transcript and update lead scoring
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

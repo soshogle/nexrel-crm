@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * UPDATE DRIVER LOCATION
  * Records driver's current location for real-time tracking
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

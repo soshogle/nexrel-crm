@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 // Helper function to sync with inventory
+
+export const dynamic = 'force-dynamic';
+
 async function syncWithInventory(userId: string, productData: any, action: 'create' | 'update') {
   try {
     // Find inventory item for this product

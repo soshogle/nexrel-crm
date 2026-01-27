@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { prisma as db } from '@/lib/db';
 
 // PATCH /api/reservations/tables/[id] - Update table details
+
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }

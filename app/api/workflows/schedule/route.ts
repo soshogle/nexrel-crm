@@ -9,6 +9,9 @@ import { getTemplateById } from '@/lib/workflow-templates';
  * POST /api/workflows/schedule
  * Schedule a workflow to run at a specific time
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -15,6 +15,9 @@ import { InstagramService } from '@/lib/messaging-sync/instagram-service';
 import { WhatsAppService } from '@/lib/messaging-sync/whatsapp-service';
 import { facebookMessengerService } from '@/lib/facebook-messenger-service';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

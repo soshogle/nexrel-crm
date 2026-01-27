@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { clubOSPaymentService } from '@/lib/clubos-payment-service';
 
 // GET /api/clubos/payments - Get payment history
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * GET SHIFTS
  * List all shifts with filtering
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

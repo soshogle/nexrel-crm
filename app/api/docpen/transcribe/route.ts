@@ -12,6 +12,9 @@ import { prisma } from '@/lib/db';
 import { transcribeAudio, processWhisperOutput } from '@/lib/docpen/transcription-service';
 import { sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

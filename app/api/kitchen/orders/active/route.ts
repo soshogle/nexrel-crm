@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * GET ACTIVE KITCHEN ORDERS
  * List all orders currently in the kitchen
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

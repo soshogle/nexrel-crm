@@ -8,6 +8,9 @@ type RouteContext = {
 };
 
 // POST /api/campaigns/drip/[id]/enroll - Enroll leads in campaign
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   context: RouteContext

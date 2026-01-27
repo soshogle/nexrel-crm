@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * Ends ALL active impersonation sessions for the current super admin
  * Used as a fallback when sessionToken is not available
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     console.log('📡 POST /api/platform-admin/impersonate/end-all called');

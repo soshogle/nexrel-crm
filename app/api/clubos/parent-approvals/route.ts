@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * Parent Approvals API
  * GET - List all pending parent signups for club admin
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

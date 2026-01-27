@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { getMessagingProvider } from '@/lib/messaging';
 
 // GET /api/messaging/conversations/[id]/messages - Get messages for a conversation
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

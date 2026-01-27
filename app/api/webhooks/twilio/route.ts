@@ -9,6 +9,9 @@ import { TwilioService } from '@/lib/messaging-sync/twilio-service';
 import { prisma } from '@/lib/db';
 import twilio from 'twilio';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();

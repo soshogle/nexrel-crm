@@ -8,6 +8,9 @@ import { prisma } from '@/lib/db';
  * COMPLETE KITCHEN ITEM
  * Mark item as complete and auto-deduct inventory
  */
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

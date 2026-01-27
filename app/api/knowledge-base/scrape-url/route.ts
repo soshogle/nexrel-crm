@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth';
 import { documentExtractor } from '@/lib/document-extractor';
 import { prisma } from '@/lib/db';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

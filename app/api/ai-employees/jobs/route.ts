@@ -9,6 +9,9 @@ import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
 import { AIJobStatus } from '@prisma/client';
 
 // GET - List all jobs for user
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

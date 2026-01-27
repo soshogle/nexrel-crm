@@ -11,6 +11,9 @@ import { prisma } from '@/lib/db';
  */
 
 // GET /api/clubos/club-code - Get current club code
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

@@ -7,6 +7,9 @@ import { generateReservationSystemPrompt } from '@/lib/voice-reservation-helper'
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
 
 // GET /api/voice-agents/[id] - Get single voice agent
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

@@ -9,6 +9,9 @@ import {
 } from '@/lib/delivery-service';
 import { DriverStatus } from '@prisma/client';
 
+
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
