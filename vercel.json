@@ -1,31 +1,6 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "node scripts/vercel-build.js && prisma generate && next build",
+  "buildCommand": "node scripts/vercel-build.js && next build",
   "installCommand": "yarn install",
-  "outputDirectory": ".next",
-  "regions": ["iad1"],
-  "functions": {
-    "app/api/**/*.ts": {
-      "maxDuration": 30
-    }
-  },
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "SAMEORIGIN"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        }
-      ]
-    }
-  ]
+  "framework": "nextjs",
+  "outputDirectory": ".next"
 }
