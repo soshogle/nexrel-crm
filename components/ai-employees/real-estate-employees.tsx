@@ -515,7 +515,7 @@ export function RealEstateAITeamWidget() {
             AI Team
           </CardTitle>
           <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300" asChild>
-            <a href="/dashboard/ai-employees">View All <ChevronRight className="w-4 h-4 ml-1" /></a>
+            <a href="/dashboard/ai-employees?tab=re-team">View All <ChevronRight className="w-4 h-4 ml-1" /></a>
           </Button>
         </div>
         <CardDescription className="text-slate-400">Your automated real estate assistants</CardDescription>
