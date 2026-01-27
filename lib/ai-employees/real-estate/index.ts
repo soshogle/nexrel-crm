@@ -1,15 +1,10 @@
 /**
- * Real Estate AI Employees - Main Export
+ * Real Estate AI Employees - Stub exports
  */
-
-// Configurations
 export * from './configs';
 
-// AI Employees
-export * from './speed-to-lead';
-export * from './fsbo-outreach';
-export * from './market-reports';
-export * from './stale-diagnostic';
-
-// Types
-export type { REEmployeeConfig } from './configs';
+// Stub functions
+export async function executeSpeedToLead(input: any) { return { success: false, message: 'Feature initializing' }; }
+export async function executeFSBOOutreach(input: any) { return { success: false, message: 'Feature initializing' }; }
+export async function generateMarketReport(input: any) { return { success: false, message: 'Feature initializing' }; }
+export async function runStaleDiagnostic(input: any) { return { success: false, message: 'Feature initializing' }; }
