@@ -1,1 +1,1 @@
-export * from './real-estate/index';
+export {};
