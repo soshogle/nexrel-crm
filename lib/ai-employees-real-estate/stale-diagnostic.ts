@@ -3,8 +3,8 @@
  * Analyzes why listings haven't sold and generates action plans
  */
 
-import { prisma } from '../../db';
-import { aiOrchestrator } from '../../ai-employee-orchestrator';
+import { prisma } from '@/lib/db';
+import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
 import { AIEmployeeType } from '@prisma/client';
 import { getREEmployeeConfig } from './configs';
 
