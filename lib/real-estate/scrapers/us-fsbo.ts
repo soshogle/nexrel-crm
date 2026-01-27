@@ -7,22 +7,22 @@ import { getApifyToken } from './utils';
 import type { REFSBOSource } from '../types';
 
 export interface USFSBOListing {
-  externalId: string;
+  sourceUrl: string;
+  sourceListingId?: string;
   address: string;
   city: string;
   state: string;
   zip?: string;
-  price: number;
-  propertyType: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  squareFeet?: number;
+  listPrice?: number;
+  beds?: number;
+  baths?: number;
+  sqft?: number;
+  propertyType?: string;
   description?: string;
   sellerName?: string;
   sellerPhone?: string;
   sellerEmail?: string;
-  listingUrl: string;
-  imageUrls: string[];
+  photos?: string[];
 }
 
 export interface ScrapeUSFSBOConfig {
@@ -64,7 +64,6 @@ export async function scrapeUSFSBO(config: ScrapeUSFSBOConfig): Promise<{
 
     return { success: true, listings: [], errors: [], jobId: job.id };
   } catch (error: any) {
-    console.error('US FSBO scrape error:', error);
     return { success: false, listings: [], errors: [error.message] };
   }
 }
