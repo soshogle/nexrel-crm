@@ -17,14 +17,6 @@ const nextConfig = {
 module.exports = nextConfig;
 `;
 
-console.log('🔧 Fixing next.config.js for Vercel...');
+console.log('Fixing next.config.js for Vercel...');
 fs.writeFileSync(configPath, cleanConfig);
-console.log('✅ next.config.js cleaned for Vercel build');
-
-// Clear Prisma cache to ensure fresh generation
-const prismaClientPath = path.join(__dirname, '..', 'node_modules', '.prisma');
-if (fs.existsSync(prismaClientPath)) {
-  console.log('🗑️ Clearing Prisma client cache...');
-  fs.rmSync(prismaClientPath, { recursive: true, force: true });
-  console.log('✅ Prisma cache cleared');
-}
+console.log('Done');
