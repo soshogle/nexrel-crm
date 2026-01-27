@@ -1,50 +1,44 @@
 /**
- * centris Scraper
+ * Centris.ca Scraper (Quebec MLS)
+ * Note: Uses 'OTHER' as source since CENTRIS is not in Prisma enum
  */
 
 import { prisma } from '@/lib/db';
-import { getApifyToken } from './utils';
-import type { REFSBOSource } from '../types';
 
-export interface CENTRISConfig {
+export interface CentrisConfig {
   userId: string;
   targetCities?: string[];
   minPrice?: number;
   maxPrice?: number;
 }
 
-export async function scrapeCENTRIS(config: CENTRISConfig) {
-  const apifyToken = getApifyToken();
-  
-  if (!apifyToken) {
-    return { success: false, listings: [], errors: ['APIFY_API_TOKEN not configured'] };
-  }
+export async function scrapeCentris(config: CentrisConfig) {
+  // Create scraping job
+  const job = await prisma.rEScrapingJob.create({
+    data: {
+      userId: config.userId,
+      name: 'Centris Quebec Scrape',
+      source: 'OTHER',
+      sources: ['OTHER'],
+      targetCities: config.targetCities || [],
+      minPrice: config.minPrice,
+      maxPrice: config.maxPrice,
+      status: 'RUNNING',
+      startedAt: new Date()
+    }
+  });
 
-  try {
-    const job = await prisma.rEScrapingJob.create({
-      data: {
-        userId: config.userId,
-        name: 'centris scrape',
-        source: 'OTHER',
-        sources: ['OTHER'],
-        targetCities: config.targetCities || [],
-        minPrice: config.minPrice,
-        maxPrice: config.maxPrice,
-        status: 'PENDING'
-      }
-    });
-
-    return { success: true, listings: [], errors: [], jobId: job.id };
-  } catch (error: any) {
-    return { success: false, listings: [], errors: [error.message] };
-  }
+  // Placeholder - actual scraping would go here
+  // Return mock results for now
+  return {
+    success: true,
+    jobId: job.id,
+    message: 'Centris scraping not yet implemented - requires API access'
+  };
 }
 
-export async function checkCENTRISJobStatus(jobId: string) {
-  try {
-    const job = await prisma.rEScrapingJob.findUnique({ where: { id: jobId } });
-    return { status: job?.status || 'NOT_FOUND', listings: [] };
-  } catch (error) {
-    return { status: 'ERROR', listings: [] };
-  }
+export async function getCentrisJobStatus(jobId: string, userId: string) {
+  return prisma.rEScrapingJob.findFirst({
+    where: { id: jobId, userId }
+  });
 }
