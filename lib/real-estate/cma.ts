@@ -20,7 +20,7 @@ export interface Comparable {
   sqft?: number;
   yearBuilt?: number;
   salePrice: number;
-  saleDate?: Date;
+  saleDate?: string;
   daysOnMarket?: number;
   distanceMiles?: number;
 }
@@ -63,7 +63,7 @@ export async function generateCMA(
       ? subject.sqft * avgPricePerSqft
       : avgPrice;
 
-    // Create report
+    // Create report - use JSON parse/stringify to ensure proper serialization
     const report = await prisma.rECMAReport.create({
       data: {
         userId,
@@ -72,8 +72,8 @@ export async function generateCMA(
         baths: subject.baths,
         sqft: subject.sqft,
         yearBuilt: subject.yearBuilt,
-        comparables: comparables,
-        adjustments: {},
+        comparables: JSON.parse(JSON.stringify(comparables)),
+        adjustments: JSON.parse(JSON.stringify({})),
         suggestedPriceMin: minPrice * 0.95,
         suggestedPriceMax: maxPrice * 1.05,
         suggestedPrice,

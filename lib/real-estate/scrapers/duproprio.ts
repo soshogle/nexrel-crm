@@ -7,22 +7,22 @@ import { getApifyToken } from './utils';
 import type { REFSBOSource, REFSBOStatus } from '../types';
 
 export interface DuProprioListing {
-  sourceUrl: string;
-  sourceListingId?: string;
+  externalId: string;
   address: string;
   city: string;
-  state: string;
-  zip?: string;
-  listPrice?: number;
-  beds?: number;
-  baths?: number;
-  sqft?: number;
-  propertyType?: string;
+  province: string;
+  postalCode?: string;
+  price: number;
+  propertyType: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  squareFeet?: number;
   description?: string;
   sellerName?: string;
   sellerPhone?: string;
   sellerEmail?: string;
-  photos?: string[];
+  listingUrl: string;
+  imageUrls: string[];
 }
 
 export interface ScrapeDuProprioConfig {
@@ -76,36 +76,33 @@ export async function checkDuProprioJobStatus(jobId: string): Promise<{
     if (!job) return { status: 'NOT_FOUND', listings: [] };
 
     const fsboListings = await prisma.rEFSBOListing.findMany({
-      where: { 
-        assignedUserId: job.userId,
-        source: 'DUPROPRIO'
-      },
+      where: { assignedUserId: job.userId, source: 'DUPROPRIO' },
       orderBy: { firstSeenAt: 'desc' },
       take: 100
     });
 
     const listings: DuProprioListing[] = fsboListings.map(l => ({
-      sourceUrl: l.sourceUrl,
-      sourceListingId: l.sourceListingId || undefined,
+      externalId: l.sourceListingId || l.id,
       address: l.address,
       city: l.city,
-      state: l.state,
-      zip: l.zip || undefined,
-      listPrice: l.listPrice || undefined,
-      beds: l.beds || undefined,
-      baths: l.baths || undefined,
-      sqft: l.sqft || undefined,
-      propertyType: l.propertyType || undefined,
+      province: l.state,
+      postalCode: l.zip || undefined,
+      price: l.listPrice || 0,
+      propertyType: l.propertyType || 'OTHER',
+      bedrooms: l.beds || undefined,
+      bathrooms: l.baths || undefined,
+      squareFeet: l.sqft || undefined,
       description: l.description || undefined,
       sellerName: l.sellerName || undefined,
       sellerPhone: l.sellerPhone || undefined,
       sellerEmail: l.sellerEmail || undefined,
-      photos: (l.photos as string[]) || undefined
+      listingUrl: l.sourceUrl,
+      imageUrls: (l.photos as string[]) || []
     }));
 
     return { status: job.status || 'UNKNOWN', listings };
   } catch (error: any) {
-    console.error('Error checking DuProprio job status:', error);
+    console.error('Error checking job status:', error);
     return { status: 'ERROR', listings: [] };
   }
 }
@@ -120,33 +117,33 @@ export async function saveDuProprioListings(
   for (const listing of listings) {
     try {
       await prisma.rEFSBOListing.upsert({
-        where: { sourceUrl: listing.sourceUrl },
+        where: { sourceUrl: listing.listingUrl },
         create: {
           assignedUserId: userId,
           source: 'DUPROPRIO' as REFSBOSource,
           status: 'NEW' as REFSBOStatus,
-          sourceUrl: listing.sourceUrl,
-          sourceListingId: listing.sourceListingId,
+          sourceListingId: listing.externalId,
+          sourceUrl: listing.listingUrl,
           address: listing.address,
           city: listing.city,
-          state: listing.state,
-          zip: listing.zip,
+          state: listing.province,
+          zip: listing.postalCode,
           country: 'CA',
-          listPrice: listing.listPrice,
-          beds: listing.beds,
-          baths: listing.baths,
-          sqft: listing.sqft,
-          propertyType: listing.propertyType,
+          listPrice: listing.price,
+          propertyType: listing.propertyType || 'OTHER',
+          beds: listing.bedrooms,
+          baths: listing.bathrooms,
+          sqft: listing.squareFeet,
           description: listing.description,
           sellerName: listing.sellerName,
           sellerPhone: listing.sellerPhone,
           sellerEmail: listing.sellerEmail,
-          photos: listing.photos,
+          photos: listing.imageUrls,
           firstSeenAt: new Date(),
           lastSeenAt: new Date()
         },
         update: {
-          listPrice: listing.listPrice,
+          listPrice: listing.price,
           description: listing.description,
           sellerPhone: listing.sellerPhone,
           sellerEmail: listing.sellerEmail,
@@ -155,7 +152,7 @@ export async function saveDuProprioListings(
       });
       saved++;
     } catch (error: any) {
-      errors.push(`Failed to save ${listing.sourceUrl}: ${error.message}`);
+      errors.push(`Failed to save ${listing.externalId}: ${error.message}`);
     }
   }
 
