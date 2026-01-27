@@ -6,6 +6,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
+import { RealEstateAIEmployees } from '@/components/ai-employees/real-estate-employees';
 
 // Embedded Tasks Component - Mini Monday Board
 function TasksEmbed() {
@@ -292,6 +294,16 @@ export default function AIEmployeesPage() {
     customName: '',
     voiceAgentId: '',
   });
+
+  // Session for industry check
+  const { data: session } = useSession() || {};
+  const userIndustry = (session?.user as any)?.industry;
+  const isRealEstateUser = userIndustry === 'REAL_ESTATE';
+
+  // Tab parameter from URL
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const defaultTab = tabParam && ['trigger', 'ai-team', 're-team', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'trigger';
 
   useEffect(() => {
     fetchJobs();
@@ -868,10 +880,13 @@ export default function AIEmployeesPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue="trigger" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue={defaultTab} className="space-y-6">
+        <TabsList className={`grid w-full ${isRealEstateUser ? 'grid-cols-5' : 'grid-cols-4'}`}>
           <TabsTrigger value="trigger">Trigger Tasks</TabsTrigger>
           <TabsTrigger value="ai-team">AI Team</TabsTrigger>
+          {isRealEstateUser && (
+            <TabsTrigger value="re-team">RE Team</TabsTrigger>
+          )}
           <TabsTrigger value="monitor">Monitor Jobs</TabsTrigger>
           <TabsTrigger value="tasks">Manage Tasks</TabsTrigger>
         </TabsList>
@@ -1649,6 +1664,13 @@ export default function AIEmployeesPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* RE Team Tab - Only for Real Estate users */}
+        {isRealEstateUser && (
+          <TabsContent value="re-team" className="space-y-4">
+            <RealEstateAIEmployees />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Job Results Dialog */}
