@@ -10,3 +10,8 @@ node_modules/
 .env.production.local
 .git_backup/
 core
+
+# Dependencies
+node_modules/
+yarn.lock
+.yarn/
