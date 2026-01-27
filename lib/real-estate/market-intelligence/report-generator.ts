@@ -7,7 +7,7 @@ import { prisma } from '@/lib/db';
 
 export interface GenerateReportInput {
   userId: string;
-  type: 'WEEKLY_MARKET_UPDATE' | 'MONTHLY_MARKET_REPORT' | 'QUARTERLY_ANALYSIS' | 'ANNUAL_REVIEW' | 'CUSTOM';
+  type: 'WEEKLY_MARKET_UPDATE' | 'MONTHLY_MARKET_REPORT' | 'QUARTERLY_ANALYSIS' | 'CUSTOM' | 'CUSTOM';
   region: string;
   periodStart: Date;
   periodEnd: Date;
