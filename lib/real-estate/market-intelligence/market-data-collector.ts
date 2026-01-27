@@ -4,7 +4,6 @@
  */
 
 import { prisma } from '@/lib/db';
-import type { REPeriodType } from '../types';
 
 export interface MarketDataInput {
   userId: string;
@@ -12,7 +11,7 @@ export interface MarketDataInput {
   city?: string;
   state?: string;
   country?: string;
-  periodType?: REPeriodType;
+  periodType?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
   periodStart: Date;
   periodEnd: Date;
 }
@@ -42,7 +41,7 @@ export async function collectMarketStats(
         city: input.city,
         state: input.state,
         country: input.country || 'US',
-        periodType: (input.periodType || 'WEEKLY') as REPeriodType,
+        periodType: input.periodType || 'WEEKLY',
         periodStart: input.periodStart,
         periodEnd: input.periodEnd,
         medianSalePrice: stats.medianSalePrice,
