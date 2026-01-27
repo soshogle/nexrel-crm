@@ -4,11 +4,10 @@
  */
 
 import { prisma } from '@/lib/db';
-import type { REReportType } from '../types';
 
 export interface GenerateReportInput {
   userId: string;
-  type: REReportType;
+  type: 'WEEKLY_MARKET_UPDATE' | 'MONTHLY_MARKET_REPORT' | 'QUARTERLY_ANALYSIS' | 'ANNUAL_REVIEW' | 'CUSTOM';
   region: string;
   periodStart: Date;
   periodEnd: Date;
@@ -32,7 +31,7 @@ export async function generateMarketReport(
     const report = await prisma.rEMarketReport.create({
       data: {
         userId: input.userId,
-        type: input.type as REReportType,
+        type: input.type,
         title: input.title || `Market Report - ${input.region}`,
         region: input.region,
         periodStart: input.periodStart,

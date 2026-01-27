@@ -4,7 +4,6 @@
  */
 
 import { prisma } from '@/lib/db';
-import type { REDiagnosticStatus } from '../types';
 
 export interface DiagnosticInput {
   userId: string;
@@ -44,7 +43,7 @@ export async function createStaleDiagnostic(
         agentNotes: analysis.agentNotes,
         sellerEmailDraft: analysis.sellerEmailDraft,
         callScript: analysis.callScript,
-        status: 'PENDING' as REDiagnosticStatus
+        status: 'PENDING'
       }
     });
 
@@ -82,7 +81,7 @@ export async function getDiagnosticById(id: string, userId: string) {
 export async function updateDiagnosticStatus(
   id: string, 
   userId: string, 
-  status: REDiagnosticStatus
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'DISMISSED'
 ) {
   try {
     const updateData: any = { status };
@@ -102,7 +101,6 @@ export async function updateDiagnosticStatus(
 
 export async function getStaleListings(userId: string, minDays = 30) {
   try {
-    // Get FSBO listings that are stale
     const staleListings = await prisma.rEFSBOListing.findMany({
       where: {
         assignedUserId: userId,
@@ -133,7 +131,6 @@ export async function analyzeStaleListing(
       return { success: false, error: 'Listing not found' };
     }
 
-    // Basic analysis based on listing data
     const topReasons: string[] = [];
     const actionPlan: string[] = [];
 
