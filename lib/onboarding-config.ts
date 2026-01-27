@@ -199,7 +199,6 @@ export const CURRENT_CRMS = [
   'ClickFunnels',
   'ActiveCampaign',
   'Keap (Infusionsoft)',
-  'GoHighLevel',
   'Other'
 ];
 

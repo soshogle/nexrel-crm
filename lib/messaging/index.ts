@@ -1,11 +1,9 @@
-
 // Messaging service factory - abstracts provider selection
 
 import { MessagingProvider } from './types';
 import { DemoMessagingProvider } from './providers/demo-provider';
 
 // Future providers will be added here:
-// import { GoHighLevelProvider } from './providers/gohighlevel-provider';
 // import { TwilioProvider } from './providers/twilio-provider';
 
 export function getMessagingProvider(userId: string): MessagingProvider {
@@ -16,8 +14,6 @@ export function getMessagingProvider(userId: string): MessagingProvider {
   switch (providerType) {
     case 'demo':
       return new DemoMessagingProvider(userId);
-    // case 'gohighlevel':
-    //   return new GoHighLevelProvider(userId);
     // case 'twilio':
     //   return new TwilioProvider(userId);
     default:

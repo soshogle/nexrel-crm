@@ -1,6 +1,6 @@
 
 // Demo provider for initial implementation (simulates messaging without external APIs)
-// This will be replaced with actual providers (GoHighLevel, Twilio, etc.)
+// This will be replaced with actual providers (Twilio, etc.)
 
 import { BaseMessagingProvider } from './base-provider';
 import { ChannelType, Conversation, Message } from '../types';

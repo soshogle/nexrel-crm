@@ -3,7 +3,7 @@
 
 ## 🚀 Overview
 
-Soshogle is a full-featured, multi-tenant CRM platform inspired by GoHighLevel, built with Next.js 14, Prisma ORM, PostgreSQL, and integrated with ElevenLabs AI Voice Agents and Twilio for voice/SMS communication.
+Nexrel is a full-featured, multi-tenant CRM platform built with Next.js 14, Prisma ORM, PostgreSQL, and integrated with ElevenLabs AI Voice Agents and Twilio for voice/SMS communication.
 
 ### Key Features
 
