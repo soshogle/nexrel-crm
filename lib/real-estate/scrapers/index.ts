@@ -1,46 +1,22 @@
-/**
- * Real Estate Scrapers - Main Export
- */
-
-// Shared utilities
-export { getApifyToken, getHunterApiKey } from './utils';
-
-// DuProprio scraper (Canada)
-export { 
-  scrapeDuProprio, 
-  checkDuProprioJobStatus, 
-  type DuProprioListing, 
-  type ScrapingConfig 
-} from './duproprio';
-
-// US FSBO scraper
-export { 
-  scrapeUSFSBO, 
-  type USFSBOListing, 
-  type USScrapingConfig 
-} from './us-fsbo';
-
-// Job manager
-export {
-  createScrapingJob,
-  runScrapingJob,
-  getScrapingJobs,
-  updateScrapingJob,
-  deleteScrapingJob,
-  getJobsDueForRun,
-  type ScrapingJobConfig
-} from './scraping-job-manager';
-
-// Stub scrapers for future implementation
-export {
-  scrapeCentris,
-  checkCentrisJobStatus,
-  scrapeRealtorCA,
-  checkRealtorCAJobStatus,
-  scrapeRealtorCom,
-  checkRealtorComJobStatus,
-  scrapeZillow,
-  checkZillowJobStatus,
-  scrapeCraigslist,
-  checkCraigslistJobStatus
-} from './stub-scrapers';
+// Stub exports
+export function getApifyToken() { return ''; }
+export function getHunterApiKey() { return ''; }
+export async function scrapeDuProprio() { return { success: false, listings: [], errors: [] }; }
+export async function checkDuProprioJobStatus() { return { status: 'failed', listings: [] }; }
+export async function scrapeUSFSBO() { return { success: false, listings: [], errors: [] }; }
+export async function createScrapingJob() { return { success: false }; }
+export async function runScrapingJob() { return { success: false }; }
+export async function getScrapingJobs() { return []; }
+export async function updateScrapingJob() { return { success: false }; }
+export async function deleteScrapingJob() { return { success: false }; }
+export async function getJobsDueForRun() { return []; }
+export async function scrapeCentris() { return { success: false, listings: [], errors: [] }; }
+export async function checkCentrisJobStatus() { return { status: 'failed', listings: [] }; }
+export async function scrapeRealtorCA() { return { success: false, listings: [], errors: [] }; }
+export async function checkRealtorCAJobStatus() { return { status: 'failed', listings: [] }; }
+export async function scrapeRealtorCom() { return { success: false, listings: [], errors: [] }; }
+export async function checkRealtorComJobStatus() { return { status: 'failed', listings: [] }; }
+export async function scrapeZillow() { return { success: false, listings: [], errors: [] }; }
+export async function checkZillowJobStatus() { return { status: 'failed', listings: [] }; }
+export async function scrapeCraigslist() { return { success: false, listings: [], errors: [] }; }
+export async function checkCraigslistJobStatus() { return { status: 'failed', listings: [] }; }
