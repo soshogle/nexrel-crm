@@ -1,6 +1,6 @@
 {
-  "buildCommand": "node scripts/vercel-build.js && next build",
-  "installCommand": "yarn install --frozen-lockfile || yarn install",
+  "buildCommand": "prisma generate && node scripts/vercel-build.js && next build",
+  "installCommand": "yarn install",
   "framework": "nextjs",
   "outputDirectory": ".next"
 }
