@@ -1,0 +1,861 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { Home, Send, Upload, Link as LinkIcon, FileText, CheckCircle2, Loader2, X, Bot, Sparkles, Zap, TrendingUp, Target, Award } from "lucide-react";
+import { toast } from "sonner";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
+import { IntegrationSetup } from "@/components/onboarding/integration-setup";
+
+export default function OnboardingPage() {
+  const { data: session, status } = useSession() || {};
+  const router = useRouter();
+  const [conversationHistory, setConversationHistory] = useState<any[]>([]);
+  const [userInput, setUserInput] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [collectedData, setCollectedData] = useState<any>({});
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showWebsiteDialog, setShowWebsiteDialog] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [currentIntegrationStep, setCurrentIntegrationStep] = useState<string | null>(null);
+  const [showScrapedDataPrompt, setShowScrapedDataPrompt] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Detect if current step is an integration step
+  const detectIntegrationStep = (progress: any) => {
+    const currentStep = progress?.currentStep;
+    if (currentStep === 'email_provider') return 'email';
+    if (currentStep === 'sms_phone_setup') return 'sms';
+    if (currentStep === 'social_media') return 'social';
+    if (currentStep === 'payment_provider') return 'payment';
+    if (currentStep === 'calendar_integration') return 'calendar';
+    return null;
+  };
+
+  // Load conversation state
+  useEffect(() => {
+    if (status === "authenticated") {
+      loadConversation();
+    } else if (status === "unauthenticated") {
+      // Stop loading if not authenticated
+      setIsLoading(false);
+    }
+    // If status is "loading", keep isLoading true
+  }, [status]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversationHistory]);
+
+  const loadConversation = async () => {
+    try {
+      const response = await fetch("/api/onboarding/conversation");
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.completed) {
+          setIsCompleted(true);
+          setProgress(100);
+        } else {
+          setCollectedData(data.progress || {});
+          
+          // Calculate progress based on collected fields
+          const totalSteps = 10; // business_name, industry, services, website, business_hours, email_provider, sms_phone_setup, social_media, payment_provider, calendar_integration
+          const completedSteps = Object.keys(data.progress || {}).filter(k => k !== 'currentStep').length;
+          setProgress(Math.min((completedSteps / totalSteps) * 100, 100));
+          
+          // Check if we're on an integration step
+          const integrationType = detectIntegrationStep(data.progress);
+          setCurrentIntegrationStep(integrationType);
+          
+          // Initialize conversation history with AI greeting
+          setConversationHistory([
+            { role: 'ai', content: data.question || "Hi! I'm your Soshogle Agent. Let's set up your CRM together! What's your business name?", timestamp: new Date() }
+          ]);
+        }
+      } else {
+        // API error, show default greeting
+        console.error("API error:", response.status);
+        toast.error("Failed to load onboarding conversation. Starting fresh.");
+        setConversationHistory([
+          { role: 'ai', content: "Hi! I'm your Soshogle Agent. Let's set up your CRM together! What's your business name?", timestamp: new Date() }
+        ]);
+      }
+    } catch (error: any) {
+      console.error("Error loading conversation:", error);
+      toast.error("Failed to connect to onboarding service. Starting fresh.");
+      // Show default greeting even on error
+      setConversationHistory([
+        { role: 'ai', content: "Hi! I'm your Soshogle Agent. Let's set up your CRM together! What's your business name?", timestamp: new Date() }
+      ]);
+    } finally {
+      // ALWAYS stop loading, even on error
+      setIsLoading(false);
+    }
+  };
+
+  const handleIntegrationComplete = async (integrationData: any) => {
+    if (!integrationData.skipped) {
+      toast.success("Integration configured successfully!");
+    }
+    
+    // Submit the integration data and continue to next step
+    const response = integrationData.skipped ? "Skip for now" : `Connected: ${JSON.stringify(integrationData)}`;
+    await handleTextSubmit(response);
+  };
+
+  const handleTextSubmit = async (providedResponse?: string) => {
+    const response = providedResponse || userInput;
+    if (!response.trim() || isProcessing) return;
+    
+    if (!providedResponse) {
+      setUserInput("");
+    }
+    
+    // Hide the scraped data prompt when user submits
+    setShowScrapedDataPrompt(false);
+    
+    // Add user message to history
+    setConversationHistory(prev => [
+      ...prev,
+      { role: 'user', content: response, timestamp: new Date() }
+    ]);
+
+    setIsProcessing(true);
+    try {
+      const res = await fetch("/api/onboarding/conversation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          response,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        
+        // Update collected data
+        setCollectedData(data.progress || {});
+        
+        // Calculate new progress
+        const totalSteps = 10;
+        const completedSteps = Object.keys(data.progress || {}).filter(k => k !== 'currentStep').length;
+        setProgress(Math.min((completedSteps / totalSteps) * 100, 100));
+        
+        // Check if we're on an integration step
+        const integrationType = detectIntegrationStep(data.progress);
+        setCurrentIntegrationStep(integrationType);
+
+        if (data.completed) {
+          setIsCompleted(true);
+          setConversationHistory(prev => [
+            ...prev,
+            { role: 'ai', content: data.message, timestamp: new Date() }
+          ]);
+          
+          // Auto-apply configuration
+          await applyConfiguration();
+        } else {
+          // Add AI response to history
+          setConversationHistory(prev => [
+            ...prev,
+            { role: 'ai', content: data.question, timestamp: new Date() }
+          ]);
+        }
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "Failed to process response");
+      }
+    } catch (error) {
+      console.error("Error processing response:", error);
+      toast.error("Failed to process your response. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const applyConfiguration = async () => {
+    try {
+      const response = await fetch("/api/onboarding/apply-config", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        toast.success("System configured successfully!");
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 2000);
+      } else {
+        toast.error("Failed to apply configuration. Please contact support.");
+      }
+    } catch (error) {
+      console.error("Error applying configuration:", error);
+      toast.error("Failed to apply configuration");
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    const newFiles: any[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/onboarding/upload-document", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          newFiles.push({
+            name: file.name,
+            type: "document",
+            size: file.size,
+            extractedChars: data.textLength,
+            timestamp: new Date(),
+          });
+          toast.success(`✅ Document "${file.name}" uploaded successfully! Extracted ${data.textLength} characters.`, {
+            duration: 6000,
+            style: { 
+              fontSize: '14px',
+              fontWeight: '600'
+            }
+          });
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Upload failed');
+        }
+      } catch (error: any) {
+        console.error(`Error uploading ${file.name}:`, error);
+        toast.error(`Failed to upload ${file.name}: ${error.message}`);
+      }
+    }
+
+    setUploadedFiles(prev => [...prev, ...newFiles]);
+    setIsUploading(false);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleWebsiteSubmit = async () => {
+    if (!websiteUrl.trim()) {
+      toast.error("Please enter a website URL");
+      return;
+    }
+
+    if (!websiteUrl.startsWith("http://") && !websiteUrl.startsWith("https://")) {
+      toast.error("Please enter a valid URL starting with http:// or https://");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const response = await fetch("/api/onboarding/scrape-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: websiteUrl }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Store extracted data with file info
+        const fileInfo: any = {
+          name: data.title || websiteUrl,
+          type: "website",
+          url: websiteUrl,
+          extractedChars: data.textLength,
+          timestamp: new Date(),
+        };
+        
+        // Include extracted structured data if available
+        if (data.extractedData) {
+          fileInfo.extractedData = data.extractedData;
+        }
+        
+        setUploadedFiles(prev => [...prev, fileInfo]);
+        
+        // Build formatted company profile text for validation
+        const extractedData = data.extractedData;
+        if (extractedData) {
+          const profileParts = [];
+          
+          if (extractedData.companyName) {
+            profileParts.push(`Company Name: ${extractedData.companyName}`);
+          } else {
+            profileParts.push(`Company Name: [Please add your company name]`);
+          }
+          
+          if (extractedData.description) {
+            profileParts.push(`\nDescription: ${extractedData.description}`);
+          } else {
+            profileParts.push(`\nDescription: [Please add a business description]`);
+          }
+          
+          if (extractedData.email) {
+            profileParts.push(`\nEmail: ${extractedData.email}`);
+          } else {
+            profileParts.push(`\nEmail: [Please add your business email]`);
+          }
+          
+          if (extractedData.phone) {
+            profileParts.push(`\nPhone: ${extractedData.phone}`);
+          } else {
+            profileParts.push(`\nPhone: [Please add your business phone]`);
+          }
+          
+          if (extractedData.address) {
+            profileParts.push(`\nAddress: ${extractedData.address}`);
+          } else {
+            profileParts.push(`\nAddress: [Please add your business address]`);
+          }
+          
+          if (extractedData.logo) {
+            profileParts.push(`\nLogo: ${extractedData.logo}`);
+          }
+          
+          profileParts.push(`\nWebsite: ${websiteUrl}`);
+          
+          // Populate the company profile field with extracted data
+          setUserInput(profileParts.join(''));
+          
+          // Show the visual prompt to review and continue
+          setShowScrapedDataPrompt(true);
+          
+          toast.success("✅ Company profile extracted! Please review and edit the information below, then click Continue.", { 
+            duration: 10000,
+            style: { 
+              fontSize: '14px',
+              fontWeight: '600'
+            }
+          });
+        } else {
+          toast.success("✅ Website scraped successfully! Please enter your company information below.", { 
+            duration: 8000,
+            style: { 
+              fontSize: '14px',
+              fontWeight: '600'
+            }
+          });
+        }
+        
+        setShowWebsiteDialog(false);
+        setWebsiteUrl("");
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to scrape website");
+      }
+    } catch (error: any) {
+      console.error("Error scraping website:", error);
+      toast.error("Failed to scrape website: " + error.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  if (status === "loading" || isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="text-center space-y-6">
+          <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center mx-auto shadow-2xl">
+            <Sparkles className="h-10 w-10 text-white animate-pulse" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Soshogle Agent
+            </h3>
+            <p className="text-muted-foreground font-medium">Initializing your intelligent assistant...</p>
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+            <span className="text-sm text-blue-600">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    router.push("/auth/signin");
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
+      {/* Header */}
+      <div className="border-b bg-card shadow-lg">
+        <div className="container max-w-5xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg">
+                  <Sparkles className="h-7 w-7 text-white" />
+                </div>
+                {!isCompleted && (
+                  <div className="absolute -bottom-1 -right-1">
+                    <div className="h-5 w-5 rounded-full bg-green-500 border-2 border-white animate-pulse" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    Soshogle Agent
+                  </h1>
+                  <Badge variant="secondary" className="gap-1 bg-blue-500/10 text-blue-600 border-blue-500/20">
+                    <Zap className="h-3 w-3" />
+                    AI Powered
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-0.5 font-medium">
+                  Your intelligent assistant for CRM success
+                </p>
+              </div>
+            </div>
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Home className="h-4 w-4" />
+                Dashboard
+              </Button>
+            </Link>
+          </div>
+          
+          {/* Progress Section */}
+          <div className="mt-6 p-4 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border border-blue-200/50 dark:border-blue-800/50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                  Setup Progress
+                </span>
+              </div>
+              <span className="text-sm font-bold text-blue-600">
+                {Math.min(Math.round(progress), 100)}%
+              </span>
+            </div>
+            <Progress value={Math.min(progress, 100)} className="h-2.5 bg-blue-100 dark:bg-blue-900/30" />
+            <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 font-medium">
+              {progress < 30 ? "🚀 Getting started..." : progress < 70 ? "⚡ Making great progress!" : progress < 100 ? "🎯 Almost there!" : "✅ Setup complete!"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Conversation Area */}
+      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-transparent to-primary/5">
+        <div className="container max-w-5xl mx-auto px-6 py-8">
+          <div className="space-y-6">
+            {conversationHistory.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-4 duration-500`}
+              >
+                <div
+                  className={`max-w-[85%] rounded-2xl p-5 shadow-sm ${
+                    message.role === 'user'
+                      ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white'
+                      : 'bg-card border border-border/50'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {message.role === 'ai' && (
+                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center flex-shrink-0 shadow-md">
+                        <Sparkles className="h-5 w-5 text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      {message.role === 'ai' && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs font-bold text-blue-600">Soshogle Agent</span>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-blue-500/10 text-blue-600 border-blue-500/20">
+                            AI
+                          </Badge>
+                        </div>
+                      )}
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {isProcessing && (
+              <div className="flex justify-start animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="max-w-[85%] rounded-2xl p-5 bg-card border border-border/50 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center flex-shrink-0">
+                      <Loader2 className="h-5 w-5 text-white animate-spin" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-bold text-blue-600">Soshogle Agent</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">Analyzing your response...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Integration Setup Card */}
+            {currentIntegrationStep && !isProcessing && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <IntegrationSetup
+                  type={currentIntegrationStep as any}
+                  onComplete={handleIntegrationComplete}
+                />
+              </div>
+            )}
+            
+            <div ref={chatEndRef} />
+          </div>
+        </div>
+      </div>
+
+      {/* Input Area */}
+      {!isCompleted && (
+        <div className="border-t bg-card shadow-2xl">
+          <div className="container max-w-5xl mx-auto px-6 py-6">
+            <div className="space-y-5">
+              {/* AI Assistant Status Card */}
+              <Card className="bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 border-blue-500/20 shadow-md overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 opacity-50" />
+                <CardContent className="py-4 px-5 relative z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg">
+                        <Sparkles className="h-6 w-6 text-white" />
+                      </div>
+                      {!isProcessing && (
+                        <div className="absolute -bottom-1 -right-1">
+                          <div className="h-4 w-4 rounded-full bg-green-500 border-2 border-white animate-pulse" />
+                        </div>
+                      )}
+                      {isProcessing && (
+                        <div className="absolute -top-1 -right-1">
+                          <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-sm bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                          Soshogle Agent
+                        </span>
+                        <Badge variant="secondary" className="gap-1 bg-blue-500/10 text-blue-600 border-blue-500/20 text-[10px] px-1.5 py-0 h-4">
+                          <Zap className="h-3 w-3" />
+                          Live
+                        </Badge>
+                      </div>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {isProcessing ? (
+                          <span className="flex items-center gap-1">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Configuring your success...
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <TrendingUp className="h-3 w-3 text-green-600" />
+                            Ready to accelerate your business growth
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="hidden md:flex items-center gap-3">
+                      <div className="text-center px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                        <div className="text-xs font-bold text-blue-600">{Math.min(Math.round(progress), 100)}%</div>
+                        <div className="text-[10px] text-blue-600/70">Complete</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Document Upload Section */}
+              <div className="flex items-center gap-3 flex-wrap p-4 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30 border border-border/50">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-muted-foreground">Quick Actions:</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="gap-2 h-8 text-xs hover:bg-blue-50 hover:text-blue-600 hover:border-blue-500/30 transition-all"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Upload Files
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowWebsiteDialog(true)}
+                    disabled={isUploading}
+                    className="gap-2 h-8 text-xs hover:bg-purple-50 hover:text-purple-600 hover:border-purple-500/30 transition-all"
+                  >
+                    <LinkIcon className="h-3.5 w-3.5" />
+                    Add Website
+                  </Button>
+                </div>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt,.csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+
+                {uploadedFiles.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap flex-1">
+                    <span className="text-xs text-muted-foreground">|</span>
+                    {uploadedFiles.map((file, idx) => (
+                      <Badge key={idx} variant="secondary" className="gap-1.5 bg-green-500/10 text-green-700 border-green-500/20 hover:bg-green-500/20 transition-all">
+                        <CheckCircle2 className="h-3 w-3" />
+                        {file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Scraped Data Review Prompt */}
+              {showScrapedDataPrompt && (
+                <Card className="border-2 border-green-500/50 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 shadow-lg animate-in fade-in slide-in-from-top-4 duration-500">
+                  <CardContent className="py-4 px-5">
+                    <div className="flex items-start gap-4">
+                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                        <CheckCircle2 className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-green-900 dark:text-green-100">
+                            Website Data Extracted Successfully!
+                          </h3>
+                          <Badge variant="secondary" className="bg-green-500/20 text-green-700 border-green-500/30">
+                            Ready to Review
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-green-800 dark:text-green-200 leading-relaxed">
+                          We've automatically filled in your company profile below with information from your website. 
+                          <strong className="font-semibold"> Please review and edit any information that needs updating, then click the "Continue" button</strong> to proceed with your CRM setup.
+                        </p>
+                        <div className="flex items-center gap-2 pt-1">
+                          <div className="h-1.5 w-1.5 rounded-full bg-green-600 animate-pulse" />
+                          <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                            Scroll down to review your company profile
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Text Input - Enhanced Visibility */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-1">
+                  <div className={`h-2 w-2 rounded-full ${showScrapedDataPrompt ? 'bg-green-600' : 'bg-blue-600'} animate-pulse`} />
+                  <label className="text-sm font-bold text-foreground">
+                    Company Profile
+                  </label>
+                  {showScrapedDataPrompt && (
+                    <Badge variant="secondary" className="bg-green-500/20 text-green-700 border-green-500/30 text-xs">
+                      Review & Edit
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-1 relative">
+                    <Textarea
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleTextSubmit();
+                        }
+                      }}
+                      placeholder="Enter your company information here, or scrape your website to auto-fill..."
+                      className="resize-none border-2 border-blue-500/30 focus:border-blue-500 pr-4 rounded-xl text-base shadow-lg bg-background"
+                      rows={4}
+                      disabled={isProcessing}
+                    />
+                    <div className="absolute bottom-3 right-3 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
+                      Press Enter to send • Shift+Enter for new line
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => handleTextSubmit()}
+                    disabled={isProcessing || !userInput.trim()}
+                    size="lg"
+                    className={`px-8 h-auto ${showScrapedDataPrompt ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 ring-2 ring-green-500/50 ring-offset-2' : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'} shadow-lg hover:shadow-xl transition-all`}
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : showScrapedDataPrompt ? (
+                      <>
+                        <span className="font-bold">Continue</span>
+                        <CheckCircle2 className="h-5 w-5 ml-2" />
+                      </>
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground px-4">
+                <Award className="h-3.5 w-3.5 text-yellow-600" />
+                <span className="font-medium">
+                  Soshogle Agent learns from your responses to create the perfect CRM setup for your success
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Completion State */}
+      {isCompleted && (
+        <div className="border-t bg-card shadow-2xl">
+          <div className="container max-w-5xl mx-auto px-6 py-12">
+            <div className="text-center space-y-6">
+              <div className="relative inline-block">
+                <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mx-auto shadow-2xl">
+                  <CheckCircle2 className="h-14 w-14 text-white" />
+                </div>
+                <div className="absolute -top-2 -right-2">
+                  <div className="h-8 w-8 rounded-full bg-yellow-400 flex items-center justify-center shadow-lg">
+                    <Award className="h-5 w-5 text-yellow-900" />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                  Setup Complete!
+                </h2>
+                <p className="text-lg text-muted-foreground font-medium max-w-xl mx-auto">
+                  <span className="font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    Soshogle Agent
+                  </span>{" "}
+                  has successfully configured your CRM for maximum success. Let's get started!
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+                <Button 
+                  onClick={() => router.push("/dashboard")} 
+                  size="lg"
+                  className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all px-8"
+                >
+                  <TrendingUp className="h-5 w-5" />
+                  Launch Dashboard
+                </Button>
+              </div>
+
+              <div className="pt-6">
+                <Card className="bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 border-blue-500/20 max-w-md mx-auto">
+                  <CardContent className="py-4 px-6">
+                    <div className="flex items-center gap-3 text-sm">
+                      <Sparkles className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                      <p className="text-muted-foreground text-left">
+                        Your intelligent agent is ready to help you grow your business 24/7
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Website URL Dialog */}
+      <Dialog open={showWebsiteDialog} onOpenChange={setShowWebsiteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Your Website</DialogTitle>
+            <DialogDescription>
+              Enter your website URL and we'll scrape it to learn about your business.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="website-url" className="text-sm font-medium">
+                Website URL
+              </label>
+              <Input
+                id="website-url"
+                placeholder="https://your-website.com"
+                value={websiteUrl}
+                onChange={(e) => setWebsiteUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleWebsiteSubmit();
+                  }
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Must start with http:// or https://
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowWebsiteDialog(false);
+                setWebsiteUrl("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleWebsiteSubmit}
+              disabled={isUploading || !websiteUrl.trim()}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Scraping...
+                </>
+              ) : (
+                <>
+                  <LinkIcon className="h-4 w-4 mr-2" />
+                  Add Website
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

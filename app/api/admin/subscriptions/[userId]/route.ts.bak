@@ -1,0 +1,6 @@
+
+// DEPRECATED FILE - DO NOT USE
+// This file is kept for backward compatibility but should not be used
+// Use /api/admin/users/[id]/subscription instead
+
+// Note: No exports here to prevent Next.js from treating this as a route

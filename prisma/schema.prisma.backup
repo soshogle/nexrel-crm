@@ -1,0 +1,1725 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/go_high_or_show_google_crm/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                String              @id @default(cuid())
+  name              String?
+  email             String              @unique
+  emailVerified     DateTime?
+  password          String?
+  image             String?
+  firstName         String?
+  lastName          String?
+  accounts          Account[]
+  sessions          Session[]
+  leads             Lead[]
+  notes             Note[]
+  messages          Message[]
+  apiKeys           ApiKey[]
+  campaigns         Campaign[]
+  referrals         Referral[]
+  voiceAgents       VoiceAgent[]
+  callLogs          CallLog[]
+  outboundCalls     OutboundCall[]
+  appointments      Appointment[]
+  calendarConnections CalendarConnection[]
+  conversations     Conversation[]
+  conversationMessages ConversationMessage[]
+  channelConnections ChannelConnection[]
+  knowledgeBase     KnowledgeBase[]
+  autoReplySettings AutoReplySettings?
+  pipelines         Pipeline[]
+  deals             Deal[]
+  dealActivities    DealActivity[]
+  workflows         Workflow[]
+  workflowEnrollments WorkflowEnrollment[]
+  emailCampaigns    EmailCampaign[]
+  smsCampaigns      SmsCampaign[]
+  teamMembers       TeamMember[]
+  tasks             Task[]
+  appointmentTypes  AppointmentType[]
+  bookingAppointments BookingAppointment[] @relation("BookingAppointments")
+  paymentProviderSettings PaymentProviderSettings[]
+  payments          Payment[]           @relation("UserPayments")
+  invoices          Invoice[]
+  bookingWidgetSettings BookingWidgetSettings?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  RESPONDED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+model Lead {
+  id                String         @id @default(cuid())
+  userId            String
+  businessName      String
+  contactPerson     String?
+  email             String?
+  phone             String?
+  website           String?
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
+  businessCategory  String?
+  googlePlaceId     String?
+  rating            Float?
+  status            LeadStatus     @default(NEW)
+  source            String         @default("manual") // "google_places", "manual", "referral", or "voice_call"
+  notes             Note[]
+  messages          Message[]
+  campaignLeads     CampaignLead[]
+  reviews           Review[]
+  referralsMade     Referral[]     @relation("ReferrerLeads")
+  referralConverted Referral[]     @relation("ConvertedFromReferral")
+  callLogs          CallLog[]
+  outboundCalls     OutboundCall[]
+  appointments      Appointment[]
+  conversations     Conversation[]
+  deals             Deal[]
+  workflowEnrollments WorkflowEnrollment[]
+  emailCampaignDeals EmailCampaignDeal[]
+  smsCampaignDeals  SmsCampaignDeal[]
+  tasks             Task[]
+  bookingAppointments BookingAppointment[] @relation("BookingLeads")
+  payments          Payment[]      @relation("LeadPayments")
+  invoices          Invoice[]      @relation("LeadInvoices")
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  leadId    String
+  userId    String
+  content   String   @db.Text
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([userId])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  leadId     String
+  userId     String
+  content    String   @db.Text
+  messageType String  @default("ai_generated") // "ai_generated", "custom", "template"
+  isUsed     Boolean  @default(false)
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([userId])
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  userId      String
+  service     String   // "google_places"
+  keyName     String
+  keyValue    String   @db.Text
+  isActive    Boolean  @default(true)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, service, keyName])
+  @@index([userId])
+}
+
+enum CampaignType {
+  REVIEW_REQUEST
+  REFERRAL_REQUEST
+  FOLLOW_UP
+  CUSTOM
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+model Campaign {
+  id              String          @id @default(cuid())
+  userId          String
+  name            String
+  description     String?         @db.Text
+  type            CampaignType
+  status          CampaignStatus  @default(DRAFT)
+  smsTemplate     String          @db.Text
+  reviewUrl       String?
+  referralReward  String?
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignLeads   CampaignLead[]
+  reviews         Review[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum CampaignLeadStatus {
+  PENDING
+  SENT
+  DELIVERED
+  RESPONDED
+  FAILED
+}
+
+model CampaignLead {
+  id            String              @id @default(cuid())
+  campaignId    String
+  leadId        String
+  status        CampaignLeadStatus  @default(PENDING)
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  respondedAt   DateTime?
+  twilioSid     String?
+  errorMessage  String?             @db.Text
+  campaign      Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead          Lead                @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([campaignId, leadId])
+  @@index([campaignId])
+  @@index([leadId])
+  @@index([status])
+}
+
+enum ReviewSource {
+  GOOGLE
+  FACEBOOK
+  YELP
+  TRUSTPILOT
+  OTHER
+}
+
+model Review {
+  id            String        @id @default(cuid())
+  campaignId    String
+  leadId        String
+  source        ReviewSource
+  rating        Int           // 1-5 stars
+  reviewText    String?       @db.Text
+  reviewUrl     String?
+  isPublic      Boolean       @default(false)
+  campaign      Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead          Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([campaignId])
+  @@index([leadId])
+  @@index([rating])
+}
+
+enum ReferralStatus {
+  PENDING
+  CONTACTED
+  CONVERTED
+  EXPIRED
+  DECLINED
+}
+
+model Referral {
+  id              String          @id @default(cuid())
+  userId          String
+  referrerId      String          // The lead who made the referral
+  referredName    String
+  referredEmail   String?
+  referredPhone   String?
+  status          ReferralStatus  @default(PENDING)
+  notes           String?         @db.Text
+  rewardGiven     Boolean         @default(false)
+  rewardDetails   String?         @db.Text
+  convertedLeadId String?         // If converted, link to new lead
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrer        Lead            @relation("ReferrerLeads", fields: [referrerId], references: [id], onDelete: Cascade)
+  convertedLead   Lead?           @relation("ConvertedFromReferral", fields: [convertedLeadId], references: [id], onDelete: SetNull)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([referrerId])
+  @@index([status])
+  @@index([convertedLeadId])
+}
+
+// Voice AI Models
+
+enum VoiceAgentType {
+  INBOUND
+  OUTBOUND
+  BOTH
+}
+
+enum VoiceAgentStatus {
+  ACTIVE
+  INACTIVE
+  TESTING
+}
+
+model VoiceAgent {
+  id                    String            @id @default(cuid())
+  userId                String
+  name                  String
+  description           String?           @db.Text
+  type                  VoiceAgentType    @default(INBOUND)
+  status                VoiceAgentStatus  @default(TESTING)
+  twilioPhoneNumber     String?
+  businessName          String
+  businessIndustry      String?
+  knowledgeBase         String?           @db.Text // FAQ and business info (legacy text format)
+  knowledgeBaseSources  Json?             // Structured knowledge base: {text: string[], urls: string[], files: string[]}
+  greetingMessage       String?           @db.Text
+  
+  // ElevenLabs Voice Configuration
+  voiceId               String?           // ElevenLabs voice ID
+  elevenLabsAgentId     String?           // ElevenLabs Conversational AI Agent ID
+  
+  // Voice Settings
+  stability             Float?            @default(0.5)  // 0.0 to 1.0
+  similarityBoost       Float?            @default(0.75) // 0.0 to 1.0
+  style                 Float?            @default(0.0)  // 0.0 to 1.0
+  useSpeakerBoost       Boolean?          @default(true)
+  
+  // TTS Configuration
+  ttsModel              String?           @default("eleven_turbo_v2") // eleven_turbo_v2, eleven_monolingual_v1, etc.
+  outputFormat          String?           @default("pcm_16000") // pcm_16000, pcm_22050, pcm_24000, pcm_44100, ulaw_8000
+  
+  // Language Model Configuration
+  llmModel              String?           @default("gpt-4") // gpt-4, gpt-3.5-turbo, claude-3-opus, etc.
+  temperature           Float?            @default(0.7)  // 0.0 to 1.0
+  maxTokens             Int?              @default(500)
+  
+  // Conversation Settings
+  firstMessage          String?           @db.Text // First thing agent says
+  systemPrompt          String?           @db.Text // Custom system instructions
+  maxCallDuration       Int?              @default(600) // In seconds (default 10 min)
+  enableInterruptions   Boolean?          @default(true) // Allow user to interrupt
+  responseDelay         Int?              @default(100) // Response delay in ms
+  
+  // Pronunciation & Language
+  pronunciationDict     String?           @db.Text // JSON array of pronunciation rules
+  language              String?           @default("en") // Language code
+  
+  // Calendar & Scheduling
+  googleCalendarId      String?           // For appointment booking
+  availableHours        String?           @db.Text // JSON format
+  appointmentDuration   Int?              @default(30) // In minutes
+  
+  // Call Handling
+  transferPhone         String?           // Phone to transfer to humans
+  enableVoicemail       Boolean?          @default(false)
+  voicemailMessage      String?           @db.Text
+  
+  // Webhook & Integration
+  webhookUrl            String?           // Custom webhook for events
+  customData            String?           @db.Text // JSON for additional custom fields
+  
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  callLogs              CallLog[]
+  outboundCalls         OutboundCall[]
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([elevenLabsAgentId])
+}
+
+enum CallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CallStatus {
+  INITIATED
+  RINGING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  NO_ANSWER
+  BUSY
+}
+
+enum CallOutcome {
+  APPOINTMENT_BOOKED
+  INFORMATION_PROVIDED
+  TRANSFERRED_TO_HUMAN
+  VOICEMAIL
+  HUNG_UP
+  ERROR
+}
+
+model CallLog {
+  id                String           @id @default(cuid())
+  userId            String
+  voiceAgentId      String?
+  leadId            String?
+  direction         CallDirection
+  status            CallStatus       @default(INITIATED)
+  outcome           CallOutcome?
+  fromNumber        String
+  toNumber          String
+  duration          Int?             // In seconds
+  recordingUrl      String?
+  transcription     String?          @db.Text
+  conversationData  String?          @db.Text // JSON format with full conversation
+  twilioCallSid     String?          @unique
+  cost              Float?
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  voiceAgent        VoiceAgent?      @relation(fields: [voiceAgentId], references: [id], onDelete: SetNull)
+  lead              Lead?            @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  outboundCall      OutboundCall?
+  appointment       Appointment?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([voiceAgentId])
+  @@index([leadId])
+  @@index([status])
+  @@index([direction])
+  @@index([createdAt])
+}
+
+// Outbound Call Scheduling and Management
+model OutboundCall {
+  id                String                @id @default(cuid())
+  userId            String
+  voiceAgentId      String
+  leadId            String?
+  name              String                // Name of contact
+  phoneNumber       String                // Number to call
+  status            OutboundCallStatus    @default(SCHEDULED)
+  scheduledFor      DateTime?             // When to make the call
+  attemptCount      Int                   @default(0)
+  maxAttempts       Int                   @default(3)
+  callLogId         String?               @unique // Link to actual call when made
+  purpose           String?               @db.Text // Purpose of the call
+  notes             String?               @db.Text // Additional notes
+  customVariables   String?               @db.Text // JSON for template variables
+  lastAttemptAt     DateTime?
+  completedAt       DateTime?
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  voiceAgent        VoiceAgent            @relation(fields: [voiceAgentId], references: [id], onDelete: Cascade)
+  lead              Lead?                 @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  callLog           CallLog?              @relation(fields: [callLogId], references: [id], onDelete: SetNull)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([userId])
+  @@index([voiceAgentId])
+  @@index([leadId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+enum OutboundCallStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+  NO_ANSWER
+  BUSY
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum CalendarProvider {
+  GOOGLE
+  OUTLOOK
+  OFFICE365
+  APPLE
+  EXTERNAL_API
+}
+
+enum SyncStatus {
+  SYNCED
+  PENDING
+  FAILED
+  DISABLED
+}
+
+model CalendarConnection {
+  id                String            @id @default(cuid())
+  userId            String
+  provider          CalendarProvider
+  providerAccountId String?           // Provider-specific account ID
+  accessToken       String?           @db.Text
+  refreshToken      String?           @db.Text
+  expiresAt         DateTime?
+  calendarId        String?           // Primary calendar ID for this provider
+  calendarName      String?           // User-friendly name
+  syncEnabled       Boolean           @default(true)
+  lastSyncAt        DateTime?
+  syncStatus        SyncStatus        @default(PENDING)
+  webhookUrl        String?           // For external API integrations
+  apiKey            String?           @db.Text // For external booking systems
+  settings          Json?             // Provider-specific settings
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments      Appointment[]
+  bookingAppointments BookingAppointment[] @relation("BookingCalendarConnection")
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@unique([userId, provider, providerAccountId])
+  @@index([userId])
+  @@index([provider])
+}
+
+model Appointment {
+  id                    String              @id @default(cuid())
+  userId                String
+  callLogId             String              @unique
+  leadId                String?
+  calendarConnectionId  String?             // Link to calendar connection
+  customerName          String
+  customerEmail         String?
+  customerPhone         String
+  appointmentDate       DateTime
+  duration              Int                 @default(30) // In minutes
+  status                AppointmentStatus   @default(SCHEDULED)
+  notes                 String?             @db.Text
+  externalEventId       String?             // Event ID from calendar provider
+  externalEventLink     String?             // Direct link to event in calendar
+  syncStatus            SyncStatus          @default(PENDING)
+  lastSyncAt            DateTime?
+  reminderSent          Boolean             @default(false)
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  callLog               CallLog             @relation(fields: [callLogId], references: [id], onDelete: Cascade)
+  lead                  Lead?               @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  calendarConnection    CalendarConnection? @relation(fields: [calendarConnectionId], references: [id], onDelete: SetNull)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([leadId])
+  @@index([appointmentDate])
+  @@index([calendarConnectionId])
+  @@index([status])
+}
+
+// Messaging System
+
+enum ChannelType {
+  SMS
+  EMAIL
+  WHATSAPP
+  INSTAGRAM
+  FACEBOOK_MESSENGER
+  GOOGLE_BUSINESS
+  WEBSITE_CHAT
+}
+
+enum ChannelConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  PENDING_AUTH
+}
+
+model ChannelConnection {
+  id                String                  @id @default(cuid())
+  userId            String
+  channelType       ChannelType
+  channelIdentifier String                  // e.g., phone number, email, page ID
+  displayName       String?                 // User-friendly name for this channel
+  status            ChannelConnectionStatus @default(PENDING_AUTH)
+  
+  // OAuth & Authentication
+  accessToken       String?                 @db.Text
+  refreshToken      String?                 @db.Text
+  expiresAt         DateTime?
+  
+  // Provider-specific data (abstracted - could be GoHighLevel, could be direct APIs later)
+  providerType      String                  @default("internal") // "internal", "ghl", "twilio", etc. (not shown to user)
+  providerAccountId String?                 // Provider's internal ID
+  providerData      Json?                   // Any additional provider-specific config
+  
+  // Metadata
+  isDefault         Boolean                 @default(false) // Default channel for this type
+  syncEnabled       Boolean                 @default(true)  // Enable automatic message syncing
+  lastSyncAt        DateTime?
+  lastSyncCursor    String?                 // Track position in message history (provider-specific)
+  errorMessage      String?                 @db.Text
+  webhookSecret     String?                 // For webhook verification (e.g., Facebook, Instagram)
+  
+  user              User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations     Conversation[]
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  
+  @@unique([userId, channelType, channelIdentifier])
+  @@index([userId])
+  @@index([channelType])
+  @@index([status])
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  UNREAD
+  SNOOZED
+}
+
+model Conversation {
+  id                    String              @id @default(cuid())
+  userId                String
+  channelConnectionId   String
+  leadId                String?             // Link to CRM lead if available
+  
+  // Contact Information
+  contactName           String
+  contactIdentifier     String              // Phone, email, or social handle
+  contactAvatar         String?
+  
+  // Conversation State
+  status                ConversationStatus  @default(ACTIVE)
+  unreadCount           Int                 @default(0)
+  lastMessageAt         DateTime?
+  lastMessagePreview    String?             @db.Text
+  
+  // Provider-specific data (abstracted)
+  externalConversationId String?            // ID from external provider (not shown to user)
+  metadata              Json?               // Additional conversation metadata
+  
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channelConnection     ChannelConnection   @relation(fields: [channelConnectionId], references: [id], onDelete: Cascade)
+  lead                  Lead?               @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  messages              ConversationMessage[]
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  @@unique([channelConnectionId, contactIdentifier])
+  @@index([userId])
+  @@index([channelConnectionId])
+  @@index([leadId])
+  @@index([status])
+  @@index([lastMessageAt])
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  SENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model ConversationMessage {
+  id                  String            @id @default(cuid())
+  conversationId      String
+  userId              String
+  direction           MessageDirection
+  status              MessageStatus     @default(SENT)
+  content             String            @db.Text
+  
+  // Attachments & Media
+  attachments         Json?             // Array of {type, url, name, size}
+  
+  // Message Metadata
+  sentAt              DateTime          @default(now())
+  deliveredAt         DateTime?
+  readAt              DateTime?
+  
+  // Provider-specific data (abstracted)
+  externalMessageId   String?           // ID from external provider (not shown to user)
+  providerData        Json?             // Additional provider-specific data
+  
+  conversation        Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  
+  @@index([conversationId])
+  @@index([userId])
+  @@index([sentAt])
+  @@index([direction])
+}
+
+// AI Auto-Reply System
+
+model KnowledgeBase {
+  id                String              @id @default(cuid())
+  userId            String
+  title             String
+  content           String              @db.Text
+  category          String?             // "faq", "product", "policy", "general"
+  tags              String?             @db.Text // JSON array of tags
+  isActive          Boolean             @default(true)
+  priority          Int                 @default(0) // Higher = more important
+  fileUrl           String?             // If uploaded as document
+  metadata          Json?               // Additional metadata
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([category])
+  @@index([isActive])
+}
+
+model AutoReplySettings {
+  id                    String              @id @default(cuid())
+  userId                String              @unique
+  
+  // Global Settings
+  isEnabled             Boolean             @default(false)
+  responseTone          String              @default("professional") // "professional", "casual", "friendly", "formal"
+  responseLanguage      String              @default("en")
+  
+  // Business Hours
+  businessHoursEnabled  Boolean             @default(true)
+  businessHoursStart    String?             // "09:00"
+  businessHoursEnd      String?             // "17:00"
+  businessDays          String?             @db.Text // JSON array: ["monday", "tuesday", ...]
+  timezone              String              @default("America/New_York")
+  
+  // Reply After Hours Message
+  afterHoursMessage     String?             @db.Text
+  
+  // Channel-specific settings
+  channelSettings       Json?               // {SMS: {enabled: true, maxDelay: 30}, EMAIL: {...}}
+  
+  // AI Behavior
+  maxResponseLength     Int                 @default(500) // Max characters
+  confidenceThreshold   Float               @default(0.7) // 0.0 to 1.0, when to escalate to human
+  useConversationHistory Boolean            @default(true)
+  historyDepth          Int                 @default(10) // Number of previous messages to include
+  
+  // Human Handoff Triggers
+  escalationKeywords    String?             @db.Text // JSON array of keywords that trigger human handoff
+  escalationTopics      String?             @db.Text // JSON array: ["complaint", "refund", "technical_issue"]
+  
+  // Notifications
+  notifyOnEscalation    Boolean             @default(true)
+  notificationEmail     String?
+  notificationPhone     String?
+  
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([userId])
+}
+
+// Enhanced message tracking for AI
+model MessageIntelligence {
+  id                    String              @id @default(cuid())
+  messageId             String              @unique
+  conversationId        String
+  
+  // AI Analysis
+  isAiGenerated         Boolean             @default(false)
+  aiConfidence          Float?              // 0.0 to 1.0
+  sentiment             String?             // "positive", "negative", "neutral", "angry"
+  intent                String?             // "question", "complaint", "thank_you", "booking", etc.
+  
+  // Escalation
+  needsHumanReview      Boolean             @default(false)
+  escalationReason      String?             // Why it was escalated
+  reviewedByHuman       Boolean             @default(false)
+  reviewedAt            DateTime?
+  
+  // Response Quality
+  responseTime          Int?                // In seconds
+  userSatisfaction      String?             // "satisfied", "unsatisfied", "unknown"
+  
+  // Context
+  detectedLanguage      String?
+  keyTopics             String?             @db.Text // JSON array of detected topics
+  suggestedActions      String?             @db.Text // JSON array of suggested next steps
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([conversationId])
+  @@index([isAiGenerated])
+  @@index([needsHumanReview])
+  @@index([sentiment])
+}
+
+// ==========================================
+// PHASE 2: Sales Pipeline, Workflows, Campaigns, Team Collaboration
+// ==========================================
+
+// Sales Pipeline Management
+
+enum DealStage {
+  LEAD
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+enum DealPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Pipeline {
+  id              String          @id @default(cuid())
+  userId          String
+  name            String
+  description     String?         @db.Text
+  color           String?         // Hex color for UI
+  isDefault       Boolean         @default(false)
+  displayOrder    Int             @default(0)
+  stages          PipelineStage[]
+  deals           Deal[]
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([isDefault])
+}
+
+model PipelineStage {
+  id              String          @id @default(cuid())
+  pipelineId      String
+  name            String
+  displayOrder    Int             @default(0)
+  probability     Int             @default(0) // 0-100 (% chance of closing)
+  rottenAfterDays Int?            // Days before deal is considered "rotten"
+  pipeline        Pipeline        @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals           Deal[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([pipelineId])
+  @@index([displayOrder])
+}
+
+model Deal {
+  id                String          @id @default(cuid())
+  userId            String
+  pipelineId        String
+  stageId           String
+  leadId            String?
+  title             String
+  description       String?         @db.Text
+  value             Float           @default(0)
+  currency          String          @default("USD")
+  probability       Int             @default(0) // 0-100
+  priority          DealPriority    @default(MEDIUM)
+  expectedCloseDate DateTime?
+  actualCloseDate   DateTime?
+  lostReason        String?         @db.Text
+  assignedToId      String?         // Team member
+  tags              String?         @db.Text // JSON array
+  customFields      Json?           // Additional custom fields
+  rottenSince       DateTime?       // When deal became stale
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pipeline          Pipeline        @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  stage             PipelineStage   @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  lead              Lead?           @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  assignedTo        TeamMember?     @relation("AssignedDeals", fields: [assignedToId], references: [id], onDelete: SetNull)
+  activities        DealActivity[]
+  tasks             Task[]
+  workflowEnrollments WorkflowEnrollment[]
+  emailCampaignDeals EmailCampaignDeal[]
+  smsCampaignDeals  SmsCampaignDeal[]
+  payments          Payment[]       @relation("DealPayments")
+  invoices          Invoice[]       @relation("DealInvoices")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([pipelineId])
+  @@index([stageId])
+  @@index([leadId])
+  @@index([assignedToId])
+  @@index([expectedCloseDate])
+}
+
+enum DealActivityType {
+  NOTE
+  CALL
+  EMAIL
+  MEETING
+  TASK_COMPLETED
+  STAGE_CHANGED
+  VALUE_CHANGED
+  CREATED
+}
+
+model DealActivity {
+  id              String            @id @default(cuid())
+  dealId          String
+  userId          String
+  type            DealActivityType
+  description     String            @db.Text
+  metadata        Json?             // Additional data
+  deal            Deal              @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+
+  @@index([dealId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Workflow Automation
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum WorkflowTriggerType {
+  LEAD_CREATED
+  LEAD_STATUS_CHANGED
+  DEAL_CREATED
+  DEAL_STAGE_CHANGED
+  DEAL_WON
+  DEAL_LOST
+  EMAIL_OPENED
+  EMAIL_CLICKED
+  SMS_REPLIED
+  FORM_SUBMITTED
+  TAG_ADDED
+  TAG_REMOVED
+  APPOINTMENT_BOOKED
+  CUSTOM_FIELD_CHANGED
+  TIME_BASED
+  MANUAL
+  MESSAGE_RECEIVED           // Any new message received
+  MESSAGE_WITH_KEYWORDS      // Message contains specific keywords
+  AFTER_HOURS_MESSAGE        // Message received outside business hours
+  CONVERSATION_STARTED       // New conversation initiated
+  LEAD_NO_RESPONSE           // Lead hasn't responded in X days
+  DEAL_STALE                 // Deal hasn't moved in X days
+}
+
+model Workflow {
+  id              String            @id @default(cuid())
+  userId          String
+  name            String
+  description     String?           @db.Text
+  status          WorkflowStatus    @default(DRAFT)
+  triggerType     WorkflowTriggerType
+  triggerConfig   Json?             // Trigger-specific configuration
+  enrollmentCount Int               @default(0)
+  completionCount Int               @default(0)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actions         WorkflowAction[]
+  enrollments     WorkflowEnrollment[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([triggerType])
+}
+
+enum WorkflowActionType {
+  SEND_EMAIL
+  SEND_SMS
+  CREATE_TASK
+  UPDATE_LEAD
+  UPDATE_DEAL
+  ADD_TAG
+  REMOVE_TAG
+  MOVE_DEAL_STAGE
+  CHANGE_LEAD_STATUS
+  ASSIGN_TO_USER
+  CREATE_APPOINTMENT
+  WAIT_DELAY
+  CONDITIONAL_SPLIT
+  WEBHOOK
+  AI_GENERATE_MESSAGE
+  AI_SCORE_LEAD
+  SEND_MESSAGE                // Send message via any channel
+  CREATE_LEAD_FROM_MESSAGE    // Auto-create lead from message
+  ASSIGN_TO_DEAL              // Assign conversation/lead to deal
+  AUTO_REPLY                  // Send auto-reply message
+  NOTIFY_USER                 // Send notification to user
+  SCHEDULE_FOLLOW_UP          // Schedule follow-up task
+  CREATE_DEAL_FROM_LEAD       // Convert lead to deal
+}
+
+model WorkflowAction {
+  id              String              @id @default(cuid())
+  workflowId      String
+  type            WorkflowActionType
+  displayOrder    Int                 @default(0)
+  actionConfig    Json                // Action-specific configuration
+  delayMinutes    Int?                // For WAIT_DELAY
+  parentActionId  String?             // For conditional branches
+  workflow        Workflow            @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  parentAction    WorkflowAction?     @relation("ActionBranches", fields: [parentActionId], references: [id], onDelete: Cascade)
+  childActions    WorkflowAction[]    @relation("ActionBranches")
+  executions      WorkflowActionExecution[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([workflowId])
+  @@index([displayOrder])
+  @@index([parentActionId])
+}
+
+enum WorkflowEnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model WorkflowEnrollment {
+  id              String                    @id @default(cuid())
+  workflowId      String
+  userId          String
+  leadId          String?
+  dealId          String?
+  status          WorkflowEnrollmentStatus  @default(ACTIVE)
+  enrolledAt      DateTime                  @default(now())
+  completedAt     DateTime?
+  workflow        Workflow                  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead            Lead?                     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  deal            Deal?                     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  executions      WorkflowActionExecution[]
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([workflowId])
+  @@index([userId])
+  @@index([leadId])
+  @@index([dealId])
+  @@index([status])
+}
+
+enum WorkflowActionExecutionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+model WorkflowActionExecution {
+  id              String                          @id @default(cuid())
+  enrollmentId    String
+  actionId        String
+  status          WorkflowActionExecutionStatus   @default(PENDING)
+  scheduledFor    DateTime?
+  executedAt      DateTime?
+  errorMessage    String?                         @db.Text
+  result          Json?                           // Execution result data
+  enrollment      WorkflowEnrollment              @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  action          WorkflowAction                  @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  createdAt       DateTime                        @default(now())
+  updatedAt       DateTime                        @updatedAt
+
+  @@index([enrollmentId])
+  @@index([actionId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+// Email Marketing Campaigns
+
+enum EmailCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  CANCELLED
+}
+
+model EmailCampaign {
+  id                String              @id @default(cuid())
+  userId            String
+  name              String
+  subject           String
+  previewText       String?
+  htmlContent       String              @db.Text
+  textContent       String?             @db.Text
+  status            EmailCampaignStatus @default(DRAFT)
+  fromName          String?
+  fromEmail         String?
+  replyTo           String?
+  scheduledFor      DateTime?
+  sentAt            DateTime?
+  totalRecipients   Int                 @default(0)
+  sentCount         Int                 @default(0)
+  deliveredCount    Int                 @default(0)
+  openedCount       Int                 @default(0)
+  clickedCount      Int                 @default(0)
+  bouncedCount      Int                 @default(0)
+  unsubscribedCount Int                 @default(0)
+  tags              String?             @db.Text // JSON array
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipients        EmailCampaignDeal[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+enum EmailCampaignDealStatus {
+  PENDING
+  SENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+  UNSUBSCRIBED
+}
+
+model EmailCampaignDeal {
+  id              String                    @id @default(cuid())
+  campaignId      String
+  dealId          String?
+  leadId          String?
+  recipientEmail  String
+  recipientName   String?
+  status          EmailCampaignDealStatus   @default(PENDING)
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  bouncedAt       DateTime?
+  unsubscribedAt  DateTime?
+  openCount       Int                       @default(0)
+  clickCount      Int                       @default(0)
+  errorMessage    String?                   @db.Text
+  campaign        EmailCampaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  deal            Deal?                     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  lead            Lead?                     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([campaignId])
+  @@index([dealId])
+  @@index([leadId])
+  @@index([status])
+  @@index([recipientEmail])
+}
+
+// SMS Marketing Campaigns
+
+enum SmsCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  CANCELLED
+}
+
+model SmsCampaign {
+  id                String              @id @default(cuid())
+  userId            String
+  name              String
+  message           String              @db.Text
+  status            SmsCampaignStatus   @default(DRAFT)
+  fromNumber        String?             // Twilio number
+  scheduledFor      DateTime?
+  sentAt            DateTime?
+  totalRecipients   Int                 @default(0)
+  sentCount         Int                 @default(0)
+  deliveredCount    Int                 @default(0)
+  clickedCount      Int                 @default(0)
+  repliedCount      Int                 @default(0)
+  failedCount       Int                 @default(0)
+  optOutCount       Int                 @default(0)
+  tags              String?             @db.Text // JSON array
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipients        SmsCampaignDeal[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+enum SmsCampaignDealStatus {
+  PENDING
+  SENDING
+  SENT
+  DELIVERED
+  CLICKED
+  REPLIED
+  FAILED
+  OPT_OUT
+}
+
+model SmsCampaignDeal {
+  id              String                  @id @default(cuid())
+  campaignId      String
+  dealId          String?
+  leadId          String?
+  recipientPhone  String
+  recipientName   String?
+  status          SmsCampaignDealStatus   @default(PENDING)
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  clickedAt       DateTime?
+  repliedAt       DateTime?
+  failedAt        DateTime?
+  optOutAt        DateTime?
+  twilioSid       String?
+  errorMessage    String?                 @db.Text
+  campaign        SmsCampaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  deal            Deal?                   @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  lead            Lead?                   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([campaignId])
+  @@index([dealId])
+  @@index([leadId])
+  @@index([status])
+  @@index([recipientPhone])
+}
+
+// Team Collaboration
+
+enum TeamMemberRole {
+  OWNER
+  ADMIN
+  MANAGER
+  AGENT
+  VIEWER
+}
+
+enum TeamMemberStatus {
+  ACTIVE
+  INACTIVE
+  INVITED
+}
+
+model TeamMember {
+  id                  String              @id @default(cuid())
+  userId              String
+  email               String
+  name                String
+  role                TeamMemberRole      @default(AGENT)
+  status              TeamMemberStatus    @default(INVITED)
+  avatar              String?
+  phone               String?
+  invitedAt           DateTime            @default(now())
+  joinedAt            DateTime?
+  lastActiveAt        DateTime?
+  permissions         Json?               // Detailed permissions
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedDeals       Deal[]              @relation("AssignedDeals")
+  assignedTasks       Task[]              @relation("AssignedTasks")
+  createdTasks        Task[]              @relation("CreatedTasks")
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@unique([userId, email])
+  @@index([userId])
+  @@index([email])
+  @@index([status])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id              String          @id @default(cuid())
+  userId          String
+  title           String
+  description     String?         @db.Text
+  status          TaskStatus      @default(TODO)
+  priority        TaskPriority    @default(MEDIUM)
+  dueDate         DateTime?
+  completedAt     DateTime?
+  assignedToId    String?
+  createdById     String?
+  dealId          String?
+  leadId          String?
+  reminderAt      DateTime?
+  tags            String?         @db.Text // JSON array
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedTo      TeamMember?     @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy       TeamMember?     @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: SetNull)
+  deal            Deal?           @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  lead            Lead?           @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([assignedToId])
+  @@index([createdById])
+  @@index([dealId])
+  @@index([leadId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ==========================================
+// PAYMENT PROCESSING & APPOINTMENT BOOKING
+// ==========================================
+
+// Appointment Types (Services)
+enum AppointmentTypeCategory {
+  CONSULTATION
+  SERVICE
+  MEETING
+  DEMO
+  SUPPORT
+  TRAINING
+  OTHER
+}
+
+model AppointmentType {
+  id                String                    @id @default(cuid())
+  userId            String
+  name              String                    // "30 Min Consultation", "Hair Cut", etc.
+  description       String?                   @db.Text
+  category          AppointmentTypeCategory   @default(CONSULTATION)
+  duration          Int                       @default(30) // In minutes
+  price             Float?                    // Price for this appointment type
+  currency          String                    @default("USD")
+  color             String?                   // Hex color for calendar
+  isActive          Boolean                   @default(true)
+  requiresPayment   Boolean                   @default(false)
+  paymentRequired   String?                   @default("none") // "none", "deposit", "full"
+  depositPercentage Float?                    // If deposit required
+  bufferTimeBefore  Int?                      @default(0) // Minutes before
+  bufferTimeAfter   Int?                      @default(0) // Minutes after
+  maxBookingsPerDay Int?                      // Limit bookings
+  bookingLeadTime   Int?                      @default(60) // Minutes in advance required
+  questions         Json?                     // Custom booking questions
+  user              User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings          BookingAppointment[]
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([category])
+}
+
+// Enhanced Appointment/Booking Model
+model BookingAppointment {
+  id                    String                    @id @default(cuid())
+  userId                String
+  appointmentTypeId     String?
+  leadId                String?
+  calendarConnectionId  String?
+  
+  // Customer Information
+  customerName          String
+  customerEmail         String
+  customerPhone         String
+  customerTimezone      String?
+  
+  // Booking Details
+  appointmentDate       DateTime
+  duration              Int                       @default(30) // In minutes
+  status                AppointmentStatus         @default(SCHEDULED)
+  
+  // Notes & Custom Fields
+  notes                 String?                   @db.Text
+  customerResponses     Json?                     // Responses to custom questions
+  internalNotes         String?                   @db.Text
+  
+  // Calendar Sync
+  externalEventId       String?                   // Event ID from calendar provider
+  externalEventLink     String?                   // Direct link to event
+  syncStatus            SyncStatus                @default(PENDING)
+  lastSyncAt            DateTime?
+  
+  // Reminders & Notifications
+  reminderSent          Boolean                   @default(false)
+  reminderSentAt        DateTime?
+  confirmationSent      Boolean                   @default(false)
+  
+  // Cancellation
+  cancellationReason    String?                   @db.Text
+  cancelledAt           DateTime?
+  cancelledBy           String?                   // "customer" or "business"
+  
+  // Payment
+  requiresPayment       Boolean                   @default(false)
+  paymentId             String?                   @unique
+  
+  // Meeting/Call Info
+  meetingLocation       String?                   @db.Text // Physical or virtual
+  meetingLink           String?                   // Zoom, Meet, etc.
+  
+  // Referencing
+  callLogId             String?                   // If booked via voice AI
+  
+  user                  User                      @relation("BookingAppointments", fields: [userId], references: [id], onDelete: Cascade)
+  appointmentType       AppointmentType?          @relation(fields: [appointmentTypeId], references: [id], onDelete: SetNull)
+  lead                  Lead?                     @relation("BookingLeads", fields: [leadId], references: [id], onDelete: SetNull)
+  calendarConnection    CalendarConnection?       @relation("BookingCalendarConnection", fields: [calendarConnectionId], references: [id], onDelete: SetNull)
+  payment               Payment?                  @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  @@index([userId])
+  @@index([appointmentTypeId])
+  @@index([leadId])
+  @@index([appointmentDate])
+  @@index([calendarConnectionId])
+  @@index([status])
+}
+
+// Payment Provider Settings
+enum PaymentProvider {
+  STRIPE
+  SQUARE
+  PAYPAL
+  APPLE_PAY
+  GOOGLE_PAY
+}
+
+model PaymentProviderSettings {
+  id                String            @id @default(cuid())
+  userId            String
+  provider          PaymentProvider
+  isActive          Boolean           @default(false)
+  isDefault         Boolean           @default(false)
+  
+  // Credentials (encrypted)
+  publishableKey    String?           @db.Text
+  secretKey         String?           @db.Text
+  webhookSecret     String?           @db.Text
+  
+  // Provider-specific settings
+  merchantId        String?           // For Square, PayPal
+  clientId          String?           // For PayPal
+  accountId         String?           // Stripe Connect account ID
+  
+  // Configuration
+  currency          String            @default("USD")
+  testMode          Boolean           @default(true)
+  settings          Json?             // Additional provider settings
+  
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments          Payment[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@index([isActive])
+}
+
+// Payment Transactions
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentType {
+  APPOINTMENT
+  INVOICE
+  SUBSCRIPTION
+  DEAL
+  SERVICE
+  PRODUCT
+  OTHER
+}
+
+model Payment {
+  id                  String                    @id @default(cuid())
+  userId              String
+  providerId          String?                   // Link to PaymentProviderSettings
+  
+  // Transaction Details
+  provider            PaymentProvider           @default(STRIPE)
+  providerPaymentId   String?                   // ID from payment provider
+  providerCustomerId  String?                   // Customer ID from provider
+  
+  // Payment Information
+  amount              Float
+  currency            String                    @default("USD")
+  status              PaymentStatus             @default(PENDING)
+  paymentType         PaymentType               @default(OTHER)
+  
+  // Customer Details
+  customerName        String
+  customerEmail       String
+  customerPhone       String?
+  
+  // Linked Resources
+  appointmentId       String?
+  dealId              String?
+  leadId              String?
+  invoiceId           String?
+  
+  // Payment Method
+  paymentMethod       String?                   // "card", "bank_transfer", "paypal", "apple_pay"
+  last4               String?                   // Last 4 digits of card
+  cardBrand           String?                   // visa, mastercard, etc.
+  
+  // Description
+  description         String?                   @db.Text
+  metadata            Json?                     // Additional data
+  
+  // Refund Information
+  refundedAmount      Float                     @default(0)
+  refundReason        String?                   @db.Text
+  refundedAt          DateTime?
+  
+  // Receipt & Invoice
+  receiptUrl          String?
+  receiptNumber       String?
+  
+  // Error Handling
+  errorMessage        String?                   @db.Text
+  failureCode         String?
+  
+  // Timestamps
+  paidAt              DateTime?
+  
+  user                User                      @relation("UserPayments", fields: [userId], references: [id], onDelete: Cascade)
+  paymentProvider     PaymentProviderSettings?  @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  deal                Deal?                     @relation("DealPayments", fields: [dealId], references: [id], onDelete: SetNull)
+  lead                Lead?                     @relation("LeadPayments", fields: [leadId], references: [id], onDelete: SetNull)
+  invoice             Invoice?                  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  bookingAppointment  BookingAppointment?
+  
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  @@index([userId])
+  @@index([providerId])
+  @@index([providerPaymentId])
+  @@index([status])
+  @@index([paymentType])
+  @@index([customerEmail])
+  @@index([appointmentId])
+  @@index([dealId])
+  @@index([leadId])
+}
+
+// Invoice Generation
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+model Invoice {
+  id                String          @id @default(cuid())
+  userId            String
+  invoiceNumber     String          @unique
+  
+  // Customer Information
+  customerName      String
+  customerEmail     String
+  customerPhone     String?
+  billingAddress    Json?           // {street, city, state, zip, country}
+  
+  // Invoice Details
+  status            InvoiceStatus   @default(DRAFT)
+  issueDate         DateTime        @default(now())
+  dueDate           DateTime?
+  
+  // Line Items
+  items             Json            // [{description, quantity, rate, amount}]
+  
+  // Amounts
+  subtotal          Float
+  taxRate           Float?          @default(0)
+  taxAmount         Float?          @default(0)
+  discountAmount    Float?          @default(0)
+  totalAmount       Float
+  paidAmount        Float           @default(0)
+  balanceAmount     Float
+  
+  // Payment
+  currency          String          @default("USD")
+  paymentTerms      String?         @db.Text
+  
+  // Notes
+  notes             String?         @db.Text
+  internalNotes     String?         @db.Text
+  
+  // Linked Resources
+  dealId            String?
+  leadId            String?
+  
+  // PDF & Sharing
+  pdfUrl            String?
+  publicUrl         String?         // Publicly accessible invoice URL
+  viewCount         Int             @default(0)
+  lastViewedAt      DateTime?
+  
+  // Timestamps
+  sentAt            DateTime?
+  paidAt            DateTime?
+  
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deal              Deal?           @relation("DealInvoices", fields: [dealId], references: [id], onDelete: SetNull)
+  lead              Lead?           @relation("LeadInvoices", fields: [leadId], references: [id], onDelete: SetNull)
+  payments          Payment[]
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([invoiceNumber])
+  @@index([status])
+  @@index([dueDate])
+  @@index([dealId])
+  @@index([leadId])
+  @@index([customerEmail])
+}
+
+// Booking Widget Settings
+model BookingWidgetSettings {
+  id                  String          @id @default(cuid())
+  userId              String          @unique
+  
+  // Widget Appearance
+  primaryColor        String          @default("#3b82f6")
+  logo                String?         // URL to logo
+  businessName        String
+  businessDescription String?         @db.Text
+  
+  // Booking Configuration
+  requireEmail        Boolean         @default(true)
+  requirePhone        Boolean         @default(true)
+  showAvailability    Boolean         @default(true)
+  timeSlotInterval    Int             @default(30) // Minutes
+  
+  // Timezone & Availability
+  timezone            String          @default("America/New_York")
+  availabilityHours   Json?           // {monday: [{start: "09:00", end: "17:00"}], ...}
+  
+  // Notifications
+  sendConfirmationEmail Boolean       @default(true)
+  sendReminderEmail   Boolean         @default(true)
+  reminderHoursBefore Int?            @default(24)
+  
+  // Payment
+  acceptPayments      Boolean         @default(false)
+  defaultPaymentProvider String?      // "stripe", "square", "paypal"
+  
+  // Customization
+  customCss           String?         @db.Text
+  customMessages      Json?           // {confirmationMessage, thankYouMessage}
+  
+  // Embed Info
+  embedCode           String?         @db.Text // Generated iframe embed code
+  publicUrl           String?         // Public booking page URL
+  
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@index([userId])
+}

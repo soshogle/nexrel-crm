@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Capture Form</title>
+    <style>
+        /* Lightweight CSS for the form widget */
+        .lead-capture-widget {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 400px;
+            padding: 24px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .lead-capture-widget h3 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .lead-capture-widget p {
+            margin: 0 0 20px 0;
+            font-size: 14px;
+            color: #6B7280;
+        }
+        
+        .lead-capture-form-group {
+            margin-bottom: 16px;
+        }
+        
+        .lead-capture-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .lead-capture-input {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
+            border: 1px solid #D1D5DB;
+            border-radius: 6px;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        
+        .lead-capture-input:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .lead-capture-button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            background: #3B82F6;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .lead-capture-button:hover {
+            background: #2563EB;
+        }
+        
+        .lead-capture-button:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+        }
+        
+        .lead-capture-success {
+            padding: 12px;
+            background: #D1FAE5;
+            border: 1px solid #10B981;
+            border-radius: 6px;
+            color: #065F46;
+            font-size: 14px;
+            margin-top: 12px;
+        }
+        
+        .lead-capture-error {
+            padding: 12px;
+            background: #FEE2E2;
+            border: 1px solid #EF4444;
+            border-radius: 6px;
+            color: #991B1B;
+            font-size: 14px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="lead-capture-widget" id="leadCaptureWidget">
+        <h3>Get in Touch</h3>
+        <p>Fill out the form below and we'll get back to you shortly.</p>
+        
+        <form id="leadCaptureForm">
+            <div class="lead-capture-form-group">
+                <label class="lead-capture-label" for="fullName">Name *</label>
+                <input 
+                    type="text" 
+                    id="fullName" 
+                    name="fullName" 
+                    class="lead-capture-input" 
+                    placeholder="John Doe"
+                    required
+                />
+            </div>
+            
+            <div class="lead-capture-form-group">
+                <label class="lead-capture-label" for="email">Email *</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    class="lead-capture-input" 
+                    placeholder="john@example.com"
+                    required
+                />
+            </div>
+            
+            <div class="lead-capture-form-group">
+                <label class="lead-capture-label" for="phone">Phone *</label>
+                <input 
+                    type="tel" 
+                    id="phone" 
+                    name="phone" 
+                    class="lead-capture-input" 
+                    placeholder="(555) 123-4567"
+                    required
+                />
+            </div>
+            
+            <div class="lead-capture-form-group">
+                <label class="lead-capture-label" for="company">Company</label>
+                <input 
+                    type="text" 
+                    id="company" 
+                    name="company" 
+                    class="lead-capture-input" 
+                    placeholder="Acme Inc."
+                />
+            </div>
+            
+            <div class="lead-capture-form-group">
+                <label class="lead-capture-label" for="message">Message</label>
+                <textarea 
+                    id="message" 
+                    name="message" 
+                    class="lead-capture-input" 
+                    rows="3"
+                    placeholder="Tell us about your needs..."
+                ></textarea>
+            </div>
+            
+            <button type="submit" class="lead-capture-button" id="submitButton">
+                Submit
+            </button>
+        </form>
+        
+        <div id="formMessage" style="display: none;"></div>
+    </div>
+
+    <script>
+        (function() {
+            // Configuration - Replace with your API endpoint
+            const API_ENDPOINT = window.LEAD_CAPTURE_API_URL || '/api/lead-generation/capture/form';
+            const USER_ID = window.LEAD_CAPTURE_USER_ID;
+            
+            const form = document.getElementById('leadCaptureForm');
+            const submitButton = document.getElementById('submitButton');
+            const formMessage = document.getElementById('formMessage');
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Disable submit button
+                submitButton.disabled = true;
+                submitButton.textContent = 'Submitting...';
+                
+                // Get form data
+                const formData = {
+                    fullName: document.getElementById('fullName').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    company: document.getElementById('company').value,
+                    message: document.getElementById('message').value,
+                    source: 'form_widget',
+                    userId: USER_ID
+                };
+                
+                try {
+                    const response = await fetch(API_ENDPOINT, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        // Show success message
+                        formMessage.className = 'lead-capture-success';
+                        formMessage.textContent = 'Thank you! We\'ll be in touch soon.';
+                        formMessage.style.display = 'block';
+                        
+                        // Reset form
+                        form.reset();
+                    } else {
+                        throw new Error(data.error || 'Submission failed');
+                    }
+                } catch (error) {
+                    // Show error message
+                    formMessage.className = 'lead-capture-error';
+                    formMessage.textContent = 'Oops! Something went wrong. Please try again.';
+                    formMessage.style.display = 'block';
+                    console.error('Form submission error:', error);
+                }
+                
+                // Re-enable submit button
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit';
+                
+                // Hide message after 5 seconds
+                setTimeout(() => {
+                    formMessage.style.display = 'none';
+                }, 5000);
+            });
+        })();
+    </script>
+</body>
+</html>

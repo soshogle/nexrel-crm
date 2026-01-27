@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice AI Widget</title>
+    <style>
+        /* Voice AI Widget Styles */
+        .voice-ai-widget {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        
+        .voice-ai-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .voice-ai-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+        }
+        
+        .voice-ai-button.active {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
+            50% { box-shadow: 0 0 0 15px rgba(102, 126, 234, 0); }
+        }
+        
+        .voice-ai-icon {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+        
+        .voice-ai-modal {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 350px;
+            max-height: 500px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        .voice-ai-modal.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .voice-ai-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .voice-ai-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .voice-ai-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+        }
+        
+        .voice-ai-body {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .voice-ai-status {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .voice-ai-status-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .voice-ai-status-icon.listening {
+            background: #dbeafe;
+            animation: listening-pulse 1.5s infinite;
+        }
+        
+        @keyframes listening-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .voice-ai-status-text {
+            font-size: 16px;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        
+        .voice-ai-status-hint {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .voice-ai-transcript {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #374151;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .voice-ai-form {
+            margin-top: 20px;
+        }
+        
+        .voice-ai-input-group {
+            margin-bottom: 12px;
+        }
+        
+        .voice-ai-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        
+        .voice-ai-input {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        
+        .voice-ai-button-submit {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            background: #3b82f6;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .voice-ai-button-submit:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="voice-ai-widget">
+        <!-- Floating button -->
+        <button class="voice-ai-button" id="voiceAIButton" aria-label="Voice AI Assistant">
+            <svg class="voice-ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="currentColor"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </button>
+        
+        <!-- Modal -->
+        <div class="voice-ai-modal" id="voiceAIModal">
+            <div class="voice-ai-header">
+                <h3>Voice AI Assistant</h3>
+                <button class="voice-ai-close" id="closeModal" aria-label="Close">&times;</button>
+            </div>
+            <div class="voice-ai-body" id="voiceAIBody">
+                <div class="voice-ai-status" id="voiceAIStatus">
+                    <div class="voice-ai-status-icon" id="statusIcon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="#3b82f6">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        </svg>
+                    </div>
+                    <div class="voice-ai-status-text" id="statusText">Tap to speak</div>
+                    <div class="voice-ai-status-hint" id="statusHint">I can help you with your inquiry</div>
+                </div>
+                <div class="voice-ai-transcript" id="transcript" style="display: none;"></div>
+                <form class="voice-ai-form" id="leadForm" style="display: none;">
+                    <div class="voice-ai-input-group">
+                        <label class="voice-ai-label" for="voiceName">Name</label>
+                        <input type="text" class="voice-ai-input" id="voiceName" required />
+                    </div>
+                    <div class="voice-ai-input-group">
+                        <label class="voice-ai-label" for="voiceEmail">Email</label>
+                        <input type="email" class="voice-ai-input" id="voiceEmail" required />
+                    </div>
+                    <div class="voice-ai-input-group">
+                        <label class="voice-ai-label" for="voicePhone">Phone</label>
+                        <input type="tel" class="voice-ai-input" id="voicePhone" required />
+                    </div>
+                    <button type="submit" class="voice-ai-button-submit">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // Configuration
+            const API_ENDPOINT = window.VOICE_AI_API_URL || '/api/lead-generation/capture/voice';
+            const USER_ID = window.VOICE_AI_USER_ID;
+            const ELEVENLABS_AGENT_ID = window.ELEVENLABS_AGENT_ID;
+            
+            let isListening = false;
+            let conversationTranscript = [];
+            let leadData = {};
+            
+            const button = document.getElementById('voiceAIButton');
+            const modal = document.getElementById('voiceAIModal');
+            const closeBtn = document.getElementById('closeModal');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('statusText');
+            const statusHint = document.getElementById('statusHint');
+            const transcript = document.getElementById('transcript');
+            const leadForm = document.getElementById('leadForm');
+            
+            // Toggle modal
+            button.addEventListener('click', toggleModal);
+            closeBtn.addEventListener('click', closeModal);
+            
+            function toggleModal() {
+                if (modal.classList.contains('active')) {
+                    closeModal();
+                } else {
+                    openModal();
+                }
+            }
+            
+            function openModal() {
+                modal.classList.add('active');
+                startVoiceAI();
+            }
+            
+            function closeModal() {
+                modal.classList.remove('active');
+                stopVoiceAI();
+            }
+            
+            function startVoiceAI() {
+                button.classList.add('active');
+                statusIcon.classList.add('listening');
+                statusText.textContent = 'Listening...';
+                statusHint.textContent = 'Speak now';
+                isListening = true;
+                
+                // Start voice recognition
+                startVoiceRecognition();
+            }
+            
+            function stopVoiceAI() {
+                button.classList.remove('active');
+                statusIcon.classList.remove('listening');
+                isListening = false;
+            }
+            
+            function startVoiceRecognition() {
+                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                    statusText.textContent = 'Voice not supported';
+                    statusHint.textContent = 'Please use the form below';
+                    showLeadForm();
+                    return;
+                }
+                
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = navigator.language || 'en-US';
+                
+                recognition.onstart = function() {
+                    console.log('Voice recognition started');
+                };
+                
+                recognition.onresult = function(event) {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+                    
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcriptPiece = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcriptPiece + ' ';
+                        } else {
+                            interimTranscript += transcriptPiece;
+                        }
+                    }
+                    
+                    if (finalTranscript) {
+                        conversationTranscript.push(finalTranscript.trim());
+                        updateTranscript();
+                        processTranscript(finalTranscript.trim());
+                    }
+                    
+                    if (interimTranscript) {
+                        transcript.style.display = 'block';
+                        transcript.textContent = interimTranscript;
+                    }
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('Voice recognition error:', event.error);
+                    statusText.textContent = 'Error occurred';
+                    statusHint.textContent = 'Please try again or use the form';
+                    setTimeout(showLeadForm, 2000);
+                };
+                
+                recognition.onend = function() {
+                    if (isListening) {
+                        recognition.start(); // Restart if still listening
+                    }
+                };
+                
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('Failed to start recognition:', error);
+                    showLeadForm();
+                }
+            }
+            
+            function updateTranscript() {
+                transcript.style.display = 'block';
+                transcript.textContent = conversationTranscript.join(' ');
+            }
+            
+            function processTranscript(text) {
+                // Simple pattern matching to extract lead data
+                const lowerText = text.toLowerCase();
+                
+                // Try to extract name
+                const nameMatch = lowerText.match(/(?:my name is|i'm|i am)\s+([a-z]+\s+[a-z]+)/i);
+                if (nameMatch) {
+                    leadData.name = nameMatch[1];
+                }
+                
+                // Try to extract email
+                const emailMatch = text.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+                if (emailMatch) {
+                    leadData.email = emailMatch[1];
+                }
+                
+                // Try to extract phone
+                const phoneMatch = text.match(/(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})/i);
+                if (phoneMatch) {
+                    leadData.phone = phoneMatch[1];
+                }
+                
+                // Check if we have enough data
+                if (Object.keys(leadData).length >= 2) {
+                    statusText.textContent = 'Great!';
+                    statusHint.textContent = 'Let me confirm your details';
+                    setTimeout(showLeadForm, 1500);
+                }
+            }
+            
+            function showLeadForm() {
+                stopVoiceAI();
+                document.getElementById('voiceAIStatus').style.display = 'none';
+                leadForm.style.display = 'block';
+                
+                // Pre-fill form with captured data
+                if (leadData.name) document.getElementById('voiceName').value = leadData.name;
+                if (leadData.email) document.getElementById('voiceEmail').value = leadData.email;
+                if (leadData.phone) document.getElementById('voicePhone').value = leadData.phone;
+            }
+            
+            // Handle form submission
+            leadForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    fullName: document.getElementById('voiceName').value,
+                    email: document.getElementById('voiceEmail').value,
+                    phone: document.getElementById('voicePhone').value,
+                    source: 'voice_ai',
+                    userId: USER_ID,
+                    transcript: conversationTranscript.join(' ')
+                };
+                
+                try {
+                    const response = await fetch(API_ENDPOINT, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        statusText.textContent = 'Thank you!';
+                        statusHint.textContent = 'We\'ll be in touch soon';
+                        leadForm.style.display = 'none';
+                        document.getElementById('voiceAIStatus').style.display = 'block';
+                        setTimeout(closeModal, 2000);
+                    } else {
+                        throw new Error(data.error || 'Submission failed');
+                    }
+                } catch (error) {
+                    alert('Failed to submit. Please try again.');
+                    console.error('Form submission error:', error);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

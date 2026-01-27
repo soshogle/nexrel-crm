@@ -1,0 +1,155 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * Facebook Messenger Webhook Endpoint
+ * Receives incoming messages from Facebook Messenger
+ */
+
+// GET - Webhook verification (Facebook requires this)
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  
+  const mode = searchParams.get('hub.mode');
+  const token = searchParams.get('hub.verify_token');
+  const challenge = searchParams.get('hub.challenge');
+
+  const VERIFY_TOKEN = process.env.FACEBOOK_VERIFY_TOKEN || 'soshogle_messenger_verify_token';
+
+  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('✅ Facebook webhook verified');
+    return new NextResponse(challenge, { status: 200 });
+  } else {
+    console.error('❌ Facebook webhook verification failed');
+    return NextResponse.json({ error: 'Verification failed' }, { status: 403 });
+  }
+}
+
+// POST - Receive incoming messages
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    console.log('📨 Incoming Messenger webhook:', JSON.stringify(body, null, 2));
+
+    // Facebook sends test events - ignore them
+    if (body.object !== 'page') {
+      return NextResponse.json({ received: true });
+    }
+
+    // Process each messaging event
+    for (const entry of body.entry || []) {
+      for (const messagingEvent of entry.messaging || []) {
+        await processMessagingEvent(messagingEvent, entry.id);
+      }
+    }
+
+    return NextResponse.json({ received: true });
+  } catch (error: any) {
+    console.error('❌ Error processing Messenger webhook:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+async function processMessagingEvent(event: any, pageId: string) {
+  try {
+    // Extract message data
+    const senderId = event.sender?.id;
+    const recipientId = event.recipient?.id;
+    const messageData = event.message;
+    const timestamp = event.timestamp;
+
+    if (!senderId || !messageData) {
+      console.log('⚠️ Skipping event without sender or message');
+      return;
+    }
+
+    console.log(`📧 Processing message from ${senderId} to page ${pageId}`);
+
+    // Find the channel connection for this page
+    const channelConnection = await prisma.channelConnection.findFirst({
+      where: {
+        providerType: 'FACEBOOK',
+        channelType: 'FACEBOOK_MESSENGER',
+        channelIdentifier: pageId,
+        status: 'CONNECTED',
+      },
+    });
+
+    if (!channelConnection) {
+      console.error(`❌ No active Messenger connection found for page ${pageId}`);
+      return;
+    }
+
+    console.log(`✅ Found channel connection for user: ${channelConnection.userId}`);
+
+    // Get or create sender profile
+    const senderProfile = await getSenderProfile(senderId, channelConnection.accessToken!);
+    const senderName = senderProfile?.name || `Messenger User ${senderId}`;
+
+    // Find or create conversation
+    let conversation = await prisma.conversation.findFirst({
+      where: {
+        userId: channelConnection.userId,
+        channelConnectionId: channelConnection.id,
+        contactIdentifier: senderId,
+      },
+    });
+
+    if (!conversation) {
+      console.log(`📝 Creating new Messenger conversation for ${senderName}`);
+      conversation = await prisma.conversation.create({
+        data: {
+          userId: channelConnection.userId,
+          channelConnectionId: channelConnection.id,
+          contactName: senderName,
+          contactIdentifier: senderId,
+          externalConversationId: senderId,
+          status: 'ACTIVE',
+        },
+      });
+    }
+
+    // Save the message
+    const messageText = messageData.text || '[Attachment]';
+    const messageId = messageData.mid;
+
+    await prisma.conversationMessage.create({
+      data: {
+        conversationId: conversation.id,
+        userId: channelConnection.userId,
+        externalMessageId: messageId,
+        content: messageText,
+        direction: 'INBOUND',
+        status: 'DELIVERED',
+        providerData: {
+          attachments: messageData.attachments || [],
+          timestamp,
+        },
+      },
+    });
+
+    console.log(`✅ Saved Messenger message from ${senderName}`);
+  } catch (error: any) {
+    console.error('❌ Error processing messaging event:', error);
+  }
+}
+
+async function getSenderProfile(senderId: string, accessToken: string): Promise<{ name: string } | null> {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/${senderId}?fields=name&access_token=${accessToken}`
+    );
+    
+    if (!response.ok) {
+      console.error('Failed to fetch sender profile:', response.statusText);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching sender profile:', error);
+    return null;
+  }
+}
