@@ -56,16 +56,16 @@ export default function LandingPage() {
               </div>
             </Link>
             <div className="flex items-center gap-4">
-              <Link href="/auth/signin">
-                <Button variant="ghost" className="text-gray-300 hover:text-white">
+              <Button variant="ghost" className="text-gray-300 hover:text-white" asChild>
+                <Link href="/auth/signin">
                   Sign In
-                </Button>
-              </Link>
-              <Link href="/auth/signup">
-                <Button className="gradient-primary text-white hover:opacity-90">
+                </Link>
+              </Button>
+              <Button className="gradient-primary text-white hover:opacity-90" asChild>
+                <Link href="/auth/signup">
                   Get Started Free
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -104,21 +104,22 @@ export default function LandingPage() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Link href="/auth/signup">
-                <Button size="lg" className="gradient-primary text-white hover:opacity-90 px-8">
+              <Button size="lg" className="gradient-primary text-white hover:opacity-90 px-8" asChild>
+                <Link href="/auth/signup">
                   Start Free Trial
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/auth/signin">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-2 border-gray-700 text-gray-300 hover:bg-purple-500/10 hover:border-purple-500/50 px-8"
-                >
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-2 border-gray-700 text-gray-300 hover:bg-purple-500/10 hover:border-purple-500/50 px-8"
+                asChild
+              >
+                <Link href="/auth/signin">
                   Watch Demo
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
 
             {/* Trust Badges */}
@@ -470,21 +471,22 @@ export default function LandingPage() {
             fully AI-powered enterprise CRM.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/signup">
-              <Button size="lg" className="gradient-primary text-white hover:opacity-90 px-8">
+            <Button size="lg" className="gradient-primary text-white hover:opacity-90 px-8" asChild>
+              <Link href="/auth/signup">
                 Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/auth/signin">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-2 border-gray-700 text-gray-300 hover:bg-purple-500/10 hover:border-purple-500/50 px-8"
-              >
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-2 border-gray-700 text-gray-300 hover:bg-purple-500/10 hover:border-purple-500/50 px-8"
+              asChild
+            >
+              <Link href="/auth/signin">
                 Schedule Demo
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       </section>

@@ -69,16 +69,16 @@ export default function MainNavigation() {
           ))}
         </div>
         <div className="hidden lg:flex lg:flex-1 lg:justify-end gap-4">
-          <Link href="/auth/signin">
-            <Button variant="ghost" className="text-white hover:text-purple-400">
+          <Button variant="ghost" className="text-white hover:text-purple-400" asChild>
+            <Link href="/auth/signin">
               Sign In
-            </Button>
-          </Link>
-          <Link href="/contact">
-            <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+            </Link>
+          </Button>
+          <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" asChild>
+            <Link href="/contact">
               Book a Demo
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </nav>
       {/* Mobile menu */}
