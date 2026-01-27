@@ -4,24 +4,29 @@
  */
 
 import { prisma } from '@/lib/db';
-import type { REFSBOSource, ScrapingJobStatus } from '../types';
+import type { REFSBOSource } from '../types';
 
 export interface CreateJobInput {
   userId: string;
-  source: REFSBOSource;
-  location?: string;
-  filters?: Record<string, any>;
-  scheduledFor?: Date;
-  isRecurring?: boolean;
-  recurringSchedule?: string;
+  name?: string;
+  source?: REFSBOSource;
+  sources?: string[];
+  targetCities?: string[];
+  targetStates?: string[];
+  targetZips?: string[];
+  country?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  frequency?: string;
+  isActive?: boolean;
 }
 
 export interface UpdateJobInput {
-  status?: ScrapingJobStatus;
-  listingsFound?: number;
-  listingsProcessed?: number;
-  errors?: string[];
-  completedAt?: Date;
+  status?: string;
+  totalListingsFound?: number;
+  lastRunAt?: Date;
+  lastRunStatus?: string;
+  nextRunAt?: Date;
 }
 
 export async function createScrapingJob(input: CreateJobInput) {
@@ -29,15 +34,18 @@ export async function createScrapingJob(input: CreateJobInput) {
     const job = await prisma.rEScrapingJob.create({
       data: {
         userId: input.userId,
+        name: input.name || 'FSBO Scraping Job',
         source: input.source,
-        status: 'PENDING',
-        location: input.location,
-        filters: input.filters || {},
-        listingsFound: 0,
-        listingsProcessed: 0,
-        isRecurring: input.isRecurring || false,
-        recurringSchedule: input.recurringSchedule,
-        scheduledFor: input.scheduledFor,
+        sources: input.sources || [],
+        targetCities: input.targetCities || [],
+        targetStates: input.targetStates || [],
+        targetZipCodes: input.targetZips || [],
+        country: input.country || 'CA',
+        minPrice: input.minPrice,
+        maxPrice: input.maxPrice,
+        frequency: input.frequency || 'weekly',
+        isActive: input.isActive ?? true,
+        status: 'IDLE'
       }
     });
     return { success: true, job };
@@ -94,9 +102,10 @@ export async function getJobsDueForRun() {
     const now = new Date();
     const jobs = await prisma.rEScrapingJob.findMany({
       where: {
+        isActive: true,
         OR: [
-          { scheduledFor: { lte: now }, status: 'PENDING' },
-          { isRecurring: true, status: { not: 'RUNNING' } }
+          { nextRunAt: { lte: now } },
+          { lastRunAt: null }
         ]
       }
     });
@@ -109,17 +118,13 @@ export async function getJobsDueForRun() {
 
 export async function runScrapingJob(jobId: string) {
   try {
-    // Mark as running
     await prisma.rEScrapingJob.update({
       where: { id: jobId },
       data: { 
         status: 'RUNNING',
-        startedAt: new Date()
+        lastRunAt: new Date()
       }
     });
-    
-    // Actual scraping would be triggered here
-    // For now, return success
     return { success: true, message: 'Job started' };
   } catch (error: any) {
     console.error('Error running scraping job:', error);

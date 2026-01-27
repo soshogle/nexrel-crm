@@ -8,7 +8,7 @@ import type { REFSBOSource } from '../types';
 
 export interface REALTOR_COMConfig {
   userId: string;
-  location: string;
+  targetCities?: string[];
   minPrice?: number;
   maxPrice?: number;
 }
@@ -24,12 +24,13 @@ export async function scrapeREALTOR_COM(config: REALTOR_COMConfig) {
     const job = await prisma.rEScrapingJob.create({
       data: {
         userId: config.userId,
+        name: 'realtor-com scrape',
         source: 'OTHER' as REFSBOSource,
-        status: 'PENDING',
-        location: config.location,
-        listingsFound: 0,
-        listingsProcessed: 0,
-        isRecurring: false
+        sources: ['OTHER'],
+        targetCities: config.targetCities || [],
+        minPrice: config.minPrice,
+        maxPrice: config.maxPrice,
+        status: 'PENDING'
       }
     });
 
