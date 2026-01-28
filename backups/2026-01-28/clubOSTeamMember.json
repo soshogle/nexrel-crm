@@ -1,0 +1,90 @@
+[
+  {
+    "id": "cmi7pqn530016s62h7b19enn0",
+    "teamId": "team-u8-boys-lions",
+    "memberId": "member-ethan",
+    "role": "PLAYER",
+    "jerseyNumber": "7",
+    "joinedDate": "2025-11-20T17:36:28.839Z"
+  },
+  {
+    "id": "cmi7pqn560018s62hzher4ocj",
+    "teamId": "team-u10-girls-tigers",
+    "memberId": "member-olivia",
+    "role": "PLAYER",
+    "jerseyNumber": "10",
+    "joinedDate": "2025-11-20T17:36:28.843Z"
+  },
+  {
+    "id": "cmi7pqn58001as62h5cebxkdu",
+    "teamId": "team-u10-boys-eagles",
+    "memberId": "member-liam",
+    "role": "PLAYER",
+    "jerseyNumber": "5",
+    "joinedDate": "2025-11-20T17:36:28.845Z"
+  },
+  {
+    "id": "cmi7pqn5a001cs62hrzq80nsf",
+    "teamId": "team-u12-girls-panthers",
+    "memberId": "member-emma",
+    "role": "PLAYER",
+    "jerseyNumber": "12",
+    "joinedDate": "2025-11-20T17:36:28.847Z"
+  },
+  {
+    "id": "cmi7pqn5c001es62h1i989i47",
+    "teamId": "team-u10-basketball-rockets",
+    "memberId": "member-noah",
+    "role": "PLAYER",
+    "jerseyNumber": "23",
+    "joinedDate": "2025-11-20T17:36:28.849Z"
+  },
+  {
+    "id": "cmi7pqn5e001gs62hr5sei8g2",
+    "teamId": "team-u14-basketball-thunder",
+    "memberId": "member-ava",
+    "role": "PLAYER",
+    "jerseyNumber": "3",
+    "joinedDate": "2025-11-20T17:36:28.850Z"
+  },
+  {
+    "id": "cmi80xsby0003s6ve0t008b4c",
+    "teamId": "team-michael-dynamos",
+    "memberId": "member-michael-alex",
+    "role": "PLAYER",
+    "jerseyNumber": "10",
+    "joinedDate": "2025-11-20T22:49:57.935Z"
+  },
+  {
+    "id": "cmi80xsc10005s6vei6c9fmim",
+    "teamId": "team-michael-warriors",
+    "memberId": "member-michael-sophia",
+    "role": "PLAYER",
+    "jerseyNumber": "7",
+    "joinedDate": "2025-11-20T22:49:57.938Z"
+  },
+  {
+    "id": "cmi80xsc30007s6vejm7qj6ur",
+    "teamId": "team-michael-lightning",
+    "memberId": "member-michael-james",
+    "role": "PLAYER",
+    "jerseyNumber": "11",
+    "joinedDate": "2025-11-20T22:49:57.940Z"
+  },
+  {
+    "id": "cmi80xsc60009s6verbeflaeh",
+    "teamId": "team-michael-titans",
+    "memberId": "member-michael-emma",
+    "role": "PLAYER",
+    "jerseyNumber": "23",
+    "joinedDate": "2025-11-20T22:49:57.942Z"
+  },
+  {
+    "id": "cmi80xsc8000bs6vepfvgldqb",
+    "teamId": "team-michael-phoenix",
+    "memberId": "member-michael-daniel",
+    "role": "PLAYER",
+    "jerseyNumber": "5",
+    "joinedDate": "2025-11-20T22:49:57.944Z"
+  }
+]

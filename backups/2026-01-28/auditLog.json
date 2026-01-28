@@ -1,0 +1,256 @@
+[
+  {
+    "id": "cmkue94yh0001pk080njo0mnn",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "action": "CREATE",
+    "severity": "LOW",
+    "entityType": "FSBO_LISTING",
+    "entityId": null,
+    "ipAddress": null,
+    "userAgent": null,
+    "metadata": {
+      "sources": [
+        "duproprio"
+      ],
+      "fsboAction": "SCRAPE_STARTED",
+      "description": "Started FSBO scrape for Montreal from duproprio",
+      "pendingJobs": 0,
+      "targetCities": [
+        "Montreal"
+      ]
+    },
+    "success": true,
+    "errorMessage": null,
+    "createdAt": "2026-01-25T23:53:03.065Z"
+  },
+  {
+    "id": "cmkufc2y00003pk084njmt2rr",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "action": "CREATE",
+    "severity": "LOW",
+    "entityType": "FSBO_LISTING",
+    "entityId": null,
+    "ipAddress": null,
+    "userAgent": null,
+    "metadata": {
+      "sources": [
+        "duproprio"
+      ],
+      "fsboAction": "SCRAPE_STARTED",
+      "description": "Started FSBO scrape for Montreal from duproprio",
+      "pendingJobs": 0,
+      "targetCities": [
+        "Montreal"
+      ]
+    },
+    "success": true,
+    "errorMessage": null,
+    "createdAt": "2026-01-26T00:23:20.040Z"
+  },
+  {
+    "id": "cmkugcks80001ot08brc6pgu1",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "action": "CREATE",
+    "severity": "LOW",
+    "entityType": "FSBO_LISTING",
+    "entityId": null,
+    "ipAddress": null,
+    "userAgent": null,
+    "metadata": {
+      "sources": [
+        "duproprio"
+      ],
+      "fsboAction": "SCRAPE_STARTED",
+      "description": "Started FSBO scrape for Montreal from duproprio",
+      "pendingJobs": 1,
+      "targetCities": [
+        "Montreal"
+      ]
+    },
+    "success": true,
+    "errorMessage": null,
+    "createdAt": "2026-01-26T00:51:42.776Z"
+  },
+  {
+    "id": "cmkuh60wa0001p508jfbvgawu",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "action": "CREATE",
+    "severity": "LOW",
+    "entityType": "FSBO_LISTING",
+    "entityId": null,
+    "ipAddress": null,
+    "userAgent": null,
+    "metadata": {
+      "sources": [
+        "duproprio"
+      ],
+      "fsboAction": "SCRAPE_STARTED",
+      "description": "Started FSBO scrape for Montreal from duproprio",
+      "pendingJobs": 1,
+      "targetCities": [
+        "Montreal"
+      ]
+    },
+    "success": true,
+    "errorMessage": null,
+    "createdAt": "2026-01-26T01:14:36.683Z"
+  },
+  {
+    "id": "cmkui1gvf0001ml08uu67h7hc",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "action": "CREATE",
+    "severity": "LOW",
+    "entityType": "FSBO_LISTING",
+    "entityId": null,
+    "ipAddress": null,
+    "userAgent": null,
+    "metadata": {
+      "sources": [
+        "duproprio"
+      ],
+      "fsboAction": "SCRAPE_STARTED",
+      "description": "Started FSBO scrape for Montreal from duproprio",
+      "pendingJobs": 0,
+      "targetCities": [
+        "Montreal"
+      ]
+    },
+    "success": true,
+    "errorMessage": null,
+    "createdAt": "2026-01-26T01:39:03.724Z"
+  },
+  {
+    "id": "cmkui258c0003ml08i8wvpg81",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "action": "CREATE",
+    "severity": "LOW",
+    "entityType": "FSBO_LISTING",
+    "entityId": null,
+    "ipAddress": null,
+    "userAgent": null,
+    "metadata": {
+      "sources": [
+        "kijiji"
+      ],
+      "fsboAction": "SCRAPE_STARTED",
+      "description": "Started FSBO scrape for Montreal from kijiji",
+      "pendingJobs": 0,
+      "targetCities": [
+        "Montreal"
+      ]
+    },
+    "success": true,
+    "errorMessage": null,
+    "createdAt": "2026-01-26T01:39:35.292Z"
+  },
+  {
+    "id": "cmkui51g70005ml0810po57tx",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "action": "CREATE",
+    "severity": "LOW",
+    "entityType": "FSBO_LISTING",
+    "entityId": null,
+    "ipAddress": null,
+    "userAgent": null,
+    "metadata": {
+      "sources": [
+        "duproprio"
+      ],
+      "fsboAction": "SCRAPE_STARTED",
+      "description": "Started FSBO scrape for Montreal from duproprio",
+      "pendingJobs": 0,
+      "targetCities": [
+        "Montreal"
+      ]
+    },
+    "success": true,
+    "errorMessage": null,
+    "createdAt": "2026-01-26T01:41:50.359Z"
+  },
+  {
+    "id": "cmkuis9f40001mh082av2rvio",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "action": "CREATE",
+    "severity": "LOW",
+    "entityType": "FSBO_LISTING",
+    "entityId": null,
+    "ipAddress": null,
+    "userAgent": null,
+    "metadata": {
+      "sources": [
+        "duproprio"
+      ],
+      "fsboAction": "SCRAPE_STARTED",
+      "description": "Started FSBO scrape for Montreal from duproprio",
+      "pendingJobs": 1,
+      "targetCities": [
+        "Montreal"
+      ]
+    },
+    "success": true,
+    "errorMessage": null,
+    "createdAt": "2026-01-26T01:59:53.777Z"
+  },
+  {
+    "id": "cmkuiuz8j0003mh08o1kwt7m6",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "action": "CREATE",
+    "severity": "LOW",
+    "entityType": "FSBO_LISTING",
+    "entityId": null,
+    "ipAddress": null,
+    "userAgent": null,
+    "metadata": {
+      "jobId": "X4LzqzsbbYL3nbMTG",
+      "fsboAction": "SCRAPE_COMPLETED",
+      "description": "Found 11 new FSBO listings",
+      "listingsFound": 11
+    },
+    "success": true,
+    "errorMessage": null,
+    "createdAt": "2026-01-26T02:02:00.547Z"
+  },
+  {
+    "id": "cmkuk0fr40001mk081wyo6k2o",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "action": "CREATE",
+    "severity": "LOW",
+    "entityType": "FSBO_LISTING",
+    "entityId": null,
+    "ipAddress": null,
+    "userAgent": null,
+    "metadata": {
+      "sources": [
+        "duproprio"
+      ],
+      "fsboAction": "SCRAPE_STARTED",
+      "description": "Started FSBO scrape for Toronto from duproprio",
+      "pendingJobs": 1,
+      "targetCities": [
+        "Toronto"
+      ]
+    },
+    "success": true,
+    "errorMessage": null,
+    "createdAt": "2026-01-26T02:34:14.848Z"
+  },
+  {
+    "id": "cmkuk2j2j000pmk0876kn5xdo",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "action": "CREATE",
+    "severity": "LOW",
+    "entityType": "FSBO_LISTING",
+    "entityId": null,
+    "ipAddress": null,
+    "userAgent": null,
+    "metadata": {
+      "jobId": "cmKSsUPsRhB9hZB2e",
+      "fsboAction": "SCRAPE_COMPLETED",
+      "description": "Found 11 new FSBO listings",
+      "listingsFound": 11
+    },
+    "success": true,
+    "errorMessage": null,
+    "createdAt": "2026-01-26T02:35:52.459Z"
+  }
+]

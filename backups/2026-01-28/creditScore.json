@@ -1,0 +1,27 @@
+[
+  {
+    "id": "cmi3tbr630001mu08qoh0v5g3",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "score": 650,
+    "scoreDate": "2025-11-18T00:05:47.980Z",
+    "trustScore": null,
+    "trustScoreDate": null,
+    "riskLevel": "MEDIUM",
+    "creditLimit": 500000,
+    "availableCredit": 500000,
+    "paymentHistory": null,
+    "creditUtilization": null,
+    "creditAge": null,
+    "accountMix": null,
+    "recentInquiries": null,
+    "experianScore": null,
+    "equifaxScore": null,
+    "transUnionScore": null,
+    "insights": null,
+    "recommendations": [],
+    "lastUpdated": "2025-11-18T00:05:47.980Z",
+    "nextReviewDate": null,
+    "frozen": false,
+    "createdAt": "2025-11-18T00:05:47.980Z"
+  }
+]

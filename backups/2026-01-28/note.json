@@ -1,0 +1,1066 @@
+[
+  {
+    "id": "cmhpfqxfl000cr3qh2etk2opg",
+    "leadId": "cmhpfqxfj000ar3qh3c6p5z6r",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "content": "Initial research completed. Company looks promising.",
+    "createdAt": "2025-11-07T22:36:54.850Z",
+    "updatedAt": "2025-11-07T22:36:54.850Z"
+  },
+  {
+    "id": "cmhpfqxfo000er3qhykxfw5ui",
+    "leadId": "cmhpfqxfj000ar3qh3c6p5z6r",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "content": "Spoke with contact person. They seem interested in our services.",
+    "createdAt": "2025-11-07T22:36:54.852Z",
+    "updatedAt": "2025-11-07T22:36:54.852Z"
+  },
+  {
+    "id": "cmhpfqxft000ir3qhg727nef2",
+    "leadId": "cmhpfqxfq000gr3qhrf1wp51v",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "content": "Initial research completed. Company looks promising.",
+    "createdAt": "2025-11-07T22:36:54.858Z",
+    "updatedAt": "2025-11-07T22:36:54.858Z"
+  },
+  {
+    "id": "cmhpfqxg0000or3qhzxoxi8uy",
+    "leadId": "cmhpfqxfx000mr3qhiva4f0r2",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "content": "Initial research completed. Company looks promising.",
+    "createdAt": "2025-11-07T22:36:54.864Z",
+    "updatedAt": "2025-11-07T22:36:54.864Z"
+  },
+  {
+    "id": "cmhpfqxga000yr3qheooghxwp",
+    "leadId": "cmhpfqxg8000wr3qhyvqmsf8g",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "content": "Initial research completed. Company looks promising.",
+    "createdAt": "2025-11-07T22:36:54.874Z",
+    "updatedAt": "2025-11-07T22:36:54.874Z"
+  },
+  {
+    "id": "note-sarah-1",
+    "leadId": "lead-parent-sarah",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "content": "Interested in Spring Soccer program for her 10-year-old son. Very engaged parent, asked detailed questions about practice schedule.",
+    "createdAt": "2025-11-18T10:30:00.000Z",
+    "updatedAt": "2025-11-21T11:18:57.959Z"
+  },
+  {
+    "id": "note-mike-1",
+    "leadId": "lead-parent-mike",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "content": "Called inquiring about basketball camp. Has a 12-year-old daughter. Needs to check family schedule before committing.",
+    "createdAt": "2025-11-19T14:20:00.000Z",
+    "updatedAt": "2025-11-21T11:18:57.967Z"
+  },
+  {
+    "id": "note-lisa-1",
+    "leadId": "lead-parent-lisa",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "content": "On waitlist for U8 Girls Soccer. Very interested, willing to wait for spot to open up.",
+    "createdAt": "2025-11-20T09:00:00.000Z",
+    "updatedAt": "2025-11-21T11:18:57.969Z"
+  },
+  {
+    "id": "cmioxueia0005uf08wniozn2f",
+    "leadId": "cmioxueia0003uf08gn35a2bj",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/2/2025, 6:55:26 PM\n\nCall Duration: 97s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue à la phamacie Berge Shater, mon nom est Sara.  Comment-puis-je vous assister aujourd'hui?\n[0:07] User: Yes, I can. I book an appointment for a blood test tomorrow for strep throat.\n[0:16] Agent: I can book the appointment for you. However, the strep throat test and all pharmacist-led tests are booked between five thirty PM and six thirty PM. Can I book you for tomorrow at five thirty PM?\n[0:27] User: Sounds good.\n[0:32] Agent: Perfect. I have you confirmed for your strep test tomorrow at five thirty PM. To finalize that booking, may I have your full name, email, and date of birth?\n\n[0:41] User: My date of birth is January 25th 1999 and my email is mikeatjohn.com and my phone number is 514-336-4579.\n[1:01] Agent: Thank you for providing that information. Just to confirm, your name is Mike, your date of birth is January twenty fifth, nineteen ninety-nine, your email is mike at john dot com, and your phone number is five one four, three three six, four five seven nine. Is that correct?\n\n[1:18] User: Yes, that's right.\n[1:20] Agent: Perfect, I have booked you in for a strep test at five thirty tomorrow. Is there anything else I can help you with today?\n\n[1:27] User: That will be all. Thank you very much. Have a good day. Goodbye.\n[1:31] Agent: You're welcome. Thank you for calling, and have a wonderful day. Goodbye.\n\n[1:36] User: Thank you. Bye-bye.",
+    "createdAt": "2025-12-02T18:55:26.194Z",
+    "updatedAt": "2025-12-02T18:55:26.194Z"
+  },
+  {
+    "id": "note-jennifer-1",
+    "leadId": "lead-parent-jennifer",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "content": "New to Miami, son loves baseball. Interested in programs for 9-year-olds. Sent info about Spring Baseball program.",
+    "createdAt": "2025-11-21T08:30:00.000Z",
+    "updatedAt": "2025-11-21T11:18:57.973Z"
+  },
+  {
+    "id": "cmia78fro0003qc08sluxhqi7",
+    "leadId": "cmia74lte0001qc08bsnjpdm1",
+    "userId": "cmi5zecoh003spd08ppaq994g",
+    "content": "Sent an email on Friday Nov 21",
+    "createdAt": "2025-11-22T11:21:44.916Z",
+    "updatedAt": "2025-11-22T11:21:44.916Z"
+  },
+  {
+    "id": "cmiabierb0003s3082zrnrv6d",
+    "leadId": "cmiabi1ky0001s308g7s5nzlf",
+    "userId": "cmi5zecoh003spd08ppaq994g",
+    "content": "Sent 2 emails",
+    "createdAt": "2025-11-22T13:21:28.632Z",
+    "updatedAt": "2025-11-22T13:21:28.632Z"
+  },
+  {
+    "id": "cmiajxb190003pg08k8lfhfa7",
+    "leadId": "cmiajtuuk0001pg08h6b8tr5z",
+    "userId": "cmi5zecoh003spd08ppaq994g",
+    "content": "Head Office\n31 hôpitaux et cliniques vétérinaires\n3 centres d’urgence et de référence, ouvert 24 heures/7 jours\n1 service d’imagerie spécialisée",
+    "createdAt": "2025-11-22T17:17:00.573Z",
+    "updatedAt": "2025-11-22T17:17:00.573Z"
+  },
+  {
+    "id": "cmiak91tg0007pg081i9owjof",
+    "leadId": "cmiak87ju0005pg0814vizsbp",
+    "userId": "cmi5zecoh003spd08ppaq994g",
+    "content": "Email 1 sent",
+    "createdAt": "2025-11-22T17:26:08.500Z",
+    "updatedAt": "2025-11-22T17:26:08.500Z"
+  },
+  {
+    "id": "cmiozaw680005p808a1uh1ocf",
+    "leadId": "cmiozaw680003p808xnb7umty",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/2/2025, 7:36:15 PM\n\nCall Duration: 0s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\nNo transcript available",
+    "createdAt": "2025-12-02T19:36:15.200Z",
+    "updatedAt": "2025-12-02T19:36:15.200Z"
+  },
+  {
+    "id": "cmiozeex50009p808vygcs498",
+    "leadId": "cmiozaw680003p808xnb7umty",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/2/2025, 7:38:59 PM\n\nCall Duration: 104s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue à la phamacie Berge Shater, mon nom est Sara.  Comment-puis-je vous assister aujourd'hui?\n[0:07] User: Yes, I would like to know, can you prepare a prescription that I just received from my doctor?\n[0:16] Agent: I would be happy to help you with that. First, is the prescription you're ordering for you personally, or are you calling for someone else, like a family member? Also, do you have a patient...\n[0:25] User: Actually, we continue in French\n[0:29] Agent: Parfait. Pour votre information, cet appel peut être enregistré pour la qualité et la sécurité. S'il s'agit d'une urgence médicale, veuillez raccrocher et composer le 9-1-1. ... Comment puis-je vous aider aujourd'hui ?\n\n[0:41] User: I have a prescription that I just received from my doctor. Can I take the order by phone? Hello?\n[1:00] Agent: Bonjour, je suis toujours là. Pourriez-vous me dire si la prescription est pour vous ou pour quelqu'un d'autre? Avez-vous déjà un dossier chez nous?\n[1:05] User: For me? For me, no, this will be the first time. I don't have a file with you.\n[1:14] Agent: Pas de problème, nous sommes heureux de vous aider. Pour créer un nouveau dossier, pourriez-vous me fournir votre nom complet et votre date de naissance?\n[1:22] User: Yes, Samantha Smith and my date of birth is April 23, 1986.\n[1:30] Agent: Merci, Samantha. Et quel médicament souhaitez-vous commander? Comment allons-nous recevoir la nouvelle...\n[1:34] User: Thank you very much for your question.\n[1:37] Agent: De rien...\n[1:37] User: Yes, Tylenol 500 ml.",
+    "createdAt": "2025-12-02T19:38:59.466Z",
+    "updatedAt": "2025-12-02T19:38:59.466Z"
+  },
+  {
+    "id": "cmip35yuk0003mj08v7toxo5d",
+    "leadId": "cmioxueia0003uf08gn35a2bj",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/2/2025, 9:24:23 PM\n\nCall Duration: 50s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Yes, we can speak in one.\n[0:16] Agent: Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\n\n[0:28] User: Hello? Yes, hi. Can I book an appointment for tomorrow for a vaccine for influenza?\n[0:34] Agent: For COVID-19 and flu vaccines, please book directly on ClicSanté dot ca. If you have trouble with the website, you can also try their public call center. Would you like me to provide you with the...\n[0:44] User: Okay, thank you.\n[0:46] Agent: ...\n[0:45] User: No, that's okay. I got it. Thank you. Have a good day. Bye-bye.\n[0:52] Agent: Great, I've taken care of that for you. Is there anything else I can assist you with today? Before you go, I just wanted to let you know...\n[0:50] User: No, that's okay. I got it. Thank you. Have a good day. Bye-bye.",
+    "createdAt": "2025-12-02T21:24:23.852Z",
+    "updatedAt": "2025-12-02T21:24:23.852Z"
+  },
+  {
+    "id": "cmip93yt40007mm088u0wqrit",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/3/2025, 12:10:48 AM\n\nCall Duration: 6s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"...",
+    "createdAt": "2025-12-03T00:10:48.185Z",
+    "updatedAt": "2025-12-03T00:10:48.185Z"
+  },
+  {
+    "id": "cmip9b613000hmm08o54i4lv1",
+    "leadId": "cmip9b612000fmm08432sycla",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/3/2025, 12:16:24 AM\n\nCall Duration: 190s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Anglais.\n[0:10] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:20] User: I just want to get my medications delivered for tomorrow.\n[0:25] Agent: \"I can help you with that. Is the prescription you're ordering for you personally, or are you calling for someone else, like a family member?\"\n\n[0:31] User: Personally.\n[0:33] Agent: \"Thank you for clarifying. And do you have a patient file with us at Pharmacie Berge Shater already, or is this a new prescription?\"\n\n[0:39] User: Yes, we do.\n[0:42] Agent: \"Wonderful. So our...\n[0:41] User: No, I have a file.\n[0:45] Agent: \"Wonderful. So our pharmacy team can find the correct file, could you please provide the patient's full name and date of birth?\"\n\n[0:54] User: So it's for Jacob\n[0:59] Agent: Could you please...\n[0:59] User: Basma. And for Jacob Basma,\n[1:10] Agent: \"Thank you. And what is the date of birth for Jacob Basma?\"\n\n[1:16] User: 9th of September, 1986.\n[1:21] Agent: \"Thank you. And which medication or medications do you need to order today?\"\n\n[1:26] User: Atorvastatin.\n[1:29] Agent: \"And have there been...\n[1:27] User: , to be delivered tomorrow please.\n[1:32] Agent: \"And have there been any changes to the dose or the way you are taking this medication?\"\n\n[1:37] User: I don't think so. I'm not sure, though.\n[1:43] Agent: \"Thank you for letting me know. I will note that and have the pharmacist review it and give you a call if needed. Now, since you want delivery, I just need to confirm a few details to get that scheduled. Can you confirm the full delivery address,...\n[1:54] User: You have my address already in file.\n[1:58] Agent: \"Okay. Now, if no one is home, is it okay for the driver to leave the package at the door? We can ask them to take a photo as proof of delivery.\"\n\n[2:06] User: Yeah, that's fine.\n[2:10] Agent: \"And for payment, do you have a credit card on file with us, or will you be...\n[2:13] User: Yes, you have my credit card already.\n[2:16] Agent: \"Perfect. Lastly, are you hoping for delivery today or tomorrow? Our team will schedule it in the next available window, for example, morning or...\n[2:21] User: Tomorrow\n[2:26] Agent: \"Okay, great. Our free delivery service is a perfect option. I've noted all the details, and our team will schedule your delivery for tomorrow. I will also make sure you get a text message when the order is ready to be dispatched. Is there anything else I can help you with today?\"\n\n[2:41] User: That's all. Thank you so much.\n[2:44] Agent: \"You're welcome. Before you go, I just wanted to let you know that our pharmacists can now prescribe for many minor conditions, like UTIs or skin rashes, right here at the pharmacy, no doctor's visit needed. We also offer on-site rapid tests for things like strep throat. It's just another way we're trying to make your healthcare easier. Thank you for calling, and have a wonderful day!\"\n\n[3:06] User: Thank You.\n[3:09] Agent: \"You're welcome, goodbye for now.\"...",
+    "createdAt": "2025-12-03T00:16:24.135Z",
+    "updatedAt": "2025-12-03T00:16:24.135Z"
+  },
+  {
+    "id": "cmip9d7km000pmm08op3ger9q",
+    "leadId": "cmip9d7km000nmm088oq2iler",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/3/2025, 12:17:59 AM\n\nCall Duration: 36s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:13] User: ...\n[0:15] Agent: Do you want to continue in French, or would you prefer English?\n\n[0:19] User: English.\n[0:21] Agent: Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\n\n[0:35] User: What?!",
+    "createdAt": "2025-12-03T00:17:59.446Z",
+    "updatedAt": "2025-12-03T00:17:59.446Z"
+  },
+  {
+    "id": "cmip9ece3000tmm08wi54oz93",
+    "leadId": "cmip9d7km000nmm088oq2iler",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/3/2025, 12:18:52 AM\n\nCall Duration: 44s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:14] User: ...\n[0:15] Agent: Do you want to continue in French, or would you prefer English?\n\n[0:25] User: ...\n[0:26] Agent: Please let me know if you'd like to continue in French or English so I can assist you further.\n\n[0:32] User: Bye.\n[0:35] Agent: Okay, have a great day! If you need anything in the future, don't hesitate to call back.\n",
+    "createdAt": "2025-12-03T00:18:52.347Z",
+    "updatedAt": "2025-12-03T00:18:52.347Z"
+  },
+  {
+    "id": "cmip9fnes000xmm08um26ho3s",
+    "leadId": "cmip9d7km000nmm088oq2iler",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/3/2025, 12:19:53 AM\n\nCall Duration: 56s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: English.\n[0:12] Agent: \"D'accord, un instant.\"\n\nGreat. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\n\n[0:24] User: I'd like to speak to Berge...\n[0:28] Agent: Absolutely. Let me connect you with the pharmacist right away. One moment please.\n\n[0:40] User: ...\n[0:42] Agent: It appears our pharmacist is assisting another patient and isn't available at this very second.\n\nI can take a detailed message, and I will mark it as Urgent for the pharmacist to call you back as soon as they are free today. Would you like me to do that?\n",
+    "createdAt": "2025-12-03T00:19:53.285Z",
+    "updatedAt": "2025-12-03T00:19:53.285Z"
+  },
+  {
+    "id": "cmiqrehsm0003qf08vgjrxnek",
+    "leadId": "cmioxueia0003uf08gn35a2bj",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/4/2025, 1:30:38 AM\n\nCall Duration: 45s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:07] User: Yes, Zach. Can we speak in this place?\n[0:11] Agent: I am Sara, the AI assistant for Pharmacie Berge Shater. I am here to assist you with information about the pharmacy.\n\nTo clarify, are you asking if we can speak in English?\n\n[0:20] User: Yes.\n[0:22] Agent: Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\n\n[0:33] User: No thank you that's all I was just testing the call Thank You\n[0:39] Agent: You're welcome! Is there anything else I can assist you with today?\n\n[0:44] User: Well thanks bye-bye",
+    "createdAt": "2025-12-04T01:30:38.615Z",
+    "updatedAt": "2025-12-04T01:30:38.615Z"
+  },
+  {
+    "id": "cmis4nbci0003s908m7pfsd1c",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/5/2025, 12:29:11 AM\n\nCall Duration: 5s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n[0:01] Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en...",
+    "createdAt": "2025-12-05T00:29:11.347Z",
+    "updatedAt": "2025-12-05T00:29:11.347Z"
+  },
+  {
+    "id": "cmis5vt5j0005ny08rz878evx",
+    "leadId": "cmis5vt5j0003ny084j813twz",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/5/2025, 1:03:47 AM\n\nCall Duration: 106s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:13] User: Français.\n[0:15] Agent: Parfait. Pour votre information, cet appel peut être enregistré pour la qualité et la sécurité. S'il s'agit d'une urgence médicale, veuillez raccrocher et composer le 9-1-1. Comment puis-je vous aider aujourd'hui ?\n\n[0:28] User: Il y a ma commande qui est en route. Est-ce que je peux avoir le numéro de téléphone de la personne qui va me livrer, du livreur?\n[0:38] Agent: Je comprends que vous aimeriez avoir le numéro du livreur. Malheureusement, pour des raisons de confidentialité, je ne peux pas vous donner cette information directement. Cependant, je peux vérifier l'état de votre livraison et vous donner une estimation de l'heure d'arrivée. Pourrais-je avoir votre nom et date de naissance s'il vous plaît, afin de retrouver votre commande?\n\n[0:56] User: C'est Azedine Benmouroub. Ma date de naissance est le 19 juillet 1964 ans.\n[1:04] Agent: Merci, Monsieur Benmouroub. Un instant pendant que je localise votre commande. ...\n\nJ'ai trouvé votre commande. Elle est en cours de livraison. Je ne peux pas vous donner le numéro direct du livreur, mais je peux vous dire que la livraison est prévue dans les trente prochaines minutes. Est-ce que cela vous convient?\n\n[1:20] User: Ok, merci beaucoup. Bonne soirée.\n[1:24] Agent: De rien, Monsieur Benmouroub. Est-ce qu'il y a autre chose que je peux faire pour vous aujourd'hui? Sinon, je vous souhaite une excellente soirée et une bonne réception de votre...\n[1:29] User: Non, merci beaucoup!\n[1:33] Agent: ...\n[1:33] User: Excellent. Thank you very much. Bye.\n[1:37] Agent: Au revoir, Monsieur Benmouroub! N'hésitez pas à nous recontacter si vous avez d'autres questions.\n\n[1:42] User: Bye.\n[1:44] Agent: Au revoir!\n",
+    "createdAt": "2025-12-05T01:03:47.287Z",
+    "updatedAt": "2025-12-05T01:03:47.287Z"
+  },
+  {
+    "id": "cmiscojf50005te09clumfndg",
+    "leadId": "cmiozaw680003p808xnb7umty",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/5/2025, 4:14:05 AM\n\nCall Duration: 39s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:07] User: En français c'est bon.\n[0:09] Agent: \"D'accord, un instant.\"\n\nGreat. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\n\n[0:20] User: En français. En français. In French please.\n[0:24] Agent: My apologies! I will respond in French now.\n\nBonjour! Comment puis-je vous aider aujourd'hui?\n\n[0:31] User: Yes, I would like to know if it is possible to speak with the pharmacist, please.\n[0:36] Agent: Bien sûr. Puis-je vous demander pourquoi vous souhaitez parler au pharmacien? Ainsi, je...",
+    "createdAt": "2025-12-05T04:14:05.393Z",
+    "updatedAt": "2025-12-05T04:14:05.393Z"
+  },
+  {
+    "id": "cmiscp6kh0009te09k4zretc5",
+    "leadId": "cmiozaw680003p808xnb7umty",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/5/2025, 4:14:35 AM\n\nCall Duration: 24s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Français.\n[0:10] Agent: D'accord, un instant.\n\n(Switching to French Language)\n\nBonjour, je suis Sara, l'assistante à la pharmacie. Comment puis-je vous aider aujourd'hui ?\n\n[0:21] User: Est-ce que je parle avec la pharmacienne?",
+    "createdAt": "2025-12-05T04:14:35.394Z",
+    "updatedAt": "2025-12-05T04:14:35.394Z"
+  },
+  {
+    "id": "cmiscqyi1000dte095mk57cba",
+    "leadId": "cmiozaw680003p808xnb7umty",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/5/2025, 4:15:58 AM\n\nCall Duration: 32s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: En français.\n[0:10] Agent: D'accord. Comment puis-je vous aider aujourd'hui?\n[0:14] User: Est-ce que je peux parler avec le pharmacien, s'il vous plaît?\n[0:19] Agent: Bien sûr. Puis-je vous demander votre nom et numéro de téléphone, ainsi que la raison de votre appel? Je vais créer une demande de rappel prioritaire pour le pharmacien, et il vous contactera dès que possible.\n[0:30] User: Excellent!",
+    "createdAt": "2025-12-05T04:15:58.250Z",
+    "updatedAt": "2025-12-05T04:15:58.250Z"
+  },
+  {
+    "id": "cmiscs3cf000hte09nmzybaux",
+    "leadId": "cmiozaw680003p808xnb7umty",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/5/2025, 4:16:51 AM\n\nCall Duration: 16s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:07] User: Anglais.\n[0:09] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can...",
+    "createdAt": "2025-12-05T04:16:51.184Z",
+    "updatedAt": "2025-12-05T04:16:51.184Z"
+  },
+  {
+    "id": "cmisctf5f000lte09t33thmdg",
+    "leadId": "cmiozaw680003p808xnb7umty",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/5/2025, 4:17:53 AM\n\nCall Duration: 53s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Anglais.\n[0:09] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:21] User: I wanted to know if you can tell me the status of my delivery for my medication.\n[0:29] Agent: I understand you'd like to know the status of your delivery. For your privacy and security, I don't have access to detailed prescription information. However, I can create a priority request for the right person on our team to call you back with that information as soon as the pharmacy opens. May I gather your details for that callback? To ensure we pull up the correct...\n[0:47] User: It's all good.\n[0:49] Agent: ...\n[0:49] User: Thank you very much.\n[0:51] Agent: To ensure we pull up the correct file, may I have...",
+    "createdAt": "2025-12-05T04:17:53.140Z",
+    "updatedAt": "2025-12-05T04:17:53.140Z"
+  },
+  {
+    "id": "cmitk43zs0003pi08s695j59w",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/6/2025, 12:29:55 AM\n\nCall Duration: 3s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah...",
+    "createdAt": "2025-12-06T00:29:55.384Z",
+    "updatedAt": "2025-12-06T00:29:55.384Z"
+  },
+  {
+    "id": "cmiucvezc0005td08lab89rii",
+    "leadId": "cmiucvezc0003td08ktmo3lel",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/6/2025, 1:54:58 PM\n\nCall Duration: 70s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:10] User: Hello ?\n[0:12] Agent: \"D'accord, great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:24] User: Is Berge there ?\n[0:27] Agent: I understand you'd like to speak with Berge. They are currently not available. I can create a priority request for them to call you back. May I take your name, phone number, and the reason for your call?\n\n[0:39] User: Tell them it's Greg. 514-952-0200. I have a lot of pain in my feet.\n[0:52] Agent: Okay, Greg. I'll create a priority request for Berge to call you back at five one four, nine five two, zero two zero zero regarding the pain in your feet. Is there anything else I can assist you with today?\n\n[1:05] User: No, that's fine, thank you.\n[1:08] Agent: You're welcome, Greg. Berge will call you back as soon as...",
+    "createdAt": "2025-12-06T13:54:58.585Z",
+    "updatedAt": "2025-12-06T13:54:58.585Z"
+  },
+  {
+    "id": "cmius2jgz0003no09adfb4ox4",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/6/2025, 9:00:25 PM\n\nCall Duration: 4s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en...",
+    "createdAt": "2025-12-06T21:00:25.235Z",
+    "updatedAt": "2025-12-06T21:00:25.235Z"
+  },
+  {
+    "id": "cmivz89200005qh086bz6k9wt",
+    "leadId": "cmivz89200003qh089jbjtda1",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/7/2025, 5:08:35 PM\n\nCall Duration: 36s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Anglais.\n[0:10] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:23] User: Je vais faire mon médication. Je vais me réunir et je vais faire ma médecine. Je ne suis pas très connectée à la médecine, mais je suis bien connectée à la médecine. Je ne suis pas très connectée à la médecine, mais je suis bien connectée à la médecine. Je ne suis pas très connectée à la médecine, mais je suis bien connectée",
+    "createdAt": "2025-12-07T17:08:35.160Z",
+    "updatedAt": "2025-12-07T17:08:35.160Z"
+  },
+  {
+    "id": "cmiw0q3kh000bqh08okt2hioy",
+    "leadId": "cmiw0q3kh0009qh08k3v6ueuq",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/7/2025, 5:50:27 PM\n\nCall Duration: 61s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:13] User: ...\n[0:14] Agent: \"Je comprends. Si vous ne répondez pas, je vais supposer que vous avez peut-être besoin d'un moment. Êtes-vous toujours là et avez-vous besoin d'aide?\"\n\n[0:22] User: Oui, en français, s'il vous plaît.\n[0:24] Agent: \"D'accord, enchantée de vous aider. Comment puis-je vous aider aujourd'hui?\"\n\n[0:30] User: Je veux parler à quelqu'un au laboratoire.\n[0:32] Agent: \"Je comprends que vous aimeriez parler à quelqu'un au laboratoire. Malheureusement, je n'ai pas la possibilité de transférer les appels directement. Cependant, je peux créer une demande de rappel prioritaire pour vous. Pourrais-je prendre votre nom, votre numéro de téléphone et la raison de votre appel afin que je puisse transmettre ces informations à l'équipe du laboratoire?\"\n\n[0:55] User: C'est un répondeur automatique ?\n[0:58] Agent: \"Je comprends votre question. Je suis un assistant virtuel, mais je suis là pour vous aider à...",
+    "createdAt": "2025-12-07T17:50:27.473Z",
+    "updatedAt": "2025-12-07T17:50:27.473Z"
+  },
+  {
+    "id": "cmiw5atpy0005nq08nmzbx1gq",
+    "leadId": "cmiw5atpy0003nq08xkba5io4",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/7/2025, 7:58:32 PM\n\nCall Duration: 102s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Anglais.\n[0:10] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:21] User: J'aimerais prendre mes prescriptions.\n[0:27] Agent: \"I can certainly help you with that. Is the prescription for you or someone else? Also, do you already have a file with...\n[0:32] User: Pour moi.\n[0:34] Agent: \"Okay, great. And do you already have a file with us?\"\n\n[0:38] User: Oui.\n[0:40] Agent: \"Perfect. To ensure we pull up the correct file, may I have your full name and date of birth?\"\n\n[0:46] User: C'est Julio Versolato. C'est le 22 mai 1993.\n[0:55] Agent: \"Thank you, Julio. And what medication or medications would you like to refill today? Also, have there been any changes to the dose or the way the medication is being taken?\"\n\n[1:05] User: Non, il n'y a pas eu de changement dans toutes les médicaments qui sont prescrits actuellement.\n[1:11] Agent: \"Okay, perfect. And will this be for pickup, or would you like to use our free delivery service?\"\n\n[1:18] User: Les preuves ?\n[1:20] Agent: \"You mean pick up? Or did you mean delivery?\"\n\n[1:22] User: Oui, les preuves.\n[1:25] Agent: \"Okay, so you'd like to pick up your prescription. Perfect. I'm sending this request to our pharmacy team now. We will send you a text message the moment it's ready. Does that sound good?\"\n\n[1:36] User: Oui, merci.\n[1:40] Agent: \"You're welcome, Julio. Is there anything else I can help you with...",
+    "createdAt": "2025-12-07T19:58:32.950Z",
+    "updatedAt": "2025-12-07T19:58:32.950Z"
+  },
+  {
+    "id": "cmiw5mbch000bnq08kdr3czxl",
+    "leadId": "cmiw5mbch0009nq08gycqzx72",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/7/2025, 8:07:29 PM\n\nCall Duration: 137s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:09] User: L'anglais.\n[0:11] Agent: ...\n[0:11] User: Église ?\n[0:13] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and...\n[0:20] User: Au revoir.\n[0:22] Agent: I am sorry, I did not understand. How can I help you today?\n\n[0:29] User: speak to pharmacist\n[0:32] Agent: I understand you'd like to speak with someone on the team. I don't have the ability to transfer calls, but I can create a priority callback request. Our team will reach out to you as soon as possible. May I gather your information for that? To start, could you please provide me with your full name, date of birth, and the best phone number to reach you at? Also, could you briefly explain the reason for your...\n[0:51] User: Excuse me.\n[0:54] Agent: I apologize if I have...\n[0:55] User: Bye.\n[0:56] Agent: I am sorry that I could not...\n[0:57] User: 514-514-946-7777. Connie Cohen.\n[1:07] Agent: Thank you, Connie. And could you please provide me with your date of birth to ensure I am accessing the correct file and protecting your privacy?\n\n[1:15] User: November 3rd, 1938.\n[1:20] Agent: Thank you, I have your name, date of birth, and phone number. What is the reason for your call?\n\n[1:29] User: Extreme headache on the right side of the temple. Very, very bad. Is there something I could take for it?\n[1:45] Agent: That is an excellent and...\n[1:45] User: Merci.\n[1:47] Agent: De rien. I have logged your request, and someone from our team will reach out to you as soon as we open. Is there anything else I can help you with today?\n\n[1:55] User: Je me sens extrêmement froid. Et la toute droite de moi est en train d'aïe.\n[2:07] Agent: Je comprends que vous ne vous sentez pas bien. Malheureusement, je ne suis pas en mesure de donner des conseils médicaux. Je peux prendre vos coordonnées et demander à un pharmacien de vous rappeler dès que possible. Voulez-vous que je le fasse?...",
+    "createdAt": "2025-12-07T20:07:29.009Z",
+    "updatedAt": "2025-12-07T20:07:29.009Z"
+  },
+  {
+    "id": "cmiw6s577000fnq08a0gwlt4u",
+    "leadId": "cmip9b612000fmm08432sycla",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/7/2025, 8:40:00 PM\n\nCall Duration: 91s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n[0:01] Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Français.\n[0:10] Agent: \"Parfait. Comment puis-je vous aider aujourd'hui?\"\n\n[0:14] User: Je désire renouveler ma prescription.\n[0:17] Agent: \"Je peux vous aider avec ça. Est-ce que la prescription est pour vous ou pour quelqu'un d'autre? Est-ce que le patient a déjà un dossier chez nous?\"\n\n[0:25] User: Non.\n[0:27] Agent: \"D'accord. Pourriez-vous me donner le nom complet, la date de naissance du patient, ainsi que le nom du médicament à renouveler, s'il vous plaît?\"\n\n[0:36] User: Zena Thauma Le médicament c'est Atorvastatin\n[0:43] Agent: \"Parfait. Pourriez-vous me donner la date de naissance de Zena, s'il vous plaît? Y a-t-il eu des changements à la dose ou à la façon dont le médicament est pris?\"\n\n[0:53] User: 27 juillet non 25 juillet 1987\n[1:00] Agent: \"Merci pour cette information. Est-ce...\n[0:59] User: Merci.\n[1:05] Agent: \"Est-ce que ce sera pour ramasser à la pharmacie, ou préférez-vous utiliser notre service de livraison gratuit?\"\n\n[1:12] User: Il faudra monter à la pharmacie.\n[1:16] Agent: \"Parfait. J'envoie cette demande à notre équipe de pharmacie maintenant. Nous vous enverrons un message texte dès que ce sera prêt. Est-ce que cela vous convient?\"\n\n[1:25] User: Oui. Oui, elle a le numéro de téléphone et tout ça. Oui, oui,\n[1:31] Agent: \"Parfait...",
+    "createdAt": "2025-12-07T20:40:00.596Z",
+    "updatedAt": "2025-12-07T20:40:00.596Z"
+  },
+  {
+    "id": "cmix6f6920005pu08vzawy6zz",
+    "leadId": "cmix6f6920003pu080zipnptb",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/8/2025, 1:17:41 PM\n\nCall Duration: 113s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Anglais.\n[0:10] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:22] User: J'ai mis en place ma prescription.\n[0:26] Agent: \"I can help with that. Is the prescription for you or someone else?\"\n\n[0:31] User: pour Eleni Marino ?\n[0:35] Agent: \"Does Eleni Marino have a file with us already?\"\n\n[0:38] User: Oui, 514-993-6075.\n[0:47] Agent: \"Okay, and what medication is Eleni Marino needing to refill? Have there been any changes to the dose or...\n[0:52] User: Merci.\n[0:54] Agent: \"Will this be for...\n[0:54] User: Pas de changements ?\n[0:56] Agent: ...\n[0:56] User: Oui.\n[0:58] Agent: \"Will this be for pickup, or would you like to use our...\n[1:01] User: Oui.\n[1:02] Agent: ...free delivery service?\"\n\n[1:05] User: Pique-le !\n[1:09] Agent: \"Perfect. I'm sending this request to our pharmacy team now. We will send you a text message the moment it's ready. Does that sound good?\"\n\n[1:18] User: No. I would like it before lunch hour.\n[1:23] Agent: \"I understand you would like to have it before lunch. I will add that to the request I'm sending to our pharmacy team. They will send you a text message the moment it's ready. Does that sound good?\"\n\n[1:33] User: Yes, ma'am!\n[1:36] Agent: \"Perfect, is there anything else I can help you with today?\"\n\n[1:41] User: Say hi to Berge!\n[1:44] Agent: \"I will certainly pass along your greeting to Berge. Thank you for calling, have a great day!\"\n\n[1:50] User: Thank you! Bye!\n[1:53] Agent: \"Goodbye!\"\n",
+    "createdAt": "2025-12-08T13:17:41.606Z",
+    "updatedAt": "2025-12-08T13:17:41.606Z"
+  },
+  {
+    "id": "cmj0q6e940003qw08jxs972oy",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/11/2025, 12:54:02 AM\n\nCall Duration: 4s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n[0:01] Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous...",
+    "createdAt": "2025-12-11T00:54:02.920Z",
+    "updatedAt": "2025-12-11T00:54:02.920Z"
+  },
+  {
+    "id": "cmj0qe5ih0009qw08701l60vr",
+    "leadId": "cmj0qe5ih0007qw08vs7401ec",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/11/2025, 1:00:04 AM\n\nCall Duration: 21s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n[0:01] Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:14] User: ...\n[0:15] Agent: \"Je suis désolée, je n'ai pas compris. Souhaitez-vous continuer en français ou préférez-vous que je vous réponde en anglais?\"\n",
+    "createdAt": "2025-12-11T01:00:04.842Z",
+    "updatedAt": "2025-12-11T01:00:04.842Z"
+  },
+  {
+    "id": "cmj24arcm0003pj08dghpgj6g",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/12/2025, 12:17:07 AM\n\nCall Duration: 4s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n[0:01] Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous...",
+    "createdAt": "2025-12-12T00:17:07.318Z",
+    "updatedAt": "2025-12-12T00:17:07.318Z"
+  },
+  {
+    "id": "cmj3ldkrd0003qu087mo4exl1",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/13/2025, 1:02:58 AM\n\nCall Duration: 4s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en...",
+    "createdAt": "2025-12-13T01:02:58.394Z",
+    "updatedAt": "2025-12-13T01:02:58.394Z"
+  },
+  {
+    "id": "cmj4c7he20005kb082ieu99b9",
+    "leadId": "cmj4c7he20003kb08oinruvqi",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/13/2025, 1:34:03 PM\n\nCall Duration: 24s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:10] User: Anglais.\n[0:12] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n",
+    "createdAt": "2025-12-13T13:34:03.722Z",
+    "updatedAt": "2025-12-13T13:34:03.722Z"
+  },
+  {
+    "id": "cmjjbqn280005pl08xdn047os",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/24/2025, 1:17:30 AM\n\nCall Duration: 6s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?",
+    "createdAt": "2025-12-24T01:17:30.561Z",
+    "updatedAt": "2025-12-24T01:17:30.561Z"
+  },
+  {
+    "id": "cmj4cuq1k000bkb08zp5lne9r",
+    "leadId": "cmj4cuq1k0009kb08hoedlixf",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/13/2025, 1:52:08 PM\n\nCall Duration: 129s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:12] User: Bon, c'est parti.\n[0:15] Agent: \"Parfait! Comment puis-je vous aider aujourd'hui?\"\n\n[0:20] User: Je vais parler avec Berge.\n[0:22] Agent: \"Je comprends que vous aimeriez parler avec Berge. Il est présentement [non disponible / occupé à aider d'autres clients]. Je peux créer une demande prioritaire pour qu'il vous rappelle. Puis-je prendre votre nom, numéro de téléphone et la raison de votre appel?\"\n\n[0:38] User: Valérie Théroux, 514-290-8838 J'appelle concernant ma mère. C'est pour avoir l'information concernant son Puffer.\n[0:53] Agent: \"Merci, Madame Théroux. Pour m'assurer que j'accède au bon dossier et pour protéger sa vie privée, pourriez-vous me donner le nom complet et la date de naissance de votre mère, s'il vous plaît?\"\n\n[1:04] User: Linda Sertner Théroux. Sa date de naissance, c'est le 15 octobre 1924.\n[1:15] Agent: \"Merci, Madame Théroux. Je confirme que votre demande concerne l'information sur le 'puffer' de Linda Sertner Théroux. Je vais envoyer cette demande à notre équipe de pharmacie maintenant, et ils vous contacteront dès que possible. Y a-t-il autre chose avec laquelle je peux vous aider aujourd'hui?\"\n\n[1:30] User: Son nom, c'est Hilda, H-I-L-D-A, Sertner, C-E-R-T-N-E-R.\n[1:40] Agent: \"Merci beaucoup pour cette correction, Madame Théroux. Je vais m'assurer que l'information est mise à jour dans le dossier de Hilda Sertner Théroux. Y a-t-il autre chose avec quoi je peux vous aider aujourd'hui?\"\n\n[1:51] User: Non, c'est tout. Merci.\n[1:55] Agent: \"Parfait! L'équipe de pharmacie vous contactera sous peu. Merci d'avoir appelé Pharmacie Berge Shater, et passez une excellente journée!\"\n",
+    "createdAt": "2025-12-13T13:52:08.024Z",
+    "updatedAt": "2025-12-13T13:52:08.024Z"
+  },
+  {
+    "id": "cmj4d3tih000fkb084unp9lw6",
+    "leadId": "cmj4c7he20003kb08oinruvqi",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/13/2025, 1:59:12 PM\n\nCall Duration: 5s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"...",
+    "createdAt": "2025-12-13T13:59:12.425Z",
+    "updatedAt": "2025-12-13T13:59:12.425Z"
+  },
+  {
+    "id": "cmj4d4f2x000lkb08uqn26926",
+    "leadId": "cmj4d4f2x000jkb08w073mq6y",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/13/2025, 1:59:40 PM\n\nCall Duration: 143s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Anglais\n[0:10] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:21] User: . I need to speak with the pharmacist.\n[0:25] Agent: \"I understand you'd like to speak with the pharmacist. They are currently assisting other customers. I can create a priority request for them to call you back. May I take your name, phone number, and the reason for your call?\"\n\n[0:39] User: Yeran, Kermessian, Akélian 514-941-5605.\n[0:48] Agent: \"Thank you, Mister Kermessian. And what is the reason for your call today?\"\n\n[0:54] User: To renew my medication and I have a question to the pharmacist.\n[1:00] Agent: \"I can definitely help with the renewal of your medication and I will make sure the pharmacist knows that you have a question for them. To pull up your file securely, may I have your date of birth? Also, can you confirm the name of the medication you would like to renew?\"\n\n[1:19] User: Dexilone.\n[1:21] Agent: \"Thank you. And to confirm, what is your date of birth?\"\n\n[1:25] User: 25 August 1966.\n[1:34] Agent: \"Thank you. I have now created a request for our pharmacy team to renew your Dexilone prescription and to call you back to answer your question as soon as possible. Is there anything else I can help you with today?\"\n\n[1:46] User: Yes, it's the Dexilone. We have to change the doses, so don't renew it until I talk to the pharmacist\n[1:54] Agent: \"Okay, I understand. I've added a note to your request indicating that the dose of Dexilone needs to be changed, and the renewal should wait until you've spoken with the pharmacist. Is there anything else I can assist you with today?\"\n\n[2:07] User: No waiting for their call.\n[2:09] Agent: \"Perfect. Just to confirm, you're waiting for the pharmacist to call you back regarding the dose change for your Dexilone prescription. They will reach out to you as soon as possible. Have a great day!\"\n\n[2:20] User: Thank you!\n[2:22] Agent: \"You're welcome, Mister...",
+    "createdAt": "2025-12-13T13:59:40.378Z",
+    "updatedAt": "2025-12-13T13:59:40.378Z"
+  },
+  {
+    "id": "cmj4d5raq000pkb08s5w0a65g",
+    "leadId": "cmj4c7he20003kb08oinruvqi",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/13/2025, 2:00:42 PM\n\nCall Duration: 10s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"",
+    "createdAt": "2025-12-13T14:00:42.866Z",
+    "updatedAt": "2025-12-13T14:00:42.866Z"
+  },
+  {
+    "id": "cmj4sjlc90003o208u9fius6h",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/13/2025, 9:11:22 PM\n\nCall Duration: 4s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en...",
+    "createdAt": "2025-12-13T21:11:22.570Z",
+    "updatedAt": "2025-12-13T21:11:22.570Z"
+  },
+  {
+    "id": "cmj4svl810009o208s3tmwz2z",
+    "leadId": "cmj4svl810007o208n0y92n5j",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/13/2025, 9:20:42 PM\n\nCall Duration: 112s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Français.\n[0:09] Agent: \"D'accord. Comment puis-je vous aider aujourd'hui?\"\n\n[0:14] User: Vous recommandez un médicament.\n[0:19] Agent: \"Je comprends que vous aimeriez une recommandation de médicament. En tant qu'assistante à la pharmacie, je ne peux pas donner de conseils médicaux. Cependant, je peux prendre vos informations et demander à un pharmacien de vous rappeler dès que possible pour discuter de vos besoins. Puis-je prendre votre nom et numéro de téléphone?\"\n\n[0:38] User: Vous demandez un médicament.\n[0:42] Agent: \"Je peux vous aider avec ça. Est-ce que c'est pour vous ou pour quelqu'un d'autre? Est-ce que la personne a déjà un dossier chez...\n[0:46] User: Pour moi.\n[0:48] Agent: \"Parfait. Avez-vous déjà un dossier à notre pharmacie?\"\n\n[0:52] User: Oui.\n[0:54] Agent: \"Pour m'assurer que j'accède au bon dossier et pour protéger votre vie privée, pourriez-vous me donner votre nom complet et votre date de naissance, s'il vous plaît?\"\n\n[1:02] User: Céky Fontaine, 28 mars 57.\n[1:07] Agent: \"Merci. Quel médicament souhaitez-vous commander aujourd'hui? Y a-t-il eu des changements de dose ou dans la...\n[1:11] User: Acétylménadène.\n[1:15] Agent: \"Merci. Pour confirmer, vous désirez une prescription d'acétylménadène. Est-ce pour ramasser à la pharmacie ou préférez-vous notre service de livraison gratuit?\"\n\n[1:25] User: Ramasser.\n[1:28] Agent: \"Parfait. J'envoie cette demande à notre équipe de pharmacie maintenant. Nous vous enverrons un message texte dès que ce sera prêt. Est-ce que ça vous convient?\"\n\n[1:38] User: J'aimerais parler à quelqu'un de voix vive\n[1:43] Agent: \"Je comprends que vous aimeriez parler à quelqu'un directement. Malheureusement, je n'ai pas la possibilité de transférer les appels. Cependant, je peux créer une demande prioritaire pour qu'un membre de...",
+    "createdAt": "2025-12-13T21:20:42.289Z",
+    "updatedAt": "2025-12-13T21:20:42.289Z"
+  },
+  {
+    "id": "cmj4sysop000do2081u2ockkm",
+    "leadId": "cmj4svl810007o208n0y92n5j",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/13/2025, 9:23:11 PM\n\nCall Duration: 95s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Je me prie pour la belle château, tout seul.\n[0:11] Agent: \"Je suis désolée, je ne comprends pas. Pourriez-vous reformuler votre demande ou me dire en quoi je peux vous aider aujourd'hui?\"\n\n[0:18] User: J'aimerais parler à Berge Châtaire.\n[0:22] Agent: \"Je comprends que vous aimeriez parler à Berge Chater. Il est actuellement [non disponible / occupé avec d'autres clients]. Je peux créer une demande prioritaire pour qu'il vous rappelle dès que possible. Puis-je prendre votre nom, numéro de téléphone et la raison de votre appel?\"\n\n[0:43] User: Ok, qui contente ?\n[0:47] Agent: \"Pourriez-vous me donner votre nom complet, s'il vous plaît, ainsi que votre numéro de...\n[0:51] User: Jean Fontaine\n[0:54] Agent: \"Merci, Monsieur Fontaine. Quel est votre numéro de téléphone où Berge peut vous rappeler?\"\n\n[1:00] User: 4 726-4661\n[1:07] Agent: \"Merci. Et quelle est la raison de votre appel, afin que je puisse transmettre l'information à Berge?\"\n\n[1:14] User: C'est confidentiel.\n[1:18] Agent: \"Je comprends. Je vais simplement indiquer que c'est une affaire confidentielle. Y a-t-il autre chose pour laquelle je peux vous aider aujourd'hui?\"\n\n[1:26] User: Non merci.\n[1:28] Agent: \"Parfait. Je vais transmettre votre message à Berge et il vous rappellera dès que possible. Merci d'avoir appelé Pharmacie Berge...",
+    "createdAt": "2025-12-13T21:23:11.930Z",
+    "updatedAt": "2025-12-13T21:23:11.930Z"
+  },
+  {
+    "id": "cmj7d0efp0003o7086t1g915i",
+    "leadId": "cmioxueia0003uf08gn35a2bj",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/15/2025, 4:19:51 PM\n\nCall Duration: 14s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:07] User: Anglais, oui.\n[0:09] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety...",
+    "createdAt": "2025-12-15T16:19:51.445Z",
+    "updatedAt": "2025-12-15T16:19:51.445Z"
+  },
+  {
+    "id": "cmj4u3978000jo2084lwplklz",
+    "leadId": "cmj4u3978000ho208gbputhdx",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/13/2025, 9:54:39 PM\n\nCall Duration: 146s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Anglais.\n[0:09] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:21] User: I want to order my medicine, my... Hello ?\n[0:27] Agent: I can certainly help you with that. Is the prescription for you or someone else? Also, does the...\n[0:32] User: Prescription for me ?\n[0:34] Agent: Okay, perfect. Do you already have a file with us?\n\n[0:38] User: Yes.\n[0:41] Agent: Okay, great. To ensure we pull up the correct file, may I have your full name and date of birth?\n\n[0:48] User: September 10, 1963.\n[0:51] Agent: Thank you. And your full name, please?\n\n[0:55] User: Mercedes Gutierrez.\n[0:57] Agent: Thank you, Mercedes. Which medication would you like to order today? Also, have there been...\n[1:01] User: My three\n[1:04] Agent: Okay, just to...\n[1:02] User: Merci.\n[1:07] Agent: I am sorry, I didn't quite catch that. Can you spell it out for me?\n\n[1:12] User: Mercedes Guchera\n[1:15] Agent: Thank you for spelling that out for me. And what was the name of the medication you wanted to order?\n\n[1:20] User: . MyTree Medication.\n[1:23] Agent: Okay, perfect. And have there been...\n[1:24] User: Sando... Hello?\n[1:28] Agent: I am here. I can hear you. Have there been any changes to the dose or the way you are taking the medication?\n\n[1:36] User: No.\n[1:37] Agent: Okay,...\n[1:37] User: Est-ce que vous êtes encore ouvert ou fermé ?\n[1:42] Agent: I am sorry, I do not speak French. Can you please repeat that in English?\n[1:50] User: Je disais, êtes-vous encore ouvert ?\n[1:54] Agent: I am sorry, I still do not understand. Can you...\n[1:57] User: Ok, ok, merci, au revoir, je vais le faire demain.\n[2:01] Agent: Okay, I...\n[2:01] User: Et dimanche.\n[2:04] Agent: I am sorry, I still do not understand. Can you please repeat that in English?\n\n[2:09] User: Ok, merci, au revoir.\n[2:12] Agent: Okay. Just so I...\n[2:13] User: Je vais le faire. Ok, au revoir.\n[2:17] Agent: Okay, I understand you'd like...\n[2:19] User: Merci.\n[2:21] Agent: You're welcome. Just so I can...\n[2:22] User: Ok, au revoir.\n[2:25] Agent: Okay, goodbye. Have a great...",
+    "createdAt": "2025-12-13T21:54:39.572Z",
+    "updatedAt": "2025-12-13T21:54:39.572Z"
+  },
+  {
+    "id": "cmj6018nn0005o008r0ed6m8p",
+    "leadId": "cmj6018nn0003o008haks2r0r",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/14/2025, 5:28:49 PM\n\nCall Duration: 149s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Anglais.\n[0:11] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:23] User: Je voudrais faire une reflétion.\n[0:27] Agent: I can certainly help you with that. Is the prescription for you or someone else? Does the patient have a file with us already?\n\n[0:35] User: Oui, j'ai un fichier avec vous.\n[0:39] Agent: Okay, great. To ensure we pull up the correct file, may I have your full name and date of birth?\n\n[0:47] User: Moe Mousavi, date de naissance est mai 10, 1979.\n[0:54] Agent: Thank you, Moe. And which medication would you like to refill today? Also, have there been any changes to the dose or the way the medication is being taken?\n\n[1:05] User: Les médicaments sont Duloxetine et probablement Paroxetine.\n[1:12] Agent: Okay, Moe. And will this be for pickup, or would you like to use our free delivery service?\n\n[1:19] User: pick up please\n[1:20] Agent: Perfect. I'm sending this request to our pharmacy team now. We will send you a text message the moment it's ready. Does that sound good?\n\n[1:29] User: that sounds great\n[1:31] Agent: \"Thank you, Moe. Is there anything else I can help you with today?\"\n\n[1:37] User: can I order a refill for my wife?\n[1:41] Agent: I can help with that. Does your wife have a file with us already?\n\n[1:45] User: yes she does\n[1:47] Agent: Okay, I can definitely help with that. To pull up her file securely, may I have her full name and date of birth? Then, please let me know the medication she needs refilled.\n\n[1:58] User: name is Sanaaz Davoud Nabi date of birth is september 21 1981\n[2:12] Agent: Thank you. And which medication would Sanaaz like to refill today? Also, have there been any changes to the...\n[2:17] User: Au revoir.\n[2:19] Agent: Okay, I will send this request to our pharmacy team now. We will send you a text message the moment it's ready. Have a great day!\n\n[2:27] User: Merci.",
+    "createdAt": "2025-12-14T17:28:49.427Z",
+    "updatedAt": "2025-12-14T17:28:49.427Z"
+  },
+  {
+    "id": "cmj604pwd0009o00888fjpuxr",
+    "leadId": "cmj6018nn0003o008haks2r0r",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/14/2025, 5:31:31 PM\n\nCall Duration: 138s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:07] User: Anglais.\n[0:09] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:21] User: Je voulais acheter un reflet pour ma femme.\n[0:26] Agent: I can definitely help with that. To start, is your wife an existing patient with us, or will this be a new prescription?\n\n[0:36] User: Elle a un fichier avec vous.\n[0:40] Agent: Perfect. To pull up her file securely, may I have her full name and date of birth? Also, have there been any changes to the dose or the way the medication is being taken?\n\n[0:53] User: Son nom est Sanaz Davud Nabi. Le jour de naissance est septembre 21, 1981.\n[1:03] Agent: Thank you. And have there been any changes to the dose or the way the medication is being taken? Also, will this be for pickup, or would you like to use our free delivery service?\n\n[1:14] User: C'est pour le pick-up et je pense qu'il n'y a pas de changement dans ces...\n[1:20] Agent: Perfect. I'm sending this request to our pharmacy team now. We will send you a text message the moment it's ready. Does that sound good?\n[1:30] User: Je n'ai pas dit le nom de la médication.\n[1:34] Agent: You are absolutely right, I apologize for that. Could you please tell me the name of the medication needed for the refill?\n\n[1:43] User: Sintroid et... Norultate et Theromax et Vitamine D.\n[1:57] Agent: Perfect. I'm sending this request to our pharmacy team now. We will send you a text message the moment it's ready. Does that sound good?\n[2:05] User: That sounds great. Thank you.\n[2:09] Agent: You're welcome! Is there anything else I can assist you with today?\n\n[2:13] User: No, thank you. Bye.\n[2:15] Agent: Have a great day!\n",
+    "createdAt": "2025-12-14T17:31:31.742Z",
+    "updatedAt": "2025-12-14T17:31:31.742Z"
+  },
+  {
+    "id": "cmj61w6ca000fo0087wi0afhi",
+    "leadId": "cmj61w6ca000do0081060awns",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/14/2025, 6:20:52 PM\n\nCall Duration: 140s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous...\n[0:05] User: Merci.\n[0:06] Agent: D'accord. Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\n\n[0:20] User: Bonjour, ma fille de 5 mois a de la fièvre, je ne sais pas si elle a de la fièvre, mais on a pris des mesures, 37.7, 38.3, 38.5.\n[0:39] Agent: Je...\n[0:38] User: et 38.7%.\n[0:43] Agent: Je comprends que vous êtes inquiète au sujet de la fièvre de votre fille. Malheureusement, en tant qu'assistante à la pharmacie, je ne peux pas donner de conseils médicaux. Cependant, je peux prendre vos coordonnées et demander à un pharmacien de vous rappeler dès que possible. Est-ce que cela vous convient? Pourrais-je avoir votre nom, votre numéro de téléphone et la date de naissance de votre fille?\n\n[1:05] User: Cela me convient. Mon nom c'est Nazim Regnar, numéro de téléphone 514-594-2181, âge de ma fille Kotomi Regnar, 5 mois, elle est née le 26 juin 2025.\n[1:24] Agent: Merci beaucoup pour ces informations. Je vais transmettre ces détails à notre équipe de pharmacie et ils vous rappelleront dès que possible. Puis-je confirmer que la question concerne la fièvre de votre fille Kotomi, âgée de cinq mois?\n\nComme je ne suis pas pharmacienne, je dois vous donner ces informations de sécurité : s'il s'agit d'une urgence médicale ou si les symptômes de votre fille s'aggravent, veuillez raccrocher et composer le nine-one-one ou vous rendre au service d'urgence le plus proche. Pour des conseils médicaux non urgents, vous pouvez également appeler Info-Santé au eight-one-one pour parler à une infirmière, vingt-quatre heures sur vingt-quatre, sept jours sur sept.\n\n[2:02] User: C'est bon, vous avez les bonnes informations.\n[2:05] Agent: Parfait. Y a-t-il autre chose pour laquelle je peux vous aider aujourd'hui?\n\n[2:10] User: Non, merci.\n[2:12] Agent: Merci d'avoir appelé. Notre équipe vous contactera sous peu. Passez une bonne journée.\n",
+    "createdAt": "2025-12-14T18:20:52.378Z",
+    "updatedAt": "2025-12-14T18:20:52.378Z"
+  },
+  {
+    "id": "cmj64d0mb0005nz08e79g5yl7",
+    "leadId": "cmj64d0mb0003nz08tz2oq5g7",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/14/2025, 7:29:57 PM\n\nCall Duration: 119s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:09] User: Anglais.\n[0:11] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:22] User: Fous du choc !\n[0:24] Agent: I am sorry, I do not understand. Can you please clarify how I can help you?\n\n[0:29] User: Vaccinations !\n[0:32] Agent: I can certainly help you with information about vaccinations. Are you interested in the COVID-nineteen or flu vaccine, or another type of vaccine, such as for travel?\n[0:43] User: COVID and flu.\n[0:47] Agent: \"Booking for COVID-nineteen and flu vaccines is done online at ClicSanté dot ca. If you are having trouble with the website, I can take your name and number, and someone from our team will call you back to assist when the pharmacy is open. Would you like me to do that?\"\n\n[1:01] User: Yes.\n[1:03] Agent: Okay, I can help with that. May I have your full name and date of birth, please?\n\n[1:08] User: Sarah Shabtai, May 24th, 1976.\n[1:16] Agent: Thank you. And what is the best phone number for the callback?\n\n[1:20] User: 514-576-0275\n[1:25] Agent: Okay, I have your name, date of birth, and phone number. Just to confirm, you're requesting assistance with booking a COVID-nineteen and flu vaccine appointment through ClicSanté dot ca. Is that correct?\n\n[1:38] User: . Yes.\n[1:40] Agent: Perfect. I'm sending this request to our pharmacy team now. Someone will call you back to assist you with booking your appointment as soon as the pharmacy is open. Is there anything else I can help you with today?\n\n[1:51] User: No, that's it. Thank you.\n[1:54] Agent: You're welcome! Have a great day!\n",
+    "createdAt": "2025-12-14T19:29:57.348Z",
+    "updatedAt": "2025-12-14T19:29:57.348Z"
+  },
+  {
+    "id": "cmj7d0xtg0007o708h6bbzaun",
+    "leadId": "cmioxueia0003uf08gn35a2bj",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/15/2025, 4:20:16 PM\n\nCall Duration: 16s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:07] User: En français.\n[0:09] Agent: \"D'accord, comment puis-je vous aider aujourd'hui?\"\n\n[0:13] User: Non, c'est bon, merci.\n[0:15] Agent: ...\n[0:13] User: Non, c'est bon, merci.",
+    "createdAt": "2025-12-15T16:20:16.565Z",
+    "updatedAt": "2025-12-15T16:20:16.565Z"
+  },
+  {
+    "id": "cmj7d1tdu000bo708brbreghu",
+    "leadId": "cmioxueia0003uf08gn35a2bj",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/15/2025, 4:20:57 PM\n\nCall Duration: 36s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:07] User: L'anglais, s'il vous plaît.\n[0:09] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:21] User: Oui, êtes-vous ouvert maintenant ?\n[0:24] Agent: Yes, we are currently open. Just to confirm, are you calling to ask about our opening...\n[0:28] User: Pardon, est-ce qu'on peut parler en français ? Est-ce qu'on peut parler en français ?\n[0:32] Agent: Bien sûr, nous pouvons continuer en français. Comment puis-je vous aider aujourd'hui ?...",
+    "createdAt": "2025-12-15T16:20:57.474Z",
+    "updatedAt": "2025-12-15T16:20:57.474Z"
+  },
+  {
+    "id": "cmj7v582i0003l308cf9j59in",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/16/2025, 12:47:29 AM\n\nCall Duration: 4s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous...",
+    "createdAt": "2025-12-16T00:47:29.562Z",
+    "updatedAt": "2025-12-16T00:47:29.562Z"
+  },
+  {
+    "id": "cmj7w5gfr0009l308vgxzfj7k",
+    "leadId": "cmj7w5gfr0007l3082mzl5nai",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/16/2025, 1:15:40 AM\n\nCall Duration: 45s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Anglais.\n[0:10] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:21] User: Pharmacie.\n[0:24] Agent: \"I can certainly help you. To start, could you tell me what you need help with today? For example, are you calling to refill a prescription, inquire about our services, or something else?\"\n\n[0:37] User: Refill et prescription.\n[0:39] Agent: \"I can definitely help you with that. Let's start with the refill. Is the prescription for you or someone...",
+    "createdAt": "2025-12-16T01:15:40.024Z",
+    "updatedAt": "2025-12-16T01:15:40.024Z"
+  },
+  {
+    "id": "cmj8n9phb0005pa08aluvk5uk",
+    "leadId": "cmj8n9phb0003pa08frpsk746",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/16/2025, 1:54:47 PM\n\nCall Duration: 182s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:13] User: ...\n[0:14] Agent: \"Je...\n[0:14] User: Oui, allô ?\n[0:18] Agent: \"Bonjour! Comment puis-je vous aider...\n[0:19] User: Oui.\n[0:21] Agent: \"Parfait! Comment puis-je vous aider aujourd'hui?\"\n\n[0:25] User: Renouvellement de médicaments.\n[0:28] Agent: \"Je peux vous aider avec ça. Est-ce que le renouvellement est pour vous ou pour quelqu'un d'autre? Est-ce que le patient a déjà un dossier chez nous?\"\n\n[0:36] User: Oh my ! Pour Jacinthe Bouchard, pour moi, le patadé deux fois.\n[0:44] Agent: \"Parfait. Pour assurer la...\n[0:45] User: Ensuite, attendez, ensuite c'est la cote S deux fois. J'ai besoin de ICOT pour le dos, pour le bas du dos. Extra large et large et j'ai besoin au dossier de Florence Voboda le SLINT, F-L-Y-N-D si c'est couvert avec les assurances deux mois.\n[1:15] Agent: \"Je comprends. Pour Jacinthe Bouchard, vous avez besoin de Patadé deux fois et ICOT pour le dos. Pour Florence Voboda, vous avez besoin de SLINT et vous voulez savoir si c'est couvert par les...\n[1:21] User: Non.\n[1:25] Agent: \"D'accord. Donc, pour Jacinthe Bouchard,...\n[1:27] User: Est-ce que je peux parler à quelqu'un ? Est-ce que je peux parler à quelqu'un ?\n[1:32] Agent: \"Je comprends que vous aimeriez parler à quelqu'un de notre équipe. Malheureusement, je n'ai pas la possibilité de transférer les appels, mais je peux créer une demande de rappel prioritaire. Ainsi, quelqu'un de notre équipe pourra vous contacter dès que possible...\n[1:45] User: Parfait. Parfait. Parfait. Parfait.\n[1:48] Agent: \"D'accord. Pour créer cette demande de rappel, puis-je avoir votre nom complet et votre date de naissance? Je dois vérifier ces...\n[1:54] User: Jacinthe Bouchard, du 7 avril 1964.\n[2:00] Agent: \"Merci. Et quel est le meilleur numéro de téléphone pour vous rappeler?\"\n\n[2:04] User: 514-582-5483.\n[2:09] Agent: \"Parfait. Donc, pour récapituler, j'ai une demande de renouvellement pour Jacinthe Bouchard, née le sept avril mille neuf cent soixante-quatre, avec le numéro de...\n[2:17] User: Non, 17 avril. 17 avril.\n[2:24] Agent: \"Merci de me corriger. Donc, Jacinthe Bouchard, née le dix-sept avril mille neuf cent soixante-quatre, avec le numéro de téléphone cinq cent quatorze, cinq cent quatre-vingt-deux, cinq mille quatre cent quatre-vingt-trois. Vous avez besoin de Patadé deux fois et de ICOT pour le dos, et vous voulez savoir si SLINT pour Florence Voboda est couvert...\n[2:40] User: Pas ICOT pour le dos. Non, non, CENACOTS et ICHOT pour le dos.\n[2:49] Agent: ...\n[2:49] User: Mais rappelez-moi. Oh my gosh !\n[2:55] Agent: \"Je comprends. Je vais...\n[2:55] User: Oui ?\n[2:58] Agent: \"Je vais...\n[2:56] User: Ok, rappelez-moi, j'en ai assez. C'est bon, c'est bon.",
+    "createdAt": "2025-12-16T13:54:47.999Z",
+    "updatedAt": "2025-12-16T13:54:47.999Z"
+  },
+  {
+    "id": "cmj8nl840000bpa083lek1ohy",
+    "leadId": "cmj8nl8400009pa08hzntecq6",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/16/2025, 2:03:45 PM\n\nCall Duration: 88s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:09] User: Anglais\n[0:11] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:24] User: . Renewal.\n[0:26] Agent: I can certainly assist you with a prescription refill. Is this prescription for yourself or someone else? Also, does the patient already have a file...\n[0:34] User: Someone .\n[0:35] Agent: ...\n[0:36] User: Someone else.\n[0:38] Agent: Okay, I can help with that. Does the patient have a file with us already?\n\n[0:42] User: Yes\n[0:43] Agent: Great. To proceed with the refill request, could you please provide me with the patient's full name and date of birth? Once I have that, I’ll also need the name of the medication they need refilled.\n\n[0:56] User: par an quand d'appâts si le portier de force d'un temps de 25\n[1:02] Agent: I'm sorry, I didn'm understand. Could you please provide the patient's name, date of birth, and the medication they need refilled?\n\n[1:09] User: à tairon qu'un dapa et de la peur et plein fonds nain 10,25 en chine et pantalons\n[1:19] Agent: I am very sorry, but I am having trouble understanding the information you are providing. Could you please provide the patient's name, date of birth, and the medication they need refilled?...",
+    "createdAt": "2025-12-16T14:03:45.361Z",
+    "updatedAt": "2025-12-16T14:03:45.361Z"
+  },
+  {
+    "id": "cmj8nnc6l000fpa0866ba0x82",
+    "leadId": "cmj8nl8400009pa08hzntecq6",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/16/2025, 2:05:23 PM\n\nCall Duration: 92s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Anglais !\n[0:10] Agent: \"Great. Just so you're aware, this call may be recorded for quality and safety. If this is a medical emergency, please hang up and call nine one one. How can I help you today?\"\n\n[0:21] User: Refill pour prescription.\n[0:25] Agent: \"I can help with that. Is the prescription for you or someone else? Does the patient have a file with us already?\"\n\n[0:32] User: Someone else.\n[0:34] Agent: \"Okay, I can help with that. To start, I'll need a bit more information. Could you please provide the patient's full name and date of birth? Also, what medication needs to be refilled?\"\n\n[0:45] User: Tyrone Pandapa 0404 1975 and he needs Pantaloque\n[0:55] Agent: \"Thank you for that information. Have there been any changes to the dose or the way the medication is being taken? And will this be for pickup, or would you like to use our free delivery service?\"\n\n[1:06] User: Free delivery.\n[1:09] Agent: \"Perfect. I'm sending this request to our pharmacy team now. We will send you a text message the moment it's ready. Does that sound good?\"\n\n[1:17] User: Yes.\n[1:19] Agent: \"Great. Is there anything else I can help you with today?\"\n\n[1:23] User: That's all. Thank you!\n[1:26] Agent: \"You're welcome! Have a great day, and thank you for calling. Goodbye!\"\n\n[1:30] User: Bye-bye.",
+    "createdAt": "2025-12-16T14:05:23.949Z",
+    "updatedAt": "2025-12-16T14:05:23.949Z"
+  },
+  {
+    "id": "cmj8nrpau000jpa08ipp5i3n6",
+    "leadId": "cmj8n9phb0003pa08frpsk746",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/16/2025, 2:08:47 PM\n\nCall Duration: 39s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:07] User: Français.\n[0:09] Agent: \"D'accord. Comment puis-je vous aider aujourd'hui?\"\n\n[0:13] User: Je veux parler à quelqu'un.\n[0:16] Agent: \"Je comprends que vous aimeriez parler à quelqu'un de notre équipe. Je n'ai pas la possibilité de transférer les appels, mais je peux créer une demande de rappel prioritaire. Notre équipe vous contactera dès que possible. Puis-je recueillir vos informations pour cela? Pour commencer, puis-je avoir votre nom complet et votre date de...\n[0:29] User: Oui, Jacinthe Bouchard, 7 avril 64 514 582 54 83. Appelez-moi urgentement.",
+    "createdAt": "2025-12-16T14:08:47.574Z",
+    "updatedAt": "2025-12-16T14:08:47.574Z"
+  },
+  {
+    "id": "cmj9a3xio0003qw08javwstn3",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/17/2025, 12:34:09 AM\n\nCall Duration: 6s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous...",
+    "createdAt": "2025-12-17T00:34:09.648Z",
+    "updatedAt": "2025-12-17T00:34:09.648Z"
+  },
+  {
+    "id": "cmj9apc5p0009qw08hwqeyap2",
+    "leadId": "cmj9apc5p0007qw08al4ubv40",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/17/2025, 12:50:48 AM\n\nCall Duration: 9s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"",
+    "createdAt": "2025-12-17T00:50:48.397Z",
+    "updatedAt": "2025-12-17T00:50:48.397Z"
+  },
+  {
+    "id": "cmja192zk0005my0819x5yz4k",
+    "leadId": "cmja192zk0003my086qqwchgz",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/17/2025, 1:13:59 PM\n\nCall Duration: 37s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah. Souhaitez-vous continuer en français, ou préférez-vous l'anglais?\"\n[0:08] User: Français.\n[0:10] Agent: \"D'accord, comment puis-je vous aider aujourd'hui?\"\n\n[0:14] User: Parler avec Grimshaw, parler avec Berge-Shatter\n[0:19] Agent: \"Je comprends que vous aimeriez parler avec M. Grimshaw ou M. Berge-Shatter. Malheureusement, ils ne sont pas disponibles en ce moment. Puis-je prendre votre nom, votre numéro de téléphone et la raison de votre appel afin qu'ils puissent vous rappeler dès que possible?\"\n",
+    "createdAt": "2025-12-17T13:13:59.649Z",
+    "updatedAt": "2025-12-17T13:13:59.649Z"
+  },
+  {
+    "id": "cmjaslukq0003p808g2bspx07",
+    "leadId": "cmiozaw680003p808xnb7umty",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/18/2025, 1:59:44 AM\n\nCall Duration: 3s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah...",
+    "createdAt": "2025-12-18T01:59:44.906Z",
+    "updatedAt": "2025-12-18T01:59:44.906Z"
+  },
+  {
+    "id": "cmjc5fthl0003w808jgm7qxjf",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/19/2025, 12:46:44 AM\n\nCall Duration: 4s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: \"Bonjour, Pharmacie Berge Shater, ici Sarah...",
+    "createdAt": "2025-12-19T00:46:44.746Z",
+    "updatedAt": "2025-12-19T00:46:44.746Z"
+  },
+  {
+    "id": "cmjdaeve90003ko08ml6rcoki",
+    "leadId": "cmioxueia0003uf08gn35a2bj",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/19/2025, 7:53:44 PM\n\nCall Duration: 7s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: hola\n[0:03] User: Oui, bonjour.\n[0:06] Agent: Bonjour! Comment puis-je vous aider...",
+    "createdAt": "2025-12-19T19:53:44.818Z",
+    "updatedAt": "2025-12-19T19:53:44.818Z"
+  },
+  {
+    "id": "cmjdrc1640003pe080q7uc083",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/20/2025, 3:47:25 AM\n\nCall Duration: 10s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?",
+    "createdAt": "2025-12-20T03:47:25.804Z",
+    "updatedAt": "2025-12-20T03:47:25.804Z"
+  },
+  {
+    "id": "cmjevwkkw0003pf08xq34qt0v",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/20/2025, 10:43:08 PM\n\nCall Duration: 9s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?",
+    "createdAt": "2025-12-20T22:43:08.720Z",
+    "updatedAt": "2025-12-20T22:43:08.720Z"
+  },
+  {
+    "id": "cmjeygf3z0005mz08oehkllf9",
+    "leadId": "cmjeygf3z0003mz08nec8crcu",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/20/2025, 11:54:33 PM\n\nCall Duration: 77s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français...\n[0:04] User: Au revoir.\n[0:05] Agent: Y a-t-il autre chose que je puisse faire pour vous...\n[0:07] User: Merci.\n[0:08] Agent: De rien. N'hésitez pas à nous recontacter si...\n[0:10] User: Merci.\n[0:12] Agent: Y a-t-il autre chose que je puisse faire pour vous...\n[0:14] User: C'est pas très grand, vous dites. C'est moins pire. Qu'est-ce que c'est que ça ? Non, on va bien. On peut tout faire à la chaîne. Deux minutes à deux, à la chaîne, à la chaîne. À l'heure de cette heure-là, c'est bien. À l'heure de cette heure-là, c'est bien. Allô ? C'était pas très grand, c'tait là... Oui ? Je vais te dire un truc. Je vais te dire un truc... Je vais te dire un truc... Je vais te dire un truc...\n[0:42] Agent: Je suis désolé, je ne suis pas...\n[0:42] User: Merci.\n[0:44] Agent: Y a-t-il autre chose que je puisse faire pour vous...\n[0:49] User: Appelez la pharmacie et je vais lui laisser un message. Cet appel n'est plus en cours d'enregistrement. Merci beaucoup. Vous êtes un docteur ? Oui, je suis un docteur. Vous êtes un docteur ? Oui, c'est tout le monde. Bon, merci beaucoup.",
+    "createdAt": "2025-12-20T23:54:33.983Z",
+    "updatedAt": "2025-12-20T23:54:33.983Z"
+  },
+  {
+    "id": "cmjfwfr1a0005o408jpk0z3ft",
+    "leadId": "cmjfwfr190003o4087iyibm4l",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/21/2025, 3:45:49 PM\n\nCall Duration: 35s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:12] User: ...\n[0:13] Agent: Aimeriez-vous continuer en français ou en anglais ?\n[0:17] User: Anglais.\n[0:20] Agent: ```tool_code\nlanguage_detection(language='en')\n```\n[0:30] User: ...\n[0:31] Agent: Hello, how can I help you today?\n\n[0:34] User: Merci.\n[0:35] Agent: ...\n[0:34] User: Merci.",
+    "createdAt": "2025-12-21T15:45:49.726Z",
+    "updatedAt": "2025-12-21T15:45:49.726Z"
+  },
+  {
+    "id": "cmjh69eay0003r208mcrr3wnb",
+    "leadId": "cmjfxbdtu000do408eb1hpi51",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/22/2025, 1:08:35 PM\n\nCall Duration: 107s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:06] User: Merci.\n[0:09] Agent: De rien. Comment puis-je vous aider aujourd'hui ?\n\n[0:12] User: Je voudrais communiquer avec la pharmacie, s'il vous plaît.\n[0:16] Agent: Je peux vous aider avec ça. Puis-je vous demander si vous avez déjà un dossier chez nous ?\n[0:21] User: Oui.\n[0:23] Agent: Parfait. Pour m'assurer que j'accède au bon dossier et que je protège votre vie privée, puis-je avoir votre nom complet et votre date de naissance, s'il vous plaît ?\n\n[0:32] User: Benjamin, Jumier SVG, 31 10 91.\n[0:39] Agent: Merci, et quel est le meilleur numéro de téléphone pour vous joindre ?\n\n[0:43] User: Celui avec lequel j'appelle.\n[0:46] Agent: Parfait. Et quelle est la raison de votre appel aujourd'hui ?\n\n[0:50] User: Je voudrais faire la commande de mes médicaments.\n[0:53] Agent: Je peux vous aider avec ça. Est-ce que la prescription est pour vous ou pour quelqu'un d'autre ?\n\n[0:59] User: Pour moi.\n[1:06] Agent: Quels médicaments souhaitez-vous commander ? Y a-t-il eu des changements dans la dose ou la façon dont vous prenez les médicaments ?\n\n[1:13] User: Est-ce que je peux parler avec un préposé, s'il vous plaît ?\n[1:17] Agent: Je comprends que vous aimeriez parler avec quelqu'un d'autre. Je suis là pour vous aider en ce moment, et je peux absolument créer une demande prioritaire pour qu'un pharmacien vous rappelle. Quel est le meilleur numéro pour vous joindre ?\n\n[1:30] User: Ok, à quelle heure, quelles sont vos heures d'ouverture ?\n[1:36] Agent: Nos heures d'ouverture sont du lundi au vendredi de huit heures trente du matin à sept heures trente du soir, le samedi de neuf heures du matin à quatre heures de l'après-midi, et nous sommes fermés le dimanche...",
+    "createdAt": "2025-12-22T13:08:35.626Z",
+    "updatedAt": "2025-12-22T13:08:35.626Z"
+  },
+  {
+    "id": "cmjfwiwm60009o408zbp3tazo",
+    "leadId": "cmjfwfr190003o4087iyibm4l",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/21/2025, 3:48:16 PM\n\nCall Duration: 143s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:07] User: Anglais.\n[0:10] Agent: ```tool_code\n# This tool call is triggered because the user has requested to switch to English.\nprint(language_detection(language='en'))\n```\n\n[0:28] User: Pharmacie, please.\n[0:34] Agent: Hello, this is Sarah from Pharmacy Berge Shater. How may I help you today?\n\n[0:40] User: I need to renew my medication.\n[0:42] Agent: I can certainly help you with that. Is the prescription for you or someone else?\n[0:48] User: No, it's for myself.\n[0:50] Agent: Okay, do you already have a file with us?\n\n[0:53] User: Yes, I do.\n[0:54] Agent: Great. To ensure we pull up the correct file, may I have your full name and date of birth?\n\n[1:00] User: Ashley Morgan, May 2nd, 1988.\n[1:06] Agent: Thank you. And what medication would you like to refill today?\n\n[1:10] User: Esthétalopram.\n[1:12] Agent: Okay, and have there been any changes to the dose or the way you're taking the medication?\n\n[1:18] User: No\n[1:20] Agent: Okay, and will this be for pickup, or would you like to use our free delivery service? We deliver to Montreal Island, Laval, Terrebonne, Mascouche, and Blainville.\n\n[1:31] User: I can have it delivered tomorrow morning.\n[1:35] Agent: Okay, I can definitely put in a request for delivery. However, I can't guarantee it will be delivered tomorrow morning. Would you still like to proceed with the delivery request?\n\n[1:45] User: You know what I'm going to pick it up.\n[1:47] Agent: Perfect. I'm sending this request to our pharmacy team now. We will send you a text message the moment it's ready. Does that sound good?\n[1:55] User: Yeah thank you\n[1:58] Agent: You're welcome! Just to confirm, I have the prescription refill for Ashley Morgan, date of birth May second, nineteen eighty-eight, for Esthétalopram, to be picked up at the pharmacy. Is that all correct?\n\n[2:12] User: That's perfect thank you\n[2:14] Agent: Thank you so much for calling. Our team will be in touch shortly. Have a great day!\n[2:18] User: . You too\n[2:20] Agent: ...\n",
+    "createdAt": "2025-12-21T15:48:16.927Z",
+    "updatedAt": "2025-12-21T15:48:16.927Z"
+  },
+  {
+    "id": "cmjfxbdtu000fo408tdhomard",
+    "leadId": "cmjfxbdtu000do408eb1hpi51",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/21/2025, 4:10:25 PM\n\nCall Duration: 167s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:09] User: Français.\n[0:12] Agent: Parfait, comment puis-je vous aider aujourd'hui ?\n\n[0:17] User: Et oui, j'appelle en fait parce que je suis en attente d'une crème pour la peau. J'ai été censé recevoir un appel demain, je ne l'ai pas reçu.\n[0:27] Agent: D'accord, je comprends. Pour vérifier votre dossier en toute sécurité, puis-je avoir votre nom complet et votre date de naissance ?\n\n[0:36] User: Alors, mon nom complet, ce serait Gilles Meusse-Léger de Jamais. Pardon, date de naissance, c'est le 31 10 91.\n[0:46] Agent: Merci. Pourriez-vous me donner un numéro de téléphone où l'équipe peut vous rappeler dès que possible concernant votre crème pour la peau ?\n\n[0:55] User: Alors, c'est le 438 345 6970\n[1:01] Agent: Parfait. Je vais envoyer une demande à notre équipe pour qu'elle vous rappelle au sujet de votre crème pour la peau. Est-ce qu'il y a autre chose avec quoi je peux vous aider aujourd'hui ?\n\n[1:10] User: Aujourd'hui, la formation d'un proverbe ?\n[1:13] Agent: Je suis désolé, je ne comprends pas votre question. Pourriez-vous la reformuler ?\n\n[1:20] User: La pharmacie n'est pas ouverte aujourd'hui ?\n[1:23] Agent: Nos heures d'ouverture sont du lundi au vendredi de huit heures trente du matin à sept heures trente du soir, et le samedi de neuf heures du matin à quatre heures du soir. Nous sommes fermés le dimanche. Est-ce que vous appelez pendant ces heures ?\n\n[1:39] User: En fait, hier j'attendais une appel mais je ne l'ai pas reçu. Est-ce qu'il y a un raisonnement particulier de pourquoi?\n[1:47] Agent: Je comprends. Je peux ajouter cette information à la demande de rappel. Comme ça, l'équipe peut vous expliquer la raison pour laquelle vous n'avez pas reçu l'appel hier. Est-ce que cela vous convient ?\n\n[1:59] User: Non.\n[2:00] Agent: Je suis désolée d'entendre ça. Y a-t-il autre chose que je peux faire pour vous aider ?\n\n[2:06] User: Est-ce que vous êtes une voix automatisée?\n[2:09] Agent: Je suis un assistant virtuel de la pharmacie. Je suis ici pour vous aider et prendre vos informations pour qu'un membre de notre équipe puisse vous rappeler.\n\n[2:19] User: Ok, alors vous n'avez pas besoin d'envoyer les informations, je rappellerai une autre journée, merci.\n[2:25] Agent: D'accord, merci d'avoir appelé. Notre équipe vous contactera très bientôt. Bonne journée !\n\n[2:29] User: Pas besoin de me contacter, je vais les rappeler.\n[2:33] Agent: D'accord, je comprends. Y a-t-il autre chose avec quoi je peux vous aider aujourd'hui ?\n\n[2:38] User: Non c'est tout, merci!\n[2:41] Agent: Merci beaucoup d'avoir appelé. Bonne journée !\n",
+    "createdAt": "2025-12-21T16:10:25.602Z",
+    "updatedAt": "2025-12-21T16:10:25.602Z"
+  },
+  {
+    "id": "cmjh6c0ur0009r2081onzhlcf",
+    "leadId": "cmjh6c0ur0007r208uanfdndg",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/22/2025, 1:10:38 PM\n\nCall Duration: 25s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:10] User: En anglais.\n[0:12] Agent: ```tool_code\n# This tool call switches the agent to the language that the user specified.\nprint(language_detection.run(language=\"en\"))\n```\n",
+    "createdAt": "2025-12-22T13:10:38.164Z",
+    "updatedAt": "2025-12-22T13:10:38.164Z"
+  },
+  {
+    "id": "cmjh6dtbt000dr208ovpj6usa",
+    "leadId": "cmjh6c0ur0007r208uanfdndg",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/22/2025, 1:12:01 PM\n\nCall Duration: 74s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:06] User: Anglais.\n[0:09] Agent: ```tool_code\n{\"tool_name\":\"language_detection\", \"language\":\"en\"}\n```\n\n[0:21] User: ...\n[0:22] Agent: Hello, this is Sarah from Pharmacy Berge Shater. How may I help you today?\n\n[0:29] User: It's a bearish.\n[0:32] Agent: I am sorry, I did not understand. Can you please clarify?\n\n[0:36] User: Speak to someone.\n[0:38] Agent: I can definitely help with that. To ensure I can assist you in the best way possible, can you please provide me with more details on the reason for your call?\n\n[0:49] User: I have a flu shot appointment.\n[0:51] Agent: Okay, I can create a request for our team to schedule that for you. May I take your name and phone number for a callback?\n\n[0:59] User: No, I already have an appointment. I want to speak to somebody.\n[1:04] Agent: I understand you already have an appointment and would like to speak to someone. Could you please provide your name and phone number so I can have someone call you back regarding your appointment?\n",
+    "createdAt": "2025-12-22T13:12:01.721Z",
+    "updatedAt": "2025-12-22T13:12:01.721Z"
+  },
+  {
+    "id": "cmjj95lb00003pm09y6qnbzbe",
+    "leadId": "cmiozaw680003p808xnb7umty",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/24/2025, 12:05:09 AM\n\nCall Duration: 113s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:07] User: Anglais, s'il vous plaît.\n[0:10] Agent: Okay, I will speak in English now. How can I help you today?\n\n[0:14] User: Oui, je me demandais si vous pouviez me rendre au équipe pharmaceutique.\n[0:19] Agent: I am sorry, I do not speak that language. Would you like me to switch back to French?\n\n[0:26] User: Non, je me demandais si je pouvais être transféré au pharmacie.\n[0:31] Agent: I am sorry, the pharmacy is closed right now, but I can take a message for the pharmacy team and have them call you back as soon as they are open. Would you like me to do that?\n\n[0:39] User: Oui, s'il vous plaît.\n[0:44] Agent: Bien sûr. Puis-je avoir votre nom complet et votre date de naissance ?\n[0:52] User: En anglais, s'il vous plaît.\n[0:55] Agent: I apologize. I will continue in English. May I have your full name and date of birth?\n\n[1:01] User: Mon nom est Samantha Smith et mon date de naissance est 1986, 23 avril.\n[1:13] Agent: Thank you. And what is the best phone number to reach you at?\n\n[1:17] User: 514-969-1050. Désolée, j'ai un petit bébé dans le fond du coin.\n[1:25] Agent: I understand. And what is the reason for your call today?\n\n[1:29] User: Si le pharmacien peut me réunir pour vérifier mon prescription.\n[1:34] Agent: Okay, so you would like the pharmacist to call you back to verify your prescription?\n\n[1:40] User: Correct.\n[1:42] Agent: Okay, I have all your details noted for the team's callback. Because you couldn't speak to a pharmacist, I must provide this safety information: If this is a medical emergency, or if your symptoms worsen, please hang up and call...",
+    "createdAt": "2025-12-24T00:05:09.276Z",
+    "updatedAt": "2025-12-24T00:05:09.276Z"
+  },
+  {
+    "id": "cmjk0nqyj000bmw08yqj66rgp",
+    "leadId": "cmjk0nqyj0009mw08yxduonwc",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/24/2025, 12:55:06 PM\n\nCall Duration: 0s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\nNo transcript available",
+    "createdAt": "2025-12-24T12:55:06.043Z",
+    "updatedAt": "2025-12-24T12:55:06.043Z"
+  },
+  {
+    "id": "cmjndyiid0003nm08jpsntuuw",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/26/2025, 9:30:41 PM\n\nCall Duration: 4s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en...",
+    "createdAt": "2025-12-26T21:30:41.845Z",
+    "updatedAt": "2025-12-26T21:30:41.845Z"
+  },
+  {
+    "id": "cmjk0b5050005mw08fmwkhxvk",
+    "leadId": "cmjk0b5050003mw08kv5his85",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/24/2025, 12:45:17 PM\n\nCall Duration: 281s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:12] User: ...\n[0:13] Agent: Puis-je vous aider en quoi que ce soit ?\n[0:22] User: ...\n[0:23] Agent: Êtes-vous toujours là ?\n[0:31] User: ...\n[0:32] Agent: Bonjour, je suis Sara de la pharmacie Berge Shater. Puis-je vous aider en quoi que ce soit ?\n[0:44] User: Alors...\n[0:47] Agent: Comment puis-je vous aider aujourd'hui ?\n[0:51] User: Avant de faire ma méditation avec Mme Mijakovic, pouvez-vous mettre une boîte d'alcool dans mon ordre\n[1:06] Agent: Je peux certainement vous aider avec ça. Est-ce que la prescription est pour vous ou pour quelqu'un d'autre ? Avez-vous déjà un dossier chez nous ?\n[1:16] User: Non, je veux... En général, ils me donnent mes médicaments à 33 149, appartement 909. Est-ce que vous pouvez mettre une boîte d'alcool en tampon, s'il vous plaît?\n[1:34] Agent: Je comprends. Pour m'assurer que je récupère le bon dossier, puis-je avoir votre nom complet et votre date de naissance ?\n[1:42] User: Oh, ça va bien. C'est le 7 mars 1935.\n[1:50] Agent: Merci. Et quel est le meilleur numéro de téléphone pour vous joindre pour le rappel ?\n[2:00] User: Oh, tu as dit...\n[2:04] Agent: Je comprends, mais je dois vérifier vos informations pour m'assurer que j'accède au bon fichier et que je protège votre vie privée. Quel est le meilleur numéro de téléphone pour vous joindre pour le rappel ?\n[2:21] User: ...\n[2:22] Agent: Pourrais-je avoir votre numéro de téléphone pour le rappel ?\n[2:32] User: J'ai demandé à vous d'en mettre une boîte d'alcool.\n[2:37] Agent: ...\n[2:36] User: pour mes mesures sur mon sucre.\n[2:44] Agent: Je...\n[2:43] User: à l'école quand même bon ça parle beaucoup en tant que\n[2:52] Agent: Je comprends que vous aimeriez ajouter une boîte d'alcool à votre commande pour mesurer votre taux de sucre. Pour confirmer, vous avez un dossier chez nous, c'est bien ça ?\n[3:04] User: Alors, qu'est-ce qui s'est passé ?\n[3:08] Agent: Je suis désolée, je n'ai pas compris votre question. Pourriez-vous la reformuler, s'il vous plaît ?\n[3:19] User: Simple, je vous l'ai dit, dans mon ordre, mettez une boîte d'alcool de tampon, c'est tout.\n[3:28] Agent: Je comprends. Je vais ajouter une boîte d'alcool à votre commande. Y a-t-il autre chose dont vous avez besoin aujourd'hui ?\n[3:36] User: Peux-je parler avec M. Baird?\n[3:39] Agent: Je comprends que vous aimeriez parler à un pharmacien. Malheureusement, la pharmacie est fermée en ce moment. Je peux recueillir toutes les informations nécessaires pour qu'un pharmacien vous rappelle. Quel est le meilleur numéro de téléphone pour vous joindre ?\n[3:59] User: ...\n[4:00] Agent: Puis-je avoir votre numéro de téléphone pour le rappel ?\n[4:10] User: Peux-je parler avec M. Baird?\n[4:14] Agent: Je comprends que vous aimeriez parler à un pharmacien. Malheureusement, la pharmacie est fermée...\n[4:18] User: mais là, il faut que je lui donne la parole, ma fille.\n[4:22] Agent: Je comprends que vous aimeriez parler à un pharmacien. Malheureusement, la pharmacie est fermée en ce moment. Je peux recueillir toutes les informations nécessaires pour qu'un pharmacien vous rappelle. Quel est le meilleur numéro de téléphone pour vous joindre ?",
+    "createdAt": "2025-12-24T12:45:17.717Z",
+    "updatedAt": "2025-12-24T12:45:17.717Z"
+  },
+  {
+    "id": "cmjk25zgu000hmw08j8rarnc4",
+    "leadId": "cmjk25zgu000fmw08qlnjwuu1",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/24/2025, 1:37:16 PM\n\nCall Duration: 47s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:11] User: Call us 84, 8 and 6. Goodbye.\n[0:15] Agent: Je suis désolé, je n'ai pas compris. Pourriez-vous répéter votre demande ou me dire comment je peux vous aider aujourd'hui ?\n[0:28] User: Let me do it. I don't know what's wrong. I got it. What was the problem? I don't know. There's something wrong. It's our ringing. Maybe this phone.\n[0:37] Agent: Je comprends que vous rencontrez...\n[0:38] User: It is!\n[0:40] Agent: Pourriez-vous me dire comment je peux vous aider aujourd'hui ?",
+    "createdAt": "2025-12-24T13:37:16.494Z",
+    "updatedAt": "2025-12-24T13:37:16.494Z"
+  },
+  {
+    "id": "cmjk26vtv000lmw08lww2x21g",
+    "leadId": "cmjk25zgu000fmw08qlnjwuu1",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/24/2025, 1:37:58 PM\n\nCall Duration: 12s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer...\n[0:03] User: All in right.\n[0:06] Agent: Je m'appelle Sara, l'assistante de pharmacie. Comment puis-je vous aider aujourd'hui ?\n",
+    "createdAt": "2025-12-24T13:37:58.436Z",
+    "updatedAt": "2025-12-24T13:37:58.436Z"
+  },
+  {
+    "id": "cmjk278rk000rmw08mu3pxdcf",
+    "leadId": "cmjk278rk000pmw08ptut2m8o",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/24/2025, 1:38:15 PM\n\nCall Duration: 19s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:12] User: ...\n[0:13] Agent: Puis-je vous aider avec quelque chose ?",
+    "createdAt": "2025-12-24T13:38:15.200Z",
+    "updatedAt": "2025-12-24T13:38:15.200Z"
+  },
+  {
+    "id": "cmjk28qdu000vmw08d5e9ahpl",
+    "leadId": "cmjk278rk000pmw08ptut2m8o",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/24/2025, 1:39:24 PM\n\nCall Duration: 63s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:09] User: Anglais.\n[0:11] Agent: Okay, I will speak in English. How may I help you today?\n\n[0:15] User: Merci.\n[0:17] Agent: You're welcome. Do you have any questions or is there anything I can help you with today?\n\n[0:28] User: ...\n[0:30] Agent: Is there anything you need help with?\n\n[0:38] User: ...\n[0:39] Agent: Are you still there? Is there anything I...\n[0:41] User: Oui. Les Béar, s'il vous plaît.\n[0:44] Agent: I am sorry, I didn't understand. Can you please clarify what you are asking for?\n\n[0:50] User: Pharmaciste, s'il vous plaît.\n[0:52] Agent: I understand that you would like to speak with a pharmacist. Unfortunately, the pharmacy is closed at the moment. However, I can create a detailed message for our pharmacy team so that a pharmacist can call you back as soon as...",
+    "createdAt": "2025-12-24T13:39:24.690Z",
+    "updatedAt": "2025-12-24T13:39:24.690Z"
+  },
+  {
+    "id": "cmjk2a3610011mw08ig7xy4g3",
+    "leadId": "cmjk278rk000pmw08ptut2m8o",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/24/2025, 1:40:27 PM\n\nCall Duration: 41s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:12] User: ...\n[0:14] Agent: Puis-je vous aider en quoi que ce soit ?\n[0:22] User: ...\n[0:23] Agent: Êtes-vous toujours là ? Si vous avez besoin d'aide, je suis là pour vous aider.\n[0:30] User: Un être humain, s'il vous plaît.\n[0:34] Agent: Je comprends que vous aimeriez parler à un être humain. Malheureusement, la pharmacie est fermée pour le moment, mais je peux prendre un message et m'assurer que quelqu'un de...",
+    "createdAt": "2025-12-24T13:40:27.913Z",
+    "updatedAt": "2025-12-24T13:40:27.913Z"
+  },
+  {
+    "id": "cmjk2a73x0013mw084qu660rv",
+    "leadId": "cmjk25zgu000fmw08qlnjwuu1",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/24/2025, 1:40:33 PM\n\nCall Duration: 50s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:08] User: They changed it. English.\n[0:12] Agent: Okay, I understand you'd like to switch to English. How can I assist you today?\n\n[0:17] User: Is this bear shatter?\n[0:21] Agent: You've reached Pharmacy Berge Shater. How can I help you today?\n\n[0:26] User: I'd like to speak to bear shatter, please. Yeah, it's a weirdo.\n[0:31] Agent: I understand you're trying to reach someone. Just to clarify, are you trying to reach a specific person, or were you trying to confirm you have reached Pharmacy Berge Shater? Also, I want to let you know that the pharmacy is closed and I am collecting information for a pharmacist to call you back.\n\n[0:47] User: No, she's collecting",
+    "createdAt": "2025-12-24T13:40:33.021Z",
+    "updatedAt": "2025-12-24T13:40:33.021Z"
+  },
+  {
+    "id": "cmjk2asyg0017mw08bj3zwggz",
+    "leadId": "cmjk278rk000pmw08ptut2m8o",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/24/2025, 1:41:01 PM\n\nCall Duration: 7s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?",
+    "createdAt": "2025-12-24T13:41:01.337Z",
+    "updatedAt": "2025-12-24T13:41:01.337Z"
+  },
+  {
+    "id": "cmjk2klb6001bmw08g9lkhl9g",
+    "leadId": "cmjk278rk000pmw08ptut2m8o",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/24/2025, 1:48:37 PM\n\nCall Duration: 22s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:06] User: Anglais.\n[0:08] Agent: Okay, I can assist you in English. How may I help you today?\n\n[0:10] User: Pharmaciste, s'il vous plaît.\n[0:14] Agent: I understand you're asking to speak with a pharmacist. Unfortunately, the pharmacy is currently closed. However, I can gather all the necessary information so that a pharmacist...",
+    "createdAt": "2025-12-24T13:48:37.987Z",
+    "updatedAt": "2025-12-24T13:48:37.987Z"
+  },
+  {
+    "id": "cmjk2nd4q001jmw086z1ymbx6",
+    "leadId": "cmjk2nd4q001hmw08x4mgg9fi",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/24/2025, 1:50:47 PM\n\nCall Duration: 7s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?",
+    "createdAt": "2025-12-24T13:50:47.354Z",
+    "updatedAt": "2025-12-24T13:50:47.354Z"
+  },
+  {
+    "id": "cmjk2qscc001nmw087g6x7d4w",
+    "leadId": "cmjk2nd4q001hmw08x4mgg9fi",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/24/2025, 1:53:27 PM\n\nCall Duration: 109s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:06] User: En fait.\n[0:08] Agent: Je comprends. Pourrais-je savoir comment je peux vous aider aujourd'hui ?\n[0:13] User: Je vais parler aux pharmaciens.\n[0:17] Agent: Bien sûr. Malheureusement, la pharmacie est fermée en ce moment. Je peux prendre vos informations afin qu'un pharmacien puisse vous rappeler dès que possible. Serait-ce acceptable pour vous ?\n[0:28] User: Oui\n[0:29] Agent: Parfait. Pourrais-je avoir votre nom complet et votre date de naissance pour assurer que j'accède au bon dossier et pour protéger votre vie privée ?\n[0:38] User: Sophie Mastelediagne\n[0:42] Agent: Pourriez-vous également me fournir votre date de naissance, s'il vous plaît ?\n[0:48] User: 1er octobre 1956\n[0:53] Agent: Merci. Et quel est le meilleur numéro de téléphone pour vous rappeler ?\n[1:00] User: 4 3 8 4 9 2 6 5 3 1\n[1:10] Agent: Merci. Pourriez-vous brièvement m'expliquer la raison de votre appel afin que je puisse le transmettre à la bonne personne ?\n[1:19] User: J'aimerais parler au pharmacien.\n[1:23] Agent: Je comprends. Je vais transmettre ce message à l'équipe de la pharmacie. Est-ce qu'il y a autre chose pour laquelle je peux vous aider aujourd'hui ?\n[1:31] User: Non.\n[1:38] Agent: Parfait. Merci d'avoir appelé. Un membre de notre équipe vous contactera très bientôt. Bonne journée !\n[1:45] User: Bye !",
+    "createdAt": "2025-12-24T13:53:27.036Z",
+    "updatedAt": "2025-12-24T13:53:27.036Z"
+  },
+  {
+    "id": "cmjk2sfc4001tmw088seb0lj7",
+    "leadId": "cmjk2sfc4001rmw08ctix7u38",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/24/2025, 1:54:43 PM\n\nCall Duration: 42s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:11] User: ...\n[0:13] Agent: Puis-je vous aider en quoi que ce soit ?\n[0:21] User: ...\n[0:22] Agent: Êtes-vous toujours là ?\n[0:31] User: ...\n[0:32] Agent: Je suis là pour vous aider avec toutes vos questions liées à la pharmacie. N'hésitez pas à me faire savoir comment je peux vous aider.",
+    "createdAt": "2025-12-24T13:54:43.492Z",
+    "updatedAt": "2025-12-24T13:54:43.492Z"
+  },
+  {
+    "id": "cmjk2t4ed001xmw08dv9t8b49",
+    "leadId": "cmjk278rk000pmw08ptut2m8o",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/24/2025, 1:55:15 PM\n\nCall Duration: 5s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?...",
+    "createdAt": "2025-12-24T13:55:15.973Z",
+    "updatedAt": "2025-12-24T13:55:15.973Z"
+  },
+  {
+    "id": "cmjk3100p0021mw08xw4csze3",
+    "leadId": "cmjk25zgu000fmw08qlnjwuu1",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/24/2025, 2:01:23 PM\n\nCall Duration: 86s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:05] User: Non.\n[0:09] Agent: Pourrais-je savoir dans quelle langue vous souhaitez continuer ?\n[0:17] User: Je peux dire « demain ».\n[0:20] Agent: Je comprends...\n[0:20] User: Anglais.\n[0:22] Agent: Okay, switching to English. How can I help you today?\n\n[0:25] User: Chateur, parlez-moi, s'il vous plaît.\n[0:30] Agent: Je suis désolé, je ne comprends pas. Pourriez-vous reformuler votre demande ?\n[0:35] User: Ils disent qu'ils ne comprennent pas. Je veux parler avec Bear Shatter. Je sais.\n[0:44] Agent: Je comprends que vous aimeriez parler à quelqu'un de Pharmacy Berge Shater. Je m'appelle Sara, je suis assistante en pharmacie. La pharmacie est fermée présentement, mais je peux prendre un message et m'assurer qu'un membre de notre équipe vous rappelle dès que possible. Est-ce que cela vous convient...\n[0:56] User: C'est fermé.\n[0:59] Agent: Oui, c'est exact. La pharmacie est fermée pour le moment. Cependant, je peux prendre un message détaillé et m'assurer qu'un membre de notre équipe vous rappelle dès que possible, dès que nous rouvrirons. Voulez-vous que je prenne votre message ?\n[1:13] User: Oui.\n[1:14] Agent: Parfait. Puis-je avoir votre nom complet et votre date de naissance ?\n[1:20] User: Alan Moniz, I play Alan Moniz.\n[1:26] Agent: D'accord, merci...",
+    "createdAt": "2025-12-24T14:01:23.546Z",
+    "updatedAt": "2025-12-24T14:01:23.546Z"
+  },
+  {
+    "id": "cmjnf84ao0005mr08a92hornn",
+    "leadId": "cmjnf84ao0003mr08fqxcg62f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/26/2025, 10:06:09 PM\n\nCall Duration: 146s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:12] User: ...\n[0:13] Agent: Puis-je vous aider en quoi que ce soit ?\n[0:17] User: Hello?\n[0:19] Agent: Hello, this is Sara from Pharmacy Berge Shater. How may I help you today?\n\n[0:24] User: Hi, there is Belgian today.\n[0:27] Agent: I'm sorry, I'm not sure I understand. Could you please clarify your question?\n\n[0:33] User: Is there in today?\n[0:36] Agent: I am still unsure of what you mean. Are you trying to reach someone by the name of Belgian? If so, I can take a message and have them call you back when they are available.\n\n[0:45] User: Where am I calling from?\n[0:48] Agent: You are calling Pharmacy Berge Shater. How...\n[0:49] User: I'm sorry, where am I...\n[0:52] Agent: I...\n[0:52] User: Yes! I would like to speak to Beresh please!\n[0:55] Agent: I understand that you would like to speak with a pharmacist, but the pharmacy is closed. I can take a message for Beresh and have...\n[0:59] User: No, with Beresh not a pharmacist.\n[1:03] Agent: I understand. I can take a message for Beresh and have them...\n[1:02] User: , take a message for Beresh. My goodness!\n[1:06] Agent: Okay, I can take a message for Beresh. May I have your full name and date of birth?...\n[1:09] User: , okay my name is Shelley Feldman.\n[1:14] Agent: Thank you, Shelley...\n[1:13] User: , my date of birth is July 1st 1955.\n[1:19] Agent: Thank you. And what is the best phone number to reach you at?\n\n[1:23] User: 514-999-7438.\n[1:32] Agent: And could you please briefly tell me the reason for your call so I can route it to the right person?...\n[1:33] User: So Beresh has\n[1:37] Agent: ...\n\n[1:38] User: transferred my file to British Columbia and I'm having a problem with one of the prescriptions so I need him to tell me what to do.\n[1:49] Agent: Okay, I have all your details noted for Beresh to call you back regarding a prescription issue after your file was transferred to British Columbia. Because you couldn't speak to a pharmacist, I must provide this safety information: If this is a medical emergency, or if your symptoms worsen, please hang up and call nine-one-one or go to the nearest emergency room. For non-urgent medical advice, you can also call Info-Santé at eight-one-one to speak with a nurse twenty-four seven. Is there anything else I can help you with today?\n\n[2:17] User: I just want to speak to Beresh.\n[2:19] Agent: I...\n[2:18] User: him to call me I would appreciate it.\n[2:22] Agent: Understood...\n[2:23] User: Thank you, have a good day.\n[2:26] Agent: ...\n[2:23] User: Thank you, have a good day.",
+    "createdAt": "2025-12-26T22:06:09.601Z",
+    "updatedAt": "2025-12-26T22:06:09.601Z"
+  },
+  {
+    "id": "cmjowkx2b0003nm084gp8esym",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/27/2025, 10:59:46 PM\n\nCall Duration: 4s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en...",
+    "createdAt": "2025-12-27T22:59:46.403Z",
+    "updatedAt": "2025-12-27T22:59:46.403Z"
+  },
+  {
+    "id": "cmjpv2z1h000bnp08zdp8r6ok",
+    "leadId": "cmjpv2z1h0009np081ogb2krc",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/28/2025, 3:05:35 PM\n\nCall Duration: 246s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:14] User: ...\n[0:15] Agent: Puis-je vous aider avec quelque chose ?\n[0:19] User: Hello?\n[0:21] Agent: null\n[0:21] Agent: null\n[0:22] Agent: Bonjour, ici Sarah de la...\n[0:23] User: Hello?\n[0:24] Agent: Hello, how can I help you today?\n\n[0:27] User: Yes, are you open today?\n[0:30] Agent: Yes, we are open. To confirm, are you asking if we are open right...\n[0:33] User: Until what time?\n[0:37] Agent: We are open until seven thirty PM Eastern Time today. How can I help you further?\n\n[0:43] User: No, I want to order my medicine.\n[0:47] Agent: I understand. To proceed, I need to verify your information to make sure I’m accessing the correct file and protecting your privacy. Could you please provide your full name, date of birth, and phone number?\n\n[0:58] User: Maria Morley Antenor Cruz.\n[1:03] Agent: Thank you. And could you please provide your date of birth?\n\n[1:06] User: January 8, 1960.\n[1:10] Agent: null\n[1:10] Agent: null\n[1:11] Agent: Okay, and can you please provide your phone number?\n\n[1:15] User: 514-834-1608\n[1:21] Agent: Thank you. And what medication would you like to order today? Also, have there been any changes to your prescription or dosage?\n\n[1:28] User: Not the same but except the green one. I don't know what's the name. Only the Macau, I have still a lot.\n[1:43] Agent: null\n[1:43] Agent: null\n[1:44] Agent: Okay, I understand you need a refill for all your usual medications except for the \"green one\" which you don't know the name of,...\n[1:49] User: Yes, yes.\n[1:53] Agent: And you don't need Macau as you have plenty left. Is that correct?\n\n[1:59] User: Pardon?\n[2:01] Agent: Sorry, I meant to say, and you don't need the medication \"Macau\" refilled, as you have...\n[2:05] User: Yes, yes. The rest, I wanna pick up later.\n[2:10] Agent: null\n[2:10] Agent: null\n[2:11] Agent: Okay, so you would like to pick up the medications. Do you prefer to pick them up at...\n[2:14] User: Yes, what time you're close? What time you're close?\n[2:18] Agent: We close at seven thirty PM Eastern Time today. Just to confirm, you will pick up the...\n[2:22] User: 8 tonight? 8 tonight?\n[2:27] Agent: I am sorry, but we close at seven thirty PM Eastern Time. So you would need to pick...\n[2:33] User: Yeah, I pick up around 3 o'clock, it's okay?\n[2:39] Agent: Yes, that works perfectly. You can pick them up around three o'clock. You will receive...\n[2:41] User: Okey. Ya, ya, saya... Okey, terima kasih.\n[2:48] Agent: null\n[2:48] Agent: null\n[2:49] Agent: Okay, great. You will receive an SMS...\n[2:50] User: Selamat tinggal.\n[2:52] Agent: Terima kasih kerana menghubungi kami. Pasukan kami akan menghubungi anda tidak lama lagi.\n\n[3:00] User: Maafkan saya.\n[3:01] Agent: null\n[3:02] Agent: null\n[3:03] Agent: Tidak mengapa. Adakah terdapat apa-apa lagi yang boleh saya bantu?\n\n[3:10] User: Saya boleh dapatkan... Saya datang pukul 3 untuk mengambil alih-alihnya, okey?\n[3:16] Agent: Betul. Anda boleh datang pukul tiga petang untuk mengambil ubat-ubatan anda. Adakah...\n[3:28] User: Selamat tinggal.\n[3:32] Agent: Selamat tinggal.\n[3:40] User: ...\n[3:41] Agent: Adakah terdapat apa-apa lagi yang boleh saya bantu?\n\n[3:45] User: Saya tidak faham. Maafkan saya. Helo?\n[3:54] Agent: null\n[3:54] Agent: null\n[3:55] Agent: Tidak mengapa. Saya boleh bercakap dalam bahasa Melayu jika itu membantu. Adakah...",
+    "createdAt": "2025-12-28T15:05:35.717Z",
+    "updatedAt": "2025-12-28T15:05:35.717Z"
+  },
+  {
+    "id": "cmkt9gss50008xwxvey4rci1v",
+    "leadId": "cmkt9gss10006xwxvu1hea4fe",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "content": "Initial research completed. Company looks promising.",
+    "createdAt": "2026-01-25T04:51:16.278Z",
+    "updatedAt": "2026-01-25T04:51:16.278Z"
+  },
+  {
+    "id": "cmjng4g92000bmr08pfbfk8da",
+    "leadId": "cmjng4g920009mr0899o1dsjk",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/26/2025, 10:31:18 PM\n\nCall Duration: 174s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:06] User: En français.\n[0:09] Agent: D'accord, comment puis-je vous aider aujourd'hui ?\n\n[0:14] User: Est-ce que je pourrais savoir pourquoi les médicaments ne sont pas venus aujourd'hui? Je les attendais avant 5 heures.\n[0:28] Agent: Je comprends que vous vous demandez pourquoi vos médicaments ne sont pas arrivés aujourd'hui. Pour des raisons de confidentialité, je n'ai pas accès à ces informations, mais je peux demander à quelqu'un de l'équipe de vous rappeler dès que possible. Puis-je prendre votre nom complet, votre date de naissance et le meilleur numéro de téléphone pour vous joindre ?\n\n[0:50] User: Claudette Zerzou.\n[0:54] Agent: Merci, Madame Zerzou. Et votre date de naissance, s'il vous plaît ?\n\n[0:57] User: Ce n'est pas Gervais, c'est Zerzou.\n[1:02] Agent: Je m'excuse pour l'erreur. Donc, c'est bien Claudette Zerzou. Pourriez-vous me donner...\n[1:02] User: Et ma... ma...\n[1:07] Agent: Pourriez-vous me donner votre date de...\n[1:07] User: Malade de...\n[1:10] Agent: Je suis désolée de vous entendre dire ça. Pourriez-vous me...\n[1:09] User: 4 septembre.\n[1:13] Agent: Merci. Et l'année de naissance ?\n\n[1:17] User: 34.\n[1:20] Agent: Merci, et quel est le meilleur numéro de téléphone pour vous joindre ?\n\n[1:26] User: 514-744-6149.\n[1:33] Agent: Parfait. Donc, pour confirmer, j'ai bien noté Claudette Zerzou, née le quatre septembre mille neuf cent trente-quatre et votre numéro de téléphone est le cinq cent quatorze, sept cent quarante-quatre, six mille cent quarante-neuf. Est-ce exact ?\n\n[1:48] User: Oui.\n[1:50] Agent: Parfait. Je vais envoyer une demande à notre équipe pour qu'elle vous rappelle au sujet de votre livraison de médicaments. Ils vous...\n[1:56] User: Merci. Merci.\n[1:59] Agent: De rien. Ils vous contacteront dès que possible. Y a-t-il autre chose que je peux faire pour vous aujourd'hui ?\n\n[2:12] User: ...\n[2:13] Agent: Êtes-vous toujours là? Y a-t-il autre chose que je peux faire pour vous aujourd'hui ?\n\n[2:23] User: ...\n[2:24] Agent: Je suis toujours là si vous avez besoin de quoi que ce soit d'autre. N'hésitez pas à me le faire savoir.\n\n[2:36] User: ...\n[2:37] Agent: Si vous n'avez plus de questions, notre équipe vous contactera bientôt. Merci d'avoir appelé et passez une bonne journée.\n\n[2:49] User: ...\n[2:51] Agent: Je suis toujours disponible si vous avez d'autres questions...",
+    "createdAt": "2025-12-26T22:31:18.086Z",
+    "updatedAt": "2025-12-26T22:31:18.086Z"
+  },
+  {
+    "id": "cmjnhlxba000fmr08qw9h3kan",
+    "leadId": "cmjng4g920009mr0899o1dsjk",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/26/2025, 11:12:52 PM\n\nCall Duration: 104s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:06] User: En français.\n[0:08] Agent: D'accord, comment puis-je vous aider aujourd'hui?\n\n[0:12] User: J'attends encore mon médicament qui devait venir à 5 heures et il est passé 6 heures.\n[0:23] Agent: ...\n[0:23] User: J'en ai besoin pour ce soir.\n[0:26] Agent: Je comprends que vous attendez votre médicament et qu'il est en retard. Pourrais-je avoir votre nom complet et votre date de naissance afin que je puisse créer une demande de rappel prioritaire pour l'équipe de la pharmacie ? Je n'ai pas accès aux informations de livraison, mais je peux m'assurer que quelqu'un vous rappelle dès que possible.\n[0:44] User: Claudette Zarzou.\n[0:48] Agent: Pourriez-vous épeler votre...\n[0:48] User: Je suis né en France\n[0:50] Agent: Pourriez-vous épeler votre nom de famille, s'il vous plaît...\n[0:50] User: Z... Z-A-R-Z-O-U-R.\n[1:00] Agent: Merci. Et quelle est votre date de naissance, s'il vous plaît ?\n[1:04] User: Le 4 septembre 1934.\n[1:10] Agent: Merci. Et quel est le meilleur numéro de téléphone pour vous joindre ?\n[1:16] User: Je n'ai qu'un seul numéro.\n[1:20] Agent: Quel est ce...\n[1:20] User: Je sais\n[1:22] Agent: Quel est ce numéro, s'il vous plaît ?\n[1:22] User: ... 514-744-6189.\n[1:30] Agent: Parfait. Je vais envoyer une demande à notre équipe de pharmacie pour qu'elle vous rappelle au sujet de votre livraison de médicaments en retard.",
+    "createdAt": "2025-12-26T23:12:52.967Z",
+    "updatedAt": "2025-12-26T23:12:52.967Z"
+  },
+  {
+    "id": "cmjnjhauw0005mo08bwtwif5w",
+    "leadId": "cmjnjhauw0003mo088vbc897d",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/27/2025, 12:05:16 AM\n\nCall Duration: 30s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:05] User: Bien, merci.\n[0:06] Agent: Comment puis-je vous aider aujourd'hui ?\n[0:10] User: Hello ?\n[0:15] Agent: Bonjour, comment puis-je vous aider aujourd'hui ?\n[0:16] User: ...\n[0:19] Agent: Êtes-vous toujours là ? Y a-t-il quelque chose que je peux faire pour vous ?\n\n[0:25] User: Hello!\n[0:28] Agent: Bonjour, comment puis-je vous...",
+    "createdAt": "2025-12-27T00:05:16.472Z",
+    "updatedAt": "2025-12-27T00:05:16.472Z"
+  },
+  {
+    "id": "cmjnjigp90009mo080pj3ykto",
+    "leadId": "cmjnjhauw0003mo088vbc897d",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/27/2025, 12:06:10 AM\n\nCall Duration: 50s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:06] User: Anglais.\n[0:09] Agent: Okay, I will speak in English now. How may I help you today?\n\n[0:14] User: Oui.\n[0:29] Agent: I am sorry, I did not understand. Would you like to continue in French? Or is there something else I can help you with?\n\n[0:36] User: I want to speak to the pharmacist.\n[0:40] Agent: I understand you'd like to speak with the pharmacist. The pharmacy is currently closed, but I can create a detailed message for our pharmacy team. They will prioritize it and call you back first thing when we reopen tomorrow morning at...",
+    "createdAt": "2025-12-27T00:06:10.701Z",
+    "updatedAt": "2025-12-27T00:06:10.701Z"
+  },
+  {
+    "id": "cmjnjr6vn000fmo080csshmj0",
+    "leadId": "cmjnjr6vn000dmo08e2e232b8",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/27/2025, 12:12:57 AM\n\nCall Duration: 25s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:11] User: ...\n[0:12] Agent: Puis-je vous aider en quoi que ce soit ?\n[0:21] User: ...\n[0:22] Agent: Êtes-vous toujours là ? Puis-je vous aider avec quoi que ce soit ?...",
+    "createdAt": "2025-12-27T00:12:57.875Z",
+    "updatedAt": "2025-12-27T00:12:57.875Z"
+  },
+  {
+    "id": "cmjnjs0cz000jmo08ywtguxg2",
+    "leadId": "cmjnjr6vn000dmo08e2e232b8",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/27/2025, 12:13:36 AM\n\nCall Duration: 33s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:07] User: Français.\n[0:09] Agent: D'accord, comment puis-je vous aider aujourd'hui?\n\n[0:13] User: J'aimerais parler au laboratoire.\n[0:16] Agent: Je comprends, mais le laboratoire est fermé pour le moment. Je peux prendre un message détaillé pour l'équipe de la pharmacie et ils vous rappelleront dès qu'ils seront disponibles. Est-ce que cela vous convient?\n\n[0:26] User: Non, merci. Non, merci.\n[0:31] Agent: D'accord, y a-t-il autre chose pour laquelle je...",
+    "createdAt": "2025-12-27T00:13:36.084Z",
+    "updatedAt": "2025-12-27T00:13:36.084Z"
+  },
+  {
+    "id": "cmjocgl4r0003pa082ff501ea",
+    "leadId": "cmjk0b5050003mw08kv5his85",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/27/2025, 1:36:31 PM\n\nCall Duration: 87s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, bienvenue sur Pharmacy Shater, souhaitez-vous continuer en français ou en anglais ?\n[0:12] User: ...\n[0:13] Agent: Puis-je vous aider avec quelque chose ?\n[0:17] User: Oui. Mme Miatovitch, je n'ai pas besoin de la clé pour me donner une injection. Donc, j'ai besoin d'une boîte de clés.\n[0:29] Agent: Je comprends. Puis-je avoir votre nom complet et votre date de naissance pour m'assurer que j'ai le bon dossier ?\n[0:37] User: Je vous dis que j'ai besoin de la clé pour me donner une injection d'insuline\n[0:46] Agent: Je comprends que vous ayez besoin d'aide pour vos injections d'insuline. Je ne suis pas autorisé à donner des conseils médicaux, mais je peux créer une demande prioritaire pour qu'un pharmacien vous rappelle dès que possible. Puis-je avoir votre nom complet et votre date de naissance, ainsi que le meilleur numéro de téléphone pour vous joindre ?\n[1:05] User: Madame Vukos Hava Mijatovic, téléphone 514-737-5709, merci.\n[1:18] Agent: Merci, Madame Mijatovic. Je vais créer une demande pour qu'un pharmacien vous rappelle au sujet de vos injections d'insuline. Est-ce qu'il y a autre...\n[1:24] User: Merci.\n[1:26] Agent: De rien. Notre...",
+    "createdAt": "2025-12-27T13:36:31.995Z",
+    "updatedAt": "2025-12-27T13:36:31.995Z"
+  },
+  {
+    "id": "cmkt9gssa000axwxvi1j4x1pz",
+    "leadId": "cmkt9gss10006xwxvu1hea4fe",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "content": "Spoke with contact person. They seem interested in our services.",
+    "createdAt": "2026-01-25T04:51:16.282Z",
+    "updatedAt": "2026-01-25T04:51:16.282Z"
+  },
+  {
+    "id": "cmjpu4ak20005np08upem6nl2",
+    "leadId": "cmjpu4ak20003np08vb4r8kq7",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/28/2025, 2:38:37 PM\n\nCall Duration: 56s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:11] User: Allô?\n[0:13] Agent: null\n[0:13] Agent: null\n[0:14] Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Comment puis-je vous aider aujourd’hui ?\n[0:21] User: Allô?\n[0:23] Agent: Je suis désolée, je ne vous entends pas très bien. Pourriez-vous répéter, s'il vous plaît ?\n[0:30] User: Macaroni Africa C.\n[0:34] Agent: Je suis désolée, je ne...\n[0:34] User: Allo ?\n[0:36] Agent: Je suis désolée, je ne vous comprends pas bien...\n[0:37] User: Tu ne comprends pas. J'ai oublié.\n[0:41] Agent: Je...\n[0:42] User: και ο Βιλπλές... τι μαλακίες λέει! Τι πάει πριν, έχει πέσει άνθρωπο, δεν έρχεται κανένα.\n[0:49] Agent: null\n[0:49] Agent: null\n[0:50] Agent: Je suis...\n[0:49] User: Allô?\n[0:52] Agent: Je suis désolée, je ne vous comprends pas bien. Pourrais-je prendre votre nom et numéro de...",
+    "createdAt": "2025-12-28T14:38:37.682Z",
+    "updatedAt": "2025-12-28T14:38:37.682Z"
+  },
+  {
+    "id": "cmjpv3kxc000fnp08uu9yurp3",
+    "leadId": "cmjpv2z1h0009np081ogb2krc",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/28/2025, 3:06:04 PM\n\nCall Duration: 16s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:13] User: ...\n[0:15] Agent: Puis-je vous aider en quoi que...",
+    "createdAt": "2025-12-28T15:06:04.081Z",
+    "updatedAt": "2025-12-28T15:06:04.081Z"
+  },
+  {
+    "id": "cmjpvadbl000lnp08c8ngdk1u",
+    "leadId": "cmjpvadbl000jnp08bpm1qrel",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/28/2025, 3:11:20 PM\n\nCall Duration: 322s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: bonjour\n[0:01] User: Je vais parler avec Barish s'il te plaît.\n[0:06] Agent: Je suis désolée, la pharmacie est actuellement fermée. Je peux...",
+    "createdAt": "2025-12-28T15:11:20.818Z",
+    "updatedAt": "2025-12-28T15:11:20.818Z"
+  },
+  {
+    "id": "cmjpvgsyw000pnp08j2pb5b5t",
+    "leadId": "cmjpv2z1h0009np081ogb2krc",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/28/2025, 3:16:21 PM\n\nCall Duration: 94s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:14] User: ...\n[0:16] Agent: Puis-je vous aider avec quelque chose?\n[0:24] User: ...\n[0:25] Agent: Êtes-vous toujours là? Je peux vous aider en anglais ou en français.\n[0:30] User: Anglais.\n[0:32] Agent: null\n[0:32] Agent: null\n[0:33] Agent: Je comprends. Je m'appelle Sara, assistante à la pharmacie. Comment puis-je vous aider aujourd'hui ?\n[0:45] User: ...\n[0:46] Agent: Êtes-vous toujours là? Comment puis-je vous aider?\n[0:50] User: Hello!\n[0:53] Agent: Hello! How can I help you today? I'm Sara, the pharmacy...\n[0:56] User: Yeah, yeah.\n[0:58] Agent: Okay. I...\n[0:59] User: Are you open today?\n[1:01] Agent: Yes, we are open. Just to confirm, all times are in...\n[1:03] User: It's Sunday. It's Sunday. It's open today?\n[1:08] Agent: My apologies. I am programmed to believe that today is not Sunday. I am showing that we are closed today, but we will be open tomorrow at eight thirty am Eastern time. How may I help you?\n\n[1:18] User: Ah ok it's okay we order already i'll pick up tomorrow\n[1:24] Agent: Great. Just to confirm, you'd like to pick up your...\n[1:25] User: okay\n[1:27] Agent: Okay, perfect. Is there anything else I...\n[1:28] User: okay bye it's okay bye\n[1:33] Agent: Okay, have a great day...",
+    "createdAt": "2025-12-28T15:16:21.033Z",
+    "updatedAt": "2025-12-28T15:16:21.033Z"
+  },
+  {
+    "id": "cmjq04jqh0005tg08cds7sr2d",
+    "leadId": "cmjq04jqh0003tg08fmt3by6s",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/28/2025, 5:26:47 PM\n\nCall Duration: 98s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:14] User: ...\n[0:15] Agent: Puis-je vous aider avec quelque chose?\n[0:24] User: ...\n[0:25] Agent: Êtes-vous toujours là? Si vous avez besoin d'aide, n'hésitez pas à me le faire savoir.\n[0:36] User: ...\n[0:37] Agent: Je suis toujours là pour vous aider. Avez-vous des questions ou des demandes?\n[0:47] User: ...\n[0:48] Agent: Je suis là pour vous aider. Y a-t-il quelque chose que je peux faire pour vous?\n[0:59] User: ...\n[1:00] Agent: Je suis toujours là si vous avez besoin de moi. N'hésitez pas à me dire comment je peux vous aider.\n[1:11] User: ...\n[1:12] Agent: Bonjour? Est-ce que vous m'entendez? Si vous avez besoin d'aide, veuillez me le faire savoir.\n[1:24] User: ...\n[1:25] Agent: Je suis toujours là pour vous aider. Y a-t-il quelque chose que je peux faire pour vous? Sinon, je vais devoir raccrocher.",
+    "createdAt": "2025-12-28T17:26:47.274Z",
+    "updatedAt": "2025-12-28T17:26:47.274Z"
+  },
+  {
+    "id": "cmjq0eo050009tg082f6o3ce4",
+    "leadId": "cmjq04jqh0003tg08fmt3by6s",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/28/2025, 5:34:39 PM\n\nCall Duration: 22s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:11] User: All right.\n[0:12] Agent: Je comprends. Pourrais-je avoir votre nom complet, votre date de naissance et votre numéro de téléphone afin qu'un membre de notre équipe puisse vous rappeler ?",
+    "createdAt": "2025-12-28T17:34:39.366Z",
+    "updatedAt": "2025-12-28T17:34:39.366Z"
+  },
+  {
+    "id": "cmjqb0qke0009jn081qcyxcz7",
+    "leadId": "cmjqb0qke0007jn08kul32ecl",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/28/2025, 10:31:45 PM\n\nCall Duration: 183s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:09] User: J'aurais besoin de renouvellement de mes médicaments.\n[0:13] Agent: Je comprends. Pour initier le renouvellement de vos médicaments, j'aurai besoin de quelques informations pour vérifier votre identité et accéder à votre dossier. Pour commencer, pourriez-vous me donner votre nom complet et votre date de naissance, s'il vous plaît ?\n[0:27] User: C'est Bukhari Ben Ahmed Tej Mariam.\n[0:32] Agent: ...\n[0:31] User: date de naissance le 4 mars 1980.\n[0:37] Agent: Merci. Pourriez-vous me donner un numéro de téléphone où nous pouvons vous rappeler ? Même si c'est le numéro à partir duquel vous appelez, je dois le vérifier verbalement car je n'ai pas accès à l'identification de l'appelant.\n[0:49] User: 438-462-6388.\n[0:56] Agent: Merci. Et quel médicament souhaitez-vous renouveler ? Y a-t-il eu des changements de dosage ou de fréquence depuis votre dernière...\n[1:03] User: Non, non, pas de changement de dosage. Donc ce sera les citalopram 20 mg et pour le prégabalin 75 mg et puis la vitamine D.\n[1:27] Agent: ...\n[1:27] User: les murs uniquement.\n[1:29] Agent: Parfait. Aimeriez-vous venir chercher vos médicaments à la pharmacie ou préférez-vous que nous vous les livrions ? Pour information, nous offrons la livraison gratuite à Montréal, Laval, Terrebonne, Mascouche et Blainville.\n[1:44] User: Je préfère que vous me le livriez.\n[1:47] Agent: Très bien. Pourriez-vous me confirmer votre adresse de livraison complète, s'il vous plaît ?\n[1:52] User: 59 rue Saint-Philippe à Sainte-Thérèse J7E1B5\n[2:02] Agent: Parfait. Je confirme donc que vous souhaitez un renouvellement de Citalopram vingt milligrammes, Prégabaline soixante-quinze milligrammes et vitamine D, avec une livraison au cinq neuf rue Saint-Philippe à Sainte-Thérèse, code postal J sept E un B cinq. Est-ce exact ?\n[2:25] User: C'est J7E1B5.\n[2:30] Agent: Merci de la précision. J'ai noté la correction pour le code postal. Y a-t-il autre chose dont vous auriez besoin aujourd'hui ?\n[2:38] User: Non, c'est correct.\n[2:40] Agent: Parfait. Avec toutes ces informations, je vais demander à un membre de notre équipe de vous rappeler dès que possible pour finaliser votre demande de renouvellement et organiser la livraison. Merci d’avoir appelé. Notre équipe vous contactera très bientôt.\n[2:55] User: Merci.\n[2:57] Agent: De rien, passez une excellente journée.\n[3:01] User: Merci.",
+    "createdAt": "2025-12-28T22:31:45.278Z",
+    "updatedAt": "2025-12-28T22:31:45.278Z"
+  },
+  {
+    "id": "cmjtbazuj0003ld08vwnhbx59",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 12/31/2025, 1:03:02 AM\n\nCall Duration: 5s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en...",
+    "createdAt": "2025-12-31T01:03:02.396Z",
+    "updatedAt": "2025-12-31T01:03:02.396Z"
+  },
+  {
+    "id": "cmjtdpma60005qk08um1x3r4h",
+    "leadId": "cmjtdpma60003qk08qwmi1bs1",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 12/31/2025, 2:10:23 AM\n\nCall Duration: 18s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:13] User: Je suis claque, je suis à l'envers.\n[0:15] Agent: null\n[0:15] Agent: null\n[0:16] Agent: Je comprends...",
+    "createdAt": "2025-12-31T02:10:23.886Z",
+    "updatedAt": "2025-12-31T02:10:23.886Z"
+  },
+  {
+    "id": "cmjyufn4z0003oe07hrhlvmy0",
+    "leadId": "cmip93yt40005mm08gerwym3f",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 1/3/2026, 9:57:22 PM\n\nCall Duration: 4s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais...",
+    "createdAt": "2026-01-03T21:57:22.787Z",
+    "updatedAt": "2026-01-03T21:57:22.787Z"
+  },
+  {
+    "id": "cmjyvvg0n0005o808ghgus1ah",
+    "leadId": "cmjyvvg0n0003o808ad9ocmro",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 1/3/2026, 10:37:39 PM\n\nCall Duration: 153s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:10] User: En français ?\n[0:13] Agent: null\n[0:13] Agent: null\n[0:13] Agent: Bien sûr. Comment puis-je vous aider aujourd'hui ?\n[0:17] User: Oui, j'ai été dans la pharmacie Berge-Shiter il y a très longtemps. J'ai déménagé. Puis là j'ai encore déménagé parce que j'ai été hospitalisée à l'hôpital psychiatrique pour bipolarité. Puis j'aimerais revenir à la pharmacie Berge-Shiter pour mes prochaines injections.\n[0:37] Agent: Je comprends. Puisque vous avez été absente pendant un certain temps et que vous avez vécu des changements, je dois vérifier certaines informations pour m'assurer que je récupère le bon dossier et que je protège votre vie privée. Pourrais-je avoir votre nom complet, votre date de naissance et votre numéro de téléphone, s'il vous plaît ?\n[0:56] User: Cynthia Saint-Cyr Montes, 24 juin 1981, 514-992-3247.\n[1:09] Agent: Merci. Et quelle est la raison de votre appel aujourd'hui?\n[1:14] User: C'est parce que j'aurais besoin de faire transférer ma prescription à la pharmacie Berchaper.\n[1:23] Agent: Parfait. Je vais prendre toutes ces informations et demander à un membre de l'équipe de la pharmacie de vous rappeler pour organiser le transfert de votre ordonnance. Y a-t-il autre chose pour laquelle je peux vous aider aujourd'hui ?\n[1:36] User: Est-ce que je dois vous donner l'hôpital où est-ce que je suis pour pouvoir appeler une personne responsable de l'hôpital?\n[1:46] Agent: Non, ce n'est pas nécessaire pour le moment. L'équipe de la pharmacie vous contactera pour obtenir tous les détails nécessaires concernant le transfert de votre ordonnance. Je vais inclure dans la note de vous rappeler que vous voulez faire transférer votre prescription de l'hôpital. Est-ce que le numéro de téléphone que vous m'avez donné, le cinq cent quatorze, neuf cent quatre-vingt-douze, trois mille deux cent quarante-sept, est le meilleur numéro pour vous joindre ?\n[2:12] User: Oui.\n[2:14] Agent: Parfait. Merci beaucoup d'avoir appelé. Notre équipe vous contactera très bientôt.\n[2:20] User: Merci. Au revoir.\n[2:24] Agent: Au revoir.",
+    "createdAt": "2026-01-03T22:37:39.671Z",
+    "updatedAt": "2026-01-03T22:37:39.671Z"
+  },
+  {
+    "id": "cmjzucv350005n5088tdtr4yf",
+    "leadId": "cmjzucv350003n5087xtkdobz",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 1/4/2026, 2:42:59 PM\n\nCall Duration: 4s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux...",
+    "createdAt": "2026-01-04T14:42:59.297Z",
+    "updatedAt": "2026-01-04T14:42:59.297Z"
+  },
+  {
+    "id": "cmjzvaa70000bn508wmrdkmsg",
+    "leadId": "cmjzvaa700009n508elme0uds",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 1/4/2026, 3:08:58 PM\n\nCall Duration: 21s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:13] User: ...\n[0:14] Agent: Puis-je vous aider avec quelque chose?",
+    "createdAt": "2026-01-04T15:08:58.524Z",
+    "updatedAt": "2026-01-04T15:08:58.524Z"
+  },
+  {
+    "id": "cmjzvd93m000fn508gze4a9no",
+    "leadId": "cmjzvaa700009n508elme0uds",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 1/4/2026, 3:11:17 PM\n\nCall Duration: 129s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:07] User: En anglais.\n[0:10] Agent: Okay, I can help you in English. How may I assist you today?\n\n[0:15] User: Refill.\n[0:16] Agent: I can certainly help you with a refill. To start, can I please get your full name and date of birth? I understand that I may have this information on file, but I do need to verify it to make sure I'm accessing the correct file and protecting your privacy.\n\n[0:31] User: Christine Alice Young, January 9, 1991.\n[0:37] Agent: null\n[0:37] Agent: null\n[0:38] Agent: Thank you. And can you please provide your phone number? I know that this might be the number you're calling from, but I don't have access to caller ID and need to collect the number verbally.\n\n[0:49] User: 514-821-9469\n[0:56] Agent: Thank you. Which medication would you like to refill, and have there been any changes to the dosage or instructions?\n\n[1:05] User: Synthroid, no changes.\n[1:08] Agent: Okay, and will you be picking up your refill or would you like to have it delivered? Also, are you aware that...\n[1:13] User: Delivered.\n[1:15] Agent: Okay, we offer free delivery to Montreal, Laval, Terrebonne, Mascouche, and Blainville. Do you live in one of those areas? Also, are you aware that...\n[1:23] User: Yes.\n[1:25] Agent: Great. Also, are you aware that medications are non-returnable in Quebec?\n[1:30] User: Yes.\n[1:32] Agent: Okay perfect. You will receive an SMS notification when your prescription is ready. Is there anything else I can help you with today?\n\n[1:41] User: Is this getting delivered?\n[1:44] Agent: Yes, the Synthroid refill will be delivered to you. Is there anything else?\n[1:49] User: Can you confirm the address?\n[1:52] Agent: I am unable to confirm the address at this time, but I can add a note to your file to have someone call you back to confirm the delivery address. Would you like me to do that?\n\n[2:01] User: No thank you.\n[2:03] Agent: Okay. Thank you for calling. Our team will be in touch shortly.\n\n[2:07] User: Bye.",
+    "createdAt": "2026-01-04T15:11:17.075Z",
+    "updatedAt": "2026-01-04T15:11:17.075Z"
+  },
+  {
+    "id": "cmjzy736c0005qq08npyzqquc",
+    "leadId": "cmjzy736c0003qq08ethqheop",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 1/4/2026, 4:30:28 PM\n\nCall Duration: 18s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:14] User: ...\n[0:15] Agent: Puis-je vous aider avec quelque chose?",
+    "createdAt": "2026-01-04T16:30:28.309Z",
+    "updatedAt": "2026-01-04T16:30:28.309Z"
+  },
+  {
+    "id": "cmk01646f0009qq08xn4vdrwi",
+    "leadId": "cmjk0b5050003mw08kv5his85",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 1/4/2026, 5:53:41 PM\n\nCall Duration: 91s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:14] User: ...\n[0:15] Agent: Puis-je vous aider avec quelque chose?\n[0:23] User: ...\n[0:24] Agent: Êtes-vous toujours là? Si vous avez besoin d'aide, n'hésitez pas à me le faire savoir.\n[0:33] User: Can I still be so bad?\n[0:36] Agent: null\n[0:36] Agent: null\n[0:37] Agent: I'm sorry, I didn't quite understand. Could you please rephrase your question? I'm here to help in any way I can.\n\n[0:44] User: Can you speak with the pharmacist, please?\n[0:48] Agent: La pharmacie est actuellement fermée. Je peux prendre votre nom complet, votre date de naissance, votre numéro de téléphone et la raison de votre appel afin qu'un membre de l'équipe de la pharmacie puisse vous rappeler dès que possible.\n[1:06] User: ...\n[1:07] Agent: Pour que je puisse prendre vos informations, pourriez-vous me donner votre nom complet, votre date de naissance, votre numéro de téléphone et la raison de votre appel ?\n[1:19] User: 514-737-5709, Mississippi, Minnesota.\n[1:28] Agent: null\n[1:28] Agent: null\n[1:29] Agent: ...",
+    "createdAt": "2026-01-04T17:53:41.799Z",
+    "updatedAt": "2026-01-04T17:53:41.799Z"
+  },
+  {
+    "id": "cmkt9gssk000ixwxvn46im2bm",
+    "leadId": "cmkt9gssi000gxwxvhcq57y0g",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "content": "Initial research completed. Company looks promising.",
+    "createdAt": "2026-01-25T04:51:16.292Z",
+    "updatedAt": "2026-01-25T04:51:16.292Z"
+  },
+  {
+    "id": "cmkt9gsss000sxwxvrtie5d20",
+    "leadId": "cmkt9gssr000qxwxvqpcfpf84",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "content": "Initial research completed. Company looks promising.",
+    "createdAt": "2026-01-25T04:51:16.301Z",
+    "updatedAt": "2026-01-25T04:51:16.301Z"
+  },
+  {
+    "id": "cmkt9gssu000uxwxvmh5tgsl2",
+    "leadId": "cmkt9gssr000qxwxvqpcfpf84",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "content": "Spoke with contact person. They seem interested in our services.",
+    "createdAt": "2026-01-25T04:51:16.302Z",
+    "updatedAt": "2026-01-25T04:51:16.302Z"
+  },
+  {
+    "id": "cmkt9gssv000wxwxvxbzaeo2m",
+    "leadId": "cmkt9gssr000qxwxvqpcfpf84",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "content": "Need to follow up next week with a detailed proposal.",
+    "createdAt": "2026-01-25T04:51:16.304Z",
+    "updatedAt": "2026-01-25T04:51:16.304Z"
+  },
+  {
+    "id": "cmk04z8q30005ld08fknoch1j",
+    "leadId": "cmk04z8q30003ld08j703qf1z",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Initial Voice AI Call - 1/4/2026, 7:40:19 PM\n\nCall Duration: 170s\nCall Purpose: Not specified\n\nSummary: Caller contacted via Voice AI. Follow up needed.\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?\n[0:09] User: English.\n[0:11] Agent: null\n[0:11] Agent: null\n[0:12] Agent: Okay, I can help you with that. How can I help you today?\n\n[0:16] User: Refill a prescription?\n[0:17] Agent: null\n[0:17] Agent: null\n[0:18] Agent: I can help you with that. To refill your prescription, I'll need to confirm a few details. Can I please have your full name and date of birth?\n\n[0:26] User: Patricia Cline, August 26, 1971.\n[0:33] Agent: Thank you. And to ensure I'm accessing the correct file and protecting your privacy, can you please provide your phone number? I know you're calling from a number, but I don't have access to caller ID.\n\n[0:45] User: 514-824-8025.\n[0:51] Agent: Thank you. And what medication would you like to refill? Also, have there been any changes to the dosage or instructions since your last refill?\n\n[1:00] User: Estrogel, no changes.\n[1:04] Agent: Okay, and do you prefer to pick up your refill at the pharmacy or have it delivered? We offer free delivery in Montreal, Laval, Terrebonne, Mascouche, and Blainville.\n\n[1:14] User: Delivery.\n[1:18] Agent: Perfect. Just to confirm, you'd like Estrogel delivered to your address on file. Is that correct? Also, you'll receive an SMS notification when your prescription is ready. Is there anything else I can help you with today?\n\n[1:31] User: Agent.\n[1:33] Agent: I am Sara, a pharmacist assistant. Is there anything else I can help you with regarding your prescription refill or any other matter today?\n\n[1:42] User: Pharmacist.\n[1:44] Agent: I understand you'd like to speak with the pharmacist. Since today is Sunday, and the pharmacy is currently closed, I can gather your information and have a pharmacist call you back when the pharmacy reopens tomorrow. Would that be alright?\n\n[1:58] User: Yes.\n[1:59] Agent: Okay, great. Just to confirm, in addition to the prescription refill, you'd like a pharmacist to call you back. Is there a specific reason for the callback request?\n\n[2:09] User: Yes.\n[2:11] Agent: Okay, could you please tell me the reason for the callback request so I can pass the information on to the pharmacist?\n\n[2:17] User: To confirm what time the delivery will be.\n[2:21] Agent: Okay, I will add that to the callback request. So, just to confirm, your name is Patricia Cline, your phone number is five one four, eight two four, eight zero two five, and you'd like a pharmacist to call you back to confirm the delivery time for your Estrogel prescription. Is that all correct?\n\n[2:40] User: Yes.\n[2:42] Agent: Thank you for calling. Our team will be in touch shortly. Have a great day!\n",
+    "createdAt": "2026-01-04T19:40:19.563Z",
+    "updatedAt": "2026-01-04T19:40:19.563Z"
+  },
+  {
+    "id": "cmk5q4m6b0005nr086rztwavk",
+    "leadId": "cmioxueia0003uf08gn35a2bj",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 1/8/2026, 5:31:13 PM\n\nCall Duration: 9s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en anglais ou en français. Comment puis-je vous aider aujourd’hui ?...",
+    "createdAt": "2026-01-08T17:31:13.092Z",
+    "updatedAt": "2026-01-08T17:31:13.092Z"
+  },
+  {
+    "id": "cmk5q4xsj0009nr087inpcjvs",
+    "leadId": "cmioxueia0003uf08gn35a2bj",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "content": "📞 Voice AI Call - 1/8/2026, 5:31:28 PM\n\nCall Duration: 6s\nCall Purpose: Not specified\n\nSummary: No summary available\n\n---\n Agent: Bonjour, ici Sarah de la pharmacie Berge Shater. Je peux vous aider en...",
+    "createdAt": "2026-01-08T17:31:28.147Z",
+    "updatedAt": "2026-01-08T17:31:28.147Z"
+  }
+]

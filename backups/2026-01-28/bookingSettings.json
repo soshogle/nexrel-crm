@@ -1,0 +1,118 @@
+[
+  {
+    "id": "cmieowslk0001wiv4q3642nu6",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "businessName": "Mendez (Sports Club Owner)",
+    "businessDescription": "Schedule a meeting with us",
+    "bookingUrl": "cmhpnsd8e0000n508lgk9ivvm",
+    "availabilitySchedule": {
+      "friday": {
+        "end": "17:00",
+        "start": "09:00",
+        "enabled": true
+      },
+      "monday": {
+        "end": "17:00",
+        "start": "09:00",
+        "enabled": true
+      },
+      "sunday": {
+        "end": "17:00",
+        "start": "09:00",
+        "enabled": false
+      },
+      "tuesday": {
+        "end": "17:00",
+        "start": "09:00",
+        "enabled": true
+      },
+      "saturday": {
+        "end": "17:00",
+        "start": "09:00",
+        "enabled": false
+      },
+      "thursday": {
+        "end": "17:00",
+        "start": "09:00",
+        "enabled": true
+      },
+      "wednesday": {
+        "end": "17:00",
+        "start": "09:00",
+        "enabled": true
+      }
+    },
+    "slotDuration": 30,
+    "bufferTime": 15,
+    "advanceBookingDays": 30,
+    "minNoticeHours": 24,
+    "allowedMeetingTypes": [
+      "PHONE",
+      "VIDEO",
+      "IN_PERSON"
+    ],
+    "requireApproval": false,
+    "customMessage": "Looking forward to speaking with you!",
+    "brandColor": "#8b5cf6",
+    "createdAt": "2025-11-25T14:47:39.464Z",
+    "updatedAt": "2025-11-25T14:47:39.464Z"
+  },
+  {
+    "id": "cmijobb3c0001qancpvrhp2nl",
+    "userId": "cmif7bcow0000tkxtz7wh8c5o",
+    "businessName": "Pharmacie Test",
+    "businessDescription": null,
+    "bookingUrl": "book/cmif7bcow0000tkxtz7wh8c5o",
+    "availabilitySchedule": {
+      "friday": {
+        "end": "17:00",
+        "start": "09:00",
+        "enabled": true
+      },
+      "monday": {
+        "end": "18:00",
+        "start": "09:00",
+        "enabled": true
+      },
+      "sunday": {
+        "end": "",
+        "start": "",
+        "enabled": false
+      },
+      "tuesday": {
+        "end": "18:00",
+        "start": "09:00",
+        "enabled": true
+      },
+      "saturday": {
+        "end": "",
+        "start": "",
+        "enabled": false
+      },
+      "thursday": {
+        "end": "18:00",
+        "start": "09:00",
+        "enabled": true
+      },
+      "wednesday": {
+        "end": "18:00",
+        "start": "09:00",
+        "enabled": true
+      }
+    },
+    "slotDuration": 30,
+    "bufferTime": 15,
+    "advanceBookingDays": 30,
+    "minNoticeHours": 2,
+    "allowedMeetingTypes": [
+      "PHONE",
+      "VIDEO",
+      "IN_PERSON"
+    ],
+    "requireApproval": false,
+    "customMessage": null,
+    "brandColor": "#9333ea",
+    "createdAt": "2025-11-29T02:29:47.880Z",
+    "updatedAt": "2025-11-29T02:29:47.880Z"
+  }
+]

@@ -1,0 +1,90 @@
+[
+  {
+    "id": "cmhqtybya0001mi08tmqwae1i",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "name": "Default Pipeline",
+    "description": "Your default sales pipeline",
+    "color": null,
+    "isDefault": true,
+    "displayOrder": 0,
+    "createdAt": "2025-11-08T22:02:21.058Z",
+    "updatedAt": "2025-11-08T22:02:21.058Z"
+  },
+  {
+    "id": "cmi5zf239003wpd08m03oowse",
+    "userId": "cmi5zecoh003spd08ppaq994g",
+    "name": "Default Pipeline",
+    "description": "Your default sales pipeline",
+    "color": null,
+    "isDefault": true,
+    "displayOrder": 0,
+    "createdAt": "2025-11-19T12:31:52.150Z",
+    "updatedAt": "2025-11-19T12:31:52.150Z"
+  },
+  {
+    "id": "cmifwlfxg0001po08plvi7c34",
+    "userId": "cmidlmvpc0000yng92gsr9nd6",
+    "name": "Default Pipeline",
+    "description": "Your default sales pipeline",
+    "color": null,
+    "isDefault": true,
+    "displayOrder": 0,
+    "createdAt": "2025-11-26T11:10:32.931Z",
+    "updatedAt": "2025-11-26T11:10:32.931Z"
+  },
+  {
+    "id": "cmig3yw2e0001qp08efxwvcon",
+    "userId": "cmif8lq3p0000tky7tx02rrea",
+    "name": "Default Pipeline",
+    "description": "Your default sales pipeline",
+    "color": null,
+    "isDefault": true,
+    "displayOrder": 0,
+    "createdAt": "2025-11-26T14:36:57.685Z",
+    "updatedAt": "2025-11-26T14:36:57.685Z"
+  },
+  {
+    "id": "cminh140i000zrw081zar193a",
+    "userId": "cmhpfqxf80004r3qh8zdpe0om",
+    "name": "Default Pipeline",
+    "description": "Your default sales pipeline",
+    "color": null,
+    "isDefault": true,
+    "displayOrder": 0,
+    "createdAt": "2025-12-01T18:16:59.539Z",
+    "updatedAt": "2025-12-01T18:16:59.539Z"
+  },
+  {
+    "id": "cmioxcwd90003qq0871x0j57e",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "name": "Default Pipeline",
+    "description": "Your default sales pipeline",
+    "color": null,
+    "isDefault": true,
+    "displayOrder": 0,
+    "createdAt": "2025-12-02T18:41:49.533Z",
+    "updatedAt": "2025-12-02T18:41:49.533Z"
+  },
+  {
+    "id": "cmjjaj7br0003od08nxex5s6b",
+    "userId": "cmisd9zsl0000s3089k0xv2ap",
+    "name": "Default Pipeline",
+    "description": "Your default sales pipeline",
+    "color": null,
+    "isDefault": true,
+    "displayOrder": 0,
+    "createdAt": "2025-12-24T00:43:43.959Z",
+    "updatedAt": "2025-12-24T00:43:43.959Z"
+  },
+  {
+    "id": "cmktc3jvx0001qq08sv3fg3s1",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "name": "Default Pipeline",
+    "description": "Your default sales pipeline",
+    "color": null,
+    "isDefault": true,
+    "displayOrder": 0,
+    "createdAt": "2026-01-25T06:04:57.069Z",
+    "updatedAt": "2026-01-25T06:04:57.069Z"
+  }
+]

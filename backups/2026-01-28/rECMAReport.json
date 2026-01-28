@@ -1,0 +1,292 @@
+[
+  {
+    "id": "cmkvbvcei0001mg0809e33pjq",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "propertyId": null,
+    "address": "2147 RUE DU BOREE",
+    "beds": 3,
+    "baths": 2,
+    "sqft": 1800,
+    "yearBuilt": 2000,
+    "comparables": [],
+    "adjustments": [],
+    "suggestedPriceMin": 475000,
+    "suggestedPriceMax": 525000,
+    "suggestedPrice": 500000,
+    "pricePerSqft": 278,
+    "pdfUrl": null,
+    "fullPdfUrl": null,
+    "createdAt": "2026-01-26T15:34:06.474Z"
+  },
+  {
+    "id": "cmkvbwgbf0003mg08pcem02kj",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "propertyId": null,
+    "address": "2147 RUE DU BOREE",
+    "beds": 3,
+    "baths": 2,
+    "sqft": 1800,
+    "yearBuilt": 2000,
+    "comparables": [],
+    "adjustments": [],
+    "suggestedPriceMin": 475000,
+    "suggestedPriceMax": 525000,
+    "suggestedPrice": 500000,
+    "pricePerSqft": 278,
+    "pdfUrl": null,
+    "fullPdfUrl": null,
+    "createdAt": "2026-01-26T15:34:58.204Z"
+  },
+  {
+    "id": "cmkvcce140001ph080oel71c8",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "propertyId": null,
+    "address": "2147 RUE DU BOREE",
+    "beds": 3,
+    "baths": 2,
+    "sqft": 1800,
+    "yearBuilt": 2000,
+    "comparables": [],
+    "adjustments": [],
+    "suggestedPriceMin": 475000,
+    "suggestedPriceMax": 525000,
+    "suggestedPrice": 500000,
+    "pricePerSqft": 278,
+    "pdfUrl": null,
+    "fullPdfUrl": null,
+    "createdAt": "2026-01-26T15:47:21.736Z"
+  },
+  {
+    "id": "cmkvci5fu0003ph08gi04kkb0",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "propertyId": null,
+    "address": "2147 RUE DU BOREE",
+    "beds": 3,
+    "baths": 2,
+    "sqft": 1800,
+    "yearBuilt": 2000,
+    "comparables": [],
+    "adjustments": [],
+    "suggestedPriceMin": 475000,
+    "suggestedPriceMax": 525000,
+    "suggestedPrice": 500000,
+    "pricePerSqft": 278,
+    "pdfUrl": null,
+    "fullPdfUrl": null,
+    "createdAt": "2026-01-26T15:51:50.538Z"
+  },
+  {
+    "id": "cmkvcxuxu0001p3081t5xrn31",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "propertyId": null,
+    "address": "2147 RUE DU BOREE",
+    "beds": 3,
+    "baths": 2,
+    "sqft": 1800,
+    "yearBuilt": 2000,
+    "comparables": [],
+    "adjustments": [],
+    "suggestedPriceMin": 475000,
+    "suggestedPriceMax": 525000,
+    "suggestedPrice": 500000,
+    "pricePerSqft": 278,
+    "pdfUrl": null,
+    "fullPdfUrl": null,
+    "createdAt": "2026-01-26T16:04:03.427Z"
+  },
+  {
+    "id": "cmkvdizft0001mb088fwfg4pr",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "propertyId": null,
+    "address": "2147 RUE DU BOREE",
+    "beds": 3,
+    "baths": 2,
+    "sqft": 1800,
+    "yearBuilt": 2000,
+    "comparables": [
+      {
+        "city": "SAINT-LAURENT",
+        "price": 643340,
+        "state": "QC",
+        "status": "sold",
+        "address": "4799 Oak Street",
+        "bedrooms": 2,
+        "saleDate": "2025-12-29T08:14:09.738Z",
+        "bathrooms": 1.5,
+        "yearBuilt": 2003,
+        "squareFeet": 1871,
+        "adjustments": [
+          {
+            "type": "bedrooms",
+            "amount": 15000,
+            "reason": "Subject has more bedrooms"
+          },
+          {
+            "type": "bathrooms",
+            "amount": 5000,
+            "reason": "Subject has more bathrooms"
+          }
+        ],
+        "daysOnMarket": 50,
+        "pricePerSqft": 344,
+        "adjustedPrice": 663340
+      },
+      {
+        "city": "SAINT-LAURENT",
+        "price": 521028,
+        "state": "QC",
+        "status": "sold",
+        "address": "1492 Maple Avenue",
+        "bedrooms": 4,
+        "saleDate": "2025-11-14T16:02:07.662Z",
+        "bathrooms": 2.5,
+        "yearBuilt": 2002,
+        "squareFeet": 1640,
+        "adjustments": [
+          {
+            "type": "sqft",
+            "amount": 16000,
+            "reason": "Subject larger by 160 sqft"
+          },
+          {
+            "type": "bedrooms",
+            "amount": -15000,
+            "reason": "Subject has fewer bedrooms"
+          },
+          {
+            "type": "bathrooms",
+            "amount": -5000,
+            "reason": "Subject has fewer bathrooms"
+          }
+        ],
+        "daysOnMarket": 49,
+        "pricePerSqft": 318,
+        "adjustedPrice": 517028
+      },
+      {
+        "city": "SAINT-LAURENT",
+        "price": 588489,
+        "state": "QC",
+        "status": "sold",
+        "address": "764 Cedar Drive",
+        "bedrooms": 3,
+        "saleDate": "2025-10-23T07:26:26.194Z",
+        "bathrooms": 2,
+        "yearBuilt": 2003,
+        "squareFeet": 1815,
+        "adjustments": [],
+        "daysOnMarket": 51,
+        "pricePerSqft": 324,
+        "adjustedPrice": 588489
+      },
+      {
+        "city": "SAINT-LAURENT",
+        "price": 623739,
+        "state": "QC",
+        "status": "pending",
+        "address": "3503 Pine Court",
+        "bedrooms": 4,
+        "saleDate": "2025-12-07T03:25:55.622Z",
+        "bathrooms": 2.5,
+        "yearBuilt": 1995,
+        "squareFeet": 1727,
+        "adjustments": [
+          {
+            "type": "bedrooms",
+            "amount": -15000,
+            "reason": "Subject has fewer bedrooms"
+          },
+          {
+            "type": "bathrooms",
+            "amount": -5000,
+            "reason": "Subject has fewer bathrooms"
+          }
+        ],
+        "daysOnMarket": 27,
+        "pricePerSqft": 361,
+        "adjustedPrice": 603739
+      },
+      {
+        "city": "SAINT-LAURENT",
+        "price": 584175,
+        "state": "QC",
+        "status": "active",
+        "address": "7269 Elm Boulevard",
+        "bedrooms": 2,
+        "saleDate": "2025-11-10T16:47:55.392Z",
+        "bathrooms": 2.5,
+        "yearBuilt": 2003,
+        "squareFeet": 1831,
+        "adjustments": [
+          {
+            "type": "bedrooms",
+            "amount": 15000,
+            "reason": "Subject has more bedrooms"
+          },
+          {
+            "type": "bathrooms",
+            "amount": -5000,
+            "reason": "Subject has fewer bathrooms"
+          }
+        ],
+        "daysOnMarket": 41,
+        "pricePerSqft": 319,
+        "adjustedPrice": 594175
+      }
+    ],
+    "adjustments": [
+      {
+        "type": "bedrooms",
+        "amount": 15000,
+        "reason": "Subject has more bedrooms"
+      },
+      {
+        "type": "bathrooms",
+        "amount": 5000,
+        "reason": "Subject has more bathrooms"
+      },
+      {
+        "type": "sqft",
+        "amount": 16000,
+        "reason": "Subject larger by 160 sqft"
+      },
+      {
+        "type": "bedrooms",
+        "amount": -15000,
+        "reason": "Subject has fewer bedrooms"
+      },
+      {
+        "type": "bathrooms",
+        "amount": -5000,
+        "reason": "Subject has fewer bathrooms"
+      },
+      {
+        "type": "bedrooms",
+        "amount": -15000,
+        "reason": "Subject has fewer bedrooms"
+      },
+      {
+        "type": "bathrooms",
+        "amount": -5000,
+        "reason": "Subject has fewer bathrooms"
+      },
+      {
+        "type": "bedrooms",
+        "amount": 15000,
+        "reason": "Subject has more bedrooms"
+      },
+      {
+        "type": "bathrooms",
+        "amount": -5000,
+        "reason": "Subject has fewer bathrooms"
+      }
+    ],
+    "suggestedPriceMin": 517028,
+    "suggestedPriceMax": 663340,
+    "suggestedPrice": 593354,
+    "pricePerSqft": 330,
+    "pdfUrl": null,
+    "fullPdfUrl": null,
+    "createdAt": "2026-01-26T16:20:29.034Z"
+  }
+]

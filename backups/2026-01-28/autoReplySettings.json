@@ -1,0 +1,27 @@
+[
+  {
+    "id": "cmhs5v5a80005qz08e6sz2lw8",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "isEnabled": true,
+    "responseTone": "professional",
+    "responseLanguage": "en",
+    "businessHoursEnabled": true,
+    "businessHoursStart": null,
+    "businessHoursEnd": null,
+    "businessDays": null,
+    "timezone": "America/New_York",
+    "afterHoursMessage": null,
+    "channelSettings": null,
+    "maxResponseLength": 500,
+    "confidenceThreshold": 0.7,
+    "useConversationHistory": true,
+    "historyDepth": 10,
+    "escalationKeywords": null,
+    "escalationTopics": null,
+    "notifyOnEscalation": true,
+    "notificationEmail": null,
+    "notificationPhone": null,
+    "createdAt": "2025-11-09T20:23:34.016Z",
+    "updatedAt": "2025-11-09T20:23:34.016Z"
+  }
+]

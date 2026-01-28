@@ -1,0 +1,58 @@
+[
+  {
+    "id": "station-grill",
+    "userId": "cmhpfqxf20002r3qhb7cjlxsv",
+    "name": "Grill",
+    "displayName": "Grill Station",
+    "color": "#FF5733",
+    "icon": null,
+    "isActive": true,
+    "priority": 1,
+    "maxCapacity": null,
+    "defaultPrepTime": 15,
+    "createdAt": "2025-11-20T14:40:47.568Z",
+    "updatedAt": "2025-11-20T14:40:47.568Z"
+  },
+  {
+    "id": "station-fryer",
+    "userId": "cmhpfqxf20002r3qhb7cjlxsv",
+    "name": "Fryer",
+    "displayName": "Fryer Station",
+    "color": "#FFC300",
+    "icon": null,
+    "isActive": true,
+    "priority": 2,
+    "maxCapacity": null,
+    "defaultPrepTime": 15,
+    "createdAt": "2025-11-20T14:40:47.578Z",
+    "updatedAt": "2025-11-20T14:40:47.578Z"
+  },
+  {
+    "id": "station-salad",
+    "userId": "cmhpfqxf20002r3qhb7cjlxsv",
+    "name": "Salad Bar",
+    "displayName": "Salad Bar",
+    "color": "#28B463",
+    "icon": null,
+    "isActive": true,
+    "priority": 3,
+    "maxCapacity": null,
+    "defaultPrepTime": 15,
+    "createdAt": "2025-11-20T14:40:47.582Z",
+    "updatedAt": "2025-11-20T14:40:47.582Z"
+  },
+  {
+    "id": "station-dessert",
+    "userId": "cmhpfqxf20002r3qhb7cjlxsv",
+    "name": "Dessert",
+    "displayName": "Dessert Station",
+    "color": "#F39C12",
+    "icon": null,
+    "isActive": true,
+    "priority": 4,
+    "maxCapacity": null,
+    "defaultPrepTime": 15,
+    "createdAt": "2025-11-20T14:40:47.585Z",
+    "updatedAt": "2025-11-20T14:40:47.585Z"
+  }
+]

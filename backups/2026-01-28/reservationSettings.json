@@ -1,0 +1,75 @@
+[
+  {
+    "id": "cmi401hr40001mz08yxt7a8el",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "acceptReservations": true,
+    "minAdvanceHours": 2,
+    "maxAdvanceDays": 90,
+    "slotDuration": 30,
+    "bufferBetweenSlots": 15,
+    "operatingHours": {
+      "friday": [
+        {
+          "end": "23:00",
+          "start": "11:00"
+        }
+      ],
+      "monday": [
+        {
+          "end": "22:00",
+          "start": "11:00"
+        }
+      ],
+      "sunday": [
+        {
+          "end": "21:00",
+          "start": "12:00"
+        }
+      ],
+      "tuesday": [
+        {
+          "end": "22:00",
+          "start": "11:00"
+        }
+      ],
+      "saturday": [
+        {
+          "end": "23:00",
+          "start": "11:00"
+        }
+      ],
+      "thursday": [
+        {
+          "end": "22:00",
+          "start": "11:00"
+        }
+      ],
+      "wednesday": [
+        {
+          "end": "22:00",
+          "start": "11:00"
+        }
+      ]
+    },
+    "requireDeposit": false,
+    "depositAmount": null,
+    "depositMinPartySize": null,
+    "cancellationPolicy": null,
+    "cancellationHours": 24,
+    "sendReminders": true,
+    "reminderHoursBefore": 24,
+    "reminderChannels": [
+      "email",
+      "sms"
+    ],
+    "maxPartySizeOnline": 8,
+    "allowOverbooking": false,
+    "overbookingPercentage": null,
+    "allowPreOrders": false,
+    "preOrderDeadlineHours": null,
+    "enableVoiceBooking": true,
+    "voiceAgentId": null,
+    "createdAt": "2025-11-18T03:13:46.529Z",
+    "updatedAt": "2025-11-18T03:13:46.529Z"
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "id": "cmhvwqg340001n908dad9t5nm",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "phoneNumber": "+19048170321",
+    "friendlyName": "Soshogle CRM Number",
+    "country": "US",
+    "capabilities": {
+      "mms": true,
+      "sms": true,
+      "voice": true
+    },
+    "twilioSid": "[REDACTED]",
+    "status": "active",
+    "purchasedAt": "2025-11-12T11:19:02.895Z",
+    "lastUsedAt": null,
+    "createdAt": "2025-11-12T11:19:02.895Z",
+    "updatedAt": "2025-11-12T11:19:02.895Z"
+  },
+  {
+    "id": "cmhxl7zov0001mm08fhrcvfsl",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "phoneNumber": "+14509901011",
+    "friendlyName": "Soshogle CRM Number",
+    "country": "US",
+    "capabilities": {
+      "mms": true,
+      "sms": true,
+      "voice": true
+    },
+    "twilioSid": "[REDACTED]",
+    "status": "active",
+    "purchasedAt": "2025-11-13T15:32:18.416Z",
+    "lastUsedAt": null,
+    "createdAt": "2025-11-13T15:32:18.416Z",
+    "updatedAt": "2025-11-13T15:32:18.416Z"
+  },
+  {
+    "id": "cmhxl80320005mm0822z67xrj",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "phoneNumber": "+14508091703",
+    "friendlyName": "Soshogle CRM Number",
+    "country": "US",
+    "capabilities": {
+      "mms": true,
+      "sms": true,
+      "voice": true
+    },
+    "twilioSid": "[REDACTED]",
+    "status": "active",
+    "purchasedAt": "2025-11-13T15:32:18.927Z",
+    "lastUsedAt": null,
+    "createdAt": "2025-11-13T15:32:18.927Z",
+    "updatedAt": "2025-11-13T15:32:18.927Z"
+  },
+  {
+    "id": "cmiginixb0001sw9om93xs98k",
+    "userId": "cmif7bcow0000tkxtz7wh8c5o",
+    "phoneNumber": "+13605022136",
+    "friendlyName": "Sarah Voice Agent",
+    "country": "US",
+    "capabilities": {
+      "mms": false,
+      "sms": true,
+      "voice": true
+    },
+    "twilioSid": "[REDACTED]",
+    "status": "active",
+    "purchasedAt": "2025-11-26T21:28:01.680Z",
+    "lastUsedAt": null,
+    "createdAt": "2025-11-26T21:28:01.680Z",
+    "updatedAt": "2025-11-26T21:28:01.680Z"
+  },
+  {
+    "id": "cmhxl7zz40003mm08p3v7dvi6",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "phoneNumber": "+14506391671",
+    "friendlyName": "(450) 639-1671",
+    "country": "US",
+    "capabilities": {
+      "mms": true,
+      "sms": true,
+      "voice": true
+    },
+    "twilioSid": "[REDACTED]",
+    "status": "active",
+    "purchasedAt": "2025-11-13T15:32:18.784Z",
+    "lastUsedAt": null,
+    "createdAt": "2025-11-13T15:32:18.784Z",
+    "updatedAt": "2025-12-01T21:32:25.976Z"
+  }
+]

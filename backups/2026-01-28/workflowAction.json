@@ -1,0 +1,158 @@
+[
+  {
+    "id": "cmjcajwon0002mg08fzlmzuw0",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_EMAIL",
+    "displayOrder": 0,
+    "actionConfig": {
+      "template": "Email 1: Introduction to Voice AI and Nexrel benefits"
+    },
+    "delayMinutes": 0,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  },
+  {
+    "id": "cmjcajwon0003mg08hlx8xzqz",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_EMAIL",
+    "displayOrder": 1,
+    "actionConfig": {
+      "template": "Email 2: How Voice AI reduces missed calls"
+    },
+    "delayMinutes": 1440,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  },
+  {
+    "id": "cmjcajwon0004mg08hvm5u5iw",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_MESSAGE",
+    "displayOrder": 2,
+    "actionConfig": {
+      "template": "Voice AI Call 1: Friendly introduction and benefits overview"
+    },
+    "delayMinutes": 2880,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  },
+  {
+    "id": "cmjcajwon0005mg083gevmfj0",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_EMAIL",
+    "displayOrder": 3,
+    "actionConfig": {
+      "template": "Email 3: Case study of a dental clinic using Nexrel"
+    },
+    "delayMinutes": 4320,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  },
+  {
+    "id": "cmjcajwon0006mg086vyrau30",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_MESSAGE",
+    "displayOrder": 4,
+    "actionConfig": {
+      "template": "Voice AI Call 2: Urgent tone, emphasizing missed call reduction"
+    },
+    "delayMinutes": 5760,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  },
+  {
+    "id": "cmjcajwon0007mg084fk0kqap",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_EMAIL",
+    "displayOrder": 5,
+    "actionConfig": {
+      "template": "Email 4: ROI benefits of Nexrel system"
+    },
+    "delayMinutes": 7200,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  },
+  {
+    "id": "cmjcajwon0008mg08g8ydauil",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_EMAIL",
+    "displayOrder": 6,
+    "actionConfig": {
+      "template": "Email 5: Limited-time offer for demo booking"
+    },
+    "delayMinutes": 8640,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  },
+  {
+    "id": "cmjcajwon0009mg08jcpk7pkm",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_MESSAGE",
+    "displayOrder": 7,
+    "actionConfig": {
+      "template": "Voice AI Call 3: Reminder to book demo, friendly tone"
+    },
+    "delayMinutes": 10080,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  },
+  {
+    "id": "cmjcajwon000amg08akei52jb",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_EMAIL",
+    "displayOrder": 8,
+    "actionConfig": {
+      "template": "Email 6: Highlighting customer testimonials"
+    },
+    "delayMinutes": 11520,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  },
+  {
+    "id": "cmjcajwoo000bmg08adcygl7c",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_MESSAGE",
+    "displayOrder": 9,
+    "actionConfig": {
+      "template": "Voice AI Call 4: Final call to action, urgent tone"
+    },
+    "delayMinutes": 12960,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  },
+  {
+    "id": "cmjcajwoo000cmg08rc91srqg",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_EMAIL",
+    "displayOrder": 10,
+    "actionConfig": {
+      "template": "Email 7: Recap of benefits and final demo offer"
+    },
+    "delayMinutes": 14400,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  },
+  {
+    "id": "cmjcajwoo000dmg08wtlw33av",
+    "workflowId": "cmjcajwon0001mg08sw0ogbbq",
+    "type": "SEND_EMAIL",
+    "displayOrder": 11,
+    "actionConfig": {
+      "template": "Email 8: Final follow-up email with demo link"
+    },
+    "delayMinutes": 15840,
+    "parentActionId": null,
+    "createdAt": "2025-12-19T03:09:53.592Z",
+    "updatedAt": "2025-12-19T03:09:53.592Z"
+  }
+]

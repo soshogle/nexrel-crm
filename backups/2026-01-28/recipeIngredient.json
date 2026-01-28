@@ -1,0 +1,132 @@
+[
+  {
+    "id": "cmi7jgphy000nt7fx2wuukasj",
+    "recipeId": "recipe-burger",
+    "inventoryItemId": "cmi7jgpgl0001t7fxkbh6c9pf",
+    "quantity": "0.25",
+    "unit": "LBS",
+    "cost": "1.5",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.638Z"
+  },
+  {
+    "id": "cmi7jgphy000ot7fxmwzwh5sr",
+    "recipeId": "recipe-burger",
+    "inventoryItemId": "cmi7jgpgx0003t7fxbxcxgak4",
+    "quantity": "1",
+    "unit": "PIECE",
+    "cost": "0.5",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.638Z"
+  },
+  {
+    "id": "cmi7jgphy000pt7fxf1iz463q",
+    "recipeId": "recipe-burger",
+    "inventoryItemId": "cmi7jgph10005t7fxh8ysg5x5",
+    "quantity": "1",
+    "unit": "OZ",
+    "cost": "0.15",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.638Z"
+  },
+  {
+    "id": "cmi7jgphy000qt7fxra21rjir",
+    "recipeId": "recipe-burger",
+    "inventoryItemId": "cmi7jgph50007t7fxopunvjql",
+    "quantity": "1",
+    "unit": "OZ",
+    "cost": "0.2",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.638Z"
+  },
+  {
+    "id": "cmi7jgphy000rt7fx9qcx7s6l",
+    "recipeId": "recipe-burger",
+    "inventoryItemId": "cmi7jgph90009t7fxt4z680eu",
+    "quantity": "1",
+    "unit": "OZ",
+    "cost": "0.35",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.638Z"
+  },
+  {
+    "id": "cmi7jgpi8000tt7fxyy27p0h0",
+    "recipeId": "recipe-fries",
+    "inventoryItemId": "cmi7jgphd000bt7fx1an1njxe",
+    "quantity": "0.5",
+    "unit": "LBS",
+    "cost": "0.6",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.649Z"
+  },
+  {
+    "id": "cmi7jgpid000vt7fxxc1ufuo8",
+    "recipeId": "recipe-chicken",
+    "inventoryItemId": "cmi7jgphg000dt7fxdlzi0ei3",
+    "quantity": "0.3",
+    "unit": "LBS",
+    "cost": "1.35",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.653Z"
+  },
+  {
+    "id": "cmi7jgpid000wt7fxdsd6mrj5",
+    "recipeId": "recipe-chicken",
+    "inventoryItemId": "cmi7jgpgx0003t7fxbxcxgak4",
+    "quantity": "1",
+    "unit": "PIECE",
+    "cost": "0.5",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.653Z"
+  },
+  {
+    "id": "cmi7jgpid000xt7fx4574qphh",
+    "recipeId": "recipe-chicken",
+    "inventoryItemId": "cmi7jgph10005t7fxh8ysg5x5",
+    "quantity": "1",
+    "unit": "OZ",
+    "cost": "0.15",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.653Z"
+  },
+  {
+    "id": "cmi7jgpid000yt7fx7331k0ys",
+    "recipeId": "recipe-chicken",
+    "inventoryItemId": "cmi7jgph50007t7fxopunvjql",
+    "quantity": "1",
+    "unit": "OZ",
+    "cost": "0.2",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.653Z"
+  },
+  {
+    "id": "cmi7jgpih0010t7fx33mc20oa",
+    "recipeId": "recipe-salad",
+    "inventoryItemId": "cmi7jgph10005t7fxh8ysg5x5",
+    "quantity": "4",
+    "unit": "OZ",
+    "cost": "0.6",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.658Z"
+  },
+  {
+    "id": "cmi7jgpih0011t7fx5yn45bn1",
+    "recipeId": "recipe-salad",
+    "inventoryItemId": "cmi7jgphg000dt7fxdlzi0ei3",
+    "quantity": "0.2",
+    "unit": "LBS",
+    "cost": "0.9",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.658Z"
+  },
+  {
+    "id": "cmi7jgpih0012t7fxjoflfcqp",
+    "recipeId": "recipe-salad",
+    "inventoryItemId": "cmi7jgph90009t7fxt4z680eu",
+    "quantity": "0.5",
+    "unit": "OZ",
+    "cost": "0.18",
+    "notes": null,
+    "createdAt": "2025-11-20T14:40:47.658Z"
+  }
+]
