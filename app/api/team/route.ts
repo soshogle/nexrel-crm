@@ -25,13 +25,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get users who are team members of this user
+    // Get team members belonging to this user
     const teamMembers = await prisma.teamMember.findMany({
       where: {
-        OR: [
-          { managerId: session.user.id },
-          { userId: session.user.id },
-        ],
+        userId: session.user.id,
       },
       include: {
         user: {
@@ -41,13 +38,6 @@ export async function GET(request: NextRequest) {
             email: true,
             image: true,
             role: true,
-          },
-        },
-        manager: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
           },
         },
       },
