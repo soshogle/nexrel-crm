@@ -203,7 +203,7 @@ async function saveExpiredListing(userId: string, listing: ExpiredListingInput) 
   // Check for duplicate
   const existing = await prisma.rEExpiredListing.findFirst({
     where: {
-      userId,
+      assignedUserId: userId,
       address: listing.address,
       city: listing.city
     }
@@ -215,24 +215,20 @@ async function saveExpiredListing(userId: string, listing: ExpiredListingInput) 
 
   const newListing = await prisma.rEExpiredListing.create({
     data: {
-      userId,
-      mlsNumber: listing.mlsNumber,
+      assignedUserId: userId,
+      source: 'SCRAPED',
+      sourceId: listing.mlsNumber,
       address: listing.address,
       city: listing.city,
       state: listing.state,
       zip: listing.zip,
       originalListPrice: listing.originalListPrice,
-      lastListPrice: listing.lastListPrice,
+      finalListPrice: listing.lastListPrice,
       daysOnMarket: listing.daysOnMarket,
       expiredDate: listing.expiredDate,
       ownerName: listing.ownerName,
       ownerPhone: listing.ownerPhone ? normalizePhone(listing.ownerPhone) : null,
       ownerEmail: listing.ownerEmail,
-      propertyType: listing.propertyType,
-      beds: listing.beds,
-      baths: listing.baths,
-      sqft: listing.sqft,
-      sourceUrl: listing.sourceUrl,
       status: 'NEW'
     }
   });
