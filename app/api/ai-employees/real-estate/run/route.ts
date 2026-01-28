@@ -150,7 +150,7 @@ async function executeStaleDiagnostic(userId: string): Promise<ExecutionResult> 
 }
 
 // Execute Market Report Generation
-async function executeMarketReport(userId: string, reportType: 'WEEKLY' | 'MONTHLY' | 'ANNUAL'): Promise<ExecutionResult> {
+async function executeMarketReport(userId: string, reportType: 'WEEKLY_MARKET_UPDATE' | 'MONTHLY_MARKET_REPORT' | 'QUARTERLY_ANALYSIS'): Promise<ExecutionResult> {
   // Get user info for region
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -160,12 +160,13 @@ async function executeMarketReport(userId: string, reportType: 'WEEKLY' | 'MONTH
   const region = user?.operatingLocation || 'Local Market';
 
   // Check if we already have a recent report of this type
+  const days = reportType === 'WEEKLY_MARKET_UPDATE' ? 7 : reportType === 'MONTHLY_MARKET_REPORT' ? 30 : 90;
   const existingReport = await prisma.rEMarketReport.findFirst({
     where: {
       userId,
       type: reportType,
       createdAt: {
-        gte: new Date(Date.now() - (reportType === 'WEEKLY' ? 7 : reportType === 'MONTHLY' ? 30 : 365) * 24 * 60 * 60 * 1000)
+        gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000)
       }
     }
   });
@@ -183,15 +184,21 @@ async function executeMarketReport(userId: string, reportType: 'WEEKLY' | 'MONTH
   // Create a placeholder report (actual generation via /generate endpoint)
   const currentDate = new Date();
   const periodStart = new Date();
-  if (reportType === 'WEEKLY') periodStart.setDate(currentDate.getDate() - 7);
-  else if (reportType === 'MONTHLY') periodStart.setMonth(currentDate.getMonth() - 1);
-  else periodStart.setFullYear(currentDate.getFullYear() - 1);
+  if (reportType === 'WEEKLY_MARKET_UPDATE') periodStart.setDate(currentDate.getDate() - 7);
+  else if (reportType === 'MONTHLY_MARKET_REPORT') periodStart.setMonth(currentDate.getMonth() - 1);
+  else periodStart.setMonth(currentDate.getMonth() - 3);
+
+  const titleMap = {
+    'WEEKLY_MARKET_UPDATE': 'Weekly Market Update',
+    'MONTHLY_MARKET_REPORT': 'Monthly Market Report',
+    'QUARTERLY_ANALYSIS': 'Quarterly Analysis'
+  };
 
   const report = await prisma.rEMarketReport.create({
     data: {
       userId,
       type: reportType,
-      title: `${region} ${reportType.charAt(0) + reportType.slice(1).toLowerCase()} Market Report`,
+      title: `${region} ${titleMap[reportType]}`,
       region,
       periodStart,
       periodEnd: currentDate,
@@ -201,9 +208,9 @@ async function executeMarketReport(userId: string, reportType: 'WEEKLY' | 'MONTH
 
   return {
     success: true,
-    employeeType: `RE_${reportType}_REPORT`,
+    employeeType: `RE_${reportType}`,
     tasksCompleted: 1,
-    summary: `Initiated ${reportType.toLowerCase()} market report for ${region}`,
+    summary: `Initiated ${titleMap[reportType].toLowerCase()} for ${region}`,
     details: { reportId: report.id }
   };
 }
@@ -301,13 +308,13 @@ export async function POST(request: NextRequest) {
         result = await executeStaleDiagnostic(session.user.id);
         break;
       case 'RE_WEEKLY_SNAPSHOT':
-        result = await executeMarketReport(session.user.id, 'WEEKLY');
+        result = await executeMarketReport(session.user.id, 'WEEKLY_MARKET_UPDATE');
         break;
       case 'RE_MONTHLY_REPORT':
-        result = await executeMarketReport(session.user.id, 'MONTHLY');
+        result = await executeMarketReport(session.user.id, 'MONTHLY_MARKET_REPORT');
         break;
       case 'RE_ANNUAL_REVIEW':
-        result = await executeMarketReport(session.user.id, 'ANNUAL');
+        result = await executeMarketReport(session.user.id, 'QUARTERLY_ANALYSIS');
         break;
       case 'RE_COLD_REACTIVATION':
         result = await executeColdReactivation(session.user.id);
