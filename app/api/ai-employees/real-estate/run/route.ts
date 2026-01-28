@@ -256,7 +256,7 @@ async function executeSphereNurture(userId: string): Promise<ExecutionResult> {
   const pastClients = await prisma.lead.findMany({
     where: {
       userId,
-      status: 'CLOSED',
+      status: 'CONVERTED',
       lastContactedAt: { lt: sixtyDaysAgo }
     },
     take: 20
