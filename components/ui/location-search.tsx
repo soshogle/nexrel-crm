@@ -25,10 +25,46 @@ interface LocationSearchProps {
   countryRestriction?: string[];
 }
 
+// Global to track Google Maps script loading
+let googleMapsPromise: Promise<void> | null = null;
+
+function loadGoogleMapsScript(): Promise<void> {
+  if (googleMapsPromise) return googleMapsPromise;
+  
+  if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
+    return Promise.resolve();
+  }
+
+  googleMapsPromise = new Promise((resolve, reject) => {
+    // Check if already loaded
+    if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
+      resolve();
+      return;
+    }
+
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      console.error('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not set');
+      reject(new Error('Google Maps API key not configured'));
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Google Maps'));
+    document.head.appendChild(script);
+  });
+
+  return googleMapsPromise;
+}
+
 /**
  * Location Search Component
- * Connected to Google Places API via server-side endpoint
- * Uses uncontrolled input pattern - parent value is only used for initial/reset
+ * Uses Google Places Autocomplete API directly in browser (client-side)
+ * This works with referrer-restricted API keys
  */
 export function LocationSearch({
   value: controlledValue,
@@ -39,28 +75,39 @@ export function LocationSearch({
   className = '',
   countryRestriction
 }: LocationSearchProps) {
-  // Use internal state for input - this allows typing to work
-  const [inputValue, setInputValue] = useState(controlledValue || defaultValue || '');
-  const [predictions, setPredictions] = useState<any[]>([]);
+  const [inputValue, setInputValue] = useState(defaultValue || '');
+  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+  
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const lastControlledValueRef = useRef(controlledValue);
 
-  // Only sync from parent when controlled value actually changes (e.g., reset or selection)
-  // This prevents parent's empty value from overriding user typing
+  // Load Google Maps script
   useEffect(() => {
-    console.log('[LocationSearch] useEffect - controlledValue:', controlledValue, 'lastRef:', lastControlledValueRef.current);
-    // Only update if parent explicitly changed the value (not just re-rendered)
-    if (controlledValue !== lastControlledValueRef.current) {
-      console.log('[LocationSearch] Syncing from parent value');
+    loadGoogleMapsScript()
+      .then(() => {
+        setIsGoogleLoaded(true);
+        autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+        // PlacesService needs a DOM element or map
+        const dummyDiv = document.createElement('div');
+        placesServiceRef.current = new google.maps.places.PlacesService(dummyDiv);
+      })
+      .catch((err) => {
+        console.error('Failed to load Google Maps:', err);
+      });
+  }, []);
+
+  // Sync controlled value
+  useEffect(() => {
+    if (controlledValue !== undefined && controlledValue !== lastControlledValueRef.current) {
       lastControlledValueRef.current = controlledValue;
-      // Only sync if controlled value is non-empty OR if we need to clear
-      if (controlledValue !== undefined) {
-        setInputValue(controlledValue);
-      }
+      setInputValue(controlledValue);
     }
   }, [controlledValue]);
 
@@ -80,42 +127,43 @@ export function LocationSearch({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch predictions from server API
-  const fetchPredictions = useCallback(async (input: string) => {
-    if (!input || input.length < 3) {
+  const fetchPredictions = useCallback((input: string) => {
+    if (!input || input.length < 2 || !autocompleteServiceRef.current) {
       setPredictions([]);
       setShowDropdown(false);
       return;
     }
 
     setIsLoading(true);
-    try {
-      const response = await fetch(
-        `/api/places/autocomplete?input=${encodeURIComponent(input)}&types=(cities)`
-      );
-      const data = await response.json();
+    
+    const request: google.maps.places.AutocompletionRequest = {
+      input,
+      types: ['(cities)'],
+    };
 
-      if (data.predictions && data.predictions.length > 0) {
-        setPredictions(data.predictions);
-        setShowDropdown(true);
-      } else {
-        setPredictions([]);
-        setShowDropdown(false);
-      }
-    } catch (error) {
-      console.error('Location autocomplete error:', error);
-      setPredictions([]);
-    } finally {
-      setIsLoading(false);
+    if (countryRestriction && countryRestriction.length > 0) {
+      request.componentRestrictions = { country: countryRestriction };
     }
-  }, []);
+
+    autocompleteServiceRef.current.getPlacePredictions(
+      request,
+      (results, status) => {
+        setIsLoading(false);
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          setPredictions(results);
+          setShowDropdown(true);
+        } else {
+          setPredictions([]);
+          setShowDropdown(false);
+        }
+      }
+    );
+  }, [countryRestriction]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    console.log('[LocationSearch] handleInputChange called with:', newValue);
     setInputValue(newValue);
 
-    // Debounce API call
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
@@ -123,57 +171,20 @@ export function LocationSearch({
       fetchPredictions(newValue);
     }, 300);
 
-    // Clear parent state if input is empty
     if (!newValue && onChange) {
       onChange(null);
     }
   };
 
-  const handleSelectPrediction = async (prediction: any) => {
+  const handleSelectPrediction = (prediction: google.maps.places.AutocompletePrediction) => {
     const desc = prediction.description;
     setInputValue(desc);
     setShowDropdown(false);
     setPredictions([]);
 
-    // Fetch place details
-    try {
-      const response = await fetch(
-        `/api/places/details?placeId=${encodeURIComponent(prediction.place_id)}`
-      );
-      const data = await response.json();
-
-      if (data.place) {
-        const locationData: LocationData = {
-          city: data.place.city || '',
-          state: data.place.state || '',
-          country: data.place.country || '',
-          countryCode: data.place.countryCode || '',
-          formatted: desc,
-          lat: data.place.lat,
-          lng: data.place.lng,
-          placeId: prediction.place_id,
-        };
-
-        if (onChange) onChange(locationData);
-        if (onSelect) onSelect(locationData);
-      } else {
-        // Fallback - parse from description
-        const parts = desc.split(',').map((p: string) => p.trim());
-        const locationData: LocationData = {
-          city: parts[0] || '',
-          state: parts[1] || '',
-          country: parts[2] || '',
-          countryCode: '',
-          formatted: desc,
-          placeId: prediction.place_id,
-        };
-        if (onChange) onChange(locationData);
-        if (onSelect) onSelect(locationData);
-      }
-    } catch (error) {
-      console.error('Place details error:', error);
-      // Fallback
-      const parts = desc.split(',').map((p: string) => p.trim());
+    if (!placesServiceRef.current) {
+      // Fallback without details
+      const parts = desc.split(',').map((p) => p.trim());
       const locationData: LocationData = {
         city: parts[0] || '',
         state: parts[1] || '',
@@ -184,7 +195,58 @@ export function LocationSearch({
       };
       if (onChange) onChange(locationData);
       if (onSelect) onSelect(locationData);
+      return;
     }
+
+    // Fetch place details
+    placesServiceRef.current.getDetails(
+      { placeId: prediction.place_id, fields: ['address_components', 'geometry', 'formatted_address'] },
+      (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+          let city = '', state = '', country = '', countryCode = '';
+          
+          place.address_components?.forEach((component) => {
+            if (component.types.includes('locality')) {
+              city = component.long_name;
+            }
+            if (component.types.includes('administrative_area_level_1')) {
+              state = component.short_name;
+            }
+            if (component.types.includes('country')) {
+              country = component.long_name;
+              countryCode = component.short_name;
+            }
+          });
+
+          const locationData: LocationData = {
+            city,
+            state,
+            country,
+            countryCode,
+            formatted: place.formatted_address || desc,
+            lat: place.geometry?.location?.lat(),
+            lng: place.geometry?.location?.lng(),
+            placeId: prediction.place_id,
+          };
+
+          if (onChange) onChange(locationData);
+          if (onSelect) onSelect(locationData);
+        } else {
+          // Fallback
+          const parts = desc.split(',').map((p) => p.trim());
+          const locationData: LocationData = {
+            city: parts[0] || '',
+            state: parts[1] || '',
+            country: parts[2] || '',
+            countryCode: '',
+            formatted: desc,
+            placeId: prediction.place_id,
+          };
+          if (onChange) onChange(locationData);
+          if (onSelect) onSelect(locationData);
+        }
+      }
+    );
   };
 
   return (
@@ -196,7 +258,8 @@ export function LocationSearch({
         value={inputValue}
         onChange={handleInputChange}
         onFocus={() => predictions.length > 0 && setShowDropdown(true)}
-        placeholder={placeholder}
+        placeholder={isGoogleLoaded ? placeholder : 'Loading...'}
+        disabled={!isGoogleLoaded}
         className="pl-10 pr-8 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
         autoComplete="off"
       />

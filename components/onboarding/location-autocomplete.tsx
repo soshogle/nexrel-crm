@@ -12,15 +12,75 @@ interface LocationAutocompleteProps {
   onTimezoneDetected?: (timezone: string) => void;
 }
 
+// Global to track Google Maps script loading
+let googleMapsPromise: Promise<void> | null = null;
+
+function loadGoogleMapsScript(): Promise<void> {
+  if (googleMapsPromise) return googleMapsPromise;
+  
+  if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
+    return Promise.resolve();
+  }
+
+  googleMapsPromise = new Promise((resolve, reject) => {
+    if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
+      resolve();
+      return;
+    }
+
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      console.error('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not set');
+      reject(new Error('Google Maps API key not configured'));
+      return;
+    }
+
+    // Check if script is already loading
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve());
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Google Maps'));
+    document.head.appendChild(script);
+  });
+
+  return googleMapsPromise;
+}
+
 export function LocationAutocomplete({ value, onChange, onTimezoneDetected }: LocationAutocompleteProps) {
   const [inputValue, setInputValue] = useState(value);
   const [isOnline, setIsOnline] = useState(value === 'Online/Remote');
-  const [predictions, setPredictions] = useState<any[]>([]);
+  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+  
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
+
+  // Load Google Maps script
+  useEffect(() => {
+    loadGoogleMapsScript()
+      .then(() => {
+        setIsGoogleLoaded(true);
+        autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+        const dummyDiv = document.createElement('div');
+        placesServiceRef.current = new google.maps.places.PlacesService(dummyDiv);
+      })
+      .catch((err) => {
+        console.error('Failed to load Google Maps:', err);
+      });
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -38,37 +98,30 @@ export function LocationAutocomplete({ value, onChange, onTimezoneDetected }: Lo
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch predictions from server API
-  const fetchPredictions = useCallback(async (input: string) => {
-    if (!input || input.length < 3) {
+  const fetchPredictions = useCallback((input: string) => {
+    if (!input || input.length < 2 || !autocompleteServiceRef.current) {
       setPredictions([]);
       setShowDropdown(false);
       return;
     }
 
     setIsLoading(true);
-    try {
-      const response = await fetch(
-        `/api/places/autocomplete?input=${encodeURIComponent(input)}&types=(cities)`
-      );
-      const data = await response.json();
-
-      if (data.predictions && data.predictions.length > 0) {
-        setPredictions(data.predictions);
-        setShowDropdown(true);
-      } else {
-        setPredictions([]);
-        setShowDropdown(false);
+    
+    autocompleteServiceRef.current.getPlacePredictions(
+      { input, types: ['(cities)'] },
+      (results, status) => {
+        setIsLoading(false);
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          setPredictions(results);
+          setShowDropdown(true);
+        } else {
+          setPredictions([]);
+          setShowDropdown(false);
+        }
       }
-    } catch (error) {
-      console.error('Autocomplete error:', error);
-      setPredictions([]);
-    } finally {
-      setIsLoading(false);
-    }
+    );
   }, []);
 
-  // Handle input change with debounce
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInputValue(val);
@@ -80,7 +133,6 @@ export function LocationAutocomplete({ value, onChange, onTimezoneDetected }: Lo
       return;
     }
 
-    // Debounce API call
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
@@ -89,27 +141,29 @@ export function LocationAutocomplete({ value, onChange, onTimezoneDetected }: Lo
     }, 300);
   };
 
-  const handleSelectPrediction = async (prediction: any) => {
+  const handleSelectPrediction = (prediction: google.maps.places.AutocompletePrediction) => {
     const desc = prediction.description;
     setInputValue(desc);
     onChange(desc, false);
     setShowDropdown(false);
     setPredictions([]);
 
-    // Fetch place details for timezone detection
-    try {
-      const response = await fetch(
-        `/api/places/details?placeId=${encodeURIComponent(prediction.place_id)}`
+    if (placesServiceRef.current && onTimezoneDetected) {
+      placesServiceRef.current.getDetails(
+        { placeId: prediction.place_id, fields: ['address_components'] },
+        (place, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+            let country = '';
+            place.address_components?.forEach((component) => {
+              if (component.types.includes('country')) {
+                country = component.long_name;
+              }
+            });
+            const timezone = guessTimezoneFromLocation(desc, country);
+            onTimezoneDetected(timezone);
+          }
+        }
       );
-      const data = await response.json();
-
-      if (data.place && onTimezoneDetected) {
-        // Try to guess timezone from location
-        const timezone = guessTimezoneFromLocation(desc, data.place.country);
-        onTimezoneDetected(timezone);
-      }
-    } catch (error) {
-      console.error('Place details error:', error);
     }
   };
 
@@ -195,8 +249,8 @@ export function LocationAutocomplete({ value, onChange, onTimezoneDetected }: Lo
             value={inputValue}
             onChange={handleInputChange}
             onFocus={() => predictions.length > 0 && setShowDropdown(true)}
-            placeholder={isOnline ? 'Online/Remote' : 'Search city...'}
-            disabled={isOnline}
+            placeholder={isOnline ? 'Online/Remote' : (isGoogleLoaded ? 'Search city...' : 'Loading...')}
+            disabled={isOnline || !isGoogleLoaded}
             className="pl-10 pr-8"
             autoComplete="off"
           />
