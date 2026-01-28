@@ -1,0 +1,134 @@
+[
+  {
+    "id": "team-u8-boys-lions",
+    "divisionId": "div-u8-boys-soccer",
+    "name": "Lions",
+    "colorPrimary": "#FFA500",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:36:11.849Z",
+    "updatedAt": "2025-11-20T17:36:11.849Z"
+  },
+  {
+    "id": "team-u10-girls-tigers",
+    "divisionId": "div-u10-girls-soccer",
+    "name": "Tigers",
+    "colorPrimary": "#FF6347",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:36:11.853Z",
+    "updatedAt": "2025-11-20T17:36:11.853Z"
+  },
+  {
+    "id": "team-u10-boys-eagles",
+    "divisionId": "div-u10-boys-soccer",
+    "name": "Eagles",
+    "colorPrimary": "#1E90FF",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:36:11.855Z",
+    "updatedAt": "2025-11-20T17:36:11.855Z"
+  },
+  {
+    "id": "team-u12-girls-panthers",
+    "divisionId": "div-u12-girls-soccer",
+    "name": "Panthers",
+    "colorPrimary": "#800080",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:36:11.857Z",
+    "updatedAt": "2025-11-20T17:36:11.857Z"
+  },
+  {
+    "id": "team-u10-basketball-rockets",
+    "divisionId": "div-u10-basketball",
+    "name": "Rockets",
+    "colorPrimary": "#FF4500",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:36:11.859Z",
+    "updatedAt": "2025-11-20T17:36:11.859Z"
+  },
+  {
+    "id": "team-u14-basketball-thunder",
+    "divisionId": "div-u14-basketball",
+    "name": "Thunder",
+    "colorPrimary": "#0000FF",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:36:11.861Z",
+    "updatedAt": "2025-11-20T17:36:11.861Z"
+  },
+  {
+    "id": "team-michael-dynamos",
+    "divisionId": "div-michael-u8-boys",
+    "name": "Dynamos",
+    "colorPrimary": "#FF6B35",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:54:06.010Z",
+    "updatedAt": "2025-11-20T17:54:06.010Z"
+  },
+  {
+    "id": "team-michael-stars",
+    "divisionId": "div-michael-u8-girls",
+    "name": "Stars",
+    "colorPrimary": "#F7931E",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:54:06.012Z",
+    "updatedAt": "2025-11-20T17:54:06.012Z"
+  },
+  {
+    "id": "team-michael-lightning",
+    "divisionId": "div-michael-u10-boys",
+    "name": "Lightning",
+    "colorPrimary": "#4ECDC4",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:54:06.014Z",
+    "updatedAt": "2025-11-20T17:54:06.014Z"
+  },
+  {
+    "id": "team-michael-warriors",
+    "divisionId": "div-michael-u12-girls",
+    "name": "Warriors",
+    "colorPrimary": "#9B59B6",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:54:06.016Z",
+    "updatedAt": "2025-11-20T17:54:06.016Z"
+  },
+  {
+    "id": "team-michael-phoenix",
+    "divisionId": "div-michael-u10-basketball",
+    "name": "Phoenix",
+    "colorPrimary": "#E74C3C",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:54:06.018Z",
+    "updatedAt": "2025-11-20T17:54:06.018Z"
+  },
+  {
+    "id": "team-michael-titans",
+    "divisionId": "div-michael-u14-basketball",
+    "name": "Titans",
+    "colorPrimary": "#3498DB",
+    "colorSecondary": null,
+    "maxPlayers": null,
+    "status": "ACTIVE",
+    "createdAt": "2025-11-20T17:54:06.020Z",
+    "updatedAt": "2025-11-20T17:54:06.020Z"
+  }
+]

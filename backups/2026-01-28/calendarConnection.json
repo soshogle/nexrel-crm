@@ -1,0 +1,21 @@
+[
+  {
+    "id": "cmink7f4n0003o60818opiqvu",
+    "userId": "cminj7jv90000ow08pm5bbza5",
+    "provider": "GOOGLE",
+    "providerAccountId": null,
+    "accessToken": "[REDACTED]",
+    "refreshToken": "[REDACTED]",
+    "expiresAt": "2025-12-01T20:45:51.726Z",
+    "calendarId": null,
+    "calendarName": "Google Calendar",
+    "syncEnabled": true,
+    "lastSyncAt": null,
+    "syncStatus": "SYNCED",
+    "webhookUrl": null,
+    "apiKey": null,
+    "settings": null,
+    "createdAt": "2025-12-01T19:45:52.727Z",
+    "updatedAt": "2025-12-01T19:45:52.727Z"
+  }
+]

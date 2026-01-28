@@ -1,0 +1,29 @@
+[
+  {
+    "id": "cmkko4aa70003mn086xtue7h8",
+    "sessionId": "cmkko3psd0001mn08yo049k2f",
+    "queryType": "medical_lookup",
+    "queryText": "yeah can you help me",
+    "responseText": "Of course, I can assist. Please provide the specific medical question or topic you need help with, and I will provide evidence-based information.",
+    "triggerMethod": "text",
+    "timestamp": null,
+    "sourcesCited": [],
+    "createdAt": "2026-01-19T04:31:31.088Z"
+  },
+  {
+    "id": "cmkkol9gg0005mn08jcu2f3jw",
+    "sessionId": "cmkko3psd0001mn08yo049k2f",
+    "queryType": "medical_lookup",
+    "queryText": "whats a 45 degree temperature for a 9 moth old mean?",
+    "responseText": "A temperature of 45°C (113°F) in a 9-month-old is **extremely high** and would indicate a **medical emergency**. Such a temperature is far above the threshold for fever and could suggest **severe hyperpyrexia** or an error in temperature measurement. Immediate evaluation and intervention are critical.\n\n### Evidence-Based Information:\n\n#### 1. **Clinical Guidelines for Fever in Infants**:\n   - According to the American Academy of Pediatrics (AAP), fever in infants is defined as a rectal temperature of **38°C (100.4°F) or higher**.\n   - Temperatures exceeding **41°C (105.8°F)** are considered **hyperpyrexia**, which is rare and may indicate a serious underlying condition such as:\n     - Severe infection (e.g., sepsis, meningitis)\n     - Heat stroke\n     - Central nervous system abnormalities\n     - Drug or toxin ingestion\n\n#### 2. **Diagnostic Considerations**:\n   - **Recheck the temperature**: Ensure the measurement is accurate (preferably rectal for infants).\n   - Assess for signs of severe illness:\n     - Lethargy, irritability, or altered mental status\n     - Seizures\n     - Dehydration\n     - Rash or petechiae\n     - Difficulty breathing\n   - Investigate potential causes:\n     - Infections: Bacterial or viral (e.g., meningitis, pneumonia)\n     - Environmental factors: Overheating or heat stroke\n     - Underlying medical conditions\n\n#### 3. **Immediate Treatment Recommendations**:\n   - **Emergency care**: A temperature of 45°C warrants **immediate transfer to an emergency department**.\n   - **Cooling measures** (while awaiting medical help):\n     - Remove excess clothing.\n     - Use tepid sponging or cooling blankets.\n     - Avoid ice baths or alcohol rubs, as these can cause complications.\n   - **Hydration**: If the child is conscious, encourage fluids (e.g., oral rehydration solutions).\n\n#### 4. **Verification Required**:\n   - Confirm the temperature measurement (device, method, and site used).\n   - Obtain more clinical details (e.g., symptoms, exposure history, recent illnesses).\n\nThis situation is life-threatening and requires **immediate medical intervention**.",
+    "triggerMethod": "text",
+    "timestamp": null,
+    "sourcesCited": [
+      {
+        "type": "guideline",
+        "title": "Clinical Practice Guidelines"
+      }
+    ],
+    "createdAt": "2026-01-19T04:44:43.169Z"
+  }
+]

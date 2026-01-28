@@ -1,0 +1,482 @@
+[
+  {
+    "id": "cmhqtybya0002mi08877a4oa3",
+    "pipelineId": "cmhqtybya0001mi08tmqwae1i",
+    "name": "New Lead",
+    "displayOrder": 0,
+    "probability": 10,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-08T22:02:21.058Z",
+    "updatedAt": "2025-11-08T22:02:21.058Z"
+  },
+  {
+    "id": "cmhqtybya0003mi085jjfsn7v",
+    "pipelineId": "cmhqtybya0001mi08tmqwae1i",
+    "name": "Contacted",
+    "displayOrder": 1,
+    "probability": 25,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-08T22:02:21.058Z",
+    "updatedAt": "2025-11-08T22:02:21.058Z"
+  },
+  {
+    "id": "cmhqtybya0004mi08hku9x031",
+    "pipelineId": "cmhqtybya0001mi08tmqwae1i",
+    "name": "Qualified",
+    "displayOrder": 2,
+    "probability": 50,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-08T22:02:21.058Z",
+    "updatedAt": "2025-11-08T22:02:21.058Z"
+  },
+  {
+    "id": "cmhqtybya0005mi084lkqmaie",
+    "pipelineId": "cmhqtybya0001mi08tmqwae1i",
+    "name": "Proposal Sent",
+    "displayOrder": 3,
+    "probability": 75,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-08T22:02:21.058Z",
+    "updatedAt": "2025-11-08T22:02:21.058Z"
+  },
+  {
+    "id": "cmhqtybya0006mi08wv5p9chs",
+    "pipelineId": "cmhqtybya0001mi08tmqwae1i",
+    "name": "Negotiation",
+    "displayOrder": 4,
+    "probability": 90,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-08T22:02:21.058Z",
+    "updatedAt": "2025-11-08T22:02:21.058Z"
+  },
+  {
+    "id": "cmhqtybya0007mi08yx1vybuc",
+    "pipelineId": "cmhqtybya0001mi08tmqwae1i",
+    "name": "Closed Won",
+    "displayOrder": 5,
+    "probability": 100,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-08T22:02:21.058Z",
+    "updatedAt": "2025-11-08T22:02:21.058Z"
+  },
+  {
+    "id": "cmi5zf239003xpd08syfa1sun",
+    "pipelineId": "cmi5zf239003wpd08m03oowse",
+    "name": "New Lead",
+    "displayOrder": 0,
+    "probability": 10,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-19T12:31:52.150Z",
+    "updatedAt": "2025-11-19T12:31:52.150Z"
+  },
+  {
+    "id": "cmi5zf239003ypd080qrn4u2r",
+    "pipelineId": "cmi5zf239003wpd08m03oowse",
+    "name": "Contacted",
+    "displayOrder": 1,
+    "probability": 25,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-19T12:31:52.150Z",
+    "updatedAt": "2025-11-19T12:31:52.150Z"
+  },
+  {
+    "id": "cmi5zf239003zpd08yemj9m0s",
+    "pipelineId": "cmi5zf239003wpd08m03oowse",
+    "name": "Qualified",
+    "displayOrder": 2,
+    "probability": 50,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-19T12:31:52.150Z",
+    "updatedAt": "2025-11-19T12:31:52.150Z"
+  },
+  {
+    "id": "cmi5zf2390040pd08uznx4xtk",
+    "pipelineId": "cmi5zf239003wpd08m03oowse",
+    "name": "Proposal Sent",
+    "displayOrder": 3,
+    "probability": 75,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-19T12:31:52.150Z",
+    "updatedAt": "2025-11-19T12:31:52.150Z"
+  },
+  {
+    "id": "cmi5zf2390041pd0837quzczw",
+    "pipelineId": "cmi5zf239003wpd08m03oowse",
+    "name": "Negotiation",
+    "displayOrder": 4,
+    "probability": 90,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-19T12:31:52.150Z",
+    "updatedAt": "2025-11-19T12:31:52.150Z"
+  },
+  {
+    "id": "cmi5zf2390042pd085u2yrxbe",
+    "pipelineId": "cmi5zf239003wpd08m03oowse",
+    "name": "Closed Won",
+    "displayOrder": 5,
+    "probability": 100,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-19T12:31:52.150Z",
+    "updatedAt": "2025-11-19T12:31:52.150Z"
+  },
+  {
+    "id": "cmifwlfxg0002po08pfx5oysj",
+    "pipelineId": "cmifwlfxg0001po08plvi7c34",
+    "name": "New Lead",
+    "displayOrder": 0,
+    "probability": 10,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T11:10:32.931Z",
+    "updatedAt": "2025-11-26T11:10:32.931Z"
+  },
+  {
+    "id": "cmifwlfxg0003po08kk8lzo4b",
+    "pipelineId": "cmifwlfxg0001po08plvi7c34",
+    "name": "Contacted",
+    "displayOrder": 1,
+    "probability": 25,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T11:10:32.931Z",
+    "updatedAt": "2025-11-26T11:10:32.931Z"
+  },
+  {
+    "id": "cmifwlfxg0004po08hi1qk9yr",
+    "pipelineId": "cmifwlfxg0001po08plvi7c34",
+    "name": "Qualified",
+    "displayOrder": 2,
+    "probability": 50,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T11:10:32.931Z",
+    "updatedAt": "2025-11-26T11:10:32.931Z"
+  },
+  {
+    "id": "cmifwlfxg0005po08hfy67ppg",
+    "pipelineId": "cmifwlfxg0001po08plvi7c34",
+    "name": "Proposal Sent",
+    "displayOrder": 3,
+    "probability": 75,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T11:10:32.931Z",
+    "updatedAt": "2025-11-26T11:10:32.931Z"
+  },
+  {
+    "id": "cmifwlfxg0006po0870sb9k8y",
+    "pipelineId": "cmifwlfxg0001po08plvi7c34",
+    "name": "Negotiation",
+    "displayOrder": 4,
+    "probability": 90,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T11:10:32.931Z",
+    "updatedAt": "2025-11-26T11:10:32.931Z"
+  },
+  {
+    "id": "cmifwlfxg0007po08qz68a2wt",
+    "pipelineId": "cmifwlfxg0001po08plvi7c34",
+    "name": "Closed Won",
+    "displayOrder": 5,
+    "probability": 100,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T11:10:32.931Z",
+    "updatedAt": "2025-11-26T11:10:32.931Z"
+  },
+  {
+    "id": "cmig3yw2e0002qp08jktwc269",
+    "pipelineId": "cmig3yw2e0001qp08efxwvcon",
+    "name": "New Lead",
+    "displayOrder": 0,
+    "probability": 10,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T14:36:57.685Z",
+    "updatedAt": "2025-11-26T14:36:57.685Z"
+  },
+  {
+    "id": "cmig3yw2e0003qp08qjzdcozr",
+    "pipelineId": "cmig3yw2e0001qp08efxwvcon",
+    "name": "Contacted",
+    "displayOrder": 1,
+    "probability": 25,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T14:36:57.685Z",
+    "updatedAt": "2025-11-26T14:36:57.685Z"
+  },
+  {
+    "id": "cmig3yw2e0004qp08cndxqugx",
+    "pipelineId": "cmig3yw2e0001qp08efxwvcon",
+    "name": "Qualified",
+    "displayOrder": 2,
+    "probability": 50,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T14:36:57.685Z",
+    "updatedAt": "2025-11-26T14:36:57.685Z"
+  },
+  {
+    "id": "cmig3yw2e0005qp08hkaa43k2",
+    "pipelineId": "cmig3yw2e0001qp08efxwvcon",
+    "name": "Proposal Sent",
+    "displayOrder": 3,
+    "probability": 75,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T14:36:57.685Z",
+    "updatedAt": "2025-11-26T14:36:57.685Z"
+  },
+  {
+    "id": "cmig3yw2e0006qp0891vz0m1e",
+    "pipelineId": "cmig3yw2e0001qp08efxwvcon",
+    "name": "Negotiation",
+    "displayOrder": 4,
+    "probability": 90,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T14:36:57.685Z",
+    "updatedAt": "2025-11-26T14:36:57.685Z"
+  },
+  {
+    "id": "cmig3yw2e0007qp08u7zix3ee",
+    "pipelineId": "cmig3yw2e0001qp08efxwvcon",
+    "name": "Closed Won",
+    "displayOrder": 5,
+    "probability": 100,
+    "rottenAfterDays": null,
+    "createdAt": "2025-11-26T14:36:57.685Z",
+    "updatedAt": "2025-11-26T14:36:57.685Z"
+  },
+  {
+    "id": "cminh140i0010rw08dvr55g1u",
+    "pipelineId": "cminh140i000zrw081zar193a",
+    "name": "New Lead",
+    "displayOrder": 0,
+    "probability": 10,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-01T18:16:59.539Z",
+    "updatedAt": "2025-12-01T18:16:59.539Z"
+  },
+  {
+    "id": "cminh140i0011rw08fyohjqqy",
+    "pipelineId": "cminh140i000zrw081zar193a",
+    "name": "Contacted",
+    "displayOrder": 1,
+    "probability": 25,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-01T18:16:59.539Z",
+    "updatedAt": "2025-12-01T18:16:59.539Z"
+  },
+  {
+    "id": "cminh140i0012rw08agudz7yb",
+    "pipelineId": "cminh140i000zrw081zar193a",
+    "name": "Qualified",
+    "displayOrder": 2,
+    "probability": 50,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-01T18:16:59.539Z",
+    "updatedAt": "2025-12-01T18:16:59.539Z"
+  },
+  {
+    "id": "cminh140i0013rw086iqv8b16",
+    "pipelineId": "cminh140i000zrw081zar193a",
+    "name": "Proposal Sent",
+    "displayOrder": 3,
+    "probability": 75,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-01T18:16:59.539Z",
+    "updatedAt": "2025-12-01T18:16:59.539Z"
+  },
+  {
+    "id": "cminh140i0014rw08839i5fsc",
+    "pipelineId": "cminh140i000zrw081zar193a",
+    "name": "Negotiation",
+    "displayOrder": 4,
+    "probability": 90,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-01T18:16:59.539Z",
+    "updatedAt": "2025-12-01T18:16:59.539Z"
+  },
+  {
+    "id": "cminh140i0015rw08l5qaokut",
+    "pipelineId": "cminh140i000zrw081zar193a",
+    "name": "Closed Won",
+    "displayOrder": 5,
+    "probability": 100,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-01T18:16:59.539Z",
+    "updatedAt": "2025-12-01T18:16:59.539Z"
+  },
+  {
+    "id": "cmioxcwd90004qq08iy2my07y",
+    "pipelineId": "cmioxcwd90003qq0871x0j57e",
+    "name": "New Lead",
+    "displayOrder": 0,
+    "probability": 10,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-02T18:41:49.533Z",
+    "updatedAt": "2025-12-02T18:41:49.533Z"
+  },
+  {
+    "id": "cmioxcwd90005qq08e46591gq",
+    "pipelineId": "cmioxcwd90003qq0871x0j57e",
+    "name": "Contacted",
+    "displayOrder": 1,
+    "probability": 25,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-02T18:41:49.533Z",
+    "updatedAt": "2025-12-02T18:41:49.533Z"
+  },
+  {
+    "id": "cmioxcwd90006qq08j46cjjkb",
+    "pipelineId": "cmioxcwd90003qq0871x0j57e",
+    "name": "Qualified",
+    "displayOrder": 2,
+    "probability": 50,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-02T18:41:49.533Z",
+    "updatedAt": "2025-12-02T18:41:49.533Z"
+  },
+  {
+    "id": "cmioxcwd90007qq08s1nqmgnd",
+    "pipelineId": "cmioxcwd90003qq0871x0j57e",
+    "name": "Proposal Sent",
+    "displayOrder": 3,
+    "probability": 75,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-02T18:41:49.533Z",
+    "updatedAt": "2025-12-02T18:41:49.533Z"
+  },
+  {
+    "id": "cmioxcwd90008qq08fvsrw6b4",
+    "pipelineId": "cmioxcwd90003qq0871x0j57e",
+    "name": "Negotiation",
+    "displayOrder": 4,
+    "probability": 90,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-02T18:41:49.533Z",
+    "updatedAt": "2025-12-02T18:41:49.533Z"
+  },
+  {
+    "id": "cmioxcwd90009qq08cpp0pzfs",
+    "pipelineId": "cmioxcwd90003qq0871x0j57e",
+    "name": "Closed Won",
+    "displayOrder": 5,
+    "probability": 100,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-02T18:41:49.533Z",
+    "updatedAt": "2025-12-02T18:41:49.533Z"
+  },
+  {
+    "id": "cmjjaj7br0004od08zvs3pt70",
+    "pipelineId": "cmjjaj7br0003od08nxex5s6b",
+    "name": "New Lead",
+    "displayOrder": 0,
+    "probability": 10,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-24T00:43:43.959Z",
+    "updatedAt": "2025-12-24T00:43:43.959Z"
+  },
+  {
+    "id": "cmjjaj7br0005od08gl5jujwi",
+    "pipelineId": "cmjjaj7br0003od08nxex5s6b",
+    "name": "Contacted",
+    "displayOrder": 1,
+    "probability": 25,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-24T00:43:43.959Z",
+    "updatedAt": "2025-12-24T00:43:43.959Z"
+  },
+  {
+    "id": "cmjjaj7br0006od08gvq0xt56",
+    "pipelineId": "cmjjaj7br0003od08nxex5s6b",
+    "name": "Qualified",
+    "displayOrder": 2,
+    "probability": 50,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-24T00:43:43.959Z",
+    "updatedAt": "2025-12-24T00:43:43.959Z"
+  },
+  {
+    "id": "cmjjaj7br0007od08oz7w18u1",
+    "pipelineId": "cmjjaj7br0003od08nxex5s6b",
+    "name": "Proposal Sent",
+    "displayOrder": 3,
+    "probability": 75,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-24T00:43:43.959Z",
+    "updatedAt": "2025-12-24T00:43:43.959Z"
+  },
+  {
+    "id": "cmjjaj7br0008od086h4v59kc",
+    "pipelineId": "cmjjaj7br0003od08nxex5s6b",
+    "name": "Negotiation",
+    "displayOrder": 4,
+    "probability": 90,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-24T00:43:43.959Z",
+    "updatedAt": "2025-12-24T00:43:43.959Z"
+  },
+  {
+    "id": "cmjjaj7br0009od0875vilvnv",
+    "pipelineId": "cmjjaj7br0003od08nxex5s6b",
+    "name": "Closed Won",
+    "displayOrder": 5,
+    "probability": 100,
+    "rottenAfterDays": null,
+    "createdAt": "2025-12-24T00:43:43.959Z",
+    "updatedAt": "2025-12-24T00:43:43.959Z"
+  },
+  {
+    "id": "cmktc3jvx0002qq08m4hps0mx",
+    "pipelineId": "cmktc3jvx0001qq08sv3fg3s1",
+    "name": "New Lead",
+    "displayOrder": 0,
+    "probability": 10,
+    "rottenAfterDays": null,
+    "createdAt": "2026-01-25T06:04:57.069Z",
+    "updatedAt": "2026-01-25T06:04:57.069Z"
+  },
+  {
+    "id": "cmktc3jvx0003qq08bx5x9eps",
+    "pipelineId": "cmktc3jvx0001qq08sv3fg3s1",
+    "name": "Contacted",
+    "displayOrder": 1,
+    "probability": 25,
+    "rottenAfterDays": null,
+    "createdAt": "2026-01-25T06:04:57.069Z",
+    "updatedAt": "2026-01-25T06:04:57.069Z"
+  },
+  {
+    "id": "cmktc3jvx0004qq088pb0tdib",
+    "pipelineId": "cmktc3jvx0001qq08sv3fg3s1",
+    "name": "Qualified",
+    "displayOrder": 2,
+    "probability": 50,
+    "rottenAfterDays": null,
+    "createdAt": "2026-01-25T06:04:57.069Z",
+    "updatedAt": "2026-01-25T06:04:57.069Z"
+  },
+  {
+    "id": "cmktc3jvx0005qq08w8an7ga9",
+    "pipelineId": "cmktc3jvx0001qq08sv3fg3s1",
+    "name": "Proposal Sent",
+    "displayOrder": 3,
+    "probability": 75,
+    "rottenAfterDays": null,
+    "createdAt": "2026-01-25T06:04:57.069Z",
+    "updatedAt": "2026-01-25T06:04:57.069Z"
+  },
+  {
+    "id": "cmktc3jvx0006qq08iw6lkr99",
+    "pipelineId": "cmktc3jvx0001qq08sv3fg3s1",
+    "name": "Negotiation",
+    "displayOrder": 4,
+    "probability": 90,
+    "rottenAfterDays": null,
+    "createdAt": "2026-01-25T06:04:57.069Z",
+    "updatedAt": "2026-01-25T06:04:57.069Z"
+  },
+  {
+    "id": "cmktc3jvx0007qq081777dmk7",
+    "pipelineId": "cmktc3jvx0001qq08sv3fg3s1",
+    "name": "Closed Won",
+    "displayOrder": 5,
+    "probability": 100,
+    "rottenAfterDays": null,
+    "createdAt": "2026-01-25T06:04:57.069Z",
+    "updatedAt": "2026-01-25T06:04:57.069Z"
+  }
+]

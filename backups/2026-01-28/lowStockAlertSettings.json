@@ -1,0 +1,19 @@
+[
+  {
+    "id": "cmifxbobz0001qm08ol972ypk",
+    "userId": "cmhpnsd8e0000n508lgk9ivvm",
+    "enabled": true,
+    "checkDaily": true,
+    "alertTime": "09:00",
+    "sendEmail": true,
+    "emailAddresses": "michaelmendeznow@gmail.com",
+    "sendSMS": false,
+    "smsNumbers": "",
+    "alertOnLowStock": true,
+    "alertOnOutOfStock": true,
+    "alertOnCritical": true,
+    "lastAlertSent": null,
+    "createdAt": "2025-11-26T11:30:56.880Z",
+    "updatedAt": "2025-11-26T11:30:56.880Z"
+  }
+]
