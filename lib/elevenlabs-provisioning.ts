@@ -1,13 +1,15 @@
 
 /**
- * ElevenLabs Auto-Provisioning Service
+ * ElevenLabs Auto-Provisioning Service (White-Label)
  * 
  * This service automatically creates and manages ElevenLabs conversational AI agents
  * for your SaaS users without requiring them to have their own ElevenLabs accounts.
  * 
- * Architecture:
- * - Uses automatic failover between multiple ElevenLabs API keys
- * - Switches to backup key when primary reaches capacity
+ * WHITE-LABEL ARCHITECTURE:
+ * - Uses a SINGLE master ElevenLabs API key for all agencies
+ * - Agents are prefixed with agency ID for isolation (ag_{userId}_{agentType})
+ * - Usage is tracked per-agency for billing purposes
+ * - ElevenLabs branding is hidden from end users
  * - Creates unique agents for each user's voice agent
  * - Tracks all created agents in your database
  * - Manages agent lifecycle (create, update, delete)
@@ -15,7 +17,7 @@
  */
 
 import { prisma } from './db';
-import { elevenLabsKeyManager } from './elevenlabs-key-manager';
+import { voiceAIPlatform } from './voice-ai-platform';
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
@@ -70,16 +72,25 @@ export interface ElevenLabsAgent {
 
 class ElevenLabsProvisioningService {
   /**
-   * Get the active ElevenLabs API key for a user (with automatic failover)
+   * Get the master ElevenLabs API key (WHITE-LABEL)
+   * 
+   * All agencies share the same master API key.
+   * The userId parameter is kept for compatibility but not used for key selection.
    */
   private async getApiKey(userId?: string): Promise<string> {
-    if (!userId) {
-      // No userId provided, use environment variable
-      return process.env.ELEVENLABS_API_KEY || '';
-    }
-    const apiKey = await elevenLabsKeyManager.getActiveApiKey(userId);
-    // Fallback to environment variable if no keys configured for this user
-    return apiKey || process.env.ELEVENLABS_API_KEY || '';
+    // Always use the master API key from the platform config
+    const masterKey = await voiceAIPlatform.getMasterApiKey();
+    return masterKey || process.env.ELEVENLABS_API_KEY || '';
+  }
+
+  /**
+   * Generate the agent name with agency prefix for multi-tenant isolation
+   * Format: ag_{userId}_{agentName}
+   */
+  private async generatePrefixedAgentName(userId: string, agentName: string): Promise<string> {
+    const subscription = await voiceAIPlatform.getAgencySubscription(userId);
+    const prefix = subscription.agentPrefix || voiceAIPlatform.generateAgentPrefix(userId);
+    return `${prefix}_${agentName.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').slice(0, 50)}`;
   }
 
   /**
@@ -292,10 +303,14 @@ class ElevenLabsProvisioningService {
         },
       ];
 
+      // Generate prefixed agent name for multi-tenant isolation in ElevenLabs
+      const prefixedAgentName = await this.generatePrefixedAgentName(options.userId, options.name);
+      console.log(`🏷️  [White-Label] Agent name: ${prefixedAgentName} (original: ${options.name})`);
+
       // Create the agent via ElevenLabs API
       // IMPORTANT: Include ALL required configuration for browser-based preview
       const agentPayload = {
-        name: options.name, // CRITICAL: Agent name for identification
+        name: prefixedAgentName, // WHITE-LABEL: Prefixed with agency ID for isolation
         conversation_config: {
           agent: {
             prompt: {

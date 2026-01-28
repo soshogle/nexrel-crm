@@ -298,7 +298,7 @@ export function RealEstateAIEmployees() {
     setProvisioningProgress(0);
     
     try {
-      toast.loading('Creating ElevenLabs agents...', { id: 'provision' });
+      toast.loading('Creating Voice AI agents...', { id: 'provision' });
       
       const response = await fetch('/api/real-estate/ai-employees/provision', {
         method: 'POST',
@@ -422,7 +422,7 @@ export function RealEstateAIEmployees() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3 mb-2">
               <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
-              <span className="text-purple-300 font-medium">Creating ElevenLabs Voice Agents...</span>
+              <span className="text-purple-300 font-medium">Creating NEXREL Voice AI Agents...</span>
             </div>
             <p className="text-sm text-slate-400 mb-3">
               Each agent is configured with OACIQ compliance, multi-language support, and specialized real estate knowledge.
@@ -596,7 +596,7 @@ export function RealEstateAIEmployees() {
                           </Badge>
                         </div>
                         <p className="text-sm text-slate-400 mb-3">
-                          ElevenLabs agent configured with OACIQ compliance and multi-language support.
+                          Voice AI agent configured with OACIQ compliance and multi-language support.
                         </p>
                         <div className="flex gap-2">
                           <Button
@@ -606,13 +606,13 @@ export function RealEstateAIEmployees() {
                             onClick={(e) => {
                               e.stopPropagation();
                               const agent = getProvisionedAgent(selectedEmployee.id);
-                              if (agent?.elevenLabsAgentId) {
-                                window.open(`https://elevenlabs.io/app/conversational-ai/${agent.elevenLabsAgentId}`, '_blank');
+                              if (agent?.id) {
+                                window.location.href = `/dashboard/voice-agents/preview?agentId=${agent.id}`;
                               }
                             }}
                           >
                             <Settings className="w-3 h-3 mr-1" />
-                            Configure in ElevenLabs
+                            Test Agent
                           </Button>
                         </div>
                       </>
@@ -623,7 +623,7 @@ export function RealEstateAIEmployees() {
                           <span className="text-yellow-400 font-medium">Voice Agent Not Provisioned</span>
                         </div>
                         <p className="text-sm text-slate-400 mb-3">
-                          Click "Provision All Voice Agents" above to create this agent in ElevenLabs.
+                          Click "Provision All Voice Agents" above to create this Voice AI agent.
                         </p>
                       </>
                     )}
