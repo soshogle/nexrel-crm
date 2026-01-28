@@ -39,7 +39,7 @@ function loadGoogleMapsScript(): Promise<void> {
       return;
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDBBXN9otEolVDPCQKYCJq8KwM-zH6HgVI';
     if (!apiKey) {
       console.error('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not set');
       reject(new Error('Google Maps API key not configured'));
