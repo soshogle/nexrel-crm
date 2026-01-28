@@ -52,8 +52,10 @@ export function LocationSearch({
   // Only sync from parent when controlled value actually changes (e.g., reset or selection)
   // This prevents parent's empty value from overriding user typing
   useEffect(() => {
+    console.log('[LocationSearch] useEffect - controlledValue:', controlledValue, 'lastRef:', lastControlledValueRef.current);
     // Only update if parent explicitly changed the value (not just re-rendered)
     if (controlledValue !== lastControlledValueRef.current) {
+      console.log('[LocationSearch] Syncing from parent value');
       lastControlledValueRef.current = controlledValue;
       // Only sync if controlled value is non-empty OR if we need to clear
       if (controlledValue !== undefined) {
@@ -110,6 +112,7 @@ export function LocationSearch({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    console.log('[LocationSearch] handleInputChange called with:', newValue);
     setInputValue(newValue);
 
     // Debounce API call
