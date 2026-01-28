@@ -343,8 +343,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         employeeType: employeeType as any,
         status: result.success ? 'SUCCESS' : 'FAILED',
-        tasksProcessed: result.tasksCompleted,
-        resultJson: result.details || {},
+        result: result.details || {},
         completedAt: new Date()
       }
     });
