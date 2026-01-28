@@ -284,7 +284,7 @@ export function AttractionEngine() {
                   value={region}
                   onChange={handleLocationChange}
                   placeholder="Search city, neighborhood, or area..."
-                  types={['(cities)', '(regions)']}
+                  types="(cities)"
                 />
                 {placeData?.city && (
                   <p className="text-xs text-gray-500">
@@ -573,7 +573,7 @@ export function AttractionEngine() {
                   value={region}
                   onChange={handleLocationChange}
                   placeholder="Search city, neighborhood, or area..."
-                  types={['(cities)', '(regions)']}
+                  types="(cities)"
                 />
                 {placeData?.city && (
                   <p className="text-xs text-gray-500">
