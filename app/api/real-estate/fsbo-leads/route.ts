@@ -17,22 +17,22 @@ export async function GET(request: NextRequest) {
     const source = searchParams.get('source') as REFSBOSource | null;
     const status = searchParams.get('status') as REFSBOStatus | null;
     const city = searchParams.get('city');
+    const assignedOnly = searchParams.get('assignedOnly') === 'true';
     const limit = parseInt(searchParams.get('limit') || '50');
 
     const fsboListings = await prisma.rEFSBOListing.findMany({
       where: {
-        userId: session.user.id,
+        ...(assignedOnly && { assignedUserId: session.user.id }),
         ...(source && { source }),
         ...(status && { status }),
         ...(city && { city: { contains: city, mode: 'insensitive' } }),
       },
       include: {
+        assignedUser: {
+          select: { id: true, name: true, email: true },
+        },
         convertedLead: {
-          select: {
-            id: true,
-            contactPerson: true,
-            status: true,
-          },
+          select: { id: true, contactPerson: true, status: true },
         },
       },
       orderBy: { lastSeenAt: 'desc' },
@@ -48,10 +48,7 @@ export async function GET(request: NextRequest) {
       notInterested: fsboListings.filter(l => l.status === 'NOT_INTERESTED').length,
     };
 
-    return NextResponse.json({
-      listings: fsboListings,
-      stats,
-    });
+    return NextResponse.json({ listings: fsboListings, stats });
   } catch (error) {
     console.error('FSBO Leads GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch FSBO leads' }, { status: 500 });
@@ -84,9 +81,9 @@ export async function POST(request: NextRequest) {
       propertyType,
       photos,
       description,
-      ownerName,
-      ownerPhone,
-      ownerEmail,
+      sellerName,
+      sellerPhone,
+      sellerEmail,
     } = body;
 
     if (!source || !sourceUrl || !address || !city) {
@@ -102,7 +99,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      // Update existing
       const updated = await prisma.rEFSBOListing.update({
         where: { sourceUrl },
         data: {
@@ -115,7 +111,6 @@ export async function POST(request: NextRequest) {
 
     const listing = await prisma.rEFSBOListing.create({
       data: {
-        userId: session.user.id,
         source: source as REFSBOSource,
         sourceUrl,
         sourceListingId,
@@ -133,10 +128,11 @@ export async function POST(request: NextRequest) {
         propertyType,
         photos: photos || [],
         description,
-        ownerName,
-        ownerPhone,
-        ownerEmail,
+        sellerName,
+        sellerPhone,
+        sellerEmail,
         status: 'NEW',
+        assignedUserId: session.user.id,
       },
     });
 
@@ -155,15 +151,14 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, status, notes, ownerPhone, ownerEmail, ownerName, convertedLeadId } = body;
+    const { id, status, notes, sellerPhone, sellerEmail, sellerName, convertedLeadId, assignedUserId } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Listing ID required' }, { status: 400 });
     }
 
-    // Verify ownership
     const existing = await prisma.rEFSBOListing.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id },
     });
 
     if (!existing) {
@@ -175,10 +170,11 @@ export async function PUT(request: NextRequest) {
       data: {
         ...(status && { status: status as REFSBOStatus }),
         ...(notes !== undefined && { notes }),
-        ...(ownerPhone && { ownerPhone }),
-        ...(ownerEmail && { ownerEmail }),
-        ...(ownerName && { ownerName }),
+        ...(sellerPhone && { sellerPhone }),
+        ...(sellerEmail && { sellerEmail }),
+        ...(sellerName && { sellerName }),
         ...(convertedLeadId && { convertedLeadId }),
+        ...(assignedUserId !== undefined && { assignedUserId }),
         lastSeenAt: new Date(),
       },
     });
@@ -204,9 +200,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Listing ID required' }, { status: 400 });
     }
 
-    // Verify ownership
     const existing = await prisma.rEFSBOListing.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id },
     });
 
     if (!existing) {
