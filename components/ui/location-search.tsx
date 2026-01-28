@@ -28,6 +28,7 @@ interface LocationSearchProps {
 /**
  * Location Search Component
  * Connected to Google Places API via server-side endpoint
+ * Uses uncontrolled input pattern - parent value is only used for initial/reset
  */
 export function LocationSearch({
   value: controlledValue,
@@ -38,19 +39,26 @@ export function LocationSearch({
   className = '',
   countryRestriction
 }: LocationSearchProps) {
-  // Always use internal state for the input value to ensure typing works
-  const [inputValue, setInputValue] = useState(defaultValue);
+  // Use internal state for input - this allows typing to work
+  const [inputValue, setInputValue] = useState(controlledValue || defaultValue || '');
   const [predictions, setPredictions] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const lastControlledValueRef = useRef(controlledValue);
 
-  // Sync with controlled value only when it changes from parent (not on every render)
+  // Only sync from parent when controlled value actually changes (e.g., reset or selection)
+  // This prevents parent's empty value from overriding user typing
   useEffect(() => {
-    if (controlledValue !== undefined && controlledValue !== inputValue) {
-      setInputValue(controlledValue);
+    // Only update if parent explicitly changed the value (not just re-rendered)
+    if (controlledValue !== lastControlledValueRef.current) {
+      lastControlledValueRef.current = controlledValue;
+      // Only sync if controlled value is non-empty OR if we need to clear
+      if (controlledValue !== undefined) {
+        setInputValue(controlledValue);
+      }
     }
   }, [controlledValue]);
 
