@@ -1,17 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Calculator,
   DollarSign,
-  Percent,
-  Home,
   FileText,
   Download,
   Send,
-  Info,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 interface SellerNetSheetCalculatorProps {
   initialPrice?: number;
@@ -43,6 +41,7 @@ export function SellerNetSheetCalculator({ initialPrice = 500000, propertyAddres
   const [mortgageBalance, setMortgageBalance] = useState(250000);
   const [commissionRate, setCommissionRate] = useState(5);
   const [expandedSections, setExpandedSections] = useState<string[]>(['closing', 'prepaid']);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // State-specific transfer tax rates (per $1000)
   const transferTaxRates: Record<string, number> = {
@@ -105,6 +104,62 @@ export function SellerNetSheetCalculator({ initialPrice = 500000, propertyAddres
     setExpandedSections(prev =>
       prev.includes(section) ? prev.filter(s => s !== section) : [...prev, section]
     );
+  };
+
+  const handleDownloadPdf = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      const response = await fetch('/api/real-estate/net-sheet/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyAddress,
+          salePrice,
+          state,
+          mortgageBalance,
+          commissionRate,
+          closingCosts: {
+            commission,
+            transferTax,
+            titleInsurance,
+            escrowFee,
+            recordingFees,
+            total: closingCosts.total,
+          },
+          prepaidItems: {
+            propertyTaxProration,
+            hoaProration,
+            homeWarranty,
+            total: prepaidItems.total,
+          },
+          estimatedProceeds,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to generate PDF' }));
+        throw new Error(error.error || 'Failed to generate PDF');
+      }
+
+      // Download the PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = propertyAddress 
+        ? `Net_Sheet_${propertyAddress.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
+        : `Seller_Net_Sheet_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate PDF');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   return (
@@ -286,9 +341,23 @@ export function SellerNetSheetCalculator({ initialPrice = 500000, propertyAddres
 
       {/* Actions */}
       <div className="flex justify-end gap-3">
-        <Button variant="outline" className="border-slate-700">
-          <Download className="w-4 h-4 mr-2" />
-          Export PDF
+        <Button 
+          variant="outline" 
+          className="border-slate-700"
+          onClick={handleDownloadPdf}
+          disabled={isGeneratingPdf}
+        >
+          {isGeneratingPdf ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4 mr-2" />
+              Export PDF
+            </>
+          )}
         </Button>
         <Button className="bg-gradient-to-r from-emerald-500 to-teal-500">
           <Send className="w-4 h-4 mr-2" />
