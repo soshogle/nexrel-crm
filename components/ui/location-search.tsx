@@ -178,7 +178,7 @@ export function LocationSearch({
 
   return (
     <div className={`relative ${className}`}>
-      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 z-10 pointer-events-none" />
       <Input
         ref={inputRef}
         type="text"
@@ -186,27 +186,27 @@ export function LocationSearch({
         onChange={handleInputChange}
         onFocus={() => predictions.length > 0 && setShowDropdown(true)}
         placeholder={placeholder}
-        className="pl-10 pr-8"
+        className="pl-10 pr-8 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-blue-500 focus:ring-blue-500/20"
         autoComplete="off"
       />
       {isLoading && (
-        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 animate-spin" />
       )}
 
       {showDropdown && predictions.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+          className="absolute z-[9999] w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-y-auto"
         >
           {predictions.map((prediction, idx) => (
             <button
               key={prediction.place_id || idx}
               type="button"
               onClick={() => handleSelectPrediction(prediction)}
-              className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
+              className="w-full px-4 py-3 text-left hover:bg-slate-700 flex items-center gap-3 transition-colors"
             >
-              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-700 dark:text-gray-200 truncate">
+              <MapPin className="w-4 h-4 text-blue-400 flex-shrink-0" />
+              <span className="text-sm text-white truncate">
                 {prediction.description}
               </span>
             </button>
