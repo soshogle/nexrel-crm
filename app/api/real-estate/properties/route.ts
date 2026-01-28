@@ -15,39 +15,25 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') as REListingStatus | null;
-    const city = searchParams.get('city');
+    const propertyType = searchParams.get('propertyType') as REPropertyType | null;
     const limit = parseInt(searchParams.get('limit') || '50');
 
     const properties = await prisma.rEProperty.findMany({
       where: {
         userId: session.user.id,
         ...(status && { listingStatus: status }),
-        ...(city && { city: { contains: city, mode: 'insensitive' } }),
+        ...(propertyType && { propertyType }),
       },
       include: {
         sellerLead: {
-          select: {
-            id: true,
-            contactPerson: true,
-            phone: true,
-            email: true,
-          },
-        },
-        _count: {
-          select: {
-            cmaReports: true,
-            diagnostics: true,
-          },
+          select: { id: true, contactPerson: true, email: true, phone: true },
         },
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
       take: limit,
     });
 
-    return NextResponse.json({
-      properties,
-      total: properties.length,
-    });
+    return NextResponse.json({ properties });
   } catch (error) {
     console.error('Properties GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 });
@@ -108,8 +94,8 @@ export async function POST(request: NextRequest) {
         sqft: sqft ? parseInt(sqft) : null,
         lotSize: lotSize ? parseInt(lotSize) : null,
         yearBuilt: yearBuilt ? parseInt(yearBuilt) : null,
-        propertyType: propertyType || 'SINGLE_FAMILY',
-        listingStatus: listingStatus || 'ACTIVE',
+        propertyType: (propertyType as REPropertyType) || 'SINGLE_FAMILY',
+        listingStatus: (listingStatus as REListingStatus) || 'ACTIVE',
         listPrice: listPrice ? parseFloat(listPrice) : null,
         mlsNumber,
         photos: photos || [],
@@ -117,7 +103,7 @@ export async function POST(request: NextRequest) {
         description,
         features: features || [],
         sellerLeadId,
-        listingDate: listingDate ? new Date(listingDate) : new Date(),
+        listingDate: listingDate ? new Date(listingDate) : null,
         expirationDate: expirationDate ? new Date(expirationDate) : null,
       },
     });
@@ -143,7 +129,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Property ID required' }, { status: 400 });
     }
 
-    // Verify ownership
     const existing = await prisma.rEProperty.findFirst({
       where: { id, userId: session.user.id },
     });
@@ -152,24 +137,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
     }
 
-    // Calculate days on market if status changed to ACTIVE
-    let daysOnMarket = existing.daysOnMarket;
-    if (updateData.listingStatus === 'ACTIVE' && existing.listingDate) {
-      daysOnMarket = Math.floor(
-        (Date.now() - new Date(existing.listingDate).getTime()) / (1000 * 60 * 60 * 24)
-      );
-    }
-
     const property = await prisma.rEProperty.update({
       where: { id },
       data: {
-        ...updateData,
-        daysOnMarket,
-        ...(updateData.listPrice && { listPrice: parseFloat(updateData.listPrice) }),
-        ...(updateData.soldPrice && { soldPrice: parseFloat(updateData.soldPrice) }),
-        ...(updateData.beds && { beds: parseInt(updateData.beds) }),
-        ...(updateData.baths && { baths: parseFloat(updateData.baths) }),
-        ...(updateData.sqft && { sqft: parseInt(updateData.sqft) }),
+        ...(updateData.address && { address: updateData.address }),
+        ...(updateData.listPrice !== undefined && { listPrice: parseFloat(updateData.listPrice) }),
+        ...(updateData.listingStatus && { listingStatus: updateData.listingStatus as REListingStatus }),
+        ...(updateData.description && { description: updateData.description }),
+        ...(updateData.daysOnMarket !== undefined && { daysOnMarket: parseInt(updateData.daysOnMarket) }),
       },
     });
 
@@ -194,7 +169,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Property ID required' }, { status: 400 });
     }
 
-    // Verify ownership
     const existing = await prisma.rEProperty.findFirst({
       where: { id, userId: session.user.id },
     });

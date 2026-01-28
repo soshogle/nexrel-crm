@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
       try {
         await prisma.rEFSBOListing.create({
           data: {
-            userId,
+            assignedUserId: userId,
             source: fsbo.source as any,
             sourceUrl: fsbo.sourceUrl,
             address: fsbo.address,
@@ -290,8 +290,8 @@ export async function POST(request: NextRequest) {
             sqft: fsbo.sqft,
             yearBuilt: fsbo.yearBuilt,
             propertyType: fsbo.propertyType,
-            ownerName: fsbo.ownerName,
-            ownerPhone: fsbo.ownerPhone,
+            sellerName: fsbo.ownerName,
+            sellerPhone: fsbo.ownerPhone,
             status: fsbo.status as any,
           },
         });
