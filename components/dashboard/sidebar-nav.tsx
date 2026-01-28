@@ -590,6 +590,21 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       return pathname === '/onboarding';
     }
     
+    // For parent routes that have child pages (like /dashboard/real-estate), 
+    // only highlight if it's an EXACT match to prevent double highlighting
+    const parentRoutesWithChildren = [
+      '/dashboard/real-estate',
+      '/dashboard/clubos',
+      '/dashboard/clubos/parent',
+      '/dashboard/campaigns',
+      '/dashboard/ecommerce',
+      '/dashboard/payments',
+    ];
+    
+    if (parentRoutesWithChildren.includes(href)) {
+      return pathname === href;
+    }
+    
     // Exact match first
     if (pathname === href) return true;
     
