@@ -8,7 +8,6 @@ import { SidebarNav } from './sidebar-nav'
 import { AIChatAssistant } from './ai-chat-assistant'
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
 import { GlobalSearchTrigger } from '@/app/components/unified-search'
-import { GoogleMapsLoader } from '@/components/google-maps-loader'
 
 interface DashboardWrapperProps {
   children: ReactNode
@@ -62,9 +61,6 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
     <>
       {/* Impersonation Banner - Always renders but only shows when impersonating */}
       <ImpersonationBanner />
-      
-      {/* Google Maps API for Place Autocomplete */}
-      <GoogleMapsLoader />
       
       <div className="flex h-screen bg-gray-50">
         {/* Sidebar - Positioned to account for potential impersonation banner */}
