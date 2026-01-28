@@ -107,14 +107,17 @@ async function scrapeSource(
       return await scrapeZillowFSBO(config);
     case 'FSBO_COM':
       return await scrapeFSBOCom(config);
-    case 'REALTOR_COM':
-      return await scrapeRealtorCom(config);
     case 'DUPROPRIO':
       return await scrapeDuProprio(config);
     case 'KIJIJI':
       return await scrapeKijiji(config);
     case 'CRAIGSLIST':
       return await scrapeCraigslist(config);
+    case 'PURPLEBRICKS':
+    case 'FACEBOOK_MARKETPLACE':
+    case 'MANUAL_IMPORT':
+    case 'OTHER':
+      return { found: 0, newLeads: 0, duplicates: 0, error: `Source ${source} requires manual import` };
     default:
       return { found: 0, newLeads: 0, duplicates: 0, error: `Unsupported source: ${source}` };
   }
@@ -213,49 +216,6 @@ async function scrapeFSBOCom(config: FSBOScrapingConfig) {
     if (!item.address) continue;
     
     const listing = transformGenericListing(item, 'FSBO_COM');
-    const saveResult = await saveFSBOListing(config.userId, listing);
-    
-    if (saveResult.duplicate) {
-      duplicates++;
-    } else {
-      newLeads++;
-    }
-  }
-
-  return {
-    found: items.length,
-    newLeads,
-    duplicates,
-    runId: apifyResult.runId
-  };
-}
-
-/**
- * Scrape Realtor.com listings
- */
-async function scrapeRealtorCom(config: FSBOScrapingConfig) {
-  const searchUrls = buildRealtorComUrls(config);
-  
-  const apifyResult = await runApifyActor({
-    actorId: APIFY_ACTORS.REALTOR_SCRAPER,
-    input: {
-      startUrls: searchUrls.map(url => ({ url })),
-      maxItems: config.maxListings || 100,
-      filterByOwner: true
-    },
-    waitForFinish: 300
-  });
-
-  if (!apifyResult.success) {
-    return { found: 0, newLeads: 0, duplicates: 0, error: apifyResult.error };
-  }
-
-  const items = apifyResult.items || [];
-  let newLeads = 0;
-  let duplicates = 0;
-
-  for (const item of items) {
-    const listing = transformRealtorListing(item);
     const saveResult = await saveFSBOListing(config.userId, listing);
     
     if (saveResult.duplicate) {
@@ -511,16 +471,6 @@ function buildFSBOComUrls(config: FSBOScrapingConfig): string[] {
   return states.map(state => `https://www.fsbo.com/listings/${state.toLowerCase()}/`);
 }
 
-function buildRealtorComUrls(config: FSBOScrapingConfig): string[] {
-  const urls: string[] = [];
-  
-  for (const state of config.targetStates || []) {
-    urls.push(`https://www.realtor.com/realestateandhomes-search/${state}/type-for-sale-by-owner`);
-  }
-  
-  return urls;
-}
-
 function transformZillowListing(item: any): FSBOListingInput {
   return {
     source: 'ZILLOW_FSBO',
@@ -541,28 +491,6 @@ function transformZillowListing(item: any): FSBOListingInput {
     description: item.description,
     photos: item.photos?.map((p: any) => p.url) || [],
     daysOnMarket: item.daysOnZillow || 0
-  };
-}
-
-function transformRealtorListing(item: any): FSBOListingInput {
-  return {
-    source: 'REALTOR_COM',
-    sourceUrl: item.url || `https://realtor.com/property/${item.property_id}`,
-    sourceListingId: item.property_id,
-    address: item.address?.line || item.location?.address?.line || 'Unknown',
-    city: item.address?.city || 'Unknown',
-    state: item.address?.state_code || 'Unknown',
-    zip: item.address?.postal_code,
-    country: 'US',
-    listPrice: item.list_price,
-    beds: item.description?.beds,
-    baths: item.description?.baths,
-    sqft: item.description?.sqft,
-    lotSize: item.description?.lot_sqft,
-    yearBuilt: item.description?.year_built,
-    propertyType: item.description?.type,
-    photos: item.photos?.map((p: any) => p.href) || [],
-    daysOnMarket: item.list_date ? Math.floor((Date.now() - new Date(item.list_date).getTime()) / (1000 * 60 * 60 * 24)) : 0
   };
 }
 

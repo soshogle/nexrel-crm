@@ -49,10 +49,11 @@ export async function GET(request: NextRequest) {
       sources: [
         { id: 'ZILLOW_FSBO', name: 'Zillow FSBO', country: 'US' },
         { id: 'FSBO_COM', name: 'FSBO.com', country: 'US' },
-        { id: 'REALTOR_COM', name: 'Realtor.com', country: 'US' },
         { id: 'DUPROPRIO', name: 'DuProprio', country: 'CA' },
         { id: 'KIJIJI', name: 'Kijiji', country: 'CA' },
-        { id: 'CRAIGSLIST', name: 'Craigslist', country: 'US/CA' }
+        { id: 'CRAIGSLIST', name: 'Craigslist', country: 'US/CA' },
+        { id: 'PURPLEBRICKS', name: 'Purplebricks', country: 'CA/UK' },
+        { id: 'FACEBOOK_MARKETPLACE', name: 'Facebook Marketplace', country: 'US/CA' }
       ]
     });
   } catch (error) {
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Default to FSBO scraping
       const validSources = sources.filter((s: string) =>
-        ['ZILLOW_FSBO', 'FSBO_COM', 'REALTOR_COM', 'DUPROPRIO', 'KIJIJI', 'CRAIGSLIST'].includes(s)
+        ['ZILLOW_FSBO', 'FSBO_COM', 'DUPROPRIO', 'KIJIJI', 'CRAIGSLIST', 'PURPLEBRICKS', 'FACEBOOK_MARKETPLACE'].includes(s)
       ) as REFSBOSource[];
 
       result = await scrapeFSBOListings({
