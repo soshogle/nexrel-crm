@@ -273,6 +273,63 @@ export default function RealEstateDashboard() {
           ))}
         </motion.div>
 
+        {/* Quick Navigation to Subpages */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-white text-lg flex items-center gap-2">
+                <LayoutDashboard className="w-5 h-5 text-violet-400" />
+                Quick Navigation
+              </CardTitle>
+              <CardDescription className="text-slate-400">Access all Real Estate tools and pages</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <Link href="/dashboard/real-estate" className="group">
+                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-violet-500/50 hover:bg-violet-500/10 transition-all text-center">
+                    <Building2 className="w-6 h-6 text-violet-400 mx-auto mb-2" />
+                    <span className="text-sm text-white font-medium">RE Hub</span>
+                  </div>
+                </Link>
+                <Link href="/dashboard/real-estate/fsbo-leads" className="group">
+                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-blue-500/50 hover:bg-blue-500/10 transition-all text-center">
+                    <Users className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+                    <span className="text-sm text-white font-medium">FSBO Leads</span>
+                  </div>
+                </Link>
+                <Link href="/dashboard/real-estate/cma" className="group">
+                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all text-center">
+                    <TrendingUp className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
+                    <span className="text-sm text-white font-medium">CMA Tools</span>
+                  </div>
+                </Link>
+                <Link href="/dashboard/real-estate/market-insights" className="group">
+                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all text-center">
+                    <BarChart3 className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+                    <span className="text-sm text-white font-medium">Market Insights</span>
+                  </div>
+                </Link>
+                <Link href="/dashboard/real-estate/net-sheet" className="group">
+                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-amber-500/50 hover:bg-amber-500/10 transition-all text-center">
+                    <DollarSign className="w-6 h-6 text-amber-400 mx-auto mb-2" />
+                    <span className="text-sm text-white font-medium">Seller Net Sheet</span>
+                  </div>
+                </Link>
+                <Link href="/dashboard/real-estate/analytics" className="group">
+                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 hover:bg-cyan-500/10 transition-all text-center">
+                    <LineChart className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
+                    <span className="text-sm text-white font-medium">RE Analytics</span>
+                  </div>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-slate-900/50 border border-slate-700/50 backdrop-blur-xl p-1">
