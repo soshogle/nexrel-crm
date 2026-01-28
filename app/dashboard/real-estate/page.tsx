@@ -53,6 +53,7 @@ import { MarketInsightsWidget } from '@/components/real-estate/market-insights-w
 import { FSBOLeadsWidget } from '@/components/real-estate/fsbo-leads-widget';
 import { StaleListingsWidget } from '@/components/real-estate/stale-listings-widget';
 import { RealEstateAITeamWidget } from '@/components/ai-employees/real-estate-employees';
+import { AttractionEngine } from '@/components/real-estate/attraction-engine';
 
 interface MarketStat {
   label: string;
@@ -353,6 +354,10 @@ export default function RealEstateDashboard() {
               <Search className="w-4 h-4 mr-2" />
               FSBO Leads
             </TabsTrigger>
+            <TabsTrigger value="attraction" className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300">
+              <Target className="w-4 h-4 mr-2" />
+              Attraction
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -419,6 +424,10 @@ export default function RealEstateDashboard() {
 
           <TabsContent value="fsbo">
             <FSBOLeadsWidget expanded />
+          </TabsContent>
+
+          <TabsContent value="attraction">
+            <AttractionEngine />
           </TabsContent>
         </Tabs>
       </div>
