@@ -885,7 +885,12 @@ export default function AIEmployeesPage() {
           <TabsTrigger value="trigger">Trigger Tasks</TabsTrigger>
           <TabsTrigger value="ai-team">AI Team</TabsTrigger>
           {isRealEstateUser && (
-            <TabsTrigger value="re-team">RE Team</TabsTrigger>
+            <TabsTrigger 
+              value="re-team"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+            >
+              RE Team
+            </TabsTrigger>
           )}
           <TabsTrigger value="monitor">Monitor Jobs</TabsTrigger>
           <TabsTrigger value="tasks">Manage Tasks</TabsTrigger>
