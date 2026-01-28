@@ -1,7 +1,31 @@
 /**
- * FSBO Scrapers Module
+ * Real Estate Scrapers - Main Export
  */
 
+// Apify Client
+export {
+  runApifyActor,
+  getDatasetItems,
+  getRunStatus,
+  validateApifyConnection,
+  APIFY_ACTORS
+} from './apify-client';
+
+// FSBO Scraper
+export {
+  scrapeFSBOListings,
+  type FSBOScrapingConfig,
+  type FSBOScrapingResult
+} from './fsbo-scraper';
+
+// Expired Listing Scraper
+export {
+  scrapeExpiredListings,
+  type ExpiredListingInput,
+  type ExpiredScrapingConfig
+} from './expired-scraper';
+
+// Scraper Service (DB operations)
 export {
   createScrapingJob,
   getScrapingJobs,
@@ -15,9 +39,14 @@ export {
   type FSBOListingInput
 } from './scraper-service';
 
+// Utilities
 export {
   getApifyToken,
-  getHunterApiKey,
   normalizePhone,
-  normalizeAddress
+  normalizeAddress,
+  parsePrice,
+  calculateDaysOnMarket,
+  isValidEmail,
+  getStateAbbrev,
+  STATE_ABBREVS
 } from './utils';
