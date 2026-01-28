@@ -154,12 +154,10 @@ async function executeMarketReport(userId: string, reportType: 'WEEKLY' | 'MONTH
   // Get user info for region
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { state: true, city: true, name: true }
+    select: { operatingLocation: true, name: true }
   });
 
-  const region = user?.city && user?.state 
-    ? `${user.city}, ${user.state}` 
-    : user?.state || 'Local Market';
+  const region = user?.operatingLocation || 'Local Market';
 
   // Check if we already have a recent report of this type
   const existingReport = await prisma.rEMarketReport.findFirst({
