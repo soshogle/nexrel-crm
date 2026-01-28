@@ -3,7 +3,9 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+
+// Global Google Maps API key for all users
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,21 +22,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ predictions: [] });
     }
 
-    // Get user's Google Places API key from database
-    const apiKeyRecord = await prisma.apiKey.findFirst({
-      where: {
-        userId: session.user.id,
-        service: 'google_places',
-        isActive: true,
-      },
-    });
-
-    if (!apiKeyRecord?.keyValue) {
-      // Return empty predictions if no API key - component will work as text input
+    if (!GOOGLE_MAPS_API_KEY) {
+      console.error('GOOGLE_MAPS_API_KEY not configured');
       return NextResponse.json({ predictions: [], noApiKey: true });
     }
 
-    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&types=${encodeURIComponent(types)}&key=${apiKeyRecord.keyValue}`;
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&types=${encodeURIComponent(types)}&key=${GOOGLE_MAPS_API_KEY}`;
 
     const response = await fetch(url);
     const data = await response.json();
