@@ -38,7 +38,8 @@ export function LocationSearch({
   className = '',
   countryRestriction
 }: LocationSearchProps) {
-  const [internalValue, setInternalValue] = useState(defaultValue);
+  // Always use internal state for the input value to ensure typing works
+  const [inputValue, setInputValue] = useState(defaultValue);
   const [predictions, setPredictions] = useState<any[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,11 +47,10 @@ export function LocationSearch({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const value = controlledValue !== undefined ? controlledValue : internalValue;
-
+  // Sync with controlled value only when it changes from parent (not on every render)
   useEffect(() => {
-    if (controlledValue !== undefined) {
-      setInternalValue(controlledValue);
+    if (controlledValue !== undefined && controlledValue !== inputValue) {
+      setInputValue(controlledValue);
     }
   }, [controlledValue]);
 
@@ -102,7 +102,7 @@ export function LocationSearch({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setInternalValue(newValue);
+    setInputValue(newValue);
 
     // Debounce API call
     if (debounceRef.current) {
@@ -112,7 +112,7 @@ export function LocationSearch({
       fetchPredictions(newValue);
     }, 300);
 
-    // Also update parent with raw value for backward compatibility
+    // Clear parent state if input is empty
     if (!newValue && onChange) {
       onChange(null);
     }
@@ -120,7 +120,7 @@ export function LocationSearch({
 
   const handleSelectPrediction = async (prediction: any) => {
     const desc = prediction.description;
-    setInternalValue(desc);
+    setInputValue(desc);
     setShowDropdown(false);
     setPredictions([]);
 
@@ -182,7 +182,7 @@ export function LocationSearch({
       <Input
         ref={inputRef}
         type="text"
-        value={value}
+        value={inputValue}
         onChange={handleInputChange}
         onFocus={() => predictions.length > 0 && setShowDropdown(true)}
         placeholder={placeholder}
