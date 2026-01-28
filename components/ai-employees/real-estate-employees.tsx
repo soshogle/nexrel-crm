@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
 import {
   Zap,
   Home,
@@ -40,16 +41,31 @@ import {
   AlertCircle,
   Loader2,
   ChevronRight,
-  Bot
+  Bot,
+  Sparkles,
+  RefreshCw,
+  Mic
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Real Estate AI Employee definitions
+// Types for provisioned agents
+interface ProvisionedAgent {
+  id: string;
+  employeeType: string;
+  name: string;
+  elevenLabsAgentId: string;
+  twilioPhoneNumber?: string;
+  status: string;
+  callCount: number;
+  createdAt: string;
+}
+
+// Real Estate AI Employee definitions - matches REAIEmployeeType enum
 const RE_AI_EMPLOYEES = [
   {
     id: 'RE_SPEED_TO_LEAD',
-    name: 'Alex',
-    title: 'Speed to Lead',
+    name: 'Sarah',
+    title: 'Speed to Lead Specialist',
     icon: Zap,
     color: 'from-yellow-500 to-orange-500',
     bgColor: 'bg-yellow-500/10',
@@ -63,8 +79,8 @@ const RE_AI_EMPLOYEES = [
   },
   {
     id: 'RE_FSBO_OUTREACH',
-    name: 'Maya',
-    title: 'FSBO Specialist',
+    name: 'Michael',
+    title: 'FSBO Outreach Specialist',
     icon: Home,
     color: 'from-green-500 to-emerald-500',
     bgColor: 'bg-green-500/10',
@@ -78,8 +94,8 @@ const RE_AI_EMPLOYEES = [
   },
   {
     id: 'RE_EXPIRED_OUTREACH',
-    name: 'Jordan',
-    title: 'Expired Hunter',
+    name: 'Jessica',
+    title: 'Expired Listing Specialist',
     icon: Clock,
     color: 'from-red-500 to-rose-500',
     bgColor: 'bg-red-500/10',
@@ -93,37 +109,37 @@ const RE_AI_EMPLOYEES = [
   },
   {
     id: 'RE_COLD_REACTIVATION',
-    name: 'Sam',
-    title: 'Lead Reactivation',
+    name: 'Alex',
+    title: 'Lead Reactivation Specialist',
     icon: Users,
     color: 'from-blue-500 to-cyan-500',
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/30',
-    description: 'Re-engages cold leads',
+    description: 'Re-engages cold leads and past clients',
     fullDescription: 'Re-engages cold leads who haven\'t responded in 30+ days. Uses market updates and new listings as conversation starters.',
-    capabilities: ['Cold lead detection', 'Market updates', 'New listing alerts', 'Multi-channel outreach', 'Drip campaigns'],
+    capabilities: ['Cold lead detection', 'Market updates', 'New listing alerts', 'Multi-channel outreach', 'Referral requests'],
     voiceEnabled: true,
     priority: 'LOW',
     category: 'lead-capture'
   },
   {
     id: 'RE_DOCUMENT_CHASER',
-    name: 'Taylor',
-    title: 'Document Chaser',
+    name: 'Emma',
+    title: 'Document Coordinator',
     icon: FileText,
     color: 'from-purple-500 to-violet-500',
     bgColor: 'bg-purple-500/10',
     borderColor: 'border-purple-500/30',
     description: 'Transaction document follow-up',
     fullDescription: 'Follows up on missing documents during transactions. Sends reminders for signatures, inspections, and deadlines.',
-    capabilities: ['Document tracking', 'Deadline reminders', 'E-signature requests', 'Lender coordination', 'Closing alerts'],
+    capabilities: ['Document tracking', 'Deadline reminders', 'E-signature requests', 'Notary coordination', 'Closing alerts'],
     voiceEnabled: true,
     priority: 'HIGH',
     category: 'transaction'
   },
   {
     id: 'RE_SHOWING_CONFIRM',
-    name: 'Casey',
+    name: 'David',
     title: 'Showing Coordinator',
     icon: Calendar,
     color: 'from-indigo-500 to-blue-500',
@@ -138,8 +154,8 @@ const RE_AI_EMPLOYEES = [
   },
   {
     id: 'RE_SPHERE_NURTURE',
-    name: 'Morgan',
-    title: 'SOI Manager',
+    name: 'Rachel',
+    title: 'Relationship Manager',
     icon: Heart,
     color: 'from-pink-500 to-rose-500',
     bgColor: 'bg-pink-500/10',
@@ -147,59 +163,44 @@ const RE_AI_EMPLOYEES = [
     description: 'Past client nurture campaigns',
     fullDescription: 'Maintains relationships with past clients and sphere of influence. Sends market updates, home anniversary cards, and referral requests.',
     capabilities: ['Home anniversaries', 'Market updates', 'Referral requests', 'Holiday outreach', 'Review automation'],
-    voiceEnabled: false,
+    voiceEnabled: true,
     priority: 'LOW',
     category: 'nurture'
   },
   {
-    id: 'RE_WEEKLY_SNAPSHOT',
-    name: 'Riley',
-    title: 'Weekly Reports',
-    icon: BarChart3,
+    id: 'RE_BUYER_FOLLOWUP',
+    name: 'Chris',
+    title: 'Buyer Success Specialist',
+    icon: Users,
     color: 'from-teal-500 to-cyan-500',
     bgColor: 'bg-teal-500/10',
     borderColor: 'border-teal-500/30',
-    description: 'Weekly market snapshots',
-    fullDescription: 'Creates weekly market snapshot reports with AI-generated insights. Perfect for social media and email newsletters.',
-    capabilities: ['MLS aggregation', 'Price trends', 'Inventory tracking', 'AI insights', 'Social media captions'],
-    voiceEnabled: false,
+    description: 'Follows up with active buyers',
+    fullDescription: 'Keeps buyers engaged, addresses concerns, and moves them toward making confident offers.',
+    capabilities: ['Buyer engagement', 'Concern resolution', 'Property matching', 'Offer preparation', 'Financing guidance'],
+    voiceEnabled: true,
     priority: 'MEDIUM',
-    category: 'reports'
+    category: 'transaction'
   },
   {
-    id: 'RE_MONTHLY_REPORT',
-    name: 'Drew',
-    title: 'Monthly Analyst',
+    id: 'RE_MARKET_UPDATE',
+    name: 'Jennifer',
+    title: 'Market Intelligence Analyst',
     icon: TrendingUp,
     color: 'from-amber-500 to-yellow-500',
     bgColor: 'bg-amber-500/10',
     borderColor: 'border-amber-500/30',
-    description: 'Monthly market analysis',
-    fullDescription: 'Generates comprehensive monthly market reports with buyer/seller insights, predictions, and actionable recommendations.',
-    capabilities: ['MoM comparisons', 'YoY analysis', 'Price predictions', 'Neighborhood data', 'PDF reports'],
-    voiceEnabled: false,
+    description: 'Personalized market updates',
+    fullDescription: 'Provides valuable market insights that position homeowners and buyers for success. Shares price trends and opportunities.',
+    capabilities: ['Market analysis', 'Price trends', 'Neighborhood insights', 'Investment tips', 'Timing recommendations'],
+    voiceEnabled: true,
     priority: 'MEDIUM',
     category: 'reports'
   },
   {
-    id: 'RE_ANNUAL_REVIEW',
-    name: 'Avery',
-    title: 'Annual Review',
-    icon: Award,
-    color: 'from-slate-500 to-gray-500',
-    bgColor: 'bg-slate-500/10',
-    borderColor: 'border-slate-500/30',
-    description: 'Year-end market reports',
-    fullDescription: 'Creates year-in-review market reports perfect for Q1 marketing. Includes predictions and strategic recommendations.',
-    capabilities: ['Full year analysis', 'Seasonal trends', 'Market predictions', 'Investment opportunities', 'Presentation decks'],
-    voiceEnabled: false,
-    priority: 'LOW',
-    category: 'reports'
-  },
-  {
     id: 'RE_STALE_DIAGNOSTIC',
-    name: 'Quinn',
-    title: 'Stale Diagnostic',
+    name: 'Mark',
+    title: 'Listing Health Specialist',
     icon: Search,
     color: 'from-orange-500 to-red-500',
     bgColor: 'bg-orange-500/10',
@@ -207,22 +208,37 @@ const RE_AI_EMPLOYEES = [
     description: 'Analyzes stuck listings',
     fullDescription: 'Analyzes listings that haven\'t sold after 21+ days. Identifies issues and generates action plans with scripts for seller conversations.',
     capabilities: ['Pricing analysis', 'Photo assessment', 'Description optimization', 'Feedback patterns', 'Price reduction scripts'],
-    voiceEnabled: false,
+    voiceEnabled: true,
     priority: 'MEDIUM',
     category: 'transaction'
   },
   {
-    id: 'RE_LISTING_PRESENTATION',
-    name: 'Blake',
-    title: 'Presentations',
+    id: 'RE_LISTING_BOOST',
+    name: 'Sophie',
+    title: 'Marketing Specialist',
     icon: Presentation,
     color: 'from-violet-500 to-purple-500',
     bgColor: 'bg-violet-500/10',
     borderColor: 'border-violet-500/30',
-    description: 'Listing presentation builder',
-    fullDescription: 'Creates stunning listing presentations with CMAs, marketing plans, and personalized value propositions.',
-    capabilities: ['CMA generation', 'Marketing plans', 'Pricing strategies', 'Competitor analysis', 'PDF export'],
-    voiceEnabled: false,
+    description: 'Promotes listings to buyers',
+    fullDescription: 'Generates buyer interest and schedules showings for your listings through targeted outreach.',
+    capabilities: ['Buyer targeting', 'Listing promotion', 'Showing scheduling', 'Feature highlighting', 'Urgency creation'],
+    voiceEnabled: true,
+    priority: 'MEDIUM',
+    category: 'reports'
+  },
+  {
+    id: 'RE_CMA_GENERATOR',
+    name: 'Daniel',
+    title: 'Valuation Specialist',
+    icon: BarChart3,
+    color: 'from-slate-500 to-gray-500',
+    bgColor: 'bg-slate-500/10',
+    borderColor: 'border-slate-500/30',
+    description: 'CMA and property valuation',
+    fullDescription: 'Creates and presents comparative market analyses for pricing decisions. Helps sellers understand property value.',
+    capabilities: ['CMA generation', 'Comparable analysis', 'Pricing strategy', 'Value explanations', 'Listing recommendations'],
+    voiceEnabled: true,
     priority: 'MEDIUM',
     category: 'reports'
   }
@@ -231,9 +247,9 @@ const RE_AI_EMPLOYEES = [
 const CATEGORIES = [
   { id: 'all', label: 'All Employees', count: 12 },
   { id: 'lead-capture', label: 'Lead Capture', count: 4 },
-  { id: 'transaction', label: 'Transaction', count: 3 },
+  { id: 'transaction', label: 'Transaction', count: 4 },
   { id: 'nurture', label: 'Nurture', count: 1 },
-  { id: 'reports', label: 'Reports', count: 4 }
+  { id: 'reports', label: 'Reports', count: 3 }
 ];
 
 interface EmployeeStatus {
@@ -250,6 +266,70 @@ export function RealEstateAIEmployees() {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [runningEmployee, setRunningEmployee] = useState<string | null>(null);
   const [employeeStatuses, setEmployeeStatuses] = useState<Record<string, EmployeeStatus>>({});
+  
+  // Provisioning state
+  const [provisionedAgents, setProvisionedAgents] = useState<ProvisionedAgent[]>([]);
+  const [isProvisioning, setIsProvisioning] = useState(false);
+  const [provisioningProgress, setProvisioningProgress] = useState(0);
+  const [isLoadingAgents, setIsLoadingAgents] = useState(true);
+
+  // Fetch provisioned agents on mount
+  useEffect(() => {
+    fetchProvisionedAgents();
+  }, []);
+
+  const fetchProvisionedAgents = async () => {
+    try {
+      setIsLoadingAgents(true);
+      const response = await fetch('/api/real-estate/ai-employees/provision');
+      if (response.ok) {
+        const data = await response.json();
+        setProvisionedAgents(data.agents || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch provisioned agents:', error);
+    } finally {
+      setIsLoadingAgents(false);
+    }
+  };
+
+  const handleProvisionAll = async () => {
+    setIsProvisioning(true);
+    setProvisioningProgress(0);
+    
+    try {
+      toast.loading('Creating ElevenLabs agents...', { id: 'provision' });
+      
+      const response = await fetch('/api/real-estate/ai-employees/provision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forceRefresh: false })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        toast.success(`Successfully provisioned ${data.results?.filter((r: { success: boolean }) => r.success).length || 0} AI employees!`, { id: 'provision' });
+        setProvisionedAgents(data.agents || []);
+      } else {
+        toast.error(data.error || 'Failed to provision some agents', { id: 'provision' });
+      }
+    } catch (error) {
+      console.error('Provisioning error:', error);
+      toast.error('Failed to provision agents', { id: 'provision' });
+    } finally {
+      setIsProvisioning(false);
+      setProvisioningProgress(100);
+    }
+  };
+
+  const isAgentProvisioned = (employeeId: string): boolean => {
+    return provisionedAgents.some(a => a.employeeType === employeeId);
+  };
+
+  const getProvisionedAgent = (employeeId: string): ProvisionedAgent | undefined => {
+    return provisionedAgents.find(a => a.employeeType === employeeId);
+  };
 
   // Filter employees by category
   const filteredEmployees = selectedCategory === 'all' 
@@ -290,18 +370,67 @@ export function RealEstateAIEmployees() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <Bot className="w-7 h-7 text-purple-400" />
             Real Estate AI Team
           </h2>
-          <p className="text-slate-400 mt-1">12 specialized AI employees to automate your real estate business</p>
+          <p className="text-slate-400 mt-1">12 specialized AI employees with OACIQ compliance and multi-language support</p>
         </div>
-        <Badge variant="outline" className="bg-purple-500/10 border-purple-500/30 text-purple-400">
-          {RE_AI_EMPLOYEES.filter(e => employeeStatuses[e.id]?.isActive).length} / 12 Active
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400">
+            <Mic className="w-3 h-3 mr-1" />
+            {provisionedAgents.length} / 12 Voice Agents
+          </Badge>
+          {provisionedAgents.length < 12 && (
+            <Button 
+              onClick={handleProvisionAll}
+              disabled={isProvisioning}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              {isProvisioning ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating Agents...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Provision All Voice Agents
+                </>
+              )}
+            </Button>
+          )}
+          {provisionedAgents.length === 12 && (
+            <Button 
+              variant="outline"
+              onClick={handleProvisionAll}
+              disabled={isProvisioning}
+              className="border-slate-600 text-slate-300 hover:bg-slate-800"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isProvisioning ? 'animate-spin' : ''}`} />
+              Refresh Agents
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Provisioning Progress */}
+      {isProvisioning && (
+        <Card className="bg-purple-500/10 border-purple-500/30">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
+              <span className="text-purple-300 font-medium">Creating ElevenLabs Voice Agents...</span>
+            </div>
+            <p className="text-sm text-slate-400 mb-3">
+              Each agent is configured with OACIQ compliance, multi-language support, and specialized real estate knowledge.
+            </p>
+            <Progress value={provisioningProgress} className="h-2" />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Category Filter */}
       <div className="flex gap-2 flex-wrap">
@@ -352,12 +481,17 @@ export function RealEstateAIEmployees() {
                         <Icon className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex items-center gap-2">
-                        {employee.voiceEnabled && (
-                          <Badge variant="outline" className="text-xs bg-blue-500/10 border-blue-500/30 text-blue-400">
-                            <Phone className="w-3 h-3 mr-1" />
-                            Voice
+                        {isAgentProvisioned(employee.id) ? (
+                          <Badge variant="outline" className="text-xs bg-green-500/10 border-green-500/30 text-green-400">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Ready
                           </Badge>
-                        )}
+                        ) : employee.voiceEnabled ? (
+                          <Badge variant="outline" className="text-xs bg-yellow-500/10 border-yellow-500/30 text-yellow-400">
+                            <AlertCircle className="w-3 h-3 mr-1" />
+                            Not Provisioned
+                          </Badge>
+                        ) : null}
                       </div>
                     </div>
 
@@ -443,18 +577,69 @@ export function RealEstateAIEmployees() {
                   <Switch />
                 </div>
 
-                {/* Voice Agent (if enabled) */}
+                {/* Voice Agent Status */}
                 {selectedEmployee.voiceEnabled && (
-                  <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Phone className="w-4 h-4 text-blue-400" />
-                      <span className="text-blue-400 font-medium">Voice AI Enabled</span>
-                    </div>
-                    <p className="text-sm text-slate-400">
-                      This employee can make and receive calls using AI voice technology.
-                    </p>
+                  <div className={`p-4 rounded-lg border ${
+                    isAgentProvisioned(selectedEmployee.id) 
+                      ? 'bg-green-500/10 border-green-500/30' 
+                      : 'bg-yellow-500/10 border-yellow-500/30'
+                  }`}>
+                    {isAgentProvisioned(selectedEmployee.id) ? (
+                      <>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-green-400" />
+                            <span className="text-green-400 font-medium">Voice Agent Active</span>
+                          </div>
+                          <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+                            {getProvisionedAgent(selectedEmployee.id)?.callCount || 0} calls
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-slate-400 mb-3">
+                          ElevenLabs agent configured with OACIQ compliance and multi-language support.
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const agent = getProvisionedAgent(selectedEmployee.id);
+                              if (agent?.elevenLabsAgentId) {
+                                window.open(`https://elevenlabs.io/app/conversational-ai/${agent.elevenLabsAgentId}`, '_blank');
+                              }
+                            }}
+                          >
+                            <Settings className="w-3 h-3 mr-1" />
+                            Configure in ElevenLabs
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertCircle className="w-4 h-4 text-yellow-400" />
+                          <span className="text-yellow-400 font-medium">Voice Agent Not Provisioned</span>
+                        </div>
+                        <p className="text-sm text-slate-400 mb-3">
+                          Click "Provision All Voice Agents" above to create this agent in ElevenLabs.
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
+                
+                {/* OACIQ Compliance Note */}
+                <div className="p-4 bg-slate-900 rounded-lg border border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="w-4 h-4 text-purple-400" />
+                    <span className="text-purple-400 font-medium">OACIQ Compliant</span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    This AI employee follows Quebec real estate regulations (OACIQ). It identifies as an AI assistant, handles personal information according to Law 25, and escalates compliance matters to human agents.
+                  </p>
+                </div>
               </div>
 
               <DialogFooter className="mt-6">

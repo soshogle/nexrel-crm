@@ -255,6 +255,7 @@ model User {
   reBuyerCriteria           REBuyerCriteria[]            @relation("REBuyerCriteriaUser")
   reExpiredAssignedListings REExpiredListing[]           @relation("REExpiredAssignedUser")
   reAIEmployeeExecutions    REAIEmployeeExecution[]      @relation("REAIEmployeeExecutionUser")
+  reAIEmployeeAgents        REAIEmployeeAgent[]          @relation("REAIEmployeeAgentUser")
 }
 
 model Lead {
@@ -7196,4 +7197,29 @@ model REAIEmployeeExecution {
   @@index([employeeType])
   @@index([status])
   @@index([createdAt])
+}
+
+// Real Estate AI Employee Voice Agents
+// Maps RE AI Employee types to their ElevenLabs agent instances per user
+model REAIEmployeeAgent {
+  id                  String           @id @default(cuid())
+  userId              String
+  employeeType        REAIEmployeeType
+  name                String
+  elevenLabsAgentId   String
+  twilioPhoneNumber   String?
+  voiceId             String?
+  status              String           @default("active")
+  lastUsedAt          DateTime?
+  callCount           Int              @default(0)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  // Relations
+  user                User             @relation("REAIEmployeeAgentUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, employeeType])
+  @@index([userId])
+  @@index([employeeType])
+  @@index([elevenLabsAgentId])
 }
