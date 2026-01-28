@@ -30,9 +30,11 @@ export {
   getStaleListings,
   runScrapingJob,
   getApifyToken,
-  getHunterApiKey,
   normalizePhone,
-  normalizeAddress
+  normalizeAddress,
+  scrapeFSBOListings,
+  scrapeExpiredListings,
+  validateApifyConnection
 } from './scrapers';
 
 // Market Intelligence
