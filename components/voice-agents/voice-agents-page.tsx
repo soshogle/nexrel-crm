@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Plus, Phone, Users, TrendingUp, PhoneOutgoing, ShoppingCart, RefreshCw, Key } from 'lucide-react';
+import { Plus, Phone, Users, TrendingUp, PhoneOutgoing, ShoppingCart, RefreshCw, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,7 +10,7 @@ import { CreateVoiceAgentDialog } from './create-voice-agent-dialog';
 import { ScheduleOutboundCallDialog } from './schedule-outbound-call-dialog';
 import PurchasePhoneNumberDialog from './purchase-phone-number-dialog';
 import { VoiceAgentsList } from './voice-agents-list';
-import { ElevenLabsKeysManager } from './elevenlabs-keys-manager';
+import { VoiceAIUsageDashboard } from '../voice-ai/usage-dashboard';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -101,7 +101,7 @@ export function VoiceAgentsPage() {
 
   const handleSyncPhoneNumbers = async () => {
     setSyncingPhones(true);
-    const toastId = toast.loading('Syncing phone numbers from Twilio to ElevenLabs...');
+    const toastId = toast.loading('Syncing phone numbers to Voice AI platform...');
     
     try {
       const response = await fetch('/api/twilio/phone-numbers/sync', {
@@ -112,7 +112,7 @@ export function VoiceAgentsPage() {
         const result = await response.json();
         toast.success('Phone numbers synced successfully!', {
           id: toastId,
-          description: result.message || `Synced ${result.syncedToDatabase} to database, imported ${result.importedToElevenLabs} to ElevenLabs`,
+          description: result.message || `Synced ${result.syncedToDatabase} to database, imported ${result.importedToElevenLabs} to Voice AI`,
           duration: 5000
         });
         
@@ -123,9 +123,9 @@ export function VoiceAgentsPage() {
         
         // Special handling for payment plan issues
         if (response.status === 402 || error.upgradeRequired) {
-          toast.error('ElevenLabs Plan Upgrade Required', {
+          toast.error('Voice AI Plan Upgrade Required', {
             id: toastId,
-            description: `${error.details || error.error}\n\n${error.recommendation || 'Please upgrade your ElevenLabs plan to use phone numbers.'}`,
+            description: `${error.details || error.error}\n\n${error.recommendation || 'Please upgrade your Voice AI plan to use phone numbers.'}`,
             duration: 10000,
             action: error.upgradeUrl ? {
               label: 'Upgrade Now',
@@ -156,7 +156,7 @@ export function VoiceAgentsPage() {
 
   const handleVerifySetup = async () => {
     setVerifying(true);
-    const toastId = toast.loading('Verifying ElevenLabs and Twilio setup...');
+    const toastId = toast.loading('Verifying Voice AI and phone setup...');
     
     try {
       const response = await fetch('/api/elevenlabs/validate');
@@ -170,7 +170,7 @@ export function VoiceAgentsPage() {
           id: toastId,
           description: data.warnings.length > 0 
             ? `${data.warnings.length} warning(s): ${data.warnings[0]}` 
-            : 'Your ElevenLabs and Twilio configuration is valid',
+            : 'Your Voice AI and phone configuration is valid',
           duration: 5000
         });
         
@@ -181,7 +181,7 @@ export function VoiceAgentsPage() {
           id: toastId,
           description: data.errors.length > 0 
             ? data.errors[0] 
-            : 'Please check your ElevenLabs and Twilio configuration',
+            : 'Please check your Voice AI and phone configuration',
           duration: 8000
         });
         
@@ -340,9 +340,9 @@ export function VoiceAgentsPage() {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="api-keys">
-            <Key className="w-4 h-4 mr-2" />
-            API Keys
+          <TabsTrigger value="usage">
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Usage & Billing
           </TabsTrigger>
         </TabsList>
 
@@ -430,8 +430,8 @@ export function VoiceAgentsPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="api-keys" className="mt-6">
-          <ElevenLabsKeysManager />
+        <TabsContent value="usage" className="mt-6">
+          <VoiceAIUsageDashboard />
         </TabsContent>
       </Tabs>
 

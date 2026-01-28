@@ -255,6 +255,10 @@ model User {
   reExpiredAssignedListings REExpiredListing[]           @relation("REExpiredAssignedUser")
   reAIEmployeeExecutions    REAIEmployeeExecution[]      @relation("REAIEmployeeExecutionUser")
   reAIEmployeeAgents        REAIEmployeeAgent[]          @relation("REAIEmployeeAgentUser")
+  // White-Label Voice AI Platform Relations
+  voiceAISubscription       VoiceAISubscription?         @relation("VoiceAISubscriptionUser")
+  voiceAIUsageLogs          VoiceAIUsageLog[]            @relation("VoiceAIUsageLogUser")
+  voiceAIBillingRecords     VoiceAIBillingRecord[]       @relation("VoiceAIBillingRecordUser")
 }
 
 model Lead {
@@ -7221,4 +7225,153 @@ model REAIEmployeeAgent {
   @@index([userId])
   @@index([employeeType])
   @@index([elevenLabsAgentId])
+}
+
+// ==========================================
+// WHITE-LABEL VOICE AI PLATFORM ENUMS
+// ==========================================
+
+enum VoiceAISubscriptionTier {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+  CUSTOM
+}
+
+enum VoiceAICallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum VoiceAICallStatus {
+  INITIATED
+  RINGING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  NO_ANSWER
+  BUSY
+  CANCELLED
+}
+
+enum VoiceAIBillingStatus {
+  PENDING
+  INVOICED
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+// ==========================================
+// WHITE-LABEL VOICE AI PLATFORM MODELS
+// ==========================================
+
+// Platform-level Voice AI configuration (admin only)
+// Stores the master ElevenLabs API key and global settings
+model PlatformVoiceAIConfig {
+  id                    String    @id @default(cuid())
+  masterElevenLabsKey   String    // Encrypted master API key
+  masterTwilioSid       String?   // Optional: Master Twilio Account SID
+  masterTwilioToken     String?   // Optional: Master Twilio Auth Token
+  defaultPricePerMin    Decimal   @default(0.50) @db.Decimal(10, 4)
+  defaultOverageRate    Decimal   @default(0.75) @db.Decimal(10, 4)
+  totalMonthlyQuota     Int       @default(2000) // Your ElevenLabs plan limit
+  usedThisMonth         Int       @default(0)    // Total used by all agencies
+  billingCycleStart     DateTime  @default(now())
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([isActive])
+}
+
+// Per-agency Voice AI subscription and quota management
+model VoiceAISubscription {
+  id                    String                   @id @default(cuid())
+  userId                String                   @unique
+  tier                  VoiceAISubscriptionTier  @default(STARTER)
+  monthlyMinutesQuota   Int                      @default(100)
+  pricePerMinute        Decimal                  @default(0.50) @db.Decimal(10, 4)
+  minutesUsedThisMonth  Int                      @default(0)
+  overageAllowed        Boolean                  @default(false)
+  overageRate           Decimal                  @default(0.75) @db.Decimal(10, 4)
+  billingCycleStart     DateTime                 @default(now())
+  isActive              Boolean                  @default(true)
+  agentPrefix           String?                  // Unique prefix for this agency's agents in ElevenLabs
+  notes                 String?                  // Admin notes
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  // Relations
+  user                  User                     @relation("VoiceAISubscriptionUser", fields: [userId], references: [id], onDelete: Cascade)
+  usageLogs             VoiceAIUsageLog[]        @relation("VoiceAISubscriptionUsage")
+  billingRecords        VoiceAIBillingRecord[]   @relation("VoiceAISubscriptionBilling")
+
+  @@index([userId])
+  @@index([tier])
+  @@index([isActive])
+}
+
+// Tracks every Voice AI call for usage and billing
+model VoiceAIUsageLog {
+  id                    String                @id @default(cuid())
+  userId                String
+  subscriptionId        String?
+  agentId               String?               // VoiceAgent or REAIEmployeeAgent ID
+  elevenLabsAgentId     String?               // ElevenLabs agent ID
+  elevenLabsCallId      String?               // ElevenLabs call ID
+  direction             VoiceAICallDirection  @default(OUTBOUND)
+  durationSeconds       Int                   @default(0)
+  durationMinutes       Decimal               @default(0) @db.Decimal(10, 2) // Rounded up for billing
+  cost                  Decimal               @default(0) @db.Decimal(10, 4) // minutes × rate
+  callerNumber          String?
+  recipientNumber       String?
+  status                VoiceAICallStatus     @default(INITIATED)
+  recordingUrl          String?
+  transcriptUrl         String?
+  metadata              Json?                 // Extra data from ElevenLabs
+  errorMessage          String?
+  createdAt             DateTime              @default(now())
+
+  // Relations
+  user                  User                  @relation("VoiceAIUsageLogUser", fields: [userId], references: [id], onDelete: Cascade)
+  subscription          VoiceAISubscription?  @relation("VoiceAISubscriptionUsage", fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([agentId])
+  @@index([elevenLabsCallId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Monthly billing records per agency
+model VoiceAIBillingRecord {
+  id                    String                @id @default(cuid())
+  userId                String
+  subscriptionId        String?
+  billingPeriodStart    DateTime
+  billingPeriodEnd      DateTime
+  totalMinutesUsed      Int                   @default(0)
+  quotaMinutes          Int                   @default(0)
+  overageMinutes        Int                   @default(0)
+  baseCost              Decimal               @default(0) @db.Decimal(10, 2)
+  overageCost           Decimal               @default(0) @db.Decimal(10, 2)
+  totalCost             Decimal               @default(0) @db.Decimal(10, 2)
+  status                VoiceAIBillingStatus  @default(PENDING)
+  invoiceNumber         String?               @unique
+  paidAt                DateTime?
+  notes                 String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  // Relations
+  user                  User                  @relation("VoiceAIBillingRecordUser", fields: [userId], references: [id], onDelete: Cascade)
+  subscription          VoiceAISubscription?  @relation("VoiceAISubscriptionBilling", fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([billingPeriodStart])
+  @@index([createdAt])
 }
