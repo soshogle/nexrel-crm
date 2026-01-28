@@ -49,8 +49,7 @@ async function executeSpeedToLead(userId: string): Promise<ExecutionResult> {
       where: { id: lead.id },
       data: {
         status: 'CONTACTED',
-        lastContactedAt: new Date(),
-        notes: (lead.notes || '') + `\n[AI] Speed-to-Lead auto-response triggered at ${new Date().toISOString()}`
+        lastContactedAt: new Date()
       }
     });
   }
@@ -230,8 +229,7 @@ async function executeColdReactivation(userId: string): Promise<ExecutionResult>
     await prisma.lead.update({
       where: { id: lead.id },
       data: {
-        lastContactedAt: new Date(),
-        notes: (lead.notes || '') + `\n[AI] Cold lead reactivation attempt at ${new Date().toISOString()}`
+        lastContactedAt: new Date()
       }
     });
   }
@@ -263,8 +261,7 @@ async function executeSphereNurture(userId: string): Promise<ExecutionResult> {
     await prisma.lead.update({
       where: { id: client.id },
       data: {
-        lastContactedAt: new Date(),
-        notes: (client.notes || '') + `\n[AI] SOI nurture touchpoint at ${new Date().toISOString()}`
+        lastContactedAt: new Date()
       }
     });
   }
