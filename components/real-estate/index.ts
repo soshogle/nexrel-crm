@@ -7,3 +7,4 @@ export { FSBOLeadsWidget } from './fsbo-leads-widget';
 export { FSBOLeadsFull } from './fsbo-leads-full';
 export { StaleListingsWidget } from './stale-listings-widget';
 export { SellerNetSheetCalculator } from './seller-net-sheet-calculator';
+export { AttractionEngine } from './attraction-engine';
