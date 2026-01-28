@@ -3,8 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+import { prisma } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,11 +19,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'placeId required' }, { status: 400 });
     }
 
-    if (!GOOGLE_MAPS_API_KEY) {
-      return NextResponse.json({ error: 'API not configured' }, { status: 500 });
+    // Get user's Google Places API key from database
+    const apiKeyRecord = await prisma.apiKey.findFirst({
+      where: {
+        userId: session.user.id,
+        service: 'google_places',
+        isActive: true,
+      },
+    });
+
+    if (!apiKeyRecord?.keyValue) {
+      return NextResponse.json({ error: 'Google Places API key not configured' }, { status: 400 });
     }
 
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=place_id,name,formatted_address,address_components,geometry&key=${GOOGLE_MAPS_API_KEY}`;
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=place_id,name,formatted_address,address_components,geometry&key=${apiKeyRecord.keyValue}`;
 
     const response = await fetch(url);
     const data = await response.json();
