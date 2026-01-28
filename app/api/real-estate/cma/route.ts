@@ -22,16 +22,7 @@ export async function GET(request: NextRequest) {
         ...(propertyId && { propertyId }),
       },
       include: {
-        property: {
-          select: {
-            id: true,
-            address: true,
-            city: true,
-            state: true,
-            listPrice: true,
-          },
-        },
-        comparables: true,
+        property: true,
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -54,67 +45,45 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       propertyId,
-      leadId,
-      subjectAddress,
-      subjectCity,
-      subjectState,
-      subjectZip,
-      suggestedListPrice,
-      priceRangeLow,
-      priceRangeHigh,
-      adjustedAvgPrice,
-      marketConditions,
-      analysis,
+      address,
+      beds,
+      baths,
+      sqft,
+      yearBuilt,
       comparables,
+      adjustments,
+      suggestedPriceMin,
+      suggestedPriceMax,
+      suggestedPrice,
+      pricePerSqft,
     } = body;
 
-    if (!subjectAddress || !subjectCity) {
+    if (!address) {
       return NextResponse.json(
-        { error: 'Subject address and city required' },
+        { error: 'Property address required' },
         { status: 400 }
       );
     }
 
-    // Create CMA report with comparables
+    // Create CMA report - comparables stored as JSON
     const cmaReport = await prisma.rECMAReport.create({
       data: {
         userId: session.user.id,
-        propertyId,
-        leadId,
-        subjectAddress,
-        subjectCity,
-        subjectState: subjectState || '',
-        subjectZip: subjectZip || '',
-        suggestedListPrice: suggestedListPrice ? parseFloat(suggestedListPrice) : null,
-        priceRangeLow: priceRangeLow ? parseFloat(priceRangeLow) : null,
-        priceRangeHigh: priceRangeHigh ? parseFloat(priceRangeHigh) : null,
-        adjustedAvgPrice: adjustedAvgPrice ? parseFloat(adjustedAvgPrice) : null,
-        marketConditions,
-        analysis,
-        comparables: comparables && comparables.length > 0 ? {
-          create: comparables.map((comp: any) => ({
-            address: comp.address,
-            city: comp.city,
-            state: comp.state || '',
-            zip: comp.zip || '',
-            status: comp.status || 'SOLD',
-            salePrice: comp.salePrice ? parseFloat(comp.salePrice) : null,
-            listPrice: comp.listPrice ? parseFloat(comp.listPrice) : null,
-            closeDate: comp.closeDate ? new Date(comp.closeDate) : null,
-            dom: comp.dom ? parseInt(comp.dom) : null,
-            beds: comp.beds ? parseInt(comp.beds) : null,
-            baths: comp.baths ? parseFloat(comp.baths) : null,
-            sqft: comp.sqft ? parseInt(comp.sqft) : null,
-            yearBuilt: comp.yearBuilt ? parseInt(comp.yearBuilt) : null,
-            distanceMiles: comp.distanceMiles ? parseFloat(comp.distanceMiles) : null,
-            pricePerSqft: comp.pricePerSqft ? parseFloat(comp.pricePerSqft) : null,
-            adjustments: comp.adjustments || {},
-            adjustedPrice: comp.adjustedPrice ? parseFloat(comp.adjustedPrice) : null,
-          })),
-        } : undefined,
+        propertyId: propertyId || null,
+        address,
+        beds: beds ? parseInt(beds) : null,
+        baths: baths ? parseFloat(baths) : null,
+        sqft: sqft ? parseInt(sqft) : null,
+        yearBuilt: yearBuilt ? parseInt(yearBuilt) : null,
+        comparables: comparables || [],
+        adjustments: adjustments || {},
+        suggestedPriceMin: suggestedPriceMin ? parseFloat(suggestedPriceMin) : null,
+        suggestedPriceMax: suggestedPriceMax ? parseFloat(suggestedPriceMax) : null,
+        suggestedPrice: suggestedPrice ? parseFloat(suggestedPrice) : null,
+        pricePerSqft: pricePerSqft ? parseFloat(pricePerSqft) : null,
       },
       include: {
-        comparables: true,
+        property: true,
       },
     });
 
@@ -150,11 +119,15 @@ export async function PUT(request: NextRequest) {
     const report = await prisma.rECMAReport.update({
       where: { id },
       data: {
-        ...(updateData.suggestedListPrice && { suggestedListPrice: parseFloat(updateData.suggestedListPrice) }),
-        ...(updateData.priceRangeLow && { priceRangeLow: parseFloat(updateData.priceRangeLow) }),
-        ...(updateData.priceRangeHigh && { priceRangeHigh: parseFloat(updateData.priceRangeHigh) }),
-        ...(updateData.marketConditions && { marketConditions: updateData.marketConditions }),
-        ...(updateData.analysis && { analysis: updateData.analysis }),
+        ...(updateData.address && { address: updateData.address }),
+        ...(updateData.beds !== undefined && { beds: parseInt(updateData.beds) }),
+        ...(updateData.baths !== undefined && { baths: parseFloat(updateData.baths) }),
+        ...(updateData.sqft !== undefined && { sqft: parseInt(updateData.sqft) }),
+        ...(updateData.comparables && { comparables: updateData.comparables }),
+        ...(updateData.adjustments && { adjustments: updateData.adjustments }),
+        ...(updateData.suggestedPrice !== undefined && { suggestedPrice: parseFloat(updateData.suggestedPrice) }),
+        ...(updateData.suggestedPriceMin !== undefined && { suggestedPriceMin: parseFloat(updateData.suggestedPriceMin) }),
+        ...(updateData.suggestedPriceMax !== undefined && { suggestedPriceMax: parseFloat(updateData.suggestedPriceMax) }),
       },
     });
 
@@ -166,9 +139,32 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Report ID required' }, { status: 400 });
+    }
+    
+    const existing = await prisma.rECMAReport.findFirst({
+      where: { id, userId: session.user.id },
+    });
+    
+    if (!existing) {
+      return NextResponse.json({ error: 'CMA report not found' }, { status: 404 });
+    }
+    
+    await prisma.rECMAReport.delete({ where: { id } });
+    
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('CMA DELETE error:', error);
+    return NextResponse.json({ error: 'Failed to delete CMA report' }, { status: 500 });
   }
-  return NextResponse.json({ success: true, message: 'RE feature initializing...' });
 }
