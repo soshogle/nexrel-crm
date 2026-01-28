@@ -3,15 +3,13 @@
  */
 
 import { prisma } from '@/lib/db';
-
-const VALID_SOURCES = ['DUPROPRIO', 'PURPLEBRICKS', 'FSBO_COM', 'CRAIGSLIST', 'FACEBOOK_MARKETPLACE', 'KIJIJI', 'ZILLOW_FSBO', 'MANUAL_IMPORT', 'OTHER'] as const;
-type ValidSource = typeof VALID_SOURCES[number];
+import { REFSBOSource, REFSBOStatus } from '@prisma/client';
 
 export interface ScrapingJobConfig {
   userId: string;
   name?: string;
-  source?: ValidSource;
-  sources?: ValidSource[];
+  source?: REFSBOSource;
+  sources?: REFSBOSource[];
   targetCities?: string[];
   targetStates?: string[];
   minPrice?: number;
@@ -75,7 +73,7 @@ export async function updateJobStatus(
 }
 
 export async function saveFSBOListing(userId: string, listing: {
-  source: ValidSource;
+  source: REFSBOSource;
   sourceUrl: string;
   sourceListingId?: string;
   address: string;
@@ -94,7 +92,6 @@ export async function saveFSBOListing(userId: string, listing: {
   daysOnMarket?: number;
 }) {
   try {
-    // Check for duplicates by sourceUrl (unique field)
     const existing = await prisma.rEFSBOListing.findUnique({
       where: { sourceUrl: listing.sourceUrl }
     });
@@ -132,8 +129,8 @@ export async function saveFSBOListing(userId: string, listing: {
 }
 
 export async function getFSBOListings(userId: string, filters?: {
-  status?: string;
-  source?: ValidSource;
+  status?: REFSBOStatus;
+  source?: REFSBOSource;
   city?: string;
   minPrice?: number;
   maxPrice?: number;
@@ -157,7 +154,7 @@ export async function getFSBOListings(userId: string, filters?: {
   }
 }
 
-export async function updateFSBOStatus(listingId: string, userId: string, status: string) {
+export async function updateFSBOStatus(listingId: string, userId: string, status: REFSBOStatus) {
   try {
     await prisma.rEFSBOListing.updateMany({
       where: { id: listingId, assignedUserId: userId },
