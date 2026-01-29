@@ -34,8 +34,8 @@ interface WorkflowInstance {
   };
   lead?: {
     id: string;
-    firstName: string;
-    lastName: string;
+    businessName: string;
+    contactPerson: string | null;
     email: string;
   } | null;
   deal?: {
@@ -43,7 +43,7 @@ interface WorkflowInstance {
     title: string;
     value: number;
   } | null;
-  taskExecutions: {
+  executions: {
     id: string;
     status: string;
     startedAt: string | null;
@@ -52,7 +52,7 @@ interface WorkflowInstance {
       id: string;
       name: string;
       order: number;
-      isHITLGate: boolean;
+      isHITL: boolean;
     };
   }[];
 }
@@ -134,8 +134,8 @@ export function WorkflowInstanceMonitor() {
   };
 
   const calculateProgress = (instance: WorkflowInstance) => {
-    const totalTasks = instance.workflow.tasks.length;
-    const completedTasks = instance.taskExecutions.filter(
+    const totalTasks = instance.template.tasks.length;
+    const completedTasks = instance.executions.filter(
       (te) => te.status === 'COMPLETED'
     ).length;
     return totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
@@ -206,20 +206,20 @@ export function WorkflowInstanceMonitor() {
                     {/* Workflow Info */}
                     <div>
                       <div className="flex items-center gap-2">
-                        {instance.workflow.workflowType === 'BUYER_PIPELINE' ? (
+                        {instance.template.workflowType === 'BUYER_PIPELINE' ? (
                           <Home className="h-4 w-4 text-blue-500" />
                         ) : (
                           <FileText className="h-4 w-4 text-green-500" />
                         )}
                         <CardTitle className="text-lg text-white">
-                          {instance.workflow.name}
+                          {instance.template.name}
                         </CardTitle>
                       </div>
                       <CardDescription className="mt-1">
                         {instance.lead && (
                           <span className="flex items-center gap-1">
                             <User className="h-3 w-3" />
-                            {instance.lead.firstName} {instance.lead.lastName}
+                            {instance.lead.businessName} {instance.lead.contactPerson || ""}
                           </span>
                         )}
                         {instance.deal && (
@@ -256,10 +256,10 @@ export function WorkflowInstanceMonitor() {
               {expandedInstance === instance.id && (
                 <CardContent className="border-t border-gray-800 pt-4">
                   <div className="space-y-2">
-                    {instance.workflow.tasks
-                      .sort((a, b) => a.order - b.order)
+                    {instance.template.tasks
+                      .sort((a, b) => a.displayOrder - b.displayOrder)
                       .map((task) => {
-                        const execution = instance.taskExecutions.find(
+                        const execution = instance.executions.find(
                           (te) => te.task.id === task.id
                         );
                         return (
@@ -269,11 +269,11 @@ export function WorkflowInstanceMonitor() {
                           >
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm font-medium text-white">
-                                {task.order}
+                                {task.displayOrder}
                               </div>
                               {getTaskStatusIcon(execution?.status || 'PENDING')}
                               <span className="text-white">{task.name}</span>
-                              {execution?.task.isHITLGate && (
+                              {execution?.task.isHITL && (
                                 <Shield className="h-4 w-4 text-amber-500" />
                               )}
                             </div>

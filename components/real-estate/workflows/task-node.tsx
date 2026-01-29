@@ -65,7 +65,7 @@ export function TaskNode({
         </div>
         
         {/* HITL Badge */}
-        {task.isHITLGate && (
+        {task.isHITL && (
           <div className="absolute -bottom-1 -right-1 bg-amber-500 rounded-full p-1">
             <Shield className="w-3 h-3 text-white" />
           </div>
@@ -102,7 +102,7 @@ export function TaskNode({
       
       {/* Order Number */}
       <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-gray-900 border-2 border-gray-700 flex items-center justify-center text-xs font-bold text-white">
-        {task.order}
+        {task.displayOrder}
       </div>
     </div>
   );

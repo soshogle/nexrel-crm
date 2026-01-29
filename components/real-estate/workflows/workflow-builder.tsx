@@ -170,7 +170,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
       assignedAgentName: null,
       agentColor: '#6B7280',
       order: newOrder,
-      isHITLGate: false,
+      isHITL: false,
       delayMinutes: 0,
       angle,
       radius: 0.7,
@@ -343,7 +343,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
             </span>
             <span>
               <strong className="text-amber-400">
-                {workflow.tasks.filter(t => t.isHITLGate).length}
+                {workflow.tasks.filter(t => t.isHITL).length}
               </strong> HITL gates
             </span>
             <span>

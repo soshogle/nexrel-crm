@@ -8,8 +8,8 @@ export interface WorkflowTask {
   assignedAgentId: string | null;
   assignedAgentName: string | null;
   agentColor: string;
-  order: number;
-  isHITLGate: boolean;
+  displayOrder: number;
+  isHITL: boolean;
   delayMinutes: number;
   angle: number; // Position on the circle (0-360)
   radius: number; // Distance from center (0-1)

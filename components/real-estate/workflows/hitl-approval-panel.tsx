@@ -49,8 +49,8 @@ interface HITLNotification {
       };
       lead?: {
         id: string;
-        firstName: string;
-        lastName: string;
+        businessName: string;
+        contactPerson: string | null;
         email: string;
         phone: string;
       } | null;
@@ -213,13 +213,13 @@ export function HITLApprovalPanel() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      {getWorkflowTypeIcon(notification.taskExecution.workflowInstance.workflow.workflowType)}
+                      {getWorkflowTypeIcon(notification.taskExecution.workflowInstance.template.workflowType)}
                       <span className="text-sm text-gray-400">
-                        {notification.taskExecution.workflowInstance.workflow.name}
+                        {notification.taskExecution.workflowInstance.template.name}
                       </span>
                       <span className="text-gray-600">•</span>
                       <span className="text-sm text-gray-500">
-                        Step {notification.taskExecution.task.order}
+                        Step {notification.taskExecution.task.displayOrder}
                       </span>
                     </div>
 
@@ -237,8 +237,8 @@ export function HITLApprovalPanel() {
                         <div className="flex items-center gap-1 text-sm text-blue-400">
                           <User className="h-4 w-4" />
                           <span>
-                            {notification.taskExecution.workflowInstance.lead.firstName}{' '}
-                            {notification.taskExecution.workflowInstance.lead.lastName}
+                            {notification.taskExecution.workflowInstance.lead.businessName}{' '}
+                            {notification.taskExecution.workflowInstance.lead.contactPerson || ''}
                           </span>
                         </div>
                       )}
@@ -337,8 +337,8 @@ export function HITLApprovalPanel() {
                       <div>
                         <span className="text-gray-400">Name: </span>
                         <span className="text-white">
-                          {selectedNotification.taskExecution.workflowInstance.lead.firstName}{' '}
-                          {selectedNotification.taskExecution.workflowInstance.lead.lastName}
+                          {selectedNotification.taskExecution.workflowInstance.lead.businessName}{' '}
+                          {selectedNotification.taskExecution.workflowInstance.lead.contactPerson || ''}
                         </span>
                       </div>
                       <div>

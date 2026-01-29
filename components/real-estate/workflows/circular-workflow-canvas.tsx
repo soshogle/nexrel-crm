@@ -125,10 +125,10 @@ export function CircularWorkflowCanvas({
         if (distance < 50) {
           const updatedTasks = workflow.tasks.map(t => {
             if (t.id === task.id) {
-              return { ...t, order: other.order, angle: other.angle, radius: other.radius };
+              return { ...t, order: other.displayOrder, angle: other.angle, radius: other.radius };
             }
             if (t.id === other.id) {
-              return { ...t, order: task.order, angle: task.angle, radius: task.radius };
+              return { ...t, displayOrder: task.displayOrder, angle: task.angle, radius: task.radius };
             }
             return t;
           });
@@ -144,7 +144,7 @@ export function CircularWorkflowCanvas({
   
   // Draw connection lines between tasks
   const renderConnections = () => {
-    const sortedTasks = [...workflow.tasks].sort((a, b) => a.order - b.order);
+    const sortedTasks = [...workflow.tasks].sort((a, b) => a.displayOrder - b.displayOrder);
     const lines: React.ReactNode[] = [];
     
     for (let i = 0; i < sortedTasks.length - 1; i++) {
