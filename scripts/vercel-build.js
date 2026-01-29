@@ -18,4 +18,4 @@ module.exports = nextConfig;
 
 fs.writeFileSync(configPath, cleanConfig);
 console.log('next.config.js fixed');
-// Build trigger: 1769600000 - RE Workflow models added
+// Build trigger: 1769601000 - Force fresh install with RE Workflow models
