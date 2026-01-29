@@ -2,9 +2,12 @@
 
 import React, { useState } from 'react';
 import { WorkflowBuilder } from './workflow-builder';
+import { HITLApprovalPanel } from './hitl-approval-panel';
+import { WorkflowInstanceMonitor } from './workflow-instance-monitor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   GitBranch,
   Home,
@@ -14,10 +17,13 @@ import {
   Clock,
   Users,
   ArrowRight,
+  Activity,
+  Wrench,
 } from 'lucide-react';
 
 export function REWorkflowsTab() {
   const [showBuilder, setShowBuilder] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState('overview');
   
   if (showBuilder) {
     return (
@@ -59,6 +65,33 @@ export function REWorkflowsTab() {
           Open Workflow Builder
         </Button>
       </div>
+
+      {/* Sub-tabs for different views */}
+      <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-4">
+        <TabsList className="bg-gray-800">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-purple-600">
+            <Wrench className="w-4 h-4 mr-2" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="approvals" className="data-[state=active]:bg-amber-600">
+            <Shield className="w-4 h-4 mr-2" />
+            HITL Approvals
+          </TabsTrigger>
+          <TabsTrigger value="monitor" className="data-[state=active]:bg-blue-600">
+            <Activity className="w-4 h-4 mr-2" />
+            Monitor
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="approvals">
+          <HITLApprovalPanel />
+        </TabsContent>
+
+        <TabsContent value="monitor">
+          <WorkflowInstanceMonitor />
+        </TabsContent>
+
+        <TabsContent value="overview">
       
       {/* Pipeline Templates */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -188,6 +221,8 @@ export function REWorkflowsTab() {
           or start with a template above
         </span>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
