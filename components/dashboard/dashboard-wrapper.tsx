@@ -8,6 +8,7 @@ import { SidebarNav } from './sidebar-nav'
 import { AIChatAssistant } from './ai-chat-assistant'
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
 import { GlobalSearchTrigger } from '@/app/components/unified-search'
+import { HITLNotificationBell } from '@/components/real-estate/workflows/hitl-notification-bell'
 
 interface DashboardWrapperProps {
   children: ReactNode
@@ -109,8 +110,12 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
             <h2 className="text-xl font-semibold text-gray-900">
               {session?.user?.name ? `Welcome, ${session.user.name}` : 'Dashboard'}
             </h2>
-            <div className="w-96">
-              <GlobalSearchTrigger />
+            <div className="flex items-center gap-4">
+              {/* HITL Notification Bell - Only for Real Estate users */}
+              {mounted && <HITLNotificationBell />}
+              <div className="w-96">
+                <GlobalSearchTrigger />
+              </div>
             </div>
           </div>
         </div>
