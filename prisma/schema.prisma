@@ -256,6 +256,10 @@ model User {
   reExpiredAssignedListings REExpiredListing[]           @relation("REExpiredAssignedUser")
   reAIEmployeeExecutions    REAIEmployeeExecution[]      @relation("REAIEmployeeExecutionUser")
   reAIEmployeeAgents        REAIEmployeeAgent[]          @relation("REAIEmployeeAgentUser")
+  // Real Estate Workflow Relations
+  reWorkflowTemplates       REWorkflowTemplate[]         @relation("UserREWorkflowTemplates")
+  reWorkflowInstances       REWorkflowInstance[]         @relation("UserREWorkflowInstances")
+  reHITLNotifications       REHITLNotification[]         @relation("UserREHITLNotifications")
   // White-Label Voice AI Platform Relations
   voiceAISubscription       VoiceAISubscription?         @relation("VoiceAISubscriptionUser")
   voiceAIUsageLogs          VoiceAIUsageLog[]            @relation("VoiceAIUsageLogUser")
@@ -323,6 +327,8 @@ model Lead {
   reTransactions        RETransaction[]      @relation("RETransactionLead")
   reBuyerCriteria       REBuyerCriteria?     @relation("REBuyerCriteriaLead")
   reExpiredConvertedLead REExpiredListing[]  @relation("REExpiredConvertedLead")
+  // Real Estate Workflow Relations
+  reWorkflowInstances    REWorkflowInstance[] @relation("LeadREWorkflowInstances")
 
   @@index([userId])
   @@index([status])
@@ -896,6 +902,8 @@ model Deal {
   smsCampaignDeals    SmsCampaignDeal[]
   tasks               Task[]
   workflowEnrollments WorkflowEnrollment[]
+  // Real Estate Workflow Relations
+  reWorkflowInstances REWorkflowInstance[] @relation("DealREWorkflowInstances")
 
   @@index([userId])
   @@index([pipelineId])
@@ -7374,5 +7382,188 @@ model VoiceAIBillingRecord {
   @@index([subscriptionId])
   @@index([status])
   @@index([billingPeriodStart])
+  @@index([createdAt])
+}
+
+
+// ==========================================
+// REAL ESTATE WORKFLOW AUTOMATION SYSTEM
+// ==========================================
+
+enum REWorkflowType {
+  BUYER
+  SELLER
+  CUSTOM
+}
+
+enum RETaskType {
+  QUALIFICATION
+  MLS_SEARCH
+  SHOWING_SCHEDULE
+  SHOWING_FEEDBACK
+  OFFER_PREP
+  OFFER_SUBMIT
+  CONDITION_TRACKING
+  CLOSING_COORDINATION
+  POST_CLOSE_FOLLOWUP
+  CMA_GENERATION
+  LISTING_PREP
+  PHOTO_SCHEDULING
+  MARKETING_DRAFT
+  LISTING_PUBLISH
+  CUSTOM
+}
+
+enum REWorkflowInstanceStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum RETaskExecutionStatus {
+  PENDING
+  IN_PROGRESS
+  AWAITING_HITL
+  APPROVED
+  REJECTED
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+// RE Workflow Template - defines a buyer/seller pipeline
+model REWorkflowTemplate {
+  id            String                 @id @default(cuid())
+  userId        String
+  name          String
+  type          REWorkflowType
+  description   String?
+  isDefault     Boolean                @default(false)
+  isActive      Boolean                @default(true)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  
+  // Relations
+  user          User                   @relation("UserREWorkflowTemplates", fields: [userId], references: [id], onDelete: Cascade)
+  tasks         REWorkflowTask[]       @relation("REWorkflowTemplateTasks")
+  instances     REWorkflowInstance[]   @relation("REWorkflowTemplateInstances")
+  
+  @@index([userId])
+  @@index([type])
+  @@index([isDefault])
+}
+
+// RE Workflow Task - a single task/step in the workflow
+model REWorkflowTask {
+  id                String              @id @default(cuid())
+  templateId        String
+  name              String
+  description       String?
+  taskType          RETaskType
+  assignedAgentType REAIEmployeeType?
+  delayValue        Int                 @default(0)
+  delayUnit         String              @default("MINUTES") // MINUTES, HOURS, DAYS
+  isHITL            Boolean             @default(false)
+  isOptional        Boolean             @default(false)
+  position          Json                // {angle: 45, radius: 1, x: 0, y: 0} for circular UI
+  displayOrder      Int
+  parentTaskId      String?
+  branchCondition   Json?               // {field: "feedback", operator: "equals", value: "liked"}
+  actionConfig      Json                // {actions: ["voice_call", "sms"], script: "...", etc}
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Relations
+  template          REWorkflowTemplate  @relation("REWorkflowTemplateTasks", fields: [templateId], references: [id], onDelete: Cascade)
+  parentTask        REWorkflowTask?     @relation("RETaskBranches", fields: [parentTaskId], references: [id])
+  childTasks        REWorkflowTask[]    @relation("RETaskBranches")
+  executions        RETaskExecution[]   @relation("RETaskExecutions")
+  
+  @@index([templateId])
+  @@index([parentTaskId])
+  @@index([displayOrder])
+}
+
+// RE Workflow Instance - a running instance of a workflow for a specific lead/deal
+model REWorkflowInstance {
+  id            String                    @id @default(cuid())
+  templateId    String
+  userId        String
+  leadId        String?
+  dealId        String?
+  status        REWorkflowInstanceStatus  @default(ACTIVE)
+  currentTaskId String?
+  metadata      Json?                     // Buyer/Seller specific data collected
+  startedAt     DateTime                  @default(now())
+  completedAt   DateTime?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  
+  // Relations
+  template      REWorkflowTemplate        @relation("REWorkflowTemplateInstances", fields: [templateId], references: [id])
+  user          User                      @relation("UserREWorkflowInstances", fields: [userId], references: [id], onDelete: Cascade)
+  lead          Lead?                     @relation("LeadREWorkflowInstances", fields: [leadId], references: [id])
+  deal          Deal?                     @relation("DealREWorkflowInstances", fields: [dealId], references: [id])
+  executions    RETaskExecution[]         @relation("REInstanceExecutions")
+  
+  @@index([templateId])
+  @@index([userId])
+  @@index([leadId])
+  @@index([dealId])
+  @@index([status])
+}
+
+// RE Task Execution - tracks execution of a single task within an instance
+model RETaskExecution {
+  id              String                @id @default(cuid())
+  instanceId      String
+  taskId          String
+  status          RETaskExecutionStatus @default(PENDING)
+  scheduledFor    DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  agentUsed       REAIEmployeeType?
+  callLogId       String?               // Link to CallLog if voice call made
+  result          Json?                 // Outcome data
+  hitlApprovedBy  String?               // User who approved HITL
+  hitlApprovedAt  DateTime?
+  hitlNotes       String?
+  errorMessage    String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  
+  // Relations
+  instance        REWorkflowInstance    @relation("REInstanceExecutions", fields: [instanceId], references: [id], onDelete: Cascade)
+  task            REWorkflowTask        @relation("RETaskExecutions", fields: [taskId], references: [id])
+  
+  @@index([instanceId])
+  @@index([taskId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+// HITL Notification Queue - tracks pending human-in-the-loop approvals
+model REHITLNotification {
+  id              String    @id @default(cuid())
+  userId          String
+  executionId     String    @unique
+  taskName        String
+  contactName     String?
+  dealAddress     String?
+  message         String
+  urgency         String    @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  isRead          Boolean   @default(false)
+  isActioned      Boolean   @default(false)
+  smsSent         Boolean   @default(false)
+  emailSent       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  user            User      @relation("UserREHITLNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([isActioned])
   @@index([createdAt])
 }
