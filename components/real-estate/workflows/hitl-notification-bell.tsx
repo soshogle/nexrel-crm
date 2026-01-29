@@ -24,7 +24,7 @@ interface HITLNotification {
     };
     workflowInstance: {
       id: string;
-      lead?: { firstName: string; lastName: string; email: string } | null;
+      lead?: { businessName: string; contactPerson: string | null; email: string | null } | null;
       deal?: { title: string } | null;
     };
   };
@@ -185,8 +185,8 @@ export function HITLNotificationBell() {
                         <div className="flex items-center gap-1 mt-2 text-xs text-blue-600">
                           <User className="h-3 w-3" />
                           <span>
-                            {notification.taskExecution.workflowInstance.lead.firstName}{' '}
-                            {notification.taskExecution.workflowInstance.lead.lastName}
+                            {notification.taskExecution.workflowInstance.lead.businessName}{' '}
+                            {notification.taskExecution.workflowInstance.lead.contactPerson || ''}
                           </span>
                         </div>
                       )}

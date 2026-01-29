@@ -150,8 +150,8 @@ export function TaskEditorPanel({
             </div>
           </div>
           <Switch
-            checked={editedTask.isHITLGate}
-            onCheckedChange={(checked) => setEditedTask({ ...editedTask, isHITLGate: checked })}
+            checked={editedTask.isHITL}
+            onCheckedChange={(checked) => setEditedTask({ ...editedTask, isHITL: checked })}
           />
         </div>
         
@@ -176,7 +176,7 @@ export function TaskEditorPanel({
           <Input
             type="number"
             min="1"
-            value={editedTask.order}
+            value={editedTask.displayOrder}
             onChange={(e) => setEditedTask({ ...editedTask, order: parseInt(e.target.value) || 1 })}
             className="bg-gray-800 border-gray-700 text-white"
           />

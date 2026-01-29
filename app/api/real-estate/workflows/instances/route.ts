@@ -14,13 +14,13 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status'); // Filter by status
+    const status = searchParams.get('status');
     const leadId = searchParams.get('leadId');
     const dealId = searchParams.get('dealId');
     const limit = parseInt(searchParams.get('limit') || '50');
 
     const where: any = {
-      workflow: {
+      template: {
         userId: session.user.id,
       },
     };
@@ -40,15 +40,15 @@ export async function GET(request: NextRequest) {
       take: limit,
       orderBy: { startedAt: 'desc' },
       include: {
-        workflow: {
+        template: {
           include: {
             tasks: {
-              orderBy: { order: 'asc' },
+              orderBy: { displayOrder: 'asc' },
               select: {
                 id: true,
                 name: true,
-                order: true,
-                isHITLGate: true,
+                displayOrder: true,
+                isHITL: true,
               },
             },
           },
@@ -56,8 +56,8 @@ export async function GET(request: NextRequest) {
         lead: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
+            businessName: true,
+            contactPerson: true,
             email: true,
           },
         },
@@ -68,14 +68,14 @@ export async function GET(request: NextRequest) {
             value: true,
           },
         },
-        taskExecutions: {
+        executions: {
           include: {
             task: {
               select: {
                 id: true,
                 name: true,
-                order: true,
-                isHITLGate: true,
+                displayOrder: true,
+                isHITL: true,
               },
             },
           },
