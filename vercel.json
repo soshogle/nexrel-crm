@@ -1,6 +1,6 @@
 {
   "buildCommand": "node scripts/vercel-build.js && next build",
-  "installCommand": "yarn install",
+  "installCommand": "yarn install && rm -rf node_modules/.prisma && npx prisma generate",
   "framework": "nextjs",
   "outputDirectory": ".next"
 }
