@@ -46,6 +46,7 @@ import {
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { RealEstateAIEmployees } from '@/components/ai-employees/real-estate-employees';
+import { REWorkflowsTab } from '@/components/real-estate/workflows/re-workflows-tab';
 
 // Embedded Tasks Component - Mini Monday Board
 function TasksEmbed() {
@@ -881,7 +882,7 @@ export default function AIEmployeesPage() {
       </div>
 
       <Tabs defaultValue={defaultTab} className="space-y-6">
-        <TabsList className={`grid w-full ${isRealEstateUser ? 'grid-cols-5' : 'grid-cols-4'}`}>
+        <TabsList className={`grid w-full ${isRealEstateUser ? 'grid-cols-6' : 'grid-cols-4'}`}>
           <TabsTrigger value="trigger">Trigger Tasks</TabsTrigger>
           <TabsTrigger value="ai-team">AI Team</TabsTrigger>
           {isRealEstateUser && (
@@ -890,6 +891,14 @@ export default function AIEmployeesPage() {
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
             >
               RE Team
+            </TabsTrigger>
+          )}
+          {isRealEstateUser && (
+            <TabsTrigger 
+              value="workflows"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+            >
+              Workflows
             </TabsTrigger>
           )}
           <TabsTrigger value="monitor">Monitor Jobs</TabsTrigger>
@@ -1674,6 +1683,13 @@ export default function AIEmployeesPage() {
         {isRealEstateUser && (
           <TabsContent value="re-team" className="space-y-4">
             <RealEstateAIEmployees />
+          </TabsContent>
+        )}
+
+        {/* Workflows Tab - Only for Real Estate users */}
+        {isRealEstateUser && (
+          <TabsContent value="workflows" className="space-y-4">
+            <REWorkflowsTab />
           </TabsContent>
         )}
       </Tabs>
