@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/widget/submit - Public endpoint to receive form submissions from embedded widgets
 export async function POST(request: NextRequest) {

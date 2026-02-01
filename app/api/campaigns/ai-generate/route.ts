@@ -5,6 +5,7 @@ import { aiCampaignService } from '@/lib/ai-campaign-service';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/campaigns/ai-generate - Generate AI campaign content
 export async function POST(request: NextRequest) {

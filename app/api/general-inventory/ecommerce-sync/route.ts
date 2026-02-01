@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { createPlatformClient } from '@/lib/ecommerce-platforms';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET - Get sync configuration
 export async function GET(request: NextRequest) {

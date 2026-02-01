@@ -7,6 +7,7 @@ import { prisma as db } from '@/lib/db';
 // GET /api/reservations/settings - Get reservation settings
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

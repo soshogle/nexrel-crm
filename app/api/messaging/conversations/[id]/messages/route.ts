@@ -7,6 +7,7 @@ import { getMessagingProvider } from '@/lib/messaging';
 // GET /api/messaging/conversations/[id]/messages - Get messages for a conversation
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,

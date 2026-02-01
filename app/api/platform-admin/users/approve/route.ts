@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/platform-admin/users/approve - Approve a pending user (SUPER_ADMIN only)
 export async function POST(request: NextRequest) {

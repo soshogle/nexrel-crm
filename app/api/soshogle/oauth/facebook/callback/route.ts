@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/soshogle/oauth/facebook/callback - Handle Facebook OAuth callback
 export async function GET(request: NextRequest) {

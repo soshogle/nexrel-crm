@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { aiTaskService } from '@/lib/ai-task-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/tasks/suggest-assignee - Suggest optimal assignee
 export async function POST(request: NextRequest) {

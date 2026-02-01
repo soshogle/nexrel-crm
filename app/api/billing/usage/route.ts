@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { billingService } from '@/lib/billing-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * GET /api/billing/usage

@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { aiTaskService } from '@/lib/ai-task-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/tasks/ai-categorize - Auto-categorize a task
 export async function POST(request: NextRequest) {

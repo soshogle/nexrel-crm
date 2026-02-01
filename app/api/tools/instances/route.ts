@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // Simple encryption helper (replace with proper encryption service in production)
 function encrypt(text: string): string {

@@ -10,6 +10,7 @@ import { runDailyGoogleMapsScraping, testCronJob } from '@/lib/lead-generation/c
  */
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

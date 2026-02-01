@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 // GET /api/campaigns/drip - List all drip campaigns
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {

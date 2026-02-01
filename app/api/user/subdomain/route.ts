@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 // GET /api/user/subdomain - Get current user's subdomain
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

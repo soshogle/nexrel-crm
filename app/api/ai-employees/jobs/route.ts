@@ -11,6 +11,7 @@ import { AIJobStatus } from '@prisma/client';
 // GET - List all jobs for user
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

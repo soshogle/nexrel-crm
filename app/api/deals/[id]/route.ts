@@ -8,6 +8,7 @@ import { workflowEngine } from '@/lib/workflow-engine';
 // GET /api/deals/[id] - Get single deal
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,

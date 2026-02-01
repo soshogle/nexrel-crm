@@ -8,6 +8,7 @@ import { elevenLabsService } from '@/lib/elevenlabs';
 // GET /api/outbound-calls/[id] - Get specific outbound call
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,

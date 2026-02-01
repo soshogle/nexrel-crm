@@ -11,6 +11,7 @@ import { RE_AGENT_NAMES } from '@/lib/real-estate/workflow-templates';
 import { REAIEmployeeType } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET - Get all pending HITL approvals
 export async function GET(request: NextRequest) {

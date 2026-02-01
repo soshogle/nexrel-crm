@@ -10,6 +10,7 @@ type RouteContext = {
 // POST /api/campaigns/drip/[id]/activate - Activate campaign
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(
   req: NextRequest,

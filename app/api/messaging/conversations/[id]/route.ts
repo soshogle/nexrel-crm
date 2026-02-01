@@ -8,6 +8,7 @@ import { prisma } from '@/lib/db';
 // GET /api/messaging/conversations/[id] - Get conversation details
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,

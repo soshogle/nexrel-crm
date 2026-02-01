@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // DELETE /api/knowledge-base/[id] - Delete a knowledge base file
 export async function DELETE(

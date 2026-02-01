@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { lowStockAlertService } from '@/lib/low-stock-alert-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST - Manually trigger alerts
 export async function POST(request: NextRequest) {

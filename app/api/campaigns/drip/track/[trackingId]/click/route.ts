@@ -8,6 +8,7 @@ type RouteContext = {
 // GET /api/campaigns/drip/track/[trackingId]/click - Track email click
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   req: NextRequest,

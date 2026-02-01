@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { facebookMessengerService } from '@/lib/facebook-messenger-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * Sync historical Messenger conversations

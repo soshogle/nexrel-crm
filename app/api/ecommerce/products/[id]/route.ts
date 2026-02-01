@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db'
 // Helper function to sync with inventory
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 async function syncWithInventory(userId: string, productData: any, action: 'create' | 'update') {
   try {

@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 // GET /api/clubos/households - Get household for current user
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

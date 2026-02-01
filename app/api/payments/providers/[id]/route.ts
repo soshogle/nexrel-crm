@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 // DELETE - Delete a payment provider
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function DELETE(
   request: NextRequest,

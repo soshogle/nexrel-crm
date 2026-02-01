@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { addDays, format, parse, isAfter, isBefore, addMinutes } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/booking/[userId]/availability?date=YYYY-MM-DD
 export async function GET(

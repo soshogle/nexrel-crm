@@ -10,6 +10,7 @@ import { widgetService } from '@/lib/ecommerce/widget-service';
 // This endpoint doesn't require authentication as it's called from external websites
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(
   req: NextRequest,

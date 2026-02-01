@@ -11,6 +11,7 @@ import { stripeSubscriptionService, SUBSCRIPTION_PLANS } from '@/lib/payments/st
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/knowledge-base - Fetch all knowledge base files for the user
 // Optional query parameter: voiceAgentId - filter files for a specific voice agent

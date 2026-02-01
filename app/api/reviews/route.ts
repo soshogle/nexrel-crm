@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db'
 import { ReviewSource } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs';
 
 // GET - List all reviews
 export async function GET(request: NextRequest) {

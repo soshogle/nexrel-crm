@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { facebookMessengerService } from '@/lib/facebook-messenger-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * Send a message via Facebook Messenger

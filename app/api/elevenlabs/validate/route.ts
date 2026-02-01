@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';

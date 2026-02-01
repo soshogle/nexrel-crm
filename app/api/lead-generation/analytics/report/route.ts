@@ -9,6 +9,7 @@ import { generateDailyReport } from '@/lib/lead-generation/analytics';
  */
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

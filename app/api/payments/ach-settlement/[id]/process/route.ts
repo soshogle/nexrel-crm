@@ -11,6 +11,7 @@ import { AchSettlementService } from '@/lib/payments/ach-settlement-service';
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(
   request: NextRequest,

@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 // Define available actions
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const AVAILABLE_ACTIONS = {
   // Setup & Configuration

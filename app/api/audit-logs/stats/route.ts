@@ -12,6 +12,7 @@ import { RateLimiters, getClientIdentifier, createRateLimitResponse } from '@/li
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   // Apply rate limiting

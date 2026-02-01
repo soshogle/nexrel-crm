@@ -11,6 +11,7 @@ import { checkAvailability } from '@/lib/voice-reservation-helper';
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {

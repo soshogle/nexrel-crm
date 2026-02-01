@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db'
 // GET /api/ecommerce/storefront - Get user's storefront
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {

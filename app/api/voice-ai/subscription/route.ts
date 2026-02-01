@@ -10,6 +10,7 @@ import { authOptions } from '@/lib/auth';
 import { voiceAIPlatform } from '@/lib/voice-ai-platform';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET - Get current user's Voice AI subscription and usage summary
 export async function GET() {

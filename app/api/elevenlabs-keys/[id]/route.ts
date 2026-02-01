@@ -7,6 +7,7 @@ import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 // DELETE /api/elevenlabs-keys/[id] - Remove an API key
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function DELETE(
   request: NextRequest,

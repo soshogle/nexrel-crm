@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 // GET /api/clubos/programs/[id]
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,

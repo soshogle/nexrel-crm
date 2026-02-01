@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/platform-admin/users - List all users (SUPER_ADMIN only)
 export async function GET(request: NextRequest) {

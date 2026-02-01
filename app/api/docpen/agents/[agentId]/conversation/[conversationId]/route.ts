@@ -11,6 +11,7 @@ import { prisma } from '@/lib/db';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 

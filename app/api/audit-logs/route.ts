@@ -14,6 +14,7 @@ import { AuditAction, AuditSeverity } from '@prisma/client';
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   // Apply rate limiting

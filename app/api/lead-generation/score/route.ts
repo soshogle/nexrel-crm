@@ -9,6 +9,7 @@ import { scoreAndSaveLead, batchScoreLeads } from '@/lib/lead-generation/lead-sc
  */
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {

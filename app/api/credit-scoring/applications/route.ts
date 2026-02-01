@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db'
 // GET /api/credit-scoring/applications - List credit applications
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {

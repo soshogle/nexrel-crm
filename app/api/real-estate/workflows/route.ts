@@ -10,6 +10,7 @@ import { prisma } from '@/lib/db';
 import { DEFAULT_WORKFLOW_TEMPLATES } from '@/lib/real-estate/workflow-templates';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET - List all workflow templates for the user
 export async function GET(request: NextRequest) {

@@ -10,6 +10,7 @@ import { batchScoreLeads } from '@/lib/lead-generation/lead-scoring-db';
  */
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {

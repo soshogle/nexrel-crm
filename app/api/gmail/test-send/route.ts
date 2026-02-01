@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { emailService } from '@/lib/email-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * Test endpoint to send an email via Gmail OAuth

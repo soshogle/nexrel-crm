@@ -10,6 +10,7 @@ type RouteContext = {
 // GET /api/campaigns/drip/[id]/sequences - List sequences
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   req: NextRequest,

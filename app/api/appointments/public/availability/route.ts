@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 // GET /api/appointments/public/availability - Get available time slots
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

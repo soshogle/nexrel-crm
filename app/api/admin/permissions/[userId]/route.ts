@@ -7,6 +7,7 @@ import { grantPermission, getUserPermissions } from '@/lib/permissions';
 import { PageResource } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/admin/permissions/[userId] - Get permissions for specific user
 export async function GET(

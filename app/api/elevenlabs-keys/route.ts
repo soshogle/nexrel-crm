@@ -7,6 +7,7 @@ import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 // GET /api/elevenlabs-keys - Get all API keys with status
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

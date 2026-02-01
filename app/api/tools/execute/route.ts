@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 function decrypt(text: string): string {
   try {

@@ -7,6 +7,7 @@ import { clubOSPaymentService } from '@/lib/clubos-payment-service';
 // GET /api/clubos/payments - Get payment history
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

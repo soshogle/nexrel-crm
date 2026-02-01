@@ -5,6 +5,7 @@ import { emailService } from '@/lib/email-service';
 import { CalendarService } from '@/lib/calendar/calendar-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/booking/[userId]/book
 export async function POST(

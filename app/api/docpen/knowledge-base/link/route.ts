@@ -13,6 +13,7 @@ import { VOICE_AGENT_PROMPTS } from '@/lib/docpen/voice-prompts';
 import type { DocpenProfessionType } from '@/lib/docpen/prompts';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 

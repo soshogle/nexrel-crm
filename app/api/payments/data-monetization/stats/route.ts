@@ -11,6 +11,7 @@ import { dataMonetizationService } from '@/lib/payments/data-monetization-servic
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {

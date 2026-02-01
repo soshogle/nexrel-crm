@@ -17,6 +17,7 @@ import {
 } from '@/lib/real-estate/scrapers';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET - Check scraper status and list jobs
 export async function GET(request: NextRequest) {
