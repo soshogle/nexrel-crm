@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { emailService } from '@/lib/email-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * Send email notifications for completed calls
