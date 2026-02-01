@@ -261,7 +261,7 @@ export function DemoModal({ isOpen, onClose }: DemoModalProps) {
 
               <div>
                 <Label htmlFor="industry">Industry</Label>
-                <Select value={formData.industry} onValueChange={(value) => handleInputChange("industry", value)} modal={false}>
+                <Select value={formData.industry} onValueChange={(value) => handleInputChange("industry", value)}>
                   <SelectTrigger id="industry">
                     <SelectValue placeholder="Select an industry" />
                   </SelectTrigger>
