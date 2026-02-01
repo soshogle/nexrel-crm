@@ -32,6 +32,9 @@ export class AIResponseService {
 
   constructor() {
     this.apiKey = process.env.ABACUSAI_API_KEY || '';
+  }
+
+  private ensureConfigured() {
     if (!this.apiKey) {
       throw new Error('ABACUSAI_API_KEY is not configured');
     }
@@ -41,6 +44,7 @@ export class AIResponseService {
    * Generate AI response for incoming message
    */
   async generateResponse(context: MessageContext): Promise<AIResponse> {
+    this.ensureConfigured();
     const { userId, incomingMessage, contactName, channelType, conversationHistory } = context;
 
     // Get user's auto-reply settings
@@ -346,6 +350,7 @@ Respond with raw JSON only.`;
    * Generate suggested reply for human agents
    */
   async generateSuggestedReply(context: MessageContext): Promise<string> {
+    this.ensureConfigured();
     const { userId, incomingMessage, contactName, conversationHistory } = context;
 
     const knowledgeBase = await prisma.knowledgeBase.findMany({

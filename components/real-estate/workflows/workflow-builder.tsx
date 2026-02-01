@@ -149,7 +149,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
       ...workflow,
       tasks: workflow.tasks
         .filter(t => t.id !== taskId)
-        .map((t, i) => ({ ...t, order: i + 1 })),
+        .map((t, i) => ({ ...t, displayOrder: i + 1 })),
     });
     setSelectedTaskId(null);
     toast.success('Task deleted');
@@ -169,7 +169,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
       assignedAgentId: null,
       assignedAgentName: null,
       agentColor: '#6B7280',
-      order: newOrder,
+      displayOrder: newOrder,
       isHITL: false,
       delayMinutes: 0,
       angle,

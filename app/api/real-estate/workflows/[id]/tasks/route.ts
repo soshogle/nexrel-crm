@@ -128,7 +128,7 @@ export async function POST(
         position: position || { angle: (order * 36) - 90, radius: 1 },
         displayOrder: order,
         parentTaskId: parentTaskId || null,
-        branchCondition: branchCondition || null,
+        branchCondition: branchCondition ?? undefined,
         actionConfig: actionConfig || { actions: [] }
       }
     });

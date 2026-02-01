@@ -177,7 +177,7 @@ export function TaskEditorPanel({
             type="number"
             min="1"
             value={editedTask.displayOrder}
-            onChange={(e) => setEditedTask({ ...editedTask, order: parseInt(e.target.value) || 1 })}
+            onChange={(e) => setEditedTask({ ...editedTask, displayOrder: parseInt(e.target.value) || 1 })}
             className="bg-gray-800 border-gray-700 text-white"
           />
         </div>

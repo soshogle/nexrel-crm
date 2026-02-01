@@ -134,7 +134,7 @@ export function WorkflowInstanceMonitor() {
   };
 
   const calculateProgress = (instance: WorkflowInstance) => {
-    const totalTasks = instance.template.tasks.length;
+    const totalTasks = instance.workflow.tasks.length;
     const completedTasks = instance.executions.filter(
       (te) => te.status === 'COMPLETED'
     ).length;
@@ -206,13 +206,13 @@ export function WorkflowInstanceMonitor() {
                     {/* Workflow Info */}
                     <div>
                       <div className="flex items-center gap-2">
-                        {instance.template.workflowType === 'BUYER_PIPELINE' ? (
+                        {instance.workflow.workflowType === 'BUYER_PIPELINE' ? (
                           <Home className="h-4 w-4 text-blue-500" />
                         ) : (
                           <FileText className="h-4 w-4 text-green-500" />
                         )}
                         <CardTitle className="text-lg text-white">
-                          {instance.template.name}
+                          {instance.workflow.name}
                         </CardTitle>
                       </div>
                       <CardDescription className="mt-1">
@@ -256,8 +256,8 @@ export function WorkflowInstanceMonitor() {
               {expandedInstance === instance.id && (
                 <CardContent className="border-t border-gray-800 pt-4">
                   <div className="space-y-2">
-                    {instance.template.tasks
-                      .sort((a, b) => a.displayOrder - b.displayOrder)
+                    {instance.workflow.tasks
+                      .sort((a, b) => a.order - b.order)
                       .map((task) => {
                         const execution = instance.executions.find(
                           (te) => te.task.id === task.id
@@ -269,7 +269,7 @@ export function WorkflowInstanceMonitor() {
                           >
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm font-medium text-white">
-                                {task.displayOrder}
+                                {task.order}
                               </div>
                               {getTaskStatusIcon(execution?.status || 'PENDING')}
                               <span className="text-white">{task.name}</span>
