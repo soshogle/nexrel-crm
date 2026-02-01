@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
 
 function signToken(payload: string, secret: string) {
