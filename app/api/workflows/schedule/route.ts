@@ -11,6 +11,7 @@ import { getTemplateById } from '@/lib/workflow-templates';
  */
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {

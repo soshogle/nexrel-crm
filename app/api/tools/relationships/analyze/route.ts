@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/tools/relationships/analyze - Analyze tool usage patterns and create relationships
 export async function POST(request: NextRequest) {

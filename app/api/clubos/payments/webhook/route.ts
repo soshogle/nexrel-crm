@@ -5,6 +5,7 @@ import { clubOSPaymentService } from '@/lib/clubos-payment-service';
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const stripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder_for_build';
 const stripe = new Stripe(stripeKey, {

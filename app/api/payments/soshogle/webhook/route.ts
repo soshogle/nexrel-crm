@@ -10,6 +10,7 @@ import { soshogleWebhookHandler, verifyWebhookSignature } from '@/lib/payments/w
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const WEBHOOK_SECRET = process.env.SOSHOGLE_PAY_WEBHOOK_SECRET || '';
 

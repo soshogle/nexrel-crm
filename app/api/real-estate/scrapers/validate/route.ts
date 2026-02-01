@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/auth';
 import { validateApifyConnection } from '@/lib/real-estate/scrapers';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

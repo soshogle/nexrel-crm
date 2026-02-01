@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { modifyBooking } from '@/lib/elevenlabs-booking-functions';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * ElevenLabs Custom Function: Modify Booking

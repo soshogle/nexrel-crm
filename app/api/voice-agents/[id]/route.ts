@@ -9,6 +9,7 @@ import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
 // GET /api/voice-agents/[id] - Get single voice agent
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,

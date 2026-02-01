@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createBooking } from '@/lib/elevenlabs-booking-functions';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * ElevenLabs Custom Function: Create Booking

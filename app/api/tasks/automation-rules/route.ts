@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/tasks/automation-rules - Get automation rules
 export async function GET(request: NextRequest) {

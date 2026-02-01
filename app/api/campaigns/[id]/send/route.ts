@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db'
 import { sendSMS } from '@/lib/twilio'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs';
 
 // POST - Send SMS messages for campaign
 export async function POST(

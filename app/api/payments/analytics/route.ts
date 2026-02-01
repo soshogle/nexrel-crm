@@ -11,6 +11,7 @@ import { analyticsService } from '@/lib/payments/analytics-service';
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {

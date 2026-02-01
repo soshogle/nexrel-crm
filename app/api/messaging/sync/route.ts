@@ -11,6 +11,7 @@ import { MessageSyncOrchestrator } from '@/lib/messaging-sync/sync-orchestrator'
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {

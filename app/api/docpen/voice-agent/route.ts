@@ -13,6 +13,7 @@ import { docpenAgentProvisioning } from '@/lib/docpen/agent-provisioning';
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET() {
   try {

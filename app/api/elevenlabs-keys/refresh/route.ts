@@ -7,6 +7,7 @@ import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 // POST /api/elevenlabs-keys/refresh - Refresh all API key statuses
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {

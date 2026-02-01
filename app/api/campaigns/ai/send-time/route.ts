@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { aiCampaignGenerator } from '@/lib/ai-campaign-generator';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST - Get AI-powered send time recommendation
 export async function POST(request: NextRequest) {

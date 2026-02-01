@@ -10,6 +10,7 @@ type RouteContext = {
 // PUT /api/campaigns/drip/[id]/sequences/[sequenceId] - Update sequence
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function PUT(
   req: NextRequest,

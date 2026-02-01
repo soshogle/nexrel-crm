@@ -8,6 +8,7 @@ import { ReservationStatus } from '@prisma/client';
 // GET /api/reservations - List reservations with filters
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

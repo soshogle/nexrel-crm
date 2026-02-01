@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/soshogle/oauth/facebook - Initiate Facebook OAuth flow
 export async function GET(request: NextRequest) {

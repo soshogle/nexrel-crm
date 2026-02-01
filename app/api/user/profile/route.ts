@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 // GET user profile
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {

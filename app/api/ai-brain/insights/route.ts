@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { aiBrainService } from '@/lib/ai-brain-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * GET /api/ai-brain/insights

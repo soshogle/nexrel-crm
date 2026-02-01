@@ -9,6 +9,7 @@ import { createABTest, getActiveTests } from '@/lib/lead-generation/ab-testing';
  */
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {

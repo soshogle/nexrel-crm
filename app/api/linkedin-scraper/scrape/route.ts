@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { linkedInScraperService } from '@/lib/linkedin-scraper-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/linkedin-scraper/scrape - Start LinkedIn scraping
 export async function POST(request: NextRequest) {

@@ -5,6 +5,7 @@ import { scoreAndSaveLead } from '@/lib/lead-generation/lead-scoring-db';
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const prisma = new PrismaClient();
 

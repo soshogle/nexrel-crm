@@ -12,6 +12,7 @@ import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
  */
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(
   req: NextRequest,

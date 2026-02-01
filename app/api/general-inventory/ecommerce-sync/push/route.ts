@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { createPlatformClient } from '@/lib/ecommerce-platforms';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST - Push inventory changes to external platform
 export async function POST(request: NextRequest) {

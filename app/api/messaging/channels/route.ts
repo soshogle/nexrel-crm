@@ -8,6 +8,7 @@ import { getMessagingProvider } from '@/lib/messaging';
 // GET /api/messaging/channels - Get all connected channels
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET() {
   try {

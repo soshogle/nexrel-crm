@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET - Get all tasks for a workflow
 export async function GET(

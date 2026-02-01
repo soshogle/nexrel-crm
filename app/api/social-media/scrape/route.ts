@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import fs from 'fs';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // Read Apify API token from secrets file
 function getApifyToken(): string | null {

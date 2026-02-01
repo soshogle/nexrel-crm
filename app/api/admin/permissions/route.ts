@@ -7,6 +7,7 @@ import { getUserPermissions, applyRolePreset, ROLE_PRESETS } from '@/lib/permiss
 import { PageResource } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/admin/permissions - Get all team members with their permissions
 export async function GET(request: NextRequest) {

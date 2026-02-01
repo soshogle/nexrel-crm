@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { aiTaskService } from '@/lib/ai-task-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/tasks/ai-patterns - Get AI-analyzed task patterns
 export async function GET(request: NextRequest) {

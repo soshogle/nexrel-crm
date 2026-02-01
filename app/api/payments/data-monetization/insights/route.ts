@@ -12,6 +12,7 @@ import { InsightType, InsightPeriod } from '@prisma/client';
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {

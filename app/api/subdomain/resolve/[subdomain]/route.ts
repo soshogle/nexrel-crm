@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 // GET /api/subdomain/resolve/[subdomain] - Resolve subdomain to userId (public)
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,

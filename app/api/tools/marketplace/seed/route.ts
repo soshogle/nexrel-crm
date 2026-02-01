@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/tools/marketplace/seed - Seed marketplace with pre-built templates (Admin only)
 export async function POST(request: NextRequest) {

@@ -8,6 +8,7 @@ import { addDays } from 'date-fns';
 // GET /api/clubos/parent/dashboard - Get parent dashboard data
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

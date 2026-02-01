@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { aiCampaignGenerator } from '@/lib/ai-campaign-generator';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST - Get AI-powered recipient segmentation suggestions
 export async function POST(request: NextRequest) {

@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 // PUT /api/clubos/parent/family/[id] - Update family member
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function PUT(
   request: NextRequest,

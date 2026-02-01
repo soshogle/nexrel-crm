@@ -11,6 +11,7 @@ import { prisma } from '@/lib/db';
 import mammoth from 'mammoth';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // Helper function to extract text from file buffer
 async function extractTextFromFile(

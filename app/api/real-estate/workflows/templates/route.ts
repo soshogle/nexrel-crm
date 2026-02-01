@@ -15,6 +15,7 @@ import {
 } from '@/lib/real-estate/workflow-templates';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET - Get default workflow templates
 export async function GET(request: NextRequest) {

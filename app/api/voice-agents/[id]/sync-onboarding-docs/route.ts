@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { generateReservationSystemPrompt } from '@/lib/voice-reservation-helper';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * PATCH /api/voice-agents/[id]/sync-onboarding-docs

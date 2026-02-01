@@ -8,6 +8,7 @@ import { elevenLabsService } from '@/lib/elevenlabs';
 // PATCH /api/voice-agents/[id]/update-phone - Update voice agent phone number
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function PATCH(
   request: NextRequest,

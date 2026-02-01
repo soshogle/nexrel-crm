@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs';
 
 // POST - Convert referral to lead
 export async function POST(

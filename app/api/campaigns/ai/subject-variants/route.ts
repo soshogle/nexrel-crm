@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { aiCampaignGenerator } from '@/lib/ai-campaign-generator';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST - Generate subject line variants for A/B testing
 export async function POST(request: NextRequest) {

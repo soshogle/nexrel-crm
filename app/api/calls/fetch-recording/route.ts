@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { elevenLabsService } from '@/lib/elevenlabs';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * POST /api/calls/fetch-recording

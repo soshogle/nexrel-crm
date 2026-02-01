@@ -12,6 +12,7 @@ import { voiceAIPlatform } from '@/lib/voice-ai-platform';
 import { VoiceAISubscriptionTier } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET - List all agency subscriptions
 export async function GET(request: NextRequest) {

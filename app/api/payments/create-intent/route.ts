@@ -13,6 +13,7 @@ import { AuditLogger } from '@/lib/security/audit-logger';
 // POST - Create a payment intent
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   // Apply rate limiting (10 payment requests per minute)

@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { sendSMS } from '@/lib/twilio';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes for long-running campaigns
 
 // Helper: Check if we've exceeded frequency caps

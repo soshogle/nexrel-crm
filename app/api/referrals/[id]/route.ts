@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db'
 import { ReferralStatus } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs';
 
 // GET - Get referral by ID
 export async function GET(

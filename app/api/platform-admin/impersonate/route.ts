@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { randomBytes } from 'crypto';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/platform-admin/impersonate - Start impersonating a user
 export async function POST(request: NextRequest) {

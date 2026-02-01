@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/general-inventory/barcode-search - Search inventory by barcode or SKU
 export async function GET(request: NextRequest) {

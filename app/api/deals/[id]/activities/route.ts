@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 // GET /api/deals/[id]/activities - Get all activities for a deal
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,

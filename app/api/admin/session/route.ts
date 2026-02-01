@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import { createAdminSession, hasValidAdminSession, invalidateAdminSession } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/admin/session - Verify password and create admin session
 export async function POST(request: NextRequest) {

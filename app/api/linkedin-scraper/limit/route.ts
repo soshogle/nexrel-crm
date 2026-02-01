@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { linkedInScraperService } from '@/lib/linkedin-scraper-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/linkedin-scraper/limit - Check weekly scraping limit
 export async function GET(request: NextRequest) {

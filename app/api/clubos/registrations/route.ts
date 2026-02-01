@@ -14,6 +14,7 @@ import { clubOSCommunicationService } from '@/lib/clubos-communication-service';
 // Helper: Calculate age at August 1st of current year
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 function calculateAgeAtCutoff(dateOfBirth: Date): number {
   const cutoffDate = new Date(new Date().getFullYear(), 7, 1); // August 1

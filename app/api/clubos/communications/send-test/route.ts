@@ -7,6 +7,7 @@ import { clubOSCommunicationService } from '@/lib/clubos-communication-service';
 // POST /api/clubos/communications/send-test - Send test notification
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {

@@ -10,6 +10,7 @@ import { getCashStatistics } from '@/lib/payments/cash-service';
  */
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {

@@ -11,6 +11,7 @@ import { stripeSubscriptionService } from '@/lib/payments/stripe-subscription-se
 
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {

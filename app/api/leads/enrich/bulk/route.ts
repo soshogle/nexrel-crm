@@ -5,6 +5,7 @@ import { dataEnrichmentService } from '@/lib/data-enrichment-service';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/leads/enrich/bulk - Bulk enrich multiple leads
 export async function POST(request: NextRequest) {

@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { aiTaskService } from '@/lib/ai-task-service';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // POST /api/tasks/auto-create - Automatically create tasks based on events
 export async function POST(request: NextRequest) {

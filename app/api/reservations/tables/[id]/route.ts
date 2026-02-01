@@ -7,6 +7,7 @@ import { prisma as db } from '@/lib/db';
 // PATCH /api/reservations/tables/[id] - Update table details
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function PATCH(
   request: NextRequest,

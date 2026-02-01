@@ -6,6 +6,7 @@ import { ElevenLabsService } from '@/lib/elevenlabs';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
  * Fetch conversations directly from ElevenLabs API

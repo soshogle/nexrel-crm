@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { startOfWeek, startOfMonth, subDays, subWeeks, subMonths, format } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 // GET /api/tasks/analytics - Get comprehensive task analytics
 export async function GET(request: NextRequest) {

@@ -8,6 +8,7 @@ import { clubOSPaymentService } from '@/lib/clubos-payment-service';
 // POST /api/clubos/payments/[id]/refund - Process refund
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(
   request: NextRequest,

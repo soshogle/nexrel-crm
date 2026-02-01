@@ -13,6 +13,7 @@ import { REAIEmployeeType } from '@prisma/client';
 import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 

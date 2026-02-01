@@ -8,6 +8,7 @@ import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadSta
  */
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
