@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 
 import { Metadata } from 'next';
 import ContactsPage from '@/components/contacts/contacts-page';

@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { FSBOLeadsFull } from '@/components/real-estate/fsbo-leads-full';
 
 export default function FSBOLeadsPage() {

@@ -6,6 +6,8 @@
 
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { WalletCard } from '@/components/payments/wallet-card';
 import { PaymentMethodsManager } from '@/components/payments/payment-methods-manager';
 import { TransactionHistory } from '@/components/payments/transaction-history';

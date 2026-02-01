@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { EmailCampaignsList } from '@/components/campaigns/email-campaigns-list';
 
 export default function EmailCampaignsPage() {

@@ -1,6 +1,8 @@
 
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Admin Subscriptions Dashboard
  * Manage all user subscriptions
