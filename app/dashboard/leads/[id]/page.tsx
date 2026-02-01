@@ -1,13 +1,10 @@
 export const dynamic = 'force-dynamic';
 
-
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { redirect, notFound } from 'next/navigation'
 import { LeadDetail } from '@/components/leads/lead-detail'
-
-export const dynamic = "force-dynamic"
 
 export default async function LeadDetailPage({
   params,

@@ -1,12 +1,9 @@
 export const dynamic = 'force-dynamic';
 
-
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { ReferralsList } from '@/components/referrals/referrals-list'
 import { redirect } from 'next/navigation'
-
-export const dynamic = 'force-dynamic'
 
 export default async function ReferralsPage() {
   const session = await getServerSession(authOptions)

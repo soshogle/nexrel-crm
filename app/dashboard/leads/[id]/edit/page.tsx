@@ -1,13 +1,10 @@
 export const dynamic = 'force-dynamic';
 
-
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { redirect, notFound } from 'next/navigation'
 import { EditLeadForm } from '@/components/leads/edit-lead-form'
-
-export const dynamic = "force-dynamic"
 
 export default async function EditLeadPage({
   params,

@@ -1,13 +1,10 @@
 export const dynamic = 'force-dynamic';
 
-
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { MessageGenerator } from '@/components/messages/message-generator'
-
-export const dynamic = "force-dynamic"
 
 export default async function GenerateMessagePage({
   searchParams,
