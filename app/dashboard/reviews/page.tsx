@@ -1,11 +1,8 @@
 export const dynamic = 'force-dynamic';
 
-
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { Star } from 'lucide-react'
-
-export const dynamic = "force-dynamic"
 
 export default async function ReviewsPage() {
   const session = await getServerSession(authOptions)
