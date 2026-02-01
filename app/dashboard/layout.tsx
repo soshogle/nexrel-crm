@@ -5,6 +5,9 @@ import { authOptions } from '@/lib/auth'
 import { DashboardWrapper } from '@/components/dashboard/dashboard-wrapper'
 import { prisma } from '@/lib/db'
 
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export default async function DashboardLayout({
   children,
 }: {
