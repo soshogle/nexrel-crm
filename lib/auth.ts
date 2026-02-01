@@ -23,18 +23,19 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        console.log('[AUTH DEBUG] authorize() called with email:', credentials?.email)
+        const normalizedEmail = credentials?.email?.trim().toLowerCase()
+        console.log('[AUTH DEBUG] authorize() called with email:', normalizedEmail)
         
-        if (!credentials?.email || !credentials?.password) {
+        if (!normalizedEmail || !credentials?.password) {
           console.log('[AUTH DEBUG] Missing email or password')
           return null
         }
 
         try {
-          console.log('[AUTH DEBUG] Querying database for user:', credentials.email)
+          console.log('[AUTH DEBUG] Querying database for user:', normalizedEmail)
           const user = await prisma.user.findUnique({
             where: {
-              email: credentials.email
+              email: normalizedEmail
             },
             include: {
               agency: true
