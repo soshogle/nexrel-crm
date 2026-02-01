@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 
 import { Metadata } from 'next';
 import { CreditScoreCard } from '@/components/credit-scoring/credit-score-card';

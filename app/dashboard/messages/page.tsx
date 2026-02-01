@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { MessagingPage } from '@/components/messaging/messaging-page';
 
 export const dynamic = "force-dynamic"

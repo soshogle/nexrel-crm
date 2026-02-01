@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import CallHistoryPanel from '@/components/messaging/call-history-panel';
 import { Phone, History } from 'lucide-react';

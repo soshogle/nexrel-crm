@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 
 import { DataMonetizationDashboard } from '@/components/data-monetization/data-monetization-dashboard';
 

@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * E-commerce Widgets Page
  * Manage and monitor embeddable product widgets

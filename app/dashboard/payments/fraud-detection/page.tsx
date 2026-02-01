@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 
 import { FraudDetectionDashboard } from '@/components/payments/fraud-detection-dashboard';
 

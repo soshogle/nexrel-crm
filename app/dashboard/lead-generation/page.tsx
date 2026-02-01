@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { AnalyticsDashboard } from '@/components/lead-generation/analytics-dashboard';
