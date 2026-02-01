@@ -9,11 +9,12 @@ import { Menu, X } from 'lucide-react';
 import Image from 'next/image';
 
 const navigation = [
-  { name: 'Home', href: '/' },
-  { name: 'Features', href: '/features' },
-  { name: 'Solutions', href: '/solutions' },
+  { name: 'Features', href: '/#features' },
+  { name: 'AI Staff', href: '/#ai-staff' },
+  { name: 'Nexrel', href: '/#nexrel' },
+  { name: 'Pricing', href: '/#pricing' },
   { name: 'About', href: '/about' },
-  { name: 'Contact', href: '/contact' },
+  { name: 'Contact', href: '/#contact' },
 ];
 
 export default function MainNavigation() {
@@ -70,14 +71,10 @@ export default function MainNavigation() {
         </div>
         <div className="hidden lg:flex lg:flex-1 lg:justify-end gap-4">
           <Button variant="ghost" className="text-white hover:text-purple-400" asChild>
-            <Link href="/auth/signin">
-              Sign In
-            </Link>
+            <Link href="/auth/signin">Nexrel</Link>
           </Button>
           <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" asChild>
-            <Link href="/contact">
-              Book a Demo
-            </Link>
+            <Link href="https://calendly.com/soshogle/30min">Book a Demo</Link>
           </Button>
         </div>
       </nav>
@@ -131,10 +128,10 @@ export default function MainNavigation() {
                     className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-white hover:bg-gray-800"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Sign In
+                    Nexrel
                   </Link>
                   <Link
-                    href="/contact"
+                    href="https://calendly.com/soshogle/30min"
                     className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                     onClick={() => setMobileMenuOpen(false)}
                   >
