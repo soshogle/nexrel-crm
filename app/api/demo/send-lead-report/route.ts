@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { emailService } from "@/lib/email-service";
 import { prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   try {
     const { leadId, email, fullName } = await request.json();
