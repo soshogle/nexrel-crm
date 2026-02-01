@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
               isOptional: task.isOptional,
               position: task.position as object,
               displayOrder: task.displayOrder,
-              branchCondition: (task.branchCondition || null) as object | null,
+              branchCondition: (task.branchCondition || undefined) as any,
               actionConfig: task.actionConfig as object
             }))
           }
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
             isOptional: task.isOptional as boolean || false,
             position: task.position as object || { angle: (index * 36) - 90, radius: 1 },
             displayOrder: task.displayOrder as number || index + 1,
-            branchCondition: task.branchCondition as object || null,
+            branchCondition: (task.branchCondition as object | undefined) ?? undefined,
             actionConfig: task.actionConfig as object || { actions: [] }
           }))
         } : undefined
