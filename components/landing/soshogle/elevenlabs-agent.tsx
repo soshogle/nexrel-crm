@@ -122,96 +122,107 @@ export function ElevenLabsAgent({
         }
       };
 
-      const startSession = async (connectionType: "webrtc" | "websocket") => {
-        return Conversation.startSession({
-          conversationToken: resolvedToken,
-          connectionType,
-          ...(dynamicVariables && { config: { dynamic_variables: dynamicVariables } }),
-          onConnect: () => {
-            setIsConnected(true);
-            setIsLoading(false);
-            setStatus("listening");
-          },
-          onDisconnect: () => {
-            setIsConnected(false);
+      const sessionOptions = {
+        conversationToken: resolvedToken,
+        ...(dynamicVariables && { config: { dynamic_variables: dynamicVariables } }),
+        onConnect: () => {
+          setIsConnected(true);
+          setIsLoading(false);
+          setStatus("listening");
+        },
+        onDisconnect: () => {
+          setIsConnected(false);
+          setIsAgentSpeaking(false);
+          setStatus("idle");
+
+          let audioBlob: Blob | undefined;
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+            mediaRecorderRef.current.stop();
+            if (audioChunksRef.current.length > 0) {
+              audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+            }
+          }
+
+          if (audioStreamRef.current) {
+            audioStreamRef.current.getTracks().forEach((track) => track.stop());
+            audioStreamRef.current = null;
+          }
+
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+          }
+          if (audioContextRef.current) {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+          }
+
+          conversationRef.current = null;
+
+          if (onConversationEnd) {
+            onConversationEnd(conversationMessagesRef.current, audioBlob);
+          }
+        },
+        onError: (error: any) => {
+          console.error("ElevenLabs error:", error);
+          const message =
+            error?.message ||
+            error?.error ||
+            "Could not establish signal connection. Please try again.";
+          setError(message);
+          setIsLoading(false);
+          setStatus("idle");
+        },
+        onMessage: (message: any) => {
+          if (message.message) {
+            conversationMessagesRef.current.push({
+              role: message.source === "ai" ? "agent" : "user",
+              content: message.message,
+              timestamp: Date.now(),
+            });
+          }
+        },
+        onModeChange: (mode: any) => {
+          if (mode.mode === "speaking") {
+            setIsAgentSpeaking(true);
+            setStatus("speaking");
+            if (onAgentSpeakingChange) {
+              onAgentSpeakingChange(true);
+            }
+          } else if (mode.mode === "listening") {
             setIsAgentSpeaking(false);
-            setStatus("idle");
+            setStatus("listening");
+            if (onAgentSpeakingChange) {
+              onAgentSpeakingChange(false);
+            }
+            setAudioLevel(0);
+            if (onAudioLevel) {
+              onAudioLevel(0);
+            }
+          }
+        },
+      };
 
-            let audioBlob: Blob | undefined;
-            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-              mediaRecorderRef.current.stop();
-              if (audioChunksRef.current.length > 0) {
-                audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-              }
-            }
+      const startWebrtcSession = async () => {
+        return Conversation.startSession({
+          ...sessionOptions,
+          connectionType: "webrtc",
+        });
+      };
 
-            if (audioStreamRef.current) {
-              audioStreamRef.current.getTracks().forEach((track) => track.stop());
-              audioStreamRef.current = null;
-            }
-
-            if (animationFrameRef.current) {
-              cancelAnimationFrame(animationFrameRef.current);
-            }
-            if (audioContextRef.current) {
-              audioContextRef.current.close();
-              audioContextRef.current = null;
-            }
-
-            conversationRef.current = null;
-
-            if (onConversationEnd) {
-              onConversationEnd(conversationMessagesRef.current, audioBlob);
-            }
-          },
-          onError: (error: any) => {
-            console.error("ElevenLabs error:", error);
-            const message =
-              error?.message ||
-              error?.error ||
-              "Could not establish signal connection. Please try again.";
-            setError(message);
-            setIsLoading(false);
-            setStatus("idle");
-          },
-          onMessage: (message: any) => {
-            if (message.message) {
-              conversationMessagesRef.current.push({
-                role: message.source === "ai" ? "agent" : "user",
-                content: message.message,
-                timestamp: Date.now(),
-              });
-            }
-          },
-          onModeChange: (mode: any) => {
-            if (mode.mode === "speaking") {
-              setIsAgentSpeaking(true);
-              setStatus("speaking");
-              if (onAgentSpeakingChange) {
-                onAgentSpeakingChange(true);
-              }
-            } else if (mode.mode === "listening") {
-              setIsAgentSpeaking(false);
-              setStatus("listening");
-              if (onAgentSpeakingChange) {
-                onAgentSpeakingChange(false);
-              }
-              setAudioLevel(0);
-              if (onAudioLevel) {
-                onAudioLevel(0);
-              }
-            }
-          },
+      const startWebsocketSession = async () => {
+        return (Conversation as any).startSession({
+          ...sessionOptions,
+          connectionType: "websocket",
         });
       };
 
       try {
-        conversationRef.current = await startSession("webrtc");
+        conversationRef.current = await startWebrtcSession();
       } catch (sessionError: any) {
         const message = sessionError?.message || "";
         if (message.includes("Failed to fetch") || message.includes("signal")) {
           try {
-            conversationRef.current = await startSession("websocket");
+            conversationRef.current = await startWebsocketSession();
           } catch (fallbackError: any) {
             console.error("ElevenLabs fallback error:", fallbackError);
             cleanupMedia();
