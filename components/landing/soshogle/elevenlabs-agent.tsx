@@ -104,6 +104,7 @@ export function ElevenLabsAgent({
         setStatus("idle");
         return;
       }
+      const resolvedToken = conversationToken;
 
       const cleanupMedia = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -123,7 +124,7 @@ export function ElevenLabsAgent({
 
       const startSession = async (connectionType: "webrtc" | "websocket") => {
         return Conversation.startSession({
-          conversationToken,
+          conversationToken: resolvedToken,
           connectionType,
           ...(dynamicVariables && { config: { dynamic_variables: dynamicVariables } }),
           onConnect: () => {
