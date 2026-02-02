@@ -15,14 +15,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "ElevenLabs API key not configured" }, { status: 500 });
     }
 
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${encodeURIComponent(agentId)}`,
-      {
-        headers: {
-          "xi-api-key": apiKey,
-        },
-      }
-    );
+    const response = await fetch("https://api.elevenlabs.io/v1/convai/conversation/token", {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ agent_id: agentId }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
