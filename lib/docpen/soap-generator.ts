@@ -7,6 +7,7 @@
 
 import { getSOAPPrompt, DocpenProfessionType } from './prompts';
 import { formatTranscriptionForSOAP, TranscriptionSegment } from './transcription-service';
+import { chatCompletion } from '@/lib/openai-client';
 
 export interface SOAPNote {
   subjective: string;
@@ -31,11 +32,6 @@ export async function generateSOAPNote(params: {
   patientHistory?: string;
 }): Promise<SOAPNote> {
   const startTime = Date.now();
-  const apiKey = process.env.ABACUSAI_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('ABACUSAI_API_KEY not configured');
-  }
 
   // Format transcription for the prompt
   const transcription = formatTranscriptionForSOAP(params.segments);
@@ -50,36 +46,23 @@ export async function generateSOAPNote(params: {
     transcription,
   });
 
-  // Call GPT-4o via Abacus AI
-  const response = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert medical documentation AI. Generate accurate, professional SOAP notes based on clinical conversation transcripts.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.3, // Lower temperature for consistent, accurate output
-      max_tokens: 4000,
-    }),
+  // Call GPT-4o via OpenAI
+  const result = await chatCompletion({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'system',
+        content: 'You are an expert medical documentation AI. Generate accurate, professional SOAP notes based on clinical conversation transcripts.'
+      },
+      {
+        role: 'user',
+        content: prompt
+      }
+    ],
+    temperature: 0.3, // Lower temperature for consistent, accurate output
+    max_tokens: 4000,
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`SOAP generation API error: ${response.status} - ${error}`);
-  }
-
-  const result = await response.json();
   const content = result.choices?.[0]?.message?.content;
 
   if (!content) {
@@ -159,12 +142,6 @@ export async function regenerateSection(
     feedback?: string;
   }
 ): Promise<string> {
-  const apiKey = process.env.ABACUSAI_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('ABACUSAI_API_KEY not configured');
-  }
-
   const sectionNames: Record<string, string> = {
     subjective: 'SUBJECTIVE',
     objective: 'OBJECTIVE',
@@ -186,26 +163,14 @@ ${context.feedback ? `User Feedback: ${context.feedback}` : ''}
 
 Please regenerate ONLY the ${sectionNames[section]} section with improvements. Return just the content for this section, without the header.`;
 
-  const response = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.3,
-      max_tokens: 2000,
-    }),
+  const result = await chatCompletion({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'user', content: prompt }
+    ],
+    temperature: 0.3,
+    max_tokens: 2000,
   });
 
-  if (!response.ok) {
-    throw new Error(`Section regeneration failed: ${response.status}`);
-  }
-
-  const result = await response.json();
   return result.choices?.[0]?.message?.content?.trim() || '';
 }

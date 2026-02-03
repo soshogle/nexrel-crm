@@ -38,10 +38,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Use AI to customize the template based on user's business
-    const llmApiKey = process.env.ABACUSAI_API_KEY;
+    const llmApiKey = process.env.OPENAI_API_KEY;
     if (!llmApiKey) {
       return NextResponse.json(
-        { error: 'LLM API not configured' },
+        { error: 'OPENAI_API_KEY not configured' },
         { status: 500 }
       );
     }
@@ -65,14 +65,14 @@ Return a JSON object with:
 Be specific and actionable. Use the user's industry, products, and business goals.
 `;
 
-    const response = await fetch('https://api.abacus.ai/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${llmApiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',

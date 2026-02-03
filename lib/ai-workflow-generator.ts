@@ -36,8 +36,8 @@ export class AIWorkflowGenerator {
   private apiUrl: string;
 
   constructor() {
-    this.apiKey = process.env.ABACUSAI_API_KEY || '';
-    this.apiUrl = 'https://apps.abacus.ai/v1/chat/completions';
+    this.apiKey = process.env.OPENAI_API_KEY || '';
+    this.apiUrl = 'https://api.openai.com/v1/chat/completions';
   }
 
   /**

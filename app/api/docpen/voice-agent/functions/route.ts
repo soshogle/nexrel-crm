@@ -15,8 +15,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const openai = new OpenAI({
-  apiKey: process.env.ABACUSAI_API_KEY || '',
-  baseURL: 'https://routellm.abacus.ai/v1',
+  apiKey: process.env.OPENAI_API_KEY || '',
 });
 
 /**

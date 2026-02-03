@@ -171,8 +171,8 @@ export function DocpenRecorder({
           toast.error(errorMessage);
           
           // Show hint if API key is missing
-          if (errorMessage.includes('ABACUSAI_API_KEY')) {
-            toast.error('Please configure ABACUSAI_API_KEY in your environment variables', { duration: 5000 });
+          if (errorMessage.includes('OPENAI_API_KEY') || errorMessage.includes('API key')) {
+            toast.error('Please configure OPENAI_API_KEY in your environment variables', { duration: 5000 });
           }
         } finally {
           setIsRecording(false);

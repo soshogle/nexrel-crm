@@ -10,8 +10,7 @@
 import OpenAI from 'openai';
 
 const client = new OpenAI({
-  baseURL: 'https://api.abacus.ai/v1',
-  apiKey: process.env.ABACUSAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export interface ConversationAnalysis {

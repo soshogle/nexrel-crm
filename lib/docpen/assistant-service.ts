@@ -10,6 +10,7 @@
 
 import { getAssistantPrompt, DocpenProfessionType } from './prompts';
 import { prisma } from '@/lib/db';
+import { chatCompletion } from '@/lib/openai-client';
 
 export interface AssistantQuery {
   queryType: 'patient_history' | 'drug_interaction' | 'medical_lookup' | 'feedback';
@@ -39,12 +40,6 @@ export async function processAssistantQuery(
     userId: string;
   }
 ): Promise<AssistantResponse> {
-  const apiKey = process.env.ABACUSAI_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error('ABACUSAI_API_KEY not configured');
-  }
-
   // Get patient history if available and relevant
   let patientHistory = '';
   if (query.queryType === 'patient_history' && context.leadId) {
@@ -59,28 +54,16 @@ export async function processAssistantQuery(
     profession: context.profession,
   });
 
-  // Call GPT-4o
-  const response = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.5,
-      max_tokens: 1000,
-    }),
+  // Call GPT-4o via OpenAI
+  const result = await chatCompletion({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'user', content: prompt }
+    ],
+    temperature: 0.5,
+    max_tokens: 1000,
   });
 
-  if (!response.ok) {
-    throw new Error(`Assistant API error: ${response.status}`);
-  }
-
-  const result = await response.json();
   const responseText = result.choices?.[0]?.message?.content || 'Unable to process query.';
 
   return {
