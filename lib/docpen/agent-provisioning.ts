@@ -71,108 +71,56 @@ class DocpenAgentProvisioning {
       });
 
       if (existingAgent) {
-        console.log(`🎙️ [Docpen] Found existing agent in database for ${professionKey}: ${existingAgent.elevenLabsAgentId}`);
-        console.log(`🎙️ [Docpen] Agent details:`, {
-          id: existingAgent.id,
-          elevenLabsAgentId: existingAgent.elevenLabsAgentId,
-          profession: existingAgent.profession,
-          customProfession: existingAgent.customProfession,
-          createdAt: existingAgent.createdAt,
-        });
+        console.log(`🎙️ [Docpen] Found existing agent for ${professionKey}: ${existingAgent.elevenLabsAgentId}`);
         
-        // Verify agent exists in ElevenLabs (don't fail if it doesn't, but log it)
+        // REVERTED: Go back to simple logic that worked before 11:17am
+        // Just verify agent exists in ElevenLabs in background (non-blocking)
+        // If it doesn't exist, we'll find out when trying to use it, but don't block here
         const apiKey = await this.getApiKey(config.userId);
-        let agentExistsInElevenLabs = false;
-        
         if (apiKey) {
-          try {
-            console.log(`🔍 [Docpen] Verifying agent ${existingAgent.elevenLabsAgentId} exists in ElevenLabs...`);
-            const verifyResponse = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${existingAgent.elevenLabsAgentId}`, {
-              headers: { 'xi-api-key': apiKey },
-            });
-            
-            if (verifyResponse.ok) {
-              // Only trust 200 OK - agent definitely exists
-              agentExistsInElevenLabs = true;
-              const agentData = await verifyResponse.json();
-              console.log(`✅ [Docpen] Verified agent ${existingAgent.elevenLabsAgentId} exists in ElevenLabs`);
-              console.log(`   Agent name: ${agentData.name || 'Unnamed'}`);
-            } else if (verifyResponse.status === 404) {
-              // Agent doesn't exist - definitely create new one
-              agentExistsInElevenLabs = false;
-              console.warn(`⚠️ [Docpen] Agent ${existingAgent.elevenLabsAgentId} NOT FOUND in ElevenLabs (404)`);
-              console.warn(`⚠️ [Docpen] Database record exists but agent missing from ElevenLabs`);
-              console.warn(`⚠️ [Docpen] Will create new agent and update database record`);
-            } else if (verifyResponse.status === 401) {
-              // API key issue - don't create new agent, return error
-              const errorText = await verifyResponse.text();
-              console.error(`❌ [Docpen] Unauthorized (401) verifying agent - API key issue: ${errorText}`);
-              console.error(`❌ [Docpen] Cannot verify or create agent without valid API key`);
-              // Return error instead of creating new agent
-              return {
-                success: false,
-                error: 'ElevenLabs API key is invalid or expired. Please check your API key settings.',
-              };
-            } else {
-              // Other error (500, 503, etc.) - be safe and create new agent
-              const errorText = await verifyResponse.text();
-              console.warn(`⚠️ [Docpen] Error verifying agent (status: ${verifyResponse.status}): ${errorText}`);
-              console.warn(`⚠️ [Docpen] Cannot verify agent exists - will create new one to be safe`);
-              agentExistsInElevenLabs = false;
-            }
-          } catch (verifyError: any) {
-            // Network error - be safe and create new agent
-            console.warn(`⚠️ [Docpen] Network error verifying agent:`, verifyError.message);
-            console.warn(`⚠️ [Docpen] Cannot verify agent exists due to network error - will create new one to be safe`);
-            agentExistsInElevenLabs = false;
-          }
-        } else {
-          // No API key - cannot verify, so create new agent
-          console.warn(`⚠️ [Docpen] No API key available to verify agent. Will create new agent.`);
-          agentExistsInElevenLabs = false;
-        }
-        
-        // Only return existing agent if it exists in ElevenLabs
-        // If verification explicitly failed (404), we'll create a new agent
-        if (agentExistsInElevenLabs) {
-          // Automatically update agent functions in the background (non-blocking)
-          this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId)
-            .then(success => {
-              if (success) {
-                console.log(`✅ [Docpen] Auto-updated agent ${existingAgent.elevenLabsAgentId} with latest function configurations`);
+          // Quick verification in background - don't block on it
+          fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${existingAgent.elevenLabsAgentId}`, {
+            headers: { 'xi-api-key': apiKey },
+          })
+            .then(async (verifyResponse) => {
+              if (verifyResponse.ok) {
+                const agentData = await verifyResponse.json();
+                console.log(`✅ [Docpen] Verified agent ${existingAgent.elevenLabsAgentId} exists in ElevenLabs: ${agentData.name || 'Unnamed'}`);
+              } else if (verifyResponse.status === 404) {
+                console.warn(`⚠️ [Docpen] Agent ${existingAgent.elevenLabsAgentId} NOT FOUND in ElevenLabs (404) - will need to recreate`);
+              } else {
+                console.warn(`⚠️ [Docpen] Could not verify agent (status: ${verifyResponse.status})`);
               }
             })
-            .catch(err => {
-              console.warn(`⚠️ [Docpen] Failed to auto-update agent functions (non-critical):`, err.message);
+            .catch((err) => {
+              console.warn(`⚠️ [Docpen] Verification check failed (non-critical):`, err.message);
             });
-          
-          // Update session context if provided
-          if (config.sessionContext) {
-            await this.updateAgentContext(existingAgent.elevenLabsAgentId, config);
-          }
-          
-          return {
-            success: true,
-            agentId: existingAgent.elevenLabsAgentId,
-          };
-        } else {
-          console.log(`🔄 [Docpen] Agent ${existingAgent.elevenLabsAgentId} not found in ElevenLabs. Creating new agent...`);
-          // Mark old database record as inactive before creating new one
-          try {
-            await prisma.docpenVoiceAgent.update({
-              where: { id: existingAgent.id },
-              data: { isActive: false },
-            });
-            console.log(`📝 [Docpen] Marked old database record as inactive`);
-          } catch (updateError) {
-            console.warn(`⚠️ [Docpen] Failed to mark old record as inactive:`, updateError);
-            // Continue anyway - upsert will handle it
-          }
-          // Continue to create new agent below
         }
-      } else {
-        console.log(`🆕 [Docpen] No existing agent found. Creating new agent...`);
+        
+        // Automatically update agent functions in the background (non-blocking)
+        this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId)
+          .then(success => {
+            if (success) {
+              console.log(`✅ [Docpen] Auto-updated agent ${existingAgent.elevenLabsAgentId} with latest function configurations`);
+            }
+          })
+          .catch(err => {
+            console.warn(`⚠️ [Docpen] Failed to auto-update agent functions (non-critical):`, err.message);
+          });
+        
+        // Update session context if provided
+        if (config.sessionContext) {
+          await this.updateAgentContext(existingAgent.elevenLabsAgentId, config);
+        }
+        
+        return {
+          success: true,
+          agentId: existingAgent.elevenLabsAgentId,
+        };
       }
+
+      // Create new agent
+      console.log(`🎙️ [Docpen] Creating new voice agent for profession: ${professionKey}`);
 
       // Create new agent
       console.log(`🎙️ [Docpen] Creating new voice agent for profession: ${professionKey}`);
