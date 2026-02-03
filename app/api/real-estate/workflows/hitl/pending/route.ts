@@ -82,10 +82,14 @@ export async function GET(request: NextRequest) {
       pendingApprovals: enrichedApprovals,
       totalPending: awaitingApproval.length
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching HITL approvals:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch pending approvals' },
+      { 
+        error: 'Failed to fetch pending approvals',
+        details: error?.message || 'Unknown error',
+        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     );
   }

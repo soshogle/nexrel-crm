@@ -157,15 +157,23 @@ export function DocpenRecorder({
           });
           
           if (!response.ok) {
-            throw new Error('Transcription failed');
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = errorData.details || errorData.error || 'Transcription failed';
+            throw new Error(errorMessage);
           }
           
           const result = await response.json();
           toast.success(`Transcribed ${result.segmentCount} segments`);
           onRecordingComplete?.(duration);
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error processing recording:', error);
-          toast.error('Failed to process recording');
+          const errorMessage = error?.message || 'Failed to process recording';
+          toast.error(errorMessage);
+          
+          // Show hint if API key is missing
+          if (errorMessage.includes('ABACUSAI_API_KEY')) {
+            toast.error('Please configure ABACUSAI_API_KEY in your environment variables', { duration: 5000 });
+          }
         } finally {
           setIsRecording(false);
           setIsPaused(false);
