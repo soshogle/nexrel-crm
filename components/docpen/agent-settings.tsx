@@ -108,6 +108,7 @@ export function DocpenAgentSettings() {
   const [deleteAgent, setDeleteAgent] = useState<Agent | null>(null);
   const [saving, setSaving] = useState(false);
   const [playingVoice, setPlayingVoice] = useState<string | null>(null);
+  const [updatingFunctions, setUpdatingFunctions] = useState(false);
 
   // Editing form state
   const [editForm, setEditForm] = useState({
@@ -187,6 +188,35 @@ export function DocpenAgentSettings() {
     }
   };
 
+  const handleUpdateFunctions = async () => {
+    setUpdatingFunctions(true);
+    try {
+      const response = await fetch('/api/docpen/agents/update-functions', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update agents');
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success(`Updated ${result.updated} of ${result.total} agents successfully!`);
+        if (result.errors && result.errors.length > 0) {
+          console.warn('Some agents had errors:', result.errors);
+        }
+      } else {
+        throw new Error(result.error || 'Update failed');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update agent functions');
+    } finally {
+      setUpdatingFunctions(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteAgent) return;
 
@@ -238,10 +268,30 @@ export function DocpenAgentSettings() {
             Manage your profession-specific voice assistants
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchAgents}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={handleUpdateFunctions}
+            disabled={updatingFunctions || agents.length === 0}
+          >
+            {updatingFunctions ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Update All Agents
+              </>
+            )}
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchAgents}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Agents List */}
