@@ -86,13 +86,27 @@ export async function POST(request: NextRequest) {
 
     // Transcribe the audio
     console.log('[Docpen Transcribe] 🎤 Starting transcription...');
-    const transcriptionResult = await transcribeAudio(audioBuffer, {
-      practitionerName: practitionerName || user?.name || 'Practitioner',
-    });
-    console.log('[Docpen Transcribe] ✅ Transcription complete:', {
-      segments: transcriptionResult.segments.length,
-      duration: transcriptionResult.duration
-    });
+    let transcriptionResult;
+    try {
+      transcriptionResult = await transcribeAudio(audioBuffer, {
+        practitionerName: practitionerName || user?.name || 'Practitioner',
+      });
+      console.log('[Docpen Transcribe] ✅ Transcription complete:', {
+        segments: transcriptionResult.segments.length,
+        duration: transcriptionResult.duration
+      });
+    } catch (transcribeError: any) {
+      // Catch and normalize any errors from transcription service
+      let errorMessage = transcribeError?.message || 'Transcription failed';
+      
+      // Normalize old error messages
+      if (errorMessage.includes('Abacus') || errorMessage.includes('ABACUS') || errorMessage.includes('initialize LLM APIs')) {
+        errorMessage = 'OpenAI API key not configured. Please add OPENAI_API_KEY to your Vercel environment variables.';
+        console.warn('[Docpen Transcribe] ⚠️ Old error format detected - this indicates old code is running');
+      }
+      
+      throw new Error(errorMessage);
+    }
 
     // Save transcription segments to database
     const savedTranscriptions = await Promise.all(
