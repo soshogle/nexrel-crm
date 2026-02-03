@@ -358,8 +358,18 @@ export function VoiceAssistant({
           const messageType = message.type || (message.agent_transcript ? 'agent_transcript' : (message.user_transcript ? 'user_transcript' : (message.audio ? 'audio' : 'unknown')));
           console.log('📨 [Docpen] Received:', messageType, message);
           
+          // ALWAYS log full message structure for debugging
+          console.log('🔍🔍🔍 [Docpen] FULL MESSAGE DEBUG 🔍🔍🔍');
+          console.log('   messageType:', messageType);
+          console.log('   message.type:', message.type);
+          console.log('   "audio" in message?', 'audio' in message);
+          console.log('   message.audio:', message.audio);
+          console.log('   typeof message.audio:', typeof message.audio);
+          console.log('   All keys:', Object.keys(message));
+          console.log('   Full message:', JSON.stringify(message, null, 2));
+          
           // CRITICAL: Log audio messages in detail to understand structure
-          if (messageType === 'audio' || message.audio) {
+          if (messageType === 'audio' || message.audio || 'audio' in message) {
             console.log('🔊🔊🔊 [Docpen] AUDIO MESSAGE DETECTED 🔊🔊🔊');
             console.log('🔍 [Docpen] Message type:', messageType);
             console.log('🔍 [Docpen] Has message.audio?', !!message.audio);
