@@ -409,88 +409,79 @@ export function VoiceAssistant({
           }
 
           // Handle audio response (this is how ElevenLabs sends speech)
-          // ElevenLabs can send audio as either:
-          // 1. Direct base64 string: message.audio = "base64string"
-          // 2. Object with data field: message.audio = { data: "base64string" }
-          // 3. Object with audio field: message.audio = { audio: "base64string" }
-          let audioData: string | null = null;
-          
+          // IMPORTANT: ElevenLabs sends audio as a direct base64 string in message.audio
+          // This matches the working implementation from voice-agents/preview/page.tsx
           if (message.audio) {
-            console.log('🔊 [Docpen] Audio message received, type:', typeof message.audio);
-            console.log('🔊 [Docpen] Audio message is object?', typeof message.audio === 'object');
-            
+            // Check if it's a string (expected format from ElevenLabs)
             if (typeof message.audio === 'string') {
-              audioData = message.audio;
-              console.log('✅ [Docpen] Audio is direct string, length:', audioData.length);
-            } else if (typeof message.audio === 'object') {
-              // Log all keys to understand structure
-              const audioKeys = Object.keys(message.audio);
-              console.log('🔍 [Docpen] Audio object keys:', audioKeys);
-              console.log('🔍 [Docpen] Audio object sample:', JSON.stringify(message.audio).substring(0, 500));
-              
-              // Try different possible field names
-              if ('data' in message.audio && typeof message.audio.data === 'string') {
-                audioData = message.audio.data;
-                console.log('✅ [Docpen] Found audio.data, length:', audioData.length);
-              } else if ('audio' in message.audio && typeof message.audio.audio === 'string') {
-                audioData = message.audio.audio;
-                console.log('✅ [Docpen] Found audio.audio, length:', audioData.length);
-              } else if ('base64' in message.audio && typeof message.audio.base64 === 'string') {
-                audioData = message.audio.base64;
-                console.log('✅ [Docpen] Found audio.base64, length:', audioData.length);
-              } else if ('chunk' in message.audio && typeof message.audio.chunk === 'string') {
-                audioData = message.audio.chunk;
-                console.log('✅ [Docpen] Found audio.chunk, length:', audioData.length);
-              } else {
-                // Check if it's an array buffer or typed array
-                if (message.audio instanceof ArrayBuffer) {
-                  console.warn('⚠️ [Docpen] Audio is ArrayBuffer - need to convert to base64');
-                  const bytes = new Uint8Array(message.audio);
-                  audioData = btoa(String.fromCharCode(...bytes));
-                  console.log('✅ [Docpen] Converted ArrayBuffer to base64, length:', audioData.length);
-                } else if (message.audio instanceof Uint8Array) {
-                  console.warn('⚠️ [Docpen] Audio is Uint8Array - need to convert to base64');
-                  audioData = btoa(String.fromCharCode(...message.audio));
-                  console.log('✅ [Docpen] Converted Uint8Array to base64, length:', audioData.length);
-                } else {
-                  // Last resort: try to find any string value
-                  for (const key of audioKeys) {
-                    const value = (message.audio as any)[key];
-                    if (typeof value === 'string' && value.length > 100) {
-                      audioData = value;
-                      console.log(`✅ [Docpen] Found audio data in key "${key}", length:`, audioData.length);
-                      break;
-                    }
-                  }
-                  
-                  if (!audioData) {
-                    console.error('❌ [Docpen] Unknown audio format - could not extract audio data');
-                    console.error('   Audio object structure:', JSON.stringify(message.audio, null, 2).substring(0, 1000));
-                  }
-                }
-              }
-            }
-            
-            if (audioData) {
-              console.log('🔊 [Docpen] Extracted audio data, length:', audioData.length, 'preview:', audioData.substring(0, 50));
+              console.log('🔊 [Docpen] Received audio chunk (string), length:', message.audio.length);
               setIsAgentSpeaking(true);
               if (isSpeakerEnabled) {
                 try {
-                  await playAudioChunk(audioData);
+                  await playAudioChunk(message.audio);
                   console.log('✅ [Docpen] Audio chunk played successfully');
                 } catch (audioError) {
                   console.error('❌ [Docpen] Failed to play audio chunk:', audioError);
-                  console.error('   Error details:', audioError);
                   toast.error('Failed to play agent audio. Please check your speaker settings.');
                 }
               } else {
                 console.warn('⚠️ [Docpen] Speaker disabled - audio chunk received but not played');
               }
               setTimeout(() => setIsAgentSpeaking(false), 1000);
+            } else if (typeof message.audio === 'object') {
+              // Handle object format (fallback for different ElevenLabs API versions)
+              console.log('⚠️ [Docpen] Audio received as object (unexpected), attempting extraction...');
+              console.log('🔍 [Docpen] Audio object keys:', Object.keys(message.audio));
+              console.log('🔍 [Docpen] Audio object sample:', JSON.stringify(message.audio).substring(0, 300));
+              
+              let audioData: string | null = null;
+              
+              // Try common field names
+              if ('data' in message.audio && typeof message.audio.data === 'string') {
+                audioData = message.audio.data;
+              } else if ('audio' in message.audio && typeof message.audio.audio === 'string') {
+                audioData = message.audio.audio;
+              } else if ('base64' in message.audio && typeof message.audio.base64 === 'string') {
+                audioData = message.audio.base64;
+              } else if ('chunk' in message.audio && typeof message.audio.chunk === 'string') {
+                audioData = message.audio.chunk;
+              } else if (message.audio instanceof ArrayBuffer) {
+                const bytes = new Uint8Array(message.audio);
+                audioData = btoa(String.fromCharCode(...bytes));
+              } else if (message.audio instanceof Uint8Array) {
+                audioData = btoa(String.fromCharCode(...message.audio));
+              } else {
+                // Last resort: find any string value >100 chars
+                for (const [key, value] of Object.entries(message.audio)) {
+                  if (typeof value === 'string' && value.length > 100) {
+                    audioData = value;
+                    console.log(`✅ [Docpen] Found audio data in key "${key}"`);
+                    break;
+                  }
+                }
+              }
+              
+              if (audioData) {
+                console.log('✅ [Docpen] Extracted audio data from object, length:', audioData.length);
+                setIsAgentSpeaking(true);
+                if (isSpeakerEnabled) {
+                  try {
+                    await playAudioChunk(audioData);
+                    console.log('✅ [Docpen] Audio chunk played successfully');
+                  } catch (audioError) {
+                    console.error('❌ [Docpen] Failed to play audio chunk:', audioError);
+                    toast.error('Failed to play agent audio. Please check your speaker settings.');
+                  }
+                } else {
+                  console.warn('⚠️ [Docpen] Speaker disabled - audio chunk received but not played');
+                }
+                setTimeout(() => setIsAgentSpeaking(false), 1000);
+              } else {
+                console.error('❌ [Docpen] Could not extract audio data from object');
+                console.error('   Full audio object:', JSON.stringify(message.audio, null, 2).substring(0, 500));
+              }
             } else {
-              console.error('❌ [Docpen] Audio object received but could not extract audio data');
-              console.error('   Message type:', messageType);
-              console.error('   Full message keys:', Object.keys(message));
+              console.error('❌ [Docpen] Unexpected audio type:', typeof message.audio);
             }
           }
 
