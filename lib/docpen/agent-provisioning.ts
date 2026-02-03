@@ -94,14 +94,24 @@ class DocpenAgentProvisioning {
             if (verifyResponse.ok) {
               agentExistsInElevenLabs = true;
               console.log(`✅ [Docpen] Verified agent ${existingAgent.elevenLabsAgentId} exists in ElevenLabs`);
-            } else {
+            } else if (verifyResponse.status === 404) {
+              // Agent doesn't exist - definitely create new one
+              agentExistsInElevenLabs = false;
               const errorText = await verifyResponse.text();
-              console.warn(`⚠️ [Docpen] Agent ${existingAgent.elevenLabsAgentId} not found in ElevenLabs (status: ${verifyResponse.status}): ${errorText}`);
-              console.warn(`⚠️ [Docpen] Will create new agent instead of reusing database record`);
+              console.warn(`⚠️ [Docpen] Agent ${existingAgent.elevenLabsAgentId} NOT FOUND in ElevenLabs (404)`);
+              console.warn(`⚠️ [Docpen] Database record exists but agent missing from ElevenLabs`);
+              console.warn(`⚠️ [Docpen] Will create new agent and update database record`);
+            } else {
+              // Other error (401, 500, etc.) - log but assume agent exists to avoid recreating unnecessarily
+              const errorText = await verifyResponse.text();
+              console.warn(`⚠️ [Docpen] Error verifying agent (status: ${verifyResponse.status}): ${errorText}`);
+              console.warn(`⚠️ [Docpen] Assuming agent exists (might be API key or permission issue)`);
+              agentExistsInElevenLabs = true;
             }
           } catch (verifyError: any) {
-            console.warn(`⚠️ [Docpen] Could not verify agent in ElevenLabs:`, verifyError.message);
-            // Assume agent exists if we can't verify (might be network issue)
+            console.warn(`⚠️ [Docpen] Network error verifying agent:`, verifyError.message);
+            // Network error - assume agent exists to avoid unnecessary recreation
+            // But log it so we know there might be an issue
             agentExistsInElevenLabs = true;
           }
         } else {

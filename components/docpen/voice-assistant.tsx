@@ -462,41 +462,68 @@ export function VoiceAssistant({
           }
 
           // Handle audio response (this is how ElevenLabs sends speech)
-          // IMPORTANT: ElevenLabs sends audio as a direct base64 string in message.audio
-          // This matches the working implementation from voice-agents/preview/page.tsx
+          // IMPORTANT: ElevenLabs can send audio in multiple formats:
+          // 1. Direct: message.audio = "base64string"
+          // 2. Nested event: message.audio_event.audio = "base64string" (similar to agent_response_event)
+          // 3. Object: message.audio = { data: "base64string" }
           
-          // CRITICAL: Check for audio in multiple ways
-          const hasAudio = message.audio !== undefined && message.audio !== null;
+          // Check for audio in multiple locations (matching the agent_response pattern)
+          let audioData: string | null = null;
+          const audioSources: string[] = [];
           
-          if (hasAudio) {
-            console.log('🔊🔊🔊 [Docpen] AUDIO HANDLER TRIGGERED 🔊🔊🔊');
+          // Check direct audio field
+          if (message.audio !== undefined && message.audio !== null) {
+            audioSources.push('message.audio (direct)');
+            if (typeof message.audio === 'string') {
+              audioData = message.audio;
+            }
+          }
+          
+          // Check nested audio_event structure (like agent_response_event)
+          if (message.audio_event?.audio) {
+            audioSources.push('message.audio_event.audio');
+            if (typeof message.audio_event.audio === 'string') {
+              audioData = message.audio_event.audio;
+            }
+          }
+          
+          // Check audio_event direct (if audio is the whole event)
+          if (message.audio_event && typeof message.audio_event === 'string') {
+            audioSources.push('message.audio_event (direct string)');
+            audioData = message.audio_event;
+          }
+          
+          // Log all audio detection attempts
+          if (audioSources.length > 0 || message.audio !== undefined || message.audio_event) {
+            console.log('🔊🔊🔊 [Docpen] AUDIO DETECTION 🔊🔊🔊');
             console.log('   messageType:', messageType);
             console.log('   message.type:', message.type);
-            console.log('   message.audio exists?', !!message.audio);
-            console.log('   message.audio type:', typeof message.audio);
-            console.log('   message.audio value:', message.audio);
+            console.log('   message.audio:', message.audio);
+            console.log('   message.audio_event:', message.audio_event);
+            console.log('   audioSources found:', audioSources);
+            console.log('   audioData extracted:', audioData ? `YES (length: ${audioData.length})` : 'NO');
+            console.log('   Full message keys:', Object.keys(message));
             console.log('   Full message:', JSON.stringify(message, null, 2));
           }
           
-          if (hasAudio) {
-            // Check if it's a string (expected format from ElevenLabs)
-            if (typeof message.audio === 'string') {
-              const audioString = message.audio; // Type narrowing
-              console.log('🔊 [Docpen] Received audio chunk (string), length:', audioString.length);
-              setIsAgentSpeaking(true);
-              if (isSpeakerEnabled) {
-                try {
-                  await playAudioChunk(audioString);
-                  console.log('✅ [Docpen] Audio chunk played successfully');
-                } catch (audioError) {
-                  console.error('❌ [Docpen] Failed to play audio chunk:', audioError);
-                  toast.error('Failed to play agent audio. Please check your speaker settings.');
-                }
-              } else {
-                console.warn('⚠️ [Docpen] Speaker disabled - audio chunk received but not played');
+          if (audioData) {
+            // We already extracted audioData above, now play it
+            console.log('🔊 [Docpen] Playing extracted audio chunk, length:', audioData.length);
+            setIsAgentSpeaking(true);
+            if (isSpeakerEnabled) {
+              try {
+                await playAudioChunk(audioData);
+                console.log('✅ [Docpen] Audio chunk played successfully');
+              } catch (audioError) {
+                console.error('❌ [Docpen] Failed to play audio chunk:', audioError);
+                toast.error('Failed to play agent audio. Please check your speaker settings.');
               }
-              setTimeout(() => setIsAgentSpeaking(false), 1000);
-            } else if (typeof message.audio === 'object' && message.audio !== null) {
+            } else {
+              console.warn('⚠️ [Docpen] Speaker disabled - audio chunk received but not played');
+            }
+            setTimeout(() => setIsAgentSpeaking(false), 1000);
+          } else if (message.audio && typeof message.audio === 'object' && message.audio !== null) {
+            // Fallback: try to extract from object if we didn't find it above
               // Handle object format (fallback for different ElevenLabs API versions)
               console.log('⚠️ [Docpen] Audio received as object (unexpected), attempting extraction...');
               console.log('🔍 [Docpen] Audio object keys:', Object.keys(message.audio));
