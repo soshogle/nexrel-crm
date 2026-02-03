@@ -286,9 +286,27 @@ class DocpenAgentProvisioning {
         return true;
       }
       
-      // Update with latest function configurations
+      // Update with latest function configurations while preserving all existing settings
       const updatePayload = {
-        ...currentAgent,
+        name: currentAgent.name,
+        conversation_config: {
+          ...currentAgent.conversation_config,
+          // Preserve agent config (prompt, first_message, language)
+          agent: {
+            ...currentAgent.conversation_config?.agent,
+            prompt: currentAgent.conversation_config?.agent?.prompt,
+            first_message: currentAgent.conversation_config?.agent?.first_message,
+            language: currentAgent.conversation_config?.agent?.language || 'en',
+          },
+          // Preserve TTS settings
+          tts: currentAgent.conversation_config?.tts,
+          // Preserve conversation settings
+          conversation: currentAgent.conversation_config?.conversation,
+          // Preserve ASR settings
+          asr: currentAgent.conversation_config?.asr,
+        },
+        platform_settings: currentAgent.platform_settings || { widget_enabled: true },
+        // Update tools with latest function configurations
         tools: medicalFunctions.map(func => ({
           type: 'function',
           function: func,
