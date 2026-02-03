@@ -125,12 +125,13 @@ export async function POST(request: NextRequest) {
       )
     );
 
-    // Update session with transcription complete
+    // Update session with transcription complete and change status from PROCESSING to REVIEW_PENDING
     await prisma.docpenSession.update({
       where: { id: sessionId },
       data: {
         transcriptionComplete: true,
         sessionDuration: Math.round(transcriptionResult.duration),
+        status: 'REVIEW_PENDING', // Move from PROCESSING to REVIEW_PENDING after transcription
       },
     });
 

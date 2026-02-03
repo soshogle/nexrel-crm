@@ -81,12 +81,48 @@ export default function DocpenPage() {
   const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [showSignDialog, setShowSignDialog] = useState(false);
   const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'paused' | 'processing'>('idle');
+  const [sessionStats, setSessionStats] = useState({
+    activeSessions: 0,
+    soapNotesGenerated: 0,
+    signedComplete: 0,
+  });
 
   useEffect(() => {
     if (sessionIdParam) {
       loadSession(sessionIdParam);
+    } else {
+      fetchStats();
     }
   }, [sessionIdParam]);
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/docpen/sessions');
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = await response.json();
+      const sessions = data.sessions || [];
+      
+      const activeSessions = sessions.filter((s: Session) => 
+        s.status === 'RECORDING' || s.status === 'PROCESSING' || s.status === 'REVIEW_PENDING'
+      ).length;
+      
+      const soapNotesGenerated = sessions.filter((s: Session) => 
+        s.soapNoteGenerated
+      ).length;
+      
+      const signedComplete = sessions.filter((s: Session) => 
+        s.status === 'SIGNED' || s.signedAt
+      ).length;
+      
+      setSessionStats({
+        activeSessions,
+        soapNotesGenerated,
+        signedComplete,
+      });
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    }
+  };
 
   const loadSession = async (sessionId: string) => {
     setIsLoadingSession(true);
@@ -195,7 +231,7 @@ export default function DocpenPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Active Sessions</p>
-                  <p className="text-2xl font-bold">--</p>
+                  <p className="text-2xl font-bold">{sessionStats.activeSessions}</p>
                 </div>
               </div>
             </CardContent>
@@ -208,7 +244,7 @@ export default function DocpenPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">SOAP Notes Generated</p>
-                  <p className="text-2xl font-bold">--</p>
+                  <p className="text-2xl font-bold">{sessionStats.soapNotesGenerated}</p>
                 </div>
               </div>
             </CardContent>
@@ -221,7 +257,7 @@ export default function DocpenPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Signed & Complete</p>
-                  <p className="text-2xl font-bold">--</p>
+                  <p className="text-2xl font-bold">{sessionStats.signedComplete}</p>
                 </div>
               </div>
             </CardContent>
