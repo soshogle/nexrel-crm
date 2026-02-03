@@ -59,6 +59,8 @@ class DocpenAgentProvisioning {
         : config.profession;
 
       // Check if agent already exists for this user + profession
+      console.log(`🔍 [Docpen] Checking for existing agent: userId=${config.userId}, profession=${config.profession}, customProfession=${config.customProfession || 'null'}`);
+      
       const existingAgent = await prisma.docpenVoiceAgent.findFirst({
         where: {
           userId: config.userId,
@@ -69,31 +71,67 @@ class DocpenAgentProvisioning {
       });
 
       if (existingAgent) {
-        console.log(`🎙️ [Docpen] Found existing agent for ${professionKey}: ${existingAgent.elevenLabsAgentId}`);
+        console.log(`🎙️ [Docpen] Found existing agent in database for ${professionKey}: ${existingAgent.elevenLabsAgentId}`);
+        console.log(`🎙️ [Docpen] Agent details:`, {
+          id: existingAgent.id,
+          elevenLabsAgentId: existingAgent.elevenLabsAgentId,
+          profession: existingAgent.profession,
+          customProfession: existingAgent.customProfession,
+          createdAt: existingAgent.createdAt,
+        });
         
-        // Automatically update agent functions in the background (non-blocking)
-        // This ensures agents created before API migrations get updated automatically
-        // No user action required - happens silently in the background
-        this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId)
-          .then(success => {
-            if (success) {
-              console.log(`✅ [Docpen] Auto-updated agent ${existingAgent.elevenLabsAgentId} with latest function configurations`);
+        // Verify agent exists in ElevenLabs (don't fail if it doesn't, but log it)
+        const apiKey = await this.getApiKey(config.userId);
+        if (apiKey) {
+          try {
+            const verifyResponse = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${existingAgent.elevenLabsAgentId}`, {
+              headers: { 'xi-api-key': apiKey },
+            });
+            if (!verifyResponse.ok) {
+              console.warn(`⚠️ [Docpen] Agent ${existingAgent.elevenLabsAgentId} not found in ElevenLabs (status: ${verifyResponse.status}). Will create new agent.`);
+              // Don't return - continue to create new agent
+            } else {
+              console.log(`✅ [Docpen] Verified agent ${existingAgent.elevenLabsAgentId} exists in ElevenLabs`);
             }
-          })
-          .catch(err => {
-            // Non-critical - agent will still work, just might have old function URLs
-            console.warn(`⚠️ [Docpen] Failed to auto-update agent functions (non-critical):`, err.message);
-          });
-        
-        // Update session context if provided
-        if (config.sessionContext) {
-          await this.updateAgentContext(existingAgent.elevenLabsAgentId, config);
+          } catch (verifyError) {
+            console.warn(`⚠️ [Docpen] Could not verify agent in ElevenLabs:`, verifyError);
+            // Continue - might be network issue, but agent might still exist
+          }
         }
         
-        return {
-          success: true,
-          agentId: existingAgent.elevenLabsAgentId,
-        };
+        // Only return existing agent if verification passed or we couldn't verify
+        // If verification explicitly failed (404), we'll create a new agent
+        const verifyResponse = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${existingAgent.elevenLabsAgentId}`, {
+          headers: { 'xi-api-key': await this.getApiKey(config.userId) },
+        }).catch(() => null);
+        
+        if (verifyResponse && verifyResponse.ok) {
+          // Automatically update agent functions in the background (non-blocking)
+          this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId)
+            .then(success => {
+              if (success) {
+                console.log(`✅ [Docpen] Auto-updated agent ${existingAgent.elevenLabsAgentId} with latest function configurations`);
+              }
+            })
+            .catch(err => {
+              console.warn(`⚠️ [Docpen] Failed to auto-update agent functions (non-critical):`, err.message);
+            });
+          
+          // Update session context if provided
+          if (config.sessionContext) {
+            await this.updateAgentContext(existingAgent.elevenLabsAgentId, config);
+          }
+          
+          return {
+            success: true,
+            agentId: existingAgent.elevenLabsAgentId,
+          };
+        } else {
+          console.log(`🔄 [Docpen] Agent ${existingAgent.elevenLabsAgentId} not found in ElevenLabs. Creating new agent...`);
+          // Continue to create new agent below
+        }
+      } else {
+        console.log(`🆕 [Docpen] No existing agent found. Creating new agent...`);
       }
 
       // Create new agent
@@ -187,28 +225,61 @@ class DocpenAgentProvisioning {
     };
 
     console.log('📤 [Docpen] Creating ElevenLabs agent with medical functions...');
+    console.log('📤 [Docpen] Agent payload:', JSON.stringify(agentPayload, null, 2));
+    console.log('📤 [Docpen] API endpoint:', `${ELEVENLABS_BASE_URL}/convai/agents/create`);
+    console.log('📤 [Docpen] Using API key ending in:', apiKey.slice(-8));
 
-    const response = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
-      method: 'POST',
-      headers: {
-        'xi-api-key': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(agentPayload),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`ElevenLabs API error: ${error}`);
+    let response: Response;
+    try {
+      response = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
+        method: 'POST',
+        headers: {
+          'xi-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(agentPayload),
+      });
+    } catch (fetchError: any) {
+      console.error('❌ [Docpen] Fetch error creating agent:', fetchError);
+      throw new Error(`Failed to connect to ElevenLabs API: ${fetchError.message}`);
     }
 
-    const result = await response.json();
+    console.log('📥 [Docpen] ElevenLabs API response status:', response.status, response.statusText);
+    console.log('📥 [Docpen] Response headers:', Object.fromEntries(response.headers.entries()));
+
+    const responseText = await response.text();
+    console.log('📥 [Docpen] Raw response:', responseText);
+
+    if (!response.ok) {
+      console.error('❌ [Docpen] ElevenLabs API error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: responseText,
+      });
+      throw new Error(`ElevenLabs API error (${response.status}): ${responseText}`);
+    }
+
+    let result: any;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ [Docpen] Failed to parse response as JSON:', parseError);
+      throw new Error(`Invalid JSON response from ElevenLabs: ${responseText}`);
+    }
+
+    console.log('📥 [Docpen] Parsed response:', JSON.stringify(result, null, 2));
+
     const agentId = result.agent_id;
+    if (!agentId) {
+      console.error('❌ [Docpen] No agent_id in response:', result);
+      throw new Error(`ElevenLabs API did not return agent_id. Response: ${JSON.stringify(result)}`);
+    }
 
     console.log(`✅ [Docpen] Created agent: ${agentId}`);
     console.log(`📝 [Docpen] Agent name: "${agentPayload.name}"`);
     console.log(`🔑 [Docpen] Created in ElevenLabs account associated with API key: ${keyLabel}`);
     console.log(`💡 [Docpen] To see this agent in ElevenLabs dashboard, log in with the account that owns this API key`);
+    console.log(`🔗 [Docpen] ElevenLabs dashboard URL: https://elevenlabs.io/app/agents/agents`);
 
     // Save to database with error handling and upsert to handle race conditions
     try {
