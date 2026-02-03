@@ -57,5 +57,11 @@ export async function GET(request: NextRequest) {
       : abacusKey
       ? '⚠️ ABACUSAI_API_KEY is still set but not needed. You can remove it.'
       : '✅ Configuration looks correct!',
+  }, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    },
   });
 }
