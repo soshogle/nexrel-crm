@@ -82,15 +82,32 @@ export async function POST(req: NextRequest) {
 
     // Create or get existing agent
     console.log('🔄 [Docpen Voice Agent API] Calling getOrCreateAgent...');
-    const result = await docpenAgentProvisioning.getOrCreateAgent({
-      userId: session.user.id,
-      profession,
-      customProfession,
-      practitionerName: practitionerName || session.user.name,
-      clinicName,
-      voiceGender,
-      sessionContext,
-    });
+    console.log('🔄 [Docpen Voice Agent API] Force create:', forceCreateParam);
+    
+    let result;
+    if (forceCreateParam) {
+      // Force create a new agent by calling createAgent directly
+      console.log('🔄 [Docpen Voice Agent API] FORCE CREATING new agent (skipping getOrCreateAgent)...');
+      result = await docpenAgentProvisioning.createAgent({
+        userId: session.user.id,
+        profession,
+        customProfession,
+        practitionerName: practitionerName || session.user.name,
+        clinicName,
+        voiceGender,
+        sessionContext,
+      });
+    } else {
+      result = await docpenAgentProvisioning.getOrCreateAgent({
+        userId: session.user.id,
+        profession,
+        customProfession,
+        practitionerName: practitionerName || session.user.name,
+        clinicName,
+        voiceGender,
+        sessionContext,
+      });
+    }
 
     console.log('📤 [Docpen Voice Agent API] getOrCreateAgent result:', {
       success: result.success,
