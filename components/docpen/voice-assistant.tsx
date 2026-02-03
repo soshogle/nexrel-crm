@@ -401,21 +401,45 @@ export function VoiceAssistant({
           }
 
           // Handle audio response (this is how ElevenLabs sends speech)
+          // ElevenLabs can send audio as either:
+          // 1. Direct base64 string: message.audio = "base64string"
+          // 2. Object with data field: message.audio = { data: "base64string" }
+          // 3. Object with audio field: message.audio = { audio: "base64string" }
+          let audioData: string | null = null;
+          
           if (message.audio) {
-            console.log('🔊 [Docpen] Received audio chunk from agent, length:', message.audio?.length || 0);
-            setIsAgentSpeaking(true);
-            if (isSpeakerEnabled) {
-              try {
-                await playAudioChunk(message.audio);
-                console.log('✅ [Docpen] Audio chunk played successfully');
-              } catch (audioError) {
-                console.error('❌ [Docpen] Failed to play audio chunk:', audioError);
-                toast.error('Failed to play agent audio. Please check your speaker settings.');
-              }
+            if (typeof message.audio === 'string') {
+              audioData = message.audio;
+            } else if (message.audio.data) {
+              audioData = message.audio.data;
+            } else if (message.audio.audio) {
+              audioData = message.audio.audio;
+            } else if (message.audio.base64) {
+              audioData = message.audio.base64;
             } else {
-              console.warn('⚠️ [Docpen] Speaker disabled - audio chunk received but not played');
+              // Try to stringify and parse if it's a nested object
+              console.warn('⚠️ [Docpen] Unknown audio format:', Object.keys(message.audio));
+              console.log('🔍 [Docpen] Full audio object:', JSON.stringify(message.audio).substring(0, 200));
             }
-            setTimeout(() => setIsAgentSpeaking(false), 1000);
+            
+            if (audioData) {
+              console.log('🔊 [Docpen] Received audio chunk from agent, length:', audioData.length);
+              setIsAgentSpeaking(true);
+              if (isSpeakerEnabled) {
+                try {
+                  await playAudioChunk(audioData);
+                  console.log('✅ [Docpen] Audio chunk played successfully');
+                } catch (audioError) {
+                  console.error('❌ [Docpen] Failed to play audio chunk:', audioError);
+                  toast.error('Failed to play agent audio. Please check your speaker settings.');
+                }
+              } else {
+                console.warn('⚠️ [Docpen] Speaker disabled - audio chunk received but not played');
+              }
+              setTimeout(() => setIsAgentSpeaking(false), 1000);
+            } else {
+              console.warn('⚠️ [Docpen] Audio object received but could not extract audio data');
+            }
           }
 
           // Handle agent response (alternative format - text only, no audio)
