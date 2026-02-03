@@ -42,6 +42,13 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   console.log('🚀 [Docpen Voice Agent API] POST endpoint called');
+  console.log('🔍 [Docpen Voice Agent API] Environment check:', {
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
+    databaseUrlPreview: process.env.DATABASE_URL ? `${process.env.DATABASE_URL.substring(0, 30)}...` : 'NOT SET',
+    hasElevenLabsKey: !!process.env.ELEVENLABS_API_KEY,
+    elevenLabsKeyPreview: process.env.ELEVENLABS_API_KEY ? `...${process.env.ELEVENLABS_API_KEY.slice(-8)}` : 'NOT SET',
+  });
+  
   try {
     const session = await getServerSession(authOptions);
     console.log('🔐 [Docpen Voice Agent API] Session check:', session ? `User: ${session.user?.email}` : 'No session');
