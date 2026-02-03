@@ -157,12 +157,49 @@ class DocpenAgentProvisioning {
    * Create a new Docpen voice agent
    */
   async createAgent(config: DocpenAgentConfig): Promise<DocpenAgentResult> {
+    console.log(`🔑 [Docpen] Getting API key for userId: ${config.userId}`);
     const apiKey = await this.getApiKey(config.userId);
     
-    if (!apiKey) {
+    console.log(`🔑 [Docpen] API key result:`, {
+      found: !!apiKey,
+      length: apiKey?.length || 0,
+      preview: apiKey ? `...${apiKey.slice(-8)}` : 'EMPTY',
+    });
+    
+    if (!apiKey || apiKey.trim() === '') {
+      console.error('❌ [Docpen] No API key available!');
+      console.error('   - Checked user-specific keys');
+      console.error('   - Checked environment variable ELEVENLABS_API_KEY');
+      console.error('   - Both are empty or missing');
       return {
         success: false,
-        error: 'ElevenLabs API key not configured',
+        error: 'ElevenLabs API key not configured. Please set ELEVENLABS_API_KEY environment variable or configure a user-specific API key.',
+      };
+    }
+    
+    // Test API key validity before proceeding
+    console.log(`🔍 [Docpen] Testing API key validity...`);
+    try {
+      const testResponse = await fetch(`${ELEVENLABS_BASE_URL}/user`, {
+        headers: { 'xi-api-key': apiKey },
+      });
+      
+      if (!testResponse.ok) {
+        const errorText = await testResponse.text();
+        console.error(`❌ [Docpen] API key is invalid! Status: ${testResponse.status}, Error: ${errorText}`);
+        return {
+          success: false,
+          error: `ElevenLabs API key is invalid (${testResponse.status}). Please check your API key configuration.`,
+        };
+      }
+      
+      const userInfo = await testResponse.json();
+      console.log(`✅ [Docpen] API key is valid! User: ${userInfo.first_name || 'Unknown'}`);
+    } catch (testError: any) {
+      console.error(`❌ [Docpen] Failed to test API key:`, testError.message);
+      return {
+        success: false,
+        error: `Failed to verify API key: ${testError.message}`,
       };
     }
 
