@@ -41,13 +41,18 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  console.log('🚀 [Docpen Voice Agent API] POST endpoint called');
   try {
     const session = await getServerSession(authOptions);
+    console.log('🔐 [Docpen Voice Agent API] Session check:', session ? `User: ${session.user?.email}` : 'No session');
     if (!session?.user?.id) {
+      console.error('❌ [Docpen Voice Agent API] Unauthorized - no session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('📥 [Docpen Voice Agent API] Parsing request body...');
     const body = await req.json();
+    console.log('✅ [Docpen Voice Agent API] Request body parsed:', Object.keys(body));
     const { 
       profession, 
       customProfession, 
