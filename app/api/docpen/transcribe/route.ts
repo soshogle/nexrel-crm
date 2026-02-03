@@ -105,10 +105,22 @@ export async function POST(request: NextRequest) {
       duration: transcriptionResult.duration,
       segmentCount: savedTranscriptions.length,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Docpen Transcribe] Error:', error);
+    
+    // Provide more detailed error information
+    const errorMessage = error?.message || 'Unknown error';
+    const isApiKeyMissing = errorMessage.includes('ABACUSAI_API_KEY') || errorMessage.includes('not configured');
+    
     return NextResponse.json(
-      { error: 'Failed to transcribe audio' },
+      { 
+        error: 'Failed to transcribe audio',
+        details: errorMessage,
+        hint: isApiKeyMissing 
+          ? 'ABACUSAI_API_KEY environment variable is not configured. Please add it to your .env file.'
+          : undefined,
+        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     );
   }
