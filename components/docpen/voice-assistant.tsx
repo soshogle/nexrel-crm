@@ -358,8 +358,29 @@ export function VoiceAssistant({
           const messageType = message.type || (message.agent_transcript ? 'agent_transcript' : (message.user_transcript ? 'user_transcript' : (message.audio ? 'audio' : 'unknown')));
           console.log('📨 [Docpen] Received:', messageType, message);
           
+          // CRITICAL: Log audio messages in detail to understand structure
+          if (messageType === 'audio' || message.audio) {
+            console.log('🔊🔊🔊 [Docpen] AUDIO MESSAGE DETECTED 🔊🔊🔊');
+            console.log('🔍 [Docpen] Message type:', messageType);
+            console.log('🔍 [Docpen] Has message.audio?', !!message.audio);
+            console.log('🔍 [Docpen] message.audio type:', typeof message.audio);
+            console.log('🔍 [Docpen] message.audio value:', message.audio);
+            if (message.audio) {
+              if (typeof message.audio === 'string') {
+                console.log('✅ [Docpen] Audio is STRING, length:', message.audio.length);
+                console.log('   Preview:', message.audio.substring(0, 100));
+              } else if (typeof message.audio === 'object') {
+                console.log('⚠️ [Docpen] Audio is OBJECT');
+                console.log('   Keys:', Object.keys(message.audio));
+                console.log('   Full object:', JSON.stringify(message.audio, null, 2));
+              }
+            }
+            console.log('🔍 [Docpen] All message keys:', Object.keys(message));
+            console.log('🔍 [Docpen] Full message:', JSON.stringify(message, null, 2));
+          }
+          
           // Debug: Log all message keys to understand structure
-          if (messageType === 'agent_response' || messageType === 'unknown' || messageType === 'audio') {
+          if (messageType === 'agent_response' || messageType === 'unknown') {
             console.log('🔍 [Docpen] Message keys:', Object.keys(message));
             console.log('🔍 [Docpen] Has audio field?', !!message.audio);
             console.log('🔍 [Docpen] Audio type:', typeof message.audio);
@@ -411,6 +432,18 @@ export function VoiceAssistant({
           // Handle audio response (this is how ElevenLabs sends speech)
           // IMPORTANT: ElevenLabs sends audio as a direct base64 string in message.audio
           // This matches the working implementation from voice-agents/preview/page.tsx
+          
+          // CRITICAL DEBUG: Log ALL audio-related messages
+          if (messageType === 'audio' || message.audio || message.type === 'audio') {
+            console.log('🔊🔊🔊 [Docpen] AUDIO HANDLER TRIGGERED 🔊🔊🔊');
+            console.log('   messageType:', messageType);
+            console.log('   message.type:', message.type);
+            console.log('   message.audio exists?', !!message.audio);
+            console.log('   message.audio type:', typeof message.audio);
+            console.log('   message.audio value:', message.audio);
+            console.log('   Full message:', JSON.stringify(message, null, 2));
+          }
+          
           if (message.audio) {
             // Check if it's a string (expected format from ElevenLabs)
             if (typeof message.audio === 'string') {
