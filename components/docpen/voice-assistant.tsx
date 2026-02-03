@@ -414,11 +414,12 @@ export function VoiceAssistant({
           if (message.audio) {
             // Check if it's a string (expected format from ElevenLabs)
             if (typeof message.audio === 'string') {
-              console.log('🔊 [Docpen] Received audio chunk (string), length:', message.audio.length);
+              const audioString = message.audio; // Type narrowing
+              console.log('🔊 [Docpen] Received audio chunk (string), length:', audioString.length);
               setIsAgentSpeaking(true);
               if (isSpeakerEnabled) {
                 try {
-                  await playAudioChunk(message.audio);
+                  await playAudioChunk(audioString);
                   console.log('✅ [Docpen] Audio chunk played successfully');
                 } catch (audioError) {
                   console.error('❌ [Docpen] Failed to play audio chunk:', audioError);
@@ -428,7 +429,7 @@ export function VoiceAssistant({
                 console.warn('⚠️ [Docpen] Speaker disabled - audio chunk received but not played');
               }
               setTimeout(() => setIsAgentSpeaking(false), 1000);
-            } else if (typeof message.audio === 'object') {
+            } else if (typeof message.audio === 'object' && message.audio !== null) {
               // Handle object format (fallback for different ElevenLabs API versions)
               console.log('⚠️ [Docpen] Audio received as object (unexpected), attempting extraction...');
               console.log('🔍 [Docpen] Audio object keys:', Object.keys(message.audio));
