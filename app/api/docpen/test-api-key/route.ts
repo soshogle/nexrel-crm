@@ -9,8 +9,13 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
+  console.log('[Test API Key] Route accessed at:', new Date().toISOString());
+  
   const openaiKey = process.env.OPENAI_API_KEY;
   const abacusKey = process.env.ABACUSAI_API_KEY;
+  
+  console.log('[Test API Key] OpenAI key configured:', !!openaiKey);
+  console.log('[Test API Key] Abacus key present:', !!abacusKey);
   
   return NextResponse.json({
     status: 'ok',
