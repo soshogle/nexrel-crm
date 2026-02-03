@@ -237,83 +237,19 @@ class DocpenAgentProvisioning {
     console.log(`📝 [Docpen] Agent name: "${agentPayload.name}"`);
     console.log(`🔑 [Docpen] Created in ElevenLabs account associated with API key: ${keyLabel}`);
     console.log(`💡 [Docpen] To see this agent in ElevenLabs dashboard, log in with the account that owns this API key`);
-    console.log(`🔗 [Docpen] ElevenLabs dashboard URL: https://elevenlabs.io/app/agents/agents`);
 
-    // Save to database with error handling and upsert to handle race conditions
-    try {
-      const customProfessionValue = config.profession === 'CUSTOM' 
-        ? (config.customProfession || null)
-        : null;
-
-      // Build where clause - Prisma unique constraint requires all fields
-      const whereClause = customProfessionValue !== null
-        ? {
-            userId_profession_customProfession: {
-              userId: config.userId,
-              profession: config.profession,
-              customProfession: customProfessionValue,
-            },
-          }
-        : {
-            // For non-CUSTOM professions, find by userId + profession (customProfession is null)
-            userId: config.userId,
-            profession: config.profession,
-            customProfession: null,
-          };
-
-      await prisma.docpenVoiceAgent.upsert({
-        where: whereClause as any, // Type assertion needed due to Prisma's unique constraint typing
-        create: {
-          userId: config.userId,
-          profession: config.profession,
-          customProfession: customProfessionValue,
-          elevenLabsAgentId: agentId,
-          voiceId: voiceId,
-          systemPrompt: systemPrompt,
-          isActive: true,
-        },
-        update: {
-          elevenLabsAgentId: agentId, // Update if agent already exists (race condition)
-          voiceId: voiceId,
-          systemPrompt: systemPrompt,
-          isActive: true,
-          updatedAt: new Date(),
-        },
-      });
-      console.log(`✅ [Docpen] Agent saved to database: ${agentId}`);
-    } catch (dbError: any) {
-      console.error(`❌ [Docpen] Failed to save agent to database:`, dbError);
-      // If it's a unique constraint violation, try to find existing agent
-      if (dbError.code === 'P2002' || dbError.message?.includes('Unique constraint')) {
-        console.log(`⚠️ [Docpen] Agent already exists in database, attempting to update...`);
-        try {
-          const existing = await prisma.docpenVoiceAgent.findFirst({
-            where: {
-              userId: config.userId,
-              profession: config.profession,
-              customProfession: config.profession === 'CUSTOM' ? config.customProfession : null,
-            },
-          });
-          if (existing) {
-            await prisma.docpenVoiceAgent.update({
-              where: { id: existing.id },
-              data: {
-                elevenLabsAgentId: agentId,
-                voiceId: voiceId,
-                systemPrompt: systemPrompt,
-                isActive: true,
-              },
-            });
-            console.log(`✅ [Docpen] Updated existing agent record: ${existing.id}`);
-          }
-        } catch (updateError) {
-          console.error(`❌ [Docpen] Failed to update existing agent:`, updateError);
-          // Continue - agent exists in ElevenLabs, just not in our DB
-        }
-      }
-      // Don't throw - agent was created successfully in ElevenLabs
-      // Database sync can be fixed later
-    }
+    // Save to database
+    await prisma.docpenVoiceAgent.create({
+      data: {
+        userId: config.userId,
+        profession: config.profession,
+        customProfession: config.profession === 'CUSTOM' ? config.customProfession : null,
+        elevenLabsAgentId: agentId,
+        voiceId: voiceId,
+        systemPrompt: systemPrompt,
+        isActive: true,
+      },
+    });
 
     return {
       success: true,
