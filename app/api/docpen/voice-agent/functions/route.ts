@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import OpenAI from 'openai';
 
-// Initialize OpenAI client via Abacus AI
+// Initialize OpenAI client
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
