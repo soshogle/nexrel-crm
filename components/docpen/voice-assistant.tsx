@@ -433,8 +433,10 @@ export function VoiceAssistant({
           // IMPORTANT: ElevenLabs sends audio as a direct base64 string in message.audio
           // This matches the working implementation from voice-agents/preview/page.tsx
           
-          // CRITICAL DEBUG: Log ALL audio-related messages
-          if (messageType === 'audio' || message.audio || message.type === 'audio') {
+          // CRITICAL: Check for audio in multiple ways
+          const hasAudio = message.audio !== undefined && message.audio !== null;
+          
+          if (hasAudio) {
             console.log('🔊🔊🔊 [Docpen] AUDIO HANDLER TRIGGERED 🔊🔊🔊');
             console.log('   messageType:', messageType);
             console.log('   message.type:', message.type);
@@ -444,7 +446,7 @@ export function VoiceAssistant({
             console.log('   Full message:', JSON.stringify(message, null, 2));
           }
           
-          if (message.audio) {
+          if (hasAudio) {
             // Check if it's a string (expected format from ElevenLabs)
             if (typeof message.audio === 'string') {
               const audioString = message.audio; // Type narrowing
