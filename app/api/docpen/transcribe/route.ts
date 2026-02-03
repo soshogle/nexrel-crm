@@ -70,14 +70,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Check API key before attempting transcription
-    const apiKey = process.env.ABACUSAI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.error('[Docpen Transcribe] ❌ ABACUSAI_API_KEY not found in environment');
+      console.error('[Docpen Transcribe] ❌ OPENAI_API_KEY not found in environment');
       return NextResponse.json(
         { 
           error: 'API key not configured',
-          details: 'ABACUSAI_API_KEY environment variable is not set. Please add it to your Vercel environment variables.',
-          hint: 'Go to Vercel Dashboard → Project Settings → Environment Variables → Add ABACUSAI_API_KEY'
+          details: 'OPENAI_API_KEY environment variable is not set. Please add it to your Vercel environment variables.',
+          hint: 'Go to Vercel Dashboard → Project Settings → Environment Variables → Add OPENAI_API_KEY'
         },
         { status: 500 }
       );
@@ -136,14 +136,14 @@ export async function POST(request: NextRequest) {
     
     // Provide more detailed error information
     const errorMessage = error?.message || 'Unknown error';
-    const isApiKeyMissing = errorMessage.includes('ABACUSAI_API_KEY') || errorMessage.includes('not configured');
+    const isApiKeyMissing = errorMessage.includes('OPENAI_API_KEY') || errorMessage.includes('API key not configured') || errorMessage.includes('not configured');
     
     return NextResponse.json(
       { 
         error: 'Failed to transcribe audio',
         details: errorMessage,
         hint: isApiKeyMissing 
-          ? 'ABACUSAI_API_KEY environment variable is not configured. Please add it to your .env file.'
+          ? 'OPENAI_API_KEY environment variable is not configured. Please add it to your Vercel environment variables.'
           : undefined,
         stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
       },

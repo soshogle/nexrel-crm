@@ -115,14 +115,19 @@ Report Period: ${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateStr
     userPrompt += `\n\nCreate a professional, insightful market report that agents can share with their clients.`;
 
     // Call the LLM API
-    const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.ABACUSAI_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },

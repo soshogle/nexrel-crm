@@ -77,8 +77,8 @@ export class AiCampaignGeneratorService {
   private apiEndpoint: string;
 
   constructor() {
-    this.apiKey = process.env.ABACUSAI_API_KEY || '';
-    this.apiEndpoint = process.env.ABACUSAI_API_ENDPOINT || 'https://api.abacus.ai/v1/chat/completions';
+    this.apiKey = process.env.OPENAI_API_KEY || '';
+    this.apiEndpoint = 'https://api.openai.com/v1/chat/completions';
   }
 
   /**
@@ -336,7 +336,7 @@ Return response as JSON in this exact format:
    */
   private async callAI(prompt: string): Promise<string> {
     if (!this.apiKey) {
-      throw new Error('ABACUSAI_API_KEY not configured');
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     const response = await fetch(this.apiEndpoint, {

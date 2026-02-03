@@ -26,17 +26,12 @@ interface AIResponse {
   suggestedActions: string[];
 }
 
+import { chatCompletion } from '@/lib/openai-client';
+
 export class AIResponseService {
-  private apiKey: string;
-  private apiUrl = 'https://apps.abacus.ai/v1/chat/completions';
-
-  constructor() {
-    this.apiKey = process.env.ABACUSAI_API_KEY || '';
-  }
-
   private ensureConfigured() {
-    if (!this.apiKey) {
-      throw new Error('ABACUSAI_API_KEY is not configured');
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not configured');
     }
   }
 
@@ -171,26 +166,14 @@ Your task is to respond to the customer's message naturally and helpfully based 
    */
   private async callAIAPI(messages: any[], settings: any): Promise<string> {
     try {
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4.1-mini',
-          messages,
-          temperature: 0.7,
-          max_tokens: Math.min(settings.maxResponseLength * 2, 1000),
-        }),
+      const result = await chatCompletion({
+        model: 'gpt-4o-mini',
+        messages,
+        temperature: 0.7,
+        max_tokens: Math.min(settings.maxResponseLength * 2, 1000),
       });
 
-      if (!response.ok) {
-        throw new Error(`AI API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data.choices[0]?.message?.content || '';
+      return result.choices[0]?.message?.content || '';
     } catch (error) {
       console.error('AI API call failed:', error);
       throw new Error('Failed to generate AI response');
@@ -234,36 +217,23 @@ suggestedActions: array of recommended next steps
 Respond with raw JSON only.`;
 
     try {
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4.1-mini',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an expert at analyzing customer service conversations.',
-            },
-            {
-              role: 'user',
-              content: analysisPrompt,
-            },
-          ],
-          temperature: 0.3,
-          max_tokens: 500,
-          response_format: { type: 'json_object' },
-        }),
+      const result = await chatCompletion({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert at analyzing customer service conversations.',
+          },
+          {
+            role: 'user',
+            content: analysisPrompt,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 500,
       });
 
-      if (!response.ok) {
-        throw new Error('Analysis API call failed');
-      }
-
-      const data = await response.json();
-      const analysis = JSON.parse(data.choices[0]?.message?.content || '{}');
+      const analysis = JSON.parse(result.choices[0]?.message?.content || '{}');
 
       // Check for escalation keywords
       const escalationKeywords = settings.escalationKeywords
@@ -376,22 +346,14 @@ Make the suggestion professional, helpful, and personalized for ${contactName}.`
     ];
 
     try {
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4.1-mini',
-          messages,
-          temperature: 0.7,
-          max_tokens: 300,
-        }),
+      const result = await chatCompletion({
+        model: 'gpt-4o-mini',
+        messages,
+        temperature: 0.7,
+        max_tokens: 300,
       });
 
-      const data = await response.json();
-      return data.choices[0]?.message?.content || 'No suggestion available';
+      return result.choices[0]?.message?.content || 'No suggestion available';
     } catch (error) {
       console.error('Failed to generate suggested reply:', error);
       return 'Error generating suggestion';

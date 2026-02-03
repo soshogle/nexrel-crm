@@ -726,52 +726,43 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       { role: "user", content: message },
     ];
 
-    // Call Abacus AI API
-    const apiKey = process.env.ABACUSAI_API_KEY;
+    // Call OpenAI API
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.error("ABACUSAI_API_KEY not configured");
+      console.error("OPENAI_API_KEY not configured");
       return NextResponse.json(
         { error: "AI service not configured. Please contact support." },
         { status: 500 }
       );
     }
 
-    console.log("Calling Abacus AI API with", conversationMessages.length, "messages");
+    console.log("Calling OpenAI API with", conversationMessages.length, "messages");
 
-    let aiResponse;
+    let aiData;
     try {
-      aiResponse = await fetch("https://apps.abacus.ai/v1/chat/completions", {
+      const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4.1-mini",
+          model: "gpt-4o-mini",
           messages: conversationMessages,
           temperature: 0.7,
           max_tokens: 1200, // Increased for more detailed, helpful responses
         }),
       });
-    } catch (fetchError: any) {
-      console.error("Fetch error calling AI API:", fetchError);
-      return NextResponse.json(
-        { error: "Network error connecting to AI service. Please try again." },
-        { status: 500 }
-      );
-    }
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("AI service error:", aiResponse.status, errorText);
-      return NextResponse.json(
-        { error: "Failed to get AI response. Please try again." },
-        { status: 500 }
-      );
-    }
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error("AI service error:", aiResponse.status, errorText);
+        return NextResponse.json(
+          { error: "Failed to get AI response. Please try again." },
+          { status: 500 }
+        );
+      }
 
-    let aiData;
-    try {
       aiData = await aiResponse.json();
     } catch (jsonError: any) {
       console.error("Error parsing AI response JSON:", jsonError);

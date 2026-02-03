@@ -138,12 +138,12 @@ Respond with raw JSON only (no markdown, no code blocks):
     userPrompt += `\n\nCurrent Date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
     userPrompt += `\n\nGenerate 5-6 SPECIFIC opportunities. Make it feel like insider knowledge that only a local expert would know. Be specific about neighborhoods, price points, and why NOW is the time to act.`;
 
-    const apiKey = process.env.ABACUSAI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'LLM API not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
     }
 
-    const response = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

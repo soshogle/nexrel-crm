@@ -49,14 +49,19 @@ export class VoiceConversationEngine {
     ];
 
     // Call LLM API
-    const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY not configured');
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.ABACUSAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
+        model: 'gpt-4o-mini',
         messages,
         max_tokens: 150,
         temperature: 0.7,

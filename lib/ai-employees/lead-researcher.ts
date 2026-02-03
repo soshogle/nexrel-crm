@@ -84,7 +84,7 @@ export class LeadResearcher {
   private llmApiKey: string;
 
   constructor() {
-    this.llmApiKey = process.env.ABACUSAI_API_KEY || '';
+    // API key will be checked at call time
   }
 
   /**
@@ -594,18 +594,19 @@ Provide the response in JSON format:
    * Call LLM API
    */
   private async callLLM(prompt: string): Promise<string> {
-    if (!this.llmApiKey) {
-      console.error('[LeadResearcher] ABACUSAI_API_KEY is not set!');
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      console.error('[LeadResearcher] OPENAI_API_KEY is not set!');
       throw new Error('LLM API key not configured');
     }
 
     console.log('[LeadResearcher] Making LLM call...');
     
-    const response = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.llmApiKey}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',

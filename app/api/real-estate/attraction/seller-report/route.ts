@@ -133,12 +133,12 @@ Respond with raw JSON only (no markdown, no code blocks):
     userPrompt += `\n\nCurrent Date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
     userPrompt += `\n\nGenerate 5-6 compelling demand indicators. Make the report feel like it's based on real local market data. Emphasize the opportunity cost of waiting. Be specific about appreciation, buyer demand, and optimal timing for THEIR situation.`;
 
-    const apiKey = process.env.ABACUSAI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'LLM API not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
     }
 
-    const response = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

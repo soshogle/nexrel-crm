@@ -4,6 +4,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { chromium } from 'playwright';
 
 interface NetSheetData {
   propertyAddress?: string;
@@ -360,76 +361,50 @@ export async function POST(request: NextRequest) {
 
     const htmlContent = generateNetSheetHTML(data);
 
-    // Step 1: Create the PDF generation request
-    const createResponse = await fetch('https://apps.abacus.ai/api/createConvertHtmlToPdfRequest', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        deployment_token: process.env.ABACUSAI_API_KEY,
-        html_content: htmlContent,
-        pdf_options: {
-          format: 'Letter',
-          margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' },
-          print_background: true,
-        },
-      }),
+    // Generate PDF using Playwright
+    console.log('[Net Sheet PDF] Generating PDF with Playwright...');
+    const browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'], // Required for Vercel/serverless
     });
 
-    if (!createResponse.ok) {
-      const error = await createResponse.json().catch(() => ({ error: 'Failed to create PDF request' }));
-      console.error('PDF create error:', error);
-      return NextResponse.json({ success: false, error: error.error || 'Failed to create PDF' }, { status: 500 });
-    }
-
-    const { request_id } = await createResponse.json();
-    if (!request_id) {
-      return NextResponse.json({ success: false, error: 'No request ID returned' }, { status: 500 });
-    }
-
-    // Step 2: Poll for status
-    const maxAttempts = 60; // 60 seconds max
-    let attempts = 0;
-
-    while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const statusResponse = await fetch('https://apps.abacus.ai/api/getConvertHtmlToPdfStatus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          request_id: request_id,
-          deployment_token: process.env.ABACUSAI_API_KEY,
-        }),
+    try {
+      const page = await browser.newPage();
+      
+      // Set content and wait for it to load
+      await page.setContent(htmlContent, { waitUntil: 'networkidle' });
+      
+      // Generate PDF
+      const pdfBuffer = await page.pdf({
+        format: 'Letter',
+        margin: {
+          top: '20px',
+          right: '20px',
+          bottom: '20px',
+          left: '20px',
+        },
+        printBackground: true,
       });
 
-      const statusResult = await statusResponse.json();
-      const status = statusResult?.status || 'FAILED';
-      const result = statusResult?.result || null;
+      await browser.close();
 
-      if (status === 'SUCCESS') {
-        if (result && result.result) {
-          const pdfBuffer = Buffer.from(result.result, 'base64');
-          const filename = data.propertyAddress
-            ? `Net_Sheet_${data.propertyAddress.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
-            : `Seller_Net_Sheet_${Date.now()}.pdf`;
+      const filename = data.propertyAddress
+        ? `Net_Sheet_${data.propertyAddress.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`
+        : `Seller_Net_Sheet_${Date.now()}.pdf`;
 
-          return new NextResponse(pdfBuffer, {
-            headers: {
-              'Content-Type': 'application/pdf',
-              'Content-Disposition': `attachment; filename="${filename}"`,
-            },
-          });
-        } else {
-          return NextResponse.json({ success: false, error: 'PDF generation completed but no result' }, { status: 500 });
-        }
-      } else if (status === 'FAILED') {
-        return NextResponse.json({ success: false, error: result?.error || 'PDF generation failed' }, { status: 500 });
-      }
+      console.log('[Net Sheet PDF] PDF generated successfully:', filename);
 
-      attempts++;
+      return new NextResponse(pdfBuffer, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
+      });
+    } catch (pdfError: any) {
+      await browser.close();
+      console.error('[Net Sheet PDF] Error generating PDF:', pdfError);
+      throw pdfError;
     }
-
-    return NextResponse.json({ success: false, error: 'PDF generation timed out' }, { status: 500 });
   } catch (error) {
     console.error('Net Sheet PDF error:', error);
     return NextResponse.json({ success: false, error: 'Failed to generate PDF' }, { status: 500 });

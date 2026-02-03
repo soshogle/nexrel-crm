@@ -1,5 +1,5 @@
 /**
- * Check if ABACUSAI_API_KEY is configured
+ * Check if OPENAI_API_KEY is configured
  * Useful for debugging API key issues
  */
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const apiKey = process.env.ABACUSAI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     
     return NextResponse.json({
       configured: !!apiKey,
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       keyPreview: apiKey ? `${apiKey.substring(0, 10)}...` : null,
       environment: process.env.NODE_ENV,
       hint: !apiKey 
-        ? 'ABACUSAI_API_KEY is not set. Add it to Vercel environment variables.'
+        ? 'OPENAI_API_KEY is not set. Add it to Vercel environment variables.'
         : 'API key is configured. If transcription still fails, check if the key is valid.'
     });
   } catch (error: any) {

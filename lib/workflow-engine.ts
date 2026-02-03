@@ -637,14 +637,19 @@ export class WorkflowEngine {
 
     // Call AI API to generate message
     try {
-      const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        throw new Error('OPENAI_API_KEY not configured');
+      }
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.ABACUSAI_API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4.1-mini',
+          model: 'gpt-4o-mini',
           messages: [{
             role: 'system',
             content: `You are a ${tone} CRM assistant. Generate a brief, engaging message for: ${prompt}. Context: Lead name is ${lead?.contactPerson || 'the lead'}, business is ${lead?.businessName || 'their business'}.`
@@ -652,6 +657,10 @@ export class WorkflowEngine {
           max_tokens: 200,
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
 
       const data = await response.json();
       const generatedMessage = data.choices?.[0]?.message?.content || 'Hello! Following up on our previous conversation.';
