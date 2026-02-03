@@ -212,22 +212,51 @@ export function DocpenRecorder({
           });
           
           if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            const errorMessage = errorData.details || errorData.error || 'Transcription failed';
-            throw new Error(errorMessage);
+            let errorData: any = {};
+            try {
+              errorData = await response.json();
+            } catch (e) {
+              // If response is not JSON, try to get text
+              const text = await response.text().catch(() => 'Unknown error');
+              errorData = { error: text, details: text };
+            }
+            
+            const errorMessage = errorData.details || errorData.error || `Transcription failed (${response.status})`;
+            console.error('[Docpen Recorder] Transcription API error:', {
+              status: response.status,
+              statusText: response.statusText,
+              error: errorMessage,
+              fullError: errorData
+            });
+            
+            // Normalize error message - remove any old "Abacus" references
+            let normalizedError = errorMessage;
+            if (normalizedError.includes('Abacus') || normalizedError.includes('ABACUS')) {
+              normalizedError = normalizedError.replace(/Abacus\s*AI/gi, 'OpenAI').replace(/ABACUS/gi, 'OPENAI');
+              console.warn('[Docpen Recorder] ⚠️ Detected old error message format - this indicates cached code. Please hard refresh your browser.');
+            }
+            
+            throw new Error(normalizedError);
           }
           
           const result = await response.json();
           toast.success(`Transcribed ${result.segmentCount} segments`);
           onRecordingComplete?.(duration);
         } catch (error: any) {
-          console.error('Error processing recording:', error);
-          const errorMessage = error?.message || 'Failed to process recording';
+          console.error('[Docpen Recorder] Error processing recording:', error);
+          let errorMessage = error?.message || 'Failed to process recording';
+          
+          // Normalize any old error messages
+          if (errorMessage.includes('Abacus') || errorMessage.includes('ABACUS') || errorMessage.includes('initialize LLM APIs')) {
+            errorMessage = 'OpenAI API key not configured. Please check your Vercel environment variables.';
+            console.warn('[Docpen Recorder] ⚠️ Old error format detected - browser cache may be stale. Hard refresh recommended (Cmd+Shift+R).');
+          }
+          
           toast.error(errorMessage);
           
           // Show hint if API key is missing
-          if (errorMessage.includes('OPENAI_API_KEY') || errorMessage.includes('API key')) {
-            toast.error('Please configure OPENAI_API_KEY in your environment variables', { duration: 5000 });
+          if (errorMessage.includes('OPENAI_API_KEY') || errorMessage.includes('API key') || errorMessage.includes('not configured')) {
+            toast.error('Please configure OPENAI_API_KEY in your Vercel environment variables', { duration: 5000 });
           }
         } finally {
           setIsRecording(false);
