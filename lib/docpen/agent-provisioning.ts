@@ -216,14 +216,24 @@ class DocpenAgentProvisioning {
         ? (config.customProfession || null)
         : null;
 
-      await prisma.docpenVoiceAgent.upsert({
-        where: {
-          userId_profession_customProfession: {
+      // Build where clause - Prisma unique constraint requires all fields
+      const whereClause = customProfessionValue !== null
+        ? {
+            userId_profession_customProfession: {
+              userId: config.userId,
+              profession: config.profession,
+              customProfession: customProfessionValue,
+            },
+          }
+        : {
+            // For non-CUSTOM professions, find by userId + profession (customProfession is null)
             userId: config.userId,
             profession: config.profession,
-            customProfession: customProfessionValue,
-          },
-        },
+            customProfession: null,
+          };
+
+      await prisma.docpenVoiceAgent.upsert({
+        where: whereClause as any, // Type assertion needed due to Prisma's unique constraint typing
         create: {
           userId: config.userId,
           profession: config.profession,
