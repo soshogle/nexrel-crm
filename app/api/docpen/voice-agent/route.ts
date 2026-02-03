@@ -57,7 +57,18 @@ export async function POST(req: NextRequest) {
       sessionContext 
     } = body;
 
+    console.log('📥 [Docpen Voice Agent API] POST request received:', {
+      userId: session.user.id,
+      profession,
+      customProfession,
+      practitionerName,
+      clinicName,
+      voiceGender,
+      hasSessionContext: !!sessionContext,
+    });
+
     if (!profession) {
+      console.error('❌ [Docpen Voice Agent API] Missing profession');
       return NextResponse.json(
         { error: 'Profession is required' },
         { status: 400 }
@@ -65,6 +76,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create or get existing agent
+    console.log('🔄 [Docpen Voice Agent API] Calling getOrCreateAgent...');
     const result = await docpenAgentProvisioning.getOrCreateAgent({
       userId: session.user.id,
       profession,
@@ -75,19 +87,36 @@ export async function POST(req: NextRequest) {
       sessionContext,
     });
 
+    console.log('📤 [Docpen Voice Agent API] getOrCreateAgent result:', {
+      success: result.success,
+      agentId: result.agentId,
+      error: result.error,
+    });
+
     if (!result.success) {
+      console.error('❌ [Docpen Voice Agent API] Agent creation failed:', result.error);
       return NextResponse.json(
         { error: result.error || 'Failed to create agent' },
         { status: 500 }
       );
     }
 
+    if (!result.agentId) {
+      console.error('❌ [Docpen Voice Agent API] No agentId returned despite success');
+      return NextResponse.json(
+        { error: 'Agent created but no agent ID returned' },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ [Docpen Voice Agent API] Successfully returning agentId:', result.agentId);
     return NextResponse.json({
       success: true,
       agentId: result.agentId,
     });
   } catch (error: any) {
-    console.error('[Docpen Voice Agent] Error creating agent:', error);
+    console.error('❌ [Docpen Voice Agent API] Error creating agent:', error);
+    console.error('   Error stack:', error.stack);
     return NextResponse.json(
       { error: error.message || 'Failed to create agent' },
       { status: 500 }
