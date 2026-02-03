@@ -82,11 +82,14 @@ async function verifyAgentExists(agentId: string, apiKey: string) {
 }
 
 export async function GET(req: NextRequest) {
+  console.log('🚀 [Test Agent Creation] ========== ENDPOINT CALLED ==========');
+  console.log('🚀 [Test Agent Creation] Timestamp:', new Date().toISOString());
+  console.log('🚀 [Test Agent Creation] URL:', req.url);
+  
   try {
-    console.log('🔍 [Test Agent Creation] Endpoint called');
-    
+    console.log('🔍 [Test Agent Creation] Getting session...');
     const session = await getServerSession(authOptions);
-    console.log('🔍 [Test Agent Creation] Session:', session ? 'exists' : 'missing');
+    console.log('🔍 [Test Agent Creation] Session:', session ? `User: ${session.user?.email}, ID: ${session.user?.id}` : 'MISSING');
     
     if (!session?.user?.id) {
       console.log('❌ [Test Agent Creation] Unauthorized - no session');
