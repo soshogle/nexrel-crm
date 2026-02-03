@@ -203,12 +203,30 @@ export async function transcribeAudio(
     formData.append('language', options.language);
   }
 
-  // Use Abacus AI RouteLLM API endpoint
-  console.log('[Docpen Transcription] 🌐 Calling Abacus AI transcription API...');
-  const response = await fetch('https://routellm.abacus.ai/v1/audio/transcriptions', {
+  // IMPORTANT: RouteLLM may not support audio transcriptions (Whisper)
+  // Try OpenAI's direct endpoint instead, as RouteLLM is primarily for chat completions
+  // Check if we should use OpenAI directly or RouteLLM
+  const useOpenAIDirect = process.env.USE_OPENAI_DIRECT_TRANSCRIPTION === 'true' || 
+                          !process.env.ABACUSAI_API_KEY?.includes('abacus');
+  
+  const transcriptionUrl = useOpenAIDirect 
+    ? 'https://api.openai.com/v1/audio/transcriptions'
+    : 'https://routellm.abacus.ai/v1/audio/transcriptions';
+  
+  // For OpenAI direct, we need OPENAI_API_KEY instead
+  const transcriptionApiKey = useOpenAIDirect 
+    ? (process.env.OPENAI_API_KEY || apiKey) // Fallback to Abacus key if OpenAI not set
+    : apiKey;
+  
+  console.log('[Docpen Transcription] 🌐 Calling transcription API...');
+  console.log('[Docpen Transcription] 📍 Endpoint:', transcriptionUrl);
+  console.log('[Docpen Transcription] 🔑 Using:', useOpenAIDirect ? 'OpenAI Direct' : 'RouteLLM');
+  
+  const response = await fetch(transcriptionUrl, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${transcriptionApiKey}`,
+      // Don't set Content-Type - let fetch set it with boundary for FormData
     },
     body: formData,
   });
@@ -216,21 +234,34 @@ export async function transcribeAudio(
   console.log('[Docpen Transcription] 📡 API response status:', response.status, response.statusText);
 
   if (!response.ok) {
-    const error = await response.text();
-    console.error('[Docpen Transcription] ❌ API error response:', error);
+    let errorText = '';
+    try {
+      errorText = await response.text();
+      console.error('[Docpen Transcription] ❌ API error response:', errorText);
+    } catch (e) {
+      errorText = `Failed to read error response: ${e}`;
+    }
+    
     console.error('[Docpen Transcription] ❌ Status:', response.status);
-    console.error('[Docpen Transcription] ❌ Headers:', Object.fromEntries(response.headers.entries()));
+    console.error('[Docpen Transcription] ❌ URL:', transcriptionUrl);
     
     // Provide more helpful error messages
     if (response.status === 401) {
-      throw new Error('Invalid API key. Please check your ABACUSAI_API_KEY is correct.');
+      const keyType = useOpenAIDirect ? 'OPENAI_API_KEY' : 'ABACUSAI_API_KEY';
+      throw new Error(`Invalid API key (401). Please check your ${keyType} is correct.`);
+    } else if (response.status === 404) {
+      if (!useOpenAIDirect) {
+        throw new Error(`RouteLLM endpoint not found (404). RouteLLM may not support audio transcriptions. Try setting USE_OPENAI_DIRECT_TRANSCRIPTION=true and OPENAI_API_KEY in your environment variables.`);
+      } else {
+        throw new Error(`OpenAI endpoint not found (404). Please verify your OPENAI_API_KEY is correct.`);
+      }
     } else if (response.status === 429) {
       throw new Error('Rate limit exceeded. Please try again in a moment.');
     } else if (response.status === 400) {
-      throw new Error(`Invalid request: ${error.substring(0, 200)}`);
+      throw new Error(`Invalid request: ${errorText.substring(0, 200)}`);
     }
     
-    throw new Error(`Transcription API error: ${response.status} - ${error.substring(0, 200)}`);
+    throw new Error(`Transcription API error: ${response.status} - ${errorText.substring(0, 200)}`);
   }
 
   const whisperResult = await response.json();
