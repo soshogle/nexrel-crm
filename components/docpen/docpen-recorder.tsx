@@ -28,13 +28,56 @@ export function DocpenRecorder({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      cleanup();
     };
   }, []);
+
+  const cleanup = () => {
+    // Stop all tracks
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log('🎤 [Docpen Recorder] Stopped track:', track.kind);
+      });
+      streamRef.current = null;
+    }
+    
+    // Stop timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    // Cancel animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    
+    // Close audio context
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    
+    // Stop media recorder
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {
+        // Ignore errors if already stopped
+      }
+      mediaRecorderRef.current = null;
+    }
+    
+    console.log('🧹 [Docpen Recorder] Cleanup complete');
+  };
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -56,10 +99,13 @@ export function DocpenRecorder({
 
   const startRecording = async () => {
     try {
+      // Request microphone access (this will prompt the user)
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
       
       // Setup audio analysis
       const audioContext = new AudioContext();
+      audioContextRef.current = audioContext;
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
@@ -78,9 +124,10 @@ export function DocpenRecorder({
       };
       
       mediaRecorder.onstop = () => {
-        stream.getTracks().forEach(track => track.stop());
+        // Cleanup will be handled by cleanup() function
         if (animationRef.current) {
           cancelAnimationFrame(animationRef.current);
+          animationRef.current = null;
         }
       };
       
@@ -101,9 +148,15 @@ export function DocpenRecorder({
       analyzeAudio();
       
       toast.success('Recording started');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting recording:', error);
-      toast.error('Could not access microphone. Please check permissions.');
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        toast.error('Microphone access denied. Please allow microphone permissions and try again.');
+      } else if (error.name === 'NotFoundError') {
+        toast.error('No microphone found. Please connect a microphone and try again.');
+      } else {
+        toast.error('Could not access microphone. Please check permissions.');
+      }
     }
   };
 
@@ -133,11 +186,13 @@ export function DocpenRecorder({
     // Stop timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
+      timerRef.current = null;
     }
     
     // Stop recording
     return new Promise<void>((resolve) => {
       if (!mediaRecorderRef.current) {
+        cleanup();
         resolve();
         return;
       }
@@ -180,6 +235,9 @@ export function DocpenRecorder({
           setIsProcessing(false);
           setAudioLevel(0);
           onStatusChange?.('idle');
+          
+          // Cleanup microphone and resources
+          cleanup();
           resolve();
         }
       };
@@ -275,10 +333,10 @@ export function DocpenRecorder({
         {/* Wake Word Hint */}
         <div className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-3 text-sm">
           <p className="font-medium text-purple-700 dark:text-purple-300">
-            💡 Active Assistant Available
+            💡 Voice Assistant Available
           </p>
           <p className="text-purple-600 dark:text-purple-400 mt-1">
-            Say "<span className="font-mono">Docpen</span>" followed by your question to activate the assistant during recording.
+            Connect the Voice Assistant in the right panel for real-time AI help. Say "<span className="font-mono">Docpen</span>" followed by your question during recording.
           </p>
         </div>
       </CardContent>

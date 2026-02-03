@@ -283,8 +283,9 @@ export function VoiceAssistant({
         setConnectionStartTime(new Date());
         setMessages([]);
         toast.success('Voice assistant connected - Listen for the greeting!');
+        console.log('🎧 [Docpen] Waiting for agent greeting message...');
 
-        // Start sending audio after brief delay
+        // Start sending audio after brief delay to allow agent to speak first
         setTimeout(() => {
           processor.onaudioprocess = (e) => {
             try {
@@ -306,14 +307,15 @@ export function VoiceAssistant({
 
           source.connect(processor);
           processor.connect(audioContextRef.current!.destination);
-          console.log('🎤 [Docpen] Audio processing started');
-        }, 500);
+          console.log('🎤 [Docpen] Audio processing started - microphone is active');
+        }, 1000); // Increased delay to give agent time to speak first message
       };
 
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          console.log('📨 [Docpen] Received:', message.type || 'data', message);
+          const messageType = message.type || (message.agent_transcript ? 'agent_transcript' : (message.user_transcript ? 'user_transcript' : (message.audio ? 'audio' : 'unknown')));
+          console.log('📨 [Docpen] Received:', messageType, message);
 
           // Handle conversation ID
           if (message.conversation_id) {
@@ -334,7 +336,7 @@ export function VoiceAssistant({
             onTranscript?.(message.user_transcript, 'user');
           }
 
-          // Handle agent transcript
+          // Handle agent transcript (including first message)
           if (message.agent_transcript) {
             console.log('🤖 [Docpen] Agent said:', message.agent_transcript);
             const newMsg: VoiceMessage = {
@@ -349,12 +351,31 @@ export function VoiceAssistant({
             setTimeout(() => setIsAgentSpeaking(false), 2000);
           }
 
-          // Handle audio response
-          if (message.audio && isSpeakerEnabled) {
-            console.log('🔊 [Docpen] Received audio chunk');
+          // Handle audio response (this is how ElevenLabs sends speech)
+          if (message.audio) {
+            console.log('🔊 [Docpen] Received audio chunk from agent');
             setIsAgentSpeaking(true);
-            playAudioChunk(message.audio);
+            if (isSpeakerEnabled) {
+              playAudioChunk(message.audio);
+            } else {
+              console.warn('⚠️ [Docpen] Speaker disabled - audio chunk received but not played');
+            }
             setTimeout(() => setIsAgentSpeaking(false), 1000);
+          }
+
+          // Handle agent response (alternative format)
+          if (message.agent_response) {
+            console.log('🤖 [Docpen] Agent response:', message.agent_response);
+            if (message.agent_response.text) {
+              const newMsg: VoiceMessage = {
+                id: Date.now().toString(),
+                role: 'assistant',
+                content: message.agent_response.text,
+                timestamp: new Date(),
+              };
+              setMessages((prev) => [...prev, newMsg]);
+              onTranscript?.(message.agent_response.text, 'assistant');
+            }
           }
 
           // Handle interruption
@@ -369,7 +390,7 @@ export function VoiceAssistant({
             toast.error(message.message || message.error || 'Agent error');
           }
         } catch (err) {
-          console.error('Failed to parse message:', err, event.data);
+          console.error('❌ [Docpen] Failed to parse message:', err, event.data);
         }
       };
 
@@ -415,20 +436,43 @@ export function VoiceAssistant({
    * Cleanup resources
    */
   const cleanup = () => {
+    console.log('🧹 [Docpen] Starting cleanup...');
+    
+    // Stop all media tracks
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current.getTracks().forEach((track) => {
+        track.stop();
+        console.log(`🎤 [Docpen] Stopped ${track.kind} track`);
+      });
       mediaStreamRef.current = null;
     }
+    
+    // Close audio context
     if (audioContextRef.current) {
-      audioContextRef.current.close();
+      if (audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(err => {
+          console.warn('⚠️ [Docpen] Error closing audio context:', err);
+        });
+      }
       audioContextRef.current = null;
     }
+    
+    // Close WebSocket if still open
+    if (wsRef.current) {
+      if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
+        wsRef.current.close();
+      }
+      wsRef.current = null;
+    }
+    
+    console.log('✅ [Docpen] Cleanup complete');
   };
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      disconnect();
+      console.log('🔄 [Docpen] Component unmounting - cleaning up...');
+      cleanup();
     };
   }, []);
 
