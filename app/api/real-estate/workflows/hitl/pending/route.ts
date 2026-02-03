@@ -21,25 +21,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get pending HITL notifications (with error handling)
+    // Get pending HITL notifications (with error handling and timeout protection)
     let notifications: any[] = [];
     try {
-      notifications = await prisma.rEHITLNotification.findMany({
+      // Add timeout to prevent 508 errors
+      const notificationsPromise = prisma.rEHITLNotification.findMany({
         where: {
           userId: session.user.id,
           isActioned: false
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 50, // Limit to prevent timeouts
       });
+      
+      notifications = await Promise.race([
+        notificationsPromise,
+        new Promise<any[]>((resolve) => setTimeout(() => resolve([]), 5000)) // 5 second timeout
+      ]);
     } catch (notifError: any) {
       console.error('[HITL Pending] Error fetching notifications:', notifError);
       // Continue with empty array if notifications fail
+      notifications = [];
     }
 
-    // Also get task executions awaiting HITL (with error handling)
+    // Also get task executions awaiting HITL (with error handling and timeout protection)
     let awaitingApproval: any[] = [];
     try {
-      awaitingApproval = await prisma.rETaskExecution.findMany({
+      const executionsPromise = prisma.rETaskExecution.findMany({
         where: {
           instance: {
             userId: session.user.id
@@ -70,11 +78,18 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 50, // Limit to prevent timeouts
       });
+      
+      awaitingApproval = await Promise.race([
+        executionsPromise,
+        new Promise<any[]>((resolve) => setTimeout(() => resolve([]), 5000)) // 5 second timeout
+      ]);
     } catch (execError: any) {
       console.error('[HITL Pending] Error fetching task executions:', execError);
       // Continue with empty array if executions fail
+      awaitingApproval = [];
     }
 
     // Enrich with agent names (with error handling)
