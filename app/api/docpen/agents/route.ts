@@ -77,6 +77,22 @@ export async function GET(request: NextRequest) {
       ],
     });
 
+    // Automatically update all agents in the background (non-blocking)
+    // This ensures agents created before API migrations get updated automatically
+    agents.forEach(agent => {
+      if (agent.isActive) {
+        docpenAgentProvisioning.updateAgentFunctions(agent.elevenLabsAgentId, session.user.id)
+          .then(success => {
+            if (success) {
+              console.log(`✅ [Docpen] Auto-updated agent ${agent.elevenLabsAgentId} functions`);
+            }
+          })
+          .catch(err => {
+            console.warn(`⚠️ [Docpen] Failed to auto-update agent functions (non-critical):`, err.message);
+          });
+      }
+    });
+
     // Map agents with additional info
     const agentsWithDetails = agents.map(agent => ({
       id: agent.id,

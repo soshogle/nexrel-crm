@@ -50,6 +50,7 @@ class DocpenAgentProvisioning {
 
   /**
    * Create or get an existing Docpen voice agent for a profession
+   * Automatically updates agent functions if needed (for API migrations)
    */
   async getOrCreateAgent(config: DocpenAgentConfig): Promise<DocpenAgentResult> {
     try {
@@ -69,6 +70,20 @@ class DocpenAgentProvisioning {
 
       if (existingAgent) {
         console.log(`🎙️ [Docpen] Found existing agent for ${professionKey}: ${existingAgent.elevenLabsAgentId}`);
+        
+        // Automatically update agent functions in the background (non-blocking)
+        // This ensures agents created before API migrations get updated automatically
+        // No user action required - happens silently in the background
+        this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId)
+          .then(success => {
+            if (success) {
+              console.log(`✅ [Docpen] Auto-updated agent ${existingAgent.elevenLabsAgentId} with latest function configurations`);
+            }
+          })
+          .catch(err => {
+            // Non-critical - agent will still work, just might have old function URLs
+            console.warn(`⚠️ [Docpen] Failed to auto-update agent functions (non-critical):`, err.message);
+          });
         
         // Update session context if provided
         if (config.sessionContext) {
@@ -231,6 +246,7 @@ class DocpenAgentProvisioning {
   /**
    * Update existing agent with latest function configurations
    * This is needed after API migrations to ensure agents use correct endpoints
+   * Called automatically when agents are accessed - no user action required
    */
   async updateAgentFunctions(agentId: string, userId: string): Promise<boolean> {
     const apiKey = await this.getApiKey(userId);
@@ -253,9 +269,24 @@ class DocpenAgentProvisioning {
 
       const currentAgent = await getResponse.json();
       
-      // Update with latest function configurations
+      // Check if agent already has the correct server_url configured
+      const currentTools = currentAgent.tools || [];
       const medicalFunctions = this.buildMedicalFunctions();
+      const expectedServerUrl = this.getFunctionServerUrl();
       
+      // Check if any function is missing server_url or has wrong URL
+      const needsUpdate = currentTools.length === 0 || 
+        currentTools.some((tool: any) => {
+          const func = tool.function;
+          return !func?.server_url || func.server_url !== expectedServerUrl;
+        });
+
+      if (!needsUpdate) {
+        console.log(`✅ [Docpen] Agent ${agentId} already has correct function configurations`);
+        return true;
+      }
+      
+      // Update with latest function configurations
       const updatePayload = {
         ...currentAgent,
         tools: medicalFunctions.map(func => ({
