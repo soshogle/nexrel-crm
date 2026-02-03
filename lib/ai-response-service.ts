@@ -336,10 +336,13 @@ ${knowledgeBase.map((kb, i) => `${i + 1}. ${kb.title}\n${kb.content}`).join('\n\
 
 Make the suggestion professional, helpful, and personalized for ${contactName}.`;
 
-    const messages = [
+    const messages: Array<{
+      role: 'system' | 'user' | 'assistant';
+      content: string;
+    }> = [
       { role: 'system', content: systemPrompt },
       ...(conversationHistory?.slice(-5).map((msg) => ({
-        role: msg.role === 'user' ? 'user' : 'assistant',
+        role: (msg.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
         content: msg.content,
       })) || []),
       { role: 'user', content: incomingMessage },
