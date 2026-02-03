@@ -284,6 +284,7 @@ export function VoiceAssistant({
         setMessages([]);
         toast.success('Voice assistant connected - Listen for the greeting!');
         console.log('🎧 [Docpen] Waiting for agent greeting message...');
+        console.log('🔊 [Docpen] Speaker enabled:', isSpeakerEnabled);
 
         // Start sending audio after brief delay to allow agent to speak first
         setTimeout(() => {
@@ -308,7 +309,7 @@ export function VoiceAssistant({
           source.connect(processor);
           processor.connect(audioContextRef.current!.destination);
           console.log('🎤 [Docpen] Audio processing started - microphone is active');
-        }, 1000); // Increased delay to give agent time to speak first message
+        }, 1500); // Increased delay to give agent time to speak first message
       };
 
       ws.onmessage = (event) => {
@@ -363,18 +364,46 @@ export function VoiceAssistant({
             setTimeout(() => setIsAgentSpeaking(false), 1000);
           }
 
-          // Handle agent response (alternative format)
+          // Handle agent response (alternative format - text only, no audio)
           if (message.agent_response) {
-            console.log('🤖 [Docpen] Agent response:', message.agent_response);
-            if (message.agent_response.text) {
-              const newMsg: VoiceMessage = {
-                id: Date.now().toString(),
+            console.log('🤖 [Docpen] Agent response (text):', message.agent_response);
+            const responseText = message.agent_response.text || message.agent_response.message || JSON.stringify(message.agent_response);
+            const newMsg: VoiceMessage = {
+              id: Date.now().toString(),
+              role: 'assistant',
+              content: responseText,
+              timestamp: new Date(),
+            };
+            setMessages((prev) => [...prev, newMsg]);
+            onTranscript?.(responseText, 'assistant');
+            setIsAgentSpeaking(true);
+            setTimeout(() => setIsAgentSpeaking(false), 2000);
+            
+            // If agent_response doesn't include audio, log a warning
+            if (!message.audio && !message.agent_response.audio) {
+              console.warn('⚠️ [Docpen] Agent response received but no audio chunk. Agent may be configured to send text only.');
+            }
+          }
+          
+          // Handle conversation initiation metadata (includes first message)
+          if (message.conversation_initiation_metadata) {
+            console.log('🎬 [Docpen] Conversation initiated:', message.conversation_initiation_metadata);
+            // The first_message should be sent as audio automatically by ElevenLabs
+            // But if we receive it as text, display it
+            if (message.conversation_initiation_metadata.first_message) {
+              const firstMsg: VoiceMessage = {
+                id: 'first-message',
                 role: 'assistant',
-                content: message.agent_response.text,
+                content: message.conversation_initiation_metadata.first_message,
                 timestamp: new Date(),
               };
-              setMessages((prev) => [...prev, newMsg]);
-              onTranscript?.(message.agent_response.text, 'assistant');
+              setMessages((prev) => {
+                // Only add if not already present
+                if (!prev.find(m => m.id === 'first-message')) {
+                  return [firstMsg, ...prev];
+                }
+                return prev;
+              });
             }
           }
 
