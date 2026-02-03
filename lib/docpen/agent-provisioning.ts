@@ -212,18 +212,22 @@ class DocpenAgentProvisioning {
 
     // Save to database with error handling and upsert to handle race conditions
     try {
+      const customProfessionValue = config.profession === 'CUSTOM' 
+        ? (config.customProfession || null)
+        : null;
+
       await prisma.docpenVoiceAgent.upsert({
         where: {
           userId_profession_customProfession: {
             userId: config.userId,
             profession: config.profession,
-            customProfession: config.profession === 'CUSTOM' ? config.customProfession : null,
+            customProfession: customProfessionValue,
           },
         },
         create: {
           userId: config.userId,
           profession: config.profession,
-          customProfession: config.profession === 'CUSTOM' ? config.customProfession : null,
+          customProfession: customProfessionValue,
           elevenLabsAgentId: agentId,
           voiceId: voiceId,
           systemPrompt: systemPrompt,
