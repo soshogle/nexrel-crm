@@ -137,6 +137,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('📦 Request body:', JSON.stringify(body, null, 2));
 
+    // Fetch user's language preference
+    const userLanguage = user.language || body.language || 'en';
+    
+    // Language instruction based on user preference
+    const languageInstructions: Record<string, string> = {
+      'en': 'IMPORTANT: Respond in English. All your responses must be in English.',
+      'fr': 'IMPORTANT: Répondez en français. Toutes vos réponses doivent être en français.',
+      'es': 'IMPORTANTE: Responde en español. Todas tus respuestas deben ser en español.',
+      'zh': '重要提示：请用中文回复。您的所有回复必须使用中文。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+
     // Build system prompt from knowledge base and business info
     let systemPrompt = body.systemPrompt;
     
@@ -149,11 +161,16 @@ export async function POST(request: NextRequest) {
       });
     } else if (!systemPrompt) {
       // Default prompt if no custom prompt provided
-      systemPrompt = `You are an AI voice assistant for ${body.businessName}${body.businessIndustry ? ` in the ${body.businessIndustry} industry` : ''}.
+      systemPrompt = `${languageInstruction}
+
+You are an AI voice assistant for ${body.businessName}${body.businessIndustry ? ` in the ${body.businessIndustry} industry` : ''}.
 
 ${body.knowledgeBase || 'Answer customer questions professionally and helpfully.'}
 
 ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : ''}`;
+    } else {
+      // Add language instruction to custom prompt if provided
+      systemPrompt = `${languageInstruction}\n\n${systemPrompt}`;
     }
 
     console.log('💾 Creating agent in database...');
@@ -210,8 +227,8 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
         enableInterruptions: body.enableInterruptions ?? true,
         responseDelay: body.responseDelay || 100,
         
-        // Language
-        language: body.language || 'en',
+        // Language - use user's preference if not explicitly provided
+        language: body.language || userLanguage,
         
         // Calendar & Scheduling
         googleCalendarId: body.googleCalendarId,
@@ -497,7 +514,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
         systemPrompt: finalSystemPrompt, // Use the rebuilt prompt with onboarding docs
         knowledgeBase: enhancedKnowledgeBase, // Use enhanced knowledge base with onboarding docs
         voiceId: body.voiceId,
-        language: body.language,
+        language: userLanguage, // Use user's language preference
         maxCallDuration: body.maxCallDuration,
         twilioPhoneNumber: body.twilioPhoneNumber, // Pass phone number for import/assignment
         userId: user.id,

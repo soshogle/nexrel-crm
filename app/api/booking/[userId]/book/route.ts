@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { addMinutes, parse, isAfter, isBefore, format } from 'date-fns';
 import { emailService } from '@/lib/email-service';
 import { CalendarService } from '@/lib/calendar/calendar-service';
+import { getEmailTemplates, replaceEmailPlaceholders, formatDateForLocale } from '@/lib/email-templates';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -190,7 +191,29 @@ export async function POST(
     // Send notification email to business owner if email available
     if (user?.email) {
       console.log('📧 Sending notification email to business owner:', user.email);
-      const ownerSubject = `📅 New Booking: ${customerName} - ${format(appointmentDateTime, 'MMM dd, yyyy')} at ${appointmentTime}`;
+      
+      // Get user's language preference
+      const userLanguage = (user.language && ['en', 'fr', 'es', 'zh'].includes(user.language)) 
+        ? (user.language as 'en' | 'fr' | 'es' | 'zh')
+        : 'en';
+      
+      const templates = getEmailTemplates(userLanguage);
+      const emailTemplates = templates.bookingNotification;
+      
+      const formattedDate = formatDateForLocale(appointmentDateTime, userLanguage);
+      const actionMessage = settings.requireApproval 
+        ? emailTemplates.actionPendingApproval 
+        : emailTemplates.actionConfirmed;
+      const statusText = settings.requireApproval 
+        ? emailTemplates.statusPending 
+        : emailTemplates.statusConfirmed;
+
+      const ownerSubject = replaceEmailPlaceholders(emailTemplates.subject, {
+        customerName,
+        date: format(appointmentDateTime, 'MMM dd, yyyy'),
+        time: appointmentTime,
+      });
+      
       const ownerHtml = `
         <!DOCTYPE html>
         <html>
@@ -230,48 +253,48 @@ export async function POST(
         </head>
         <body>
           <div class="header">
-            <h1>📅 New Booking Received</h1>
-            <p>You have a new appointment scheduled</p>
+            <h1>${emailTemplates.headerTitle}</h1>
+            <p>${emailTemplates.headerSubtitle}</p>
           </div>
 
           <div class="booking-details">
             <div class="detail-row">
-              <span class="label">Customer:</span> ${customerName}
+              <span class="label">${emailTemplates.customerLabel}</span> ${customerName}
             </div>
             <div class="detail-row">
-              <span class="label">Email:</span> ${customerEmail}
+              <span class="label">${emailTemplates.emailLabel}</span> ${customerEmail}
             </div>
             ${customerPhone ? `
             <div class="detail-row">
-              <span class="label">Phone:</span> ${customerPhone}
+              <span class="label">${emailTemplates.phoneLabel}</span> ${customerPhone}
             </div>
             ` : ''}
             <div class="detail-row">
-              <span class="label">Date:</span> ${format(appointmentDateTime, 'EEEE, MMMM dd, yyyy')}
+              <span class="label">${emailTemplates.dateLabel}</span> ${formattedDate}
             </div>
             <div class="detail-row">
-              <span class="label">Time:</span> ${appointmentTime}
+              <span class="label">${emailTemplates.timeLabel}</span> ${appointmentTime}
             </div>
             <div class="detail-row">
-              <span class="label">Duration:</span> ${slotDuration} minutes
+              <span class="label">${emailTemplates.durationLabel}</span> ${slotDuration} minutes
             </div>
             ${notes ? `
             <div class="detail-row">
-              <span class="label">Notes:</span> ${notes}
+              <span class="label">${emailTemplates.notesLabel}</span> ${notes}
             </div>
             ` : ''}
             <div class="detail-row">
-              <span class="label">Confirmation Code:</span> ${confirmationCode}
+              <span class="label">${emailTemplates.confirmationCodeLabel}</span> ${confirmationCode}
             </div>
             <div class="detail-row">
-              <span class="label">Status:</span> ${settings.requireApproval ? 'Pending Approval' : 'Confirmed'}
+              <span class="label">${emailTemplates.statusLabel}</span> ${statusText}
             </div>
           </div>
 
-          <p><strong>Action Required:</strong> ${settings.requireApproval ? 'Please review and approve this appointment request.' : 'The customer has been notified of the confirmed appointment.'}</p>
+          <p>${replaceEmailPlaceholders(emailTemplates.actionRequired, { message: actionMessage })}</p>
 
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #888; font-size: 12px; text-align: center;">
-            <p>Powered by Soshogle AI Agents</p>
+            <p>${emailTemplates.footerPoweredBy}</p>
           </div>
         </body>
         </html>

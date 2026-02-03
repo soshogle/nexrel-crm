@@ -6,6 +6,7 @@
 import { prisma } from '@/lib/db';
 import sgMail from '@sendgrid/mail';
 import { CallSummaryExtractor } from '@/lib/call-summary-extractor';
+import { getEmailTemplates, replaceEmailPlaceholders, formatDateForLocale } from '@/lib/email-templates';
 
 interface EmailOptions {
   to: string;
@@ -713,14 +714,31 @@ ${recordingUrl ? `RECORDING: ${recordingUrl}` : ''}
   }): Promise<boolean> {
     const { recipientEmail, customerName, appointmentDate, appointmentTime, businessName, confirmationCode, userId } = params;
 
-    const formattedDate = appointmentDate.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    // Get user's language preference
+    let userLanguage: 'en' | 'fr' | 'es' | 'zh' = 'en';
+    if (userId) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { language: true },
+        });
+        if (user?.language && ['en', 'fr', 'es', 'zh'].includes(user.language)) {
+          userLanguage = user.language as 'en' | 'fr' | 'es' | 'zh';
+        }
+      } catch (error) {
+        console.error('Error fetching user language:', error);
+      }
+    }
 
-    const subject = `✅ Appointment Confirmed - ${formattedDate} at ${appointmentTime}`;
+    const templates = getEmailTemplates(userLanguage);
+    const emailTemplates = templates.appointmentConfirmation;
+
+    const formattedDate = formatDateForLocale(appointmentDate, userLanguage);
+
+    const subject = replaceEmailPlaceholders(emailTemplates.subject, {
+      date: formattedDate,
+      time: appointmentTime,
+    });
 
     const html = `
       <!DOCTYPE html>
@@ -781,38 +799,38 @@ ${recordingUrl ? `RECORDING: ${recordingUrl}` : ''}
       <body>
         <div class="header">
           <div class="checkmark">✅</div>
-          <h1>Appointment Confirmed!</h1>
-          <p>We look forward to seeing you</p>
+          <h1>${emailTemplates.headerTitle}</h1>
+          <p>${emailTemplates.headerSubtitle}</p>
         </div>
 
-        <p>Hello ${customerName},</p>
-        <p>Your appointment with <strong>${businessName}</strong> has been confirmed.</p>
+        <p>${replaceEmailPlaceholders(emailTemplates.greeting, { customerName })}</p>
+        <p>${replaceEmailPlaceholders(emailTemplates.confirmedMessage, { businessName })}</p>
 
         <div class="appointment-details">
           <div class="detail-row">
-            <span class="label">📅 Date:</span> ${formattedDate}
+            <span class="label">${emailTemplates.dateLabel}</span> ${formattedDate}
           </div>
           <div class="detail-row">
-            <span class="label">🕐 Time:</span> ${appointmentTime}
+            <span class="label">${emailTemplates.timeLabel}</span> ${appointmentTime}
           </div>
           <div class="detail-row">
-            <span class="label">👤 Name:</span> ${customerName}
+            <span class="label">${emailTemplates.nameLabel}</span> ${customerName}
           </div>
         </div>
 
         ${confirmationCode ? `
           <div class="confirmation-code">
-            <p style="margin: 0 0 10px 0; color: #065f46;"><strong>Confirmation Code</strong></p>
+            <p style="margin: 0 0 10px 0; color: #065f46;"><strong>${emailTemplates.confirmationCodeLabel}</strong></p>
             <div class="code">${confirmationCode}</div>
           </div>
         ` : ''}
 
-        <p><strong>Important:</strong> Please arrive 5-10 minutes early for your appointment.</p>
-        <p>If you need to reschedule or cancel, please contact us as soon as possible.</p>
+        <p>${emailTemplates.importantNote}</p>
+        <p>${emailTemplates.rescheduleNote}</p>
 
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #888; font-size: 12px; text-align: center;">
-          <p>Thank you for choosing ${businessName}</p>
-          <p>Powered by Soshogle AI Agents</p>
+          <p>${replaceEmailPlaceholders(emailTemplates.footerThankYou, { businessName })}</p>
+          <p>${emailTemplates.footerPoweredBy}</p>
         </div>
       </body>
       </html>

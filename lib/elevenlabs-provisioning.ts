@@ -209,8 +209,15 @@ class ElevenLabsProvisioningService {
 
       console.log('🤖 Creating ElevenLabs agent:', options.name);
 
+      // Fetch user's language preference
+      const user = await prisma.user.findUnique({
+        where: { id: options.userId },
+        select: { language: true },
+      });
+      const userLanguage = user?.language || options.language || 'en';
+
       // Build the system prompt with business context
-      const systemPrompt = options.systemPrompt || this.buildDefaultPrompt(options);
+      const systemPrompt = options.systemPrompt || this.buildDefaultPrompt(options, userLanguage);
       
       // Build the greeting message
       const greetingMessage = options.greetingMessage || 
@@ -317,7 +324,7 @@ class ElevenLabsProvisioningService {
               prompt: systemPrompt,
             },
             first_message: greetingMessage, // REQUIRED for conversations to start
-            language: options.language || 'en',
+            language: userLanguage, // Use user's language preference
           },
           tts: {
             voice_id: options.voiceId || 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
@@ -441,8 +448,15 @@ class ElevenLabsProvisioningService {
 
       console.log('🔧 Updating ElevenLabs agent configuration:', agentId);
 
+      // Fetch user's language preference
+      const user = await prisma.user.findUnique({
+        where: { id: options.userId },
+        select: { language: true },
+      });
+      const userLanguage = user?.language || options.language || 'en';
+
       // Build the system prompt with business context
-      const systemPrompt = options.systemPrompt || this.buildDefaultPrompt(options);
+      const systemPrompt = options.systemPrompt || this.buildDefaultPrompt(options, userLanguage);
       
       // Build the greeting message
       const greetingMessage = options.greetingMessage || 
@@ -544,7 +558,7 @@ class ElevenLabsProvisioningService {
               prompt: systemPrompt,
             },
             first_message: greetingMessage, // REQUIRED for conversations to start
-            language: options.language || 'en',
+            language: userLanguage, // Use user's language preference
           },
           tts: {
             voice_id: options.voiceId || 'EXAVITQu4vr4xnSDxMaL',
@@ -1044,13 +1058,24 @@ class ElevenLabsProvisioningService {
   /**
    * Build a default system prompt with business context
    */
-  private buildDefaultPrompt(options: CreateAgentOptions): string {
+  private buildDefaultPrompt(options: CreateAgentOptions, userLanguage: string = 'en'): string {
     const industry = options.businessIndustry || 'business';
     const knowledgeBase = options.knowledgeBase 
       ? `\n\nCompany Information:\n${options.knowledgeBase}`
       : '';
 
-    return `You are a professional AI assistant representing ${options.businessName}, a ${industry} company.
+    // Language instruction based on user preference
+    const languageInstructions: Record<string, string> = {
+      'en': 'IMPORTANT: Respond in English. All your responses must be in English.',
+      'fr': 'IMPORTANT: Répondez en français. Toutes vos réponses doivent être en français.',
+      'es': 'IMPORTANTE: Responde en español. Todas tus respuestas deben ser en español.',
+      'zh': '重要提示：请用中文回复。您的所有回复必须使用中文。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+
+    return `${languageInstruction}
+
+You are a professional AI assistant representing ${options.businessName}, a ${industry} company.
 
 Your role is to:
 - Answer questions about ${options.businessName}

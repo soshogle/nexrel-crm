@@ -47,6 +47,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface Agent {
   id: string;
@@ -100,6 +101,8 @@ const PROFESSION_LABELS: Record<string, string> = {
 };
 
 export function DocpenAgentSettings() {
+  const t = useTranslations('toasts.docpen');
+  const tPlaceholders = useTranslations('placeholders.select');
   const [agents, setAgents] = useState<Agent[]>([]);
   const [languages, setLanguages] = useState<Language[]>([]);
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -132,7 +135,7 @@ export function DocpenAgentSettings() {
       setAgents(data.agents || []);
       setLanguages(data.languages || []);
     } catch (error) {
-      toast.error('Failed to load agents');
+      toast.error(t('agentsLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -178,11 +181,11 @@ export function DocpenAgentSettings() {
 
       if (!response.ok) throw new Error('Failed to update agent');
 
-      toast.success('Agent updated successfully');
+      toast.success(t('agentUpdated'));
       setEditingAgent(null);
       fetchAgents();
     } catch (error) {
-      toast.error('Failed to update agent');
+      toast.error(t('agentUpdateFailed'));
     } finally {
       setSaving(false);
     }
@@ -203,7 +206,7 @@ export function DocpenAgentSettings() {
       const result = await response.json();
       
       if (result.success) {
-        toast.success(`Updated ${result.updated} of ${result.total} agents successfully!`);
+        toast.success(t('agentsUpdated', { updated: result.updated, total: result.total }));
         if (result.errors && result.errors.length > 0) {
           console.warn('Some agents had errors:', result.errors);
         }
@@ -211,7 +214,7 @@ export function DocpenAgentSettings() {
         throw new Error(result.error || 'Update failed');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update agent functions');
+      toast.error(error.message || t('agentFunctionsUpdateFailed'));
     } finally {
       setUpdatingFunctions(false);
     }
@@ -227,11 +230,11 @@ export function DocpenAgentSettings() {
 
       if (!response.ok) throw new Error('Failed to delete agent');
 
-      toast.success('Agent deleted');
+      toast.success(t('agentDeleted'));
       setDeleteAgent(null);
       fetchAgents();
     } catch (error) {
-      toast.error('Failed to delete agent');
+      toast.error(t('agentDeleteFailed'));
     }
   };
 
@@ -388,7 +391,7 @@ export function DocpenAgentSettings() {
                 onValueChange={val => setEditForm(f => ({ ...f, language: val }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select language" />
+                  <SelectValue placeholder={tPlaceholders('language')} />
                 </SelectTrigger>
                 <SelectContent>
                   {languages.map(lang => (
@@ -408,7 +411,7 @@ export function DocpenAgentSettings() {
                 onValueChange={val => setEditForm(f => ({ ...f, voiceId: val }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select voice" />
+                  <SelectValue placeholder={tPlaceholders('voice')} />
                 </SelectTrigger>
                 <SelectContent>
                   {voices.map(voice => (

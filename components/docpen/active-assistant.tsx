@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface Message {
   id: string;
@@ -29,6 +30,7 @@ export function ActiveAssistant({
   isActive,
   onActivationChange,
 }: ActiveAssistantProps) {
+  const tPlaceholders = useTranslations('placeholders.input');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -256,7 +258,7 @@ export function ActiveAssistant({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={isListening ? 'Listening...' : 'Ask Docpen...'}
+            placeholder={isListening ? tPlaceholders('listening') : tPlaceholders('askDocpen')}
             disabled={isLoading || isListening}
             className="flex-1"
           />
