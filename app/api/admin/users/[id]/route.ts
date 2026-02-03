@@ -77,7 +77,18 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { industry, accountStatus, suspendedReason, trialEndsAt } = body;
+    const { industry, accountStatus, suspendedReason, trialEndsAt, language } = body;
+
+    // Validate language if provided
+    if (language) {
+      const supportedLanguages = ['en', 'fr', 'es', 'zh'];
+      if (!supportedLanguages.includes(language)) {
+        return NextResponse.json(
+          { error: 'Unsupported language. Supported: en, fr, es, zh' },
+          { status: 400 }
+        );
+      }
+    }
 
     // Update user
     const user = await prisma.user.update({
@@ -91,6 +102,7 @@ export async function PATCH(
         }),
         ...(suspendedReason !== undefined && { suspendedReason }),
         ...(trialEndsAt && { trialEndsAt: new Date(trialEndsAt) }),
+        ...(language && { language }),
       },
       include: {
         subscription: true,
