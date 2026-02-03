@@ -71,31 +71,74 @@ class DocpenAgentProvisioning {
       });
 
       if (existingAgent) {
-        console.log(`🎙️ [Docpen] Found existing agent for ${professionKey}: ${existingAgent.elevenLabsAgentId}`);
+        console.log(`🎙️ [Docpen] Found existing agent in database: ${existingAgent.elevenLabsAgentId}`);
         
-        // Automatically update agent functions in the background (non-blocking)
-        // This ensures agents created before API migrations get updated automatically
-        // No user action required - happens silently in the background
-        this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId)
-          .then(success => {
-            if (success) {
-              console.log(`✅ [Docpen] Auto-updated agent ${existingAgent.elevenLabsAgentId} with latest function configurations`);
+        // CRITICAL: Verify agent actually exists in ElevenLabs before reusing
+        const apiKey = await this.getApiKey(config.userId);
+        if (apiKey) {
+          try {
+            const verifyResponse = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${existingAgent.elevenLabsAgentId}`, {
+              headers: { 'xi-api-key': apiKey },
+            });
+            
+            if (verifyResponse.status === 404) {
+              console.warn(`⚠️ [Docpen] Agent ${existingAgent.elevenLabsAgentId} NOT FOUND in ElevenLabs (404) - marking inactive and creating new one`);
+              // Mark as inactive and create a new agent
+              await prisma.docpenVoiceAgent.update({
+                where: { id: existingAgent.id },
+                data: { isActive: false },
+              });
+              // Continue to create new agent below
+            } else if (!verifyResponse.ok) {
+              console.warn(`⚠️ [Docpen] Failed to verify agent (${verifyResponse.status}) - creating new one anyway`);
+              await prisma.docpenVoiceAgent.update({
+                where: { id: existingAgent.id },
+                data: { isActive: false },
+              });
+              // Continue to create new agent below
+            } else {
+              // Agent exists in ElevenLabs - reuse it
+              console.log(`✅ [Docpen] Verified agent ${existingAgent.elevenLabsAgentId} exists in ElevenLabs - reusing`);
+              
+              // Automatically update agent functions in the background (non-blocking)
+              this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId)
+                .then(success => {
+                  if (success) {
+                    console.log(`✅ [Docpen] Auto-updated agent ${existingAgent.elevenLabsAgentId} with latest function configurations`);
+                  }
+                })
+                .catch(err => {
+                  console.warn(`⚠️ [Docpen] Failed to auto-update agent functions (non-critical):`, err.message);
+                });
+              
+              // Update session context if provided
+              if (config.sessionContext) {
+                await this.updateAgentContext(existingAgent.elevenLabsAgentId, config);
+              }
+              
+              return {
+                success: true,
+                agentId: existingAgent.elevenLabsAgentId,
+              };
             }
-          })
-          .catch(err => {
-            // Non-critical - agent will still work, just might have old function URLs
-            console.warn(`⚠️ [Docpen] Failed to auto-update agent functions (non-critical):`, err.message);
-          });
-        
-        // Update session context if provided
-        if (config.sessionContext) {
-          await this.updateAgentContext(existingAgent.elevenLabsAgentId, config);
+          } catch (verifyError: any) {
+            console.error(`❌ [Docpen] Error verifying agent:`, verifyError.message);
+            // On error, mark inactive and create new one to be safe
+            await prisma.docpenVoiceAgent.update({
+              where: { id: existingAgent.id },
+              data: { isActive: false },
+            }).catch(() => {}); // Ignore update errors
+            // Continue to create new agent below
+          }
+        } else {
+          console.warn(`⚠️ [Docpen] No API key available to verify agent - creating new one`);
+          // No API key - mark inactive and create new
+          await prisma.docpenVoiceAgent.update({
+            where: { id: existingAgent.id },
+            data: { isActive: false },
+          }).catch(() => {}); // Ignore update errors
+          // Continue to create new agent below
         }
-        
-        return {
-          success: true,
-          agentId: existingAgent.elevenLabsAgentId,
-        };
       }
 
       // Create new agent
