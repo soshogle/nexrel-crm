@@ -65,12 +65,29 @@ export async function GET(request: NextRequest) {
         message: 'Database is reachable',
       });
     } catch (error: any) {
+      // Include DATABASE_URL info in the error for debugging
+      const errorDetails = {
+        message: error.message,
+        code: error.code,
+        meta: error.meta,
+        databaseUrlPreview: databaseUrl ? `${databaseUrl.substring(0, 30)}...${databaseUrl.substring(databaseUrl.length - 20)}` : 'NOT SET',
+        databaseUrlContainsHost: databaseUrl?.includes('host:5432') || false,
+        databaseUrlContainsNeon: databaseUrl?.includes('neon.tech') || false,
+      };
+      
       results.checks.push({
         name: 'Database Connection',
         status: 'failed',
         error: error.message,
+        errorDetails: errorDetails,
       });
       results.errors.push(`Database connection failed: ${error.message}`);
+      results.errors.push(`DATABASE_URL being used: ${databaseUrl ? 'SET' : 'NOT SET'}`);
+      if (databaseUrl) {
+        results.errors.push(`DATABASE_URL preview: ${databaseUrl.substring(0, 50)}...`);
+        results.errors.push(`Contains 'host:5432': ${databaseUrl.includes('host:5432')}`);
+        results.errors.push(`Contains 'neon.tech': ${databaseUrl.includes('neon.tech')}`);
+      }
     }
   } else {
     results.checks.push({
