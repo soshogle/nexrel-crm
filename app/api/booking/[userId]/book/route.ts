@@ -112,6 +112,7 @@ export async function POST(
         name: true,
         email: true,
         businessCategory: true,
+        language: true,
       },
     });
 
