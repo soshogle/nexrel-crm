@@ -79,6 +79,12 @@ export function VoiceAssistant({
    */
   const initializeAgent = async (): Promise<string | null> => {
     try {
+      console.log('🚀 [Docpen] Initializing agent with:', {
+        profession,
+        customProfession,
+        sessionContext: { patientName, chiefComplaint, sessionId },
+      });
+
       const response = await fetch('/api/docpen/voice-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -93,15 +99,31 @@ export function VoiceAssistant({
         }),
       });
 
+      console.log('📥 [Docpen] Agent initialization response status:', response.status);
+
       if (!response.ok) {
         const error = await response.json();
+        console.error('❌ [Docpen] Agent initialization failed:', error);
         throw new Error(error.error || 'Failed to initialize agent');
       }
 
       const data = await response.json();
+      console.log('✅ [Docpen] Agent initialization success:', data);
+      console.log('📝 [Docpen] Agent ID received:', data.agentId);
+      
+      if (!data.agentId) {
+        console.error('❌ [Docpen] No agentId in response:', data);
+        throw new Error('Agent ID not returned from server');
+      }
+
       return data.agentId;
     } catch (err: any) {
-      console.error('[Docpen] Failed to initialize agent:', err);
+      console.error('❌ [Docpen] Failed to initialize agent:', err);
+      console.error('   Error details:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
+      });
       setError(err.message);
       toast.error(err.message || t('voiceAgentInitFailed'));
       return null;
