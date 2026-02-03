@@ -333,7 +333,7 @@ export function VoiceAssistant({
       const source = audioContextRef.current.createMediaStreamSource(stream);
       const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
 
-      // Step 5: Connect WebSocket
+      // Step 5: Connect WebSocket  
       console.log('🔗 [Docpen] Connecting WebSocket...');
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
