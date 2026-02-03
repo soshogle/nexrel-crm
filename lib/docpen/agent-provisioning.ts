@@ -229,6 +229,64 @@ class DocpenAgentProvisioning {
   }
 
   /**
+   * Update existing agent with latest function configurations
+   * This is needed after API migrations to ensure agents use correct endpoints
+   */
+  async updateAgentFunctions(agentId: string, userId: string): Promise<boolean> {
+    const apiKey = await this.getApiKey(userId);
+    if (!apiKey) {
+      console.error('❌ [Docpen] No API key available for updating agent functions');
+      return false;
+    }
+
+    try {
+      // Get current agent config from ElevenLabs
+      const getResponse = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${agentId}`, {
+        headers: {
+          'xi-api-key': apiKey,
+        },
+      });
+
+      if (!getResponse.ok) {
+        throw new Error(`Failed to fetch agent: ${getResponse.statusText}`);
+      }
+
+      const currentAgent = await getResponse.json();
+      
+      // Update with latest function configurations
+      const medicalFunctions = this.buildMedicalFunctions();
+      
+      const updatePayload = {
+        ...currentAgent,
+        tools: medicalFunctions.map(func => ({
+          type: 'function',
+          function: func,
+        })),
+      };
+
+      const updateResponse = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${agentId}`, {
+        method: 'PATCH',
+        headers: {
+          'xi-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatePayload),
+      });
+
+      if (!updateResponse.ok) {
+        const error = await updateResponse.text();
+        throw new Error(`Failed to update agent: ${error}`);
+      }
+
+      console.log(`✅ [Docpen] Updated agent ${agentId} with latest function configurations`);
+      return true;
+    } catch (error: any) {
+      console.error(`❌ [Docpen] Failed to update agent functions:`, error);
+      return false;
+    }
+  }
+
+  /**
    * Get signed WebSocket URL for voice conversation
    */
   async getSignedWebSocketUrl(
@@ -311,9 +369,19 @@ Use these for any time-sensitive responses.`;
   }
 
   /**
+   * Get the function server URL for Docpen agents
+   */
+  private getFunctionServerUrl(): string {
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://www.nexrel.soshogle.com';
+    return `${baseUrl}/api/docpen/voice-agent/functions`;
+  }
+
+  /**
    * Build medical assistant custom functions
    */
   private buildMedicalFunctions() {
+    const serverUrl = this.getFunctionServerUrl();
+    
     return [
       {
         name: 'lookup_patient_history',
@@ -333,6 +401,7 @@ Use these for any time-sensitive responses.`;
           },
           required: ['patientName'],
         },
+        server_url: serverUrl,
       },
       {
         name: 'check_drug_interaction',
@@ -356,6 +425,7 @@ Use these for any time-sensitive responses.`;
           },
           required: ['drug1', 'drug2'],
         },
+        server_url: serverUrl,
       },
       {
         name: 'medical_reference_lookup',
@@ -375,6 +445,7 @@ Use these for any time-sensitive responses.`;
           },
           required: ['query'],
         },
+        server_url: serverUrl,
       },
       {
         name: 'suggest_soap_content',
@@ -394,6 +465,7 @@ Use these for any time-sensitive responses.`;
           },
           required: ['section'],
         },
+        server_url: serverUrl,
       },
     ];
   }
