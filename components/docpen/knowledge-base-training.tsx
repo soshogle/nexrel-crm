@@ -49,6 +49,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface Agent {
   id: string;
@@ -98,6 +99,7 @@ const PROFESSION_LABELS: Record<string, string> = {
 };
 
 export function DocpenKnowledgeBaseTraining() {
+  const tPlaceholders = useTranslations('placeholders');
   const [files, setFiles] = useState<KnowledgeBaseFile[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -305,7 +307,7 @@ export function DocpenKnowledgeBaseTraining() {
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search files..."
+            placeholder={tPlaceholders('input.searchFiles')}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -317,7 +319,7 @@ export function DocpenKnowledgeBaseTraining() {
         }}>
           <SelectTrigger className="w-[200px]">
             <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="All Specialties" />
+            <SelectValue placeholder={tPlaceholders('select.allSpecialties')} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Specialties</SelectItem>
@@ -459,7 +461,7 @@ export function DocpenKnowledgeBaseTraining() {
                 onValueChange={val => setUploadForm(f => ({ ...f, specialty: val === 'none' ? '' : val }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select specialty" />
+                  <SelectValue placeholder={tPlaceholders('select.specialty')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
@@ -490,7 +492,7 @@ export function DocpenKnowledgeBaseTraining() {
                 onValueChange={val => setUploadForm(f => ({ ...f, agentId: val === 'none' ? '' : val }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select agent" />
+                  <SelectValue placeholder={tPlaceholders('select.agent')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>

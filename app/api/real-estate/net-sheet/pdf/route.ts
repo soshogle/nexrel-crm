@@ -5,6 +5,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { chromium } from 'playwright';
+import { formatDateForLocale } from '@/lib/email-templates';
+import enMessages from '@/messages/en.json';
+import frMessages from '@/messages/fr.json';
+import esMessages from '@/messages/es.json';
+import zhMessages from '@/messages/zh.json';
+
+const pdfMessages = {
+  en: enMessages,
+  fr: frMessages,
+  es: esMessages,
+  zh: zhMessages,
+};
 
 interface NetSheetData {
   propertyAddress?: string;
@@ -33,15 +45,21 @@ interface NetSheetData {
   agentBrokerage?: string;
 }
 
-function generateNetSheetHTML(data: NetSheetData): string {
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+function generateNetSheetHTML(data: NetSheetData, locale: 'en' | 'fr' | 'es' | 'zh' = 'en'): string {
+  const messages = pdfMessages[locale] || pdfMessages.en;
+  const t = messages.pdfs?.netSheet || pdfMessages.en.pdfs.netSheet;
 
+  const currentDate = formatDateForLocale(new Date(), locale);
+
+  // Format currency based on locale
+  const localeMap: Record<string, string> = {
+    en: 'en-US',
+    fr: 'fr-FR',
+    es: 'es-ES',
+    zh: 'zh-CN',
+  };
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+    new Intl.NumberFormat(localeMap[locale] || 'en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
 
   return `
 <!DOCTYPE html>
@@ -49,7 +67,7 @@ function generateNetSheetHTML(data: NetSheetData): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Seller Net Sheet</title>
+  <title>${t.title}</title>
   <style>
     * {
       margin: 0;
@@ -222,8 +240,8 @@ function generateNetSheetHTML(data: NetSheetData): string {
 <body>
   <div class="container">
     <div class="header">
-      <h1>Seller Net Sheet</h1>
-      <p class="subtitle">Estimated Proceeds from Sale</p>
+      <h1>${t.title}</h1>
+      <p class="subtitle">${t.subtitle}</p>
       ${data.propertyAddress ? `
       <div class="property-info">
         <div class="address">${data.propertyAddress}</div>
@@ -235,43 +253,43 @@ function generateNetSheetHTML(data: NetSheetData): string {
     <div class="content">
       <!-- Sale Information -->
       <div class="section">
-        <div class="section-title">Sale Information</div>
+        <div class="section-title">${t.saleInformation}</div>
         <div class="line-item">
-          <span class="label">Sale Price</span>
+          <span class="label">${t.salePrice}</span>
           <span class="value">${formatCurrency(data.salePrice)}</span>
         </div>
         <div class="line-item">
-          <span class="label">Commission Rate</span>
+          <span class="label">${t.commissionRate}</span>
           <span class="value">${data.commissionRate}%</span>
         </div>
       </div>
 
       <!-- Closing Costs -->
       <div class="section">
-        <div class="section-title">Closing Costs</div>
+        <div class="section-title">${t.closingCosts}</div>
         <div class="line-item">
-          <span class="label">Real Estate Commission</span>
+          <span class="label">${t.realEstateCommission}</span>
           <span class="value negative">-${formatCurrency(data.closingCosts.commission)}</span>
         </div>
         <div class="line-item">
-          <span class="label">Transfer Tax</span>
+          <span class="label">${t.transferTax}</span>
           <span class="value negative">-${formatCurrency(data.closingCosts.transferTax)}</span>
         </div>
         <div class="line-item">
-          <span class="label">Title Insurance</span>
+          <span class="label">${t.titleInsurance}</span>
           <span class="value negative">-${formatCurrency(data.closingCosts.titleInsurance)}</span>
         </div>
         <div class="line-item">
-          <span class="label">Escrow Fee</span>
+          <span class="label">${t.escrowFee}</span>
           <span class="value negative">-${formatCurrency(data.closingCosts.escrowFee)}</span>
         </div>
         <div class="line-item">
-          <span class="label">Recording Fees</span>
+          <span class="label">${t.recordingFees}</span>
           <span class="value negative">-${formatCurrency(data.closingCosts.recordingFees)}</span>
         </div>
         <div class="subtotal">
           <div class="line-item">
-            <span class="label">Total Closing Costs</span>
+            <span class="label">${t.totalClosingCosts}</span>
             <span class="value negative">-${formatCurrency(data.closingCosts.total)}</span>
           </div>
         </div>
@@ -279,22 +297,22 @@ function generateNetSheetHTML(data: NetSheetData): string {
 
       <!-- Prepaid Items -->
       <div class="section">
-        <div class="section-title">Prepaid Items & Prorations</div>
+        <div class="section-title">${t.prepaidItems}</div>
         <div class="line-item">
-          <span class="label">Property Tax Proration</span>
+          <span class="label">${t.propertyTaxProration}</span>
           <span class="value negative">-${formatCurrency(data.prepaidItems.propertyTaxProration)}</span>
         </div>
         <div class="line-item">
-          <span class="label">HOA Proration</span>
+          <span class="label">${t.hoaProration}</span>
           <span class="value negative">-${formatCurrency(data.prepaidItems.hoaProration)}</span>
         </div>
         <div class="line-item">
-          <span class="label">Home Warranty (Optional)</span>
+          <span class="label">${t.homeWarranty}</span>
           <span class="value negative">-${formatCurrency(data.prepaidItems.homeWarranty)}</span>
         </div>
         <div class="subtotal">
           <div class="line-item">
-            <span class="label">Total Prepaid Items</span>
+            <span class="label">${t.totalPrepaidItems}</span>
             <span class="value negative">-${formatCurrency(data.prepaidItems.total)}</span>
           </div>
         </div>
@@ -302,18 +320,18 @@ function generateNetSheetHTML(data: NetSheetData): string {
 
       <!-- Mortgage Payoff -->
       <div class="section">
-        <div class="section-title">Mortgage Payoff</div>
+        <div class="section-title">${t.mortgagePayoff}</div>
         <div class="line-item">
-          <span class="label">Existing Mortgage Balance</span>
+          <span class="label">${t.existingMortgageBalance}</span>
           <span class="value negative">-${formatCurrency(data.mortgageBalance)}</span>
         </div>
       </div>
 
       <!-- Summary -->
       <div class="summary-box">
-        <div class="summary-title">Estimated Net Proceeds</div>
+        <div class="summary-title">${t.estimatedNetProceeds}</div>
         <div class="summary-amount">${formatCurrency(data.estimatedProceeds)}</div>
-        <div class="summary-note">This is an estimate. Actual proceeds may vary based on final closing figures.</div>
+        <div class="summary-note">${t.summaryNote}</div>
       </div>
     </div>
 
@@ -326,14 +344,12 @@ function generateNetSheetHTML(data: NetSheetData): string {
           ${data.agentPhone ? `<p>${data.agentPhone}</p>` : ''}
         </div>
         <div class="date-info">
-          <div class="label">Prepared On</div>
+          <div class="label">${t.preparedOn}</div>
           <div class="date">${currentDate}</div>
         </div>
       </div>
       <div class="disclaimer">
-        <strong>Disclaimer:</strong> This Seller Net Sheet is an estimate only and is not a guarantee of actual proceeds.
-        Actual costs may vary based on final contract terms, title company fees, and other factors.
-        Please consult with your real estate professional for accurate figures.
+        <strong>${t.disclaimer}</strong> ${t.disclaimerText}
       </div>
     </div>
   </div>
@@ -359,7 +375,22 @@ export async function POST(request: NextRequest) {
       data.agentEmail = session.user.email;
     }
 
-    const htmlContent = generateNetSheetHTML(data);
+    // Get user's language preference
+    let userLanguage: 'en' | 'fr' | 'es' | 'zh' = 'en';
+    try {
+      const { prisma } = await import('@/lib/db');
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { language: true },
+      });
+      if (user?.language && ['en', 'fr', 'es', 'zh'].includes(user.language)) {
+        userLanguage = user.language as 'en' | 'fr' | 'es' | 'zh';
+      }
+    } catch (error) {
+      console.error('Error fetching user language:', error);
+    }
+
+    const htmlContent = generateNetSheetHTML(data, userLanguage);
 
     // Generate PDF using Playwright
     console.log('[Net Sheet PDF] Generating PDF with Playwright...');

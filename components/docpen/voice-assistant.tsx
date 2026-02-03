@@ -21,6 +21,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import type { DocpenProfessionType } from '@/lib/docpen/prompts';
 
 interface VoiceMessage {
@@ -47,6 +48,7 @@ export function VoiceAssistant({
   chiefComplaint,
   onTranscript,
 }: VoiceAssistantProps) {
+  const t = useTranslations('toasts.docpen');
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isMicEnabled, setIsMicEnabled] = useState(true);
@@ -101,7 +103,7 @@ export function VoiceAssistant({
     } catch (err: any) {
       console.error('[Docpen] Failed to initialize agent:', err);
       setError(err.message);
-      toast.error(err.message || 'Failed to initialize voice agent');
+      toast.error(err.message || t('voiceAgentInitFailed'));
       return null;
     }
   };
@@ -156,32 +158,68 @@ export function VoiceAssistant({
    */
   const playAudioChunk = async (base64Audio: string) => {
     try {
-      if (audioContextRef.current?.state === 'suspended') {
+      if (!base64Audio || base64Audio.length === 0) {
+        console.warn('⚠️ [Docpen] Empty audio chunk received');
+        return;
+      }
+
+      if (!audioContextRef.current) {
+        console.warn('⚠️ [Docpen] Audio context not initialized, creating new one');
+        audioContextRef.current = new AudioContext();
+      }
+
+      if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
         console.log('🔊 [Docpen] Audio context resumed');
       }
 
+      if (audioContextRef.current.state === 'closed') {
+        console.warn('⚠️ [Docpen] Audio context is closed, creating new one');
+        audioContextRef.current = new AudioContext();
+      }
+
+      console.log('🔊 [Docpen] Decoding audio chunk, length:', base64Audio.length);
       const binaryString = atob(base64Audio);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
+      console.log('🔊 [Docpen] Audio bytes decoded, size:', bytes.length, 'bytes');
+
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         try {
+          // Create a copy to avoid buffer detachment issues
           const audioData = bytes.buffer.slice(0);
+          console.log('🔊 [Docpen] Decoding audio data...');
           const audioBuffer = await audioContextRef.current.decodeAudioData(audioData);
+          console.log('✅ [Docpen] Audio decoded successfully, duration:', audioBuffer.duration, 'seconds');
+          
           const source = audioContextRef.current.createBufferSource();
           source.buffer = audioBuffer;
           source.connect(audioContextRef.current.destination);
+          
+          source.onended = () => {
+            console.log('✅ [Docpen] Audio chunk playback finished');
+          };
+          
           source.start();
-          console.log('✅ [Docpen] Audio chunk played');
-        } catch (decodeError) {
-          console.warn('⚠️ [Docpen] Failed to decode audio:', decodeError);
+          console.log('✅ [Docpen] Audio chunk playback started');
+        } catch (decodeError: any) {
+          console.error('❌ [Docpen] Failed to decode audio:', decodeError);
+          console.error('❌ [Docpen] Error details:', {
+            name: decodeError.name,
+            message: decodeError.message,
+            audioLength: base64Audio.length,
+            audioPreview: base64Audio.substring(0, 50),
+          });
         }
+      } else {
+        console.error('❌ [Docpen] Audio context is not available or closed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [Docpen] Error playing audio:', error);
+      console.error('❌ [Docpen] Error stack:', error.stack);
     }
   };
 
@@ -261,12 +299,14 @@ export function VoiceAssistant({
       mediaStreamRef.current = stream;
       console.log('✅ [Docpen] Microphone access granted');
 
-      // Step 4: Set up audio context
-      audioContextRef.current = new AudioContext({ sampleRate: 16000 });
+      // Step 4: Set up audio context for playback (separate from recording)
+      // Use default sample rate for playback (usually 44100 Hz)
+      audioContextRef.current = new AudioContext();
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
         console.log('🔊 [Docpen] Audio context resumed');
       }
+      console.log('🔊 [Docpen] Audio context created for playback, sample rate:', audioContextRef.current.sampleRate);
 
       const source = audioContextRef.current.createMediaStreamSource(stream);
       const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
@@ -282,7 +322,7 @@ export function VoiceAssistant({
         setIsConnecting(false);
         setConnectionStartTime(new Date());
         setMessages([]);
-        toast.success('Voice assistant connected - Listen for the greeting!');
+        toast.success(t('voiceAssistantConnected'));
         console.log('🎧 [Docpen] Waiting for agent greeting message...');
         console.log('🔊 [Docpen] Speaker enabled:', isSpeakerEnabled);
 
@@ -317,6 +357,14 @@ export function VoiceAssistant({
           const message = JSON.parse(event.data);
           const messageType = message.type || (message.agent_transcript ? 'agent_transcript' : (message.user_transcript ? 'user_transcript' : (message.audio ? 'audio' : 'unknown')));
           console.log('📨 [Docpen] Received:', messageType, message);
+          
+          // Debug: Log all message keys to understand structure
+          if (messageType === 'agent_response' || messageType === 'unknown') {
+            console.log('🔍 [Docpen] Message keys:', Object.keys(message));
+            console.log('🔍 [Docpen] Has audio field?', !!message.audio);
+            console.log('🔍 [Docpen] Has agent_response.audio?', !!message.agent_response?.audio);
+            console.log('🔍 [Docpen] Full message structure:', JSON.stringify(message, null, 2).substring(0, 500));
+          }
 
           // Handle conversation ID
           if (message.conversation_id) {
@@ -354,10 +402,16 @@ export function VoiceAssistant({
 
           // Handle audio response (this is how ElevenLabs sends speech)
           if (message.audio) {
-            console.log('🔊 [Docpen] Received audio chunk from agent');
+            console.log('🔊 [Docpen] Received audio chunk from agent, length:', message.audio?.length || 0);
             setIsAgentSpeaking(true);
             if (isSpeakerEnabled) {
-              playAudioChunk(message.audio);
+              try {
+                await playAudioChunk(message.audio);
+                console.log('✅ [Docpen] Audio chunk played successfully');
+              } catch (audioError) {
+                console.error('❌ [Docpen] Failed to play audio chunk:', audioError);
+                toast.error('Failed to play agent audio. Please check your speaker settings.');
+              }
             } else {
               console.warn('⚠️ [Docpen] Speaker disabled - audio chunk received but not played');
             }
@@ -366,8 +420,17 @@ export function VoiceAssistant({
 
           // Handle agent response (alternative format - text only, no audio)
           if (message.agent_response) {
-            console.log('🤖 [Docpen] Agent response (text):', message.agent_response);
-            const responseText = message.agent_response.text || message.agent_response.message || JSON.stringify(message.agent_response);
+            console.log('🤖 [Docpen] Agent response received:', {
+              hasText: !!message.agent_response.text || !!message.agent_response.message,
+              hasAudio: !!message.audio || !!message.agent_response.audio,
+              responseType: message.agent_response?.event_id ? 'event' : 'direct',
+              fullMessage: message.agent_response,
+            });
+            
+            // Extract text from nested structure if needed
+            const agentResponseData = message.agent_response?.agent_response || message.agent_response;
+            const responseText = agentResponseData?.text || agentResponseData?.message || message.agent_response?.text || message.agent_response?.message || JSON.stringify(message.agent_response);
+            
             const newMsg: VoiceMessage = {
               id: Date.now().toString(),
               role: 'assistant',
@@ -379,9 +442,27 @@ export function VoiceAssistant({
             setIsAgentSpeaking(true);
             setTimeout(() => setIsAgentSpeaking(false), 2000);
             
-            // If agent_response doesn't include audio, log a warning
-            if (!message.audio && !message.agent_response.audio) {
-              console.warn('⚠️ [Docpen] Agent response received but no audio chunk. Agent may be configured to send text only.');
+            // Check if audio is embedded in agent_response structure
+            const embeddedAudio = message.agent_response?.audio || agentResponseData?.audio;
+            if (embeddedAudio) {
+              console.log('🔊 [Docpen] Found embedded audio in agent_response');
+              if (isSpeakerEnabled) {
+                try {
+                  await playAudioChunk(embeddedAudio);
+                  console.log('✅ [Docpen] Embedded audio chunk played successfully');
+                } catch (audioError) {
+                  console.error('❌ [Docpen] Failed to play embedded audio:', audioError);
+                }
+              }
+            }
+            
+            // If agent_response doesn't include audio, log a detailed warning
+            if (!message.audio && !embeddedAudio) {
+              console.warn('⚠️ [Docpen] Agent response received but no audio chunk. This may indicate:');
+              console.warn('   1. Agent is configured to send text-only responses');
+              console.warn('   2. ElevenLabs TTS is not enabled for this agent');
+              console.warn('   3. Audio chunks are being sent separately (check for separate "audio" messages)');
+              console.warn('   4. Audio format might be different - check message structure above');
             }
           }
           
@@ -416,7 +497,7 @@ export function VoiceAssistant({
           // Handle errors
           if (message.type === 'error') {
             console.error('❌ [Docpen] Agent error:', message.message || message.error);
-            toast.error(message.message || message.error || 'Agent error');
+            toast.error(message.message || message.error || t('agentError'));
           }
         } catch (err) {
           console.error('❌ [Docpen] Failed to parse message:', err, event.data);
@@ -435,13 +516,13 @@ export function VoiceAssistant({
         await saveConversation();
         cleanup();
         if (!event.wasClean && event.code !== 1000) {
-          toast.error(`Connection closed (Code: ${event.code})`);
+          toast.error(t('connectionClosed', { code: event.code }));
         }
       };
     } catch (err: any) {
       console.error('❌ [Docpen] Connection failed:', err);
       setError(err.message);
-      toast.error(err.message || 'Failed to connect');
+      toast.error(err.message || t('connectionFailed'));
       setIsConnecting(false);
       cleanup();
     }
@@ -458,7 +539,7 @@ export function VoiceAssistant({
     cleanup();
     setIsConnected(false);
     setConnectionStartTime(null);
-    toast.info('Voice assistant disconnected');
+    toast.info(t('voiceAssistantDisconnected'));
   };
 
   /**

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface DocpenRecorderProps {
   sessionId: string;
@@ -18,6 +19,7 @@ export function DocpenRecorder({
   onRecordingComplete,
   onStatusChange,
 }: DocpenRecorderProps) {
+  const t = useTranslations('toasts.docpen');
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -147,15 +149,15 @@ export function DocpenRecorder({
       // Start audio analysis
       analyzeAudio();
       
-      toast.success('Recording started');
+      toast.success(t('recordingStarted'));
     } catch (error: any) {
       console.error('Error starting recording:', error);
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        toast.error('Microphone access denied. Please allow microphone permissions and try again.');
+        toast.error(t('microphoneAccessDenied'));
       } else if (error.name === 'NotFoundError') {
-        toast.error('No microphone found. Please connect a microphone and try again.');
+        toast.error(t('noMicrophoneFound'));
       } else {
-        toast.error('Could not access microphone. Please check permissions.');
+        toast.error(t('microphoneAccessError'));
       }
     }
   };
@@ -240,15 +242,15 @@ export function DocpenRecorder({
           }
           
           const result = await response.json();
-          toast.success(`Transcribed ${result.segmentCount} segments`);
+          toast.success(t('transcribedSegments', { count: result.segmentCount }));
           onRecordingComplete?.(duration);
         } catch (error: any) {
           console.error('[Docpen Recorder] Error processing recording:', error);
-          let errorMessage = error?.message || 'Failed to process recording';
+          let errorMessage = error?.message || t('transcriptionFailed');
           
           // Normalize any old error messages
           if (errorMessage.includes('Abacus') || errorMessage.includes('ABACUS') || errorMessage.includes('initialize LLM APIs')) {
-            errorMessage = 'OpenAI API key not configured. Please check your Vercel environment variables.';
+            errorMessage = t('openaiKeyNotConfigured');
             console.warn('[Docpen Recorder] ⚠️ Old error format detected - browser cache may be stale. Hard refresh recommended (Cmd+Shift+R).');
           }
           
@@ -256,7 +258,7 @@ export function DocpenRecorder({
           
           // Show hint if API key is missing
           if (errorMessage.includes('OPENAI_API_KEY') || errorMessage.includes('API key') || errorMessage.includes('not configured')) {
-            toast.error('Please configure OPENAI_API_KEY in your Vercel environment variables', { duration: 5000 });
+            toast.error(t('configureOpenaiKey'), { duration: 5000 });
           }
         } finally {
           setIsRecording(false);

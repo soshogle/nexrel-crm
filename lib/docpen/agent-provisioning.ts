@@ -121,6 +121,23 @@ class DocpenAgentProvisioning {
       };
     }
 
+    // Log which API key is being used (for debugging)
+    const apiKeySource = await elevenLabsKeyManager.getAllKeys(config.userId);
+    const isUserKey = apiKeySource.length > 0;
+    const keyLabel = isUserKey 
+      ? apiKeySource.find(k => k.apiKey === apiKey)?.label || 'User API Key'
+      : 'Environment Variable (ELEVENLABS_API_KEY)';
+    
+    console.log(`🔑 [Docpen] Creating agent with API key from: ${keyLabel}`);
+    console.log(`🔑 [Docpen] API key preview: ...${apiKey.slice(-8)}`);
+
+    // Fetch user's language preference
+    const user = await prisma.user.findUnique({
+      where: { id: config.userId },
+      select: { language: true },
+    });
+    const userLanguage = user?.language || 'en';
+
     const professionKey = config.profession === 'CUSTOM' 
       ? 'CUSTOM' 
       : config.profession;
@@ -129,7 +146,7 @@ class DocpenAgentProvisioning {
     const promptTemplate = VOICE_AGENT_PROMPTS[professionKey] || VOICE_AGENT_PROMPTS.GENERAL_PRACTICE;
     
     // Build the full system prompt with context
-    const systemPrompt = this.buildSystemPrompt(promptTemplate, config);
+    const systemPrompt = this.buildSystemPrompt(promptTemplate, config, userLanguage);
     
     // Select voice based on preference
     const voiceId = MEDICAL_VOICE_IDS[config.voiceGender || 'neutral'];
@@ -145,7 +162,7 @@ class DocpenAgentProvisioning {
             prompt: systemPrompt,
           },
           first_message: `Hello Doctor${config.practitionerName ? ` ${config.practitionerName}` : ''}. I'm your Docpen assistant ready to help with ${this.getProfessionDisplayName(config.profession, config.customProfession)} consultations. Just say "Docpen" followed by your question anytime.`,
-          language: 'en',
+          language: userLanguage, // Use user's language preference
         },
         tts: {
           voice_id: voiceId,
@@ -189,6 +206,12 @@ class DocpenAgentProvisioning {
     const agentId = result.agent_id;
 
     console.log(`✅ [Docpen] Created agent: ${agentId}`);
+    console.log(`📝 [Docpen] Agent name: "${agentPayload.name}"`);
+    console.log(`🔑 [Docpen] Created in ElevenLabs account associated with API key: ${keyLabel}`);
+    console.log(`💡 [Docpen] To see this agent in ElevenLabs dashboard, log in with the account that owns this API key`);
+    console.log(`📝 [Docpen] Agent name: "${agentPayload.name}"`);
+    console.log(`🔑 [Docpen] Created in ElevenLabs account associated with API key: ${keyLabel}`);
+    console.log(`💡 [Docpen] To see this agent in ElevenLabs dashboard, log in with the account that owns this API key`);
 
     // Save to database
     await prisma.docpenVoiceAgent.create({
@@ -216,9 +239,16 @@ class DocpenAgentProvisioning {
     const apiKey = await this.getApiKey(config.userId);
     if (!apiKey) return;
 
+    // Fetch user's language preference
+    const user = await prisma.user.findUnique({
+      where: { id: config.userId },
+      select: { language: true },
+    });
+    const userLanguage = user?.language || 'en';
+
     const professionKey = config.profession === 'CUSTOM' ? 'CUSTOM' : config.profession;
     const promptTemplate = VOICE_AGENT_PROMPTS[professionKey] || VOICE_AGENT_PROMPTS.GENERAL_PRACTICE;
-    const systemPrompt = this.buildSystemPrompt(promptTemplate, config);
+    const systemPrompt = this.buildSystemPrompt(promptTemplate, config, userLanguage);
 
     try {
       await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${agentId}`, {
@@ -382,8 +412,16 @@ class DocpenAgentProvisioning {
   /**
    * Build system prompt with context
    */
-  private buildSystemPrompt(template: string, config: DocpenAgentConfig): string {
-    let prompt = template;
+  private buildSystemPrompt(template: string, config: DocpenAgentConfig, userLanguage: string = 'en'): string {
+    // Language instruction based on user preference
+    const languageInstructions: Record<string, string> = {
+      'en': 'IMPORTANT: Respond in English. All your responses must be in English.',
+      'fr': 'IMPORTANT: Répondez en français. Toutes vos réponses doivent être en français.',
+      'es': 'IMPORTANTE: Responde en español. Todas tus respuestas deben ser en español.',
+      'zh': '重要提示：请用中文回复。您的所有回复必须使用中文。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+    let prompt = `${languageInstruction}\n\n${template}`;
 
     // Add practitioner context
     if (config.practitionerName) {

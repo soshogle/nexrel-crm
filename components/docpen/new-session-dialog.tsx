@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface Lead {
   id: string;
@@ -50,6 +51,7 @@ const PROFESSIONS = [
 ];
 
 export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
+  const tPlaceholders = useTranslations('placeholders');
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -166,7 +168,7 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search existing clients..."
+                placeholder={tPlaceholders('input.searchClients')}
                 className="pl-9"
               />
               {isSearching && (
@@ -200,7 +202,7 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
                 id="patientName"
                 value={formData.patientName}
                 onChange={(e) => setFormData(prev => ({ ...prev, patientName: e.target.value }))}
-                placeholder="Enter patient name"
+                placeholder={tPlaceholders('input.patientName')}
               />
             </div>
           )}
@@ -233,7 +235,7 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
                 id="customProfession"
                 value={formData.customProfession}
                 onChange={(e) => setFormData(prev => ({ ...prev, customProfession: e.target.value }))}
-                placeholder="e.g., Endocrinology"
+                placeholder={tPlaceholders('input.customProfession')}
               />
             </div>
           )}
@@ -245,7 +247,7 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
               id="chiefComplaint"
               value={formData.chiefComplaint}
               onChange={(e) => setFormData(prev => ({ ...prev, chiefComplaint: e.target.value }))}
-              placeholder="Main reason for visit..."
+              placeholder={tPlaceholders('input.chiefComplaint')}
               rows={2}
             />
           </div>

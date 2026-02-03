@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 import { sendSMS } from '@/lib/twilio';
 import { RE_AGENT_NAMES } from './workflow-templates';
 import { REAIEmployeeType } from '@prisma/client';
+import { getEmailTemplates, replaceEmailPlaceholders } from '@/lib/email-templates';
 
 interface HITLNotificationData {
   userId: string;
@@ -160,69 +161,88 @@ export class HITLNotificationService {
     data: HITLNotificationData,
     agentName: string
   ): Promise<void> {
+    // Get user's language preference
+    let userLanguage: 'en' | 'fr' | 'es' | 'zh' = 'en';
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: data.userId },
+        select: { language: true },
+      });
+      if (user?.language && ['en', 'fr', 'es', 'zh'].includes(user.language)) {
+        userLanguage = user.language as 'en' | 'fr' | 'es' | 'zh';
+      }
+    } catch (error) {
+      console.error('Error fetching user language:', error);
+    }
+
+    const templates = getEmailTemplates(userLanguage);
+    const emailTemplates = templates.hitlNotification;
+
     const urgencyColor = data.urgency === 'URGENT' ? '#dc2626' : 
                          data.urgency === 'HIGH' ? '#f59e0b' : '#3b82f6';
     
-    const subject = `[Action Required] ${data.taskName} - Approval Needed`;
+    const subject = replaceEmailPlaceholders(emailTemplates.subject, {
+      taskName: data.taskName,
+    });
     
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: ${urgencyColor}; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-          <h2 style="margin: 0;">⚡ Human Approval Required</h2>
+          <h2 style="margin: 0;">${emailTemplates.headerTitle}</h2>
         </div>
         <div style="background: #f9fafb; padding: 24px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-          <p style="color: #374151; font-size: 16px;">Hi ${userName},</p>
+          <p style="color: #374151; font-size: 16px;">${replaceEmailPlaceholders(emailTemplates.greeting, { userName })}</p>
           
-          <p style="color: #374151;">An AI workflow task requires your approval before proceeding:</p>
+          <p style="color: #374151;">${emailTemplates.introMessage}</p>
           
           <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0;">
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 8px 0; color: #6b7280; width: 120px;">Task:</td>
+                <td style="padding: 8px 0; color: #6b7280; width: 120px;">${emailTemplates.taskLabel}</td>
                 <td style="padding: 8px 0; color: #111827; font-weight: 600;">${data.taskName}</td>
               </tr>
               ${data.taskDescription ? `
               <tr>
-                <td style="padding: 8px 0; color: #6b7280;">Description:</td>
+                <td style="padding: 8px 0; color: #6b7280;">${emailTemplates.descriptionLabel}</td>
                 <td style="padding: 8px 0; color: #374151;">${data.taskDescription}</td>
               </tr>
               ` : ''}
               <tr>
-                <td style="padding: 8px 0; color: #6b7280;">AI Agent:</td>
+                <td style="padding: 8px 0; color: #6b7280;">${emailTemplates.agentLabel}</td>
                 <td style="padding: 8px 0; color: #374151;">${agentName}</td>
               </tr>
               ${data.contactName ? `
               <tr>
-                <td style="padding: 8px 0; color: #6b7280;">Contact:</td>
+                <td style="padding: 8px 0; color: #6b7280;">${emailTemplates.contactLabel}</td>
                 <td style="padding: 8px 0; color: #374151;">${data.contactName}</td>
               </tr>
               ` : ''}
               ${data.dealAddress ? `
               <tr>
-                <td style="padding: 8px 0; color: #6b7280;">Property:</td>
+                <td style="padding: 8px 0; color: #6b7280;">${emailTemplates.propertyLabel}</td>
                 <td style="padding: 8px 0; color: #374151;">${data.dealAddress}</td>
               </tr>
               ` : ''}
               ${data.workflowName ? `
               <tr>
-                <td style="padding: 8px 0; color: #6b7280;">Workflow:</td>
+                <td style="padding: 8px 0; color: #6b7280;">${emailTemplates.workflowLabel}</td>
                 <td style="padding: 8px 0; color: #374151;">${data.workflowName}</td>
               </tr>
               ` : ''}
             </table>
           </div>
           
-          <p style="color: #374151;">Please log in to your dashboard to review and approve or reject this action.</p>
+          <p style="color: #374151;">${emailTemplates.actionMessage}</p>
           
           <div style="text-align: center; margin-top: 24px;">
             <a href="${process.env.NEXTAUTH_URL || 'https://nexrel.soshogleagents.com'}/dashboard/ai-employees" 
                style="background: ${urgencyColor}; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">
-              Review &amp; Approve
+              ${emailTemplates.buttonText}
             </a>
           </div>
           
           <p style="color: #9ca3af; font-size: 12px; margin-top: 24px; text-align: center;">
-            This is an automated notification from your Real Estate CRM workflow system.
+            ${emailTemplates.footerMessage}
           </p>
         </div>
       </div>

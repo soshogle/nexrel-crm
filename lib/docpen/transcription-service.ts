@@ -238,7 +238,10 @@ export async function transcribeAudio(
     } else if (response.status === 404) {
       throw new Error(`OpenAI endpoint not found (404). Please verify your OPENAI_API_KEY is correct.`);
     } else if (response.status === 429) {
-      throw new Error('Rate limit exceeded. Please try again in a moment.');
+      // Rate limit exceeded - check for retry-after header
+      const retryAfter = response.headers.get('retry-after');
+      const retrySeconds = retryAfter ? parseInt(retryAfter, 10) : 60;
+      throw new Error(`Rate limit exceeded. Please try again in ${retrySeconds} seconds. Your OpenAI account may need more credits or a higher rate limit tier.`);
     } else if (response.status === 400) {
       throw new Error(`Invalid request: ${errorText.substring(0, 200)}`);
     }

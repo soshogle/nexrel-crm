@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTranslations } from 'next-intl';
 import {
   Collapsible,
   CollapsibleContent,
@@ -78,6 +79,7 @@ const PROFESSION_LABELS: Record<string, string> = {
 };
 
 export function DocpenConversationHistory() {
+  const tPlaceholders = useTranslations('placeholders.select');
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -196,7 +198,7 @@ export function DocpenConversationHistory() {
         <div className="flex items-center gap-3">
           <Select value={selectedAgentId || undefined} onValueChange={setSelectedAgentId}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select agent" />
+              <SelectValue placeholder={tPlaceholders('agent')} />
             </SelectTrigger>
             <SelectContent>
               {agents.map(agent => (
