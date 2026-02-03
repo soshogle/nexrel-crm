@@ -82,30 +82,36 @@ class DocpenAgentProvisioning {
         
         // Verify agent exists in ElevenLabs (don't fail if it doesn't, but log it)
         const apiKey = await this.getApiKey(config.userId);
+        let agentExistsInElevenLabs = false;
+        
         if (apiKey) {
           try {
+            console.log(`🔍 [Docpen] Verifying agent ${existingAgent.elevenLabsAgentId} exists in ElevenLabs...`);
             const verifyResponse = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${existingAgent.elevenLabsAgentId}`, {
               headers: { 'xi-api-key': apiKey },
             });
-            if (!verifyResponse.ok) {
-              console.warn(`⚠️ [Docpen] Agent ${existingAgent.elevenLabsAgentId} not found in ElevenLabs (status: ${verifyResponse.status}). Will create new agent.`);
-              // Don't return - continue to create new agent
-            } else {
+            
+            if (verifyResponse.ok) {
+              agentExistsInElevenLabs = true;
               console.log(`✅ [Docpen] Verified agent ${existingAgent.elevenLabsAgentId} exists in ElevenLabs`);
+            } else {
+              const errorText = await verifyResponse.text();
+              console.warn(`⚠️ [Docpen] Agent ${existingAgent.elevenLabsAgentId} not found in ElevenLabs (status: ${verifyResponse.status}): ${errorText}`);
+              console.warn(`⚠️ [Docpen] Will create new agent instead of reusing database record`);
             }
-          } catch (verifyError) {
-            console.warn(`⚠️ [Docpen] Could not verify agent in ElevenLabs:`, verifyError);
-            // Continue - might be network issue, but agent might still exist
+          } catch (verifyError: any) {
+            console.warn(`⚠️ [Docpen] Could not verify agent in ElevenLabs:`, verifyError.message);
+            // Assume agent exists if we can't verify (might be network issue)
+            agentExistsInElevenLabs = true;
           }
+        } else {
+          console.warn(`⚠️ [Docpen] No API key available to verify agent. Assuming it exists.`);
+          agentExistsInElevenLabs = true;
         }
         
-        // Only return existing agent if verification passed or we couldn't verify
+        // Only return existing agent if it exists in ElevenLabs
         // If verification explicitly failed (404), we'll create a new agent
-        const verifyResponse = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${existingAgent.elevenLabsAgentId}`, {
-          headers: { 'xi-api-key': await this.getApiKey(config.userId) },
-        }).catch(() => null);
-        
-        if (verifyResponse && verifyResponse.ok) {
+        if (agentExistsInElevenLabs) {
           // Automatically update agent functions in the background (non-blocking)
           this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId)
             .then(success => {
