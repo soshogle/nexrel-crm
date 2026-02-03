@@ -176,8 +176,13 @@ export async function transcribeAudio(
   const apiKey = process.env.ABACUSAI_API_KEY;
   
   if (!apiKey) {
+    console.error('[Docpen Transcription] ❌ ABACUSAI_API_KEY is not set in environment variables');
     throw new Error('Abacus AI API key not configured. Please initialize LLM APIs.');
   }
+
+  // Log API key status (first 10 chars only for security)
+  console.log('[Docpen Transcription] ✅ API key found:', apiKey.substring(0, 10) + '...');
+  console.log('[Docpen Transcription] 📊 Audio buffer size:', audioBuffer instanceof Buffer ? audioBuffer.length : audioBuffer.size, 'bytes');
 
   // Create form data for file upload
   const formData = new FormData();
@@ -199,6 +204,7 @@ export async function transcribeAudio(
   }
 
   // Use Abacus AI RouteLLM API endpoint
+  console.log('[Docpen Transcription] 🌐 Calling Abacus AI transcription API...');
   const response = await fetch('https://routellm.abacus.ai/v1/audio/transcriptions', {
     method: 'POST',
     headers: {
@@ -207,10 +213,24 @@ export async function transcribeAudio(
     body: formData,
   });
 
+  console.log('[Docpen Transcription] 📡 API response status:', response.status, response.statusText);
+
   if (!response.ok) {
     const error = await response.text();
-    console.error('[Docpen Transcription] API error:', error);
-    throw new Error(`Transcription API error: ${response.status} - ${error}`);
+    console.error('[Docpen Transcription] ❌ API error response:', error);
+    console.error('[Docpen Transcription] ❌ Status:', response.status);
+    console.error('[Docpen Transcription] ❌ Headers:', Object.fromEntries(response.headers.entries()));
+    
+    // Provide more helpful error messages
+    if (response.status === 401) {
+      throw new Error('Invalid API key. Please check your ABACUSAI_API_KEY is correct.');
+    } else if (response.status === 429) {
+      throw new Error('Rate limit exceeded. Please try again in a moment.');
+    } else if (response.status === 400) {
+      throw new Error(`Invalid request: ${error.substring(0, 200)}`);
+    }
+    
+    throw new Error(`Transcription API error: ${response.status} - ${error.substring(0, 200)}`);
   }
 
   const whisperResult = await response.json();

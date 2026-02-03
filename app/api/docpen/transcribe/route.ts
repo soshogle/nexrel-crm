@@ -62,10 +62,36 @@ export async function POST(request: NextRequest) {
 
     // Convert file to buffer for processing
     const audioBuffer = Buffer.from(await audioFile.arrayBuffer());
+    console.log('[Docpen Transcribe] 📁 Audio file received:', {
+      size: audioBuffer.length,
+      sessionId,
+      fileName: audioFile.name,
+      fileType: audioFile.type
+    });
+
+    // Check API key before attempting transcription
+    const apiKey = process.env.ABACUSAI_API_KEY;
+    if (!apiKey) {
+      console.error('[Docpen Transcribe] ❌ ABACUSAI_API_KEY not found in environment');
+      return NextResponse.json(
+        { 
+          error: 'API key not configured',
+          details: 'ABACUSAI_API_KEY environment variable is not set. Please add it to your Vercel environment variables.',
+          hint: 'Go to Vercel Dashboard → Project Settings → Environment Variables → Add ABACUSAI_API_KEY'
+        },
+        { status: 500 }
+      );
+    }
+    console.log('[Docpen Transcribe] ✅ API key found (first 10 chars):', apiKey.substring(0, 10) + '...');
 
     // Transcribe the audio
+    console.log('[Docpen Transcribe] 🎤 Starting transcription...');
     const transcriptionResult = await transcribeAudio(audioBuffer, {
       practitionerName: practitionerName || user?.name || 'Practitioner',
+    });
+    console.log('[Docpen Transcribe] ✅ Transcription complete:', {
+      segments: transcriptionResult.segments.length,
+      duration: transcriptionResult.duration
     });
 
     // Save transcription segments to database
