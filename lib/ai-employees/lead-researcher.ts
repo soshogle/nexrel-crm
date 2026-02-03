@@ -81,10 +81,8 @@ interface LeadResearchOutput {
 }
 
 export class LeadResearcher {
-  private llmApiKey: string;
-
   constructor() {
-    // API key will be checked at call time
+    // API key will be checked at call time via process.env.OPENAI_API_KEY
   }
 
   /**
