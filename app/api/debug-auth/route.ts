@@ -43,9 +43,14 @@ export async function GET(request: NextRequest) {
     name: 'DATABASE_URL',
     status: databaseUrl ? 'present' : 'missing',
     hasValue: !!databaseUrl,
+    preview: databaseUrl ? `${databaseUrl.substring(0, 30)}...${databaseUrl.substring(databaseUrl.length - 20)}` : null,
+    containsHost: databaseUrl?.includes('host:5432') || false,
+    containsNeon: databaseUrl?.includes('neon.tech') || false,
   });
   if (!databaseUrl) {
     results.errors.push('DATABASE_URL is missing - database queries will fail');
+  } else if (databaseUrl.includes('host:5432')) {
+    results.errors.push('DATABASE_URL contains placeholder "host:5432" - this is incorrect!');
   }
 
   // Check 4: Test database connection
