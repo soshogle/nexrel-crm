@@ -92,31 +92,44 @@ class DocpenAgentProvisioning {
             });
             
             if (verifyResponse.ok) {
+              // Only trust 200 OK - agent definitely exists
               agentExistsInElevenLabs = true;
+              const agentData = await verifyResponse.json();
               console.log(`✅ [Docpen] Verified agent ${existingAgent.elevenLabsAgentId} exists in ElevenLabs`);
+              console.log(`   Agent name: ${agentData.name || 'Unnamed'}`);
             } else if (verifyResponse.status === 404) {
               // Agent doesn't exist - definitely create new one
               agentExistsInElevenLabs = false;
-              const errorText = await verifyResponse.text();
               console.warn(`⚠️ [Docpen] Agent ${existingAgent.elevenLabsAgentId} NOT FOUND in ElevenLabs (404)`);
               console.warn(`⚠️ [Docpen] Database record exists but agent missing from ElevenLabs`);
               console.warn(`⚠️ [Docpen] Will create new agent and update database record`);
+            } else if (verifyResponse.status === 401) {
+              // API key issue - don't create new agent, return error
+              const errorText = await verifyResponse.text();
+              console.error(`❌ [Docpen] Unauthorized (401) verifying agent - API key issue: ${errorText}`);
+              console.error(`❌ [Docpen] Cannot verify or create agent without valid API key`);
+              // Return error instead of creating new agent
+              return {
+                success: false,
+                error: 'ElevenLabs API key is invalid or expired. Please check your API key settings.',
+              };
             } else {
-              // Other error (401, 500, etc.) - log but assume agent exists to avoid recreating unnecessarily
+              // Other error (500, 503, etc.) - be safe and create new agent
               const errorText = await verifyResponse.text();
               console.warn(`⚠️ [Docpen] Error verifying agent (status: ${verifyResponse.status}): ${errorText}`);
-              console.warn(`⚠️ [Docpen] Assuming agent exists (might be API key or permission issue)`);
-              agentExistsInElevenLabs = true;
+              console.warn(`⚠️ [Docpen] Cannot verify agent exists - will create new one to be safe`);
+              agentExistsInElevenLabs = false;
             }
           } catch (verifyError: any) {
+            // Network error - be safe and create new agent
             console.warn(`⚠️ [Docpen] Network error verifying agent:`, verifyError.message);
-            // Network error - assume agent exists to avoid unnecessary recreation
-            // But log it so we know there might be an issue
-            agentExistsInElevenLabs = true;
+            console.warn(`⚠️ [Docpen] Cannot verify agent exists due to network error - will create new one to be safe`);
+            agentExistsInElevenLabs = false;
           }
         } else {
-          console.warn(`⚠️ [Docpen] No API key available to verify agent. Assuming it exists.`);
-          agentExistsInElevenLabs = true;
+          // No API key - cannot verify, so create new agent
+          console.warn(`⚠️ [Docpen] No API key available to verify agent. Will create new agent.`);
+          agentExistsInElevenLabs = false;
         }
         
         // Only return existing agent if it exists in ElevenLabs
@@ -144,6 +157,17 @@ class DocpenAgentProvisioning {
           };
         } else {
           console.log(`🔄 [Docpen] Agent ${existingAgent.elevenLabsAgentId} not found in ElevenLabs. Creating new agent...`);
+          // Mark old database record as inactive before creating new one
+          try {
+            await prisma.docpenVoiceAgent.update({
+              where: { id: existingAgent.id },
+              data: { isActive: false },
+            });
+            console.log(`📝 [Docpen] Marked old database record as inactive`);
+          } catch (updateError) {
+            console.warn(`⚠️ [Docpen] Failed to mark old record as inactive:`, updateError);
+            // Continue anyway - upsert will handle it
+          }
           // Continue to create new agent below
         }
       } else {
