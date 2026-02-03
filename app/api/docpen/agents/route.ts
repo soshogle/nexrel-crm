@@ -11,6 +11,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
+import { docpenAgentProvisioning } from '@/lib/docpen/agent-provisioning';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
