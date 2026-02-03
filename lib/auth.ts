@@ -33,6 +33,20 @@ export const authOptions: NextAuthOptions = {
 
         try {
           console.log('[AUTH DEBUG] Querying database for user:', normalizedEmail)
+          
+          // Check database connection first
+          try {
+            await prisma.$queryRaw`SELECT 1 as test`
+            console.log('[AUTH DEBUG] Database connection OK')
+          } catch (dbError: any) {
+            console.error('[AUTH DEBUG] Database connection failed:', dbError.message)
+            console.error('[AUTH DEBUG] Database error details:', {
+              code: dbError.code,
+              meta: dbError.meta,
+            })
+            throw new Error(`Database connection failed: ${dbError.message}`)
+          }
+          
           const user = await prisma.user.findUnique({
             where: {
               email: normalizedEmail
@@ -70,8 +84,11 @@ export const authOptions: NextAuthOptions = {
             agencyId: user.agencyId,
             agencyName: user.agency?.name,
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('[AUTH DEBUG] Error during authorize:', error)
+          console.error('[AUTH DEBUG] Error stack:', error.stack)
+          console.error('[AUTH DEBUG] Error name:', error.name)
+          console.error('[AUTH DEBUG] Error code:', error.code)
           return null
         }
       }
