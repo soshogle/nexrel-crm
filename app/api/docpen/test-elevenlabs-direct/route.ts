@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
         },
       });
       
-      const test1 = {
+      const test1: any = {
         name: 'Verify API Key',
         endpoint: `${ELEVENLABS_BASE_URL}/user`,
         method: 'GET',
@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
         },
       });
       
-      const test2 = {
+      const test2: any = {
         name: 'List Agents',
         endpoint: `${ELEVENLABS_BASE_URL}/convai/agents`,
         method: 'GET',
@@ -172,7 +172,7 @@ export async function GET(req: NextRequest) {
         body: JSON.stringify(testAgentPayload),
       });
       
-      const test3 = {
+      const test3: any = {
         name: 'Create Test Agent',
         endpoint: `${ELEVENLABS_BASE_URL}/convai/agents/create`,
         method: 'POST',
