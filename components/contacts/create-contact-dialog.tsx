@@ -110,6 +110,7 @@ export default function CreateContactDialog({
           state: '',
           zipCode: '',
           country: '',
+          dateOfBirth: '',
           notes: '',
           contactType: 'CUSTOMER',
           status: 'ACTIVE',

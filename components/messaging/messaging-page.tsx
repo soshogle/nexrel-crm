@@ -5,8 +5,9 @@ import { useState, useEffect } from 'react';
 import { ConversationList } from './conversation-list';
 import { MessageThread } from './message-thread';
 import CallHistoryPanel from './call-history-panel';
+import { ChannelConnectionsPanel } from './channel-connections-panel';
 import CreateContactDialog from '../contacts/create-contact-dialog';
-import { MessageCircle, Plus, Loader2, Search, UserPlus, Phone, Mail, User } from 'lucide-react';
+import { MessageCircle, Plus, Loader2, Search, UserPlus, Phone, Mail, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -159,9 +160,21 @@ export function MessagingPage() {
       return;
     }
 
-    if (newChannelType === 'SMS' && !fromPhoneNumber) {
-      toast.error('Please select a phone number to send from');
-      return;
+    // For SMS, require phone number selection only if multiple numbers exist
+    if (newChannelType === 'SMS') {
+      if (twilioNumbers.length === 0) {
+        toast.error('No phone numbers configured. Please configure a phone number in Settings.');
+        return;
+      }
+      // If multiple numbers exist, require selection
+      if (twilioNumbers.length > 1 && !fromPhoneNumber) {
+        toast.error('Please select a phone number to send from');
+        return;
+      }
+      // If only one number exists, use it automatically
+      if (twilioNumbers.length === 1 && !fromPhoneNumber) {
+        setFromPhoneNumber(twilioNumbers[0].phoneNumber);
+      }
     }
 
     try {
@@ -173,7 +186,7 @@ export function MessagingPage() {
           channelType: newChannelType,
           contactName: newContactName.trim(),
           contactIdentifier: newContactIdentifier.trim(),
-          fromPhoneNumber: newChannelType === 'SMS' ? fromPhoneNumber : undefined,
+          fromPhoneNumber: newChannelType === 'SMS' ? (fromPhoneNumber || twilioNumbers[0]?.phoneNumber) : undefined,
         }),
       });
 
@@ -224,12 +237,43 @@ export function MessagingPage() {
   return (
     <div className="h-[calc(100vh-4rem)] flex bg-background">
       {/* Conversations List - Left Sidebar */}
-      <div className="w-full md:w-96 shrink-0">
-        <ConversationList
-          selectedConversationId={selectedConversationId}
-          onSelectConversation={setSelectedConversationId}
-          onSync={handleSync}
-        />
+      <div className="w-full md:w-96 shrink-0 flex flex-col border-r border-gray-700">
+        <div className="flex-1 overflow-hidden">
+          <ConversationList
+            key={refreshKey}
+            selectedConversationId={selectedConversationId}
+            onSelectConversation={setSelectedConversationId}
+            onSync={handleSync}
+          />
+        </div>
+        
+        {/* Channel Connections Panel - Collapsible */}
+        <div className="border-t border-gray-700 bg-gray-900">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowConnectionsPanel(!showConnectionsPanel)}
+            className="w-full justify-between text-white hover:bg-gray-800 rounded-none"
+          >
+            <span className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Channel Connections
+            </span>
+            <span className="text-xs text-gray-400">
+              {showConnectionsPanel ? 'Hide' : 'Show'}
+            </span>
+          </Button>
+          {showConnectionsPanel && (
+            <div className="max-h-96 overflow-y-auto border-t border-gray-700">
+              <ChannelConnectionsPanel
+                onConnectionChange={() => {
+                  setRefreshKey((prev) => prev + 1);
+                  handleSync();
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Message Thread - Main Area */}
@@ -291,10 +335,10 @@ export function MessagingPage() {
                     </Select>
                   </div>
 
-                  {/* Show phone number dropdown for SMS */}
+                  {/* Show SMS phone number selection only for SMS channel */}
                   {newChannelType === 'SMS' && (
                     <div className="space-y-2">
-                      <Label htmlFor="fromNumber">Send From (Your Number)</Label>
+                      <Label htmlFor="smsNumber">SMS</Label>
                       {loadingNumbers ? (
                         <div className="flex items-center gap-2 p-3 border rounded-md">
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -302,19 +346,21 @@ export function MessagingPage() {
                         </div>
                       ) : twilioNumbers.length === 0 ? (
                         <div className="p-3 border rounded-md bg-muted">
-                          <p className="text-sm text-muted-foreground mb-2">No phone numbers found</p>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => window.open('/dashboard/voice-agents', '_blank')}
-                          >
-                            Purchase Phone Number
-                          </Button>
+                          <p className="text-sm text-muted-foreground">
+                            No phone numbers configured. Please configure a phone number in Settings.
+                          </p>
+                        </div>
+                      ) : twilioNumbers.length === 1 ? (
+                        <div className="p-3 border rounded-md bg-muted">
+                          <p className="text-sm text-muted-foreground">
+                            {twilioNumbers[0].phoneNumber}
+                            {twilioNumbers[0].friendlyName && ` (${twilioNumbers[0].friendlyName})`}
+                          </p>
                         </div>
                       ) : (
-                        <Select value={fromPhoneNumber} onValueChange={setFromPhoneNumber}>
-                          <SelectTrigger id="fromNumber">
-                            <SelectValue placeholder="Select a phone number" />
+                        <Select value={fromPhoneNumber} onValueChange={setFromPhoneNumber} required>
+                          <SelectTrigger id="smsNumber">
+                            <SelectValue placeholder="Select SMS phone number" />
                           </SelectTrigger>
                           <SelectContent>
                             {twilioNumbers.map((number) => (
