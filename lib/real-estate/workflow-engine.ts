@@ -113,8 +113,18 @@ export async function processTaskExecution(executionId: string): Promise<void> {
 
     // Check branch condition
     if (execution.task.branchCondition) {
+      const branchCondition = execution.task.branchCondition as { field: string; operator: string; value: string } | null;
+      if (!branchCondition || !branchCondition.field || !branchCondition.operator || !branchCondition.value) {
+        // Invalid branch condition, skip
+        await prisma.rETaskExecution.update({
+          where: { id: executionId },
+          data: { status: RETaskExecutionStatus.SKIPPED },
+        });
+        await processNextTask(execution.instanceId);
+        return;
+      }
       const conditionMet = evaluateBranchCondition(
-        execution.task.branchCondition,
+        branchCondition,
         parentExecution.result || {}
       );
 
