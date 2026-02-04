@@ -526,7 +526,7 @@ export function AIBrainDashboard() {
       </Card>
 
           {/* Workflow Recommendations */}
-          {workflows.length > 0 && (
+          {workflows.length > 0 ? (
             <Card className="p-6 bg-gray-900 border-gray-800">
               <div className="flex items-center gap-2 mb-4">
                 <Zap className="h-5 w-5 text-yellow-500" />
@@ -579,8 +579,8 @@ export function AIBrainDashboard() {
           ) : (
             <Card className="p-6 bg-gray-900 border-gray-800">
               <div className="text-center py-8 text-gray-400">
-                <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No predictions available yet. Keep using the CRM to generate predictions.</p>
+                <Zap className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No workflow recommendations available yet.</p>
               </div>
             </Card>
           )}
