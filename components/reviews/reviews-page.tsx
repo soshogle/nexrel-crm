@@ -171,7 +171,7 @@ export function ReviewsPage() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
             Reviews & Reputation
           </h1>
-          <p className="text-white/70 mt-2">
+          <p className="text-gray-600 mt-2">
             Monitor and manage your business reviews across all platforms
           </p>
         </div>
