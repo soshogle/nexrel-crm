@@ -63,14 +63,52 @@ export class AIBrainEnhancedService {
    * Get comprehensive brain data from all sources
    */
   async getComprehensiveBrainData(userId: string): Promise<ComprehensiveBrainData> {
+    // Helper to fetch leads safely, handling dateOfBirth column issues
+    const fetchLeadsSafely = async () => {
+      try {
+        return await prisma.lead.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+        });
+      } catch (error: any) {
+        // If dateOfBirth column doesn't exist, fetch with explicit select
+        if (error?.code === 'P2022' && error?.meta?.column === 'Lead.dateOfBirth') {
+          console.warn('[AI Brain] dateOfBirth column missing, using select statement');
+          return await prisma.lead.findMany({
+            where: { userId },
+            select: {
+              id: true,
+              userId: true,
+              businessName: true,
+              contactPerson: true,
+              email: true,
+              phone: true,
+              website: true,
+              address: true,
+              city: true,
+              state: true,
+              zipCode: true,
+              country: true,
+              status: true,
+              source: true,
+              contactType: true,
+              tags: true,
+              createdAt: true,
+              updatedAt: true,
+              lastContactedAt: true,
+              // Explicitly exclude dateOfBirth
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+        }
+        throw error; // Re-throw if it's a different error
+      }
+    };
+
     // Fetch ALL data sources in parallel with error handling using Promise.allSettled
     const results = await Promise.allSettled([
       // Existing sources
-      prisma.lead.findMany({
-        where: { userId },
-        include: { notes: true },
-        orderBy: { createdAt: 'desc' },
-      }),
+      fetchLeadsSafely(),
       prisma.deal.findMany({
         where: { userId },
         include: { stage: true, lead: true },
@@ -182,15 +220,23 @@ export class AIBrainEnhancedService {
     // Extract results, defaulting to empty arrays on failure with proper typing
     const getResult = <T>(result: PromiseSettledResult<T[]>, name: string): T[] => {
       if (result.status === 'fulfilled') {
-        return result.value;
+        const data = result.value;
+        console.log(`[AI Brain] Successfully fetched ${name}:`, data.length, 'items');
+        return data;
       } else {
         // Handle Prisma errors for missing columns/tables gracefully
         const error = result.reason;
         if (error?.code === 'P2022' || error?.code === 'P2021') {
-          console.warn(`Database schema mismatch for ${name}:`, error.message);
+          console.warn(`[AI Brain] Database schema mismatch for ${name}:`, error.message);
+          console.warn(`[AI Brain] Error code:`, error?.code, 'Meta:', error?.meta);
           return [];
         }
-        console.error(`Error fetching ${name}:`, result.reason);
+        console.error(`[AI Brain] Error fetching ${name}:`, error);
+        console.error(`[AI Brain] Error details:`, {
+          code: error?.code,
+          message: error?.message,
+          meta: error?.meta,
+        });
         return [];
       }
     };
@@ -210,6 +256,25 @@ export class AIBrainEnhancedService {
     const feedbackCollections = getResult(results[12], 'feedbackCollections');
     const workflows = getResult(results[13], 'workflows');
     const workflowEnrollments = getResult(results[14], 'workflowEnrollments');
+
+    // Log summary of fetched data
+    console.log('[AI Brain] Data summary:', {
+      leads: leads.length,
+      deals: deals.length,
+      tasks: tasks.length,
+      appointments: appointments.length,
+      callLogs: callLogs.length,
+      payments: payments.length,
+      invoices: invoices.length,
+      emailCampaigns: emailCampaigns.length,
+      smsCampaigns: smsCampaigns.length,
+      conversations: conversations.length,
+      conversationMessages: conversationMessages.length,
+      reviews: reviews.length,
+      feedbackCollections: feedbackCollections.length,
+      workflows: workflows.length,
+      workflowEnrollments: workflowEnrollments.length,
+    });
 
     // Calculate core metrics
     const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
