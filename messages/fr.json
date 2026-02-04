@@ -79,7 +79,8 @@
     "myDashboard": "Mon tableau de bord",
     "myFamily": "Ma famille",
     "mySchedules": "Mes horaires",
-    "myPayments": "Mes paiements"
+    "myPayments": "Mes paiements",
+    "admin": "Administration"
   },
   "dashboard": {
     "welcome": "Bienvenue",
