@@ -46,6 +46,16 @@ const channelIcons: Record<string, string> = {
   WEBSITE_CHAT: '💻',
 };
 
+const channelColors: Record<string, { bg: string; border: string; text: string }> = {
+  SMS: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400' },
+  EMAIL: { bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-400' },
+  WHATSAPP: { bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-400' },
+  INSTAGRAM: { bg: 'bg-pink-500/10', border: 'border-pink-500/30', text: 'text-pink-400' },
+  FACEBOOK_MESSENGER: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400' },
+  GOOGLE_BUSINESS: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400' },
+  WEBSITE_CHAT: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-400' },
+};
+
 export function ConversationList({
   selectedConversationId,
   onSelectConversation,
@@ -58,6 +68,13 @@ export function ConversationList({
 
   useEffect(() => {
     loadConversations();
+    
+    // Poll for new messages every 30 seconds
+    const interval = setInterval(() => {
+      loadConversations();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, [channelFilter]);
 
   const loadConversations = async () => {
@@ -183,8 +200,13 @@ export function ConversationList({
                       {getInitials(conversation.contactName)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="absolute -bottom-1 -right-1 text-sm">
-                    {channelIcons[conversation.channelType]}
+                  <div 
+                    className={`absolute -bottom-1 -right-1 text-xs px-1.5 py-0.5 rounded-full border ${channelColors[conversation.channelType]?.bg || 'bg-gray-500/10'} ${channelColors[conversation.channelType]?.border || 'border-gray-500/30'}`}
+                    title={conversation.channelType}
+                  >
+                    <span className={channelColors[conversation.channelType]?.text || 'text-gray-400'}>
+                      {channelIcons[conversation.channelType] || '💬'}
+                    </span>
                   </div>
                 </div>
 
