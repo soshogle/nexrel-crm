@@ -524,6 +524,8 @@ Format: {"message": "text", "action": "action_type", "parameters": {...}, "navig
    "{\"message\": \"...\"}"  (DO NOT wrap JSON in quotes as a string!)
 7. **IMPORTANT**: If user requests an action (create contact, create deal, etc.), you MUST return JSON with the action field - do NOT just navigate without executing the action first
 8. **CRITICAL**: Return the JSON object directly, NOT as a string. The response should start with { and end with }, not be wrapped in quotes
+9. **MOST IMPORTANT**: When the user says "create a contact" or "add a lead" or similar action requests, you MUST respond with JSON containing the "action" field. Do NOT respond with plain text explaining what you'll do - actually return the JSON action object immediately.
+10. **REMEMBER**: The system will parse your response as JSON. If you return plain text when an action is requested, the action will NOT execute and the user will be frustrated. Always return JSON for action requests.
 
 ═══════════════════════════════════════════════════════════════════
 AVAILABLE ACTIONS (For JSON responses)
@@ -768,6 +770,10 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
           messages: conversationMessages,
           temperature: 0.7,
           max_tokens: 1200, // Increased for more detailed, helpful responses
+          // Note: response_format: { type: "json_object" } requires the model to return valid JSON
+          // But it also requires the system prompt to explicitly request JSON, which we do
+          // However, this might be too restrictive for plain text responses
+          // So we'll parse JSON flexibly instead
         }),
       });
 
@@ -792,7 +798,9 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     const reply = aiData.choices?.[0]?.message?.content || "I'm here to help! Could you please rephrase your question?";
 
     console.log("AI response received successfully");
-    console.log("AI reply:", reply);
+    console.log("AI reply (first 500 chars):", reply.substring(0, 500));
+    console.log("AI reply length:", reply.length);
+    console.log("AI reply starts with JSON?", reply.trim().startsWith('{'));
 
     // Check if the response contains an action request (JSON format)
     let actionResult: any = null;
@@ -860,7 +868,9 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       
       console.log("JSON match found:", actionData ? "YES" : "NO");
       if (actionData) {
-        console.log("Parsed action data:", JSON.stringify(actionData, null, 2));
+        console.log("✅ [Chat] Parsed action data:", JSON.stringify(actionData, null, 2));
+        console.log("✅ [Chat] Action:", actionData.action);
+        console.log("✅ [Chat] NavigateTo:", actionData.navigateTo);
         
         // Extract navigation URL if present
         if (actionData.navigateTo) {
@@ -909,6 +919,9 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
               const result = actionResponseData.result;
               const leadId = result?.lead?.id;
               
+              console.log("✅ [Chat] create_lead action result:", JSON.stringify(result, null, 2));
+              console.log("✅ [Chat] Lead ID:", leadId);
+              
               // Clean, user-friendly message without markdown
               const leadName = result?.lead?.contactPerson || result?.lead?.businessName || 'Contact';
               const leadEmail = result?.lead?.email || 'No email';
@@ -921,6 +934,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
               
               // Navigate to contacts page, optionally with lead ID to highlight it
               navigationUrl = leadId ? `/dashboard/contacts?id=${leadId}` : "/dashboard/contacts";
+              console.log("✅ [Chat] Setting navigationUrl for create_lead:", navigationUrl);
             } else if (actionData.action === "list_leads") {
               const leads = actionResponseData.result?.leads || [];
               if (leads.length > 0) {
@@ -1276,21 +1290,33 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       }
     }
 
-    // Final validation: Only clear navigation if we attempted to execute an action but it failed
-    // Don't clear navigation for navigation-only responses or if no action was attempted
-    if (navigationUrl && actionExecuted) {
-      if (actionResult && actionResult.success === false) {
+    // Final validation: Only clear navigation if action was attempted and explicitly failed
+    // Keep navigation for successful actions and navigation-only responses
+    if (navigationUrl && actionExecuted && actionResult) {
+      // Only clear if actionResult explicitly indicates failure
+      if (actionResult.success === false) {
         console.warn("⚠️ [Chat] Action execution failed - clearing navigation");
-        navigationUrl = null; // Clear navigation only if action was attempted and failed
-      } else if (!actionResult) {
-        // This shouldn't happen, but if we executed an action but got no result, clear navigation
-        console.warn("⚠️ [Chat] Action executed but no result received - clearing navigation");
         navigationUrl = null;
       } else {
-        console.log("✅ [Chat] Action executed successfully, navigation will proceed");
+        // Action succeeded (success: true or success undefined but actionResult exists)
+        console.log("✅ [Chat] Action executed successfully, navigation will proceed:", navigationUrl);
       }
+    } else if (navigationUrl && actionExecuted && !actionResult) {
+      // Action was attempted but no result - this is an error case, clear navigation
+      console.warn("⚠️ [Chat] Action executed but no result received - clearing navigation");
+      navigationUrl = null;
+    } else if (navigationUrl && !actionExecuted) {
+      // Navigation-only response (no action attempted) - keep navigation
+      console.log("✅ [Chat] Navigation-only response, keeping navigation:", navigationUrl);
     }
 
+    // Final logging before response
+    console.log("📤 [Chat] Final response:");
+    console.log("  - Navigation URL:", navigationUrl);
+    console.log("  - Action executed:", actionExecuted);
+    console.log("  - Action result:", actionResult ? "Present" : "None");
+    console.log("  - Action result success:", actionResult?.success);
+    
     return NextResponse.json({
       reply: finalReply,
       action: actionResult,
