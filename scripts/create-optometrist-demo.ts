@@ -70,29 +70,46 @@ async function createOptometristDemo() {
   console.log('🔵 Création du compte démo optométriste...\n');
 
   try {
-    // Step 1: Create user account
-    const hashedPassword = await bcrypt.hash('DemoOptometrist2024!', 10);
+    // Step 1: Create user account with Lunetterie Corbeil information
+    const hashedPassword = await bcrypt.hash('LunetterieCorbeil2024!', 10);
     
     const user = await prisma.user.create({
       data: {
-        email: 'optometriste@demo.nexrel.com',
+        email: 'lunetterie.corbeil@demo.nexrel.com',
         password: hashedPassword,
-        name: 'Dr. Marie-Claire Optométriste',
+        name: 'Mariline Pageau, Optométriste Propriétaire',
         role: 'USER',
         accountStatus: 'ACTIVE',
         onboardingCompleted: true,
         businessCategory: 'Optometry',
-        industryNiche: 'Optométrie',
+        industryNiche: 'Optométrie familiale',
         businessLanguage: 'French',
         language: 'fr',
-        businessDescription: 'Clinique d\'optométrie moderne offrant des examens de la vue complets, lunettes et lentilles de contact.',
-        phone: '+15141234000',
-        address: '123 Rue Sainte-Catherine, Montréal, QC H3B 1A1',
-        website: 'https://visionplus-montreal.com',
-        businessHours: 'Lun-Ven: 9h-18h, Sam: 9h-16h',
+        businessDescription: 'Fondée en 1970, Lunetterie Corbeil est une entreprise familiale constituée de 2 générations de professionnels de la vision. Notre équipe constituée de 5 opticiens et 11 optométristes est formée pour servir les patients de tout âge. Nous avons œuvré au sein du département d\'ophtalmologie de l\'hôpital Ste-Justine, ce qui nous a permis d\'acquérir une expérience particulière auprès des jeunes enfants. Nous offrons des services complets d\'optométrie, lunettes, lentilles de contact et santé oculaire.',
+        phone: '514-254-9872',
+        address: '6347 Jean-Talon est, Montréal, QC H1S 3E7',
+        website: 'https://www.lunetteriecorbeil.com',
+        businessHours: 'Lundi: 9h00 à 19h00\nMardi: 9h00 à 20h00\nMercredi: 9h00 à 20h00\nJeudi: 9h00 à 20h00\nVendredi: 9h00 à 19h00\nSamedi: Fermé\nDimanche: Fermé',
         currency: 'CAD',
         timezone: 'America/Montreal',
-        // Note: User model doesn't have tags field, but we'll tag related data
+        operatingLocation: 'Montréal, QC, Canada',
+        productsServices: 'Examens visuels complets, examens spécifiques, santé oculaire, lunettes, lentilles de contact, laboratoire de taillage et réparation sur place',
+        targetAudience: 'Patients de tout âge, familles, jeunes enfants, patients à besoins spéciaux',
+        preferredContactMethod: 'Téléphone',
+        primaryMarketingChannel: 'Références, Google, Site web',
+        teamSize: '16 (5 opticiens, 11 optométristes)',
+        averageDealValue: 400,
+        salesCycleLength: 'Court terme (rendez-vous immédiat)',
+        onboardingProgress: {
+          completed: true,
+          completedAt: new Date().toISOString(),
+          steps: {
+            businessInfo: true,
+            services: true,
+            contactInfo: true,
+            preferences: true,
+          },
+        },
       },
     });
 
@@ -506,7 +523,10 @@ async function createOptometristDemo() {
     console.log('\n✅✅✅ Données démo créées avec succès! ✅✅✅\n');
     console.log('📋 Résumé:');
     console.log(`   👤 Utilisateur: ${user.email}`);
-    console.log(`   🔑 Mot de passe: DemoOptometrist2024!`);
+    console.log(`   🔑 Mot de passe: LunetterieCorbeil2024!`);
+    console.log(`   🏢 Entreprise: Lunetterie Corbeil`);
+    console.log(`   📞 Téléphone: 514-254-9872`);
+    console.log(`   📍 Adresse: 6347 Jean-Talon est, Montréal, QC H1S 3E7`);
     console.log(`   📇 Contacts: ${leads.length}`);
     console.log(`   📞 Appels: 3`);
     console.log(`   💬 Messages: 5`);
