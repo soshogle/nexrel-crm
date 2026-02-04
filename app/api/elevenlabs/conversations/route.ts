@@ -55,6 +55,33 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Also get CallLog entries for this user (in case they have calls but no voice agents)
+    const callLogs = await prisma.callLog.findMany({
+      where: {
+        userId: session.user.id,
+        elevenLabsConversationId: { not: null },
+      },
+      select: {
+        elevenLabsConversationId: true,
+        id: true,
+        fromNumber: true,
+        toNumber: true,
+        duration: true,
+        status: true,
+        createdAt: true,
+        transcription: true,
+        recordingUrl: true,
+        voiceAgentId: true,
+        voiceAgent: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
     // Create map of agent IDs to names
     const agentMap = new Map(
       voiceAgents.map(agent => [agent.elevenLabsAgentId, agent.name])
@@ -63,24 +90,43 @@ export async function GET(request: NextRequest) {
     // Create set of user's agent IDs for filtering
     const userAgentIds = new Set(voiceAgents.map(agent => agent.elevenLabsAgentId).filter(Boolean));
 
-    console.log(`🔒 [Multi-Tenancy Filter] User ${session.user.id} has ${userAgentIds.size} voice agents`);
+    // Create set of conversation IDs from CallLog
+    const callLogConvIds = new Set(
+      callLogs
+        .map(log => log.elevenLabsConversationId)
+        .filter((id): id is string => id !== null)
+    );
 
-    // 🔒 CRITICAL: Filter conversations to ONLY show those from user's agents
+    console.log(`🔒 [Multi-Tenancy Filter] User ${session.user.id} has ${userAgentIds.size} voice agents`);
+    console.log(`📞 [CallLog] Found ${callLogConvIds.size} conversations in CallLog`);
+
+    // 🔒 CRITICAL: Filter conversations to ONLY show those from user's agents OR in CallLog
     const userConversations = (response.conversations || []).filter((conv: any) => {
-      const belongsToUser = userAgentIds.has(conv.agent_id);
+      const belongsToUser = userAgentIds.has(conv.agent_id) || callLogConvIds.has(conv.conversation_id);
       if (!belongsToUser) {
-        console.log(`🚫 [Security] Filtered out conversation ${conv.conversation_id} - not user's agent`);
+        console.log(`🚫 [Security] Filtered out conversation ${conv.conversation_id} - not user's agent or in CallLog`);
       }
       return belongsToUser;
     });
 
     console.log(`✅ [Multi-Tenancy Filter] Returning ${userConversations.length} of ${response.conversations?.length || 0} conversations`);
 
-    // Enrich conversations with agent names
-    const enrichedConversations = userConversations.map((conv: any) => ({
-      ...conv,
-      agent_name: agentMap.get(conv.agent_id) || 'Unknown Agent',
-    }));
+    // Enrich conversations with agent names and CallLog data
+    const enrichedConversations = userConversations.map((conv: any) => {
+      const callLog = callLogs.find(log => log.elevenLabsConversationId === conv.conversation_id);
+      return {
+        ...conv,
+        agent_name: agentMap.get(conv.agent_id) || callLog?.voiceAgent?.name || 'Unknown Agent',
+        // Include CallLog data if available
+        callLogId: callLog?.id,
+        fromNumber: callLog?.fromNumber || conv.metadata?.from_number || conv.metadata?.from,
+        toNumber: callLog?.toNumber || conv.metadata?.to_number || conv.metadata?.to,
+        callLogDuration: callLog?.duration,
+        callLogStatus: callLog?.status,
+        callLogTranscription: callLog?.transcription,
+        callLogRecordingUrl: callLog?.recordingUrl,
+      };
+    });
 
     return NextResponse.json({
       success: true,
