@@ -276,7 +276,6 @@ export function VoiceAssistant({
             audioLength: base64Audio.length,
             bytesLength: bytes.length,
           });
-          isPlayingAudioRef.current = false; // Reset on error
         }
       } else {
         console.error('❌ [Docpen] Audio context is not available or closed');
@@ -284,7 +283,6 @@ export function VoiceAssistant({
     } catch (error: any) {
       console.error('❌ [Docpen] Error playing audio:', error);
       console.error('❌ [Docpen] Error stack:', error.stack);
-      isPlayingAudioRef.current = false; // Reset on error
     }
   };
 
