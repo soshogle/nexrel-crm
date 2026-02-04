@@ -240,15 +240,23 @@ export function AIBrainDashboard() {
       </div>
 
       {/* Radial Brain Visualization */}
-      {viewMode === 'radial' && comprehensiveData && (
+      {viewMode === 'radial' && (
         <Card className="p-6 bg-gray-900 border-gray-800 overflow-hidden">
-          <RadialBrainVisualization
-            data={comprehensiveData}
-            onDataPointClick={(dataPoint) => {
-              console.log('Data point clicked:', dataPoint);
-              // Could open a detail modal or navigate to related page
-            }}
-          />
+          {comprehensiveData ? (
+            <RadialBrainVisualization
+              data={comprehensiveData}
+              onDataPointClick={(dataPoint) => {
+                console.log('Data point clicked:', dataPoint);
+                // Could open a detail modal or navigate to related page
+              }}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+              <Brain className="h-16 w-16 mb-4 opacity-50 animate-pulse" />
+              <p className="text-lg">Loading AI Brain data...</p>
+              <p className="text-sm mt-2">Connecting to all business data sources</p>
+            </div>
+          )}
         </Card>
       )}
 
