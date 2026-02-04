@@ -435,10 +435,22 @@ export function getNavigationUrlForAction(
   action: string,
   result: any
 ): string | null {
+  console.log(`🧭 [getNavigationUrlForAction] Called with action: ${action}`);
+  console.log(`🧭 [getNavigationUrlForAction] Result structure:`, {
+    hasResult: !!result,
+    hasResultResult: !!result?.result,
+    resultKeys: result ? Object.keys(result) : [],
+    resultResultKeys: result?.result ? Object.keys(result.result) : [],
+  });
+  
   switch (action) {
     case "create_lead":
+      // The action endpoint returns: { success: true, action: "create_lead", result: { lead: {...} } }
       const leadId = result?.result?.lead?.id;
-      return leadId ? `/dashboard/contacts?id=${leadId}` : "/dashboard/contacts";
+      console.log(`🧭 [getNavigationUrlForAction] create_lead - leadId:`, leadId);
+      const navUrl = leadId ? `/dashboard/contacts?id=${leadId}` : "/dashboard/contacts";
+      console.log(`🧭 [getNavigationUrlForAction] create_lead - returning:`, navUrl);
+      return navUrl;
     case "list_leads":
     case "search_contacts":
       return "/dashboard/contacts";
