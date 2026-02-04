@@ -23,6 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { Conversation } from '@elevenlabs/client';
 import type { DocpenProfessionType } from '@/lib/docpen/prompts';
 
 interface VoiceMessage {
@@ -65,9 +66,8 @@ export function VoiceAssistant({
   const [connectionStartTime, setConnectionStartTime] = useState<Date | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  const wsRef = useRef<WebSocket | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const conversationRef = useRef<any>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when messages change
@@ -141,146 +141,27 @@ export function VoiceAssistant({
   };
 
   /**
-   * Get signed WebSocket URL for conversation
+   * Get conversation token for ElevenLabs SDK
    */
-  const getSignedWebSocketUrl = async (agentIdToUse: string): Promise<string | null> => {
+  const getConversationToken = async (agentIdToUse: string): Promise<string | null> => {
     try {
-      const response = await fetch('/api/docpen/voice-agent/websocket-url', {
+      const response = await fetch('/api/docpen/conversation-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agentId: agentIdToUse,
-          sessionContext: {
-            patientName,
-            chiefComplaint,
-            sessionId,
-          },
-        }),
+        body: JSON.stringify({ agentId: agentIdToUse }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to get WebSocket URL');
+        throw new Error(error.error || 'Failed to get conversation token');
       }
 
       const data = await response.json();
-      return data.signedUrl;
+      return data.token;
     } catch (err: any) {
-      console.error('[Docpen] Failed to get WebSocket URL:', err);
+      console.error('❌ [Docpen] Failed to get conversation token:', err);
       setError(err.message);
       return null;
-    }
-  };
-
-  /**
-   * Convert Float32 audio to Int16 PCM
-   */
-  const convertFloat32ToInt16 = (buffer: Float32Array): Int16Array => {
-    const l = buffer.length;
-    const int16Array = new Int16Array(l);
-    for (let i = 0; i < l; i++) {
-      const s = Math.max(-1, Math.min(1, buffer[i]));
-      int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-    }
-    return int16Array;
-  };
-
-  /**
-   * Convert Int16 PCM to Float32 for Web Audio API
-   */
-  const convertInt16ToFloat32 = (int16Array: Int16Array): Float32Array => {
-    const float32Array = new Float32Array(int16Array.length);
-    for (let i = 0; i < int16Array.length; i++) {
-      // Convert Int16 (-32768 to 32767) to Float32 (-1.0 to 1.0)
-      float32Array[i] = int16Array[i] / 32768.0;
-    }
-    return float32Array;
-  };
-
-  /**
-   * Play audio chunk from ElevenLabs (PCM format)
-   */
-  const playAudioChunk = async (base64Audio: string) => {
-    try {
-      if (!base64Audio || base64Audio.length === 0) {
-        console.warn('⚠️ [Docpen] Empty audio chunk received');
-        return;
-      }
-
-      if (!audioContextRef.current) {
-        console.warn('⚠️ [Docpen] Audio context not initialized, creating new one');
-        audioContextRef.current = new AudioContext({ sampleRate: 16000 });
-      }
-
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
-        console.log('🔊 [Docpen] Audio context resumed');
-      }
-
-      if (audioContextRef.current.state === 'closed') {
-        console.warn('⚠️ [Docpen] Audio context is closed, creating new one');
-        audioContextRef.current = new AudioContext({ sampleRate: 16000 });
-      }
-
-      console.log('🔊 [Docpen] Decoding audio chunk, length:', base64Audio.length);
-      
-      // Decode base64 to get raw bytes
-      const binaryString = atob(base64Audio);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      console.log('🔊 [Docpen] Audio bytes decoded, size:', bytes.length, 'bytes');
-
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        try {
-          // ElevenLabs sends PCM 16-bit audio at 16kHz
-          // Convert bytes to Int16Array (PCM samples)
-          const pcm16 = new Int16Array(bytes.buffer, bytes.byteOffset, bytes.length / 2);
-          
-          // Convert Int16 PCM to Float32 for Web Audio API
-          const float32Audio = convertInt16ToFloat32(pcm16);
-          
-          // Create AudioBuffer directly from PCM data
-          const sampleRate = 16000; // ElevenLabs sends PCM at 16kHz
-          const audioBuffer = audioContextRef.current.createBuffer(
-            1, // mono channel
-            float32Audio.length,
-            sampleRate
-          );
-          
-          // Copy Float32 data into AudioBuffer
-          audioBuffer.copyToChannel(float32Audio, 0);
-          
-          console.log('✅ [Docpen] PCM audio converted to AudioBuffer, duration:', audioBuffer.duration, 'seconds');
-          
-          // Play the audio
-          const source = audioContextRef.current.createBufferSource();
-          source.buffer = audioBuffer;
-          source.connect(audioContextRef.current.destination);
-          
-          source.onended = () => {
-            console.log('✅ [Docpen] Audio chunk playback finished');
-          };
-          
-          source.start();
-          console.log('✅ [Docpen] Audio chunk playback started');
-        } catch (decodeError: any) {
-          console.error('❌ [Docpen] Failed to process PCM audio:', decodeError);
-          console.error('❌ [Docpen] Error details:', {
-            name: decodeError.name,
-            message: decodeError.message,
-            audioLength: base64Audio.length,
-            bytesLength: bytes.length,
-          });
-        }
-      } else {
-        console.error('❌ [Docpen] Audio context is not available or closed');
-      }
-    } catch (error: any) {
-      console.error('❌ [Docpen] Error playing audio:', error);
-      console.error('❌ [Docpen] Error stack:', error.stack);
     }
   };
 
@@ -325,7 +206,7 @@ export function VoiceAssistant({
   };
 
   /**
-   * Connect to voice agent
+   * Connect to voice agent using ElevenLabs SDK
    */
   const connect = async () => {
     if (isConnecting || isConnected) return;
@@ -358,491 +239,123 @@ export function VoiceAssistant({
         console.log('✅ [Docpen] Agent initialized:', currentAgentId);
       }
 
-      // Step 2: Get signed WebSocket URL
-      console.log('🔗 [Docpen] Getting signed WebSocket URL...');
-      const wsUrl = await getSignedWebSocketUrl(currentAgentId);
-      if (!wsUrl) {
-        throw new Error('Failed to get WebSocket URL');
+      // Step 2: Get conversation token
+      console.log('🔗 [Docpen] Getting conversation token...');
+      const conversationToken = await getConversationToken(currentAgentId);
+      if (!conversationToken) {
+        throw new Error('Failed to get conversation token');
       }
-      console.log('✅ [Docpen] Got signed URL');
+      console.log('✅ [Docpen] Got conversation token');
 
       // Step 3: Request microphone access
       console.log('🎤 [Docpen] Requesting microphone access...');
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaStreamRef.current = stream;
+      audioStreamRef.current = stream;
       console.log('✅ [Docpen] Microphone access granted');
 
-      // Step 4: Set up audio context for playback (separate from recording)
-      // Use default sample rate for playback (usually 44100 Hz)
-      audioContextRef.current = new AudioContext();
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
-        console.log('🔊 [Docpen] Audio context resumed');
-      }
-      console.log('🔊 [Docpen] Audio context created for playback, sample rate:', audioContextRef.current.sampleRate);
-
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-
-      // Step 5: Connect WebSocket  
-      console.log('🔗 [Docpen] Connecting WebSocket...');
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        console.log('✅ [Docpen] WebSocket connected');
-        setIsConnected(true);
-        setIsConnecting(false);
-        setConnectionStartTime(new Date());
-        setMessages([]);
-        setRetryCount(0); // Reset retry count on successful connection
-        toast.success(t('voiceAssistantConnected'));
-        console.log('🎧 [Docpen] Waiting for agent greeting message...');
-        console.log('🔊 [Docpen] Speaker enabled:', isSpeakerEnabled);
-
-        // Start sending audio after brief delay to allow agent to speak first
-        setTimeout(() => {
-          processor.onaudioprocess = (e) => {
-            try {
-              if (ws.readyState === WebSocket.OPEN) {
-                if (!isMicEnabled) return;
-                if (pushToTalk && !isPushToTalkActive) return;
-
-                const inputData = e.inputBuffer.getChannelData(0);
-                
-                // Resample to 16kHz if needed (ElevenLabs expects 16kHz)
-                let resampledData = inputData;
-                const currentSampleRate = audioContextRef.current!.sampleRate;
-                if (currentSampleRate !== 16000) {
-                  // Simple downsampling: take every Nth sample
-                  const ratio = currentSampleRate / 16000;
-                  const newLength = Math.floor(inputData.length / ratio);
-                  resampledData = new Float32Array(newLength);
-                  for (let i = 0; i < newLength; i++) {
-                    resampledData[i] = inputData[Math.floor(i * ratio)];
-                  }
-                  console.log(`🔄 [Docpen] Resampled audio from ${currentSampleRate}Hz to 16kHz`);
-                }
-                
-                const pcm16 = convertFloat32ToInt16(resampledData);
-                const base64Audio = btoa(
-                  String.fromCharCode(...new Uint8Array(pcm16.buffer))
-                );
-                
-                // Send audio chunk (ElevenLabs will handle silence detection)
-                ws.send(JSON.stringify({ user_audio_chunk: base64Audio }));
-                // Log occasionally to avoid spam (every 50th chunk ~= once per second)
-                if (Math.random() < 0.02) {
-                  console.log('📤 [Docpen] Sent user audio chunk, size:', base64Audio.length);
-                }
-              }
-            } catch (err) {
-              console.error('❌ [Docpen] Error processing audio:', err);
-            }
-          };
-
-          // Connect source to processor, but DON'T connect processor to destination
-          // (that would cause feedback - processor is only for capturing input)
-          source.connect(processor);
-          // processor.connect(audioContextRef.current!.destination); // REMOVED - causes feedback
-          console.log('🎤 [Docpen] Audio processing started - microphone is active');
-        }, 1500); // Increased delay to give agent time to speak first message
-      };
-
-      ws.onmessage = async (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          const messageType = message.type || (message.agent_transcript ? 'agent_transcript' : (message.user_transcript ? 'user_transcript' : (message.audio ? 'audio' : 'unknown')));
-          console.log('📨 [Docpen] Received:', messageType, message);
-          
-          // ALWAYS log full message structure for debugging
-          console.log('🔍🔍🔍 [Docpen] FULL MESSAGE DEBUG 🔍🔍🔍');
-          console.log('   messageType:', messageType);
-          console.log('   message.type:', message.type);
-          console.log('   "audio" in message?', 'audio' in message);
-          console.log('   message.audio:', message.audio);
-          console.log('   typeof message.audio:', typeof message.audio);
-          console.log('   All keys:', Object.keys(message));
-          console.log('   Full message:', JSON.stringify(message, null, 2));
-          
-          // CRITICAL: Log audio messages in detail to understand structure
-          if (messageType === 'audio' || message.audio || 'audio' in message) {
-            console.log('🔊🔊🔊 [Docpen] AUDIO MESSAGE DETECTED 🔊🔊🔊');
-            console.log('🔍 [Docpen] Message type:', messageType);
-            console.log('🔍 [Docpen] Has message.audio?', !!message.audio);
-            console.log('🔍 [Docpen] message.audio type:', typeof message.audio);
-            console.log('🔍 [Docpen] message.audio value:', message.audio);
-            if (message.audio) {
-              if (typeof message.audio === 'string') {
-                console.log('✅ [Docpen] Audio is STRING, length:', message.audio.length);
-                console.log('   Preview:', message.audio.substring(0, 100));
-              } else if (typeof message.audio === 'object') {
-                console.log('⚠️ [Docpen] Audio is OBJECT');
-                console.log('   Keys:', Object.keys(message.audio));
-                console.log('   Full object:', JSON.stringify(message.audio, null, 2));
-              }
-            }
-            console.log('🔍 [Docpen] All message keys:', Object.keys(message));
-            console.log('🔍 [Docpen] Full message:', JSON.stringify(message, null, 2));
-          }
-          
-          // Debug: Log all message keys to understand structure
-          if (messageType === 'agent_response' || messageType === 'unknown') {
-            console.log('🔍 [Docpen] Message keys:', Object.keys(message));
-            console.log('🔍 [Docpen] Has audio field?', !!message.audio);
-            console.log('🔍 [Docpen] Audio type:', typeof message.audio);
-            if (message.audio) {
-              console.log('🔍 [Docpen] Audio is object?', typeof message.audio === 'object');
-              if (typeof message.audio === 'object') {
-                console.log('🔍 [Docpen] Audio object keys:', Object.keys(message.audio));
-                console.log('🔍 [Docpen] Audio object sample:', JSON.stringify(message.audio).substring(0, 300));
-              }
-            }
-            console.log('🔍 [Docpen] Has agent_response.audio?', !!message.agent_response?.audio);
-            console.log('🔍 [Docpen] Full message structure:', JSON.stringify(message, null, 2).substring(0, 500));
-          }
-
-          // Handle conversation ID
-          if (message.conversation_id) {
-            setConversationId(message.conversation_id);
-            console.log('📝 [Docpen] Conversation ID:', message.conversation_id);
-          }
-
-          // Handle user transcript
-          if (message.user_transcript) {
-            console.log('👤 [Docpen] User said:', message.user_transcript);
+      // Step 4: Set up SDK session options
+      const sessionOptions = {
+        conversationToken,
+        onConnect: () => {
+          console.log('✅ [Docpen] SDK connected');
+          setIsConnected(true);
+          setIsConnecting(false);
+          setConnectionStartTime(new Date());
+          setMessages([]);
+          setRetryCount(0);
+          toast.success(t('voiceAssistantConnected'));
+        },
+        onDisconnect: () => {
+          console.log('🔔 [Docpen] SDK disconnected');
+          setIsConnected(false);
+          setIsAgentSpeaking(false);
+          await saveConversation();
+          cleanup();
+        },
+        onError: (error: any) => {
+          console.error('❌ [Docpen] SDK error:', error);
+          const message =
+            error?.message ||
+            error?.error ||
+            'Could not establish connection. Please try again.';
+          setError(message);
+          setIsConnecting(false);
+          toast.error(message);
+        },
+        onMessage: (message: any) => {
+          console.log('📨 [Docpen] SDK message:', message);
+          if (message.message) {
             const newMsg: VoiceMessage = {
               id: Date.now().toString(),
-              role: 'user',
-              content: message.user_transcript,
+              role: message.source === 'ai' ? 'assistant' : 'user',
+              content: message.message,
               timestamp: new Date(),
             };
             setMessages((prev) => [...prev, newMsg]);
-            onTranscript?.(message.user_transcript, 'user');
+            onTranscript?.(message.message, message.source === 'ai' ? 'assistant' : 'user');
           }
-
-          // Handle agent transcript (including first message)
-          if (message.agent_transcript) {
-            console.log('🤖 [Docpen] Agent said:', message.agent_transcript);
-            const newMsg: VoiceMessage = {
-              id: Date.now().toString(),
-              role: 'assistant',
-              content: message.agent_transcript,
-              timestamp: new Date(),
-            };
-            setMessages((prev) => [...prev, newMsg]);
-            onTranscript?.(message.agent_transcript, 'assistant');
+        },
+        onModeChange: (mode: any) => {
+          console.log('🔄 [Docpen] Mode changed:', mode.mode);
+          if (mode.mode === 'speaking') {
             setIsAgentSpeaking(true);
-            setTimeout(() => setIsAgentSpeaking(false), 2000);
-          }
-
-          // Handle audio response (this is how ElevenLabs sends speech)
-          // IMPORTANT: ElevenLabs can send audio in multiple formats:
-          // 1. Direct: message.audio = "base64string"
-          // 2. Nested event: message.audio_event.audio = "base64string" (similar to agent_response_event)
-          // 3. Object: message.audio = { data: "base64string" }
-          
-          // Check for audio in multiple locations (matching the agent_response pattern)
-          let audioData: string | null = null;
-          const audioSources: string[] = [];
-          
-          // Check direct audio field
-          if (message.audio !== undefined && message.audio !== null) {
-            audioSources.push('message.audio (direct)');
-            if (typeof message.audio === 'string') {
-              audioData = message.audio;
-            }
-          }
-          
-          // Check nested audio_event structure (like agent_response_event)
-          // ElevenLabs sends audio_base_64 in audio_event
-          if (message.audio_event?.audio_base_64) {
-            audioSources.push('message.audio_event.audio_base_64');
-            if (typeof message.audio_event.audio_base_64 === 'string') {
-              audioData = message.audio_event.audio_base_64;
-            }
-          }
-          
-          // Also check for audio_event.audio (alternative format)
-          if (!audioData && message.audio_event?.audio) {
-            audioSources.push('message.audio_event.audio');
-            if (typeof message.audio_event.audio === 'string') {
-              audioData = message.audio_event.audio;
-            }
-          }
-          
-          // Check audio_event direct (if audio is the whole event)
-          if (!audioData && message.audio_event && typeof message.audio_event === 'string') {
-            audioSources.push('message.audio_event (direct string)');
-            audioData = message.audio_event;
-          }
-          
-          // Log all audio detection attempts
-          if (audioSources.length > 0 || message.audio !== undefined || message.audio_event) {
-            console.log('🔊🔊🔊 [Docpen] AUDIO DETECTION 🔊🔊🔊');
-            console.log('   messageType:', messageType);
-            console.log('   message.type:', message.type);
-            console.log('   message.audio:', message.audio);
-            console.log('   message.audio_event:', message.audio_event);
-            console.log('   audioSources found:', audioSources);
-            console.log('   audioData extracted:', audioData ? `YES (length: ${audioData.length})` : 'NO');
-            console.log('   Full message keys:', Object.keys(message));
-            console.log('   Full message:', JSON.stringify(message, null, 2));
-          }
-          
-          if (audioData) {
-            // We already extracted audioData above, now play it
-            console.log('🔊 [Docpen] Playing extracted audio chunk, length:', audioData.length);
-            setIsAgentSpeaking(true);
-            if (isSpeakerEnabled) {
-              try {
-                await playAudioChunk(audioData);
-                console.log('✅ [Docpen] Audio chunk played successfully');
-              } catch (audioError) {
-                console.error('❌ [Docpen] Failed to play audio chunk:', audioError);
-                toast.error('Failed to play agent audio. Please check your speaker settings.');
-              }
-            } else {
-              console.warn('⚠️ [Docpen] Speaker disabled - audio chunk received but not played');
-            }
-            setTimeout(() => setIsAgentSpeaking(false), 1000);
-          } else if (message.audio && typeof message.audio === 'object' && message.audio !== null) {
-            // Fallback: try to extract from object if we didn't find it above
-            // Handle object format (fallback for different ElevenLabs API versions)
-            console.log('⚠️ [Docpen] Audio received as object (unexpected), attempting extraction...');
-            console.log('🔍 [Docpen] Audio object keys:', Object.keys(message.audio));
-            console.log('🔍 [Docpen] Audio object sample:', JSON.stringify(message.audio).substring(0, 300));
-            
-            let audioData: string | null = null;
-            
-            // Try common field names
-            if ('data' in message.audio && typeof message.audio.data === 'string') {
-              audioData = message.audio.data;
-            } else if ('audio' in message.audio && typeof message.audio.audio === 'string') {
-              audioData = message.audio.audio;
-            } else if ('base64' in message.audio && typeof message.audio.base64 === 'string') {
-              audioData = message.audio.base64;
-            } else if ('chunk' in message.audio && typeof message.audio.chunk === 'string') {
-              audioData = message.audio.chunk;
-            } else if (message.audio instanceof ArrayBuffer) {
-              const bytes = new Uint8Array(message.audio);
-              audioData = btoa(String.fromCharCode(...bytes));
-            } else if (message.audio instanceof Uint8Array) {
-              audioData = btoa(String.fromCharCode(...message.audio));
-            } else {
-              // Last resort: find any string value >100 chars
-              for (const [key, value] of Object.entries(message.audio)) {
-                if (typeof value === 'string' && value.length > 100) {
-                  audioData = value;
-                  console.log(`✅ [Docpen] Found audio data in key "${key}"`);
-                  break;
-                }
-              }
-            }
-            
-            if (audioData) {
-              console.log('✅ [Docpen] Extracted audio data from object, length:', audioData.length);
-              setIsAgentSpeaking(true);
-              if (isSpeakerEnabled) {
-                try {
-                  await playAudioChunk(audioData);
-                  console.log('✅ [Docpen] Audio chunk played successfully');
-                } catch (audioError) {
-                  console.error('❌ [Docpen] Failed to play audio chunk:', audioError);
-                  toast.error('Failed to play agent audio. Please check your speaker settings.');
-                }
-              } else {
-                console.warn('⚠️ [Docpen] Speaker disabled - audio chunk received but not played');
-              }
-              setTimeout(() => setIsAgentSpeaking(false), 1000);
-            } else {
-              console.error('❌ [Docpen] Could not extract audio data from object');
-              console.error('   Full audio object:', JSON.stringify(message.audio, null, 2).substring(0, 500));
-            }
-          }
-
-          // Handle agent response (alternative format - text only, no audio)
-          if (message.agent_response) {
-            console.log('🤖 [Docpen] Agent response received:', {
-              hasText: !!message.agent_response.text || !!message.agent_response.message,
-              hasAudio: !!message.audio || !!message.agent_response.audio,
-              responseType: message.agent_response?.event_id ? 'event' : 'direct',
-              fullMessage: message.agent_response,
-            });
-            
-            // Extract text from nested structure if needed
-            const agentResponseData = message.agent_response?.agent_response || message.agent_response;
-            const responseText = agentResponseData?.text || agentResponseData?.message || message.agent_response?.text || message.agent_response?.message || JSON.stringify(message.agent_response);
-            
-            const newMsg: VoiceMessage = {
-              id: Date.now().toString(),
-              role: 'assistant',
-              content: responseText,
-              timestamp: new Date(),
-            };
-            setMessages((prev) => [...prev, newMsg]);
-            onTranscript?.(responseText, 'assistant');
-            setIsAgentSpeaking(true);
-            setTimeout(() => setIsAgentSpeaking(false), 2000);
-            
-            // Check if audio is embedded in agent_response structure
-            const embeddedAudio = message.agent_response?.audio || agentResponseData?.audio;
-            if (embeddedAudio) {
-              console.log('🔊 [Docpen] Found embedded audio in agent_response');
-              if (isSpeakerEnabled) {
-                try {
-                  await playAudioChunk(embeddedAudio);
-                  console.log('✅ [Docpen] Embedded audio chunk played successfully');
-                } catch (audioError) {
-                  console.error('❌ [Docpen] Failed to play embedded audio:', audioError);
-                }
-              }
-            }
-            
-            // If agent_response doesn't include audio, log a detailed warning
-            if (!message.audio && !embeddedAudio) {
-              console.warn('⚠️ [Docpen] Agent response received but no audio chunk. This may indicate:');
-              console.warn('   1. Agent is configured to send text-only responses');
-              console.warn('   2. ElevenLabs TTS is not enabled for this agent');
-              console.warn('   3. Audio chunks are being sent separately (check for separate "audio" messages)');
-              console.warn('   4. Audio format might be different - check message structure above');
-            }
-          }
-          
-          // Handle conversation initiation metadata (includes first message)
-          if (message.conversation_initiation_metadata) {
-            console.log('🎬 [Docpen] Conversation initiated:', message.conversation_initiation_metadata);
-            // The first_message should be sent as audio automatically by ElevenLabs
-            // But if we receive it as text, display it
-            if (message.conversation_initiation_metadata.first_message) {
-              const firstMsg: VoiceMessage = {
-                id: 'first-message',
-                role: 'assistant',
-                content: message.conversation_initiation_metadata.first_message,
-                timestamp: new Date(),
-              };
-              setMessages((prev) => {
-                // Only add if not already present
-                if (!prev.find(m => m.id === 'first-message')) {
-                  return [firstMsg, ...prev];
-                }
-                return prev;
-              });
-            }
-          }
-
-          // Handle interruption
-          if (message.type === 'interruption') {
-            console.log('⏸️ [Docpen] Agent interrupted');
+          } else if (mode.mode === 'listening') {
             setIsAgentSpeaking(false);
           }
-
-          // Handle errors
-          if (message.type === 'error') {
-            console.error('❌ [Docpen] Agent error:', message.message || message.error);
-            toast.error(message.message || message.error || t('agentError'));
-          }
-        } catch (err) {
-          console.error('❌ [Docpen] Failed to parse message:', err, event.data);
-        }
+        },
       };
 
-      ws.onerror = (err) => {
-        console.error('❌ [Docpen] WebSocket error:', err);
-        console.error('❌ [Docpen] WebSocket error details:', {
-          type: err.type,
-          target: err.target,
-          currentTarget: err.currentTarget,
+      // Step 5: Start SDK session (try WebRTC first, fallback to WebSocket)
+      const startWebrtcSession = async () => {
+        return Conversation.startSession({
+          ...sessionOptions,
+          connectionType: 'webrtc',
         });
-        setError('Connection error');
-        toast.error('Connection error');
-        setIsConnecting(false);
       };
 
-      ws.onclose = async (event) => {
-        console.log('🔔 [Docpen] WebSocket closed:', event.code, event.reason);
-        console.log('🔔 [Docpen] Close event details:', {
-          code: event.code,
-          reason: event.reason,
-          wasClean: event.wasClean,
-          timestamp: new Date().toISOString(),
-          connectionDuration: connectionStartTime 
-            ? `${Math.round((Date.now() - connectionStartTime.getTime()) / 1000)}s`
-            : 'unknown',
+      const startWebsocketSession = async () => {
+        return (Conversation as any).startSession({
+          ...sessionOptions,
+          connectionType: 'websocket',
         });
-        setIsConnected(false);
-        setIsConnecting(false);
-        await saveConversation();
-        cleanup();
-        
-        // If connection closed immediately (within 5 seconds) with code 1005, agent likely doesn't exist
-        const connectionDuration = connectionStartTime 
-          ? Date.now() - connectionStartTime.getTime()
-          : 0;
-        const closedImmediately = connectionDuration < 5000 && event.code === 1005;
-        
-        if (!event.wasClean && event.code !== 1000) {
-          let errorMsg = '';
-          if (closedImmediately && retryCount < 1) {
-            // First time this happens - try forcing a new agent creation
-            errorMsg = 'Connection closed immediately. Creating a new agent...';
-            console.error('❌ [Docpen] Connection closed immediately - agent likely missing from ElevenLabs');
-            console.log('🔄 [Docpen] Retrying with forceCreate=true...');
-            
-            // Retry with forceCreate
-            setRetryCount(prev => prev + 1);
-            setTimeout(async () => {
-              try {
-                console.log('🔄 [Docpen] Retrying agent initialization with forceCreate...');
-                const response = await fetch('/api/docpen/voice-agent?forceCreate=true', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    profession,
-                    customProfession,
-                    sessionContext: {
-                      patientName,
-                      chiefComplaint,
-                      sessionId,
-                    },
-                  }),
-                });
-                
-                if (response.ok) {
-                  const data = await response.json();
-                  console.log('✅ [Docpen] New agent created:', data.agentId);
-                  setAgentId(data.agentId);
-                  // Retry connection with new agent
-                  setTimeout(() => connect(), 1000);
-                } else {
-                  const error = await response.json();
-                  console.error('❌ [Docpen] Failed to create new agent:', error);
-                  setError('Failed to create new agent. Please check ElevenLabs API key.');
-                  toast.error('Failed to create new agent. Please check ElevenLabs API key.');
-                }
-              } catch (retryError: any) {
-                console.error('❌ [Docpen] Retry failed:', retryError);
-                setError('Failed to retry connection. Please refresh the page.');
-                toast.error('Failed to retry connection. Please refresh the page.');
-              }
-            }, 1000);
-          } else {
-            errorMsg = closedImmediately
-              ? 'Connection closed immediately. The agent may not exist in ElevenLabs. Please refresh and try again.'
-              : event.code === 1005 
-                ? 'Connection closed unexpectedly. Please try again.'
-                : t('connectionClosed', { code: event.code });
-          }
-          if (errorMsg) {
-            toast.error(errorMsg);
-            setError(errorMsg);
-          }
-        }
       };
+
+      try {
+        console.log('🔗 [Docpen] Starting WebRTC session...');
+        conversationRef.current = await startWebrtcSession();
+        console.log('✅ [Docpen] WebRTC session started');
+      } catch (sessionError: any) {
+        const message = sessionError?.message || '';
+        if (message.includes('Failed to fetch') || message.includes('signal')) {
+          console.log('⚠️ [Docpen] WebRTC failed, trying WebSocket fallback...');
+          try {
+            conversationRef.current = await startWebsocketSession();
+            console.log('✅ [Docpen] WebSocket session started');
+          } catch (fallbackError: any) {
+            console.error('❌ [Docpen] WebSocket fallback failed:', fallbackError);
+            if (audioStreamRef.current) {
+              audioStreamRef.current.getTracks().forEach((track) => track.stop());
+              audioStreamRef.current = null;
+            }
+            throw fallbackError;
+          }
+        } else {
+          if (audioStreamRef.current) {
+            audioStreamRef.current.getTracks().forEach((track) => track.stop());
+            audioStreamRef.current = null;
+          }
+          throw sessionError;
+        }
+      }
     } catch (err: any) {
       console.error('❌ [Docpen] Connection failed:', err);
-      setError(err.message);
-      toast.error(err.message || t('connectionFailed'));
+      if (err.name === 'NotAllowedError') {
+        setError('Microphone access denied. Please grant permission and try again.');
+        toast.error('Microphone access denied');
+      } else {
+        setError(err.message || 'Failed to connect');
+        toast.error(err.message || t('connectionFailed'));
+      }
       setIsConnecting(false);
       cleanup();
     }
@@ -853,8 +366,13 @@ export function VoiceAssistant({
    */
   const disconnect = async () => {
     await saveConversation();
-    if (wsRef.current) {
-      wsRef.current.close();
+    if (conversationRef.current) {
+      try {
+        conversationRef.current.endSession();
+      } catch (e) {
+        console.error('❌ [Docpen] Error ending session:', e);
+      }
+      conversationRef.current = null;
     }
     cleanup();
     setIsConnected(false);
@@ -868,31 +386,23 @@ export function VoiceAssistant({
   const cleanup = () => {
     console.log('🧹 [Docpen] Starting cleanup...');
     
+    // End SDK session
+    if (conversationRef.current) {
+      try {
+        conversationRef.current.endSession();
+      } catch (e) {
+        console.error('⚠️ [Docpen] Error ending SDK session:', e);
+      }
+      conversationRef.current = null;
+    }
+    
     // Stop all media tracks
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => {
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach((track) => {
         track.stop();
         console.log(`🎤 [Docpen] Stopped ${track.kind} track`);
       });
-      mediaStreamRef.current = null;
-    }
-    
-    // Close audio context
-    if (audioContextRef.current) {
-      if (audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close().catch(err => {
-          console.warn('⚠️ [Docpen] Error closing audio context:', err);
-        });
-      }
-      audioContextRef.current = null;
-    }
-    
-    // Close WebSocket if still open
-    if (wsRef.current) {
-      if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
-        wsRef.current.close();
-      }
-      wsRef.current = null;
+      audioStreamRef.current = null;
     }
     
     console.log('✅ [Docpen] Cleanup complete');
