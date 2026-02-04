@@ -169,40 +169,55 @@ export async function GET(request: Request) {
         },
       });
 
-      // Then fetch counts separately for each contact (more reliable)
-      const contactIds = contacts.map(c => c.id);
-      const [dealsCounts, messagesCounts, callLogsCounts] = await Promise.all([
-        prisma.deal.groupBy({
-          by: ['leadId'],
-          where: { leadId: { in: contactIds } },
-          _count: true,
-        }).catch(() => []),
-        prisma.message.groupBy({
-          by: ['leadId'],
-          where: { leadId: { in: contactIds } },
-          _count: true,
-        }).catch(() => []),
-        prisma.callLog.groupBy({
-          by: ['leadId'],
-          where: { leadId: { in: contactIds } },
-          _count: true,
-        }).catch(() => []),
-      ]);
+      // Fetch counts separately using simple queries (more reliable than groupBy)
+      if (contacts.length > 0) {
+        const contactIds = contacts.map(c => c.id);
+        
+        // Use count queries instead of groupBy - more reliable
+        const [dealsData, messagesData, callLogsData] = await Promise.all([
+          prisma.deal.findMany({
+            where: { leadId: { in: contactIds } },
+            select: { leadId: true },
+          }).catch(() => []),
+          prisma.message.findMany({
+            where: { leadId: { in: contactIds } },
+            select: { leadId: true },
+          }).catch(() => []),
+          prisma.callLog.findMany({
+            where: { leadId: { in: contactIds } },
+            select: { leadId: true },
+          }).catch(() => []),
+        ]);
 
-      // Create lookup maps
-      const dealsMap = new Map(dealsCounts.map(d => [d.leadId, d._count]));
-      const messagesMap = new Map(messagesCounts.map(m => [m.leadId, m._count]));
-      const callLogsMap = new Map(callLogsCounts.map(c => [c.leadId, c._count]));
+        // Count manually
+        const dealsMap = new Map<string, number>();
+        const messagesMap = new Map<string, number>();
+        const callLogsMap = new Map<string, number>();
 
-      // Add counts to contacts
-      contacts = contacts.map((contact: any) => ({
-        ...contact,
-        _count: {
-          deals: dealsMap.get(contact.id) || 0,
-          messages: messagesMap.get(contact.id) || 0,
-          callLogs: callLogsMap.get(contact.id) || 0,
-        },
-      }));
+        dealsData.forEach(d => dealsMap.set(d.leadId, (dealsMap.get(d.leadId) || 0) + 1));
+        messagesData.forEach(m => messagesMap.set(m.leadId, (messagesMap.get(m.leadId) || 0) + 1));
+        callLogsData.forEach(c => callLogsMap.set(c.leadId, (callLogsMap.get(c.leadId) || 0) + 1));
+
+        // Add counts to contacts
+        contacts = contacts.map((contact: any) => ({
+          ...contact,
+          _count: {
+            deals: dealsMap.get(contact.id) || 0,
+            messages: messagesMap.get(contact.id) || 0,
+            callLogs: callLogsMap.get(contact.id) || 0,
+          },
+        }));
+      } else {
+        // No contacts, add empty counts
+        contacts = contacts.map((contact: any) => ({
+          ...contact,
+          _count: {
+            deals: 0,
+            messages: 0,
+            callLogs: 0,
+          },
+        }));
+      }
     } catch (dbError: any) {
       console.error('Database query error:', dbError);
       console.error('Database error code:', dbError?.code);
