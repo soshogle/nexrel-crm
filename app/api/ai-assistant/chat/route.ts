@@ -784,9 +784,15 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     const toolCalls = assistantMessage?.tool_calls || [];
     const content = assistantMessage?.content || "";
 
-    console.log("AI response received successfully");
-    console.log("Tool calls:", toolCalls.length);
-    console.log("Content:", content?.substring(0, 200) || "None");
+    console.log("═══════════════════════════════════════════════════════");
+    console.log("🤖 [Chat] AI response received");
+    console.log("  - Tool calls count:", toolCalls.length);
+    console.log("  - Content length:", content?.length || 0);
+    console.log("  - Content preview:", content?.substring(0, 200) || "None");
+    if (toolCalls.length > 0) {
+      console.log("  - Tool calls:", toolCalls.map((tc: any) => `${tc.function?.name}(${tc.function?.arguments?.substring(0, 50)}...)`).join(", "));
+    }
+    console.log("═══════════════════════════════════════════════════════");
 
     // If the model wants to call functions, execute them
     if (toolCalls.length > 0) {
@@ -805,9 +811,18 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
 
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
-        const functionArgs = JSON.parse(toolCall.function.arguments || "{}");
+        let functionArgs;
+        try {
+          functionArgs = JSON.parse(toolCall.function.arguments || "{}");
+        } catch (parseError) {
+          console.error(`❌ [Chat] Failed to parse function arguments for ${functionName}:`, toolCall.function.arguments);
+          functionArgs = {};
+        }
 
-        console.log(`🔧 [Chat] Executing function: ${functionName}`, functionArgs);
+        console.log("═══════════════════════════════════════════════════════");
+        console.log(`🔧 [Chat] Executing function: ${functionName}`);
+        console.log(`  - Arguments:`, JSON.stringify(functionArgs, null, 2));
+        console.log("═══════════════════════════════════════════════════════");
 
         // Handle special navigate_to function separately
         if (functionName === "navigate_to") {
@@ -844,16 +859,31 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
             }
           );
 
+          console.log(`📡 [Chat] Action endpoint response status:`, actionResponse.status);
+          
           if (actionResponse.ok) {
             const actionResponseData = await actionResponse.json();
+            console.log("═══════════════════════════════════════════════════════");
             console.log(`✅ [Chat] Action ${action} executed successfully`);
-            console.log(`📋 [Chat] Action response:`, JSON.stringify(actionResponseData, null, 2));
+            console.log(`📋 [Chat] Action response structure:`, {
+              hasSuccess: !!actionResponseData.success,
+              hasAction: !!actionResponseData.action,
+              hasResult: !!actionResponseData.result,
+              resultKeys: actionResponseData.result ? Object.keys(actionResponseData.result) : [],
+              fullResponse: JSON.stringify(actionResponseData, null, 2)
+            });
+            console.log("═══════════════════════════════════════════════════════");
+            
             lastActionResult = actionResponseData;
 
             // Get navigation URL for this action
-            if (!navigationUrl) {
-              navigationUrl = getNavigationUrlForAction(action, actionResponseData);
+            const computedNavUrl = getNavigationUrlForAction(action, actionResponseData);
+            console.log(`🧭 [Chat] Computed navigation URL:`, computedNavUrl);
+            if (!navigationUrl && computedNavUrl) {
+              navigationUrl = computedNavUrl;
               console.log(`🧭 [Chat] Navigation URL set to:`, navigationUrl);
+            } else if (!computedNavUrl) {
+              console.warn(`⚠️ [Chat] No navigation URL computed for action:`, action);
             }
 
             // Format result for OpenAI
@@ -944,6 +974,9 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       }
     } else {
       // No function calls - just return the content
+      console.log("⚠️ [Chat] NO FUNCTION CALLS DETECTED - Model returned text only");
+      console.log("  - This might mean the model didn't recognize the action request");
+      console.log("  - User message was:", message?.substring(0, 100));
       finalReply = content || "I'm here to help! Could you please rephrase your question?";
     }
 
@@ -987,17 +1020,30 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     }
 
     // Final logging before response
-    console.log("📤 [Chat] Final response:");
-    console.log("  - Navigation URL:", navigationUrl);
-    console.log("  - Action result:", actionResult ? "Present" : "None");
-    console.log("  - Final reply length:", finalReply.length);
+    console.log("═══════════════════════════════════════════════════════");
+    console.log("📤 [Chat] FINAL RESPONSE:");
+    console.log("  - Navigation URL:", navigationUrl || "NULL (NOT SET)");
+    console.log("  - Action result:", actionResult ? "Present" : "NULL (NOT SET)");
+    if (actionResult) {
+      console.log("  - Action result action:", actionResult.action);
+      console.log("  - Action result has result:", !!actionResult.result);
+      if (actionResult.result) {
+        console.log("  - Action result keys:", Object.keys(actionResult.result));
+      }
+    }
+    console.log("  - Final reply:", finalReply.substring(0, 200));
+    console.log("═══════════════════════════════════════════════════════");
     
-    return NextResponse.json({
+    const responsePayload = {
       reply: finalReply,
       action: actionResult,
       navigateTo: navigationUrl,
       timestamp: new Date().toISOString(),
-    });
+    };
+    
+    console.log("📦 [Chat] Response payload:", JSON.stringify(responsePayload, null, 2));
+    
+    return NextResponse.json(responsePayload);
   } catch (error: any) {
     console.error("Error in AI assistant chat:", error);
     return NextResponse.json(
