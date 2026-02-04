@@ -166,10 +166,28 @@ export function VoiceAssistant({
   };
 
   /**
+   * Fetch transcript from ElevenLabs API
+   */
+  const fetchTranscriptFromElevenLabs = async (convId: string): Promise<any[] | null> => {
+    try {
+      const response = await fetch(`/api/elevenlabs/conversations/${convId}`);
+      if (!response.ok) {
+        console.warn('⚠️ [Docpen] Failed to fetch transcript from ElevenLabs:', response.status);
+        return null;
+      }
+      const data = await response.json();
+      return data.conversation?.transcript || null;
+    } catch (error) {
+      console.error('❌ [Docpen] Error fetching transcript:', error);
+      return null;
+    }
+  };
+
+  /**
    * Save conversation to database
    */
   const saveConversation = async () => {
-    if (!agentId || messages.length === 0) return;
+    if (!agentId) return;
 
     try {
       const endTime = new Date();
@@ -177,11 +195,39 @@ export function VoiceAssistant({
         ? Math.round((endTime.getTime() - connectionStartTime.getTime()) / 1000)
         : 0;
 
-      const transcript = messages.map((m) => ({
-        role: m.role === 'assistant' ? 'agent' : 'user',
-        message: m.content,
-        time_in_call_secs: 0,
-      }));
+      // Try to fetch full transcript from ElevenLabs if we have the conversation ID
+      let transcript = null;
+      let audioUrl = null;
+      
+      if (conversationId) {
+        console.log('📥 [Docpen] Fetching transcript from ElevenLabs for:', conversationId);
+        const elevenLabsData = await fetchTranscriptFromElevenLabs(conversationId);
+        
+        if (elevenLabsData && Array.isArray(elevenLabsData)) {
+          // Use transcript from ElevenLabs
+          transcript = elevenLabsData;
+          console.log('✅ [Docpen] Using transcript from ElevenLabs:', transcript.length, 'turns');
+        } else {
+          // Fallback to local messages
+          transcript = messages.map((m) => ({
+            role: m.role === 'assistant' ? 'agent' : 'user',
+            message: m.content,
+            time_in_call_secs: 0,
+          }));
+          console.log('⚠️ [Docpen] Using local messages as fallback:', transcript.length, 'messages');
+        }
+        
+        // Set audio URL if available
+        audioUrl = `/api/calls/audio/${conversationId}`;
+      } else {
+        // Fallback to local messages if no conversation ID
+        transcript = messages.map((m) => ({
+          role: m.role === 'assistant' ? 'agent' : 'user',
+          message: m.content,
+          time_in_call_secs: 0,
+        }));
+        console.log('⚠️ [Docpen] No conversation ID, using local messages:', transcript.length, 'messages');
+      }
 
       await fetch('/api/docpen/conversations/save', {
         method: 'POST',
@@ -194,12 +240,14 @@ export function VoiceAssistant({
           endedAt: endTime.toISOString(),
           durationSec,
           transcript,
-          messageCount: messages.length,
-          turnCount: Math.ceil(messages.length / 2),
+          messageCount: transcript?.length || messages.length,
+          turnCount: Math.ceil((transcript?.length || messages.length) / 2),
+          elevenLabsConvId: conversationId, // Use real conversation ID
+          audioUrl: audioUrl,
         }),
       });
 
-      console.log('✅ [Docpen] Conversation saved');
+      console.log('✅ [Docpen] Conversation saved with conversation ID:', conversationId);
     } catch (error) {
       console.error('❌ [Docpen] Failed to save conversation:', error);
     }
@@ -284,6 +332,13 @@ export function VoiceAssistant({
         },
         onMessage: (message: any) => {
           console.log('📨 [Docpen] SDK message:', message);
+          
+          // Capture conversation ID if provided
+          if (message.conversation_id && !conversationId) {
+            console.log('📝 [Docpen] Captured conversation ID:', message.conversation_id);
+            setConversationId(message.conversation_id);
+          }
+          
           if (message.message) {
             const newMsg: VoiceMessage = {
               id: Date.now().toString(),
