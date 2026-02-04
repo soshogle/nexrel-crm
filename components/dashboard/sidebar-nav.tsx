@@ -346,13 +346,6 @@ const adminItems = [
     requiresAdmin: true,
   },
   {
-    id: 'tasks' as MenuItemId,
-    title: 'Tasks',
-    href: '/dashboard/admin/tasks',
-    icon: ListTodo,
-    requiresAdmin: true,
-  },
-  {
     id: 'analytics' as MenuItemId,
     title: 'Analytics',
     href: '/dashboard/admin/analytics',
