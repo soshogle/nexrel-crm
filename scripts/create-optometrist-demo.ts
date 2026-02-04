@@ -413,14 +413,13 @@ async function createOptometristDemo() {
           userId: user.id,
           leadId: leads[i].id,
           appointmentTypeId: appointmentType.id,
-          startTime: new Date(Date.now() + (i + 1) * 7 * 24 * 60 * 60 * 1000),
+          customerName: leads[i].contactPerson || leads[i].businessName,
+          customerEmail: leads[i].email || `patient${i}@email.com`,
+          customerPhone: leads[i].phone || '+15141234567',
+          appointmentDate: new Date(Date.now() + (i + 1) * 7 * 24 * 60 * 60 * 1000),
           duration: 60,
           status: 'CONFIRMED',
           notes: 'Examen annuel',
-          metadata: {
-            tags: [MOCK_DATA_TAG],
-            language: 'fr',
-          },
         },
       });
     }
@@ -472,6 +471,10 @@ async function createOptometristDemo() {
           currency: 'CAD',
           status: 'SUCCEEDED',
           provider: 'STRIPE',
+          customerName: leads[i].contactPerson || leads[i].businessName,
+          customerEmail: leads[i].email || `patient${i}@email.com`,
+          customerPhone: leads[i].phone || '+15141234567',
+          description: `Paiement pour examen et lunettes - ${leads[i].contactPerson}`,
         },
       });
     }
