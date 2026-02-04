@@ -344,12 +344,13 @@ class DocpenAgentProvisioning {
     const apiKey = await this.getApiKey(config.userId);
     if (!apiKey) return;
 
-    // Fetch user's language preference
+    // Fetch user's language preference and industry
     const user = await prisma.user.findUnique({
       where: { id: config.userId },
-      select: { language: true },
+      select: { language: true, industry: true },
     });
     const userLanguage = user?.language || 'en';
+    const userIndustry = user?.industry || null;
 
     const professionKey = config.profession === 'CUSTOM' ? 'CUSTOM' : config.profession;
     const promptTemplate = VOICE_AGENT_PROMPTS[professionKey] || VOICE_AGENT_PROMPTS.GENERAL_PRACTICE;
