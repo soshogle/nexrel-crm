@@ -1028,7 +1028,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     
     // Get or update navigation URL for the action
     if (!navigationUrl) {
-      navigationUrl = getNavigationUrlForAction(actionResult?.action);
+      navigationUrl = getNavigationUrlForAction(actionResult?.action, actionResult?.result);
     }
     console.log("🧭 [Chat] Initial Navigation URL:", navigationUrl);
     
