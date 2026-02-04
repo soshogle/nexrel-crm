@@ -117,6 +117,11 @@ export async function PATCH(
         },
       });
 
+      // Get the new stage information
+      const newStage = await prisma.pipelineStage.findUnique({
+        where: { id: data.stageId },
+      });
+
       // Trigger DEAL_STAGE_CHANGED workflows (generic)
       workflowEngine.triggerWorkflow('DEAL_STAGE_CHANGED', {
         userId: user.id,
@@ -140,9 +145,6 @@ export async function PATCH(
       }
 
       // Check if deal is won (moved to CLOSED_WON stage)
-      const newStage = await prisma.pipelineStage.findUnique({
-        where: { id: data.stageId },
-      });
       if (newStage?.name?.toLowerCase().includes('won') || newStage?.name?.toLowerCase().includes('closed won')) {
         // Trigger DEAL_WON workflows
         workflowEngine.triggerWorkflow('DEAL_WON', {
