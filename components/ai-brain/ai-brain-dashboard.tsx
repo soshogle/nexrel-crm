@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -86,7 +86,7 @@ export function AIBrainDashboard() {
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'radial' | 'traditional'>('radial');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsRefreshing(true);
     try {
       const [insightsRes, predictionsRes, workflowsRes, comprehensiveRes] = await Promise.all([
@@ -112,7 +112,7 @@ export function AIBrainDashboard() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -123,7 +123,7 @@ export function AIBrainDashboard() {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   const getInsightIcon = (type: string) => {
     switch (type) {
@@ -200,30 +200,72 @@ export function AIBrainDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold gradient-text">AI Brain Dashboard</h2>
-          <p className="text-gray-400 mt-1">General insights and predictions across your entire business</p>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+            Central AI Brain
+          </h2>
+          <p className="text-gray-400 mt-1">
+            The nervous system of your business - connected to everything, predicting everything
+          </p>
         </div>
-        <Button onClick={fetchData} disabled={isRefreshing} className="gradient-button">
-          {isRefreshing ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Refresh
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-gray-800 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'radial' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('radial')}
+              className={viewMode === 'radial' ? 'bg-purple-600' : ''}
+            >
+              <Brain className="h-4 w-4 mr-2" />
+              Digital Brain
+            </Button>
+            <Button
+              variant={viewMode === 'traditional' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('traditional')}
+              className={viewMode === 'traditional' ? 'bg-purple-600' : ''}
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Traditional
+            </Button>
+          </div>
+          <Button onClick={fetchData} disabled={isRefreshing} className="gradient-button">
+            {isRefreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Refresh
+          </Button>
+        </div>
       </div>
 
-      {/* Predictive Analytics */}
-      {predictions && (
-        <Card className="p-6 bg-gray-900 border-gray-800">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="h-5 w-5 text-purple-500" />
-            <h3 className="text-xl font-semibold text-white">Predictive Analytics</h3>
-          </div>
+      {/* Radial Brain Visualization */}
+      {viewMode === 'radial' && comprehensiveData && (
+        <Card className="p-6 bg-gray-900 border-gray-800 overflow-hidden">
+          <RadialBrainVisualization
+            data={comprehensiveData}
+            onDataPointClick={(dataPoint) => {
+              console.log('Data point clicked:', dataPoint);
+              // Could open a detail modal or navigate to related page
+            }}
+          />
+        </Card>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Next Week Forecast */}
-            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+      {/* Traditional View */}
+      {viewMode === 'traditional' && (
+        <>
+          {/* Predictive Analytics */}
+          {predictions && (
+            <Card className="p-6 bg-gray-900 border-gray-800">
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart3 className="h-5 w-5 text-purple-500" />
+                <h3 className="text-xl font-semibold text-white">Predictive Analytics</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {/* Next Week Forecast */}
+                <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
               <div className="text-sm text-gray-400 mb-3 flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 Next Week Forecast
@@ -328,20 +370,20 @@ export function AIBrainDashboard() {
               </div>
             </div>
           </div>
-        </Card>
-      )}
+            </Card>
+          )}
 
-      {/* General Insights */}
-      <Card className="p-6 bg-gray-900 border-gray-800">
-        <div className="flex items-center gap-2 mb-4">
-          <Brain className="h-5 w-5 text-purple-500" />
-          <h3 className="text-xl font-semibold text-white">AI-Powered Insights</h3>
-          <Badge variant="outline" className="ml-auto text-gray-400">
-            {insights.length} insights
-          </Badge>
-        </div>
+          {/* General Insights */}
+          <Card className="p-6 bg-gray-900 border-gray-800">
+            <div className="flex items-center gap-2 mb-4">
+              <Brain className="h-5 w-5 text-purple-500" />
+              <h3 className="text-xl font-semibold text-white">AI-Powered Insights</h3>
+              <Badge variant="outline" className="ml-auto text-gray-400">
+                {insights.length} insights
+              </Badge>
+            </div>
 
-        <div className="space-y-4">
+            <div className="space-y-4">
           {insights.map((insight) => (
             <div
               key={insight.id}
@@ -450,58 +492,58 @@ export function AIBrainDashboard() {
         )}
       </Card>
 
-      {/* Workflow Recommendations */}
-      {workflows.length > 0 && (
-        <Card className="p-6 bg-gray-900 border-gray-800">
-          <div className="flex items-center gap-2 mb-4">
-            <Zap className="h-5 w-5 text-yellow-500" />
-            <h3 className="text-xl font-semibold text-white">Automation Opportunities</h3>
-            <Badge variant="outline" className="ml-auto text-gray-400">
-              {workflows.length} workflows
-            </Badge>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {workflows.map((workflow) => (
-              <div
-                key={workflow.id}
-                className="border border-gray-800 rounded-lg p-4 hover:border-yellow-500/50 transition-colors"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h4 className="font-semibold text-white">{workflow.name}</h4>
-                  <Badge
-                    variant="outline"
-                    className={`${getPriorityColor(workflow.priority)} border-0 text-white text-xs`}
-                  >
-                    {workflow.priority}
-                  </Badge>
-                </div>
-                <p className="text-sm text-gray-400 mb-3">{workflow.description}</p>
-                <div className="text-xs text-gray-500 mb-2">
-                  <span className="font-semibold">Trigger:</span> {workflow.trigger}
-                </div>
-                <div className="mb-3">
-                  <div className="text-xs font-semibold text-gray-400 mb-1">Actions:</div>
-                  <div className="space-y-1">
-                    {workflow.actions.map((action, idx) => (
-                      <div key={idx} className="flex items-start gap-2 text-xs text-gray-300">
-                        <ChevronRight className="h-3 w-3 text-yellow-500 mt-0.5" />
-                        {action}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="text-xs text-gray-400 italic mb-3">{workflow.expectedImpact}</div>
-                {workflow.automatable && (
-                  <Button size="sm" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black">
-                    Enable Automation
-                  </Button>
-                )}
+          {/* Workflow Recommendations */}
+          {workflows.length > 0 && (
+            <Card className="p-6 bg-gray-900 border-gray-800">
+              <div className="flex items-center gap-2 mb-4">
+                <Zap className="h-5 w-5 text-yellow-500" />
+                <h3 className="text-xl font-semibold text-white">Automation Opportunities</h3>
+                <Badge variant="outline" className="ml-auto text-gray-400">
+                  {workflows.length} workflows
+                </Badge>
               </div>
-            ))}
-          </div>
-        </Card>
-      )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {workflows.map((workflow) => (
+                  <div
+                    key={workflow.id}
+                    className="border border-gray-800 rounded-lg p-4 hover:border-yellow-500/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold text-white">{workflow.name}</h4>
+                      <Badge
+                        variant="outline"
+                        className={`${getPriorityColor(workflow.priority)} border-0 text-white text-xs`}
+                      >
+                        {workflow.priority}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-gray-400 mb-3">{workflow.description}</p>
+                    <div className="text-xs text-gray-500 mb-2">
+                      <span className="font-semibold">Trigger:</span> {workflow.trigger}
+                    </div>
+                    <div className="mb-3">
+                      <div className="text-xs font-semibold text-gray-400 mb-1">Actions:</div>
+                      <div className="space-y-1">
+                        {workflow.actions.map((action, idx) => (
+                          <div key={idx} className="flex items-start gap-2 text-xs text-gray-300">
+                            <ChevronRight className="h-3 w-3 text-yellow-500 mt-0.5" />
+                            {action}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400 italic mb-3">{workflow.expectedImpact}</div>
+                    {workflow.automatable && (
+                      <Button size="sm" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black">
+                        Enable Automation
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
         </>
       )}
     </div>
