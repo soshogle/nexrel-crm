@@ -68,6 +68,8 @@ export function VoiceAssistant({
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const audioQueueRef = useRef<AudioBuffer[]>([]);
+  const isPlayingAudioRef = useRef<boolean>(false);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -190,7 +192,7 @@ export function VoiceAssistant({
   };
 
   /**
-   * Play audio chunk from ElevenLabs (PCM format)
+   * Play audio chunk from ElevenLabs (PCM format) - queued to prevent overlapping
    */
   const playAudioChunk = async (base64Audio: string) => {
     try {
@@ -247,17 +249,45 @@ export function VoiceAssistant({
           
           console.log('✅ [Docpen] PCM audio converted to AudioBuffer, duration:', audioBuffer.duration, 'seconds');
           
-          // Play the audio
-          const source = audioContextRef.current.createBufferSource();
-          source.buffer = audioBuffer;
-          source.connect(audioContextRef.current.destination);
-          
-          source.onended = () => {
-            console.log('✅ [Docpen] Audio chunk playback finished');
+          // Queue audio to prevent overlapping playback
+          const playQueuedAudio = () => {
+            if (isPlayingAudioRef.current) {
+              // If already playing, queue this chunk
+              audioQueueRef.current.push(audioBuffer);
+              console.log('📋 [Docpen] Audio queued (queue length:', audioQueueRef.current.length, ')');
+              return;
+            }
+
+            // Play immediately
+            isPlayingAudioRef.current = true;
+            const source = audioContextRef.current!.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(audioContextRef.current!.destination);
+            
+            source.onended = () => {
+              console.log('✅ [Docpen] Audio chunk playback finished');
+              isPlayingAudioRef.current = false;
+              
+              // Play next queued chunk if available
+              if (audioQueueRef.current.length > 0) {
+                const nextBuffer = audioQueueRef.current.shift()!;
+                console.log('▶️ [Docpen] Playing next queued audio chunk (remaining:', audioQueueRef.current.length, ')');
+                setTimeout(() => {
+                  const nextSource = audioContextRef.current!.createBufferSource();
+                  nextSource.buffer = nextBuffer;
+                  nextSource.connect(audioContextRef.current!.destination);
+                  nextSource.onended = source.onended; // Reuse the same handler
+                  nextSource.start();
+                  isPlayingAudioRef.current = true;
+                }, 10); // Small delay to prevent audio glitches
+              }
+            };
+            
+            source.start();
+            console.log('✅ [Docpen] Audio chunk playback started');
           };
-          
-          source.start();
-          console.log('✅ [Docpen] Audio chunk playback started');
+
+          playQueuedAudio();
         } catch (decodeError: any) {
           console.error('❌ [Docpen] Failed to process PCM audio:', decodeError);
           console.error('❌ [Docpen] Error details:', {
@@ -266,6 +296,7 @@ export function VoiceAssistant({
             audioLength: base64Audio.length,
             bytesLength: bytes.length,
           });
+          isPlayingAudioRef.current = false; // Reset on error
         }
       } else {
         console.error('❌ [Docpen] Audio context is not available or closed');
@@ -273,6 +304,7 @@ export function VoiceAssistant({
     } catch (error: any) {
       console.error('❌ [Docpen] Error playing audio:', error);
       console.error('❌ [Docpen] Error stack:', error.stack);
+      isPlayingAudioRef.current = false; // Reset on error
     }
   };
 
@@ -400,19 +432,42 @@ export function VoiceAssistant({
                 if (pushToTalk && !isPushToTalkActive) return;
 
                 const inputData = e.inputBuffer.getChannelData(0);
-                const pcm16 = convertFloat32ToInt16(inputData);
+                
+                // Resample to 16kHz if needed (ElevenLabs expects 16kHz)
+                let resampledData = inputData;
+                const currentSampleRate = audioContextRef.current!.sampleRate;
+                if (currentSampleRate !== 16000) {
+                  // Simple downsampling: take every Nth sample
+                  const ratio = currentSampleRate / 16000;
+                  const newLength = Math.floor(inputData.length / ratio);
+                  resampledData = new Float32Array(newLength);
+                  for (let i = 0; i < newLength; i++) {
+                    resampledData[i] = inputData[Math.floor(i * ratio)];
+                  }
+                  console.log(`🔄 [Docpen] Resampled audio from ${currentSampleRate}Hz to 16kHz`);
+                }
+                
+                const pcm16 = convertFloat32ToInt16(resampledData);
                 const base64Audio = btoa(
                   String.fromCharCode(...new Uint8Array(pcm16.buffer))
                 );
+                
+                // Send audio chunk (ElevenLabs will handle silence detection)
                 ws.send(JSON.stringify({ user_audio_chunk: base64Audio }));
+                // Log occasionally to avoid spam (every 50th chunk ~= once per second)
+                if (Math.random() < 0.02) {
+                  console.log('📤 [Docpen] Sent user audio chunk, size:', base64Audio.length);
+                }
               }
             } catch (err) {
-              console.error('Error processing audio:', err);
+              console.error('❌ [Docpen] Error processing audio:', err);
             }
           };
 
+          // Connect source to processor, but DON'T connect processor to destination
+          // (that would cause feedback - processor is only for capturing input)
           source.connect(processor);
-          processor.connect(audioContextRef.current!.destination);
+          // processor.connect(audioContextRef.current!.destination); // REMOVED - causes feedback
           console.log('🎤 [Docpen] Audio processing started - microphone is active');
         }, 1500); // Increased delay to give agent time to speak first message
       };
