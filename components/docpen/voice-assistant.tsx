@@ -50,6 +50,7 @@ export function VoiceAssistant({
   onTranscript,
 }: VoiceAssistantProps) {
   const t = useTranslations('toasts.docpen');
+  const { data: session, status: sessionStatus } = useSession();
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isMicEnabled, setIsMicEnabled] = useState(true);
