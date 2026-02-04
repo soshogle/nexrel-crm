@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     let message = "";
     let conversationHistory: any[] = [];
     let uploadedFile: File | null = null;
+    let requestBody: any = null;
 
     if (contentType.includes("multipart/form-data")) {
       // Handle file upload
@@ -41,6 +42,9 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         conversationHistory = [];
       }
+      
+      // Store request body for fallback detection
+      requestBody = { message, conversationHistory };
 
       // If there's a file, process the import immediately
       if (uploadedFile) {
