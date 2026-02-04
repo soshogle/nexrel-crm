@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import {
+  getAIAssistantFunctions,
+  mapFunctionToAction,
+  getNavigationUrlForAction,
+} from "@/lib/ai-assistant-functions";
 
 
 export const dynamic = 'force-dynamic';
@@ -736,14 +741,21 @@ CRITICAL RULES
 Remember: You're not just a chatbot - you're an AI assistant with REAL powers to diagnose problems, fix configurations, and execute actions. You have the same capabilities as a senior support engineer. Act like it!`;
 
     // Prepare conversation for AI
-    const conversationMessages = [
+    const conversationMessages: any[] = [
       { role: "system", content: systemContext },
       ...(conversationHistory || []).map((msg: any) => ({
         role: msg.role === "user" ? "user" : "assistant",
         content: msg.content,
+        // Preserve tool_calls if present in history
+        ...(msg.tool_calls && { tool_calls: msg.tool_calls }),
+        // Preserve tool_call_id if present
+        ...(msg.tool_call_id && { tool_call_id: msg.tool_call_id }),
       })),
       { role: "user", content: message },
     ];
+
+    // Get function definitions
+    const functions = getAIAssistantFunctions();
 
     // Call OpenAI API
     const apiKey = process.env.OPENAI_API_KEY;
@@ -755,9 +767,13 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       );
     }
 
-    console.log("Calling OpenAI API with", conversationMessages.length, "messages");
+    console.log("Calling OpenAI API with", conversationMessages.length, "messages and", functions.length, "functions");
 
     let aiData;
+    let finalReply = "";
+    let navigationUrl: string | null = null;
+    let actionResult: any = null;
+
     try {
       const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -768,12 +784,10 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
         body: JSON.stringify({
           model: "gpt-4o-mini",
           messages: conversationMessages,
+          tools: functions,
+          tool_choice: "auto", // Let the model decide when to use functions
           temperature: 0.7,
-          max_tokens: 1200, // Increased for more detailed, helpful responses
-          // Note: response_format: { type: "json_object" } requires the model to return valid JSON
-          // But it also requires the system prompt to explicitly request JSON, which we do
-          // However, this might be too restrictive for plain text responses
-          // So we'll parse JSON flexibly instead
+          max_tokens: 1200,
         }),
       });
 
@@ -795,30 +809,187 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       );
     }
 
-    const reply = aiData.choices?.[0]?.message?.content || "I'm here to help! Could you please rephrase your question?";
+    const assistantMessage = aiData.choices?.[0]?.message;
+    const toolCalls = assistantMessage?.tool_calls || [];
+    const content = assistantMessage?.content || "";
 
     console.log("AI response received successfully");
-    console.log("AI reply (first 500 chars):", reply.substring(0, 500));
-    console.log("AI reply length:", reply.length);
-    console.log("AI reply starts with JSON?", reply.trim().startsWith('{'));
+    console.log("Tool calls:", toolCalls.length);
+    console.log("Content:", content?.substring(0, 200) || "None");
 
-    // Check if the response contains an action request (JSON format)
-    let actionResult: any = null;
-    let actionExecuted = false; // Track if we attempted to execute an action
-    let finalReply = reply;
-    let navigationUrl = null;
+    // If the model wants to call functions, execute them
+    if (toolCalls.length > 0) {
+      console.log("🔧 [Chat] Executing", toolCalls.length, "function call(s)");
 
-    try {
-      // Try to parse the response as JSON to detect action requests OR navigation-only responses
-      // First, try to parse the entire reply as JSON
-      let actionData: any = null;
-      let jsonMatch: RegExpMatchArray | null = null;
+      // Add assistant message with tool_calls to conversation
+      conversationMessages.push({
+        role: "assistant",
+        content: content,
+        tool_calls: toolCalls,
+      });
+
+      // Execute each function call
+      const toolResults: any[] = [];
+      let lastActionResult: any = null;
+
+      for (const toolCall of toolCalls) {
+        const functionName = toolCall.function.name;
+        const functionArgs = JSON.parse(toolCall.function.arguments || "{}");
+
+        console.log(`🔧 [Chat] Executing function: ${functionName}`, functionArgs);
+
+        // Handle special navigate_to function separately
+        if (functionName === "navigate_to") {
+          navigationUrl = functionArgs.path;
+          toolResults.push({
+          tool_call_id: toolCall.id,
+          role: "tool",
+          name: functionName,
+          content: JSON.stringify({ success: true, message: "Navigation set" }),
+        });
+          continue;
+        }
+
+        // Map function name to action name
+        const action = mapFunctionToAction(functionName);
+
+        // Forward all cookies from the original request
+        const cookieHeader = req.headers.get("cookie") || "";
+
+        try {
+          const actionResponse = await fetch(
+            `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/ai-assistant/actions`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Cookie: cookieHeader,
+              },
+              body: JSON.stringify({
+                action: action,
+                parameters: functionArgs,
+                userId: user.id,
+              }),
+            }
+          );
+
+          if (actionResponse.ok) {
+            const actionResponseData = await actionResponse.json();
+            console.log(`✅ [Chat] Action ${action} executed successfully`);
+            lastActionResult = actionResponseData;
+
+            // Get navigation URL for this action
+            if (!navigationUrl) {
+              navigationUrl = getNavigationUrlForAction(action, actionResponseData);
+            }
+
+            // Format result for OpenAI
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: "tool",
+              name: functionName,
+              content: JSON.stringify({
+                success: true,
+                result: actionResponseData.result,
+                message: actionResponseData.result?.message || "Action completed successfully",
+              }),
+            });
+          } else {
+            const errorData = await actionResponse.json().catch(() => ({ error: "Unknown error" }));
+            console.error(`❌ [Chat] Action ${action} failed:`, errorData);
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              role: "tool",
+              name: functionName,
+              content: JSON.stringify({
+                success: false,
+                error: errorData.error || "Action failed",
+              }),
+            });
+          }
+        } catch (error: any) {
+          console.error(`❌ [Chat] Error executing action ${action}:`, error);
+          toolResults.push({
+            tool_call_id: toolCall.id,
+            role: "tool",
+            name: functionName,
+            content: JSON.stringify({
+              success: false,
+              error: error.message || "Execution error",
+            }),
+          });
+        }
+      }
+
+      // Add tool results to conversation
+      conversationMessages.push(...toolResults);
+
+      // Make a follow-up call to OpenAI with the function results
+      console.log("🔄 [Chat] Making follow-up call with function results");
+
+      const followUpResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: conversationMessages,
+          tools: functions,
+          tool_choice: "auto",
+          temperature: 0.7,
+          max_tokens: 1200,
+        }),
+      });
+
+      if (!followUpResponse.ok) {
+        const errorText = await followUpResponse.text();
+        console.error("Follow-up AI service error:", followUpResponse.status, errorText);
+        finalReply = "I executed the action, but encountered an error generating the response. Please check if the action completed successfully.";
+      } else {
+        const followUpData = await followUpResponse.json();
+        const followUpMessage = followUpData.choices?.[0]?.message;
+        finalReply = followUpMessage?.content || "Action completed successfully!";
+        actionResult = lastActionResult;
+      }
+    } else {
+      // No function calls - just return the content
+      finalReply = content || "I'm here to help! Could you please rephrase your question?";
+    }
+
+    // Format final reply based on action results if needed
+    if (actionResult && actionResult.result) {
+      // Format specific action results for better user experience
+      const result = actionResult.result;
       
-      // Try direct JSON parse first
-      let cleanedReply = reply.trim();
-      
-      // Remove surrounding quotes if the entire reply is wrapped in quotes (common LLM mistake)
-      // Check if it starts and ends with matching quotes and contains JSON-like content
+      // For create_lead, ensure we have good formatting and navigation
+      if (actionResult.action === "create_lead") {
+        const leadId = result?.lead?.id;
+        const leadName = result?.lead?.contactPerson || result?.lead?.businessName || 'Contact';
+        const leadEmail = result?.lead?.email || 'No email';
+        const leadPhone = result?.lead?.phone || 'No phone';
+        
+        // Enhance the reply if it doesn't already mention the contact details
+        if (!finalReply.includes(leadName) && !finalReply.includes('Contact created')) {
+          finalReply = `✓ Contact created successfully!\n\nContact Details:\n• Name: ${leadName}`;
+          if (leadEmail !== 'No email') finalReply += `\n• Email: ${leadEmail}`;
+          if (leadPhone !== 'No phone') finalReply += `\n• Phone: ${leadPhone}`;
+          finalReply += `\n\nTaking you to your Contacts page...`;
+        }
+        
+        // Ensure navigation URL is set
+        if (!navigationUrl) {
+          navigationUrl = leadId ? `/dashboard/contacts?id=${leadId}` : "/dashboard/contacts";
+        }
+      }
+    }
+
+    // Final logging before response
+    console.log("📤 [Chat] Final response:");
+    console.log("  - Navigation URL:", navigationUrl);
+    console.log("  - Action result:", actionResult ? "Present" : "None");
+    console.log("  - Final reply length:", finalReply.length);
       if ((cleanedReply.startsWith('"') && cleanedReply.endsWith('"')) ||
           (cleanedReply.startsWith("'") && cleanedReply.endsWith("'"))) {
         const innerContent = cleanedReply.slice(1, -1);
@@ -1313,9 +1484,8 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     // Final logging before response
     console.log("📤 [Chat] Final response:");
     console.log("  - Navigation URL:", navigationUrl);
-    console.log("  - Action executed:", actionExecuted);
     console.log("  - Action result:", actionResult ? "Present" : "None");
-    console.log("  - Action result success:", actionResult?.success);
+    console.log("  - Final reply length:", finalReply.length);
     
     return NextResponse.json({
       reply: finalReply,
