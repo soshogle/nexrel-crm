@@ -663,11 +663,17 @@ User: "Yes! Email: 'Hey [Name], just checking in...' SMS: 'Quick question about 
 Response: {"message": "✓ Creating your cold lead nurturing workflow!\n\n✨ Done! Your workflow will now:\n- Automatically identify cold leads\n- Send personalized re-engagement messages\n- Try multiple channels (Email → SMS)\n- Track responses and alert you\n\nThe workflow is active. You'll see results in the next few days!", "action": "create_smart_workflow", "parameters": {"description": "Re-engage cold leads with multi-channel follow-up sequence", "goal": "Revive inactive leads", "trigger": "lead_no_response_14_days", "actions": ["send_email", "wait_3_days", "send_sms_if_no_response", "wait_4_days", "mark_cold_if_no_response"]}, "navigateTo": "/dashboard/workflows"}
 
 **Example 4: Create Contact/Lead (Action Execution)**
+When the user asks to create a contact or lead, you MUST use the create_lead function.
+
 User: "Create a contact for John Smith at john@example.com"
-Response: {"message": "✓ Creating contact for John Smith...", "action": "create_lead", "parameters": {"name": "John Smith", "email": "john@example.com"}, "navigateTo": "/dashboard/contacts"}
+→ You should call the create_lead function with: {"name": "John Smith", "email": "john@example.com"}
+→ After the function executes successfully, respond naturally: "✓ Contact created successfully! Taking you to your Contacts page..."
 
 User: "Add a new lead named Jane Doe with phone 555-1234"
-Response: {"message": "✓ Creating lead for Jane Doe...", "action": "create_lead", "parameters": {"name": "Jane Doe", "phone": "555-1234"}, "navigateTo": "/dashboard/contacts"}
+→ You should call the create_lead function with: {"name": "Jane Doe", "phone": "555-1234"}
+→ After the function executes successfully, respond naturally: "✓ Lead created successfully! Taking you to your Contacts page..."
+
+IMPORTANT: When users ask to create contacts, leads, deals, or perform any action, you MUST use the available functions. Do not just acknowledge - actually execute the action by calling the appropriate function.
 
 **Example 5: Contact Import**
 User: "I need to add contacts"
@@ -729,16 +735,21 @@ CRITICAL RULES
 
 7. **Know when to act vs explain** - "How do I set up X?" = explanation. "Set up X for me" = might not be possible, offer to navigate them to settings instead.
 
-8. **🚨 MOST IMPORTANT: ACTUALLY EXECUTE ACTIONS** - You have debugging and diagnostic capabilities! When users report issues:
-   - Run "debug_voice_agent" to check configuration
-   - Run "fix_voice_agent" to automatically fix issues
-   - Run "list_voice_agents" to see what they have
-   - DO NOT just say "I'll check" and then stop - actually execute the action!
-   - Show them the diagnostic reports and fixes applied
+8. **🚨 MOST IMPORTANT: ACTUALLY EXECUTE ACTIONS** - You have REAL functions available! When users ask you to do something:
+   - To create a contact/lead → Use the create_lead function
+   - To create a deal → Use the create_deal function
+   - To list contacts → Use the list_leads function
+   - To debug voice agents → Use the debug_voice_agent function
+   - To fix voice agents → Use the fix_voice_agent function
+   - To list voice agents → Use the list_voice_agents function
+   - DO NOT just say "I'll do that" and then stop - actually CALL THE FUNCTION!
+   - After the function executes, respond naturally with the results
    
-   Your capabilities are REAL, not hypothetical. Use them!
+   Your capabilities are REAL, not hypothetical. You have access to functions that can actually create contacts, deals, debug systems, etc. USE THEM!
 
-Remember: You're not just a chatbot - you're an AI assistant with REAL powers to diagnose problems, fix configurations, and execute actions. You have the same capabilities as a senior support engineer. Act like it!`;
+9. **FUNCTION CALLING IS MANDATORY** - When a user asks you to perform an action (create contact, create deal, etc.), you MUST call the appropriate function. The functions are available to you - use them! Do not just acknowledge the request - execute it by calling the function.
+
+Remember: You're not just a chatbot - you're an AI assistant with REAL powers to execute actions, diagnose problems, fix configurations, and create records in the CRM. You have the same capabilities as a senior support engineer. Act like it! USE THE FUNCTIONS!`;
 
     // Prepare conversation for AI
     const conversationMessages: any[] = [
@@ -768,6 +779,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     }
 
     console.log("Calling OpenAI API with", conversationMessages.length, "messages and", functions.length, "functions");
+    console.log("Available functions:", functions.map((f: any) => f.function?.name || f.name).join(", "));
 
     let aiData;
     let finalReply = "";
