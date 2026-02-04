@@ -100,6 +100,7 @@ const PROFESSION_LABELS: Record<string, string> = {
 
 export function DocpenKnowledgeBaseTraining() {
   const tPlaceholders = useTranslations('placeholders');
+  const tToasts = useTranslations('toasts.general');
   const [files, setFiles] = useState<KnowledgeBaseFile[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
