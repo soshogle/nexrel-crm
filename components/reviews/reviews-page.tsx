@@ -186,7 +186,7 @@ export function ReviewsPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="bg-gradient-to-br from-purple-600/20 via-purple-700/20 to-pink-600/20 border-purple-500/30 backdrop-blur-sm">
+        <Card className="bg-gradient-to-br from-indigo-950/90 via-purple-950/90 to-indigo-950/90 border-purple-500/30 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-white/90">
               Total Reviews
@@ -201,7 +201,7 @@ export function ReviewsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-600/20 via-purple-700/20 to-pink-600/20 border-purple-500/30 backdrop-blur-sm">
+        <Card className="bg-gradient-to-br from-indigo-950/90 via-purple-950/90 to-indigo-950/90 border-purple-500/30 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-white/90">
               Average Rating
@@ -218,7 +218,7 @@ export function ReviewsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-600/20 via-purple-700/20 to-pink-600/20 border-purple-500/30 backdrop-blur-sm">
+        <Card className="bg-gradient-to-br from-indigo-950/90 via-purple-950/90 to-indigo-950/90 border-purple-500/30 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-white/90">
               This Month
@@ -231,7 +231,7 @@ export function ReviewsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-600/20 via-purple-700/20 to-pink-600/20 border-purple-500/30 backdrop-blur-sm">
+        <Card className="bg-gradient-to-br from-indigo-950/90 via-purple-950/90 to-indigo-950/90 border-purple-500/30 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-white/90">
               Platforms
@@ -248,7 +248,7 @@ export function ReviewsPage() {
       </div>
 
       {/* Filters */}
-      <Card className="bg-gradient-to-br from-purple-600/10 via-purple-700/10 to-pink-600/10 border-purple-500/20 backdrop-blur-sm">
+      <Card className="bg-gradient-to-br from-indigo-950/90 via-purple-950/90 to-indigo-950/90 border-purple-500/30 backdrop-blur-sm">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
@@ -300,7 +300,7 @@ export function ReviewsPage() {
 
       {/* Reviews List */}
       {filteredReviews.length === 0 ? (
-        <Card className="bg-gradient-to-br from-purple-600/10 via-purple-700/10 to-pink-600/10 border-purple-500/20 backdrop-blur-sm">
+        <Card className="bg-gradient-to-br from-indigo-950/90 via-purple-950/90 to-indigo-950/90 border-purple-500/30 backdrop-blur-sm">
           <CardContent className="py-12 text-center">
             <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mb-4">
               <Star className="h-8 w-8 text-purple-400" />
@@ -327,7 +327,7 @@ export function ReviewsPage() {
           {filteredReviews.map((review) => (
             <Card
               key={review.id}
-              className="bg-gradient-to-br from-purple-600/10 via-purple-700/10 to-pink-600/10 border-purple-500/20 backdrop-blur-sm hover:border-purple-400/40 transition-all"
+              className="bg-gradient-to-br from-indigo-950/90 via-purple-950/90 to-indigo-950/90 border-purple-500/30 backdrop-blur-sm hover:border-purple-400/50 transition-all"
             >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
