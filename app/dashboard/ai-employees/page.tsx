@@ -44,7 +44,10 @@ import {
   Trash2,
   MessageSquare,
   ClipboardList,
-  Zap
+  Zap,
+  RefreshCw,
+  ListTodo,
+  Filter,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
@@ -60,17 +63,6 @@ import TaskKanbanBoard from '@/components/tasks/task-kanban-board';
 import TaskAnalyticsDashboard from '@/components/tasks/task-analytics-dashboard';
 import { TaskCalendarView } from '@/components/tasks/task-calendar-view';
 import MondayBoard from '@/components/tasks/monday-board';
-import { 
-  Plus, 
-  Search, 
-  RefreshCw, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle,
-  ListTodo,
-  Calendar,
-  Filter,
-} from 'lucide-react';
 
 function TasksEmbed() {
   const { data: session } = useSession() || {};
