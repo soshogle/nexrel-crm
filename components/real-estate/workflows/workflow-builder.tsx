@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { WorkflowTask, WorkflowTemplate, RE_AGENTS, TASK_TYPE_ICONS } from './types';
 import { CircularWorkflowCanvas } from './circular-workflow-canvas';
 import { TaskEditorPanel } from './task-editor-panel';
+import { WorkflowTemplatesGallery } from './workflow-templates-gallery';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
