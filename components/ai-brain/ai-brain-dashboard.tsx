@@ -90,10 +90,10 @@ export function AIBrainDashboard() {
     setIsRefreshing(true);
     try {
       const [insightsRes, predictionsRes, workflowsRes, comprehensiveRes] = await Promise.all([
-        fetch('/api/ai-brain/insights'),
-        fetch('/api/ai-brain/predictions'),
-        fetch('/api/ai-brain/workflows'),
-        fetch('/api/ai-brain/comprehensive'),
+        fetch('/api/ai-brain/insights').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
+        fetch('/api/ai-brain/predictions').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
+        fetch('/api/ai-brain/workflows').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
+        fetch('/api/ai-brain/comprehensive').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
       ]);
 
       const insightsData = await insightsRes.json();
@@ -101,13 +101,31 @@ export function AIBrainDashboard() {
       const workflowsData = await workflowsRes.json();
       const comprehensiveData = await comprehensiveRes.json();
 
+      console.log('[AI Brain Dashboard] Data received:', {
+        insights: insightsData.success,
+        predictions: predictionsData.success,
+        workflows: workflowsData.success,
+        comprehensive: comprehensiveData.success,
+        comprehensiveDataPoints: comprehensiveData.success ? comprehensiveData.data?.leftHemisphere?.dataPoints?.length : 0,
+      });
+
       if (insightsData.success) setInsights(insightsData.insights || []);
       if (predictionsData.success) setPredictions(predictionsData.predictions);
       if (workflowsData.success) setWorkflows(workflowsData.workflows || []);
-      if (comprehensiveData.success) setComprehensiveData(comprehensiveData.data);
-    } catch (error) {
-      console.error('Error fetching AI Brain data:', error);
-      toast.error('Failed to load AI insights');
+      if (comprehensiveData.success) {
+        setComprehensiveData(comprehensiveData.data);
+        console.log('[AI Brain Dashboard] Comprehensive data set:', {
+          coreHealth: comprehensiveData.data?.core?.overallHealth,
+          leftPoints: comprehensiveData.data?.leftHemisphere?.dataPoints?.length,
+          rightPoints: comprehensiveData.data?.rightHemisphere?.dataPoints?.length,
+        });
+      } else {
+        console.error('[AI Brain Dashboard] Comprehensive data failed:', comprehensiveData.error);
+        toast.error('Failed to load comprehensive brain data: ' + (comprehensiveData.error || 'Unknown error'));
+      }
+    } catch (error: any) {
+      console.error('[AI Brain Dashboard] Error fetching AI Brain data:', error);
+      toast.error('Failed to load AI insights: ' + (error?.message || 'Unknown error'));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
