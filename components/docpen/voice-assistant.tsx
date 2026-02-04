@@ -429,6 +429,7 @@ export function VoiceAssistant({
         setIsConnecting(false);
         setConnectionStartTime(new Date());
         setMessages([]);
+        setRetryCount(0); // Reset retry count on successful connection
         toast.success(t('voiceAssistantConnected'));
         console.log('🎧 [Docpen] Waiting for agent greeting message...');
         console.log('🔊 [Docpen] Speaker enabled:', isSpeakerEnabled);
