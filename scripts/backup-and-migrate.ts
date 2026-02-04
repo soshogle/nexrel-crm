@@ -58,7 +58,7 @@ async function main() {
   console.log('');
   
   try {
-    execSync('npx prisma db push --accept-data-loss', {
+    execSync('npx prisma db push', {
       stdio: 'inherit',
       cwd: process.cwd(),
     });
