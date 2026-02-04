@@ -843,21 +843,25 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
         const cookieHeader = req.headers.get("cookie") || "";
 
         try {
-          const actionResponse = await fetch(
-            `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/ai-assistant/actions`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Cookie: cookieHeader,
-              },
-              body: JSON.stringify({
-                action: action,
-                parameters: functionArgs,
-                userId: user.id,
-              }),
-            }
-          );
+          // Get the base URL from the request, fallback to env var, then localhost
+          const requestUrl = new URL(req.url);
+          const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
+          const actionsUrl = `${baseUrl}/api/ai-assistant/actions`;
+          
+          console.log(`🌐 [Chat] Calling actions endpoint:`, actionsUrl);
+          
+          const actionResponse = await fetch(actionsUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Cookie: cookieHeader,
+            },
+            body: JSON.stringify({
+              action: action,
+              parameters: functionArgs,
+              userId: user.id,
+            }),
+          });
 
           console.log(`📡 [Chat] Action endpoint response status:`, actionResponse.status);
           
