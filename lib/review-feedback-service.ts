@@ -143,7 +143,6 @@ export class ReviewFeedbackService {
         where: {
           userId,
           isActive: true,
-          elevenLabsAgentId: { not: null },
         },
       });
 
