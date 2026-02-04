@@ -1104,9 +1104,6 @@ async function createWorkflow(userId: string, params: any) {
       },
     });
 
-    // Include suggestions from AI generator if available
-    const suggestions = generatedWorkflow.suggestions || [];
-    
     // Helper function to get action summary
     const getActionSummary = (action: any) => {
       const config = action.actionConfig || {};
