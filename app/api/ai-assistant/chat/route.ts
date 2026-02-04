@@ -833,22 +833,36 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
             if (actionData.action === "import_contacts") {
               finalReply = `${actionData.message}\n\n✨ **Two ways to import contacts:**\n\n**Option 1: Upload directly here (Recommended)**\n1. Click the paperclip (📎) button below\n2. Select your CSV file\n3. Click send - I'll handle the rest!\n\n**Option 2: Manual import**\n1. Go to the Contacts page (click "Contacts" in sidebar)\n2. Click the "Import Contacts" button at the top\n3. Upload a CSV file with your contact data\n4. Review and confirm\n\n💡 **CSV Format Tips:**\n- **Required column** (at least one of these): businessName, business name, company, company name, clinic, clinic name, organization, or name\n- **Optional columns**: contactPerson, contact person, email, phone, address, city, state, zipCode, country, website, businessCategory, contactType\n- **Supported formats**: Standard CSV with proper quoting for fields containing commas\n- **Maximum capacity**: Up to 5,000 contacts per file\n- **Example**: "Company Name","John Doe","john@example.com","555-1234"\n- **Note**: Column names are case-insensitive and spaces/underscores are handled automatically\n\nYou can also create contacts individually by telling me: "Create a lead for Jane Smith at jane@example.com"`;
             } else if (actionData.action === "create_lead") {
-              finalReply = `${actionData.message}\n\n${actionResponseData.result?.message || 'Lead created successfully!'}\n\n📋 **Lead Details:**\n${actionResponseData.result?.lead ? Object.entries(actionResponseData.result.lead).map(([key, val]) => `- ${key}: ${val || 'Not provided'}`).join('\n') : 'Details not available'}`;
+              // Lead created - navigate to contacts page, optionally with lead ID
+              const result = actionResponseData.result;
+              const leadId = result?.lead?.id;
+              finalReply = `${actionData.message}\n\n${result?.message || 'Lead created successfully!'}\n\n📋 **Lead Details:**\n${result?.lead ? Object.entries(result.lead).map(([key, val]) => `- ${key}: ${val || 'Not provided'}`).join('\n') : 'Details not available'}`;
+              finalReply += `\n\n✨ Let's go to your Contacts page to view the new lead!`;
+              // Navigate to contacts page, optionally with lead ID to highlight it
+              navigationUrl = leadId ? `/dashboard/contacts?id=${leadId}` : "/dashboard/contacts";
             } else if (actionData.action === "list_leads") {
               const leads = actionResponseData.result?.leads || [];
               if (leads.length > 0) {
                 // Don't list all leads in chat - navigate to page instead
                 finalReply = `${actionData.message}\n\n✨ Opening your Contacts page where you can see all your leads, filter by status, and manage your contacts!`;
+                navigationUrl = "/dashboard/contacts";
               } else {
                 finalReply = `${actionData.message}\n\n📋 You don't have any leads yet. Would you like me to help you create one or import contacts?`;
               }
             } else if (actionData.action === "create_deal") {
-              finalReply = `${actionData.message}\n\n${actionResponseData.result?.message || 'Deal created successfully!'}\n\n💼 **Deal Details:**\n${actionResponseData.result?.deal ? Object.entries(actionResponseData.result.deal).map(([key, val]) => `- ${key}: ${val}`).join('\n') : 'Details not available'}`;
+              // Deal created - navigate to pipeline page, optionally with deal ID
+              const result = actionResponseData.result;
+              const dealId = result?.deal?.id;
+              finalReply = `${actionData.message}\n\n${result?.message || 'Deal created successfully!'}\n\n💼 **Deal Details:**\n${result?.deal ? Object.entries(result.deal).map(([key, val]) => `- ${key}: ${val}`).join('\n') : 'Details not available'}`;
+              finalReply += `\n\n✨ Let's go to your Pipeline page to view the new deal!`;
+              // Navigate to pipeline page, optionally with deal ID to highlight it
+              navigationUrl = dealId ? `/dashboard/pipeline?id=${dealId}` : "/dashboard/pipeline";
             } else if (actionData.action === "list_deals") {
               const deals = actionResponseData.result?.deals || [];
               if (deals.length > 0) {
                 // Don't list all deals in chat - navigate to page instead
                 finalReply = `${actionData.message}\n\n✨ Opening your Pipeline page where you can see all your deals, track progress, and manage your sales pipeline!`;
+                navigationUrl = "/dashboard/pipeline";
               } else {
                 finalReply = `${actionData.message}\n\n💼 You don't have any deals yet. Would you like me to help you create one?`;
               }
@@ -860,6 +874,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
               if (contacts.length > 0) {
                 // Navigate to contacts page instead of listing results
                 finalReply = `${actionData.message}\n\n✨ Opening your Contacts page where you can see ${contacts.length} matching ${contacts.length === 1 ? 'contact' : 'contacts'} and perform advanced searches!`;
+                navigationUrl = "/dashboard/contacts";
               } else {
                 finalReply = `${actionData.message}\n\n🔍 No contacts found matching your search.`;
               }
@@ -868,6 +883,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
               if (campaigns.length > 0) {
                 // Navigate to campaigns page instead of listing
                 finalReply = `${actionData.message}\n\n✨ Opening your Campaigns page where you can see all your campaigns, track performance, and create new ones!`;
+                navigationUrl = "/dashboard/campaigns";
               } else {
                 finalReply = `${actionData.message}\n\n📢 You don't have any campaigns yet. Would you like me to help you create one?`;
               }
