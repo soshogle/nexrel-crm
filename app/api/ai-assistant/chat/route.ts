@@ -509,13 +509,17 @@ Format: {"message": "text", "action": "action_type", "parameters": {...}, "navig
 
 **🚨 CRITICAL JSON FORMAT RULES:**
 1. Your ENTIRE response must be ONLY the JSON object - no extra text before or after
-2. Do NOT say "Here's the JSON:" or "I'll execute:" - just output the JSON
-3. When user asks you to DO something (create, update, delete, import), you MUST use JSON with action field
-4. Example of CORRECT response to "create a contact for John":
-   {"message": "✓ Creating contact for John...", "action": "create_lead", "parameters": {"name": "John"}, "navigateTo": "/dashboard/contacts"}
-5. Example of WRONG response (DO NOT DO THIS):
+2. Do NOT wrap the JSON in quotes - return the raw JSON object, not a string
+3. Do NOT say "Here's the JSON:" or "I'll execute:" - just output the JSON directly
+4. When user asks you to DO something (create, update, delete, import), you MUST use JSON with action field
+5. Example of CORRECT response to "create a contact for John":
+   {"message": "Creating contact for John...", "action": "create_lead", "parameters": {"name": "John"}, "navigateTo": "/dashboard/contacts"}
+6. Example of WRONG response (DO NOT DO THIS):
    "I'll create a contact for John. Let me do that for you..."
-6. **IMPORTANT**: If user requests an action (create contact, create deal, etc.), you MUST return JSON with the action field - do NOT just navigate without executing the action first
+   OR
+   "{\"message\": \"...\"}"  (DO NOT wrap JSON in quotes as a string!)
+7. **IMPORTANT**: If user requests an action (create contact, create deal, etc.), you MUST return JSON with the action field - do NOT just navigate without executing the action first
+8. **CRITICAL**: Return the JSON object directly, NOT as a string. The response should start with { and end with }, not be wrapped in quotes
 
 ═══════════════════════════════════════════════════════════════════
 AVAILABLE ACTIONS (For JSON responses)
@@ -798,21 +802,42 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       let jsonMatch: RegExpMatchArray | null = null;
       
       // Try direct JSON parse first
+      let cleanedReply = reply.trim();
+      
+      // Remove surrounding quotes if the entire reply is wrapped in quotes (common LLM mistake)
+      // Check if it starts and ends with matching quotes and contains JSON-like content
+      if ((cleanedReply.startsWith('"') && cleanedReply.endsWith('"')) ||
+          (cleanedReply.startsWith("'") && cleanedReply.endsWith("'"))) {
+        const innerContent = cleanedReply.slice(1, -1);
+        // Check if inner content looks like JSON (starts with { or [)
+        if (innerContent.trim().startsWith('{') || innerContent.trim().startsWith('[')) {
+          cleanedReply = innerContent;
+          // Unescape any escaped quotes
+          cleanedReply = cleanedReply.replace(/\\"/g, '"').replace(/\\'/g, "'").replace(/\\n/g, '\n');
+          console.log("🔧 [Chat] Removed outer quotes from JSON string");
+        }
+      }
+      
       try {
-        actionData = JSON.parse(reply.trim());
+        actionData = JSON.parse(cleanedReply);
         console.log("✅ [Chat] Direct JSON parse successful");
       } catch (e) {
         // If direct parse fails, try to extract JSON from text
         // Match JSON with either "action" OR "navigateTo" fields
-        jsonMatch = reply.match(/\{[\s\S]*(?:"action"|"navigateTo")[\s\S]*\}/);
+        jsonMatch = cleanedReply.match(/\{[\s\S]*(?:"action"|"navigateTo")[\s\S]*\}/);
         if (jsonMatch) {
           try {
             actionData = JSON.parse(jsonMatch[0]);
             console.log("✅ [Chat] Extracted JSON from text");
           } catch (parseError) {
             console.error("❌ [Chat] Failed to parse extracted JSON:", parseError);
+            console.error("❌ [Chat] Raw reply (first 500 chars):", cleanedReply.substring(0, 500));
             actionData = null;
           }
+        } else {
+          console.error("❌ [Chat] No JSON pattern found in reply");
+          console.error("❌ [Chat] Raw reply (first 500 chars):", cleanedReply.substring(0, 500));
+          actionData = null;
         }
       }
       
@@ -865,56 +890,68 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
               // Lead created - navigate to contacts page, optionally with lead ID
               const result = actionResponseData.result;
               const leadId = result?.lead?.id;
-              finalReply = `${actionData.message}\n\n${result?.message || 'Lead created successfully!'}\n\n📋 **Lead Details:**\n${result?.lead ? Object.entries(result.lead).map(([key, val]) => `- ${key}: ${val || 'Not provided'}`).join('\n') : 'Details not available'}`;
-              finalReply += `\n\n✨ Let's go to your Contacts page to view the new lead!`;
+              
+              // Clean, user-friendly message without markdown
+              const leadName = result?.lead?.contactPerson || result?.lead?.businessName || 'Contact';
+              const leadEmail = result?.lead?.email || 'No email';
+              const leadPhone = result?.lead?.phone || 'No phone';
+              
+              finalReply = `✓ Contact created successfully!\n\nContact Details:\n• Name: ${leadName}`;
+              if (leadEmail !== 'No email') finalReply += `\n• Email: ${leadEmail}`;
+              if (leadPhone !== 'No phone') finalReply += `\n• Phone: ${leadPhone}`;
+              finalReply += `\n\nTaking you to your Contacts page...`;
+              
               // Navigate to contacts page, optionally with lead ID to highlight it
               navigationUrl = leadId ? `/dashboard/contacts?id=${leadId}` : "/dashboard/contacts";
             } else if (actionData.action === "list_leads") {
               const leads = actionResponseData.result?.leads || [];
               if (leads.length > 0) {
                 // Don't list all leads in chat - navigate to page instead
-                finalReply = `${actionData.message}\n\n✨ Opening your Contacts page where you can see all your leads, filter by status, and manage your contacts!`;
+                finalReply = `Opening your Contacts page where you can see all your leads, filter by status, and manage your contacts!`;
                 navigationUrl = "/dashboard/contacts";
               } else {
-                finalReply = `${actionData.message}\n\n📋 You don't have any leads yet. Would you like me to help you create one or import contacts?`;
+                finalReply = `You don't have any leads yet. Would you like me to help you create one or import contacts?`;
               }
             } else if (actionData.action === "create_deal") {
               // Deal created - navigate to pipeline page, optionally with deal ID
               const result = actionResponseData.result;
               const dealId = result?.deal?.id;
-              finalReply = `${actionData.message}\n\n${result?.message || 'Deal created successfully!'}\n\n💼 **Deal Details:**\n${result?.deal ? Object.entries(result.deal).map(([key, val]) => `- ${key}: ${val}`).join('\n') : 'Details not available'}`;
-              finalReply += `\n\n✨ Let's go to your Pipeline page to view the new deal!`;
+              const dealTitle = result?.deal?.title || 'Deal';
+              const dealValue = result?.deal?.value ? `$${result.deal.value}` : 'No value';
+              
+              finalReply = `✓ Deal created successfully!\n\nDeal Details:\n• Title: ${dealTitle}\n• Value: ${dealValue}\n\nTaking you to your Pipeline page...`;
+              
               // Navigate to pipeline page, optionally with deal ID to highlight it
               navigationUrl = dealId ? `/dashboard/pipeline?id=${dealId}` : "/dashboard/pipeline";
             } else if (actionData.action === "list_deals") {
               const deals = actionResponseData.result?.deals || [];
               if (deals.length > 0) {
                 // Don't list all deals in chat - navigate to page instead
-                finalReply = `${actionData.message}\n\n✨ Opening your Pipeline page where you can see all your deals, track progress, and manage your sales pipeline!`;
+                finalReply = `Opening your Pipeline page where you can see all your deals, track progress, and manage your sales pipeline!`;
                 navigationUrl = "/dashboard/pipeline";
               } else {
-                finalReply = `${actionData.message}\n\n💼 You don't have any deals yet. Would you like me to help you create one?`;
+                finalReply = `You don't have any deals yet. Would you like me to help you create one?`;
               }
             } else if (actionData.action === "get_statistics") {
               const stats = actionResponseData.result;
-              finalReply = `${actionData.message}\n\n📊 **Your CRM Statistics:**\n\n**Overview:**\n- Total Leads: ${stats.overview.totalLeads}\n- Total Deals: ${stats.overview.totalDeals}\n- Total Campaigns: ${stats.overview.totalCampaigns}\n- Total Appointments: ${stats.overview.totalAppointments}\n- Total Workflows: ${stats.overview.totalWorkflows}\n\n**Leads:**\n- New: ${stats.leads.new}\n- Qualified: ${stats.leads.qualified}\n\n**Deals:**\n- Won: ${stats.deals.won}\n- Total Revenue: $${stats.deals.totalRevenue}`;
+              finalReply = `Your CRM Statistics:\n\nOverview:\n• Total Leads: ${stats.overview.totalLeads}\n• Total Deals: ${stats.overview.totalDeals}\n• Total Campaigns: ${stats.overview.totalCampaigns}\n• Total Appointments: ${stats.overview.totalAppointments}\n• Total Workflows: ${stats.overview.totalWorkflows}\n\nLeads:\n• New: ${stats.leads.new}\n• Qualified: ${stats.leads.qualified}\n\nDeals:\n• Won: ${stats.deals.won}\n• Total Revenue: $${stats.deals.totalRevenue}`;
             } else if (actionData.action === "search_contacts") {
               const contacts = actionResponseData.result?.contacts || [];
               if (contacts.length > 0) {
                 // Navigate to contacts page instead of listing results
-                finalReply = `${actionData.message}\n\n✨ Opening your Contacts page where you can see ${contacts.length} matching ${contacts.length === 1 ? 'contact' : 'contacts'} and perform advanced searches!`;
+                finalReply = `Opening your Contacts page where you can see ${contacts.length} matching ${contacts.length === 1 ? 'contact' : 'contacts'} and perform advanced searches!`;
                 navigationUrl = "/dashboard/contacts";
               } else {
-                finalReply = `${actionData.message}\n\n🔍 No contacts found matching your search.`;
+                finalReply = `No contacts found matching your search.`;
               }
             } else if (actionData.action === "list_campaigns") {
               const campaigns = actionResponseData.result?.campaigns || [];
               if (campaigns.length > 0) {
                 // Navigate to campaigns page instead of listing
-                finalReply = `${actionData.message}\n\n✨ Opening your Campaigns page where you can see all your campaigns, track performance, and create new ones!`;
+                finalReply = `Opening your Campaigns page where you can see all your campaigns, track performance, and create new ones!`;
                 navigationUrl = "/dashboard/campaigns";
               } else {
-                finalReply = `${actionData.message}\n\n📢 You don't have any campaigns yet. Would you like me to help you create one?`;
+                finalReply = `You don't have any campaigns yet. Would you like me to help you create one?`;
               }
             } else if (actionData.action === "debug_voice_agent") {
               // Display diagnostic report
