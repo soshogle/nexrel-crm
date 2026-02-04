@@ -1025,9 +1025,40 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       hasResult: !!actionResult?.result,
     });
     
+    // Get navigation URL for the action
+    let navigationUrl = getNavigationUrlForAction(actionResult?.action);
+    console.log("🧭 [Chat] Navigation URL:", navigationUrl);
+    
+    // Extract suggestions and workflow details from action result if available
+    const suggestions = actionResult?.result?.suggestions;
+    const workflowDetails = actionResult?.result?.workflowDetails;
+    
     if (actionResult && actionResult.result) {
       // Format specific action results for better user experience
       const result = actionResult.result;
+      
+      // For create_workflow, ensure navigation and include suggestions
+      if (actionResult.action === "create_workflow") {
+        console.log("📋 [Chat] Formatting create_workflow response");
+        const workflowId = result?.workflow?.id;
+        const workflowName = result?.workflow?.name || 'Workflow';
+        
+        // Ensure navigation URL is set to workflows page
+        if (!navigationUrl) {
+          navigationUrl = workflowId ? `/dashboard/workflows?id=${workflowId}` : "/dashboard/workflows";
+          console.log("🧭 [Chat] Set navigation URL for create_workflow:", navigationUrl);
+        }
+        
+        // Enhance reply with workflow details if available
+        if (workflowDetails && workflowDetails.actions) {
+          const actionsSummary = workflowDetails.actions
+            .map((a: any, i: number) => `${i + 1}. ${a.summary || a.type}`)
+            .join('\n');
+          if (!finalReply.includes('actions') && !finalReply.includes('steps')) {
+            finalReply += `\n\n📋 Workflow Steps:\n${actionsSummary}`;
+          }
+        }
+      }
       
       // For create_lead, ensure we have good formatting and navigation
       if (actionResult.action === "create_lead") {
@@ -1077,6 +1108,15 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       action: actionResult,
       navigateTo: navigationUrl,
       timestamp: new Date().toISOString(),
+      ...(suggestions && {
+        suggestions: {
+          ...suggestions,
+          workflowId: actionResult?.result?.workflow?.id,
+        },
+      }),
+      ...(workflowDetails && {
+        workflowDetails,
+      }),
     };
     
     console.log("📦 [Chat] Response payload:", JSON.stringify(responsePayload, null, 2));

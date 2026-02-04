@@ -1104,6 +1104,35 @@ async function createWorkflow(userId: string, params: any) {
       },
     });
 
+    // Include suggestions from AI generator if available
+    const suggestions = generatedWorkflow.suggestions || [];
+    
+    // Helper function to get action summary
+    const getActionSummary = (action: any) => {
+      const config = action.actionConfig || {};
+      switch (action.type) {
+        case 'MAKE_OUTBOUND_CALL':
+          return `Call: ${config.purpose || 'Voice call'}`;
+        case 'SEND_EMAIL':
+          return `Email: ${config.subject || 'No subject'}`;
+        case 'SEND_SMS':
+          return `SMS: ${(config.template || config.message || '').substring(0, 50)}...`;
+        case 'WAIT_DELAY':
+          const minutes = action.delayMinutes || 0;
+          if (minutes >= 10080) return `Wait: ${Math.round(minutes / 10080)} week(s)`;
+          if (minutes >= 1440) return `Wait: ${Math.round(minutes / 1440)} day(s)`;
+          if (minutes >= 60) return `Wait: ${Math.round(minutes / 60)} hour(s)`;
+          return `Wait: ${minutes} minute(s)`;
+        case 'AI_GENERATE_MESSAGE':
+          return `AI Message: ${(config.prompt || '').substring(0, 50)}...`;
+        default:
+          return action.type.replace(/_/g, ' ');
+      }
+    };
+
+    // Include suggestions from AI generator if available
+    const suggestions = generatedWorkflow.suggestions || [];
+    
     return {
       message: `✅ Workflow "${workflow.name}" created successfully!`,
       workflow: {
@@ -1113,6 +1142,22 @@ async function createWorkflow(userId: string, params: any) {
         trigger: workflow.triggerType,
         actionsCount: workflow.actions.length,
         status: workflow.status,
+      },
+      suggestions: suggestions.length > 0 ? {
+        items: suggestions,
+        message: "The AI has some suggestions to improve this workflow:",
+        canAccept: true,
+        canReject: true,
+      } : undefined,
+      workflowDetails: {
+        triggerType: workflow.triggerType,
+        triggerConfig: workflow.triggerConfig,
+        actions: workflow.actions.map((action: any) => ({
+          type: action.type,
+          displayOrder: action.displayOrder,
+          delayMinutes: action.delayMinutes,
+          summary: getActionSummary(action),
+        })),
       },
     };
   }
