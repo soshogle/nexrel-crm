@@ -138,6 +138,22 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
     {
       type: "function",
       function: {
+        name: "delete_duplicate_contacts",
+        description: "Find and delete duplicate contacts from the contacts list. This will identify duplicates based on email, phone, or business name and remove them, keeping the oldest contact.",
+        parameters: {
+          type: "object",
+          properties: {
+            confirm: {
+              type: "boolean",
+              description: "Confirmation to proceed with deletion (optional, defaults to true)",
+            },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
         name: "create_campaign",
         description: "Create a new marketing campaign",
         parameters: {
@@ -465,6 +481,7 @@ export function mapFunctionToAction(functionName: string): string {
     list_leads: "list_leads",
     list_deals: "list_deals",
     search_contacts: "search_contacts",
+    delete_duplicate_contacts: "delete_duplicate_contacts",
     create_campaign: "create_campaign",
     list_campaigns: "list_campaigns",
     get_statistics: "get_statistics",
@@ -528,6 +545,8 @@ export function getNavigationUrlForAction(
       return "/dashboard/settings";
     case "create_workflow":
       return "/dashboard/workflows";
+    case "delete_duplicate_contacts":
+      return "/dashboard/contacts";
     default:
       return null;
   }

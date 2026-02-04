@@ -46,6 +46,7 @@ const AVAILABLE_ACTIONS = {
   GET_CAMPAIGN_DETAILS: "get_campaign_details",
   LIST_CAMPAIGNS: "list_campaigns",
   SEARCH_CONTACTS: "search_contacts",
+  DELETE_DUPLICATE_CONTACTS: "delete_duplicate_contacts",
   GET_STATISTICS: "get_statistics",
   GET_RECENT_ACTIVITY: "get_recent_activity",
   IMPORT_CONTACTS: "import_contacts",
@@ -198,6 +199,10 @@ export async function POST(req: NextRequest) {
 
       case AVAILABLE_ACTIONS.SEARCH_CONTACTS:
         result = await searchContacts(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.DELETE_DUPLICATE_CONTACTS:
+        result = await deleteDuplicateContacts(user.id, parameters);
         break;
 
       case AVAILABLE_ACTIONS.GET_STATISTICS:
@@ -668,6 +673,82 @@ async function searchContacts(userId: string, params: any) {
     query,
     count: leads.length,
     contacts: leads,
+  };
+}
+
+async function deleteDuplicateContacts(userId: string, params: any) {
+  const { batchDeduplicateLeads, findPotentialDuplicates } = await import('@/lib/lead-generation/deduplication');
+  
+  console.log(`[DELETE_DUPLICATES] Starting duplicate deletion for user ${userId}...`);
+  
+  // First, find all potential duplicates
+  const potentialDuplicates = await findPotentialDuplicates(userId, 0.85);
+  
+  if (potentialDuplicates.length === 0) {
+    return {
+      message: "✅ No duplicate contacts found!",
+      duplicatesFound: 0,
+      duplicatesDeleted: 0,
+    };
+  }
+
+  console.log(`[DELETE_DUPLICATES] Found ${potentialDuplicates.length} potential duplicate pairs`);
+  
+  // Track which leads to delete (keep the oldest one)
+  const leadsToDelete = new Set<string>();
+  const processedPairs = new Set<string>();
+  
+  for (const duplicate of potentialDuplicates) {
+    const pairKey = [duplicate.lead1.id, duplicate.lead2.id].sort().join('-');
+    
+    // Skip if we've already processed this pair
+    if (processedPairs.has(pairKey)) {
+      continue;
+    }
+    
+    processedPairs.add(pairKey);
+    
+    // Determine which lead to keep (the older one)
+    const lead1 = await prisma.lead.findUnique({
+      where: { id: duplicate.lead1.id },
+      select: { id: true, createdAt: true },
+    });
+    
+    const lead2 = await prisma.lead.findUnique({
+      where: { id: duplicate.lead2.id },
+      select: { id: true, createdAt: true },
+    });
+    
+    if (!lead1 || !lead2) continue;
+    
+    // Keep the older lead, delete the newer one
+    const leadToDelete = lead1.createdAt < lead2.createdAt ? lead2.id : lead1.id;
+    
+    // Only delete if it hasn't been marked for deletion already
+    if (!leadsToDelete.has(leadToDelete)) {
+      leadsToDelete.add(leadToDelete);
+    }
+  }
+  
+  console.log(`[DELETE_DUPLICATES] Will delete ${leadsToDelete.size} duplicate contacts`);
+  
+  // Delete the duplicate leads
+  if (leadsToDelete.size > 0) {
+    await prisma.lead.deleteMany({
+      where: {
+        id: { in: Array.from(leadsToDelete) },
+        userId, // Ensure we only delete user's own contacts
+      },
+    });
+    
+    console.log(`[DELETE_DUPLICATES] Successfully deleted ${leadsToDelete.size} duplicate contacts`);
+  }
+  
+  return {
+    message: `✅ Successfully deleted ${leadsToDelete.size} duplicate contact(s)!`,
+    duplicatesFound: potentialDuplicates.length,
+    duplicatesDeleted: leadsToDelete.size,
+    details: `Found ${potentialDuplicates.length} duplicate pairs and removed ${leadsToDelete.size} duplicate contact(s), keeping the oldest version of each.`,
   };
 }
 
