@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { isMenuItemVisible, type Industry, type MenuItemId } from '@/lib/industry-menu-config';
 import AdminAuthDialog from '@/components/admin/admin-auth-dialog';
@@ -423,9 +424,75 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, status } = useSession();
+  const t = useTranslations('navigation');
   const [adminExpanded, setAdminExpanded] = useState(false);
   const [isParent, setIsParent] = useState(false);
   const [isLoadingRole, setIsLoadingRole] = useState(true);
+
+  // Helper function to translate menu item titles
+  const translateMenuItem = (itemId: string, fallbackTitle: string): string => {
+    const translationMap: Record<string, string> = {
+      'dashboard': 'dashboard',
+      'ai-brain': 'aiBrain',
+      'ai-employees': 'aiEmployees',
+      'docpen': 'aiDocpen',
+      'onboarding': 'onboardingWizard',
+      'leads': 'leads',
+      'contacts': 'contacts',
+      'pipeline': 'pipeline',
+      'messages': 'messages',
+      'soshogle': 'soshogleMultiChannel',
+      'voice-agent': 'voiceAgent',
+      'calendar': 'appointments',
+      'reservations': 'reservations',
+      'clubos-admin': 'clubosAdmin',
+      'clubos-teams': 'teamsLeagues',
+      'delivery': 'delivery',
+      'inventory': 'inventory',
+      'general-inventory': 'inventory',
+      'payments': 'payments',
+      'ecommerce': 'ecommerce',
+      'campaigns': 'campaigns',
+      'sms-campaigns': 'smsCampaigns',
+      'workflows': 'workflows',
+      'reviews': 'reviews',
+      'referrals': 'referrals',
+      'real-estate-dashboard': 'realEstateHub',
+      'fsbo-leads': 'fsboLeads',
+      'cma-tools': 'cmaTools',
+      'market-insights': 'marketInsights',
+      'seller-net-sheet': 'sellerNetSheet',
+      'real-estate-analytics': 'realEstateAnalytics',
+      'voice-agents': 'voiceAgents',
+      'voice-agent-preview': 'testVoiceAgent',
+      'voice-ai-notifications': 'callNotifications',
+      'team': 'team',
+      'settings': 'settings',
+      'tasks': 'tasks',
+      'analytics': 'analytics',
+      'permissions': 'permissions',
+      'billing': 'billing',
+      'booking-settings': 'bookingSettings',
+      'widgets': 'embedWidget',
+      'manage-users': 'manageUsers',
+      'subscriptions': 'subscriptions',
+      'data-monetization': 'dataMonetization',
+      'parent-dashboard': 'myDashboard',
+      'parent-family': 'myFamily',
+      'parent-schedules': 'mySchedules',
+      'parent-payments': 'myPayments',
+    };
+
+    const translationKey = translationMap[itemId];
+    if (translationKey) {
+      try {
+        return t(translationKey);
+      } catch {
+        return fallbackTitle;
+      }
+    }
+    return fallbackTitle;
+  };
   
   // Admin session state
   const [hasAdminSession, setHasAdminSession] = useState(false);
@@ -625,6 +692,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
           {visibleMainItems.map((item) => {
             const Icon = item.icon;
             const isActive = isLinkActive(item.href);
+            const translatedTitle = translateMenuItem(item.id, item.title);
 
             return (
               <Link
@@ -636,10 +704,10 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
                     ? 'bg-purple-600 text-white font-medium'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 )}
-                title={!isExpanded ? item.title : undefined}
+                title={!isExpanded ? translatedTitle : undefined}
               >
                 <Icon className="h-[18px] w-[18px] flex-shrink-0" />
-                {isExpanded && <span className="whitespace-nowrap">{item.title}</span>}
+                {isExpanded && <span className="whitespace-nowrap">{translatedTitle}</span>}
               </Link>
             );
           })}
@@ -654,12 +722,12 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
                   ? 'bg-purple-600 text-white font-medium'
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white'
               )}
-              title={!isExpanded ? 'Admin' : undefined}
+              title={!isExpanded ? translateMenuItem('admin', 'Admin') : undefined}
             >
               <Settings className="h-[18px] w-[18px] flex-shrink-0" />
               {isExpanded && (
                 <>
-                  <span className="flex-1 text-left whitespace-nowrap">Admin</span>
+                  <span className="flex-1 text-left whitespace-nowrap">{translateMenuItem('admin', 'Admin')}</span>
                   <ChevronDown
                     className={cn(
                       'h-4 w-4 transition-transform duration-200',
@@ -713,7 +781,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
                       )}
                     >
                       <Icon className="h-4 w-4 flex-shrink-0" />
-                      <span className="whitespace-nowrap text-xs flex-1">{item.title}</span>
+                      <span className="whitespace-nowrap text-xs flex-1">{translateMenuItem(item.id, item.title)}</span>
                       {needsAdminDialog && !hasAdminSession && (
                         <Lock className="h-3 w-3 text-yellow-500" />
                       )}
