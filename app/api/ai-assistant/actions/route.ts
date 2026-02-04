@@ -31,6 +31,7 @@ const AVAILABLE_ACTIONS = {
   LIST_VOICE_AGENTS: "list_voice_agents",
   UPDATE_VOICE_AGENT: "update_voice_agent",
   ASSIGN_PHONE_TO_VOICE_AGENT: "assign_phone_to_voice_agent",
+  MAKE_OUTBOUND_CALL: "make_outbound_call",
   
   // CRM Operations
   CREATE_LEAD: "create_lead",
@@ -144,6 +145,10 @@ export async function POST(req: NextRequest) {
 
       case AVAILABLE_ACTIONS.CREATE_APPOINTMENT:
         result = await createAppointment(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.MAKE_OUTBOUND_CALL:
+        result = await makeOutboundCall(user.id, parameters);
         break;
 
       // CRM Operations
@@ -1596,6 +1601,214 @@ async function assignPhoneToVoiceAgent(userId: string, params: any) {
   };
 }
 
+
+// ========================================
+// Outbound Call Functions
+// ========================================
+
+async function makeOutboundCall(userId: string, params: any) {
+  const {
+    contactName,
+    phoneNumber,
+    purpose,
+    notes,
+    voiceAgentId,
+    voiceAgentName,
+    immediate = true,
+    scheduledFor,
+    leadId,
+  } = params;
+
+  if (!contactName || !purpose) {
+    throw new Error("Contact name and call purpose are required");
+  }
+
+  let finalPhoneNumber = phoneNumber;
+  let finalLeadId = leadId;
+
+  // If phone number not provided, try to find contact by name
+  if (!finalPhoneNumber) {
+    const lead = await prisma.lead.findFirst({
+      where: {
+        userId,
+        OR: [
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+          { businessName: { contains: contactName, mode: "insensitive" } },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (lead) {
+      finalPhoneNumber = lead.phone || null;
+      finalLeadId = lead.id;
+    } else {
+      throw new Error(
+        `Contact "${contactName}" not found. Please provide a phone number or ensure the contact exists.`
+      );
+    }
+  }
+
+  if (!finalPhoneNumber) {
+    throw new Error(
+      `No phone number found for "${contactName}". Please provide a phone number.`
+    );
+  }
+
+  // Find voice agent
+  let agentId = voiceAgentId;
+  if (!agentId && voiceAgentName) {
+    const agentByName = await prisma.voiceAgent.findFirst({
+      where: {
+        userId,
+        name: { contains: voiceAgentName, mode: "insensitive" },
+        status: "ACTIVE",
+      },
+    });
+    if (agentByName) {
+      agentId = agentByName.id;
+    }
+  }
+
+  // If still no agent, use default active agent
+  if (!agentId) {
+    const defaultAgent = await prisma.voiceAgent.findFirst({
+      where: {
+        userId,
+        status: "ACTIVE",
+        elevenLabsAgentId: { not: null },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!defaultAgent) {
+      throw new Error(
+        "No active voice agent found. Please create and configure a voice agent first."
+      );
+    }
+    agentId = defaultAgent.id;
+  }
+
+  // Get voice agent details
+  const voiceAgent = await prisma.voiceAgent.findUnique({
+    where: { id: agentId },
+  });
+
+  if (!voiceAgent) {
+    throw new Error("Voice agent not found");
+  }
+
+  if (!voiceAgent.elevenLabsAgentId) {
+    throw new Error(
+      "Voice agent is not configured properly. Please complete the voice AI setup."
+    );
+  }
+
+  // Validate agent exists in ElevenLabs
+  const { elevenLabsProvisioning } = await import("@/lib/elevenlabs-provisioning");
+  const validation = await elevenLabsProvisioning.validateAgentSetup(
+    voiceAgent.elevenLabsAgentId,
+    userId
+  );
+
+  if (!validation.valid) {
+    throw new Error(
+      `Voice agent not found in ElevenLabs: ${validation.error}. Please reconfigure the agent.`
+    );
+  }
+
+  // Validate scheduledFor if not immediate
+  if (!immediate && !scheduledFor) {
+    throw new Error(
+      "If immediate is false, scheduledFor date/time is required"
+    );
+  }
+
+  // Create outbound call record
+  const outboundCall = await prisma.outboundCall.create({
+    data: {
+      userId,
+      voiceAgentId: agentId,
+      leadId: finalLeadId,
+      name: contactName,
+      phoneNumber: finalPhoneNumber,
+      status: immediate ? "IN_PROGRESS" : "SCHEDULED",
+      scheduledFor: scheduledFor ? new Date(scheduledFor) : undefined,
+      purpose: purpose,
+      notes: notes || null,
+    },
+    include: {
+      voiceAgent: true,
+    },
+  });
+
+  // If immediate, initiate the call
+  if (immediate) {
+    try {
+      const { elevenLabsService } = await import("@/lib/elevenlabs");
+      const callResult = await elevenLabsService.initiatePhoneCall(
+        voiceAgent.elevenLabsAgentId,
+        finalPhoneNumber
+      );
+
+      // Create call log
+      const callLog = await prisma.callLog.create({
+        data: {
+          userId,
+          voiceAgentId: agentId,
+          leadId: finalLeadId,
+          direction: "OUTBOUND",
+          status: "INITIATED",
+          fromNumber: voiceAgent.twilioPhoneNumber || "System",
+          toNumber: finalPhoneNumber,
+          elevenLabsConversationId:
+            callResult.conversation_id ||
+            callResult.call_id ||
+            callResult.id ||
+            undefined,
+        },
+      });
+
+      // Update outbound call
+      await prisma.outboundCall.update({
+        where: { id: outboundCall.id },
+        data: {
+          status: "IN_PROGRESS",
+          callLogId: callLog.id,
+          attemptCount: 1,
+          lastAttemptAt: new Date(),
+        },
+      });
+    } catch (callError: any) {
+      console.error("Error initiating call:", callError);
+      // Update status to failed but don't throw - the record is created
+      await prisma.outboundCall.update({
+        where: { id: outboundCall.id },
+        data: {
+          status: "FAILED",
+        },
+      });
+      throw new Error(
+        `Call record created but failed to initiate: ${callError.message}`
+      );
+    }
+  }
+
+  const statusMessage = immediate
+    ? "Call initiated successfully"
+    : `Call scheduled for ${scheduledFor ? new Date(scheduledFor).toLocaleString() : "later"}`;
+
+  return {
+    message: `✓ ${statusMessage} to ${contactName} at ${finalPhoneNumber}.\n\nPurpose: ${purpose}${notes ? `\n\nTalking Points:\n${notes}` : ""}`,
+    outboundCall: {
+      id: outboundCall.id,
+      name: contactName,
+      phoneNumber: finalPhoneNumber,
+      status: outboundCall.status,
+      scheduledFor: outboundCall.scheduledFor,
+    },
+  };
+}
 
 // ========================================
 // QuickBooks Integration Functions
