@@ -136,40 +136,40 @@ export function DashboardOverview({ stats, recentLeads }: DashboardOverviewProps
         transition={{ delay: 0.5 }}
       >
         <Link href="/dashboard/ai-brain">
-          <div className="relative p-8 bg-gradient-to-br from-purple-900/30 via-blue-900/20 to-gray-900 rounded-xl border-2 border-purple-500/30 hover:border-purple-500/60 transition-all cursor-pointer overflow-hidden group">
+          <div className="relative p-8 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 rounded-xl border-2 border-purple-400/50 hover:border-purple-400 transition-all cursor-pointer overflow-hidden group shadow-lg shadow-purple-500/20">
             {/* Background effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             
             <div className="relative flex items-center justify-between">
               <div className="flex items-center gap-6">
-                <div className="p-4 rounded-2xl bg-purple-500/20 border border-purple-500/30">
-                  <Brain className="h-12 w-12 text-purple-400" />
+                <div className="p-4 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-sm">
+                  <Brain className="h-12 w-12 text-white" />
                 </div>
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-2xl font-bold text-white flex items-center gap-2">
                       Central AI Brain
-                      <Sparkles className="h-6 w-6 text-yellow-400 animate-pulse" />
+                      <Sparkles className="h-6 w-6 text-yellow-300 animate-pulse" />
                     </h3>
-                    <Badge className="bg-purple-500 text-white border-0">
+                    <Badge className="bg-white/20 text-white border border-white/30 backdrop-blur-sm">
                       Powered by AI
                     </Badge>
                   </div>
-                  <p className="text-gray-300 text-lg mb-2">
+                  <p className="text-white/95 text-lg mb-2 font-medium">
                     Get intelligent insights, predictions, and automation recommendations
                   </p>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-white/80 text-sm">
                     AI-powered analysis of your leads, deals, and business performance
                   </p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <Button className="gradient-button group-hover:scale-105 transition-transform" size="lg">
+                <Button className="bg-white text-purple-700 hover:bg-white/90 group-hover:scale-105 transition-transform shadow-md" size="lg">
                   View AI Insights
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <div className="flex items-center gap-2 text-sm text-gray-400">
-                  <TrendingUp className="h-4 w-4 text-green-400" />
+                <div className="flex items-center gap-2 text-sm text-white/90">
+                  <TrendingUp className="h-4 w-4 text-yellow-300" />
                   <span>Predictive Analytics</span>
                 </div>
               </div>
