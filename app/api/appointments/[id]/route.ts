@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { reviewFeedbackService } from '@/lib/review-feedback-service'
 
 // GET /api/appointments/[id] - Get appointment details
 
@@ -129,6 +130,21 @@ export async function PATCH(
         payment: true,
       },
     })
+
+    // Trigger feedback collection if appointment was just completed
+    if (status === 'COMPLETED' && existingAppointment.status !== 'COMPLETED' && appointment.leadId) {
+      try {
+        await reviewFeedbackService.triggerFeedbackCollection({
+          leadId: appointment.leadId,
+          userId: session.user.id,
+          appointmentId: appointment.id,
+          preferredMethod: 'BOTH', // Try both SMS and voice call
+        });
+      } catch (feedbackError) {
+        console.error('Error triggering feedback collection:', feedbackError);
+        // Don't fail the appointment update if feedback fails
+      }
+    }
 
     // Transform the response to include startTime and endTime for calendar compatibility
     const responseStartTime = new Date(appointment.appointmentDate)

@@ -241,6 +241,7 @@ model User {
   docpenSessions              DocpenSession[]
   docpenVoiceAgents           DocpenVoiceAgent[]
   docpenKnowledgeBaseFiles    DocpenKnowledgeBaseFile[]
+  feedbackCollections         FeedbackCollection[]
   // Real Estate Industry Relations
   reProperties              REProperty[]                 @relation("REUserProperties")
   reFsboAssignedListings    REFSBOListing[]              @relation("REFSBOAssignedUser")
@@ -317,6 +318,7 @@ model Lead {
   referralConverted   Referral[]           @relation("ConvertedFromReferral")
   referralsMade       Referral[]           @relation("ReferrerLeads")
   reviews             Review[]
+  feedbackCollections FeedbackCollection[]
   smsCampaignDeals    SmsCampaignDeal[]
   smsEnrollments      SmsEnrollment[]
   tasks               Task[]
@@ -503,6 +505,30 @@ model Review {
 
   @@index([campaignId])
   @@index([leadId])
+}
+
+model FeedbackCollection {
+  id              String    @id @default(cuid())
+  userId          String
+  leadId          String
+  appointmentId   String?
+  method          String   // SMS, VOICE, BOTH
+  status          String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  sentiment       String?  // POSITIVE, NEGATIVE, NEUTRAL
+  rating          Int?
+  feedbackText    String?
+  triggeredAt     DateTime @default(now())
+  completedAt     DateTime?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([leadId])
+  @@index([appointmentId])
+  @@index([status])
 }
 
 model Referral {
