@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { DocpenAgentSettings } from '@/components/docpen/agent-settings';
-import { DocpenConversationHistory } from '@/components/docpen/conversation-history';
+import CallHistoryPanel from '@/components/messaging/call-history-panel';
 import { DocpenKnowledgeBaseTraining } from '@/components/docpen/knowledge-base-training';
 
 export default function DocpenSettingsPage() {
@@ -65,8 +65,8 @@ export default function DocpenSettingsPage() {
           <TabsContent value="agents">
             <DocpenAgentSettings />
           </TabsContent>
-          <TabsContent value="history">
-            <DocpenConversationHistory />
+          <TabsContent value="history" className="mt-0">
+            <CallHistoryPanel />
           </TabsContent>
           <TabsContent value="training">
             <DocpenKnowledgeBaseTraining />
