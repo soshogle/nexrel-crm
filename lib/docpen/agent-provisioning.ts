@@ -235,6 +235,12 @@ class DocpenAgentProvisioning {
     };
 
     console.log('📤 [Docpen] Creating ElevenLabs agent with medical functions...');
+    console.log('📤 [Docpen] Agent payload:', JSON.stringify({
+      name: agentPayload.name,
+      hasConversationConfig: !!agentPayload.conversation_config,
+      hasTools: !!agentPayload.tools && agentPayload.tools.length > 0,
+      toolCount: agentPayload.tools?.length || 0,
+    }, null, 2));
 
     const response = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
       method: 'POST',
@@ -249,7 +255,8 @@ class DocpenAgentProvisioning {
     console.log('📥 [Docpen] Response headers:', Object.fromEntries(response.headers.entries()));
 
     const responseText = await response.text();
-    console.log('📥 [Docpen] Raw response:', responseText);
+    console.log('📥 [Docpen] Raw response (first 500 chars):', responseText.substring(0, 500));
+    console.log('📥 [Docpen] Full response length:', responseText.length);
 
     if (!response.ok) {
       console.error('❌ [Docpen] ElevenLabs API error response:', {
@@ -279,9 +286,37 @@ class DocpenAgentProvisioning {
     console.log(`✅ [Docpen] Created agent: ${agentId}`);
     console.log(`📝 [Docpen] Agent name: "${agentPayload.name}"`);
     console.log(`🔑 [Docpen] Created in ElevenLabs account associated with API key: ${keyLabel}`);
-    console.log(`💡 [Docpen] To see this agent in ElevenLabs dashboard, log in with the account that owns this API key`);
+    
+    // CRITICAL: Verify agent actually exists in ElevenLabs before saving to DB
+    console.log(`🔍 [Docpen] Verifying agent exists in ElevenLabs...`);
+    try {
+      const verifyResponse = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${agentId}`, {
+        headers: { 'xi-api-key': apiKey },
+      });
+      
+      if (verifyResponse.status === 404) {
+        console.error(`❌ [Docpen] Agent ${agentId} NOT FOUND in ElevenLabs (404) - creation may have failed silently`);
+        throw new Error(`Agent creation returned agent_id but agent does not exist in ElevenLabs. This may indicate an API key permission issue or API error.`);
+      } else if (!verifyResponse.ok) {
+        const verifyError = await verifyResponse.text();
+        console.error(`❌ [Docpen] Failed to verify agent (${verifyResponse.status}):`, verifyError);
+        throw new Error(`Agent created but verification failed (${verifyResponse.status}): ${verifyError}`);
+      } else {
+        const agentData = await verifyResponse.json();
+        console.log(`✅ [Docpen] Verified agent exists in ElevenLabs:`, {
+          agentId: agentData.agent_id,
+          name: agentData.name,
+          createdAt: agentData.metadata?.created_at_unix_secs,
+        });
+        console.log(`💡 [Docpen] To see this agent in ElevenLabs dashboard, log in with the account that owns this API key`);
+      }
+    } catch (verifyError: any) {
+      // If verification fails, don't save to DB - the agent doesn't actually exist
+      console.error(`❌ [Docpen] Agent verification failed:`, verifyError.message);
+      throw verifyError;
+    }
 
-    // Save to database
+    // Save to database only after successful verification
     await prisma.docpenVoiceAgent.create({
       data: {
         userId: config.userId,
