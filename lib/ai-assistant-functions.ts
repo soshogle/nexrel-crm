@@ -372,6 +372,55 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
     {
       type: "function",
       function: {
+        name: "make_outbound_call",
+        description: "Schedule or immediately initiate an outbound call to a contact using a voice AI agent. Use this when the user wants to call someone or schedule a call.",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: {
+              type: "string",
+              description: "Name of the contact to call (required). Can be a contact name or lead name.",
+            },
+            phoneNumber: {
+              type: "string",
+              description: "Phone number to call (optional if contactName is provided and contact exists)",
+            },
+            purpose: {
+              type: "string",
+              description: "Purpose of the call - what the call is about (required)",
+            },
+            notes: {
+              type: "string",
+              description: "Call script or talking points - what the voice AI should discuss during the call (optional but recommended)",
+            },
+            voiceAgentId: {
+              type: "string",
+              description: "Voice agent ID to use (optional - will use default active agent if not provided)",
+            },
+            voiceAgentName: {
+              type: "string",
+              description: "Voice agent name to use (optional - will use default active agent if not provided)",
+            },
+            immediate: {
+              type: "boolean",
+              description: "Whether to call immediately (true) or schedule for later (false). Defaults to true.",
+            },
+            scheduledFor: {
+              type: "string",
+              description: "When to schedule the call (ISO date string, e.g., '2026-02-05T10:00:00'). Required if immediate is false.",
+            },
+            leadId: {
+              type: "string",
+              description: "Lead/contact ID if calling a specific lead (optional)",
+            },
+          },
+          required: ["contactName", "purpose"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
         name: "navigate_to",
         description: "Navigate the user to a specific page in the application. Use this when the user wants to go somewhere or after completing an action.",
         parameters: {
@@ -423,6 +472,7 @@ export function mapFunctionToAction(functionName: string): string {
     debug_voice_agent: "debug_voice_agent",
     fix_voice_agent: "fix_voice_agent",
     create_workflow: "create_workflow",
+    make_outbound_call: "make_outbound_call",
     navigate_to: "navigate_to", // Special case - handled differently
   };
   return mapping[functionName] || functionName;
@@ -467,6 +517,7 @@ export function getNavigationUrlForAction(
     case "list_voice_agents":
     case "debug_voice_agent":
     case "fix_voice_agent":
+    case "make_outbound_call":
       return "/dashboard/voice-agents";
     case "setup_stripe":
     case "setup_twilio":

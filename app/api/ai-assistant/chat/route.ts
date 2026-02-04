@@ -544,6 +544,7 @@ You have access to FUNCTIONS that can actually execute actions. When a user asks
 - list_voice_agents - List all voice agents
 - debug_voice_agent - Debug a voice agent (required: name)
 - fix_voice_agent - Fix a voice agent (required: name)
+- make_outbound_call - Make or schedule a call to a contact using a voice AI agent (required: contactName, purpose; optional: phoneNumber, notes, voiceAgentName, immediate, scheduledFor)
 - create_workflow - Create a workflow (required: name, description)
 - navigate_to - Navigate to a page (required: path)
 
@@ -702,6 +703,7 @@ Response: "Absolutely! I can DO these things for you:
 ⚡ **Set up integrations** - Stripe, Twilio, Gmail, calendars (just ask!)
 📇 **Import contacts** - Upload CSV or add one by one
 📞 **Create & debug voice agents** - AI-powered call handling + automatic troubleshooting
+☎️ **Make calls** - I can call contacts using voice AI agents and tell them what to discuss!
 📅 **Schedule appointments** - Book meetings instantly
 💼 **Manage CRM** - Create leads, deals, campaigns
 🔧 **Debug & fix issues** - I can actually check configurations and fix problems!
