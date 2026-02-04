@@ -97,6 +97,12 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
       return;
     }
 
+    // Ensure patient name is set (either from lead or manual entry)
+    if (!formData.leadId && !formData.patientName.trim()) {
+      toast.error('Please select a patient or enter a name');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch('/api/docpen/sessions', {
@@ -186,12 +192,17 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
 
           {/* Patient Search */}
           <div className="space-y-2">
-            <Label>Patient (Optional)</Label>
+            <Label>Patient</Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value === '') {
+                    setFormData(prev => ({ ...prev, leadId: '', patientName: '' }));
+                  }
+                }}
                 placeholder={tPlaceholders('input.searchClients')}
                 className="pl-9"
               />
@@ -199,8 +210,39 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
                 <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin" />
               )}
             </div>
+            
+            {/* Walk-in option - always visible */}
+            {searchQuery.length === 0 && !formData.leadId && (
+              <button
+                type="button"
+                className="w-full px-3 py-2 text-left text-sm hover:bg-muted border rounded-md mt-1 flex items-center justify-between"
+                onClick={() => {
+                  setFormData(prev => ({ ...prev, leadId: '', patientName: 'Walk-in' }));
+                  setSearchQuery('Walk-in');
+                }}
+              >
+                <span className="font-medium">Walk-in</span>
+                <span className="text-xs text-muted-foreground">Click to select</span>
+              </button>
+            )}
+
+            {/* Search results */}
             {leads.length > 0 && (
               <div className="border rounded-md mt-1 max-h-40 overflow-y-auto">
+                {!formData.leadId && (
+                  <button
+                    type="button"
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center justify-between border-b font-medium"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, leadId: '', patientName: 'Walk-in' }));
+                      setSearchQuery('Walk-in');
+                      setLeads([]);
+                    }}
+                  >
+                    <span>Walk-in</span>
+                    <span className="text-xs text-muted-foreground">Click to select</span>
+                  </button>
+                )}
                 {leads.map((lead) => (
                   <button
                     key={lead.id}
@@ -216,20 +258,40 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
                 ))}
               </div>
             )}
-          </div>
+            
+            {/* Manual entry option when no results */}
+            {!formData.leadId && searchQuery.length >= 2 && leads.length === 0 && searchQuery !== 'Walk-in' && (
+              <button
+                type="button"
+                className="w-full px-3 py-2 text-left text-sm hover:bg-muted border rounded-md mt-1"
+                onClick={() => {
+                  setFormData(prev => ({ ...prev, patientName: searchQuery }));
+                }}
+              >
+                Use "{searchQuery}" as patient name
+              </button>
+            )}
 
-          {/* Patient Name (if not from CRM) */}
-          {!formData.leadId && (
-            <div className="space-y-2">
-              <Label htmlFor="patientName">Patient Name</Label>
-              <Input
-                id="patientName"
-                value={formData.patientName}
-                onChange={(e) => setFormData(prev => ({ ...prev, patientName: e.target.value }))}
-                placeholder={tPlaceholders('input.patientName')}
-              />
-            </div>
-          )}
+            {/* Show selected patient */}
+            {formData.patientName && (
+              <div className="mt-2 px-3 py-2 bg-muted rounded-md text-sm">
+                <span className="text-muted-foreground">Selected: </span>
+                <span className="font-medium">{formData.patientName}</span>
+                {formData.leadId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({ ...prev, leadId: '', patientName: '' }));
+                      setSearchQuery('');
+                    }}
+                    className="ml-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Profession */}
           <div className="space-y-2">
