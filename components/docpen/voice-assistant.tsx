@@ -203,7 +203,8 @@ export function VoiceAssistant({
 
       if (!audioContextRef.current) {
         console.warn('⚠️ [Docpen] Audio context not initialized, creating new one');
-        audioContextRef.current = new AudioContext({ sampleRate: 16000 });
+        // Use default sample rate - we'll resample the PCM data to match
+        audioContextRef.current = new AudioContext();
       }
 
       if (audioContextRef.current.state === 'suspended') {
@@ -213,7 +214,7 @@ export function VoiceAssistant({
 
       if (audioContextRef.current.state === 'closed') {
         console.warn('⚠️ [Docpen] Audio context is closed, creating new one');
-        audioContextRef.current = new AudioContext({ sampleRate: 16000 });
+        audioContextRef.current = new AudioContext();
       }
 
       console.log('🔊 [Docpen] Decoding audio chunk, length:', base64Audio.length);
@@ -236,12 +237,13 @@ export function VoiceAssistant({
           // Convert Int16 PCM to Float32 for Web Audio API
           const float32Audio = convertInt16ToFloat32(pcm16);
           
-          // Create AudioBuffer directly from PCM data
-          const sampleRate = 16000; // ElevenLabs sends PCM at 16kHz
+          // Create AudioBuffer directly from PCM data at 16kHz
+          // Web Audio API will handle resampling to the context's sample rate automatically
+          const sourceSampleRate = 16000; // ElevenLabs sends PCM at 16kHz
           const audioBuffer = audioContextRef.current.createBuffer(
             1, // mono channel
             float32Audio.length,
-            sampleRate
+            sourceSampleRate
           );
           
           // Copy Float32 data into AudioBuffer
@@ -772,17 +774,34 @@ export function VoiceAssistant({
 
       ws.onerror = (err) => {
         console.error('❌ [Docpen] WebSocket error:', err);
+        console.error('❌ [Docpen] WebSocket error details:', {
+          type: err.type,
+          target: err.target,
+          currentTarget: err.currentTarget,
+        });
         setError('Connection error');
         toast.error('Connection error');
+        setIsConnecting(false);
       };
 
       ws.onclose = async (event) => {
         console.log('🔔 [Docpen] WebSocket closed:', event.code, event.reason);
+        console.log('🔔 [Docpen] Close event details:', {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+          timestamp: new Date().toISOString(),
+        });
         setIsConnected(false);
+        setIsConnecting(false);
         await saveConversation();
         cleanup();
         if (!event.wasClean && event.code !== 1000) {
-          toast.error(t('connectionClosed', { code: event.code }));
+          const errorMsg = event.code === 1005 
+            ? 'Connection closed unexpectedly. The agent may not exist in ElevenLabs.'
+            : t('connectionClosed', { code: event.code });
+          toast.error(errorMsg);
+          setError(errorMsg);
         }
       };
     } catch (err: any) {
