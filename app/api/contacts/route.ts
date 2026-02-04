@@ -189,14 +189,20 @@ export async function GET(request: Request) {
           }).catch(() => []),
         ]);
 
-        // Count manually
+        // Count manually - filter out null leadIds
         const dealsMap = new Map<string, number>();
         const messagesMap = new Map<string, number>();
         const callLogsMap = new Map<string, number>();
 
-        dealsData.forEach(d => dealsMap.set(d.leadId, (dealsMap.get(d.leadId) || 0) + 1));
-        messagesData.forEach(m => messagesMap.set(m.leadId, (messagesMap.get(m.leadId) || 0) + 1));
-        callLogsData.forEach(c => callLogsMap.set(c.leadId, (callLogsMap.get(c.leadId) || 0) + 1));
+        dealsData
+          .filter(d => d.leadId !== null)
+          .forEach(d => dealsMap.set(d.leadId!, (dealsMap.get(d.leadId!) || 0) + 1));
+        messagesData
+          .filter(m => m.leadId !== null)
+          .forEach(m => messagesMap.set(m.leadId!, (messagesMap.get(m.leadId!) || 0) + 1));
+        callLogsData
+          .filter(c => c.leadId !== null)
+          .forEach(c => callLogsMap.set(c.leadId!, (callLogsMap.get(c.leadId!) || 0) + 1));
 
         // Add counts to contacts
         contacts = contacts.map((contact: any) => ({
