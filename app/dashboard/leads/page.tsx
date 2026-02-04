@@ -30,7 +30,7 @@ export default async function LeadsPage() {
       country: string | null;
       status: string;
       source: string;
-      contactType: string;
+      contactType: string | null;
       tags: any;
       createdAt: Date;
       updatedAt: Date;
