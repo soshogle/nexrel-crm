@@ -56,8 +56,11 @@ export async function POST(request: NextRequest) {
         message: 'Optometrist demo data created successfully',
         details: output,
         credentials: {
-          email: 'optometriste@demo.nexrel.com',
-          password: 'DemoOptometrist2024!',
+          email: 'lunetterie.corbeil@demo.nexrel.com',
+          password: 'LunetterieCorbeil2024!',
+          company: 'Lunetterie Corbeil',
+          phone: '514-254-9872',
+          address: '6347 Jean-Talon est, Montréal, QC H1S 3E7',
         },
       });
     } catch (error: any) {

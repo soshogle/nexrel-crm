@@ -471,7 +471,7 @@ async function createOptometristDemo() {
           transcriptionComplete: true,
           soapNoteGenerated: true,
           signedAt: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000),
-          signedBy: 'Dr. Marie-Claire Optométriste',
+          signedBy: 'Mariline Pageau, Optométriste Propriétaire',
         },
       });
     }
