@@ -494,7 +494,16 @@ export function VoiceAssistant({
           }
           
           // Check nested audio_event structure (like agent_response_event)
-          if (message.audio_event?.audio) {
+          // ElevenLabs sends audio_base_64 in audio_event
+          if (message.audio_event?.audio_base_64) {
+            audioSources.push('message.audio_event.audio_base_64');
+            if (typeof message.audio_event.audio_base_64 === 'string') {
+              audioData = message.audio_event.audio_base_64;
+            }
+          }
+          
+          // Also check for audio_event.audio (alternative format)
+          if (!audioData && message.audio_event?.audio) {
             audioSources.push('message.audio_event.audio');
             if (typeof message.audio_event.audio === 'string') {
               audioData = message.audio_event.audio;
@@ -502,7 +511,7 @@ export function VoiceAssistant({
           }
           
           // Check audio_event direct (if audio is the whole event)
-          if (message.audio_event && typeof message.audio_event === 'string') {
+          if (!audioData && message.audio_event && typeof message.audio_event === 'string') {
             audioSources.push('message.audio_event (direct string)');
             audioData = message.audio_event;
           }
