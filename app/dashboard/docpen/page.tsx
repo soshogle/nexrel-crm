@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   Brain,
   FileText,
@@ -28,6 +29,7 @@ import { SOAPNoteEditor } from '@/components/docpen/soap-note-editor';
 import { ActiveAssistant } from '@/components/docpen/active-assistant';
 import { VoiceAssistant } from '@/components/docpen/voice-assistant';
 import { ReviewSignDialog } from '@/components/docpen/review-sign-dialog';
+import { DocpenErrorBoundary } from '@/components/docpen/docpen-error-boundary';
 import type { DocpenProfessionType } from '@/lib/docpen/prompts';
 
 interface Session {
@@ -74,6 +76,7 @@ interface Session {
 export default function DocpenPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session, status: sessionStatus } = useSession();
   const sessionIdParam = searchParams.get('session');
 
   const [activeView, setActiveView] = useState<'list' | 'session'>(sessionIdParam ? 'session' : 'list');
@@ -87,13 +90,25 @@ export default function DocpenPage() {
     signedComplete: 0,
   });
 
+  // Wait for session to be ready before making API calls
   useEffect(() => {
+    // Don't make API calls until session is authenticated
+    if (sessionStatus === 'loading') {
+      return; // Still loading session
+    }
+    
+    if (sessionStatus === 'unauthenticated') {
+      // Session check will redirect via layout, but guard here too
+      return;
+    }
+
+    // Session is authenticated, safe to make API calls
     if (sessionIdParam) {
       loadSession(sessionIdParam);
     } else {
       fetchStats();
     }
-  }, [sessionIdParam]);
+  }, [sessionIdParam, sessionStatus, session]);
 
   const fetchStats = async () => {
     try {
@@ -173,6 +188,26 @@ export default function DocpenPage() {
   };
 
   const currentSOAPNote = activeSession?.soapNotes?.find(n => n.isCurrentVersion) || null;
+
+  // Show loading state while session is being checked
+  if (sessionStatus === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Guard against unauthenticated state (should be handled by layout, but extra safety)
+  if (sessionStatus === 'unauthenticated' || !session) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <p className="text-muted-foreground">Please sign in to access Docpen</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoadingSession) {
     return (
@@ -423,6 +458,7 @@ export default function DocpenPage() {
           onSigned={handleSigned}
         />
       )}
-    </div>
+      </div>
+    </DocpenErrorBoundary>
   );
 }

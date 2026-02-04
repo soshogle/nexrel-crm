@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   Brain,
   Mic,
@@ -290,6 +291,18 @@ export function VoiceAssistant({
    */
   const connect = async () => {
     if (isConnecting || isConnected) return;
+
+    // Guard: Ensure session is ready before connecting
+    if (sessionStatus === 'loading') {
+      toast.error('Please wait for session to load');
+      return;
+    }
+
+    if (sessionStatus === 'unauthenticated' || !session?.user?.id) {
+      toast.error('Please sign in to use voice assistant');
+      setError('Session not authenticated');
+      return;
+    }
 
     setIsConnecting(true);
     setError(null);
@@ -786,16 +799,33 @@ export function VoiceAssistant({
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col gap-4">
-        {/* Controls */}
-        <div className="flex items-center justify-center gap-2">
-          {!isConnected ? (
-            <Button onClick={connect} disabled={isConnecting} size="lg">
-              {isConnecting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
+        {/* Show loading state if session is not ready */}
+        {sessionStatus === 'loading' && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">Loading session...</span>
+          </div>
+        )}
+        
+        {/* Show error if session is not authenticated */}
+        {sessionStatus === 'unauthenticated' && (
+          <div className="flex items-center justify-center py-8">
+            <AlertCircle className="h-6 w-6 text-red-500" />
+            <span className="ml-2 text-sm text-red-500">Please sign in to use voice assistant</span>
+          </div>
+        )}
+
+        {/* Controls - only show if session is ready */}
+        {sessionStatus === 'authenticated' && session && (
+          <div className="flex items-center justify-center gap-2">
+            {!isConnected ? (
+              <Button onClick={connect} disabled={isConnecting} size="lg">
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
                 <>
                   <Mic className="h-4 w-4 mr-2" />
                   Connect
@@ -834,7 +864,8 @@ export function VoiceAssistant({
               </div>
             </>
           )}
-        </div>
+          </div>
+        )}
 
         {/* Agent Speaking Indicator */}
         {isAgentSpeaking && (
