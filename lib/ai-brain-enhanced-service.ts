@@ -180,9 +180,9 @@ export class AIBrainEnhancedService {
     ]);
 
     // Extract results, defaulting to empty arrays on failure with proper typing
-    const getResult = <T>(result: PromiseSettledResult<T>, name: string): T[] => {
+    const getResult = <T>(result: PromiseSettledResult<T[]>, name: string): T[] => {
       if (result.status === 'fulfilled') {
-        return result.value as T[];
+        return result.value;
       } else {
         console.error(`Error fetching ${name}:`, result.reason);
         return [];
