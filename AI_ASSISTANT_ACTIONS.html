@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - LLM and Available Actions</title>
+    <style>
+        @media print {
+            body { margin: 0; }
+            .page-break { page-break-before: always; }
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2563eb;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        h2 {
+            color: #1e40af;
+            margin-top: 30px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+        }
+        h3 {
+            color: #3b82f6;
+            margin-top: 25px;
+        }
+        h4 {
+            color: #4b5563;
+            margin-top: 20px;
+        }
+        code {
+            background-color: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        strong {
+            color: #1f2937;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 20px 0;
+        }
+        .action-block {
+            background-color: #f9fafb;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .parameter-list {
+            background-color: #ffffff;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #e5e7eb;
+        }
+        .navigation-info {
+            background-color: #eff6ff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .flow-list {
+            background-color: #f0f9ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .flow-list ol {
+            margin: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Assistant - LLM and Available Actions</h1>
+
+    <h2>LLM Configuration</h2>
+    <div class="action-block">
+        <p><strong>Model:</strong> <code>gpt-4o-mini</code> (OpenAI)</p>
+        <ul>
+            <li><strong>Provider:</strong> OpenAI API</li>
+            <li><strong>Temperature:</strong> 0.7</li>
+            <li><strong>Max Tokens:</strong> 1200</li>
+            <li><strong>API Endpoint:</strong> <code>https://api.openai.com/v1/chat/completions</code></li>
+            <li><strong>API Key:</strong> <code>OPENAI_API_KEY</code> environment variable</li>
+        </ul>
+    </div>
+
+    <h2>Available Actions</h2>
+    <p>The AI assistant can perform the following <strong>39 actions</strong> in real-time:</p>
+
+    <h3>🔧 Setup & Configuration Actions</h3>
+
+    <div class="action-block">
+        <h4>1. <code>setup_stripe</code></h4>
+        <p><strong>Purpose:</strong> Configure Stripe payment processing</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>publishableKey</code> (string, required) - Stripe publishable key (starts with pk_)</li>
+                <li><code>secretKey</code> (string, required) - Stripe secret key (starts with sk_)</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Saves Stripe API keys to user's account for payment processing</p>
+    </div>
+
+    <div class="action-block">
+        <h4>2. <code>setup_square</code></h4>
+        <p><strong>Purpose:</strong> Configure Square payment processing</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>applicationId</code> (string, required) - Square application ID</li>
+                <li><code>accessToken</code> (string, required) - Square access token</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Configures Square integration for payments</p>
+    </div>
+
+    <div class="action-block">
+        <h4>3. <code>setup_paypal</code></h4>
+        <p><strong>Purpose:</strong> Configure PayPal payment processing</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>clientId</code> (string, required) - PayPal client ID</li>
+                <li><code>clientSecret</code> (string, required) - PayPal client secret</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Sets up PayPal integration</p>
+    </div>
+
+    <div class="action-block">
+        <h4>4. <code>setup_twilio</code></h4>
+        <p><strong>Purpose:</strong> Configure Twilio for SMS/Voice</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>accountSid</code> (string, required) - Twilio account SID</li>
+                <li><code>authToken</code> (string, required) - Twilio auth token</li>
+                <li><code>phoneNumber</code> (string, optional) - Twilio phone number</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Configures Twilio for SMS and voice calls</p>
+    </div>
+
+    <div class="action-block">
+        <h4>5. <code>purchase_twilio_number</code></h4>
+        <p><strong>Purpose:</strong> Purchase a Twilio phone number</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong> None (opens search dialog)
+        </div>
+        <p><strong>What it does:</strong> Opens phone number purchase interface</p>
+    </div>
+
+    <div class="action-block">
+        <h4>6. <code>setup_quickbooks</code></h4>
+        <p><strong>Purpose:</strong> Set up QuickBooks integration</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong> None (OAuth flow)
+        </div>
+        <p><strong>What it does:</strong> Initiates QuickBooks OAuth connection</p>
+    </div>
+
+    <div class="action-block">
+        <h4>7. <code>setup_whatsapp</code></h4>
+        <p><strong>Purpose:</strong> Configure WhatsApp Business integration</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>phoneNumber</code> (string, optional)</li>
+                <li><code>apiKey</code> (string, optional)</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Configures WhatsApp Business API</p>
+    </div>
+
+    <div class="action-block">
+        <h4>8. <code>create_voice_agent</code></h4>
+        <p><strong>Purpose:</strong> Create a new voice AI agent</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>name</code> (string, required) - Agent name</li>
+                <li><code>voiceId</code> (string, optional) - ElevenLabs voice ID</li>
+                <li><code>prompt</code> (string, optional) - Agent greeting/prompt</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Creates a new ElevenLabs voice agent for AI-powered calls</p>
+    </div>
+
+    <div class="action-block">
+        <h4>9. <code>configure_auto_reply</code></h4>
+        <p><strong>Purpose:</strong> Set up automated message replies</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>enabled</code> (boolean, required)</li>
+                <li><code>message</code> (string, required) - Auto-reply message</li>
+                <li><code>channels</code> (array, optional) - Channels to enable (SMS, Email, etc.)</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Configures automatic replies for incoming messages</p>
+    </div>
+
+    <div class="action-block">
+        <h4>10. <code>create_workflow</code></h4>
+        <p><strong>Purpose:</strong> Create a basic automation workflow</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>description</code> (string, required) - Workflow description</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Creates a workflow automation</p>
+    </div>
+
+    <div class="action-block">
+        <h4>11. <code>create_smart_workflow</code></h4>
+        <p><strong>Purpose:</strong> Create an AI-powered workflow with conditions</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>description</code> (string, required)</li>
+                <li><code>goal</code> (string, required) - Workflow goal</li>
+                <li><code>trigger</code> (string, optional) - Trigger condition</li>
+                <li><code>keywords</code> (array, optional) - Keywords to trigger workflow</li>
+                <li><code>actions</code> (array, optional) - List of actions to execute</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Creates an intelligent workflow that responds to conditions</p>
+    </div>
+
+    <div class="action-block">
+        <h4>12. <code>create_appointment</code></h4>
+        <p><strong>Purpose:</strong> Schedule a calendar appointment</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>title</code> (string, required) - Appointment title</li>
+                <li><code>date</code> (string, required) - Date (ISO format)</li>
+                <li><code>time</code> (string, required) - Time</li>
+                <li><code>attendees</code> (array, optional) - List of attendee emails</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Creates a calendar appointment/event</p>
+        <div class="navigation-info"><strong>Navigation:</strong> <code>/dashboard/calendar</code></div>
+    </div>
+
+    <h3>🤖 Voice Agent Management Actions</h3>
+
+    <div class="action-block">
+        <h4>13. <code>debug_voice_agent</code></h4>
+        <p><strong>Purpose:</strong> Run diagnostics on a voice agent</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>name</code> (string, optional) - Agent name</li>
+                <li><code>agentId</code> (string, optional) - Agent ID</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Checks agent configuration, API keys, and health status</p>
+    </div>
+
+    <div class="action-block">
+        <h4>14. <code>fix_voice_agent</code></h4>
+        <p><strong>Purpose:</strong> Automatically fix voice agent issues</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>name</code> (string, optional) - Agent name</li>
+                <li><code>agentId</code> (string, optional) - Agent ID</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Attempts to automatically fix common voice agent problems</p>
+    </div>
+
+    <div class="action-block">
+        <h4>15. <code>get_voice_agent</code></h4>
+        <p><strong>Purpose:</strong> Get details about a specific voice agent</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>name</code> (string, optional) - Agent name</li>
+                <li><code>agentId</code> (string, optional) - Agent ID</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Returns agent configuration and status</p>
+    </div>
+
+    <div class="action-block">
+        <h4>16. <code>list_voice_agents</code></h4>
+        <p><strong>Purpose:</strong> List all voice agents</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong> None
+        </div>
+        <p><strong>What it does:</strong> Returns list of all user's voice agents</p>
+    </div>
+
+    <div class="action-block">
+        <h4>17. <code>update_voice_agent</code></h4>
+        <p><strong>Purpose:</strong> Update voice agent settings</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>agentId</code> or <code>name</code> (required) - Agent identifier</li>
+                <li><code>prompt</code> (string, optional) - New prompt</li>
+                <li><code>voiceId</code> (string, optional) - New voice ID</li>
+                <li>Other agent settings...</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Updates agent configuration</p>
+    </div>
+
+    <div class="action-block">
+        <h4>18. <code>assign_phone_to_voice_agent</code></h4>
+        <p><strong>Purpose:</strong> Assign a phone number to a voice agent</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>agentId</code> or <code>name</code> (required) - Agent identifier</li>
+                <li><code>phoneNumber</code> (string, required) - Phone number to assign</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Links a Twilio phone number to a voice agent</p>
+    </div>
+
+    <h3>📇 CRM Operations - Contacts/Leads</h3>
+
+    <div class="action-block">
+        <h4>19. <code>create_lead</code></h4>
+        <p><strong>Purpose:</strong> Create a new contact/lead</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>name</code> (string, required) - Contact name</li>
+                <li><code>email</code> (string, optional) - Email address</li>
+                <li><code>phone</code> (string, optional) - Phone number</li>
+                <li><code>company</code> (string, optional) - Company name</li>
+                <li><code>status</code> (string, optional) - Lead status (default: "NEW")</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong></p>
+        <ul>
+            <li>Creates a new lead in the database</li>
+            <li>Sets source as "AI Assistant"</li>
+            <li>Returns created lead details</li>
+        </ul>
+        <div class="navigation-info"><strong>Navigation:</strong> <code>/dashboard/contacts</code> (with optional <code>?id=leadId</code>)</div>
+    </div>
+
+    <div class="action-block">
+        <h4>20. <code>update_lead</code></h4>
+        <p><strong>Purpose:</strong> Update an existing lead</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>leadId</code> (string, required) - Lead ID</li>
+                <li><code>name</code> (string, optional) - New name</li>
+                <li><code>email</code> (string, optional) - New email</li>
+                <li><code>phone</code> (string, optional) - New phone</li>
+                <li><code>status</code> (string, optional) - New status</li>
+                <li>Other lead fields...</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Updates lead information in database</p>
+    </div>
+
+    <div class="action-block">
+        <h4>21. <code>get_lead_details</code></h4>
+        <p><strong>Purpose:</strong> Get detailed information about a lead</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>leadId</code> (string, optional) - Lead ID</li>
+                <li><code>name</code> (string, optional) - Lead name (alternative to leadId)</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Returns lead details including recent notes</p>
+    </div>
+
+    <div class="action-block">
+        <h4>22. <code>list_leads</code></h4>
+        <p><strong>Purpose:</strong> List leads with filters</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>status</code> (string, optional) - Filter by status</li>
+                <li><code>limit</code> (number, optional) - Max results (default: 10, max: 50)</li>
+                <li><code>search</code> (string, optional) - Search query</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Returns filtered list of leads</p>
+        <div class="navigation-info"><strong>Navigation:</strong> <code>/dashboard/contacts</code> (if leads found)</div>
+    </div>
+
+    <div class="action-block">
+        <h4>23. <code>search_contacts</code></h4>
+        <p><strong>Purpose:</strong> Search for contacts</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>query</code> (string, required) - Search term</li>
+                <li><code>limit</code> (number, optional) - Max results (default: 10, max: 20)</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Searches leads by name, email, or company</p>
+        <div class="navigation-info"><strong>Navigation:</strong> <code>/dashboard/contacts</code> (if contacts found)</div>
+    </div>
+
+    <div class="action-block">
+        <h4>24. <code>import_contacts</code></h4>
+        <p><strong>Purpose:</strong> Import contacts from CSV</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>file</code> (File, required) - CSV file</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong></p>
+        <ul>
+            <li>Parses CSV file</li>
+            <li>Creates leads from CSV data</li>
+            <li>Returns import results (success/failed counts)</li>
+        </ul>
+        <div class="navigation-info"><strong>Navigation:</strong> <code>/dashboard/contacts</code></div>
+    </div>
+
+    <h3>💼 CRM Operations - Deals</h3>
+
+    <div class="action-block">
+        <h4>25. <code>create_deal</code></h4>
+        <p><strong>Purpose:</strong> Create a new sales deal</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>title</code> (string, required) - Deal title</li>
+                <li><code>value</code> (number, optional) - Deal value</li>
+                <li><code>leadId</code> (string, optional) - Associated lead ID</li>
+                <li><code>stage</code> (string, optional) - Deal stage</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong></p>
+        <ul>
+            <li>Creates deal in default pipeline</li>
+            <li>Creates default pipeline if none exists</li>
+            <li>Sets initial stage to "Prospecting"</li>
+        </ul>
+        <div class="navigation-info"><strong>Navigation:</strong> <code>/dashboard/pipeline</code> (with optional <code>?id=dealId</code>)</div>
+    </div>
+
+    <div class="action-block">
+        <h4>26. <code>update_deal</code></h4>
+        <p><strong>Purpose:</strong> Update an existing deal</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>dealId</code> (string, required) - Deal ID</li>
+                <li><code>title</code> (string, optional) - New title</li>
+                <li><code>value</code> (number, optional) - New value</li>
+                <li><code>stage</code> (string, optional) - New stage</li>
+                <li>Other deal fields...</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Updates deal information</p>
+    </div>
+
+    <div class="action-block">
+        <h4>27. <code>get_deal_details</code></h4>
+        <p><strong>Purpose:</strong> Get detailed deal information</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>dealId</code> (string, required) - Deal ID</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Returns deal details including associated lead and stage</p>
+    </div>
+
+    <div class="action-block">
+        <h4>28. <code>list_deals</code></h4>
+        <p><strong>Purpose:</strong> List deals</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>limit</code> (number, optional) - Max results (default: 10, max: 50)</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Returns list of deals</p>
+        <div class="navigation-info"><strong>Navigation:</strong> <code>/dashboard/pipeline</code> (if deals found)</div>
+    </div>
+
+    <h3>📢 Campaign Actions</h3>
+
+    <div class="action-block">
+        <h4>29. <code>create_campaign</code></h4>
+        <p><strong>Purpose:</strong> Create a marketing campaign</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>name</code> (string, required) - Campaign name</li>
+                <li><code>type</code> (string, optional) - Campaign type (default: "SMS")</li>
+                <li><code>status</code> (string, optional) - Status (default: "DRAFT")</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Creates a new campaign</p>
+    </div>
+
+    <div class="action-block">
+        <h4>30. <code>get_campaign_details</code></h4>
+        <p><strong>Purpose:</strong> Get campaign details</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>campaignId</code> (string, required) - Campaign ID</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Returns campaign information</p>
+    </div>
+
+    <div class="action-block">
+        <h4>31. <code>list_campaigns</code></h4>
+        <p><strong>Purpose:</strong> List all campaigns</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>status</code> (string, optional) - Filter by status</li>
+                <li><code>limit</code> (number, optional) - Max results (default: 10, max: 50)</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Returns list of campaigns</p>
+        <div class="navigation-info"><strong>Navigation:</strong> <code>/dashboard/campaigns</code> (if campaigns found)</div>
+    </div>
+
+    <h3>📊 Analytics & Reporting</h3>
+
+    <div class="action-block">
+        <h4>32. <code>get_statistics</code></h4>
+        <p><strong>Purpose:</strong> Get CRM statistics</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong> None
+        </div>
+        <p><strong>What it does:</strong> Returns comprehensive CRM stats:</p>
+        <ul>
+            <li>Total leads, deals, campaigns, appointments, workflows</li>
+            <li>Lead breakdown (new, qualified)</li>
+            <li>Deal breakdown (won, total revenue)</li>
+        </ul>
+    </div>
+
+    <div class="action-block">
+        <h4>33. <code>get_recent_activity</code></h4>
+        <p><strong>Purpose:</strong> Get recent CRM activity</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>limit</code> (number, optional) - Number of activities</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Returns recent leads, deals, and campaigns</p>
+    </div>
+
+    <h3>👤 Profile Management</h3>
+
+    <div class="action-block">
+        <h4>34. <code>update_profile</code></h4>
+        <p><strong>Purpose:</strong> Update user profile</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>name</code> (string, optional)</li>
+                <li><code>email</code> (string, optional)</li>
+                <li><code>phone</code> (string, optional)</li>
+                <li>Other profile fields...</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Updates user profile information</p>
+    </div>
+
+    <div class="action-block">
+        <h4>35. <code>update_company_profile</code></h4>
+        <p><strong>Purpose:</strong> Update company information</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>companyName</code> (string, optional)</li>
+                <li><code>phone</code> (string, optional)</li>
+                <li><code>website</code> (string, optional)</li>
+                <li>Other company fields...</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Updates company profile</p>
+    </div>
+
+    <h3>💰 QuickBooks Operations</h3>
+
+    <div class="action-block">
+        <h4>36. <code>create_quickbooks_invoice</code></h4>
+        <p><strong>Purpose:</strong> Create a QuickBooks invoice</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>contactId</code> (string, required) - Contact/lead ID</li>
+                <li><code>amount</code> (number, required) - Invoice amount</li>
+                <li><code>description</code> (string, optional) - Invoice description</li>
+                <li><code>dueDate</code> (string, optional) - Due date</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Creates invoice in QuickBooks</p>
+    </div>
+
+    <div class="action-block">
+        <h4>37. <code>sync_contact_to_quickbooks</code></h4>
+        <p><strong>Purpose:</strong> Sync a contact to QuickBooks</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>leadId</code> (string, required) - Lead ID</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Creates or updates contact in QuickBooks</p>
+    </div>
+
+    <h3>📱 WhatsApp Operations</h3>
+
+    <div class="action-block">
+        <h4>38. <code>send_whatsapp_message</code></h4>
+        <p><strong>Purpose:</strong> Send a WhatsApp message</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>phoneNumber</code> (string, required) - Recipient phone number</li>
+                <li><code>message</code> (string, required) - Message content</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Sends WhatsApp message via WhatsApp Business API</p>
+    </div>
+
+    <div class="action-block">
+        <h4>39. <code>get_whatsapp_conversations</code></h4>
+        <p><strong>Purpose:</strong> Get WhatsApp conversations</p>
+        <div class="parameter-list">
+            <strong>Parameters:</strong>
+            <ul>
+                <li><code>limit</code> (number, optional) - Max results</li>
+            </ul>
+        </div>
+        <p><strong>What it does:</strong> Returns list of WhatsApp conversations</p>
+    </div>
+
+    <h2>Action Execution Flow</h2>
+    <div class="flow-list">
+        <ol>
+            <li><strong>User sends message</strong> → Chat API receives request</li>
+            <li><strong>LLM processes</strong> → GPT-4o-mini generates response (may include JSON action)</li>
+            <li><strong>JSON parsing</strong> → System extracts action from LLM response</li>
+            <li><strong>Fallback detection</strong> → If JSON parsing fails, natural language detection attempts to identify action intent</li>
+            <li><strong>Action execution</strong> → <code>/api/ai-assistant/actions</code> endpoint executes the action</li>
+            <li><strong>Result handling</strong> → Action result is formatted into user-friendly message</li>
+            <li><strong>Navigation</strong> → User is navigated to relevant page (if applicable)</li>
+        </ol>
+    </div>
+
+    <h2>Navigation URLs</h2>
+    <p>Actions automatically navigate users to:</p>
+    <ul>
+        <li><code>/dashboard/contacts</code> - After creating/listing leads</li>
+        <li><code>/dashboard/pipeline</code> - After creating/listing deals</li>
+        <li><code>/dashboard/campaigns</code> - After listing campaigns</li>
+        <li><code>/dashboard/calendar</code> - After creating appointments</li>
+        <li><code>/dashboard/voice-agents</code> - After voice agent operations</li>
+        <li><code>/dashboard/workflows</code> - After creating workflows</li>
+        <li><code>/dashboard/settings</code> - After configuration actions</li>
+    </ul>
+
+    <h2>Notes</h2>
+    <ul>
+        <li>All actions require user authentication</li>
+        <li>Actions are user-scoped (users can only access their own data)</li>
+        <li>Actions return structured results with success/error status</li>
+        <li>Navigation only occurs after successful action execution</li>
+        <li>Failed actions show error messages and do not navigate</li>
+    </ul>
+
+    <hr>
+    <p style="text-align: center; color: #6b7280; font-size: 0.9em; margin-top: 40px;">
+        Generated: <script>document.write(new Date().toLocaleDateString());</script>
+    </p>
+</body>
+</html>
