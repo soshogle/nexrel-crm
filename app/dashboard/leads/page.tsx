@@ -15,14 +15,17 @@ export default async function LeadsPage() {
     }
 
     // Fetch leads without relations first to avoid potential issues
-    let leads = await prisma.lead.findMany({
+    const leadsData = await prisma.lead.findMany({
       where: { userId: session.user.id },
       orderBy: { createdAt: 'desc' }
     });
 
     // Then fetch notes and messages separately if needed
-    if (leads.length > 0) {
-      const leadIds = leads.map(l => l.id);
+    let notesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
+    let messagesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
+
+    if (leadsData.length > 0) {
+      const leadIds = leadsData.map(l => l.id);
       const [notes, messages] = await Promise.all([
         prisma.note.findMany({
           where: { leadId: { in: leadIds } },
@@ -35,9 +38,6 @@ export default async function LeadsPage() {
       ]);
 
       // Group notes and messages by leadId
-      const notesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
-      const messagesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
-
       notes.forEach(note => {
         if (!notesMap.has(note.leadId)) notesMap.set(note.leadId, []);
         notesMap.get(note.leadId)!.push({ id: note.id, createdAt: note.createdAt });
@@ -47,16 +47,14 @@ export default async function LeadsPage() {
         if (!messagesMap.has(message.leadId)) messagesMap.set(message.leadId, []);
         messagesMap.get(message.leadId)!.push({ id: message.id, createdAt: message.createdAt });
       });
-
-      // Attach notes and messages to leads
-      const leadsWithRelations = leads.map(lead => ({
-        ...lead,
-        notes: (notesMap.get(lead.id) || []) as Array<{ id: string; createdAt: Date }>,
-        messages: (messagesMap.get(lead.id) || []) as Array<{ id: string; createdAt: Date }>,
-      }));
-      
-      leads = leadsWithRelations as any;
     }
+
+    // Attach notes and messages to leads - always ensure these properties exist
+    const leads = leadsData.map(lead => ({
+      ...lead,
+      notes: (notesMap.get(lead.id) || []) as Array<{ id: string; createdAt: Date }>,
+      messages: (messagesMap.get(lead.id) || []) as Array<{ id: string; createdAt: Date }>,
+    })) as any;
 
     return (
       <div className="space-y-6">
