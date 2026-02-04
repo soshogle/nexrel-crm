@@ -24,8 +24,8 @@ export async function GET(
 
     const { conversationId } = params;
 
-    // Verify that this call belongs to the user
-    // Check both elevenLabsConversationId and twilioCallSid for backward compatibility
+    // Verify that this call/conversation belongs to the user
+    // Check CallLog (for voice agents) and DocpenConversation (for Docpen)
     const callLog = await prisma.callLog.findFirst({
       where: {
         OR: [
@@ -36,7 +36,40 @@ export async function GET(
       },
     });
 
-    if (!callLog) {
+    // If not found in CallLog, check DocpenConversation
+    let isAuthorized = !!callLog;
+    if (!isAuthorized) {
+      // Check if this conversation belongs to one of the user's Docpen agents
+      const docpenAgents = await prisma.docpenVoiceAgent.findMany({
+        where: { userId: session.user.id },
+        select: { elevenLabsAgentId: true },
+      });
+
+      if (docpenAgents.length > 0) {
+        // Fetch conversation details from ElevenLabs to verify agent ownership
+        try {
+          const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
+          if (elevenLabsApiKey) {
+            const convResponse = await fetch(
+              `https://api.elevenlabs.io/v1/convai/conversations/${conversationId}`,
+              {
+                headers: { 'xi-api-key': elevenLabsApiKey },
+              }
+            );
+
+            if (convResponse.ok) {
+              const convData = await convResponse.json();
+              const userAgentIds = new Set(docpenAgents.map(a => a.elevenLabsAgentId));
+              isAuthorized = userAgentIds.has(convData.agent_id);
+            }
+          }
+        } catch (error) {
+          console.error('Error verifying Docpen conversation:', error);
+        }
+      }
+    }
+
+    if (!isAuthorized) {
       return NextResponse.json(
         { error: 'Call not found or unauthorized' },
         { status: 404 }
