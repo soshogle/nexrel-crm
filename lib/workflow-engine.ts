@@ -289,6 +289,9 @@ export class WorkflowEngine {
       case 'WAIT_DELAY':
         return { action: 'wait', duration: config.minutes };
       
+      case 'MAKE_OUTBOUND_CALL':
+        return this.makeOutboundCall(context, config);
+      
       default:
         console.warn(`Unknown action type: ${action.type}`);
         return { action: action.type, status: 'skipped' };
@@ -768,13 +771,132 @@ export class WorkflowEngine {
   }
 
   /**
+   * Make outbound call via voice AI agent
+   */
+  private async makeOutboundCall(context: ExecutionContext, config: any): Promise<any> {
+    const lead = context.leadId ? await prisma.lead.findUnique({
+      where: { id: context.leadId },
+      include: { user: true },
+    }) : null;
+
+    if (!lead?.phone) {
+      throw new Error('No phone number found for lead');
+    }
+
+    // Get default active voice agent for user
+    const voiceAgent = await prisma.voiceAgent.findFirst({
+      where: {
+        userId: context.userId,
+        status: 'ACTIVE',
+        elevenLabsAgentId: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!voiceAgent) {
+      throw new Error('No active voice agent found');
+    }
+
+    // Replace variables in purpose and notes
+    const purpose = this.replaceVariables(config.purpose || 'Workflow call', lead);
+    const notes = config.notes ? this.replaceVariables(config.notes, lead) : null;
+
+    // Call the makeOutboundCall function from actions route
+    // Since we're in the same server context, we can import and call it directly
+    try {
+      const { makeOutboundCall: makeCall } = await import('../app/api/ai-assistant/actions/route');
+      // Actually, we can't import from route files easily. Let's call the API internally
+      // Or better: implement the logic directly here
+      
+      const contactName = lead.contactPerson || lead.businessName || 'Contact';
+      
+      // Create outbound call record
+      const outboundCall = await prisma.outboundCall.create({
+        data: {
+          userId: context.userId,
+          voiceAgentId: voiceAgent.id,
+          leadId: lead.id,
+          name: contactName,
+          phoneNumber: lead.phone,
+          status: config.immediate !== false ? 'IN_PROGRESS' : 'SCHEDULED',
+          scheduledFor: config.scheduledFor ? new Date(config.scheduledFor) : undefined,
+          purpose: purpose,
+          notes: notes,
+        },
+      });
+
+      // If immediate, initiate the call
+      if (config.immediate !== false) {
+        try {
+          const { elevenLabsService } = await import('./elevenlabs');
+          const callResult = await elevenLabsService.initiatePhoneCall(
+            voiceAgent.elevenLabsAgentId!,
+            lead.phone
+          );
+
+          // Create call log
+          await prisma.callLog.create({
+            data: {
+              userId: context.userId,
+              voiceAgentId: voiceAgent.id,
+              leadId: lead.id,
+              direction: 'OUTBOUND',
+              status: 'INITIATED',
+              fromNumber: voiceAgent.twilioPhoneNumber || 'System',
+              toNumber: lead.phone,
+              elevenLabsConversationId: callResult.conversation_id || callResult.call_id || callResult.id || undefined,
+            },
+          });
+
+          // Update outbound call
+          await prisma.outboundCall.update({
+            where: { id: outboundCall.id },
+            data: {
+              status: 'IN_PROGRESS',
+              attemptCount: 1,
+              lastAttemptAt: new Date(),
+            },
+          });
+        } catch (callError: any) {
+          console.error('Error initiating call in workflow:', callError);
+          await prisma.outboundCall.update({
+            where: { id: outboundCall.id },
+            data: { status: 'FAILED' },
+          });
+        }
+      }
+
+      return {
+        action: 'call_initiated',
+        outboundCallId: outboundCall.id,
+        phone: lead.phone,
+        contactName: contactName,
+      };
+    } catch (error: any) {
+      console.error('Error making outbound call in workflow:', error);
+      throw new Error(`Failed to make outbound call: ${error.message}`);
+    }
+  }
+
+  /**
    * Replace variables in text with actual values
    */
   private replaceVariables(text: string, data: any): string {
     if (!text) return '';
     
     return text.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-      return data[key] || match;
+      // Map common variable names to lead fields
+      const mapping: Record<string, string> = {
+        contactName: 'contactPerson',
+        contactPerson: 'contactPerson',
+        businessName: 'businessName',
+        email: 'email',
+        phone: 'phone',
+        leadId: 'id',
+      };
+      
+      const fieldName = mapping[key] || key;
+      return data[fieldName] || match;
     });
   }
 }

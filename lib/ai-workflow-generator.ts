@@ -127,7 +127,8 @@ export class AIWorkflowGenerator {
       'NOTIFY_USER - Send notification to user',
       'ADD_TAG - Add tag to lead/deal',
       'WAIT_DELAY - Wait for specified time (delayMinutes: convert weeks to minutes = weeks * 7 * 24 * 60, days = days * 24 * 60, hours = hours * 60)',
-      'WEBHOOK - Call external API (can be used for voice calls via /api/outbound-calls)',
+      'MAKE_OUTBOUND_CALL - Make a voice call to contact using voice AI agent (actionConfig: {"purpose": "Call purpose", "notes": "What to discuss", "immediate": true/false, "scheduledFor": "ISO date"})',
+      'WEBHOOK - Call external API',
     ];
 
     return `You are a CRM workflow automation expert. Your job is to parse natural language descriptions of automation workflows and convert them into structured JSON configurations.
@@ -174,8 +175,9 @@ RESPONSE FORMAT (JSON only, no markdown):
         // For SEND_SMS: {"template": "Message content with {{contactName}} for personalization", "phoneField": "phone"}
         // For SEND_EMAIL: {"subject": "Email subject", "body": "Email body with {{contactName}} for personalization", "toField": "email"}
         // For AI_GENERATE_MESSAGE: {"prompt": "Generate personalized birthday message for {{contactName}}", "channel": "SMS" or "EMAIL"}
-        // For WEBHOOK (voice calls): {"url": "${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/outbound-calls", "method": "POST", "payload": {"contactName": "{{contactPerson}}", "phoneNumber": "{{phone}}", "purpose": "Birthday call", "notes": "Personalized birthday greeting for {{contactPerson}}", "immediate": true, "leadId": "{{leadId}}"}}
-        // Note: For internal API calls, use full URL with NEXTAUTH_URL. Variables like {{contactPerson}}, {{phone}}, {{leadId}} will be replaced with actual values.
+        // For MAKE_OUTBOUND_CALL: {"purpose": "Birthday call", "notes": "Personalized birthday greeting for {{contactPerson}}", "immediate": true}
+        // Note: Variables like {{contactPerson}}, {{phone}} will be automatically replaced with lead data
+        // For WEBHOOK: {"url": "https://example.com/webhook", "method": "POST", "payload": {...}}
         // For MOVE_DEAL_STAGE: {"pipelineId": "xxx", "stageId": "yyy"}
         // For CREATE_TASK: {"title": "Task title", "priority": "HIGH", "dueInDays": 1}
         // For CREATE_APPOINTMENT: {"title": "Appointment title", "date": "{{date}}", "time": "{{time}}"}

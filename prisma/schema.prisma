@@ -4767,6 +4767,7 @@ enum WorkflowActionType {
   NOTIFY_USER
   SCHEDULE_FOLLOW_UP
   CREATE_DEAL_FROM_LEAD
+  MAKE_OUTBOUND_CALL
 }
 
 enum WorkflowEnrollmentStatus {
