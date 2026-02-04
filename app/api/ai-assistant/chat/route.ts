@@ -876,11 +876,13 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
           if (actionResponse.ok) {
             const actionResponseData = await actionResponse.json();
             console.log(`✅ [Chat] Action ${action} executed successfully`);
+            console.log(`📋 [Chat] Action response:`, JSON.stringify(actionResponseData, null, 2));
             lastActionResult = actionResponseData;
 
             // Get navigation URL for this action
             if (!navigationUrl) {
               navigationUrl = getNavigationUrlForAction(action, actionResponseData);
+              console.log(`🧭 [Chat] Navigation URL set to:`, navigationUrl);
             }
 
             // Format result for OpenAI
@@ -946,12 +948,28 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       if (!followUpResponse.ok) {
         const errorText = await followUpResponse.text();
         console.error("Follow-up AI service error:", followUpResponse.status, errorText);
-        finalReply = "I executed the action, but encountered an error generating the response. Please check if the action completed successfully.";
+        // Still set actionResult even if follow-up fails
+        actionResult = lastActionResult;
+        // Generate a basic success message if we have an action result
+        if (actionResult && actionResult.action === "create_lead") {
+          const result = actionResult.result;
+          const leadName = result?.lead?.contactPerson || result?.lead?.businessName || 'Contact';
+          finalReply = `✓ Contact "${leadName}" created successfully! Taking you to your Contacts page...`;
+        } else {
+          finalReply = "I executed the action, but encountered an error generating the response. Please check if the action completed successfully.";
+        }
       } else {
         const followUpData = await followUpResponse.json();
         const followUpMessage = followUpData.choices?.[0]?.message;
         finalReply = followUpMessage?.content || "Action completed successfully!";
         actionResult = lastActionResult;
+        
+        // Log action result for debugging
+        console.log("✅ [Chat] Action result set:", {
+          action: actionResult?.action,
+          hasResult: !!actionResult?.result,
+          navigationUrl,
+        });
       }
     } else {
       // No function calls - just return the content
@@ -959,16 +977,25 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     }
 
     // Format final reply based on action results if needed
+    console.log("🔍 [Chat] Checking action result:", {
+      hasActionResult: !!actionResult,
+      action: actionResult?.action,
+      hasResult: !!actionResult?.result,
+    });
+    
     if (actionResult && actionResult.result) {
       // Format specific action results for better user experience
       const result = actionResult.result;
       
       // For create_lead, ensure we have good formatting and navigation
       if (actionResult.action === "create_lead") {
+        console.log("📝 [Chat] Formatting create_lead response");
         const leadId = result?.lead?.id;
         const leadName = result?.lead?.contactPerson || result?.lead?.businessName || 'Contact';
         const leadEmail = result?.lead?.email || 'No email';
         const leadPhone = result?.lead?.phone || 'No phone';
+        
+        console.log("📝 [Chat] Lead details:", { leadId, leadName, leadEmail, leadPhone });
         
         // Enhance the reply if it doesn't already mention the contact details
         if (!finalReply.includes(leadName) && !finalReply.includes('Contact created')) {
@@ -981,8 +1008,11 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
         // Ensure navigation URL is set
         if (!navigationUrl) {
           navigationUrl = leadId ? `/dashboard/contacts?id=${leadId}` : "/dashboard/contacts";
+          console.log("🧭 [Chat] Set navigation URL for create_lead:", navigationUrl);
         }
       }
+    } else {
+      console.log("⚠️ [Chat] No action result or result missing");
     }
 
     // Final logging before response
