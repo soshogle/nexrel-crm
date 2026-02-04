@@ -258,6 +258,30 @@ Additional Context:
 ${user.websiteTraffic ? `- Website Traffic: ${user.websiteTraffic}` : ''}
 ${user.currentCRM ? `- Previous CRM: ${user.currentCRM}` : ''}
 
+Current Date & Time:
+${(() => {
+  try {
+    const userTimezone = user.timezone || 'America/New_York'; // Default to EST if not set
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: userTimezone,
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    const dateStr = formatter.format(now);
+    return `- Current Date & Time: ${dateStr} (${userTimezone})`;
+  } catch (e) {
+    // Fallback to UTC if timezone is invalid
+    const now = new Date();
+    return `- Current Date & Time: ${now.toLocaleString('en-US', { timeZone: 'UTC' })} UTC`;
+  }
+})()}
+
 Current CRM Statistics:
 - Total Contacts/Leads: ${userStats.contacts}
 - Total Deals: ${userStats.deals}
