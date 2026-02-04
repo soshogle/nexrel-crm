@@ -510,10 +510,12 @@ Format: {"message": "text", "action": "action_type", "parameters": {...}, "navig
 **🚨 CRITICAL JSON FORMAT RULES:**
 1. Your ENTIRE response must be ONLY the JSON object - no extra text before or after
 2. Do NOT say "Here's the JSON:" or "I'll execute:" - just output the JSON
-3. Example of CORRECT response to "can you help me fix my voice ai":
-   {"message": "Let me check your voice agents and run diagnostics! 🔍", "action": "list_voice_agents", "parameters": {}}
-4. Example of WRONG response (DO NOT DO THIS):
-   "I'll help you fix your voice ai. Let me check your upstream configuration..."
+3. When user asks you to DO something (create, update, delete, import), you MUST use JSON with action field
+4. Example of CORRECT response to "create a contact for John":
+   {"message": "✓ Creating contact for John...", "action": "create_lead", "parameters": {"name": "John"}, "navigateTo": "/dashboard/contacts"}
+5. Example of WRONG response (DO NOT DO THIS):
+   "I'll create a contact for John. Let me do that for you..."
+6. **IMPORTANT**: If user requests an action (create contact, create deal, etc.), you MUST return JSON with the action field - do NOT just navigate without executing the action first
 
 ═══════════════════════════════════════════════════════════════════
 AVAILABLE ACTIONS (For JSON responses)
@@ -645,7 +647,14 @@ Would you like me to set this up? I'll need:
 User: "Yes! Email: 'Hey [Name], just checking in...' SMS: 'Quick question about your [business]...'"
 Response: {"message": "✓ Creating your cold lead nurturing workflow!\n\n✨ Done! Your workflow will now:\n- Automatically identify cold leads\n- Send personalized re-engagement messages\n- Try multiple channels (Email → SMS)\n- Track responses and alert you\n\nThe workflow is active. You'll see results in the next few days!", "action": "create_smart_workflow", "parameters": {"description": "Re-engage cold leads with multi-channel follow-up sequence", "goal": "Revive inactive leads", "trigger": "lead_no_response_14_days", "actions": ["send_email", "wait_3_days", "send_sms_if_no_response", "wait_4_days", "mark_cold_if_no_response"]}, "navigateTo": "/dashboard/workflows"}
 
-**Example 4: Contact Import**
+**Example 4: Create Contact/Lead (Action Execution)**
+User: "Create a contact for John Smith at john@example.com"
+Response: {"message": "✓ Creating contact for John Smith...", "action": "create_lead", "parameters": {"name": "John Smith", "email": "john@example.com"}, "navigateTo": "/dashboard/contacts"}
+
+User: "Add a new lead named Jane Doe with phone 555-1234"
+Response: {"message": "✓ Creating lead for Jane Doe...", "action": "create_lead", "parameters": {"name": "Jane Doe", "phone": "555-1234"}, "navigateTo": "/dashboard/contacts"}
+
+**Example 5: Contact Import**
 User: "I need to add contacts"
 Response: "I can help with that! Would you like to:
 
@@ -784,12 +793,31 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
 
     try {
       // Try to parse the response as JSON to detect action requests OR navigation-only responses
-      // Match JSON with either "action" OR "navigateTo" fields
-      const jsonMatch = reply.match(/\{[\s\S]*(?:"action"|"navigateTo")[\s\S]*\}/);
-      console.log("JSON match found:", jsonMatch ? "YES" : "NO");
-      if (jsonMatch) {
-        console.log("Matched JSON:", jsonMatch[0]);
-        const actionData = JSON.parse(jsonMatch[0]);
+      // First, try to parse the entire reply as JSON
+      let actionData: any = null;
+      let jsonMatch: RegExpMatchArray | null = null;
+      
+      // Try direct JSON parse first
+      try {
+        actionData = JSON.parse(reply.trim());
+        console.log("✅ [Chat] Direct JSON parse successful");
+      } catch (e) {
+        // If direct parse fails, try to extract JSON from text
+        // Match JSON with either "action" OR "navigateTo" fields
+        jsonMatch = reply.match(/\{[\s\S]*(?:"action"|"navigateTo")[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            actionData = JSON.parse(jsonMatch[0]);
+            console.log("✅ [Chat] Extracted JSON from text");
+          } catch (parseError) {
+            console.error("❌ [Chat] Failed to parse extracted JSON:", parseError);
+            actionData = null;
+          }
+        }
+      }
+      
+      console.log("JSON match found:", actionData ? "YES" : "NO");
+      if (actionData) {
         console.log("Parsed action data:", JSON.stringify(actionData, null, 2));
         
         // Extract navigation URL if present
@@ -826,6 +854,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
 
           if (actionResponse.ok) {
             const actionResponseData = await actionResponse.json();
+            console.log("✅ [Chat] Action executed successfully:", actionData.action);
             console.log("Action result:", JSON.stringify(actionResponseData, null, 2));
             actionResult = actionResponseData;
             
@@ -1093,20 +1122,44 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
             try {
               const errorData = await actionResponse.json();
               errorDetails = errorData.error || errorData.details || errorDetails;
-              console.error("Action failed:", errorData);
+              console.error("❌ [Chat] Action failed:", errorData);
             } catch (e) {
               const errorText = await actionResponse.text();
-              console.error("Action failed with status:", actionResponse.status, errorText);
+              console.error("❌ [Chat] Action failed with status:", actionResponse.status, errorText);
               errorDetails = errorText || `Status ${actionResponse.status}`;
             }
             
             finalReply = `${actionData.message}\n\n⚠️ I encountered an issue while trying to execute that action: ${errorDetails}\n\nPlease try again or let me know if you need help!`;
+            // Don't navigate if action failed
+            navigationUrl = null;
           }
+        } else {
+          console.log("⚠️ [Chat] Action data found but missing required fields (action or message)");
         }
       }
     } catch (parseError: any) {
       // Not a JSON action request, just return the regular reply
-      console.log("Not an action request, returning normal reply:", parseError.message);
+      console.log("ℹ️ [Chat] Not an action request, returning normal reply:", parseError.message);
+      // Log the actual reply to help debug why JSON wasn't detected
+      if (reply.length < 500) {
+        console.log("ℹ️ [Chat] Reply content:", reply);
+      }
+    }
+
+    // Final validation: Don't navigate if action was supposed to execute but didn't
+    if (navigationUrl && !actionResult) {
+      console.warn("⚠️ [Chat] Navigation URL set but no action result - clearing navigation to prevent false navigation");
+      // Only clear navigation if we were expecting an action (check if reply mentions creating/doing something)
+      const actionKeywords = ['create', 'add', 'import', 'update', 'delete', 'setup', 'configure'];
+      const hasActionKeyword = actionKeywords.some(keyword => 
+        reply.toLowerCase().includes(keyword) && 
+        (reply.toLowerCase().includes('contact') || reply.toLowerCase().includes('lead') || reply.toLowerCase().includes('deal'))
+      );
+      if (hasActionKeyword) {
+        console.warn("⚠️ [Chat] Detected action keyword but no action executed - user may have been navigated incorrectly");
+        // Don't clear navigationUrl here - let it navigate but log the issue
+        // The action might have been in the LLM's intent but not executed
+      }
     }
 
     return NextResponse.json({
