@@ -60,13 +60,13 @@ export function IntlProviderWrapper({ children }: { children: React.ReactNode })
     }
   }, [session, status]);
 
-  // Show loading state only briefly to avoid flash
-  if (isLoading && status === 'loading') {
-    return <>{children}</>;
-  }
+  // Always provide IntlProvider, even during loading, to prevent hook errors
+  // Use default locale and messages if still loading
+  const currentLocale = isLoading ? 'en' : locale;
+  const currentMessages = isLoading ? messages.en : messages[locale];
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages[locale]}>
+    <NextIntlClientProvider locale={currentLocale} messages={currentMessages}>
       {children}
     </NextIntlClientProvider>
   );
