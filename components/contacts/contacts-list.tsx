@@ -49,6 +49,7 @@ interface Contact {
   contactType: string | null;
   tags: string[];
   lastContactedAt: string | null;
+  dateOfBirth: string | null;
   createdAt: string;
   _count?: {
     deals: number;
@@ -190,6 +191,14 @@ export default function ContactsList({
     setIsDetailDialogOpen(true);
   };
 
+  const handleContactClick = (contact: Contact) => {
+    handleViewContact(contact);
+  };
+
+  const handleContactDoubleClick = (contact: Contact) => {
+    handleViewContact(contact);
+  };
+
   const handleManageTags = (contact: Contact) => {
     setContactForTags(contact);
     setIsTagsDialogOpen(true);
@@ -298,8 +307,12 @@ export default function ContactsList({
             </TableHeader>
             <TableBody>
               {contacts.map((contact) => (
-                <TableRow key={contact.id}>
-                  <TableCell>
+                <TableRow 
+                  key={contact.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onDoubleClick={() => handleContactDoubleClick(contact)}
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={selectedContacts.includes(contact.id)}
                       onCheckedChange={(checked) =>
@@ -391,7 +404,7 @@ export default function ContactsList({
                       <span className="text-sm text-muted-foreground">Never</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">

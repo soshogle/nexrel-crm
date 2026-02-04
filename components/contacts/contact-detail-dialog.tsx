@@ -188,6 +188,18 @@ export default function ContactDetailDialog({
                     </div>
                   </div>
                 )}
+                {contact.dateOfBirth && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span>
+                      Birthday: {new Date(contact.dateOfBirth).toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                )}
                 {contact.businessCategory && (
                   <div className="flex items-center gap-2 text-sm">
                     <Building2 className="h-4 w-4 text-muted-foreground" />

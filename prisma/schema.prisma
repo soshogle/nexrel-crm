@@ -287,6 +287,7 @@ model Lead {
   tags                Json?                @default("[]")
   contactType         String?
   lastContactedAt     DateTime?
+  dateOfBirth         DateTime?            // Birthday for contact person
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   // AI Lead Generation System fields
@@ -333,6 +334,7 @@ model Lead {
   @@index([userId])
   @@index([status])
   @@index([contactType])
+  @@index([dateOfBirth])
 }
 
 model Note {
