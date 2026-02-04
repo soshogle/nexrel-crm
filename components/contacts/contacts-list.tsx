@@ -310,6 +310,7 @@ export default function ContactsList({
                 <TableRow 
                   key={contact.id}
                   className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleContactClick(contact)}
                   onDoubleClick={() => handleContactDoubleClick(contact)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
