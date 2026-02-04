@@ -214,6 +214,7 @@ class DocpenAgentProvisioning {
         },
         tts: {
           voice_id: voiceId,
+          model_id: userLanguage !== 'en' ? 'eleven_turbo_v2_5' : 'eleven_turbo_v2', // Non-English requires v2_5
           stability: 0.6, // Slightly higher for professional tone
           similarity_boost: 0.8,
           optimize_streaming_latency: 3,
