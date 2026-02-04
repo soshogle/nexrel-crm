@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -60,6 +61,8 @@ interface SettingsPageProps {
 }
 
 export function SettingsPage({ session }: SettingsPageProps) {
+  const t = useTranslations('settings')
+  const tCommon = useTranslations('common')
   const [googlePlacesKey, setGooglePlacesKey] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)
   const [hasApiKey, setHasApiKey] = useState(false)
@@ -201,22 +204,22 @@ export function SettingsPage({ session }: SettingsPageProps) {
   const [activeSection, setActiveSection] = useState('profile')
 
   const settingsSections = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'billing', label: 'Billing', icon: CreditCard },
+    { id: 'profile', label: t('profile'), icon: User },
+    { id: 'billing', label: t('billing'), icon: CreditCard },
     { id: 'api-keys', label: 'API Keys', icon: Key },
     { id: 'google-workspace', label: 'Google Workspace', icon: Mail },
     { id: 'social-media', label: 'Social Media', icon: Share2 },
-    { id: 'calendars', label: 'Calendars', icon: Calendar },
+    { id: 'calendars', label: t('calendar'), icon: Calendar },
     { id: 'booking-widget', label: 'Booking Widget', icon: Link2 },
     { id: 'subdomain', label: 'Subdomain', icon: Globe },
-    { id: 'messaging', label: 'Messaging', icon: MessageSquare },
+    { id: 'messaging', label: t('messaging'), icon: MessageSquare },
     { id: 'meta', label: 'Meta (Instagram/Facebook)', icon: Instagram },
     { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
     { id: 'quickbooks', label: 'QuickBooks', icon: DollarSign },
     { id: 'knowledge-base', label: 'Knowledge Base', icon: Book },
     { id: 'auto-reply', label: 'AI Auto-Reply', icon: Bot },
-    { id: 'language', label: 'Language', icon: Languages },
-    { id: 'permissions', label: 'Permissions', icon: Shield },
+    { id: 'language', label: t('language'), icon: Languages },
+    { id: 'permissions', label: t('permissions'), icon: Shield },
   ]
 
   return (
@@ -226,7 +229,7 @@ export function SettingsPage({ session }: SettingsPageProps) {
         <aside className="w-64 flex-shrink-0">
           <Card className="sticky top-6">
             <CardHeader>
-              <CardTitle className="text-lg">Settings</CardTitle>
+              <CardTitle className="text-lg">{t('title')}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <nav className="space-y-1 p-2">
