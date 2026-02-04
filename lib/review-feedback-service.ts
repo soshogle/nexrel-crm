@@ -35,12 +35,6 @@ export class ReviewFeedbackService {
     try {
       const lead = await prisma.lead.findUnique({
         where: { id: request.leadId },
-        include: {
-          appointments: {
-            where: { id: request.appointmentId },
-            take: 1,
-          },
-        },
       });
 
       if (!lead) {
