@@ -152,28 +152,32 @@ export function WorkflowInstanceMonitor() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between bg-white p-6 rounded-xl border-2 border-purple-200 shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Activity className="h-6 w-6 text-blue-500" />
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Activity className="h-6 w-6 text-purple-600" />
             Active Workflows
           </h2>
-          <p className="text-gray-400 mt-1">
+          <p className="text-gray-600 mt-1">
             Monitor workflow instances running on leads and deals
           </p>
         </div>
-        <Button variant="outline" onClick={fetchInstances}>
+        <Button 
+          variant="outline" 
+          onClick={fetchInstances}
+          className="border-purple-200 text-gray-700 hover:bg-purple-50"
+        >
           <Loader2 className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
 
       {instances.length === 0 ? (
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="bg-white border-2 border-purple-200 shadow-md">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Activity className="h-16 w-16 text-gray-600 mb-4" />
-            <h3 className="text-xl font-semibold text-white">No Active Workflows</h3>
-            <p className="text-gray-400 mt-2">
+            <Activity className="h-16 w-16 text-purple-300 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900">No Active Workflows</h3>
+            <p className="text-gray-600 mt-2">
               Start a workflow from the Workflow Builder to see it here.
             </p>
           </CardContent>
@@ -183,10 +187,10 @@ export function WorkflowInstanceMonitor() {
           {instances.map((instance) => (
             <Card
               key={instance.id}
-              className="bg-gray-900 border-gray-800 overflow-hidden"
+              className="bg-white border-2 border-purple-200 overflow-hidden shadow-md hover:shadow-lg transition-all"
             >
               <CardHeader
-                className="cursor-pointer hover:bg-gray-800/50 transition-colors"
+                className="cursor-pointer hover:bg-purple-50 transition-colors"
                 onClick={() =>
                   setExpandedInstance(
                     expandedInstance === instance.id ? null : instance.id
@@ -197,7 +201,7 @@ export function WorkflowInstanceMonitor() {
                   <div className="flex items-center gap-4">
                     {/* Status Badge */}
                     <Badge
-                      className={`${getStatusColor(instance.status)} text-white`}
+                      className={`${getStatusColor(instance.status)} text-white border-2 border-white`}
                     >
                       {getStatusIcon(instance.status)}
                       <span className="ml-1">{instance.status.replace('_', ' ')}</span>
@@ -207,15 +211,15 @@ export function WorkflowInstanceMonitor() {
                     <div>
                       <div className="flex items-center gap-2">
                         {instance.workflow.workflowType === 'BUYER_PIPELINE' ? (
-                          <Home className="h-4 w-4 text-blue-500" />
+                          <Home className="h-4 w-4 text-purple-600" />
                         ) : (
-                          <FileText className="h-4 w-4 text-green-500" />
+                          <FileText className="h-4 w-4 text-purple-600" />
                         )}
-                        <CardTitle className="text-lg text-white">
+                        <CardTitle className="text-lg text-gray-900">
                           {instance.workflow.name}
                         </CardTitle>
                       </div>
-                      <CardDescription className="mt-1">
+                      <CardDescription className="mt-1 text-gray-600">
                         {instance.lead && (
                           <span className="flex items-center gap-1">
                             <User className="h-3 w-3" />
@@ -232,8 +236,8 @@ export function WorkflowInstanceMonitor() {
                   <div className="flex items-center gap-4">
                     {/* Progress */}
                     <div className="text-right">
-                      <p className="text-sm text-gray-400">Progress</p>
-                      <p className="text-lg font-semibold text-white">
+                      <p className="text-sm text-gray-600">Progress</p>
+                      <p className="text-lg font-bold text-purple-600">
                         {Math.round(calculateProgress(instance))}%
                       </p>
                     </div>
@@ -254,7 +258,7 @@ export function WorkflowInstanceMonitor() {
 
               {/* Expanded Task List */}
               {expandedInstance === instance.id && (
-                <CardContent className="border-t border-gray-800 pt-4">
+                <CardContent className="border-t-2 border-purple-200 pt-4 bg-purple-50/30">
                   <div className="space-y-2">
                     {instance.workflow.tasks
                       .sort((a, b) => a.order - b.order)
@@ -265,19 +269,19 @@ export function WorkflowInstanceMonitor() {
                         return (
                           <div
                             key={task.id}
-                            className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg"
+                            className="flex items-center justify-between p-3 bg-white border border-purple-200 rounded-lg shadow-sm"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm font-medium text-white">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-purple-500 flex items-center justify-center text-sm font-bold text-white border-2 border-white shadow-sm">
                                 {task.order}
                               </div>
                               {getTaskStatusIcon(execution?.status || 'PENDING')}
-                              <span className="text-white">{task.name}</span>
+                              <span className="text-gray-900 font-medium">{task.name}</span>
                               {execution?.task.isHITL && (
-                                <Shield className="h-4 w-4 text-amber-500" />
+                                <Shield className="h-4 w-4 text-amber-600" />
                               )}
                             </div>
-                            <div className="text-sm text-gray-400">
+                            <div className="text-sm text-gray-600">
                               {execution?.completedAt && (
                                 <span>
                                   Completed{' '}
@@ -288,10 +292,10 @@ export function WorkflowInstanceMonitor() {
                                 </span>
                               )}
                               {execution?.status === 'RUNNING' && (
-                                <span className="text-blue-400">In progress...</span>
+                                <span className="text-purple-600 font-medium">In progress...</span>
                               )}
                               {execution?.status === 'WAITING_HITL' && (
-                                <span className="text-amber-400">Waiting for approval</span>
+                                <span className="text-amber-600 font-medium">Waiting for approval</span>
                               )}
                             </div>
                           </div>
@@ -299,7 +303,7 @@ export function WorkflowInstanceMonitor() {
                       })}
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-800 flex justify-between text-sm text-gray-500">
+                  <div className="mt-4 pt-4 border-t border-purple-200 flex justify-between text-sm text-gray-600">
                     <span>Started {format(new Date(instance.startedAt), 'PPp')}</span>
                     {instance.completedAt && (
                       <span>

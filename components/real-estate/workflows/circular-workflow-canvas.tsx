@@ -4,6 +4,8 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { WorkflowTask, WorkflowTemplate, DragState, AGENT_COLORS } from './types';
 import { TaskNode } from './task-node';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Info } from 'lucide-react';
 
 interface CircularWorkflowCanvasProps {
   workflow: WorkflowTemplate;
@@ -11,6 +13,7 @@ interface CircularWorkflowCanvasProps {
   onSelectTask: (taskId: string | null) => void;
   onUpdateTask: (task: WorkflowTask) => void;
   onReorderTasks: (tasks: WorkflowTask[]) => void;
+  onAddTask?: () => void;
 }
 
 export function CircularWorkflowCanvas({
@@ -19,9 +22,10 @@ export function CircularWorkflowCanvas({
   onSelectTask,
   onUpdateTask,
   onReorderTasks,
+  onAddTask,
 }: CircularWorkflowCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 800, height: 800 });
+  const [dimensions, setDimensions] = useState({ width: 900, height: 900 });
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
     taskId: null,
@@ -29,13 +33,14 @@ export function CircularWorkflowCanvas({
     startRadius: 0,
   });
   const [draggedPosition, setDraggedPosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
   
   // Update dimensions on resize
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        const size = Math.min(rect.width, rect.height);
+        const size = Math.min(rect.width, rect.height, 900);
         setDimensions({ width: size, height: size });
       }
     };
@@ -46,7 +51,7 @@ export function CircularWorkflowCanvas({
   }, []);
   
   const center = { x: dimensions.width / 2, y: dimensions.height / 2 };
-  const maxRadius = Math.min(dimensions.width, dimensions.height) / 2 - 80;
+  const maxRadius = Math.min(dimensions.width, dimensions.height) / 2 - 100;
   
   // Calculate position from angle and radius
   const getPosition = useCallback((angle: number, radius: number) => {
@@ -70,6 +75,7 @@ export function CircularWorkflowCanvas({
   // Handle drag start
   const handleDragStart = useCallback((taskId: string, e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const task = workflow.tasks.find(t => t.id === taskId);
     if (!task) return;
     
@@ -122,10 +128,10 @@ export function CircularWorkflowCanvas({
         );
         
         // If dropped close to another task, swap positions
-        if (distance < 50) {
+        if (distance < 60) {
           const updatedTasks = workflow.tasks.map(t => {
             if (t.id === task.id) {
-              return { ...t, order: other.displayOrder, angle: other.angle, radius: other.radius };
+              return { ...t, displayOrder: other.displayOrder, angle: other.angle, radius: other.radius };
             }
             if (t.id === other.id) {
               return { ...t, displayOrder: task.displayOrder, angle: task.angle, radius: task.radius };
@@ -142,14 +148,18 @@ export function CircularWorkflowCanvas({
     setDraggedPosition(null);
   }, [dragState, draggedPosition, workflow.tasks, getAngleAndRadius, getPosition, maxRadius, onUpdateTask, onReorderTasks]);
   
-  // Draw connection lines between tasks
+  // Draw connection lines between tasks (including branches)
   const renderConnections = () => {
     const sortedTasks = [...workflow.tasks].sort((a, b) => a.displayOrder - b.displayOrder);
     const lines: React.ReactNode[] = [];
     
+    // Draw sequential connections
     for (let i = 0; i < sortedTasks.length - 1; i++) {
       const from = sortedTasks[i];
       const to = sortedTasks[i + 1];
+      
+      // Skip if to has a parent task (it's a branch, handled separately)
+      if (to.parentTaskId && to.parentTaskId !== from.id) continue;
       
       const fromPos = getPosition(from.angle, from.radius * maxRadius);
       const toPos = getPosition(to.angle, to.radius * maxRadius);
@@ -159,70 +169,140 @@ export function CircularWorkflowCanvas({
       const midY = (fromPos.y + toPos.y) / 2;
       
       // Pull toward center for curve
-      const pullFactor = 0.3;
+      const pullFactor = 0.2;
       const ctrlX = midX + (center.x - midX) * pullFactor;
       const ctrlY = midY + (center.y - midY) * pullFactor;
       
+      const isHovered = hoveredTaskId === from.id || hoveredTaskId === to.id;
+      
       lines.push(
-        <path
+        <motion.path
           key={`line-${from.id}-${to.id}`}
           d={`M ${fromPos.x} ${fromPos.y} Q ${ctrlX} ${ctrlY} ${toPos.x} ${toPos.y}`}
-          stroke="rgba(255,255,255,0.2)"
-          strokeWidth="2"
+          stroke={isHovered ? 'rgba(139, 92, 246, 0.6)' : 'rgba(139, 92, 246, 0.3)'}
+          strokeWidth={isHovered ? '3' : '2'}
           fill="none"
           className="transition-all duration-300"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.5, delay: i * 0.05 }}
         />
       );
       
       // Add arrow at the end
       const angle = Math.atan2(toPos.y - ctrlY, toPos.x - ctrlX);
-      const arrowSize = 8;
-      const arrowX = toPos.x - 20 * Math.cos(angle);
-      const arrowY = toPos.y - 20 * Math.sin(angle);
+      const arrowSize = 6;
+      const arrowX = toPos.x - 25 * Math.cos(angle);
+      const arrowY = toPos.y - 25 * Math.sin(angle);
       
       lines.push(
-        <polygon
+        <motion.polygon
           key={`arrow-${from.id}-${to.id}`}
           points={`
             ${arrowX},${arrowY}
             ${arrowX - arrowSize * Math.cos(angle - Math.PI / 6)},${arrowY - arrowSize * Math.sin(angle - Math.PI / 6)}
             ${arrowX - arrowSize * Math.cos(angle + Math.PI / 6)},${arrowY - arrowSize * Math.sin(angle + Math.PI / 6)}
           `}
-          fill="rgba(255,255,255,0.3)"
+          fill={isHovered ? 'rgba(139, 92, 246, 0.8)' : 'rgba(139, 92, 246, 0.5)'}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: i * 0.05 + 0.3 }}
         />
       );
     }
+    
+    // Draw branch connections (from parent to child tasks)
+    sortedTasks.forEach((task) => {
+      if (task.parentTaskId) {
+        const parentTask = workflow.tasks.find(t => t.id === task.parentTaskId);
+        if (!parentTask) return;
+        
+        const parentPos = getPosition(parentTask.angle, parentTask.radius * maxRadius);
+        const childPos = getPosition(task.angle, task.radius * maxRadius);
+        
+        // Branch lines are more curved and use green color
+        const midX = (parentPos.x + childPos.x) / 2;
+        const midY = (parentPos.y + childPos.y) / 2;
+        const pullFactor = 0.4; // More curve for branches
+        const ctrlX = midX + (center.x - midX) * pullFactor;
+        const ctrlY = midY + (center.y - midY) * pullFactor;
+        
+        const isHovered = hoveredTaskId === parentTask.id || hoveredTaskId === task.id;
+        
+        lines.push(
+          <motion.path
+            key={`branch-${parentTask.id}-${task.id}`}
+            d={`M ${parentPos.x} ${parentPos.y} Q ${ctrlX} ${ctrlY} ${childPos.x} ${childPos.y}`}
+            stroke={isHovered ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.4)'}
+            strokeWidth={isHovered ? '2.5' : '2'}
+            strokeDasharray="4 4"
+            fill="none"
+            className="transition-all duration-300"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          />
+        );
+        
+        // Branch arrow
+        const angle = Math.atan2(childPos.y - ctrlY, childPos.x - ctrlX);
+        const arrowSize = 5;
+        const arrowX = childPos.x - 25 * Math.cos(angle);
+        const arrowY = childPos.y - 25 * Math.sin(angle);
+        
+        lines.push(
+          <motion.polygon
+            key={`branch-arrow-${parentTask.id}-${task.id}`}
+            points={`
+              ${arrowX},${arrowY}
+              ${arrowX - arrowSize * Math.cos(angle - Math.PI / 6)},${arrowY - arrowSize * Math.sin(angle - Math.PI / 6)}
+              ${arrowX - arrowSize * Math.cos(angle + Math.PI / 6)},${arrowY - arrowSize * Math.sin(angle + Math.PI / 6)}
+            `}
+            fill={isHovered ? 'rgba(34, 197, 94, 0.9)' : 'rgba(34, 197, 94, 0.6)'}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          />
+        );
+      }
+    });
     
     return lines;
   };
   
   // Draw concentric circles as guides
   const renderGuideCircles = () => {
-    const circles = [0.33, 0.66, 1].map((ratio, i) => (
-      <circle
+    const circles = [0.4, 0.7, 1].map((ratio, i) => (
+      <motion.circle
         key={`guide-${i}`}
         cx={center.x}
         cy={center.y}
         r={maxRadius * ratio}
-        stroke="rgba(255,255,255,0.1)"
+        stroke="rgba(139, 92, 246, 0.1)"
         strokeWidth="1"
         strokeDasharray="4 4"
         fill="none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: i * 0.1 }}
       />
     ));
     
-    // Add radial lines
-    const lines = [0, 45, 90, 135, 180, 225, 270, 315].map((angle) => {
+    // Add radial lines (every 30 degrees)
+    const lines = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle) => {
       const pos = getPosition(angle, maxRadius);
       return (
-        <line
+        <motion.line
           key={`radial-${angle}`}
           x1={center.x}
           y1={center.y}
           x2={pos.x}
           y2={pos.y}
-          stroke="rgba(255,255,255,0.05)"
+          stroke="rgba(139, 92, 246, 0.05)"
           strokeWidth="1"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
         />
       );
     });
@@ -234,20 +314,30 @@ export function CircularWorkflowCanvas({
     <div
       ref={containerRef}
       className={cn(
-        'relative w-full aspect-square bg-gray-950 rounded-xl overflow-hidden',
-        'border border-gray-800'
+        'relative w-full aspect-square bg-white rounded-xl overflow-hidden',
+        'border-2 border-purple-200 shadow-lg'
       )}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onClick={() => onSelectTask(null)}
     >
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-radial from-gray-900 via-gray-950 to-black" />
+      {/* Animated background gradient */}
+      <motion.div 
+        className="absolute inset-0 bg-gradient-radial from-purple-50 via-white to-white"
+        animate={{
+          background: [
+            'radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.08) 0%, rgba(255, 255, 255, 0) 70%)',
+            'radial-gradient(circle at 50% 50%, rgba(167, 139, 250, 0.12) 0%, rgba(255, 255, 255, 0) 70%)',
+            'radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.08) 0%, rgba(255, 255, 255, 0) 70%)',
+          ],
+        }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      />
       
       {/* SVG Layer for connections and guides */}
       <svg
-        className="absolute inset-0 w-full h-full"
+        className="absolute inset-0 w-full h-full pointer-events-none"
         viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
       >
         {renderGuideCircles()}
@@ -255,61 +345,103 @@ export function CircularWorkflowCanvas({
       </svg>
       
       {/* Center Label */}
-      <div
+      <motion.div
         className="absolute flex flex-col items-center justify-center"
         style={{
           left: center.x,
           top: center.y,
           transform: 'translate(-50%, -50%)',
         }}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 200, damping: 15 }}
       >
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 via-purple-500 to-white border-4 border-purple-200 shadow-lg flex items-center justify-center">
           <span className="text-3xl">🏠</span>
         </div>
-        <p className="mt-2 text-sm font-medium text-white">
-          {workflow.workflowType === 'BUYER_PIPELINE' ? 'Buyer' : 'Seller'}
+        <p className="mt-2 text-sm font-bold text-gray-900">
+          {workflow.workflowType === 'BUYER_PIPELINE' ? 'Buyer' : workflow.workflowType === 'SELLER_PIPELINE' ? 'Seller' : 'Custom'}
         </p>
-        <p className="text-xs text-gray-500">Pipeline</p>
-      </div>
+        <p className="text-xs text-purple-600 font-medium">Pipeline</p>
+        <p className="text-xs text-gray-500 mt-1">{workflow.tasks.length} tasks</p>
+      </motion.div>
       
       {/* Task Nodes */}
-      {workflow.tasks.map((task) => {
-        const isDragging = dragState.isDragging && dragState.taskId === task.id;
-        const position = isDragging && draggedPosition
-          ? draggedPosition
-          : getPosition(task.angle, task.radius * maxRadius);
-        
-        return (
-          <TaskNode
-            key={task.id}
-            task={task}
-            isSelected={selectedTaskId === task.id}
-            isDragging={isDragging}
-            position={position}
-            onSelect={() => onSelectTask(task.id)}
-            onDragStart={(e) => handleDragStart(task.id, e)}
-          />
-        );
-      })}
-      
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 flex flex-wrap gap-2 max-w-[200px]">
-        {Object.entries(AGENT_COLORS).slice(0, 6).map(([name, color]) => (
-          <div key={name} className="flex items-center gap-1">
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: color }}
+      <AnimatePresence>
+        {workflow.tasks.map((task, index) => {
+          const isDragging = dragState.isDragging && dragState.taskId === task.id;
+          const position = isDragging && draggedPosition
+            ? draggedPosition
+            : getPosition(task.angle, task.radius * maxRadius);
+          
+          return (
+            <TaskNode
+              key={task.id}
+              task={task}
+              isSelected={selectedTaskId === task.id}
+              isDragging={isDragging}
+              position={position}
+              onSelect={() => onSelectTask(task.id)}
+              onDragStart={(e) => handleDragStart(task.id, e)}
+              onHover={() => setHoveredTaskId(task.id)}
+              onHoverEnd={() => setHoveredTaskId(null)}
             />
-            <span className="text-[10px] text-gray-500">{name}</span>
-          </div>
-        ))}
-      </div>
+          );
+        })}
+      </AnimatePresence>
+      
+      {/* Add Task Button - appears between tasks */}
+      {onAddTask && workflow.tasks.length > 0 && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+          <motion.button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddTask();
+            }}
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 font-medium"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Plus className="w-4 h-4" />
+            Add Task
+          </motion.button>
+        </div>
+      )}
       
       {/* Instructions */}
-      <div className="absolute top-4 right-4 text-xs text-gray-500 text-right">
-        <p>Click task to edit</p>
-        <p>Drag to reposition</p>
-        <p>Drop on task to swap</p>
+      <motion.div 
+        className="absolute top-4 right-4 text-xs text-gray-600 bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <div className="flex items-center gap-2 mb-1">
+          <Info className="w-3 h-3 text-purple-600" />
+          <span className="font-semibold text-gray-900">Tips</span>
+        </div>
+        <p className="text-gray-600">Click task to edit</p>
+        <p className="text-gray-600">Drag to reposition</p>
+        <p className="text-gray-600">Drop on task to swap</p>
+      </motion.div>
+      
+      {/* Stats */}
+      <div className="absolute bottom-4 right-4 flex gap-3 text-xs">
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
+          <div className="text-gray-500">Tasks</div>
+          <div className="text-gray-900 font-bold">{workflow.tasks.length}</div>
+        </div>
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
+          <div className="text-gray-500">HITL Gates</div>
+          <div className="text-purple-600 font-bold">
+            {workflow.tasks.filter(t => t.isHITL).length}
+          </div>
+        </div>
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
+          <div className="text-gray-500">Agents</div>
+          <div className="text-gray-900 font-bold">
+            {new Set(workflow.tasks.map(t => t.assignedAgentId).filter(Boolean)).size}
+          </div>
+        </div>
       </div>
     </div>
   );

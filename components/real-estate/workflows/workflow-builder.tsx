@@ -44,24 +44,26 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [showNewTaskDialog, setShowNewTaskDialog] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
+  const [showTemplateGallery, setShowTemplateGallery] = useState(!initialWorkflowId);
   
   // Fetch workflows on mount
   useEffect(() => {
     fetchWorkflows();
   }, []);
   
-  // Load initial workflow or default template
+  // Load initial workflow or show template gallery
   useEffect(() => {
-    if (workflows.length > 0 && !workflow) {
+    if (workflows.length > 0 && !workflow && !showTemplateGallery) {
       if (initialWorkflowId) {
         const found = workflows.find(w => w.id === initialWorkflowId);
-        if (found) setWorkflow(found);
-      } else {
-        // Load buyer template by default
-        loadTemplate('BUYER_PIPELINE');
+        if (found) {
+          setWorkflow(found);
+          setShowTemplateGallery(false);
+        }
       }
+      // Don't auto-load template, show gallery instead
     }
-  }, [workflows, initialWorkflowId, workflow]);
+  }, [workflows, initialWorkflowId, workflow, showTemplateGallery]);
   
   const fetchWorkflows = async () => {
     try {
@@ -79,12 +81,14 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
   
   const loadTemplate = async (type: 'BUYER_PIPELINE' | 'SELLER_PIPELINE') => {
     setIsLoading(true);
+    setShowTemplateGallery(false);
     try {
       const res = await fetch(`/api/real-estate/workflows/templates?type=${type}`);
       if (res.ok) {
         const data = await res.json();
         setWorkflow(data.template);
         setSelectedTaskId(null);
+        toast.success(`Loaded ${type === 'BUYER_PIPELINE' ? 'Buyer' : 'Seller'} template`);
       }
     } catch (error) {
       console.error('Error loading template:', error);
@@ -92,6 +96,20 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCreateCustom = () => {
+    setShowTemplateGallery(false);
+    setWorkflow({
+      id: 'new',
+      name: 'New Custom Workflow',
+      type: 'CUSTOM',
+      tasks: [],
+      userId: '',
+      isActive: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   };
   
   const handleSaveWorkflow = async () => {
@@ -201,9 +219,9 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
   }
   
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900">
+      <div className="flex items-center justify-between p-4 border-b-2 border-purple-200 bg-gradient-to-r from-purple-50 to-white shadow-sm">
         <div className="flex items-center gap-4">
           {/* Workflow Selector */}
           <Select
@@ -213,12 +231,12 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
               if (found) setWorkflow(found);
             }}
           >
-            <SelectTrigger className="w-[200px] bg-gray-800 border-gray-700">
+            <SelectTrigger className="w-[200px] bg-white border-purple-200 text-gray-900">
               <SelectValue placeholder="Select workflow" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700">
+            <SelectContent className="bg-white border-purple-200">
               {workflows.map((w) => (
-                <SelectItem key={w.id} value={w.id} className="text-white">
+                <SelectItem key={w.id} value={w.id} className="text-gray-900 hover:bg-purple-50">
                   {w.name}
                 </SelectItem>
               ))}
@@ -231,7 +249,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
               variant="outline"
               size="sm"
               onClick={() => loadTemplate('BUYER_PIPELINE')}
-              className="border-blue-600 text-blue-400 hover:bg-blue-600/20"
+              className="border-purple-300 text-purple-700 hover:bg-purple-100 bg-white"
             >
               <Home className="w-4 h-4 mr-2" />
               Buyer Template
@@ -240,7 +258,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
               variant="outline"
               size="sm"
               onClick={() => loadTemplate('SELLER_PIPELINE')}
-              className="border-green-600 text-green-400 hover:bg-green-600/20"
+              className="border-purple-300 text-purple-700 hover:bg-purple-100 bg-white"
             >
               <FileText className="w-4 h-4 mr-2" />
               Seller Template
@@ -257,19 +275,19 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
                 Add Task
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-gray-900 border-gray-800">
+            <DialogContent className="bg-white border-purple-200">
               <DialogHeader>
-                <DialogTitle className="text-white">Add New Task</DialogTitle>
+                <DialogTitle className="text-gray-900">Add New Task</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <Input
                   placeholder="Task name..."
                   value={newTaskName}
                   onChange={(e) => setNewTaskName(e.target.value)}
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-white border-purple-200 text-gray-900"
                   onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
                 />
-                <Button onClick={handleAddTask} className="w-full">
+                <Button onClick={handleAddTask} className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Task
                 </Button>
@@ -292,7 +310,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
             size="sm"
             onClick={handleSaveWorkflow}
             disabled={isSaving}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
           >
             {isSaving ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -306,27 +324,34 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
       
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Canvas */}
-        <div className="flex-1 p-6">
-          {workflow ? (
+        {/* Template Gallery or Canvas */}
+        <div className="flex-1 p-6 overflow-y-auto">
+          {showTemplateGallery ? (
+            <WorkflowTemplatesGallery
+              onSelectTemplate={loadTemplate}
+              onCreateCustom={handleCreateCustom}
+            />
+          ) : workflow ? (
             <CircularWorkflowCanvas
               workflow={workflow}
               selectedTaskId={selectedTaskId}
               onSelectTask={setSelectedTaskId}
               onUpdateTask={handleUpdateTask}
               onReorderTasks={handleReorderTasks}
+              onAddTask={() => setShowNewTaskDialog(true)}
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              <p>Select a workflow or load a template to get started</p>
+            <div className="flex items-center justify-center h-full text-gray-600 bg-white rounded-xl border-2 border-purple-200">
+              <p className="text-lg">Select a workflow or load a template to get started</p>
             </div>
           )}
         </div>
         
         {/* Editor Panel */}
-        {selectedTask && (
+        {selectedTask && workflow && (
           <TaskEditorPanel
             task={selectedTask}
+            workflowTasks={workflow.tasks}
             onClose={() => setSelectedTaskId(null)}
             onSave={handleUpdateTask}
             onDelete={handleDeleteTask}
@@ -336,24 +361,33 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
       
       {/* Footer Stats */}
       {workflow && (
-        <div className="flex items-center justify-between px-4 py-2 border-t border-gray-800 bg-gray-900/50 text-sm">
-          <div className="flex items-center gap-4 text-gray-400">
-            <span>
-              <strong className="text-white">{workflow.tasks.length}</strong> tasks
+        <div className="flex items-center justify-between px-4 py-3 border-t-2 border-purple-200 bg-gradient-to-r from-purple-50 to-white text-sm shadow-sm">
+          <div className="flex items-center gap-6 text-gray-700">
+            <span className="flex items-center gap-2">
+              <strong className="text-gray-900 font-bold">{workflow.tasks.length}</strong>
+              <span className="text-gray-600">tasks</span>
             </span>
-            <span>
-              <strong className="text-amber-400">
+            <span className="flex items-center gap-2">
+              <strong className="text-amber-600 font-bold">
                 {workflow.tasks.filter(t => t.isHITL).length}
-              </strong> HITL gates
+              </strong>
+              <span className="text-gray-600">HITL gates</span>
             </span>
-            <span>
-              <strong className="text-purple-400">
+            <span className="flex items-center gap-2">
+              <strong className="text-purple-600 font-bold">
                 {new Set(workflow.tasks.map(t => t.assignedAgentId).filter(Boolean)).size}
-              </strong> agents assigned
+              </strong>
+              <span className="text-gray-600">agents assigned</span>
+            </span>
+            <span className="flex items-center gap-2">
+              <strong className="text-green-600 font-bold">
+                {workflow.tasks.filter(t => t.parentTaskId).length}
+              </strong>
+              <span className="text-gray-600">branches</span>
             </span>
           </div>
-          <div className="text-gray-500">
-            {workflow.workflowType === 'BUYER_PIPELINE' ? 'Buyer' : 'Seller'} Pipeline
+          <div className="text-gray-700 font-semibold">
+            {workflow.workflowType === 'BUYER_PIPELINE' ? 'Buyer' : workflow.workflowType === 'SELLER_PIPELINE' ? 'Seller' : 'Custom'} Pipeline
           </div>
         </div>
       )}

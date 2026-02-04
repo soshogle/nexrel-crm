@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { startWorkflowInstance } from '@/lib/real-estate/workflow-engine';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -116,20 +117,17 @@ export async function POST(
       );
     }
 
-    // Create workflow instance
-    const firstTask = workflow.tasks[0];
+    // Start workflow instance using the engine
+    const instanceId = await startWorkflowInstance(session.user.id, params.id, {
+      leadId: leadId || undefined,
+      dealId: dealId || undefined,
+      triggerType: 'MANUAL',
+      metadata: metadata || {},
+    });
 
-    const instance = await prisma.rEWorkflowInstance.create({
-      data: {
-        templateId: params.id,
-        userId: session.user.id,
-        leadId: leadId || null,
-        dealId: dealId || null,
-        status: 'ACTIVE',
-        currentTaskId: firstTask.id,
-        metadata: metadata || {},
-        startedAt: new Date()
-      },
+    // Get the created instance with executions
+    const instance = await prisma.rEWorkflowInstance.findUnique({
+      where: { id: instanceId },
       include: {
         template: true,
         lead: {
@@ -137,38 +135,19 @@ export async function POST(
         },
         deal: {
           select: { id: true, title: true }
+        },
+        executions: {
+          include: {
+            task: true
+          },
+          orderBy: { task: { displayOrder: 'asc' } }
         }
       }
     });
 
-    // Create task executions for all tasks
-    const taskExecutions = workflow.tasks.map((task: { id: string }, index: number) => ({
-      instanceId: instance.id,
-      taskId: task.id,
-      status: index === 0 ? 'IN_PROGRESS' as const : 'PENDING' as const,
-      scheduledFor: index === 0 ? new Date() : null,
-      startedAt: index === 0 ? new Date() : null
-    }));
-
-    await prisma.rETaskExecution.createMany({
-      data: taskExecutions
-    });
-
-    // Get the created executions
-    const executions = await prisma.rETaskExecution.findMany({
-      where: { instanceId: instance.id },
-      include: {
-        task: true
-      },
-      orderBy: { task: { displayOrder: 'asc' } }
-    });
-
     return NextResponse.json({
       success: true,
-      instance: {
-        ...instance,
-        executions
-      },
+      instance,
       message: 'Workflow started successfully'
     });
   } catch (error) {

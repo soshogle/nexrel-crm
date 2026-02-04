@@ -4,15 +4,22 @@ export interface WorkflowTask {
   id: string;
   name: string;
   description: string;
-  taskType: 'QUALIFICATION' | 'OUTREACH' | 'SHOWING' | 'OFFER' | 'NEGOTIATION' | 'INSPECTION' | 'APPRAISAL' | 'FINANCING' | 'CLOSING' | 'POST_CLOSE' | 'LISTING' | 'MARKETING' | 'STAGING' | 'OPEN_HOUSE' | 'CUSTOM';
+  taskType: 'QUALIFICATION' | 'MLS_SEARCH' | 'SHOWING_SCHEDULE' | 'SHOWING_FEEDBACK' | 'OFFER_PREP' | 'OFFER_SUBMIT' | 'CONDITION_TRACKING' | 'CLOSING_COORDINATION' | 'POST_CLOSE_FOLLOWUP' | 'CMA_GENERATION' | 'LISTING_PREP' | 'PHOTO_SCHEDULING' | 'MARKETING_DRAFT' | 'LISTING_PUBLISH' | 'OUTREACH' | 'SHOWING' | 'OFFER' | 'NEGOTIATION' | 'INSPECTION' | 'APPRAISAL' | 'FINANCING' | 'CLOSING' | 'POST_CLOSE' | 'LISTING' | 'MARKETING' | 'STAGING' | 'OPEN_HOUSE' | 'CUSTOM';
   assignedAgentId: string | null;
   assignedAgentName: string | null;
   agentColor: string;
   displayOrder: number;
   isHITL: boolean;
   delayMinutes: number;
+  delayUnit?: 'MINUTES' | 'HOURS' | 'DAYS';
   angle: number; // Position on the circle (0-360)
   radius: number; // Distance from center (0-1)
+  parentTaskId?: string | null; // For branching - parent task this branches from
+  branchCondition?: {
+    field: string;
+    operator: string;
+    value: string;
+  } | null;
 }
 
 export interface WorkflowTemplate {
@@ -51,6 +58,19 @@ export const AGENT_COLORS: Record<string, string> = {
 
 export const TASK_TYPE_ICONS: Record<string, string> = {
   'QUALIFICATION': '🎯',
+  'MLS_SEARCH': '🔍',
+  'SHOWING_SCHEDULE': '📅',
+  'SHOWING_FEEDBACK': '💬',
+  'OFFER_PREP': '📝',
+  'OFFER_SUBMIT': '📤',
+  'CONDITION_TRACKING': '⏰',
+  'CLOSING_COORDINATION': '✅',
+  'POST_CLOSE_FOLLOWUP': '🎉',
+  'CMA_GENERATION': '📊',
+  'LISTING_PREP': '📋',
+  'PHOTO_SCHEDULING': '📸',
+  'MARKETING_DRAFT': '📣',
+  'LISTING_PUBLISH': '🚀',
   'OUTREACH': '📞',
   'SHOWING': '🏠',
   'OFFER': '📝',

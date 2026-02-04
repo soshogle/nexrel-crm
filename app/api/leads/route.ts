@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers'
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,6 +78,19 @@ export async function POST(request: NextRequest) {
         messages: true,
       }
     })
+
+    // Check if user is in real estate industry and trigger workflows
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { industry: true },
+    });
+
+    if (user?.industry === 'REAL_ESTATE') {
+      // Trigger RE workflow detection asynchronously
+      detectLeadWorkflowTriggers(session.user.id, lead.id).catch(err => {
+        console.error('[RE Workflow] Failed to trigger workflow for lead:', err);
+      });
+    }
 
     return NextResponse.json(lead)
   } catch (error) {

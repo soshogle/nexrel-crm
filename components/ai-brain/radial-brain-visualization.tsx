@@ -30,19 +30,19 @@ export function RadialBrainVisualization({
   const innerRadius = 120;
   const coreRadius = 70;
 
-  // Continuous rotation animation
+  // Slow, subtle rotation animation (professional)
   useEffect(() => {
     const interval = setInterval(() => {
-      setRotation(prev => (prev + 0.5) % 360);
-    }, 50);
+      setRotation(prev => (prev + 0.05) % 360);
+    }, 200);
     return () => clearInterval(interval);
   }, []);
 
-  // Pulse animation for core
+  // Subtle pulse animation for core (much slower)
   useEffect(() => {
     const interval = setInterval(() => {
-      setPulseScale(prev => prev === 1 ? 1.05 : 1);
-    }, 2000);
+      setPulseScale(prev => prev === 1 ? 1.02 : 1);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -64,7 +64,7 @@ export function RadialBrainVisualization({
 
   const positionedPoints = allDataPoints.map((point, index) => {
     const baseAngle = (index * angleStep - Math.PI / 2) + (rotation * Math.PI / 180);
-    const radius = middleRadius + Math.sin(Date.now() / 1000 + index) * 5; // Subtle pulsing
+    const radius = middleRadius; // Fixed radius - no pulsing movement
     const x = centerX + Math.cos(baseAngle) * radius;
     const y = centerY + Math.sin(baseAngle) * radius;
     
@@ -79,22 +79,22 @@ export function RadialBrainVisualization({
       startAngle,
       endAngle,
       radius,
-      pulse: Math.sin(Date.now() / 1000 + index) * 0.1 + 1,
+      pulse: 1, // No pulsing - static
     };
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'excellent':
-        return { from: '#10b981', to: '#34d399' }; // Green
+        return { from: '#059669', to: '#10b981' }; // Muted Green
       case 'healthy':
-        return { from: '#8b5cf6', to: '#a78bfa' }; // Purple
+        return { from: '#6b21a8', to: '#7c3aed' }; // Muted Purple
       case 'warning':
-        return { from: '#f59e0b', to: '#fbbf24' }; // Amber
+        return { from: '#d97706', to: '#f59e0b' }; // Muted Amber
       case 'critical':
-        return { from: '#ef4444', to: '#f87171' }; // Red
+        return { from: '#dc2626', to: '#ef4444' }; // Muted Red
       default:
-        return { from: '#8b5cf6', to: '#a78bfa' }; // Purple default
+        return { from: '#6b21a8', to: '#7c3aed' }; // Muted Purple default
     }
   };
 
@@ -115,12 +115,12 @@ export function RadialBrainVisualization({
     onDataPointClick?.(point);
   };
 
-  // Draw a perfect circular segment with dynamic effects
+  // Draw a perfect circular segment with minimal effects
   const drawSegment = (point: any, isHovered: boolean, isSelected: boolean) => {
-    const { startAngle, endAngle, pulse } = point;
+    const { startAngle, endAngle } = point;
     const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
-    const dynamicRadius = outerRadius * pulse;
-    const dynamicInnerRadius = innerRadius * pulse;
+    const dynamicRadius = outerRadius; // Static - no pulsing
+    const dynamicInnerRadius = innerRadius; // Static - no pulsing
 
     const outerX1 = centerX + Math.cos(startAngle) * dynamicRadius;
     const outerY1 = centerY + Math.sin(startAngle) * dynamicRadius;
@@ -152,14 +152,14 @@ export function RadialBrainVisualization({
         onClick={() => handlePointClick(point)}
         onMouseEnter={() => setHoveredDataPoint(point)}
         onMouseLeave={() => setHoveredDataPoint(null)}
-        initial={{ opacity: 0, scale: 0.8 }}
+        initial={{ opacity: 0 }}
         animate={{ 
-          opacity: isSelected ? 0.9 : isHovered ? 0.7 : 0.4,
-          scale: isHovered || isSelected ? 1.08 : pulse,
+          opacity: isSelected ? 0.85 : isHovered ? 0.65 : 0.45,
+          scale: 1, // No scaling animation
         }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        whileHover={{ scale: 1.08 }}
-        whileTap={{ scale: 0.95 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        whileHover={{ opacity: 0.75 }}
+        whileTap={{ scale: 0.98 }}
         style={{
           filter: isHovered || isSelected ? `drop-shadow(0 0 8px ${colors.from}80)` : 'none',
         }}
@@ -176,17 +176,12 @@ export function RadialBrainVisualization({
   return (
     <div className="relative w-full flex items-center justify-center p-8 bg-white">
       <div className="relative" style={{ width: size, height: size }}>
-        {/* Animated background gradient circles */}
-        <motion.div 
+        {/* Static background gradient - professional */}
+        <div 
           className="absolute inset-0 rounded-full"
-          animate={{
-            background: [
-              'radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, rgba(255, 255, 255, 0) 70%)',
-              'radial-gradient(circle, rgba(167, 139, 250, 0.12) 0%, rgba(255, 255, 255, 0) 70%)',
-              'radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, rgba(255, 255, 255, 0) 70%)',
-            ],
+          style={{
+            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, rgba(255, 255, 255, 0) 70%)',
           }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         />
         
         <svg 
@@ -209,29 +204,29 @@ export function RadialBrainVisualization({
               );
             })}
             
-            {/* Core gradient - purple to white */}
+            {/* Core gradient - muted purple to white */}
             <radialGradient id="coreGradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.95" />
-              <stop offset="40%" stopColor="#a78bfa" stopOpacity="0.8" />
-              <stop offset="70%" stopColor="#c4b5fd" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.4" />
+              <stop offset="0%" stopColor="#6b21a8" stopOpacity="0.9" />
+              <stop offset="40%" stopColor="#7c3aed" stopOpacity="0.7" />
+              <stop offset="70%" stopColor="#a78bfa" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.3" />
             </radialGradient>
 
-            {/* Connection lines gradient - purple to white */}
+            {/* Connection lines gradient - muted purple to white */}
             <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.5" />
-              <stop offset="50%" stopColor="#a78bfa" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.2" />
+              <stop offset="0%" stopColor="#6b21a8" stopOpacity="0.3" />
+              <stop offset="50%" stopColor="#7c3aed" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.1" />
             </linearGradient>
 
-            {/* Animated pulse gradient for core */}
+            {/* Subtle pulse gradient for core */}
             <radialGradient id="corePulseGradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
+              <stop offset="0%" stopColor="#6b21a8" stopOpacity="0.2" />
               <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
             </radialGradient>
           </defs>
 
-          {/* Animated connection lines */}
+          {/* Static connection lines - professional appearance */}
           {data.connections.slice(0, 30).map((conn, idx) => {
             const fromPoint = positionedPoints.find((p) => p.id === conn.from);
             const toPoint = positionedPoints.find((p) => p.id === conn.to);
@@ -245,19 +240,17 @@ export function RadialBrainVisualization({
                 x2={toPoint.x}
                 y2={toPoint.y}
                 stroke="url(#connectionGradient)"
-                strokeWidth={Math.max(conn.strength / 40, 0.5)}
-                opacity={0.3 + (conn.strength / 200) * 0.4}
+                strokeWidth={Math.max(conn.strength / 50, 0.3)}
+                opacity={0.2 + (conn.strength / 200) * 0.3}
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{ 
                   pathLength: 1,
-                  opacity: 0.3 + (conn.strength / 200) * 0.4,
+                  opacity: 0.2 + (conn.strength / 200) * 0.3,
                 }}
                 transition={{ 
-                  duration: 1.5, 
-                  delay: idx * 0.05,
-                  repeat: Infinity,
-                  repeatType: "reverse",
-                  repeatDelay: 2,
+                  duration: 2, 
+                  delay: idx * 0.1,
+                  ease: "easeOut"
                 }}
               />
             );
@@ -272,7 +265,7 @@ export function RadialBrainVisualization({
             )
           )}
 
-          {/* Central Core Circle - Animated */}
+          {/* Central Core Circle - Subtle animation */}
           <motion.circle
             cx={centerX}
             cy={centerY}
@@ -282,30 +275,29 @@ export function RadialBrainVisualization({
             onClick={() => setSelectedDataPoint(null)}
             animate={{
               scale: pulseScale,
-              r: coreRadius * pulseScale,
             }}
             transition={{
-              duration: 2,
+              duration: 5,
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            whileHover={{ scale: 1.15 }}
+            whileHover={{ scale: 1.05 }}
           />
 
-          {/* Pulsing outer ring */}
+          {/* Subtle outer ring - minimal animation */}
           <motion.circle
             cx={centerX}
             cy={centerY}
-            r={coreRadius + 10}
+            r={coreRadius + 8}
             fill="none"
             stroke="url(#corePulseGradient)"
-            strokeWidth="2"
+            strokeWidth="1.5"
+            opacity={0.3}
             animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.5, 0.8, 0.5],
+              opacity: [0.2, 0.35, 0.2],
             }}
             transition={{
-              duration: 2,
+              duration: 8,
               repeat: Infinity,
               ease: "easeInOut",
             }}
@@ -356,8 +348,8 @@ export function RadialBrainVisualization({
                   x={point.x}
                   y={point.y - 12}
                   textAnchor="middle"
-                  className="fill-gray-800 text-xs font-semibold pointer-events-none"
-                  style={{ fontSize: '12px' }}
+                  className="fill-gray-900 text-xs font-semibold pointer-events-none"
+                  style={{ fontSize: '11px' }}
                 >
                   {point.label.length > 15 ? point.label.substring(0, 15) + '...' : point.label}
                 </text>
@@ -366,8 +358,8 @@ export function RadialBrainVisualization({
                   x={point.x}
                   y={point.y + 10}
                   textAnchor="middle"
-                  className="fill-purple-600 text-sm font-bold pointer-events-none"
-                  style={{ fontSize: '16px' }}
+                  className="fill-gray-800 text-sm font-bold pointer-events-none"
+                  style={{ fontSize: '14px' }}
                 >
                   {formatValue(point.value, point.unit)}
                 </text>
@@ -383,33 +375,35 @@ export function RadialBrainVisualization({
           })}
         </svg>
 
-        {/* Real-time Stats Display - Top */}
+        {/* Real-time Stats Display - Top - Professional */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm border border-purple-200 rounded-xl px-6 py-3 shadow-lg"
-          style={{ marginTop: '-20px' }}
+          transition={{ duration: 0.5 }}
+          whileHover={{ scale: 1.02 }}
+          className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-white/98 backdrop-blur-sm border border-gray-300 rounded-lg px-6 py-2.5 shadow-md cursor-pointer"
+          style={{ marginTop: '-15px' }}
         >
-          <div className="flex items-center gap-6 text-sm">
+          <div className="flex items-center gap-6 text-xs">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
               <span className="text-gray-600 font-medium">Active:</span>
               <span className="text-gray-900 font-bold">{totalDataPoints}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-purple-500" />
+              <Activity className="h-3.5 w-3.5 text-gray-600" />
               <span className="text-gray-600 font-medium">Connections:</span>
               <span className="text-gray-900 font-bold">{totalConnections}</span>
             </div>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-500" />
+              <AlertTriangle className="h-3.5 w-3.5 text-red-600" />
               <span className="text-gray-600 font-medium">Alerts:</span>
-              <span className="text-red-600 font-bold">{activeAlerts}</span>
+              <span className="text-red-700 font-bold">{activeAlerts}</span>
             </div>
           </div>
         </motion.div>
 
-        {/* Floating labels around the circle - Key metrics */}
+        {/* Static labels around the circle - Professional, no floating */}
         <div className="absolute inset-0 pointer-events-none">
           {positionedPoints.slice(0, 12).map((point, index) => {
             const angle = point.angle;
@@ -429,22 +423,20 @@ export function RadialBrainVisualization({
                   top: `${(labelY / size) * 100}%`,
                   transform: 'translate(-50%, -50%)',
                 }}
-                initial={{ opacity: 0, scale: 0 }}
+                initial={{ opacity: 0 }}
                 animate={{ 
-                  opacity: isVisible ? 0.8 : 0,
-                  scale: isVisible ? 1 : 0,
-                  y: [0, -5, 0],
+                  opacity: isVisible ? 0.7 : 0,
                 }}
                 transition={{ 
-                  delay: index * 0.1,
-                  y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                  delay: index * 0.05,
+                  duration: 0.5,
                 }}
               >
-                <div className="bg-white/95 backdrop-blur-sm rounded-lg px-3 py-2 border-2 shadow-md" style={{ borderColor: colors.from }}>
-                  <div className="text-gray-800 text-xs font-medium whitespace-nowrap">
+                <div className="bg-white/98 backdrop-blur-sm rounded-md px-2.5 py-1.5 border border-gray-300 shadow-sm" style={{ borderColor: colors.from + '40' }}>
+                  <div className="text-gray-700 text-xs font-semibold whitespace-nowrap">
                     {point.label.length > 12 ? point.label.substring(0, 12) + '...' : point.label}
                   </div>
-                  <div className="text-sm font-bold" style={{ color: colors.from }}>
+                  <div className="text-xs font-bold text-gray-900">
                     {formatValue(point.value, point.unit)}
                   </div>
                 </div>
@@ -454,30 +446,32 @@ export function RadialBrainVisualization({
         </div>
       </div>
 
-      {/* Side Panels - Real-time stats */}
+      {/* Side Panels - Real-time stats with hover zoom */}
       <div className="absolute left-0 top-0 bottom-0 flex flex-col gap-4 p-4 pointer-events-none">
         {/* Current Operations */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-white/95 backdrop-blur-sm border-2 border-purple-200 rounded-xl p-4 min-w-[220px] pointer-events-auto shadow-lg"
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          whileHover={{ scale: 1.05, x: 5 }}
+          className="bg-white/98 backdrop-blur-sm border border-gray-300 rounded-lg p-4 min-w-[220px] pointer-events-auto shadow-md cursor-pointer"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Activity className="h-5 w-5 text-purple-600" />
-            <div className="text-gray-800 text-sm font-bold">Current Operations</div>
+            <Activity className="h-4 w-4 text-gray-700" />
+            <div className="text-gray-900 text-sm font-semibold">Current Operations</div>
           </div>
-          <div className="text-gray-700 text-xs space-y-2">
+          <div className="text-gray-600 text-xs space-y-2">
             <div className="flex justify-between">
               <span>Health:</span>
-              <span className="font-bold text-purple-600">{data.leftHemisphere.overallHealth}%</span>
+              <span className="font-bold text-gray-900">{data.leftHemisphere.overallHealth}%</span>
             </div>
             <div className="flex justify-between">
               <span>Alerts:</span>
-              <span className="font-bold text-red-600">{data.leftHemisphere.criticalAlerts}</span>
+              <span className="font-bold text-red-700">{data.leftHemisphere.criticalAlerts}</span>
             </div>
             <div className="flex justify-between">
               <span>Opportunities:</span>
-              <span className="font-bold text-green-600">{data.leftHemisphere.opportunities}</span>
+              <span className="font-bold text-green-700">{data.leftHemisphere.opportunities}</span>
             </div>
             <div className="flex justify-between">
               <span>Data Points:</span>
@@ -490,25 +484,26 @@ export function RadialBrainVisualization({
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white/95 backdrop-blur-sm border-2 border-pink-200 rounded-xl p-4 min-w-[220px] pointer-events-auto shadow-lg"
+          transition={{ delay: 0.1, duration: 0.6, ease: "easeOut" }}
+          whileHover={{ scale: 1.05, x: 5 }}
+          className="bg-white/98 backdrop-blur-sm border border-gray-300 rounded-lg p-4 min-w-[220px] pointer-events-auto shadow-md cursor-pointer"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Zap className="h-5 w-5 text-pink-600" />
-            <div className="text-gray-800 text-sm font-bold">Future Predictions</div>
+            <Zap className="h-4 w-4 text-gray-700" />
+            <div className="text-gray-900 text-sm font-semibold">Future Predictions</div>
           </div>
-          <div className="text-gray-700 text-xs space-y-2">
+          <div className="text-gray-600 text-xs space-y-2">
             <div className="flex justify-between">
               <span>Health:</span>
-              <span className="font-bold text-purple-600">{data.rightHemisphere.overallHealth}%</span>
+              <span className="font-bold text-gray-900">{data.rightHemisphere.overallHealth}%</span>
             </div>
             <div className="flex justify-between">
               <span>Alerts:</span>
-              <span className="font-bold text-red-600">{data.rightHemisphere.criticalAlerts}</span>
+              <span className="font-bold text-red-700">{data.rightHemisphere.criticalAlerts}</span>
             </div>
             <div className="flex justify-between">
               <span>Opportunities:</span>
-              <span className="font-bold text-green-600">{data.rightHemisphere.opportunities}</span>
+              <span className="font-bold text-green-700">{data.rightHemisphere.opportunities}</span>
             </div>
             <div className="flex justify-between">
               <span>Data Points:</span>
@@ -575,7 +570,7 @@ export function RadialBrainVisualization({
                   onDataPointClick(selectedDataPoint);
                   setSelectedDataPoint(null);
                 }}
-                className="mt-4 w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all shadow-md"
+                className="mt-4 w-full bg-gray-900 text-white py-2 rounded-md font-medium hover:bg-gray-800 transition-all shadow-sm"
               >
                 View Details →
               </button>
@@ -584,21 +579,23 @@ export function RadialBrainVisualization({
         )}
       </AnimatePresence>
 
-      {/* Critical Alerts - Bottom */}
+      {/* Critical Alerts - Bottom - Professional */}
       {data.core.criticalAlerts.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-red-50/95 backdrop-blur-sm border-2 border-red-300 rounded-xl px-6 py-3 max-w-md pointer-events-auto shadow-lg"
-          style={{ marginBottom: '-20px' }}
+          transition={{ duration: 0.5 }}
+          whileHover={{ scale: 1.02 }}
+          className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-white/98 backdrop-blur-sm border border-red-300 rounded-lg px-6 py-2.5 max-w-md pointer-events-auto shadow-md cursor-pointer"
+          style={{ marginBottom: '-15px' }}
         >
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-            <div className="text-red-700 text-sm font-bold">Critical Alerts</div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <AlertTriangle className="h-3.5 w-3.5 text-red-700" />
+            <div className="text-red-700 text-xs font-semibold">Critical Alerts</div>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {data.core.criticalAlerts.slice(0, 3).map((alert) => (
-              <div key={alert.id} className="text-gray-800 text-xs">
+              <div key={alert.id} className="text-gray-700 text-xs">
                 • {alert.title}
               </div>
             ))}
