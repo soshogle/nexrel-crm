@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -50,117 +51,382 @@ import { useSession } from 'next-auth/react';
 import { RealEstateAIEmployees } from '@/components/ai-employees/real-estate-employees';
 import { REWorkflowsTab } from '@/components/real-estate/workflows/re-workflows-tab';
 
-// Embedded Tasks Component - Mini Monday Board
+// Full Task Manager Component - Imported from admin tasks page
+import CreateTaskDialog from '@/components/tasks/create-task-dialog';
+import TaskList from '@/components/tasks/task-list';
+import TaskCard from '@/components/tasks/task-card';
+import AISuggestionsPanel from '@/components/tasks/ai-suggestions-panel';
+import TaskKanbanBoard from '@/components/tasks/task-kanban-board';
+import TaskAnalyticsDashboard from '@/components/tasks/task-analytics-dashboard';
+import { TaskCalendarView } from '@/components/tasks/task-calendar-view';
+import MondayBoard from '@/components/tasks/monday-board';
+import { 
+  Plus, 
+  Search, 
+  RefreshCw, 
+  CheckCircle2, 
+  Clock, 
+  AlertCircle,
+  ListTodo,
+  Calendar,
+  Filter,
+} from 'lucide-react';
+
 function TasksEmbed() {
   const { data: session } = useSession() || {};
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const isAdmin = (session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN';
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [view, setView] = useState<'monday' | 'list' | 'board' | 'kanban' | 'calendar' | 'analytics'>('monday');
+  
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [assigneeFilter, setAssigneeFilter] = useState('all');
 
-  const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-    'TODO': { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300', dot: 'bg-gray-400' },
-    'IN_PROGRESS': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300', dot: 'bg-blue-500' },
-    'REVIEW': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300', dot: 'bg-purple-500' },
-    'COMPLETED': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', dot: 'bg-green-500' },
-  };
-
-  const PRIORITY_COLORS: Record<string, string> = {
-    'LOW': 'border-l-gray-400',
-    'MEDIUM': 'border-l-yellow-500',
-    'HIGH': 'border-l-orange-500',
-    'URGENT': 'border-l-red-500',
-  };
-
-  useEffect(() => { fetchTasks(); }, []);
+  useEffect(() => {
+    fetchTasks();
+    fetchStats();
+  }, [statusFilter, priorityFilter, assigneeFilter, searchQuery]);
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch('/api/tasks?limit=20');
-      if (res.ok) {
-        const data = await res.json();
-        setTasks(data.tasks || []);
-      }
-    } catch (e) { console.error('Failed to fetch tasks', e); }
-    finally { setLoading(false); }
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+      if (priorityFilter !== 'all') params.append('priority', priorityFilter);
+      if (assigneeFilter !== 'all') params.append('assignedToId', assigneeFilter);
+      if (searchQuery) params.append('search', searchQuery);
+      
+      params.append('parentTaskId', 'null'); // Only top-level tasks
+
+      const response = await fetch(`/api/tasks?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch tasks');
+
+      const data = await response.json();
+      setTasks(data.tasks || []);
+    } catch (error: any) {
+      console.error('Error fetching tasks:', error);
+      toast.error('Failed to load tasks');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const updateTaskStatus = async (taskId: string, status: string) => {
-    if (!isAdmin) { toast.error('Only admins can modify tasks'); return; }
+  const fetchStats = async () => {
     try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
-      if (res.ok) { toast.success('Status updated'); fetchTasks(); }
-    } catch (e) { toast.error('Failed to update task'); }
+      const response = await fetch('/api/tasks/stats');
+      if (!response.ok) return;
+
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
   };
 
-  if (loading) return <div className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>;
-  if (tasks.length === 0) return <div className="text-center py-8 text-muted-foreground">No tasks yet. Run a workflow to create tasks.</div>;
+  const handleTaskCreated = () => {
+    setIsCreateDialogOpen(false);
+    fetchTasks();
+    fetchStats();
+    toast.success('Task created successfully');
+  };
 
-  // Group by status
-  const grouped = tasks.reduce((acc, t) => {
-    const s = t.status || 'TODO';
-    if (!acc[s]) acc[s] = [];
-    acc[s].push(t);
-    return acc;
-  }, {} as Record<string, any[]>);
+  const handleTaskUpdated = () => {
+    fetchTasks();
+    fetchStats();
+    toast.success('Task updated successfully');
+  };
+
+  const handleTaskDeleted = () => {
+    fetchTasks();
+    fetchStats();
+    toast.success('Task deleted successfully');
+  };
 
   return (
-    <div className="space-y-3">
-      {!isAdmin && (
-        <div className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950 p-2 rounded mb-3">
-          ⚠️ View only - Admin access required to modify tasks
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Task Manager</h2>
+          <p className="text-gray-400 mt-1 text-sm">
+            Manage your tasks and track progress
+          </p>
         </div>
-      )}
-      
-      {/* Monday-style table header */}
-      <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-muted/50 rounded-t-lg text-xs font-medium text-muted-foreground uppercase">
-        <div className="col-span-6">Task</div>
-        <div className="col-span-3 text-center">Status</div>
-        <div className="col-span-3 text-center">Priority</div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              fetchTasks();
+              fetchStats();
+            }}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Task
+          </Button>
+        </div>
       </div>
 
-      {/* Grouped tasks */}
-      {Object.entries(grouped).map(([status, statusTasks]) => {
-        const colors = STATUS_COLORS[status] || STATUS_COLORS['TODO'];
-        const taskList = statusTasks as any[];
-        return (
-          <div key={status} className="border rounded-lg overflow-hidden">
-            <div className={`flex items-center gap-2 px-3 py-1.5 ${colors.bg}`}>
-              <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
-              <span className={`font-medium text-xs ${colors.text}`}>{status.replace('_', ' ')}</span>
-              <Badge variant="secondary" className="text-xs h-5">{taskList.length}</Badge>
-            </div>
-            {taskList.map((task: any) => (
-              <div 
-                key={task.id} 
-                className={`grid grid-cols-12 gap-2 px-3 py-2 items-center border-t hover:bg-muted/20 border-l-4 ${PRIORITY_COLORS[task.priority] || 'border-l-gray-300'}`}
-              >
-                <div className="col-span-6">
-                  <p className="font-medium text-sm truncate">{task.title}</p>
-                  {task.description && <p className="text-xs text-muted-foreground truncate">{task.description.substring(0, 50)}</p>}
-                </div>
-                <div className="col-span-3 flex justify-center">
-                  <button 
-                    onClick={() => isAdmin && updateTaskStatus(task.id, task.status === 'COMPLETED' ? 'TODO' : 'COMPLETED')}
-                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors.bg} ${colors.text} ${isAdmin ? 'cursor-pointer hover:opacity-80' : ''}`}
-                    disabled={!isAdmin}
-                  >
-                    {status.replace('_', ' ')}
-                  </button>
-                </div>
-                <div className="col-span-3 flex justify-center">
-                  <Badge variant={task.priority === 'HIGH' || task.priority === 'URGENT' ? 'destructive' : 'outline'} className="text-xs">
-                    {task.priority}
-                  </Badge>
-                </div>
+      {/* Stats Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">
+                Total Tasks
+              </CardTitle>
+              <ListTodo className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">
+                {stats.summary?.total || 0}
               </div>
-            ))}
+              <p className="text-xs text-gray-400 mt-1">
+                {stats.summary?.completionRate || 0}% completion rate
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">
+                In Progress
+              </CardTitle>
+              <Clock className="h-4 w-4 text-purple-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">
+                {stats.summary?.inProgress || 0}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Active tasks
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">
+                Overdue
+              </CardTitle>
+              <AlertCircle className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">
+                {stats.summary?.overdue || 0}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Need attention
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">
+                Completed
+              </CardTitle>
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">
+                {stats.summary?.completed || 0}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Tasks done
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* AI Suggestions */}
+      <AISuggestionsPanel
+        onTaskCreated={() => {
+          fetchTasks();
+          fetchStats();
+        }}
+      />
+
+      {/* Filters */}
+      <Card className="bg-gray-900 border-gray-800">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="TODO">To Do</SelectItem>
+                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                <SelectItem value="BLOCKED">Blocked</SelectItem>
+                <SelectItem value="REVIEW">Review</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priority</SelectItem>
+                <SelectItem value="URGENT">Urgent</SelectItem>
+                <SelectItem value="HIGH">High</SelectItem>
+                <SelectItem value="MEDIUM">Medium</SelectItem>
+                <SelectItem value="LOW">Low</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('all');
+                setPriorityFilter('all');
+                setAssigneeFilter('all');
+              }}
+              className="border-gray-700 text-gray-400 hover:text-white"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Clear Filters
+            </Button>
           </div>
-        );
-      })}
+        </CardContent>
+      </Card>
+
+      {/* Tasks List */}
+      <Card className="bg-gray-900 border-gray-800">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-white">Your Tasks</CardTitle>
+              <CardDescription className="text-gray-400">
+                {tasks.length} task{tasks.length !== 1 ? 's' : ''} found
+              </CardDescription>
+            </div>
+            <Tabs value={view} onValueChange={(v: any) => setView(v)}>
+              <TabsList className="bg-gray-800">
+                <TabsTrigger value="monday" className="data-[state=active]:bg-purple-600">
+                  📋 Board
+                </TabsTrigger>
+                <TabsTrigger value="list" className="data-[state=active]:bg-gray-700">
+                  List
+                </TabsTrigger>
+                <TabsTrigger value="kanban" className="data-[state=active]:bg-gray-700">
+                  Kanban
+                </TabsTrigger>
+                <TabsTrigger value="calendar" className="data-[state=active]:bg-gray-700">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Calendar
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="data-[state=active]:bg-gray-700">
+                  Analytics
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="text-center py-12">
+              <ListTodo className="h-12 w-12 mx-auto text-gray-600 mb-4" />
+              <p className="text-gray-400">No tasks found</p>
+              <p className="text-gray-500 text-sm mt-1">
+                Create your first task to get started
+              </p>
+            </div>
+          ) : view === 'monday' ? (
+            <MondayBoard isAdmin={isAdmin} />
+          ) : view === 'list' ? (
+            <TaskList
+              tasks={tasks}
+              onTaskClick={setSelectedTask}
+              onTaskUpdated={handleTaskUpdated}
+              onTaskDeleted={handleTaskDeleted}
+            />
+          ) : view === 'kanban' ? (
+            <TaskKanbanBoard
+              tasks={tasks}
+              onTaskClick={setSelectedTask}
+              onTaskUpdated={handleTaskUpdated}
+              onCreateTask={(status) => {
+                setIsCreateDialogOpen(true);
+              }}
+            />
+          ) : view === 'calendar' ? (
+            <TaskCalendarView
+              tasks={tasks}
+              onTaskClick={setSelectedTask}
+              onDateClick={(date) => {
+                setIsCreateDialogOpen(true);
+              }}
+              onTaskUpdated={handleTaskUpdated}
+            />
+          ) : view === 'analytics' ? (
+            <TaskAnalyticsDashboard />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {tasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onClick={() => setSelectedTask(task)}
+                  onUpdated={handleTaskUpdated}
+                  onDeleted={handleTaskDeleted}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create Task Dialog */}
+      <CreateTaskDialog
+        open={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        onSuccess={handleTaskCreated}
+      />
+
+      {/* Edit Task Dialog */}
+      {selectedTask && (
+        <CreateTaskDialog
+          open={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onSuccess={() => {
+            setSelectedTask(null);
+            handleTaskUpdated();
+          }}
+          task={selectedTask}
+        />
+      )}
     </div>
   );
 }
@@ -1667,13 +1933,8 @@ export default function AIEmployeesPage() {
         <TabsContent value="tasks" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>AI Employee Tasks</span>
-                <Button size="sm" onClick={() => window.location.href = '/dashboard/admin/tasks'}>
-                  Open Full Task Manager
-                </Button>
-              </CardTitle>
-              <CardDescription>Tasks created by AI employees during workflows</CardDescription>
+              <CardTitle>Task Manager</CardTitle>
+              <CardDescription>Manage your tasks and track progress</CardDescription>
             </CardHeader>
             <CardContent>
               <TasksEmbed />
@@ -2256,7 +2517,13 @@ export default function AIEmployeesPage() {
                     <Button size="sm" variant="outline" onClick={() => window.location.href = '/dashboard/leads'}>
                       View Leads
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => window.location.href = '/dashboard/admin/tasks'}>
+                    <Button size="sm" variant="outline" onClick={() => {
+                      // Scroll to tasks tab
+                      const tasksTab = document.querySelector('[value="tasks"]');
+                      if (tasksTab) {
+                        (tasksTab as HTMLElement).click();
+                      }
+                    }}>
                       View Tasks
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => window.location.href = '/dashboard/pipeline'}>
