@@ -635,6 +635,22 @@ export class WorkflowEngine {
       where: { id: context.leadId },
     }) : null;
 
+    // Get user's language preference
+    const user = await prisma.user.findUnique({
+      where: { id: context.userId },
+      select: { language: true },
+    });
+    const userLanguage = user?.language || 'en';
+    
+    // Language instructions for AI responses
+    const languageInstructions: Record<string, string> = {
+      'en': 'CRITICAL: You MUST generate the message ONLY in English. Every single word must be in English.',
+      'fr': 'CRITIQUE : Vous DEVEZ générer le message UNIQUEMENT en français. Chaque mot doit être en français.',
+      'es': 'CRÍTICO: DEBES generar el mensaje SOLO en español. Cada palabra debe estar en español.',
+      'zh': '关键：您必须仅用中文生成消息。每个词都必须是中文。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+
     const prompt = config.prompt || 'Generate a professional follow-up message';
     const tone = config.tone || 'professional';
 
@@ -655,7 +671,7 @@ export class WorkflowEngine {
           model: 'gpt-4o-mini',
           messages: [{
             role: 'system',
-            content: `You are a ${tone} CRM assistant. Generate a brief, engaging message for: ${prompt}. Context: Lead name is ${lead?.contactPerson || 'the lead'}, business is ${lead?.businessName || 'their business'}.`
+            content: `${languageInstruction}\n\nYou are a ${tone} CRM assistant. Generate a brief, engaging message for: ${prompt}. Context: Lead name is ${lead?.contactPerson || 'the lead'}, business is ${lead?.businessName || 'their business'}.`
           }],
           max_tokens: 200,
         }),

@@ -486,7 +486,13 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
     const translationKey = translationMap[itemId];
     if (translationKey) {
       try {
-        return t(translationKey);
+        const translated = t(translationKey);
+        // If translation returns the key with namespace prefix, it means translation doesn't exist
+        // Use fallback title instead
+        if (translated.startsWith('navigation.')) {
+          return fallbackTitle;
+        }
+        return translated;
       } catch {
         return fallbackTitle;
       }

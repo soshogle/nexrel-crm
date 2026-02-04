@@ -31,6 +31,7 @@ export function ActiveAssistant({
   onActivationChange,
 }: ActiveAssistantProps) {
   const tPlaceholders = useTranslations('placeholders.input');
+  const tToasts = useTranslations('toasts.general');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -62,7 +63,7 @@ export function ActiveAssistant({
 
       recognitionRef.current.onerror = () => {
         setIsListening(false);
-        toast.error('Speech recognition error');
+        toast.error(tToasts('speechRecognitionError'));
       };
 
       recognitionRef.current.onend = () => {
@@ -86,7 +87,7 @@ export function ActiveAssistant({
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
-      toast.error('Speech recognition not supported');
+      toast.error(tToasts('speechRecognitionNotSupported'));
       return;
     }
 
@@ -140,7 +141,7 @@ export function ActiveAssistant({
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      toast.error('Failed to get response');
+      toast.error(tToasts('responseFailed'));
     } finally {
       setIsLoading(false);
     }

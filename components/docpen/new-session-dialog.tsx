@@ -52,6 +52,7 @@ const PROFESSIONS = [
 
 export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
   const tPlaceholders = useTranslations('placeholders');
+  const tToasts = useTranslations('toasts.general');
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -64,6 +65,7 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
     profession: 'GENERAL_PRACTICE',
     customProfession: '',
     chiefComplaint: '',
+    consultantName: '',
   });
 
   useEffect(() => {
@@ -90,6 +92,11 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
   };
 
   const handleSubmit = async () => {
+    if (!formData.consultantName.trim()) {
+      toast.error(tToasts('consultantNameRequired'));
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch('/api/docpen/sessions', {
@@ -101,6 +108,7 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
           profession: formData.profession,
           customProfession: formData.profession === 'CUSTOM' ? formData.customProfession : undefined,
           chiefComplaint: formData.chiefComplaint || undefined,
+          consultantName: formData.consultantName,
         }),
       });
 
@@ -110,7 +118,7 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
       }
 
       const data = await response.json();
-      toast.success('Session created');
+      toast.success(tToasts('sessionCreated'));
       setOpen(false);
       resetForm();
       onSessionCreated?.(data.session.id);
@@ -128,6 +136,7 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
       profession: 'GENERAL_PRACTICE',
       customProfession: '',
       chiefComplaint: '',
+      consultantName: '',
     });
     setSearchQuery('');
     setLeads([]);
@@ -160,6 +169,21 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Consultant Name */}
+          <div className="space-y-2">
+            <Label htmlFor="consultantName">Consultant Name *</Label>
+            <Input
+              id="consultantName"
+              value={formData.consultantName}
+              onChange={(e) => setFormData(prev => ({ ...prev, consultantName: e.target.value }))}
+              placeholder="Dr. John Smith"
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Name of the consultant who will sign off on the notes approval
+            </p>
+          </div>
+
           {/* Patient Search */}
           <div className="space-y-2">
             <Label>Patient (Optional)</Label>

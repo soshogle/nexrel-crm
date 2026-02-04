@@ -33,8 +33,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
     }
 
+    // Get user's language preference
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { language: true },
+    });
+    const userLanguage = user?.language || 'en';
+    
+    // Language instructions for AI responses
+    const languageInstructions: Record<string, string> = {
+      'en': 'CRITICAL: You MUST generate the message ONLY in English. Every single word must be in English.',
+      'fr': 'CRITIQUE : Vous DEVEZ générer le message UNIQUEMENT en français. Chaque mot doit être en français.',
+      'es': 'CRÍTICO: DEBES generar el mensaje SOLO en español. Cada palabra debe estar en español.',
+      'zh': '关键：您必须仅用中文生成消息。每个词都必须是中文。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+
     // Prepare the prompt for AI message generation
-    const prompt = `Generate a personalized outreach message for a business lead with the following information:
+    const prompt = `${languageInstruction}
+
+Generate a personalized outreach message for a business lead with the following information:
 
 Business Name: ${lead.businessName}
 Contact Person: ${lead.contactPerson || 'Not specified'}

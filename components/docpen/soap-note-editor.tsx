@@ -13,6 +13,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface SOAPNote {
   id: string;
@@ -45,6 +46,8 @@ export function SOAPNoteEditor({
   onUpdate,
   onGenerate,
 }: SOAPNoteEditorProps) {
+  const t = useTranslations('toasts.docpen');
+  const tCommon = useTranslations('common');
   const [editingSection, setEditingSection] = useState<SectionKey | null>(null);
   const [editedContent, setEditedContent] = useState('');
   const [isRegenerating, setIsRegenerating] = useState<SectionKey | null>(null);
@@ -94,10 +97,10 @@ export function SOAPNoteEditor({
     try {
       // Here we would save the edited content via API
       // For now, just update the local state
-      toast.success(`${editingSection} section updated`);
+      toast.success(t('sectionUpdated', { section: editingSection }));
       setEditingSection(null);
     } catch (error) {
-      toast.error('Failed to save changes');
+      toast.error(t('saveFailed'));
     }
   };
 
@@ -124,9 +127,9 @@ export function SOAPNoteEditor({
 
       const result = await response.json();
       onUpdate?.(result.soapNote);
-      toast.success(`${key} section regenerated`);
+      toast.success(t('sectionRegenerated', { key }));
     } catch (error) {
-      toast.error('Failed to regenerate section');
+      toast.error(t('regenerateFailed'));
     } finally {
       setIsRegenerating(null);
     }
@@ -145,10 +148,10 @@ export function SOAPNoteEditor({
 
       const result = await response.json();
       onUpdate?.(result.soapNote);
-      toast.success('SOAP note generated');
+      toast.success(t('soapNoteGenerated'));
       onGenerate?.();
     } catch (error) {
-      toast.error('Failed to generate SOAP note');
+      toast.error(t('soapNoteGenerationFailed'));
     } finally {
       setIsGenerating(false);
     }
@@ -194,9 +197,6 @@ export function SOAPNoteEditor({
             {soapNote.editedByUser && (
               <Badge variant="secondary">Edited</Badge>
             )}
-            {soapNote.aiModel && (
-              <Badge variant="secondary">{soapNote.aiModel}</Badge>
-            )}
           </div>
         </div>
       </CardHeader>
@@ -227,10 +227,10 @@ export function SOAPNoteEditor({
                       />
                       <div className="flex gap-2">
                         <Button size="sm" onClick={handleSave}>
-                          <Check className="h-4 w-4 mr-1" /> Save
+                          <Check className="h-4 w-4 mr-1" /> {tCommon('save')}
                         </Button>
                         <Button size="sm" variant="outline" onClick={handleCancel}>
-                          <X className="h-4 w-4 mr-1" /> Cancel
+                          <X className="h-4 w-4 mr-1" /> {tCommon('cancel')}
                         </Button>
                       </div>
                     </div>

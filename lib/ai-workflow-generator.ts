@@ -9,6 +9,7 @@
 interface WorkflowGenerationRequest {
   description: string;
   userId: string;
+  userLanguage?: string; // User's language preference (en, fr, es, zh)
   context?: {
     existingPipelines?: any[];
     existingLeadStatuses?: string[];
@@ -44,7 +45,18 @@ export class AIWorkflowGenerator {
    * Generate a workflow from natural language description
    */
   async generateWorkflow(request: WorkflowGenerationRequest): Promise<WorkflowGenerationResponse> {
-    const systemPrompt = this.buildSystemPrompt(request.context);
+    const userLanguage = request.userLanguage || 'en';
+    
+    // Language instructions for AI responses
+    const languageInstructions: Record<string, string> = {
+      'en': 'CRITICAL: You MUST generate workflow configuration ONLY in English. Every single word must be in English.',
+      'fr': 'CRITIQUE : Vous DEVEZ générer la configuration du workflow UNIQUEMENT en français. Chaque mot doit être en français.',
+      'es': 'CRÍTICO: DEBES generar la configuración del workflow SOLO en español. Cada palabra debe estar en español.',
+      'zh': '关键：您必须仅用中文生成工作流配置。每个词都必须是中文。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+    
+    const systemPrompt = `${languageInstruction}\n\n${this.buildSystemPrompt(request.context)}`;
     const userPrompt = this.buildUserPrompt(request.description);
 
     try {

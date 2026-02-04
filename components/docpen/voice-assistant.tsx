@@ -39,6 +39,7 @@ interface VoiceAssistantProps {
   customProfession?: string;
   patientName?: string;
   chiefComplaint?: string;
+  consultantName?: string;
   onTranscript?: (transcript: string, speaker: 'user' | 'assistant') => void;
 }
 
@@ -48,9 +49,11 @@ export function VoiceAssistant({
   customProfession,
   patientName,
   chiefComplaint,
+  consultantName,
   onTranscript,
 }: VoiceAssistantProps) {
   const t = useTranslations('toasts.docpen');
+  const tGeneral = useTranslations('toasts.general');
   const { data: session, status: sessionStatus } = useSession();
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -100,6 +103,7 @@ export function VoiceAssistant({
         body: JSON.stringify({
           profession,
           customProfession,
+          practitionerName: consultantName,
           sessionContext: {
             patientName,
             chiefComplaint,
@@ -261,12 +265,12 @@ export function VoiceAssistant({
 
     // Guard: Ensure session is ready before connecting
     if (sessionStatus === 'loading') {
-      toast.error('Please wait for session to load');
+      toast.error(tGeneral('waitForSession'));
       return;
     }
 
     if (sessionStatus === 'unauthenticated' || !session?.user?.id) {
-      toast.error('Please sign in to use voice assistant');
+      toast.error(tGeneral('signInRequired'));
       setError('Session not authenticated');
       return;
     }
@@ -438,7 +442,7 @@ export function VoiceAssistant({
       console.error('❌ [Docpen] Connection failed:', err);
       if (err.name === 'NotAllowedError') {
         setError('Microphone access denied. Please grant permission and try again.');
-        toast.error('Microphone access denied');
+        toast.error(tGeneral('microphoneDenied'));
       } else {
         setError(err.message || 'Failed to connect');
         toast.error(err.message || t('connectionFailed'));

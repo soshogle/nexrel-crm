@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 import { SessionList } from '@/components/docpen/session-list';
 import { NewSessionDialog } from '@/components/docpen/new-session-dialog';
@@ -41,6 +42,7 @@ interface Session {
   sessionDate: string;
   sessionDuration?: number;
   chiefComplaint?: string;
+  consultantName?: string;
   transcriptionComplete: boolean;
   soapNoteGenerated: boolean;
   signedAt?: string;
@@ -77,6 +79,7 @@ export default function DocpenPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status: sessionStatus } = useSession();
+  const tToasts = useTranslations('toasts.general');
   const sessionIdParam = searchParams.get('session');
 
   const [activeView, setActiveView] = useState<'list' | 'session'>(sessionIdParam ? 'session' : 'list');
@@ -148,7 +151,7 @@ export default function DocpenPage() {
       setActiveSession(data.session);
       setActiveView('session');
     } catch (error) {
-      toast.error('Failed to load session');
+      toast.error(tToasts('sessionLoadFailed'));
       setActiveView('list');
     } finally {
       setIsLoadingSession(false);
@@ -433,6 +436,7 @@ export default function DocpenPage() {
                       customProfession={activeSession.customProfession}
                       patientName={activeSession.patientName || activeSession.lead?.contactPerson}
                       chiefComplaint={activeSession.chiefComplaint}
+                      consultantName={activeSession.consultantName}
                     />
                   </TabsContent>
                   <TabsContent value="text" className="mt-0">

@@ -85,7 +85,15 @@ export async function POST(request: NextRequest) {
       profession = 'GENERAL_PRACTICE',
       customProfession,
       chiefComplaint,
+      consultantName,
     } = body;
+
+    if (!consultantName || !consultantName.trim()) {
+      return NextResponse.json(
+        { error: 'Consultant name is required' },
+        { status: 400 }
+      );
+    }
 
     // Validate profession
     const validProfessions = [
@@ -123,6 +131,7 @@ export async function POST(request: NextRequest) {
         profession: profession as any,
         customProfession: customProfession || null,
         chiefComplaint: chiefComplaint || null,
+        consultantName: consultantName,
         status: 'RECORDING',
       },
       include: {

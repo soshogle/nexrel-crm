@@ -36,6 +36,7 @@ import ImportContactsDialog from './import-contacts-dialog';
 import CreateContactDialog from './create-contact-dialog';
 import DuplicatesDialog from './duplicates-dialog';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface ContactStats {
   total: number;
@@ -48,6 +49,7 @@ interface ContactStats {
 
 export default function ContactsPage() {
   const { data: session, status } = useSession() || {};
+  const tToasts = useTranslations('toasts.general');
   const [stats, setStats] = useState<ContactStats>({
     total: 0,
     newThisMonth: 0,
@@ -113,13 +115,13 @@ export default function ContactsPage() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        toast.success('Contacts exported successfully!');
+        toast.success(tToasts('contactsExported'));
       } else {
-        toast.error('Failed to export contacts');
+        toast.error(tToasts('exportFailed'));
       }
     } catch (error) {
       console.error('Error exporting contacts:', error);
-      toast.error('Failed to export contacts');
+      toast.error(tToasts('exportFailed'));
     }
   };
 

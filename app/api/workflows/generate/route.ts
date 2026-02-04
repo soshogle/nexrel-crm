@@ -18,6 +18,10 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
+      select: {
+        id: true,
+        language: true,
+      },
     });
 
     if (!user) {
@@ -53,6 +57,7 @@ export async function POST(request: NextRequest) {
     const workflow = await aiWorkflowGenerator.generateWorkflow({
       description,
       userId: user.id,
+      userLanguage: user.language || 'en',
       context: {
         existingPipelines: pipelines,
         availableChannels: channelConnections.map(c => c.channelType),

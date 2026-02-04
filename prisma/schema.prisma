@@ -6344,6 +6344,15 @@ enum DocpenSpeakerRole {
   OTHER
 }
 
+enum DocpenSOAPType {
+  STANDARD_SOAP
+  FOCUSED_SOAP
+  PROGRESS_NOTE
+  CONSULTATION_NOTE
+  PROCEDURE_NOTE
+  FOLLOW_UP_NOTE
+}
+
 // Main session/consultation record
 model DocpenSession {
   id                String              @id @default(cuid())
@@ -6358,6 +6367,7 @@ model DocpenSession {
   sessionDate       DateTime            @default(now())
   sessionDuration   Int?                // Duration in seconds
   chiefComplaint    String?             // Initial reason for visit
+  consultantName    String?             // Name of consultant signing off on notes approval
   
   // Audio storage (encrypted reference)
   audioStoragePath  String?             // S3 path for encrypted audio
@@ -6425,6 +6435,9 @@ model DocpenSOAPNote {
   sessionId         String
   version           Int             @default(1)
   
+  // SOAP Type
+  soapType          DocpenSOAPType  @default(STANDARD_SOAP) // Type of SOAP note
+  
   // SOAP Format
   subjective        String?         @db.Text  // Patient's complaints, history
   objective         String?         @db.Text  // Exam findings, measurements
@@ -6450,6 +6463,7 @@ model DocpenSOAPNote {
   
   @@index([sessionId])
   @@index([isCurrentVersion])
+  @@index([soapType])
 }
 
 // Active Assistant queries during session

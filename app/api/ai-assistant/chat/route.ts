@@ -22,11 +22,57 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        phone: true,
+        website: true,
+        businessCategory: true,
+        industryNiche: true,
+        operatingLocation: true,
+        businessLanguage: true,
+        timezone: true,
+        currency: true,
+        teamSize: true,
+        productsServices: true,
+        targetAudience: true,
+        businessDescription: true,
+        averageDealValue: true,
+        salesCycleLength: true,
+        preferredContactMethod: true,
+        leadSources: true,
+        emailProvider: true,
+        emailProviderConfigured: true,
+        smsProvider: true,
+        smsProviderConfigured: true,
+        paymentProvider: true,
+        paymentProviderConfigured: true,
+        campaignTone: true,
+        primaryMarketingChannel: true,
+        monthlyMarketingBudget: true,
+        websiteTraffic: true,
+        currentCRM: true,
+        language: true, // Include language preference
+      },
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    // Get user's language preference (default to 'en' if not set)
+    const userLanguage = user.language || 'en';
+    
+    // Language instructions for AI responses
+    const languageInstructions: Record<string, string> = {
+      'en': 'CRITICAL: You MUST respond ONLY in English. Every single word, sentence, and response must be in English. Never use any other language.',
+      'fr': 'CRITIQUE : Vous DEVEZ répondre UNIQUEMENT en français. Chaque mot, phrase et réponse doit être en français. N\'utilisez jamais une autre langue.',
+      'es': 'CRÍTICO: DEBES responder SOLO en español. Cada palabra, frase y respuesta debe estar en español. Nunca uses otro idioma.',
+      'zh': '关键：您必须仅用中文回复。每个词、句子和回复都必须是中文。永远不要使用其他语言。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
 
     // Check if the request contains a file (FormData) or is JSON
     const contentType = req.headers.get("content-type") || "";
@@ -216,7 +262,13 @@ export async function POST(req: NextRequest) {
       console.error("Error fetching recent activity:", error);
     }
 
-    const systemContext = `You are Soshogle AI, a proactive AI assistant that DOES THINGS for users rather than just explaining how. Your core principle: Always offer to execute tasks for users, not just give instructions.
+    const systemContext = `${languageInstruction}
+
+You are Soshogle AI, a proactive AI assistant that DOES THINGS for users rather than just explaining how. Your core principle: Always offer to execute tasks for users, not just give instructions.
+
+${userLanguage === 'fr' ? 'Vous êtes Soshogle AI, un assistant IA proactif qui FAIT des choses pour les utilisateurs plutôt que d\'expliquer comment faire. Votre principe fondamental : Proposez toujours d\'exécuter des tâches pour les utilisateurs, pas seulement de donner des instructions.' : ''}
+${userLanguage === 'es' ? 'Eres Soshogle AI, un asistente de IA proactivo que HACE cosas para los usuarios en lugar de solo explicar cómo hacerlas. Tu principio fundamental: Siempre ofrece ejecutar tareas para los usuarios, no solo dar instrucciones.' : ''}
+${userLanguage === 'zh' ? '您是 Soshogle AI，一个主动的 AI 助手，为用户执行操作，而不仅仅是解释如何操作。您的核心原则：始终主动为用户执行任务，而不仅仅是提供说明。' : ''}
 
 Current User Profile:
 - User ID: ${user.id}

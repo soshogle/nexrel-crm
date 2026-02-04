@@ -33,14 +33,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's business context
+    // Get user's business context and language preference
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
         name: true,
         industry: true,
+        language: true,
       },
     });
+
+    const userLanguage = user?.language || 'en';
+    
+    // Language instructions for AI responses
+    const languageInstructions: Record<string, string> = {
+      'en': 'CRITICAL: You MUST generate content ONLY in English. Every single word must be in English.',
+      'fr': 'CRITIQUE : Vous DEVEZ générer du contenu UNIQUEMENT en français. Chaque mot doit être en français.',
+      'es': 'CRÍTICO: DEBES generar contenido SOLO en español. Cada palabra debe estar en español.',
+      'zh': '关键：您必须仅用中文生成内容。每个词都必须是中文。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
 
     const context = {
       campaignType,
@@ -52,6 +64,7 @@ export async function POST(request: NextRequest) {
         tone: tone || 'professional',
       },
       includePersonalization: includePersonalization !== false,
+      userLanguage: userLanguage,
     };
 
     let generatedContent: any = {};
