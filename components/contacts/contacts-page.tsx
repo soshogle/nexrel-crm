@@ -29,10 +29,13 @@ import {
   Link2,
   Copy,
   Check,
+  Copy as CopyIcon,
+  AlertTriangle,
 } from 'lucide-react';
 import ContactsList from './contacts-list';
 import ImportContactsDialog from './import-contacts-dialog';
 import CreateContactDialog from './create-contact-dialog';
+import DuplicatesDialog from './duplicates-dialog';
 import { toast } from 'sonner';
 
 interface ContactStats {
@@ -60,6 +63,7 @@ export default function ContactsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isDuplicatesDialogOpen, setIsDuplicatesDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [bookingLinkCopied, setBookingLinkCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -320,6 +324,16 @@ export default function ContactsPage() {
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
         onContactCreated={handleContactCreated}
+      />
+
+      {/* Duplicates Dialog */}
+      <DuplicatesDialog
+        open={isDuplicatesDialogOpen}
+        onOpenChange={setIsDuplicatesDialogOpen}
+        onSuccess={() => {
+          setRefreshKey((prev) => prev + 1);
+          fetchStats();
+        }}
       />
     </div>
   );
