@@ -198,7 +198,7 @@ export function VoiceAssistant({
   };
 
   /**
-   * Play audio chunk from ElevenLabs (PCM format) - queued to prevent overlapping
+   * Play audio chunk from ElevenLabs (PCM format)
    */
   const playAudioChunk = async (base64Audio: string) => {
     try {
@@ -209,8 +209,7 @@ export function VoiceAssistant({
 
       if (!audioContextRef.current) {
         console.warn('⚠️ [Docpen] Audio context not initialized, creating new one');
-        // Use default sample rate - we'll resample the PCM data to match
-        audioContextRef.current = new AudioContext();
+        audioContextRef.current = new AudioContext({ sampleRate: 16000 });
       }
 
       if (audioContextRef.current.state === 'suspended') {
@@ -220,7 +219,7 @@ export function VoiceAssistant({
 
       if (audioContextRef.current.state === 'closed') {
         console.warn('⚠️ [Docpen] Audio context is closed, creating new one');
-        audioContextRef.current = new AudioContext();
+        audioContextRef.current = new AudioContext({ sampleRate: 16000 });
       }
 
       console.log('🔊 [Docpen] Decoding audio chunk, length:', base64Audio.length);
@@ -243,13 +242,12 @@ export function VoiceAssistant({
           // Convert Int16 PCM to Float32 for Web Audio API
           const float32Audio = convertInt16ToFloat32(pcm16);
           
-          // Create AudioBuffer directly from PCM data at 16kHz
-          // Web Audio API will handle resampling to the context's sample rate automatically
-          const sourceSampleRate = 16000; // ElevenLabs sends PCM at 16kHz
+          // Create AudioBuffer directly from PCM data
+          const sampleRate = 16000; // ElevenLabs sends PCM at 16kHz
           const audioBuffer = audioContextRef.current.createBuffer(
             1, // mono channel
             float32Audio.length,
-            sourceSampleRate
+            sampleRate
           );
           
           // Copy Float32 data into AudioBuffer
@@ -257,7 +255,7 @@ export function VoiceAssistant({
           
           console.log('✅ [Docpen] PCM audio converted to AudioBuffer, duration:', audioBuffer.duration, 'seconds');
           
-          // Play audio immediately (Web Audio API handles overlapping gracefully)
+          // Play the audio
           const source = audioContextRef.current.createBufferSource();
           source.buffer = audioBuffer;
           source.connect(audioContextRef.current.destination);
