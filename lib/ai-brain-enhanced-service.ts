@@ -779,7 +779,7 @@ export class AIBrainEnhancedService {
     }
 
     // Low campaign engagement
-    const emailStats = emailCampaigns.reduce(
+    const emailStatsForAlert = (emailCampaigns || []).reduce(
       (acc, campaign) => {
         const recipients = campaign.recipients || [];
         return {
