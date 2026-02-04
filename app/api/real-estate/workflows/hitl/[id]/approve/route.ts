@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { approveHITLGate } from '@/lib/real-estate/workflow-engine';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -57,67 +58,32 @@ export async function POST(
       );
     }
 
-    // Update the execution as approved
-    const updatedExecution = await prisma.rETaskExecution.update({
+    // Approve HITL gate using the engine
+    await approveHITLGate(params.id, session.user.id, notes);
+
+    // Get updated execution
+    const updatedExecution = await prisma.rETaskExecution.findUnique({
       where: { id: params.id },
-      data: {
-        status: 'APPROVED',
-        hitlApprovedBy: session.user.id,
-        hitlApprovedAt: new Date(),
-        hitlNotes: notes || null,
-        completedAt: new Date()
+      include: {
+        task: true,
+        instance: {
+          include: {
+            template: {
+              include: {
+                tasks: {
+                  orderBy: { displayOrder: 'asc' }
+                }
+              }
+            }
+          }
+        }
       }
     });
 
-    // Mark HITL notification as actioned
-    await prisma.rEHITLNotification.updateMany({
-      where: {
-        executionId: params.id,
-        userId: session.user.id
-      },
-      data: {
-        isActioned: true,
-        isRead: true
-      }
-    });
-
-    // Find and start the next task
-    const tasks = execution.instance.template.tasks;
-    const currentTaskIndex = tasks.findIndex((t: { id: string }) => t.id === execution.taskId);
+    // Find next task
+    const tasks = updatedExecution?.instance.template.tasks || [];
+    const currentTaskIndex = tasks.findIndex((t: { id: string }) => t.id === updatedExecution?.taskId);
     const nextTask = tasks[currentTaskIndex + 1];
-
-    if (nextTask) {
-      // Schedule the next task
-      const delayMs = calculateDelay(nextTask.delayValue, nextTask.delayUnit);
-      const scheduledFor = new Date(Date.now() + delayMs);
-
-      await prisma.rETaskExecution.updateMany({
-        where: {
-          instanceId: execution.instanceId,
-          taskId: nextTask.id
-        },
-        data: {
-          status: delayMs === 0 ? 'IN_PROGRESS' : 'PENDING',
-          scheduledFor,
-          startedAt: delayMs === 0 ? new Date() : null
-        }
-      });
-
-      // Update instance current task
-      await prisma.rEWorkflowInstance.update({
-        where: { id: execution.instanceId },
-        data: { currentTaskId: nextTask.id }
-      });
-    } else {
-      // No more tasks, complete the workflow
-      await prisma.rEWorkflowInstance.update({
-        where: { id: execution.instanceId },
-        data: {
-          status: 'COMPLETED',
-          completedAt: new Date()
-        }
-      });
-    }
 
     return NextResponse.json({
       success: true,

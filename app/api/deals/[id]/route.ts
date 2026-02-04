@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { workflowEngine } from '@/lib/workflow-engine';
+import { detectDealStageWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 
 // GET /api/deals/[id] - Get single deal
 
@@ -116,7 +117,7 @@ export async function PATCH(
         },
       });
 
-      // Trigger DEAL_STAGE_CHANGED workflows
+      // Trigger DEAL_STAGE_CHANGED workflows (generic)
       workflowEngine.triggerWorkflow('DEAL_STAGE_CHANGED', {
         userId: user.id,
         dealId: params.id,
@@ -130,6 +131,13 @@ export async function PATCH(
         oldStageId: existingDeal.stageId,
         newStageId: data.stageId,
       }).catch(err => console.error('Deal stage changed workflow trigger failed:', err));
+
+      // Trigger RE-specific workflows if user is in real estate industry
+      if (user.industry === 'REAL_ESTATE' && newStage) {
+        detectDealStageWorkflowTriggers(user.id, params.id, newStage.name || '').catch(err => {
+          console.error('[RE Workflow] Failed to trigger RE workflow for deal:', err);
+        });
+      }
 
       // Check if deal is won (moved to CLOSED_WON stage)
       const newStage = await prisma.pipelineStage.findUnique({

@@ -27,17 +27,17 @@ export function REWorkflowsTab() {
   
   if (showBuilder) {
     return (
-      <div className="h-[calc(100vh-200px)] flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <GitBranch className="w-6 h-6 text-purple-500" />
+      <div className="h-[calc(100vh-200px)] flex flex-col bg-white rounded-xl border-2 border-purple-200 shadow-lg">
+        <div className="flex items-center justify-between mb-4 p-4 border-b-2 border-purple-200 bg-gradient-to-r from-purple-50 to-white">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <GitBranch className="w-6 h-6 text-purple-600" />
             Workflow Builder
           </h2>
-          <Button variant="outline" onClick={() => setShowBuilder(false)}>
+          <Button variant="outline" onClick={() => setShowBuilder(false)} className="border-purple-200 text-gray-700 hover:bg-purple-50">
             Back to Overview
           </Button>
         </div>
-        <div className="flex-1 bg-gray-900 rounded-xl overflow-hidden">
+        <div className="flex-1 bg-white rounded-xl overflow-hidden">
           <WorkflowBuilder />
         </div>
       </div>
@@ -47,19 +47,19 @@ export function REWorkflowsTab() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between bg-white p-6 rounded-xl border-2 border-purple-200 shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <GitBranch className="w-6 h-6 text-purple-500" />
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <GitBranch className="w-6 h-6 text-purple-600" />
             AI Workflow Automation
           </h2>
-          <p className="text-gray-400 mt-1">
+          <p className="text-gray-600 mt-1">
             Design and automate your real estate pipelines with AI-powered workflows
           </p>
         </div>
         <Button
           onClick={() => setShowBuilder(true)}
-          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+          className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white shadow-md"
         >
           <Zap className="w-4 h-4 mr-2" />
           Open Workflow Builder
@@ -68,16 +68,16 @@ export function REWorkflowsTab() {
 
       {/* Sub-tabs for different views */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-4">
-        <TabsList className="bg-gray-800">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-purple-600">
+        <TabsList className="bg-white border-2 border-purple-200">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700">
             <Wrench className="w-4 h-4 mr-2" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="approvals" className="data-[state=active]:bg-amber-600">
+          <TabsTrigger value="approvals" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white text-gray-700">
             <Shield className="w-4 h-4 mr-2" />
             HITL Approvals
           </TabsTrigger>
-          <TabsTrigger value="monitor" className="data-[state=active]:bg-blue-600">
+          <TabsTrigger value="monitor" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-700">
             <Activity className="w-4 h-4 mr-2" />
             Monitor
           </TabsTrigger>
@@ -96,39 +96,39 @@ export function REWorkflowsTab() {
       {/* Pipeline Templates */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Buyer Pipeline */}
-        <Card className="bg-gray-900 border-gray-800 hover:border-blue-600 transition-colors cursor-pointer" onClick={() => setShowBuilder(true)}>
+        <Card className="bg-white border-2 border-purple-200 hover:border-purple-400 transition-all cursor-pointer shadow-md hover:shadow-lg" onClick={() => setShowBuilder(true)}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center">
-                  <Home className="w-6 h-6 text-blue-500" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center border-2 border-purple-300">
+                  <Home className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-white">Buyer Pipeline</CardTitle>
-                  <CardDescription>Lead to close automation</CardDescription>
+                  <CardTitle className="text-gray-900">Buyer Pipeline</CardTitle>
+                  <CardDescription className="text-gray-600">Lead to close automation</CardDescription>
                 </div>
               </div>
-              <Badge variant="outline" className="text-blue-400 border-blue-400">
+              <Badge className="bg-purple-100 text-purple-700 border-purple-300">
                 12 Tasks
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Shield className="w-4 h-4 text-amber-500" />
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <Shield className="w-4 h-4 text-amber-600" />
                 <span>4 HITL approval gates</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Users className="w-4 h-4 text-purple-500" />
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <Users className="w-4 h-4 text-purple-600" />
                 <span>8 AI agents assigned</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Clock className="w-4 h-4 text-green-500" />
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <Clock className="w-4 h-4 text-green-600" />
                 <span>Est. 30-45 days cycle</span>
               </div>
-              <div className="pt-3 border-t border-gray-800">
-                <p className="text-xs text-gray-500">
+              <div className="pt-3 border-t border-purple-200">
+                <p className="text-xs text-gray-600">
                   Qualification → Showings → Offer → Negotiation → Inspection → Closing
                 </p>
               </div>
@@ -137,39 +137,39 @@ export function REWorkflowsTab() {
         </Card>
         
         {/* Seller Pipeline */}
-        <Card className="bg-gray-900 border-gray-800 hover:border-green-600 transition-colors cursor-pointer" onClick={() => setShowBuilder(true)}>
+        <Card className="bg-white border-2 border-purple-200 hover:border-purple-400 transition-all cursor-pointer shadow-md hover:shadow-lg" onClick={() => setShowBuilder(true)}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-green-600/20 flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-green-500" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center border-2 border-purple-300">
+                  <FileText className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-white">Seller Pipeline</CardTitle>
-                  <CardDescription>Listing to close automation</CardDescription>
+                  <CardTitle className="text-gray-900">Seller Pipeline</CardTitle>
+                  <CardDescription className="text-gray-600">Listing to close automation</CardDescription>
                 </div>
               </div>
-              <Badge variant="outline" className="text-green-400 border-green-400">
+              <Badge className="bg-purple-100 text-purple-700 border-purple-300">
                 10 Tasks
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Shield className="w-4 h-4 text-amber-500" />
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <Shield className="w-4 h-4 text-amber-600" />
                 <span>3 HITL approval gates</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Users className="w-4 h-4 text-purple-500" />
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <Users className="w-4 h-4 text-purple-600" />
                 <span>7 AI agents assigned</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Clock className="w-4 h-4 text-green-500" />
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <Clock className="w-4 h-4 text-green-600" />
                 <span>Est. 60-90 days cycle</span>
               </div>
-              <div className="pt-3 border-t border-gray-800">
-                <p className="text-xs text-gray-500">
+              <div className="pt-3 border-t border-purple-200">
+                <p className="text-xs text-gray-600">
                   Valuation → Listing → Marketing → Showings → Offers → Closing
                 </p>
               </div>
@@ -179,27 +179,27 @@ export function REWorkflowsTab() {
       </div>
       
       {/* Features Overview */}
-      <Card className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-800/50">
+      <Card className="bg-gradient-to-br from-purple-50 to-white border-2 border-purple-200 shadow-md">
         <CardHeader>
-          <CardTitle className="text-white">Circular Workflow Builder Features</CardTitle>
+          <CardTitle className="text-gray-900">Circular Workflow Builder Features</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-gray-900/50 rounded-lg">
-              <h4 className="font-medium text-white mb-2">Visual Drag & Drop</h4>
-              <p className="text-sm text-gray-400">
+            <div className="p-4 bg-white border-2 border-purple-200 rounded-lg shadow-sm">
+              <h4 className="font-bold text-gray-900 mb-2">Visual Drag & Drop</h4>
+              <p className="text-sm text-gray-600">
                 Arrange tasks in a circular layout. Drag to reposition, drop on another task to swap positions.
               </p>
             </div>
-            <div className="p-4 bg-gray-900/50 rounded-lg">
-              <h4 className="font-medium text-white mb-2">AI Agent Assignment</h4>
-              <p className="text-sm text-gray-400">
+            <div className="p-4 bg-white border-2 border-purple-200 rounded-lg shadow-sm">
+              <h4 className="font-bold text-gray-900 mb-2">AI Agent Assignment</h4>
+              <p className="text-sm text-gray-600">
                 Assign any of the 12 specialized RE AI employees to handle specific tasks automatically.
               </p>
             </div>
-            <div className="p-4 bg-gray-900/50 rounded-lg">
-              <h4 className="font-medium text-white mb-2">HITL Gates</h4>
-              <p className="text-sm text-gray-400">
+            <div className="p-4 bg-white border-2 border-purple-200 rounded-lg shadow-sm">
+              <h4 className="font-bold text-gray-900 mb-2">HITL Gates</h4>
+              <p className="text-sm text-gray-600">
                 Add human approval checkpoints. Get notified via dashboard, SMS, or email when action is needed.
               </p>
             </div>
@@ -208,16 +208,16 @@ export function REWorkflowsTab() {
       </Card>
       
       {/* Quick Actions */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 bg-white p-4 rounded-xl border-2 border-purple-200">
         <Button
           variant="outline"
-          className="border-gray-700 text-gray-300"
+          className="border-purple-200 text-gray-700 hover:bg-purple-50"
           onClick={() => setShowBuilder(true)}
         >
           Create Custom Workflow
           <ArrowRight className="w-4 h-4 ml-2" />
         </Button>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-gray-600">
           or start with a template above
         </span>
       </div>

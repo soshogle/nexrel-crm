@@ -70,10 +70,24 @@ export interface WorkflowTaskTemplate {
   parentTaskIndex?: number; // Index of parent task for branching
   branchCondition?: { field: string; operator: string; value: string };
   actionConfig: {
-    actions: ('voice_call' | 'sms' | 'email' | 'task' | 'calendar' | 'document')[];
+    actions: ('voice_call' | 'sms' | 'email' | 'task' | 'calendar' | 'cma_generation' | 'presentation_generation' | 'market_research' | 'document')[];
     script?: string;
     template?: string;
     fields?: string[];
+    // CMA-specific config
+    address?: string;
+    beds?: number;
+    baths?: number;
+    sqft?: number;
+    yearBuilt?: number;
+    // Presentation-specific config
+    presentationType?: string;
+    propertyData?: any;
+    // Market research config
+    reportType?: 'buyer' | 'seller';
+    region?: string;
+    priceRange?: string;
+    propertyType?: string;
   };
 }
 
