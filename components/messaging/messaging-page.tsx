@@ -50,6 +50,8 @@ export function MessagingPage() {
   const [twilioNumbers, setTwilioNumbers] = useState<PhoneNumber[]>([]);
   const [loadingNumbers, setLoadingNumbers] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [showConnectionsPanel, setShowConnectionsPanel] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Contact search and selection
   const [searchQuery, setSearchQuery] = useState('');
