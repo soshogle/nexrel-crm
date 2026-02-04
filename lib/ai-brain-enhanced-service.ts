@@ -63,24 +63,8 @@ export class AIBrainEnhancedService {
    * Get comprehensive brain data from all sources
    */
   async getComprehensiveBrainData(userId: string): Promise<ComprehensiveBrainData> {
-    // Fetch ALL data sources in parallel
-    const [
-      leads,
-      deals,
-      tasks,
-      appointments,
-      callLogs,
-      payments,
-      invoices,
-      emailCampaigns,
-      smsCampaigns,
-      conversations,
-      conversationMessages,
-      reviews,
-      feedbackCollections,
-      workflows,
-      workflowEnrollments,
-    ] = await Promise.all([
+    // Fetch ALL data sources in parallel with error handling using Promise.allSettled
+    const results = await Promise.allSettled([
       // Existing sources
       prisma.lead.findMany({
         where: { userId },
@@ -194,6 +178,38 @@ export class AIBrainEnhancedService {
         take: 500,
       }),
     ]);
+
+    // Extract results, defaulting to empty arrays on failure
+    const [
+      leads,
+      deals,
+      tasks,
+      appointments,
+      callLogs,
+      payments,
+      invoices,
+      emailCampaigns,
+      smsCampaigns,
+      conversations,
+      conversationMessages,
+      reviews,
+      feedbackCollections,
+      workflows,
+      workflowEnrollments,
+    ] = results.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        const dataSourceNames = [
+          'leads', 'deals', 'tasks', 'appointments', 'callLogs',
+          'payments', 'invoices', 'emailCampaigns', 'smsCampaigns',
+          'conversations', 'conversationMessages', 'reviews',
+          'feedbackCollections', 'workflows', 'workflowEnrollments'
+        ];
+        console.error(`Error fetching ${dataSourceNames[index]}:`, result.reason);
+        return [];
+      }
+    });
 
     // Calculate core metrics
     const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
