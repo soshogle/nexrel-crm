@@ -15,10 +15,52 @@ export default async function LeadsPage() {
     }
 
     // Fetch leads without relations first to avoid potential issues
-    const leadsData = await prisma.lead.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: 'desc' }
-    });
+    // Explicitly select fields to avoid issues with missing columns like dateOfBirth
+    let leadsData;
+    try {
+      leadsData = await prisma.lead.findMany({
+        where: { userId: session.user.id },
+        select: {
+          id: true,
+          businessName: true,
+          contactPerson: true,
+          email: true,
+          phone: true,
+          website: true,
+          address: true,
+          city: true,
+          state: true,
+          zipCode: true,
+          country: true,
+          status: true,
+          source: true,
+          contactType: true,
+          tags: true,
+          createdAt: true,
+          updatedAt: true,
+          lastContactedAt: true,
+          // Exclude dateOfBirth if it doesn't exist in database yet
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+    } catch (dbError: any) {
+      // Handle Prisma schema mismatch errors gracefully
+      if (dbError?.code === 'P2022' || dbError?.code === 'P2021') {
+        console.warn('Database schema mismatch, fetching without explicit select:', dbError.message);
+        // Fallback: try without explicit select but catch any errors
+        try {
+          leadsData = await prisma.lead.findMany({
+            where: { userId: session.user.id },
+            orderBy: { createdAt: 'desc' }
+          });
+        } catch (fallbackError: any) {
+          console.error('Fallback query also failed:', fallbackError);
+          leadsData = [];
+        }
+      } else {
+        throw dbError; // Re-throw non-schema errors
+      }
+    }
 
     // Then fetch notes and messages separately if needed
     let notesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
