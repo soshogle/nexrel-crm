@@ -677,7 +677,7 @@ async function searchContacts(userId: string, params: any) {
 }
 
 async function deleteDuplicateContacts(userId: string, params: any) {
-  const { batchDeduplicateLeads, findPotentialDuplicates } = await import('@/lib/lead-generation/deduplication');
+  const { findPotentialDuplicates } = await import('@/lib/lead-generation/deduplication');
   
   console.log(`[DELETE_DUPLICATES] Starting duplicate deletion for user ${userId}...`);
   
@@ -694,10 +694,12 @@ async function deleteDuplicateContacts(userId: string, params: any) {
 
   console.log(`[DELETE_DUPLICATES] Found ${potentialDuplicates.length} potential duplicate pairs`);
   
-  // Track which leads to delete (keep the oldest one)
+  // Track which leads to keep (oldest) and which to delete
+  const leadsToKeep = new Set<string>();
   const leadsToDelete = new Set<string>();
   const processedPairs = new Set<string>();
   
+  // First pass: identify which leads to keep (oldest in each pair)
   for (const duplicate of potentialDuplicates) {
     const pairKey = [duplicate.lead1.id, duplicate.lead2.id].sort().join('-');
     
@@ -708,7 +710,7 @@ async function deleteDuplicateContacts(userId: string, params: any) {
     
     processedPairs.add(pairKey);
     
-    // Determine which lead to keep (the older one)
+    // Get full lead data with createdAt
     const lead1 = await prisma.lead.findUnique({
       where: { id: duplicate.lead1.id },
       select: { id: true, createdAt: true },
@@ -721,34 +723,52 @@ async function deleteDuplicateContacts(userId: string, params: any) {
     
     if (!lead1 || !lead2) continue;
     
-    // Keep the older lead, delete the newer one
-    const leadToDelete = lead1.createdAt < lead2.createdAt ? lead2.id : lead1.id;
-    
-    // Only delete if it hasn't been marked for deletion already
-    if (!leadsToDelete.has(leadToDelete)) {
-      leadsToDelete.add(leadToDelete);
+    // Keep the older lead, mark the newer one for deletion
+    if (lead1.createdAt < lead2.createdAt) {
+      leadsToKeep.add(lead1.id);
+      // Only mark for deletion if it's not already marked to keep
+      if (!leadsToKeep.has(lead2.id)) {
+        leadsToDelete.add(lead2.id);
+      }
+    } else {
+      leadsToKeep.add(lead2.id);
+      // Only mark for deletion if it's not already marked to keep
+      if (!leadsToKeep.has(lead1.id)) {
+        leadsToDelete.add(lead1.id);
+      }
     }
+  }
+  
+  // Remove any leads from delete set that are in keep set (safety check)
+  for (const keepId of leadsToKeep) {
+    leadsToDelete.delete(keepId);
   }
   
   console.log(`[DELETE_DUPLICATES] Will delete ${leadsToDelete.size} duplicate contacts`);
   
   // Delete the duplicate leads
+  let deletedCount = 0;
   if (leadsToDelete.size > 0) {
-    await prisma.lead.deleteMany({
+    const deleteResult = await prisma.lead.deleteMany({
       where: {
         id: { in: Array.from(leadsToDelete) },
         userId, // Ensure we only delete user's own contacts
       },
     });
     
-    console.log(`[DELETE_DUPLICATES] Successfully deleted ${leadsToDelete.size} duplicate contacts`);
+    deletedCount = deleteResult.count;
+    console.log(`[DELETE_DUPLICATES] Successfully deleted ${deletedCount} duplicate contacts`);
   }
   
   return {
-    message: `✅ Successfully deleted ${leadsToDelete.size} duplicate contact(s)!`,
+    message: deletedCount > 0 
+      ? `✅ Successfully deleted ${deletedCount} duplicate contact(s)!`
+      : "✅ No duplicates found to delete.",
     duplicatesFound: potentialDuplicates.length,
-    duplicatesDeleted: leadsToDelete.size,
-    details: `Found ${potentialDuplicates.length} duplicate pairs and removed ${leadsToDelete.size} duplicate contact(s), keeping the oldest version of each.`,
+    duplicatesDeleted: deletedCount,
+    details: deletedCount > 0
+      ? `Found ${potentialDuplicates.length} duplicate pair(s) and removed ${deletedCount} duplicate contact(s), keeping the oldest version of each.`
+      : `Found ${potentialDuplicates.length} duplicate pair(s) but no contacts were deleted (they may have already been removed).`,
   };
 }
 
