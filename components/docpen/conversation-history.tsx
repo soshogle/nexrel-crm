@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -66,6 +67,7 @@ const PROFESSION_LABELS: Record<string, string> = {
 
 export function DocpenConversationHistory() {
   const { data: session } = useSession();
+  const tToasts = useTranslations('toasts.general');
 
   // Check if user is SUPER_ADMIN
   const isSuperAdmin =
@@ -119,7 +121,7 @@ export function DocpenConversationHistory() {
         // Keep 'all' selected
       }
     } catch (error) {
-      toast.error('Failed to load agents');
+      toast.error(tToasts('agentsLoadFailed'));
     }
   };
 
@@ -157,7 +159,7 @@ export function DocpenConversationHistory() {
       setConversationDetails(data.conversation);
     } catch (error: any) {
       console.error('Error fetching conversation details:', error);
-      toast.error('Failed to load conversation details');
+      toast.error(tToasts('conversationDetailsFailed'));
     } finally {
       setIsLoadingDetails(false);
     }
@@ -265,7 +267,7 @@ export function DocpenConversationHistory() {
   // Copy transcript to clipboard
   const handleCopyTranscript = () => {
     if (!conversationDetails?.transcript || !Array.isArray(conversationDetails.transcript)) {
-      toast.error('No transcript available to copy');
+      toast.error(tToasts('noTranscript'));
       return;
     }
 
@@ -283,18 +285,18 @@ export function DocpenConversationHistory() {
     navigator.clipboard
       .writeText(transcriptText)
       .then(() => {
-        toast.success('Transcript copied to clipboard');
+        toast.success(tToasts('transcriptCopied'));
       })
       .catch((error) => {
         console.error('Failed to copy transcript:', error);
-        toast.error('Failed to copy transcript');
+        toast.error(tToasts('copyFailed'));
       });
   };
 
   // Download transcript as a text file
   const handleDownloadTranscript = () => {
     if (!conversationDetails?.transcript || !Array.isArray(conversationDetails.transcript)) {
-      toast.error('No transcript available to download');
+      toast.error(tToasts('noTranscriptDownload'));
       return;
     }
 
@@ -336,7 +338,7 @@ export function DocpenConversationHistory() {
   // Open delete confirmation dialog
   const handleDeleteCall = () => {
     if (!selectedConversation) {
-      toast.error('No conversation selected');
+      toast.error(tToasts('noConversationSelected'));
       return;
     }
     setShowDeleteDialog(true);
@@ -440,9 +442,9 @@ export function DocpenConversationHistory() {
               onClick={() => {
                 if (conversationDetails?.audio_url) {
                   window.open(conversationDetails.audio_url, '_blank');
-                  toast.success('Opening audio in new tab');
+                  toast.success(tToasts('openingAudio'));
                 } else {
-                  toast.error('No audio recording available');
+                  toast.error(tToasts('noAudioAvailable'));
                 }
               }}
               disabled={!conversationDetails?.audio_url}

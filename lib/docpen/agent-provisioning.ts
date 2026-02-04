@@ -179,12 +179,13 @@ class DocpenAgentProvisioning {
     console.log(`🔑 [Docpen] Creating agent with API key from: ${keyLabel}`);
     console.log(`🔑 [Docpen] API key preview: ...${apiKey.slice(-8)}`);
 
-    // Fetch user's language preference
+    // Fetch user's language preference and industry
     const user = await prisma.user.findUnique({
       where: { id: config.userId },
-      select: { language: true },
+      select: { language: true, industry: true },
     });
     const userLanguage = user?.language || 'en';
+    const userIndustry = user?.industry || null;
 
     const professionKey = config.profession === 'CUSTOM' 
       ? 'CUSTOM' 
@@ -194,7 +195,7 @@ class DocpenAgentProvisioning {
     const promptTemplate = VOICE_AGENT_PROMPTS[professionKey] || VOICE_AGENT_PROMPTS.GENERAL_PRACTICE;
     
     // Build the full system prompt with context
-    const systemPrompt = this.buildSystemPrompt(promptTemplate, config, userLanguage);
+    const systemPrompt = this.buildSystemPrompt(promptTemplate, config, userLanguage, userIndustry);
     
     // Select voice based on preference
     const voiceId = MEDICAL_VOICE_IDS[config.voiceGender || 'neutral'];
@@ -209,7 +210,7 @@ class DocpenAgentProvisioning {
           prompt: {
             prompt: systemPrompt,
           },
-          first_message: `Hello Doctor${config.practitionerName ? ` ${config.practitionerName}` : ''}. I'm your Docpen assistant ready to help with ${this.getProfessionDisplayName(config.profession, config.customProfession)} consultations. Just say "Docpen" followed by your question anytime.`,
+          first_message: `Hello${config.practitionerName ? ` ${config.practitionerName}` : ''}${userIndustry ? ` from the ${userIndustry.toLowerCase().replace(/_/g, ' ')} industry` : ''}. I'm your Docpen assistant ready to help with ${this.getProfessionDisplayName(config.profession, config.customProfession)} consultations. Just say "Docpen" followed by your question anytime.`,
           language: userLanguage, // Use user's language preference
         },
         tts: {
@@ -352,7 +353,7 @@ class DocpenAgentProvisioning {
 
     const professionKey = config.profession === 'CUSTOM' ? 'CUSTOM' : config.profession;
     const promptTemplate = VOICE_AGENT_PROMPTS[professionKey] || VOICE_AGENT_PROMPTS.GENERAL_PRACTICE;
-    const systemPrompt = this.buildSystemPrompt(promptTemplate, config, userLanguage);
+    const systemPrompt = this.buildSystemPrompt(promptTemplate, config, userLanguage, userIndustry);
 
     try {
       await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${agentId}`, {
@@ -516,7 +517,7 @@ class DocpenAgentProvisioning {
   /**
    * Build system prompt with context
    */
-  private buildSystemPrompt(template: string, config: DocpenAgentConfig, userLanguage: string = 'en'): string {
+  private buildSystemPrompt(template: string, config: DocpenAgentConfig, userLanguage: string = 'en', userIndustry: string | null = null): string {
     // Language instruction based on user preference
     const languageInstructions: Record<string, string> = {
       'en': 'IMPORTANT: Respond in English. All your responses must be in English.',

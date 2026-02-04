@@ -166,6 +166,7 @@ export async function POST(request: NextRequest) {
       data: {
         sessionId,
         version: (docpenSession.soapNotes[0]?.version || 0) + 1,
+        soapType: 'STANDARD_SOAP', // Default to STANDARD_SOAP, can be selected in UI later
         subjective: soapNote.subjective,
         objective: soapNote.objective,
         assessment: soapNote.assessment,

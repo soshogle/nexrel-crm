@@ -139,7 +139,7 @@ export function DocpenKnowledgeBaseTraining() {
       const data = await response.json();
       setFiles(data.files || []);
     } catch (error) {
-      toast.error('Failed to load knowledge base files');
+      toast.error(tToasts('knowledgeBaseLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -182,12 +182,12 @@ export function DocpenKnowledgeBaseTraining() {
 
       if (!response.ok) throw new Error('Upload failed');
 
-      toast.success('File uploaded successfully');
+      toast.success(tToasts('fileUploaded'));
       setShowUploadDialog(false);
       setUploadForm({ file: null, specialty: '', tags: '', agentId: '' });
       fetchFiles();
     } catch (error) {
-      toast.error('Failed to upload file');
+      toast.error(tToasts('fileUploadFailed'));
     } finally {
       setUploading(false);
     }
@@ -207,7 +207,7 @@ export function DocpenKnowledgeBaseTraining() {
       setDeleteFile(null);
       fetchFiles();
     } catch (error) {
-      toast.error('Failed to delete file');
+      toast.error(tToasts('fileDeleteFailed'));
     }
   };
 
@@ -255,7 +255,7 @@ export function DocpenKnowledgeBaseTraining() {
       setShowLinkDialog(false);
       fetchFiles();
     } catch (error) {
-      toast.error('Failed to update links');
+      toast.error(tToasts('linksUpdateFailed'));
     }
   };
 

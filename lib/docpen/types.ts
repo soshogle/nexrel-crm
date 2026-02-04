@@ -25,6 +25,14 @@ export type DocpenSessionStatus =
 
 export type DocpenSpeakerRole = 'PRACTITIONER' | 'PATIENT' | 'OTHER';
 
+export type DocpenSOAPType = 
+  | 'STANDARD_SOAP'
+  | 'FOCUSED_SOAP'
+  | 'PROGRESS_NOTE'
+  | 'CONSULTATION_NOTE'
+  | 'PROCEDURE_NOTE'
+  | 'FOLLOW_UP_NOTE';
+
 export interface DocpenSession {
   id: string;
   userId: string;
@@ -36,6 +44,7 @@ export interface DocpenSession {
   sessionDate: Date;
   sessionDuration?: number;
   chiefComplaint?: string;
+  consultantName?: string;
   audioStoragePath?: string;
   audioRetained: boolean;
   retentionExpiry?: Date;
@@ -66,6 +75,7 @@ export interface DocpenSOAPNote {
   id: string;
   sessionId: string;
   version: number;
+  soapType?: DocpenSOAPType;
   subjective?: string;
   objective?: string;
   assessment?: string;
@@ -100,6 +110,7 @@ export interface CreateSessionRequest {
   profession: DocpenProfession;
   customProfession?: string;
   chiefComplaint?: string;
+  consultantName: string;
 }
 
 export interface ProcessTranscriptionRequest {

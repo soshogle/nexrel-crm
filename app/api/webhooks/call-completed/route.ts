@@ -56,6 +56,13 @@ export async function POST(req: NextRequest) {
     const transcript = callLog.transcript || callLog.transcription || 'No transcript available';
     const duration = callLog.duration || 0;
 
+    // Get user's language preference
+    const user = await prisma.user.findUnique({
+      where: { id: callLog.userId },
+      select: { language: true },
+    });
+    const userLanguage = user?.language || 'en';
+
     // Get lead context
     const leadContext = callLog.lead ? {
       status: callLog.lead.status,
@@ -69,7 +76,7 @@ export async function POST(req: NextRequest) {
     } : undefined;
 
     // Analyze the conversation
-    const analysis = await analyzeConversation(transcript, duration, leadContext);
+    const analysis = await analyzeConversation(transcript, duration, leadContext, userLanguage);
 
     // Calculate score adjustment
     const scoreAdjustment = calculateLeadScoreAdjustment(analysis, duration);

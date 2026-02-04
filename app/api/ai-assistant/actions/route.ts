@@ -71,6 +71,10 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
+      select: {
+        id: true,
+        language: true,
+      },
     });
 
     if (!user) {
@@ -1175,10 +1179,14 @@ async function createWorkflow(userId: string, params: any) {
       existingLeadStatuses: leadStatuses.map(l => l.status).filter(Boolean) as string[],
     };
 
+    // Get user's language preference
+    const userLanguage = user?.language || 'en';
+    
     // Generate workflow from natural language description
     const generatedWorkflow = await aiWorkflowGenerator.generateWorkflow({
       description: description + (goal ? ` Goal: ${goal}` : ''),
       userId,
+      userLanguage: userLanguage,
       context,
     });
 

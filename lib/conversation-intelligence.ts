@@ -50,9 +50,21 @@ export async function analyzeConversation(
     status: string;
     currentScore: number;
     previousInteractions: number;
-  }
+  },
+  userLanguage: string = 'en'
 ): Promise<ConversationAnalysis> {
-  const prompt = `You are an expert conversation analyst for a sales CRM system. Analyze the following call transcript and provide detailed insights.
+  // Language instructions for AI responses
+  const languageInstructions: Record<string, string> = {
+    'en': 'CRITICAL: You MUST generate analysis ONLY in English. Every single word must be in English.',
+    'fr': 'CRITIQUE : Vous DEVEZ générer l\'analyse UNIQUEMENT en français. Chaque mot doit être en français.',
+    'es': 'CRÍTICO: DEBES generar el análisis SOLO en español. Cada palabra debe estar en español.',
+    'zh': '关键：您必须仅用中文生成分析。每个词都必须是中文。',
+  };
+  const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+  
+  const prompt = `${languageInstruction}
+
+You are an expert conversation analyst for a sales CRM system. Analyze the following call transcript and provide detailed insights.
 
 Call Duration: ${Math.floor(callDuration / 1000)} seconds
 ${leadContext ? `\nLead Context:\n- Current Status: ${leadContext.status}\n- Current Score: ${leadContext.currentScore}\n- Previous Interactions: ${leadContext.previousInteractions}` : ''}

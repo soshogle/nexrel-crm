@@ -22,6 +22,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle, User, Mail, Phone, MapPin, Briefcase, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface CreateContactDialogProps {
   open: boolean;
@@ -40,6 +41,7 @@ export default function CreateContactDialog({
   onContactCreated,
   initialData,
 }: CreateContactDialogProps) {
+  const tToasts = useTranslations('toasts.general');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -95,7 +97,7 @@ export default function CreateContactDialog({
 
       if (response.ok) {
         const contact = await response.json();
-        toast.success('Contact created successfully!');
+        toast.success(tToasts('contactCreated'));
         onContactCreated?.(contact);
         onOpenChange(false);
         // Reset form

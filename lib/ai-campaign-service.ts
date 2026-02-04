@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { chatCompletion } from '@/lib/openai-client';
 
 interface CampaignGenerationContext {
   campaignType: 'EMAIL' | 'SMS' | 'VOICE_CALL' | 'MULTI_CHANNEL';
@@ -15,6 +16,7 @@ interface CampaignGenerationContext {
     tone?: string;
   };
   includePersonalization?: boolean;
+  userLanguage?: string; // User's language preference (en, fr, es, zh)
 }
 
 interface GeneratedContent {
@@ -92,105 +94,164 @@ export class AICampaignService {
    * Generate complete email content
    */
   async generateEmailContent(context: CampaignGenerationContext): Promise<GeneratedContent> {
-    const { goal, businessContext, targetAudience } = context;
+    const { goal, businessContext, targetAudience, userLanguage = 'en' } = context;
     const tone = businessContext?.tone || 'professional';
     const businessName = businessContext?.businessName || 'our team';
+    
+    // Language instructions for AI responses
+    const languageInstructions: Record<string, string> = {
+      'en': 'CRITICAL: You MUST generate content ONLY in English. Every single word must be in English.',
+      'fr': 'CRITIQUE : Vous DEVEZ générer du contenu UNIQUEMENT en français. Chaque mot doit être en français.',
+      'es': 'CRÍTICO: DEBES generar contenido SOLO en español. Cada palabra debe estar en español.',
+      'zh': '关键：您必须仅用中文生成内容。每个词都必须是中文。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
 
-    // Generate subject
+    // Generate subject lines using AI
     const subjects = await this.generateEmailSubjects(context);
     const subject = subjects[0];
 
-    // Generate body based on campaign structure
-    let body = '';
-    let html = '';
+    // Generate email body using AI with language instruction
+    const emailPrompt = `${languageInstruction}
 
-    // Opening/Greeting
-    if (context.includePersonalization) {
-      body += 'Hi {firstName},\n\n';
-    } else {
-      body += 'Hello,\n\n';
+Generate a professional email campaign message with the following details:
+
+Campaign Goal: ${goal}
+Business Name: ${businessName}
+Industry: ${businessContext?.industry || 'General'}
+Tone: ${tone}
+${context.includePersonalization ? 'Include personalization placeholders like {firstName}' : ''}
+
+Generate a complete email body that:
+1. Has an engaging opening/greeting
+2. Clearly communicates the campaign goal
+3. Includes a value proposition
+4. Has a clear call-to-action
+5. Has a professional closing
+
+Return ONLY the email body text, no subject line. Use placeholders like {firstName} and {businessName} where appropriate.`;
+
+    try {
+      const aiResponse = await chatCompletion({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert email marketing copywriter. Generate professional, engaging email content.'
+          },
+          {
+            role: 'user',
+            content: emailPrompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      });
+
+      const body = aiResponse.choices?.[0]?.message?.content || `${goal}\n\nAs a valued member of our community, we wanted to make sure you didn't miss this opportunity.`;
+      
+      // Generate HTML version
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #8b5cf6;">${subject.replace('{businessName}', businessName).replace('{firstName}', 'there')}</h2>
+          ${body.split('\n').map(line => `<p>${line}</p>`).join('')}
+        </div>
+      `;
+
+      // Generate suggestions
+      const suggestions = [
+        'Consider A/B testing different subject lines',
+        'Add a clear call-to-action button',
+        'Include social proof or testimonials',
+        'Personalize with recipient name and preferences',
+        'Optimize send time for your audience'
+      ];
+
+      return {
+        subject,
+        body,
+        html,
+        confidence: 0.85,
+        suggestions
+      };
+    } catch (error) {
+      console.error('Error generating email content:', error);
+      // Fallback to simple template
+      const fallbackBody = `${goal}\n\nAs a valued member of our community, we wanted to make sure you didn't miss this opportunity.`;
+      return {
+        subject: subjects[0] || goal,
+        body: fallbackBody,
+        html: `<div><p>${fallbackBody}</p></div>`,
+        confidence: 0.7,
+        suggestions: []
+      };
     }
-
-    // Hook/Value proposition
-    if (tone === 'urgent') {
-      body += `We wanted to reach out one last time about ${goal}.\n\n`;
-    } else if (tone === 'friendly') {
-      body += `We've been thinking about you and wanted to share something exciting!\n\n`;
-    } else {
-      body += `We're excited to share some news with you.\n\n`;
-    }
-
-    // Main content
-    body += `${goal}\n\n`;
-    body += `As a valued member of our community, we wanted to make sure you didn't miss this opportunity.\n\n`;
-
-    // Call to action
-    body += `Here's what you can do:\n`;
-    body += `• Visit us to learn more\n`;
-    body += `• Call us to get started\n`;
-    body += `• Reply to this email with any questions\n\n`;
-
-    // Closing
-    if (tone === 'urgent') {
-      body += `Don't wait - this opportunity won't last!\n\n`;
-    } else {
-      body += `We look forward to hearing from you soon.\n\n`;
-    }
-
-    body += `Best regards,\n${businessName}`;
-
-    // Generate HTML version
-    html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #8b5cf6;">${subject.replace('{businessName}', businessName).replace('{firstName}', 'there')}</h2>
-        ${body.split('\n').map(line => `<p>${line}</p>`).join('')}
-      </div>
-    `;
-
-    // Generate suggestions
-    const suggestions = [
-      'Consider A/B testing different subject lines',
-      'Add a clear call-to-action button',
-      'Include social proof or testimonials',
-      'Personalize with recipient name and preferences',
-      'Optimize send time for your audience'
-    ];
-
-    return {
-      subject,
-      body,
-      html,
-      confidence: 0.85,
-      suggestions
-    };
   }
 
   /**
    * Generate SMS content (160 character optimized)
    */
   async generateSMSContent(context: CampaignGenerationContext): Promise<GeneratedContent> {
-    const { goal, businessContext } = context;
+    const { goal, businessContext, userLanguage = 'en' } = context;
     const businessName = businessContext?.businessName || 'Us';
+    
+    // Language instructions for AI responses
+    const languageInstructions: Record<string, string> = {
+      'en': 'CRITICAL: You MUST generate SMS content ONLY in English. Every single word must be in English. Keep it under 160 characters.',
+      'fr': 'CRITIQUE : Vous DEVEZ générer le contenu SMS UNIQUEMENT en français. Chaque mot doit être en français. Gardez-le sous 160 caractères.',
+      'es': 'CRÍTICO: DEBES generar el contenido SMS SOLO en español. Cada palabra debe estar en español. Manténlo bajo 160 caracteres.',
+      'zh': '关键：您必须仅用中文生成短信内容。每个词都必须是中文。保持在160个字符以内。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
 
-    // SMS must be concise (160 chars)
+    // Generate SMS using AI
+    const smsPrompt = `${languageInstruction}
+
+Generate a concise SMS campaign message (under 160 characters) with:
+
+Campaign Goal: ${goal}
+Business Name: ${businessName}
+${context.includePersonalization ? 'Include {firstName} placeholder' : ''}
+
+The SMS should be engaging, include a clear call-to-action, and stay under 160 characters.`;
+
     let smsText = '';
+    try {
+      const aiResponse = await chatCompletion({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert SMS marketer. Generate concise, engaging SMS messages under 160 characters.'
+          },
+          {
+            role: 'user',
+            content: smsPrompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 100,
+      });
 
-    if (context.includePersonalization) {
-      smsText = `Hi {firstName}! `;
-    } else {
-      smsText = `Hello! `;
-    }
-
-    // Core message
-    const coreMessage = goal.length > 100 ? goal.substring(0, 100) + '...' : goal;
-    smsText += `${coreMessage} `;
-
-    // CTA
-    smsText += `Reply YES for details. -${businessName}`;
-
-    // Ensure under 160 chars
-    if (smsText.length > 160) {
-      smsText = smsText.substring(0, 157) + '...';
+      smsText = aiResponse.choices?.[0]?.message?.content?.trim() || '';
+      
+      // Ensure under 160 chars
+      if (smsText.length > 160) {
+        smsText = smsText.substring(0, 157) + '...';
+      }
+    } catch (error) {
+      // Fallback to simple template
+      if (context.includePersonalization) {
+        smsText = `Hi {firstName}! `;
+      } else {
+        smsText = `Hello! `;
+      }
+      const coreMessage = goal.length > 100 ? goal.substring(0, 100) + '...' : goal;
+      smsText += `${coreMessage} `;
+      smsText += `Reply YES for details. -${businessName}`;
+      if (smsText.length > 160) {
+        smsText = smsText.substring(0, 157) + '...';
+      }
     }
 
     const suggestions = [
@@ -213,61 +274,71 @@ export class AICampaignService {
    * Generate voice call script for voice campaigns
    */
   async generateVoiceCallScript(context: CampaignGenerationContext): Promise<GeneratedContent> {
-    const { goal, businessContext, targetAudience } = context;
+    const { goal, businessContext, targetAudience, userLanguage = 'en' } = context;
     const tone = businessContext?.tone || 'professional';
     const businessName = businessContext?.businessName || 'our company';
     const industry = businessContext?.industry;
+    
+    // Language instructions for AI responses
+    const languageInstructions: Record<string, string> = {
+      'en': 'CRITICAL: You MUST generate voice call script ONLY in English. Every single word must be in English.',
+      'fr': 'CRITIQUE : Vous DEVEZ générer le script d\'appel vocal UNIQUEMENT en français. Chaque mot doit être en français.',
+      'es': 'CRÍTICO: DEBES generar el guion de llamada de voz SOLO en español. Cada palabra debe estar en español.',
+      'zh': '关键：您必须仅用中文生成语音通话脚本。每个词都必须是中文。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
 
-    // Generate conversational call script
+    // Generate voice call script using AI
+    const voicePrompt = `${languageInstruction}
+
+Generate a conversational voice call script for a phone campaign with:
+
+Campaign Goal: ${goal}
+Business Name: ${businessName}
+Industry: ${industry || 'General'}
+Tone: ${tone}
+${context.includePersonalization ? 'Include {firstName} placeholder' : ''}
+
+Generate a complete call script with:
+1. Opening/Introduction
+2. Purpose/Hook
+3. Value Proposition
+4. Call to Action
+5. Response Handling (for interested, not interested, voicemail)
+6. Closing
+
+Format it clearly with section labels.`;
+
     let callScript = '';
+    try {
+      const aiResponse = await chatCompletion({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert phone sales script writer. Generate natural, conversational call scripts.'
+          },
+          {
+            role: 'user',
+            content: voicePrompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 800,
+      });
 
-    // Opening/Introduction
-    callScript += `OPENING:\n`;
-    callScript += `"Hello! This is a message from ${businessName}. `;
-    if (context.includePersonalization) {
-      callScript += `Am I speaking with {firstName}? `;
+      callScript = aiResponse.choices?.[0]?.message?.content?.trim() || '';
+    } catch (error) {
+      // Fallback to template
+      callScript = `OPENING:\n"Hello! This is a message from ${businessName}. `;
+      if (context.includePersonalization) {
+        callScript += `Am I speaking with {firstName}? `;
+      }
+      callScript += `We wanted to reach out about an important opportunity."\n\n`;
+      callScript += `PURPOSE:\n"${goal}"\n\n`;
+      callScript += `CALL TO ACTION:\n"Would you be interested in learning more?"\n\n`;
+      callScript += `CLOSING:\n"Thank you for your time today. Have a great day!"\n`;
     }
-    callScript += `We wanted to reach out about an important opportunity."\n\n`;
-
-    // Purpose/Hook
-    callScript += `PURPOSE:\n`;
-    if (tone === 'urgent') {
-      callScript += `"We have a time-sensitive opportunity regarding ${goal}. `;
-    } else if (tone === 'friendly') {
-      callScript += `"We've been thinking about you and wanted to share something exciting about ${goal}. `;
-    } else {
-      callScript += `"I'm calling today to let you know about ${goal}. `;
-    }
-    callScript += `We believe this could be valuable for you."\n\n`;
-
-    // Value Proposition
-    callScript += `VALUE PROPOSITION:\n`;
-    if (industry === 'RESTAURANT') {
-      callScript += `"As a valued customer, we wanted to give you first access to our latest menu offerings and special events. `;
-    } else if (industry === 'SPORTS_CLUB') {
-      callScript += `"We're offering early registration for ${goal}, and we wanted to make sure you didn't miss out. `;
-    } else {
-      callScript += `"This is an exclusive opportunity for our valued customers, and we wanted to ensure you heard about it first. `;
-    }
-    callScript += `"\n\n`;
-
-    // Call to Action
-    callScript += `CALL TO ACTION:\n`;
-    callScript += `"Would you be interested in learning more? I can:\n`;
-    callScript += `- Schedule a callback at your convenience\n`;
-    callScript += `- Send you detailed information via email or text\n`;
-    callScript += `- Answer any questions you have right now\n\n`;
-    callScript += `What works best for you?"\n\n`;
-
-    // Handling Responses
-    callScript += `RESPONSE HANDLING:\n`;
-    callScript += `IF INTERESTED: "Great! Let me get your preferred contact method..."\n`;
-    callScript += `IF NOT INTERESTED: "I understand. Thank you for your time. Would you like me to remove you from future calls?"\n`;
-    callScript += `IF VOICEMAIL: "Hi, this is ${businessName}. We wanted to reach you about ${goal}. Please call us back or reply to this message for more information."\n\n`;
-
-    // Closing
-    callScript += `CLOSING:\n`;
-    callScript += `"Thank you for your time today. Have a great day!"\n`;
 
     // Generate suggestions
     const suggestions = [
