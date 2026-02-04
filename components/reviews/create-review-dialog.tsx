@@ -150,9 +150,9 @@ export default function CreateReviewDialog({
                 <SelectTrigger className="bg-white/5 border-white/10 text-white">
                   <SelectValue placeholder="Select campaign" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectContent className="bg-purple-900/95 border-purple-500/30 backdrop-blur-xl">
                   {campaigns.map((campaign) => (
-                    <SelectItem key={campaign.id} value={campaign.id}>
+                    <SelectItem key={campaign.id} value={campaign.id} className="text-white">
                       {campaign.name}
                     </SelectItem>
                   ))}
@@ -174,9 +174,9 @@ export default function CreateReviewDialog({
                 <SelectTrigger className="bg-white/5 border-white/10 text-white">
                   <SelectValue placeholder="Select customer" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectContent className="bg-purple-900/95 border-purple-500/30 backdrop-blur-xl">
                   {leads.map((lead) => (
-                    <SelectItem key={lead.id} value={lead.id}>
+                    <SelectItem key={lead.id} value={lead.id} className="text-white">
                       {lead.businessName}
                       {lead.contactPerson && ` (${lead.contactPerson})`}
                     </SelectItem>
@@ -201,12 +201,12 @@ export default function CreateReviewDialog({
                 <SelectTrigger className="bg-white/5 border-white/10 text-white">
                   <SelectValue placeholder="Select platform" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700">
-                  <SelectItem value="GOOGLE">Google</SelectItem>
-                  <SelectItem value="FACEBOOK">Facebook</SelectItem>
-                  <SelectItem value="YELP">Yelp</SelectItem>
-                  <SelectItem value="TRUSTPILOT">Trustpilot</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
+                <SelectContent className="bg-purple-900/95 border-purple-500/30 backdrop-blur-xl">
+                  <SelectItem value="GOOGLE" className="text-white">Google</SelectItem>
+                  <SelectItem value="FACEBOOK" className="text-white">Facebook</SelectItem>
+                  <SelectItem value="YELP" className="text-white">Yelp</SelectItem>
+                  <SelectItem value="TRUSTPILOT" className="text-white">Trustpilot</SelectItem>
+                  <SelectItem value="OTHER" className="text-white">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
