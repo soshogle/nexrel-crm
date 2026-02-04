@@ -51,9 +51,9 @@ export default async function LeadsPage() {
       // Attach notes and messages to leads
       leads = leads.map(lead => ({
         ...lead,
-        notes: notesMap.get(lead.id) || [],
-        messages: messagesMap.get(lead.id) || [],
-      }));
+        notes: (notesMap.get(lead.id) || []) as Array<{ id: string; createdAt: Date }>,
+        messages: (messagesMap.get(lead.id) || []) as Array<{ id: string; createdAt: Date }>,
+      })) as any[];
     }
 
     return (

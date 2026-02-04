@@ -278,11 +278,11 @@ export function AIBrainDashboard() {
         </Card>
       )}
 
-      {/* Traditional View */}
+      {/* Traditional View - Original Design */}
       {viewMode === 'traditional' && (
-        <>
+        <div className="space-y-6">
           {/* Predictive Analytics */}
-          {predictions && (
+          {predictions ? (
             <Card className="p-6 bg-gray-900 border-gray-800">
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="h-5 w-5 text-purple-500" />
@@ -569,8 +569,194 @@ export function AIBrainDashboard() {
                 ))}
               </div>
             </Card>
+          ) : (
+            <Card className="p-6 bg-gray-900 border-gray-800">
+              <div className="text-center py-8 text-gray-400">
+                <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No predictions available yet. Keep using the CRM to generate predictions.</p>
+              </div>
+            </Card>
           )}
-        </>
+
+          {/* General Insights */}
+          <Card className="p-6 bg-gray-900 border-gray-800">
+            <div className="flex items-center gap-2 mb-4">
+              <Brain className="h-5 w-5 text-purple-500" />
+              <h3 className="text-xl font-semibold text-white">AI-Powered Insights</h3>
+              <Badge variant="outline" className="ml-auto text-gray-400">
+                {insights.length} insights
+              </Badge>
+            </div>
+
+            <div className="space-y-4">
+              {insights.length > 0 ? (
+                insights.map((insight) => (
+                  <div
+                    key={insight.id}
+                    className="border border-gray-800 rounded-lg p-4 hover:border-purple-500/50 transition-colors cursor-pointer"
+                    onClick={() =>
+                      setExpandedInsight(expandedInsight === insight.id ? null : insight.id)
+                    }
+                  >
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`p-2 rounded-lg border ${getInsightColor(insight.type)}`}
+                      >
+                        {getInsightIcon(insight.type)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-white">{insight.title}</h4>
+                              <Badge
+                                variant="outline"
+                                className={`${getPriorityColor(insight.priority)} border-0 text-white text-xs`}
+                              >
+                                {insight.priority}
+                              </Badge>
+                              {insight.actionable && (
+                                <Badge variant="outline" className="border-green-500/20 text-green-500 text-xs">
+                                  Actionable
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-400 mt-1">{insight.description}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs text-gray-400 mb-1">Confidence</div>
+                            <div className="text-sm font-semibold text-purple-500">{insight.confidence}%</div>
+                          </div>
+                        </div>
+
+                        {insight.metrics && (
+                          <div className="mb-3">
+                            <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                              <span>
+                                Current: {insight.metrics.current} {insight.metrics.unit}
+                              </span>
+                              <span>
+                                Target: {insight.metrics.target} {insight.metrics.unit}
+                              </span>
+                            </div>
+                            <Progress
+                              value={(insight.metrics.current / insight.metrics.target) * 100}
+                              className="h-2"
+                            />
+                          </div>
+                        )}
+
+                        {insight.affectedEntities && (
+                          <div className="flex items-center gap-4 text-xs text-gray-400 mb-3">
+                            {insight.affectedEntities.leads !== undefined && (
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {insight.affectedEntities.leads} leads
+                              </span>
+                            )}
+                            {insight.affectedEntities.deals !== undefined && (
+                              <span className="flex items-center gap-1">
+                                <DollarSign className="h-3 w-3" />
+                                {insight.affectedEntities.deals} deals
+                              </span>
+                            )}
+                            {insight.affectedEntities.tasks !== undefined && (
+                              <span className="flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" />
+                                {insight.affectedEntities.tasks} tasks
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="text-xs text-gray-400 italic mb-2">{insight.impact}</div>
+
+                        {expandedInsight === insight.id && insight.suggestedActions && (
+                          <div className="mt-3 p-3 bg-gray-800 rounded-lg border border-gray-700">
+                            <div className="text-sm font-semibold text-white mb-2">Suggested Actions:</div>
+                            <div className="space-y-1">
+                              {insight.suggestedActions.map((action, idx) => (
+                                <div key={idx} className="flex items-start gap-2 text-sm text-gray-300">
+                                  <ChevronRight className="h-4 w-4 text-purple-500 mt-0.5" />
+                                  {action}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  <Brain className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No insights available yet. Keep using the CRM to generate AI insights.</p>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Workflow Recommendations */}
+          {workflows.length > 0 ? (
+            <Card className="p-6 bg-gray-900 border-gray-800">
+              <div className="flex items-center gap-2 mb-4">
+                <Zap className="h-5 w-5 text-yellow-500" />
+                <h3 className="text-xl font-semibold text-white">Automation Opportunities</h3>
+                <Badge variant="outline" className="ml-auto text-gray-400">
+                  {workflows.length} workflows
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {workflows.map((workflow) => (
+                  <div
+                    key={workflow.id}
+                    className="border border-gray-800 rounded-lg p-4 hover:border-yellow-500/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold text-white">{workflow.name}</h4>
+                      <Badge
+                        variant="outline"
+                        className={`${getPriorityColor(workflow.priority)} border-0 text-white text-xs`}
+                      >
+                        {workflow.priority}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-gray-400 mb-3">{workflow.description}</p>
+                    <div className="text-xs text-gray-500 mb-2">
+                      <span className="font-semibold">Trigger:</span> {workflow.trigger}
+                    </div>
+                    <div className="mb-3">
+                      <div className="text-xs font-semibold text-gray-400 mb-1">Actions:</div>
+                      <div className="space-y-1">
+                        {workflow.actions.map((action, idx) => (
+                          <div key={idx} className="flex items-start gap-2 text-xs text-gray-300">
+                            <ChevronRight className="h-3 w-3 text-yellow-500 mt-0.5" />
+                            {action}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400 italic mb-3">{workflow.expectedImpact}</div>
+                    {workflow.automatable && (
+                      <Button size="sm" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black">
+                        Enable Automation
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ) : (
+            <Card className="p-6 bg-gray-900 border-gray-800">
+              <div className="text-center py-8 text-gray-400">
+                <Zap className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No workflow recommendations available yet.</p>
+              </div>
+            </Card>
+          )}
+        </div>
       )}
     </div>
   );
