@@ -170,7 +170,11 @@ export function WorkflowTemplatesGallery({
 
                   {/* Action Button */}
                   <Button
-                    onClick={() => onSelectTemplate(template.type)}
+                    onClick={() => {
+                      if (template.type === 'BUYER' || template.type === 'SELLER') {
+                        onSelectTemplate(template.type);
+                      }
+                    }}
                     className={`w-full mt-4 ${
                       template.type === 'BUYER'
                         ? 'bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600'
