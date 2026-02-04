@@ -79,7 +79,21 @@ const PROFESSION_LABELS: Record<string, string> = {
 };
 
 export function DocpenConversationHistory() {
-  const tSelect = useTranslations('placeholders.select');
+  // Safely get translations with error handling
+  let tSelect: (key: string) => string;
+  try {
+    tSelect = useTranslations('placeholders.select');
+  } catch (error) {
+    // Fallback if IntlProvider is not available
+    console.warn('IntlProvider not available, using fallback translations');
+    tSelect = (key: string) => {
+      const fallbacks: Record<string, string> = {
+        agent: 'Select agent',
+      };
+      return fallbacks[key] || key;
+    };
+  }
+  
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
   const [conversations, setConversations] = useState<Conversation[]>([]);
