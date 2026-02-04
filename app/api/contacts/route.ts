@@ -145,8 +145,10 @@ export async function GET(request: Request) {
       where.status = status;
     }
 
+    // Fetch contacts with counts separately to avoid potential query issues
     let contacts;
     try {
+      // First, get the contacts without _count
       contacts = await prisma.lead.findMany({
         where,
         select: {
@@ -161,52 +163,52 @@ export async function GET(request: Request) {
           lastContactedAt: true,
           dateOfBirth: true,
           createdAt: true,
-          _count: {
-            select: {
-              deals: true,
-              messages: true,
-              callLogs: true,
-            },
-          },
         },
         orderBy: {
           createdAt: 'desc',
         },
       });
+
+      // Then fetch counts separately for each contact (more reliable)
+      const contactIds = contacts.map(c => c.id);
+      const [dealsCounts, messagesCounts, callLogsCounts] = await Promise.all([
+        prisma.deal.groupBy({
+          by: ['leadId'],
+          where: { leadId: { in: contactIds } },
+          _count: true,
+        }).catch(() => []),
+        prisma.message.groupBy({
+          by: ['leadId'],
+          where: { leadId: { in: contactIds } },
+          _count: true,
+        }).catch(() => []),
+        prisma.callLog.groupBy({
+          by: ['leadId'],
+          where: { leadId: { in: contactIds } },
+          _count: true,
+        }).catch(() => []),
+      ]);
+
+      // Create lookup maps
+      const dealsMap = new Map(dealsCounts.map(d => [d.leadId, d._count]));
+      const messagesMap = new Map(messagesCounts.map(m => [m.leadId, m._count]));
+      const callLogsMap = new Map(callLogsCounts.map(c => [c.leadId, c._count]));
+
+      // Add counts to contacts
+      contacts = contacts.map((contact: any) => ({
+        ...contact,
+        _count: {
+          deals: dealsMap.get(contact.id) || 0,
+          messages: messagesMap.get(contact.id) || 0,
+          callLogs: callLogsMap.get(contact.id) || 0,
+        },
+      }));
     } catch (dbError: any) {
       console.error('Database query error:', dbError);
       console.error('Database error code:', dbError?.code);
       console.error('Database error meta:', dbError?.meta);
-      // Try without _count if that's causing the issue
-      console.log('Retrying query without _count...');
-      contacts = await prisma.lead.findMany({
-        where,
-        select: {
-          id: true,
-          businessName: true,
-          contactPerson: true,
-          email: true,
-          phone: true,
-          status: true,
-          contactType: true,
-          tags: true,
-          lastContactedAt: true,
-          dateOfBirth: true,
-          createdAt: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-      // Add empty counts manually
-      contacts = contacts.map((contact: any) => ({
-        ...contact,
-        _count: {
-          deals: 0,
-          messages: 0,
-          callLogs: 0,
-        },
-      }));
+      // Return empty array on error
+      contacts = [];
     }
 
     console.log('Contacts found:', contacts.length);
