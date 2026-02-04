@@ -1027,7 +1027,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     
     // Get navigation URL for the action
     let navigationUrl = getNavigationUrlForAction(actionResult?.action);
-    console.log("🧭 [Chat] Navigation URL:", navigationUrl);
+    console.log("🧭 [Chat] Initial Navigation URL:", navigationUrl);
     
     // Extract suggestions and workflow details from action result if available
     const suggestions = actionResult?.result?.suggestions;
