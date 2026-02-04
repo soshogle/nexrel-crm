@@ -178,7 +178,19 @@ export function VoiceAssistant({
   };
 
   /**
-   * Play audio chunk from ElevenLabs
+   * Convert Int16 PCM to Float32 for Web Audio API
+   */
+  const convertInt16ToFloat32 = (int16Array: Int16Array): Float32Array => {
+    const float32Array = new Float32Array(int16Array.length);
+    for (let i = 0; i < int16Array.length; i++) {
+      // Convert Int16 (-32768 to 32767) to Float32 (-1.0 to 1.0)
+      float32Array[i] = int16Array[i] / 32768.0;
+    }
+    return float32Array;
+  };
+
+  /**
+   * Play audio chunk from ElevenLabs (PCM format)
    */
   const playAudioChunk = async (base64Audio: string) => {
     try {
@@ -189,7 +201,7 @@ export function VoiceAssistant({
 
       if (!audioContextRef.current) {
         console.warn('⚠️ [Docpen] Audio context not initialized, creating new one');
-        audioContextRef.current = new AudioContext();
+        audioContextRef.current = new AudioContext({ sampleRate: 16000 });
       }
 
       if (audioContextRef.current.state === 'suspended') {
@@ -199,10 +211,12 @@ export function VoiceAssistant({
 
       if (audioContextRef.current.state === 'closed') {
         console.warn('⚠️ [Docpen] Audio context is closed, creating new one');
-        audioContextRef.current = new AudioContext();
+        audioContextRef.current = new AudioContext({ sampleRate: 16000 });
       }
 
       console.log('🔊 [Docpen] Decoding audio chunk, length:', base64Audio.length);
+      
+      // Decode base64 to get raw bytes
       const binaryString = atob(base64Audio);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -213,12 +227,27 @@ export function VoiceAssistant({
 
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         try {
-          // Create a copy to avoid buffer detachment issues
-          const audioData = bytes.buffer.slice(0);
-          console.log('🔊 [Docpen] Decoding audio data...');
-          const audioBuffer = await audioContextRef.current.decodeAudioData(audioData);
-          console.log('✅ [Docpen] Audio decoded successfully, duration:', audioBuffer.duration, 'seconds');
+          // ElevenLabs sends PCM 16-bit audio at 16kHz
+          // Convert bytes to Int16Array (PCM samples)
+          const pcm16 = new Int16Array(bytes.buffer, bytes.byteOffset, bytes.length / 2);
           
+          // Convert Int16 PCM to Float32 for Web Audio API
+          const float32Audio = convertInt16ToFloat32(pcm16);
+          
+          // Create AudioBuffer directly from PCM data
+          const sampleRate = 16000; // ElevenLabs sends PCM at 16kHz
+          const audioBuffer = audioContextRef.current.createBuffer(
+            1, // mono channel
+            float32Audio.length,
+            sampleRate
+          );
+          
+          // Copy Float32 data into AudioBuffer
+          audioBuffer.copyToChannel(float32Audio, 0);
+          
+          console.log('✅ [Docpen] PCM audio converted to AudioBuffer, duration:', audioBuffer.duration, 'seconds');
+          
+          // Play the audio
           const source = audioContextRef.current.createBufferSource();
           source.buffer = audioBuffer;
           source.connect(audioContextRef.current.destination);
@@ -230,12 +259,12 @@ export function VoiceAssistant({
           source.start();
           console.log('✅ [Docpen] Audio chunk playback started');
         } catch (decodeError: any) {
-          console.error('❌ [Docpen] Failed to decode audio:', decodeError);
+          console.error('❌ [Docpen] Failed to process PCM audio:', decodeError);
           console.error('❌ [Docpen] Error details:', {
             name: decodeError.name,
             message: decodeError.message,
             audioLength: base64Audio.length,
-            audioPreview: base64Audio.substring(0, 50),
+            bytesLength: bytes.length,
           });
         }
       } else {
