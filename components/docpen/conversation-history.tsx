@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/collapsible';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface Agent {
   id: string;
@@ -78,6 +79,7 @@ const PROFESSION_LABELS: Record<string, string> = {
 };
 
 export function DocpenConversationHistory() {
+  const t = useTranslations('placeholders');
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -196,7 +198,7 @@ export function DocpenConversationHistory() {
         <div className="flex items-center gap-3">
           <Select value={selectedAgentId || undefined} onValueChange={setSelectedAgentId}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select agent" />
+              <SelectValue placeholder={t('selectAgent') || 'Select agent'} />
             </SelectTrigger>
             <SelectContent>
               {agents.map(agent => (
