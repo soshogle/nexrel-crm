@@ -70,10 +70,16 @@ async function createOptometristDemo() {
   console.log('🔵 Création du compte démo optométriste...\n');
 
   try {
-    // Step 1: Create user account with Lunetterie Corbeil information
+  // Step 1: Create or get user account with Lunetterie Corbeil information
+  const email = 'lunetterie.corbeil@demo.nexrel.com';
+  
+  let user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
     const hashedPassword = await bcrypt.hash('LunetterieCorbeil2024!', 10);
-    
-    const user = await prisma.user.create({
+    user = await prisma.user.create({
       data: {
         email: 'lunetterie.corbeil@demo.nexrel.com',
         password: hashedPassword,
@@ -112,8 +118,10 @@ async function createOptometristDemo() {
         },
       },
     });
-
-    console.log(`✅ Utilisateur créé: ${user.email} (ID: ${user.id})\n`);
+      console.log(`✅ Utilisateur créé: ${user.email} (ID: ${user.id})\n`);
+    } else {
+      console.log(`✅ Utilisateur existant trouvé: ${user.email} (ID: ${user.id})\n`);
+    }
 
     // Step 2: Create contacts/leads
     console.log('📇 Création des contacts...');
@@ -203,7 +211,7 @@ async function createOptometristDemo() {
             pipelineId: pipeline.id,
             stageId: stages[Math.min(i, stages.length - 1)].id,
             leadId: leads[i].id,
-            name: `Examen + Lunettes - ${leads[i].contactPerson}`,
+            title: `Examen + Lunettes - ${leads[i].contactPerson}`,
             value: 350 + (i * 50),
             expectedCloseDate: new Date(Date.now() + (i + 1) * 7 * 24 * 60 * 60 * 1000),
             tags: MOCK_DATA_TAG,
@@ -241,12 +249,10 @@ async function createOptometristDemo() {
           direction: callTranscripts[i].direction,
           duration: callTranscripts[i].duration,
           status: 'COMPLETED',
+          fromNumber: callTranscripts[i].direction === 'INBOUND' ? leads[i].phone || '+15141234567' : '514-254-9872',
+          toNumber: callTranscripts[i].direction === 'INBOUND' ? '514-254-9872' : leads[i].phone || '+15141234567',
           recordingUrl: `https://demo-recordings.com/call-${i}.mp3`,
           transcript: callTranscripts[i].transcript,
-          metadata: {
-            tags: [MOCK_DATA_TAG],
-            language: 'fr',
-          },
         },
       });
     }
@@ -268,15 +274,15 @@ async function createOptometristDemo() {
 
     // Step 7: Create SMS campaign
     console.log('📱 Création de campagne SMS...');
-    const smsCampaign = await prisma.smsCampaign.create({
-      data: {
-        userId: user.id,
-        name: 'Rappel examens annuels - Hiver 2024',
-        status: 'ACTIVE',
-        message: 'Bonjour {name}, il est temps pour votre examen annuel de la vue! Appelez-nous pour prendre rendez-vous.',
-        tags: MOCK_DATA_TAG,
-      },
-    });
+const smsCampaign = await prisma.smsCampaign.create({
+        data: {
+          userId: user.id,
+          name: 'Rappel examens annuels - Hiver 2024',
+          status: 'SCHEDULED',
+          message: 'Bonjour {name}, il est temps pour votre examen annuel de la vue! Appelez-nous pour prendre rendez-vous.',
+          tags: MOCK_DATA_TAG,
+        },
+      });
 
     // Add recipients
     for (let i = 0; i < 5; i++) {
