@@ -259,45 +259,17 @@ export function VoiceAssistant({
           
           console.log('✅ [Docpen] PCM audio converted to AudioBuffer, duration:', audioBuffer.duration, 'seconds');
           
-          // Queue audio to prevent overlapping playback
-          const playQueuedAudio = () => {
-            if (isPlayingAudioRef.current) {
-              // If already playing, queue this chunk
-              audioQueueRef.current.push(audioBuffer);
-              console.log('📋 [Docpen] Audio queued (queue length:', audioQueueRef.current.length, ')');
-              return;
-            }
-
-            // Play immediately
-            isPlayingAudioRef.current = true;
-            const source = audioContextRef.current!.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(audioContextRef.current!.destination);
-            
-            source.onended = () => {
-              console.log('✅ [Docpen] Audio chunk playback finished');
-              isPlayingAudioRef.current = false;
-              
-              // Play next queued chunk if available
-              if (audioQueueRef.current.length > 0) {
-                const nextBuffer = audioQueueRef.current.shift()!;
-                console.log('▶️ [Docpen] Playing next queued audio chunk (remaining:', audioQueueRef.current.length, ')');
-                setTimeout(() => {
-                  const nextSource = audioContextRef.current!.createBufferSource();
-                  nextSource.buffer = nextBuffer;
-                  nextSource.connect(audioContextRef.current!.destination);
-                  nextSource.onended = source.onended; // Reuse the same handler
-                  nextSource.start();
-                  isPlayingAudioRef.current = true;
-                }, 10); // Small delay to prevent audio glitches
-              }
-            };
-            
-            source.start();
-            console.log('✅ [Docpen] Audio chunk playback started');
+          // Play audio immediately (Web Audio API handles overlapping gracefully)
+          const source = audioContextRef.current.createBufferSource();
+          source.buffer = audioBuffer;
+          source.connect(audioContextRef.current.destination);
+          
+          source.onended = () => {
+            console.log('✅ [Docpen] Audio chunk playback finished');
           };
-
-          playQueuedAudio();
+          
+          source.start();
+          console.log('✅ [Docpen] Audio chunk playback started');
         } catch (decodeError: any) {
           console.error('❌ [Docpen] Failed to process PCM audio:', decodeError);
           console.error('❌ [Docpen] Error details:', {
