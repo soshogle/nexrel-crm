@@ -14,9 +14,24 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { DocpenAgentSettings } from '@/components/docpen/agent-settings';
-import { DocpenConversationHistory } from '@/components/docpen/conversation-history';
-import { DocpenKnowledgeBaseTraining } from '@/components/docpen/knowledge-base-training';
+import dynamic from 'next/dynamic';
+
+// Lazy load components to prevent them from loading until their tab is active
+// This prevents translation hook errors if IntlProvider isn't ready
+const DocpenAgentSettings = dynamic(() => import('@/components/docpen/agent-settings').then(mod => ({ default: mod.DocpenAgentSettings })), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div></div>
+});
+
+const DocpenConversationHistory = dynamic(() => import('@/components/docpen/conversation-history').then(mod => ({ default: mod.DocpenConversationHistory })), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div></div>
+});
+
+const DocpenKnowledgeBaseTraining = dynamic(() => import('@/components/docpen/knowledge-base-training').then(mod => ({ default: mod.DocpenKnowledgeBaseTraining })), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div></div>
+});
 
 export default function DocpenSettingsPage() {
   const router = useRouter();
