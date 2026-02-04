@@ -80,10 +80,11 @@ export async function PATCH(
     // Check if stage changed
     let stageChanged = false;
     let newProbability = existingDeal.probability;
+    let newStage = null;
 
     if (data.stageId && data.stageId !== existingDeal.stageId) {
       stageChanged = true;
-      const newStage = await prisma.pipelineStage.findUnique({
+      newStage = await prisma.pipelineStage.findUnique({
         where: { id: data.stageId },
       });
       if (newStage) {
@@ -115,11 +116,6 @@ export async function PATCH(
           type: 'STAGE_CHANGED',
           description: `Deal moved from "${existingDeal.stage.name}" to stage`,
         },
-      });
-
-      // Get the new stage information
-      const newStage = await prisma.pipelineStage.findUnique({
-        where: { id: data.stageId },
       });
 
       // Trigger DEAL_STAGE_CHANGED workflows (generic)
