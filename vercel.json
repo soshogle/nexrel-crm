@@ -1,5 +1,5 @@
 {
-  "buildCommand": "prisma db push --skip-generate && prisma generate && node scripts/vercel-build.js && npm run build",
+  "buildCommand": "prisma db push --skip-generate --accept-data-loss=false && prisma generate && node scripts/vercel-build.js && npm run build",
   "installCommand": "yarn install",
   "framework": "nextjs",
   "outputDirectory": ".next"
