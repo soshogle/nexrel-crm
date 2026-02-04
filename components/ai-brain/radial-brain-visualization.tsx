@@ -77,7 +77,7 @@ export function RadialBrainVisualization({
       case 'critical':
         return 'from-red-400 to-rose-500';
       default:
-        return 'from-gray-400 to-gray-500';
+        return 'from-purple-400 to-indigo-500';
     }
   };
 
@@ -92,7 +92,7 @@ export function RadialBrainVisualization({
       case 'critical':
         return 'shadow-red-500/50';
       default:
-        return 'shadow-gray-500/50';
+        return 'shadow-purple-500/50';
     }
   };
 
@@ -407,13 +407,13 @@ export function RadialBrainVisualization({
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="absolute right-0 top-0 bg-gradient-to-br from-gray-900/95 to-gray-800/95 backdrop-blur-md border border-purple-500/30 rounded-xl p-6 min-w-[280px] pointer-events-auto shadow-2xl"
+            className="absolute right-0 top-0 bg-gradient-to-br from-indigo-950/95 via-purple-950/95 to-indigo-950/95 backdrop-blur-md border border-purple-500/30 rounded-xl p-6 min-w-[280px] pointer-events-auto shadow-2xl"
           >
             <div className="flex items-start justify-between mb-4">
               <h4 className="text-white font-bold text-lg">{selectedDataPoint.label}</h4>
               <button
                 onClick={() => setSelectedDataPoint(null)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-purple-300 hover:text-white transition-colors"
               >
                 ×
               </button>
@@ -425,24 +425,24 @@ export function RadialBrainVisualization({
 
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">Status</span>
+                <span className="text-purple-300/80">Status</span>
                 <Badge className={`${getStatusColor(selectedDataPoint.status)} text-white border-0`}>
                   {selectedDataPoint.status}
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">Category</span>
+                <span className="text-purple-300/80">Category</span>
                 <span className="text-white">{selectedDataPoint.category}</span>
               </div>
               {selectedDataPoint.confidence && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Confidence</span>
+                  <span className="text-purple-300/80">Confidence</span>
                   <span className="text-white">{selectedDataPoint.confidence.toFixed(0)}%</span>
                 </div>
               )}
               {selectedDataPoint.change !== undefined && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Change</span>
+                  <span className="text-purple-300/80">Change</span>
                   <span className={selectedDataPoint.change > 0 ? 'text-green-400' : 'text-red-400'}>
                     {selectedDataPoint.change > 0 ? '+' : ''}
                     {selectedDataPoint.change.toFixed(1)}%

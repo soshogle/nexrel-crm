@@ -259,7 +259,7 @@ export function AIBrainDashboard() {
 
       {/* Radial Brain Visualization */}
       {viewMode === 'radial' && (
-        <Card className="p-6 bg-gray-900 border-gray-800 overflow-hidden">
+        <Card className="p-6 bg-gradient-to-br from-indigo-950/90 via-purple-950/90 to-indigo-950/90 border-purple-500/30 overflow-hidden">
           {comprehensiveData ? (
             <RadialBrainVisualization
               data={comprehensiveData}
@@ -269,7 +269,7 @@ export function AIBrainDashboard() {
               }}
             />
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+            <div className="flex flex-col items-center justify-center py-12 text-purple-300/80">
               <Brain className="h-16 w-16 mb-4 opacity-50 animate-pulse" />
               <p className="text-lg">Loading AI Brain data...</p>
               <p className="text-sm mt-2">Connecting to all business data sources</p>
