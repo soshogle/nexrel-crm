@@ -1162,7 +1162,7 @@ async function createWorkflow(userId: string, params: any) {
     const { aiWorkflowGenerator } = await import('@/lib/ai-workflow-generator');
     
     // Get user context for workflow generation
-    const [pipelines, leadStatuses] = await Promise.all([
+    const [pipelines, leadStatuses, user] = await Promise.all([
       prisma.pipeline.findMany({
         where: { userId },
         include: { stages: true },
@@ -1171,6 +1171,10 @@ async function createWorkflow(userId: string, params: any) {
         where: { userId },
         distinct: ['status'],
         select: { status: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { language: true },
       }),
     ]);
 
