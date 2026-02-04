@@ -795,7 +795,8 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     console.log("AI reply:", reply);
 
     // Check if the response contains an action request (JSON format)
-    let actionResult = null;
+    let actionResult: any = null;
+    let actionExecuted = false; // Track if we attempted to execute an action
     let finalReply = reply;
     let navigationUrl = null;
 
@@ -836,7 +837,19 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
           } catch (parseError) {
             console.error("❌ [Chat] Failed to parse extracted JSON:", parseError);
             console.error("❌ [Chat] Raw reply (first 500 chars):", cleanedReply.substring(0, 500));
-            actionData = null;
+            // Try one more time with a more lenient regex that captures nested JSON
+            const lenientMatch = cleanedReply.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/);
+            if (lenientMatch) {
+              try {
+                actionData = JSON.parse(lenientMatch[0]);
+                console.log("✅ [Chat] Extracted JSON using lenient regex");
+              } catch (lenientError) {
+                console.error("❌ [Chat] Lenient parse also failed:", lenientError);
+                actionData = null;
+              }
+            } else {
+              actionData = null;
+            }
           }
         } else {
           console.error("❌ [Chat] No JSON pattern found in reply");
@@ -862,6 +875,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
         } else if (actionData.action && actionData.message) {
           // Execute the action
           console.log("Executing action:", actionData.action, "with params:", actionData.parameters);
+          actionExecuted = true; // Mark that we're attempting to execute an action
           
           // Forward all cookies from the original request
           const cookieHeader = req.headers.get("cookie") || "";
@@ -1164,10 +1178,13 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
               const errorData = await actionResponse.json();
               errorDetails = errorData.error || errorData.details || errorDetails;
               console.error("❌ [Chat] Action failed:", errorData);
+              // Set actionResult even on failure so we know an action was attempted
+              actionResult = { success: false, error: errorDetails };
             } catch (e) {
               const errorText = await actionResponse.text();
               console.error("❌ [Chat] Action failed with status:", actionResponse.status, errorText);
               errorDetails = errorText || `Status ${actionResponse.status}`;
+              actionResult = { success: false, error: errorDetails };
             }
             
             finalReply = `${actionData.message}\n\n⚠️ I encountered an issue while trying to execute that action: ${errorDetails}\n\nPlease try again or let me know if you need help!`;
@@ -1224,6 +1241,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
                 const actionResponseData = await actionResponse.json();
                 console.log("✅ [Chat] Action executed via fallback detection:", actionResponseData);
                 actionResult = actionResponseData;
+                actionExecuted = true; // Mark that we executed an action via fallback
                 
                 const result = actionResponseData.result;
                 const leadId = result?.lead?.id;
@@ -1240,6 +1258,8 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
               } else {
                 const errorData = await actionResponse.json();
                 console.error("❌ [Chat] Fallback action execution failed:", errorData);
+                actionResult = { success: false, error: errorData.error || 'Unknown error' };
+                actionExecuted = true; // Mark that we attempted an action
                 finalReply = `I tried to create the contact but encountered an error: ${errorData.error || 'Unknown error'}. Please try again.`;
               }
             } catch (fallbackError: any) {
@@ -1256,18 +1276,18 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       }
     }
 
-    // Final validation: Don't navigate if action was supposed to execute but didn't
-    if (navigationUrl && !actionResult) {
-      console.warn("⚠️ [Chat] Navigation URL set but no action result - clearing navigation to prevent false navigation");
-      // Only clear navigation if we were expecting an action (check if reply mentions creating/doing something)
-      const actionKeywords = ['create', 'add', 'import', 'update', 'delete', 'setup', 'configure'];
-      const hasActionKeyword = actionKeywords.some(keyword => 
-        reply.toLowerCase().includes(keyword) && 
-        (reply.toLowerCase().includes('contact') || reply.toLowerCase().includes('lead') || reply.toLowerCase().includes('deal'))
-      );
-      if (hasActionKeyword) {
-        console.warn("⚠️ [Chat] Detected action keyword but no action executed - clearing navigation");
-        navigationUrl = null; // Clear navigation if action didn't execute
+    // Final validation: Only clear navigation if we attempted to execute an action but it failed
+    // Don't clear navigation for navigation-only responses or if no action was attempted
+    if (navigationUrl && actionExecuted) {
+      if (actionResult && actionResult.success === false) {
+        console.warn("⚠️ [Chat] Action execution failed - clearing navigation");
+        navigationUrl = null; // Clear navigation only if action was attempted and failed
+      } else if (!actionResult) {
+        // This shouldn't happen, but if we executed an action but got no result, clear navigation
+        console.warn("⚠️ [Chat] Action executed but no result received - clearing navigation");
+        navigationUrl = null;
+      } else {
+        console.log("✅ [Chat] Action executed successfully, navigation will proceed");
       }
     }
 
