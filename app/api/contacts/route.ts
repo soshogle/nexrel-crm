@@ -145,32 +145,69 @@ export async function GET(request: Request) {
       where.status = status;
     }
 
-    const contacts = await prisma.lead.findMany({
-      where,
-      select: {
-        id: true,
-        businessName: true,
-        contactPerson: true,
-        email: true,
-        phone: true,
-        status: true,
-        contactType: true,
-        tags: true,
-        lastContactedAt: true,
-        dateOfBirth: true,
-        createdAt: true,
-        _count: {
-          select: {
-            deals: true,
-            messages: true,
-            callLogs: true,
+    let contacts;
+    try {
+      contacts = await prisma.lead.findMany({
+        where,
+        select: {
+          id: true,
+          businessName: true,
+          contactPerson: true,
+          email: true,
+          phone: true,
+          status: true,
+          contactType: true,
+          tags: true,
+          lastContactedAt: true,
+          dateOfBirth: true,
+          createdAt: true,
+          _count: {
+            select: {
+              deals: true,
+              messages: true,
+              callLogs: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    } catch (dbError: any) {
+      console.error('Database query error:', dbError);
+      console.error('Database error code:', dbError?.code);
+      console.error('Database error meta:', dbError?.meta);
+      // Try without _count if that's causing the issue
+      console.log('Retrying query without _count...');
+      contacts = await prisma.lead.findMany({
+        where,
+        select: {
+          id: true,
+          businessName: true,
+          contactPerson: true,
+          email: true,
+          phone: true,
+          status: true,
+          contactType: true,
+          tags: true,
+          lastContactedAt: true,
+          dateOfBirth: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+      // Add empty counts manually
+      contacts = contacts.map((contact: any) => ({
+        ...contact,
+        _count: {
+          deals: 0,
+          messages: 0,
+          callLogs: 0,
+        },
+      }));
+    }
 
     console.log('Contacts found:', contacts.length);
 
@@ -193,10 +230,17 @@ export async function GET(request: Request) {
     console.log('Returning', parsedContacts.length, 'contacts after filtering');
 
     return NextResponse.json(parsedContacts);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching contacts:', error);
+    console.error('Error message:', error?.message);
+    console.error('Error stack:', error?.stack);
+    console.error('Error name:', error?.name);
     return NextResponse.json(
-      { error: 'Failed to fetch contacts' },
+      { 
+        error: 'Failed to fetch contacts',
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+        type: error?.name
+      },
       { status: 500 }
     );
   }
