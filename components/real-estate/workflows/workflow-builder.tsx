@@ -99,6 +99,11 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
     }
   };
 
+  const handleSelectTemplate = (type: 'BUYER' | 'SELLER') => {
+    const pipelineType = type === 'BUYER' ? 'BUYER_PIPELINE' : 'SELLER_PIPELINE';
+    loadTemplate(pipelineType);
+  };
+
   const handleCreateCustom = () => {
     setShowTemplateGallery(false);
     setWorkflow({
@@ -329,7 +334,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
         <div className="flex-1 p-6 overflow-y-auto">
           {showTemplateGallery ? (
             <WorkflowTemplatesGallery
-              onSelectTemplate={loadTemplate}
+              onSelectTemplate={handleSelectTemplate}
               onCreateCustom={handleCreateCustom}
             />
           ) : workflow ? (
