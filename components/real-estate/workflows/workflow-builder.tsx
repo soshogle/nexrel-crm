@@ -107,8 +107,8 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
       tasks: [],
       userId: '',
       isActive: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   };
   
