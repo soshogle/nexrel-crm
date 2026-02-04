@@ -179,37 +179,31 @@ export class AIBrainEnhancedService {
       }),
     ]);
 
-    // Extract results, defaulting to empty arrays on failure
-    const [
-      leads,
-      deals,
-      tasks,
-      appointments,
-      callLogs,
-      payments,
-      invoices,
-      emailCampaigns,
-      smsCampaigns,
-      conversations,
-      conversationMessages,
-      reviews,
-      feedbackCollections,
-      workflows,
-      workflowEnrollments,
-    ] = results.map((result, index) => {
+    // Extract results, defaulting to empty arrays on failure with proper typing
+    const getResult = <T>(result: PromiseSettledResult<T>, name: string): T[] => {
       if (result.status === 'fulfilled') {
-        return result.value;
+        return result.value as T[];
       } else {
-        const dataSourceNames = [
-          'leads', 'deals', 'tasks', 'appointments', 'callLogs',
-          'payments', 'invoices', 'emailCampaigns', 'smsCampaigns',
-          'conversations', 'conversationMessages', 'reviews',
-          'feedbackCollections', 'workflows', 'workflowEnrollments'
-        ];
-        console.error(`Error fetching ${dataSourceNames[index]}:`, result.reason);
+        console.error(`Error fetching ${name}:`, result.reason);
         return [];
       }
-    });
+    };
+
+    const leads = getResult(results[0], 'leads');
+    const deals = getResult(results[1], 'deals');
+    const tasks = getResult(results[2], 'tasks');
+    const appointments = getResult(results[3], 'appointments');
+    const callLogs = getResult(results[4], 'callLogs');
+    const payments = getResult<{ amount: number }>(results[5], 'payments');
+    const invoices = getResult(results[6], 'invoices');
+    const emailCampaigns = getResult(results[7], 'emailCampaigns');
+    const smsCampaigns = getResult(results[8], 'smsCampaigns');
+    const conversations = getResult(results[9], 'conversations');
+    const conversationMessages = getResult(results[10], 'conversationMessages');
+    const reviews = getResult<{ rating: number }>(results[11], 'reviews');
+    const feedbackCollections = getResult(results[12], 'feedbackCollections');
+    const workflows = getResult(results[13], 'workflows');
+    const workflowEnrollments = getResult(results[14], 'workflowEnrollments');
 
     // Calculate core metrics
     const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
