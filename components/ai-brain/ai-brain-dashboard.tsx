@@ -24,6 +24,8 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { RadialBrainVisualization } from './radial-brain-visualization';
+import type { ComprehensiveBrainData } from '@/lib/ai-brain-enhanced-service';
 
 interface GeneralInsight {
   id: string;
@@ -78,26 +80,31 @@ export function AIBrainDashboard() {
   const [insights, setInsights] = useState<GeneralInsight[]>([]);
   const [predictions, setPredictions] = useState<PredictiveAnalytics | null>(null);
   const [workflows, setWorkflows] = useState<WorkflowRecommendation[]>([]);
+  const [comprehensiveData, setComprehensiveData] = useState<ComprehensiveBrainData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'radial' | 'traditional'>('radial');
 
   const fetchData = async () => {
     setIsRefreshing(true);
     try {
-      const [insightsRes, predictionsRes, workflowsRes] = await Promise.all([
+      const [insightsRes, predictionsRes, workflowsRes, comprehensiveRes] = await Promise.all([
         fetch('/api/ai-brain/insights'),
         fetch('/api/ai-brain/predictions'),
         fetch('/api/ai-brain/workflows'),
+        fetch('/api/ai-brain/comprehensive'),
       ]);
 
       const insightsData = await insightsRes.json();
       const predictionsData = await predictionsRes.json();
       const workflowsData = await workflowsRes.json();
+      const comprehensiveData = await comprehensiveRes.json();
 
       if (insightsData.success) setInsights(insightsData.insights || []);
       if (predictionsData.success) setPredictions(predictionsData.predictions);
       if (workflowsData.success) setWorkflows(workflowsData.workflows || []);
+      if (comprehensiveData.success) setComprehensiveData(comprehensiveData.data);
     } catch (error) {
       console.error('Error fetching AI Brain data:', error);
       toast.error('Failed to load AI insights');
@@ -109,6 +116,13 @@ export function AIBrainDashboard() {
 
   useEffect(() => {
     fetchData();
+    
+    // Auto-refresh every 30 seconds for real-time updates
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const getInsightIcon = (type: string) => {
@@ -487,6 +501,8 @@ export function AIBrainDashboard() {
             ))}
           </div>
         </Card>
+      )}
+        </>
       )}
     </div>
   );
