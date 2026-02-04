@@ -120,13 +120,6 @@ export class ReviewFeedbackService {
           leadId: lead.id,
           content: message,
           messageType: 'feedback_request',
-          metadata: {
-            feedbackCollectionId: feedbackId,
-            type: 'FEEDBACK_REQUEST',
-            direction: 'OUTBOUND',
-            channel: 'SMS',
-            status: 'SENT',
-          } as any,
         },
       });
 
@@ -165,26 +158,25 @@ export class ReviewFeedbackService {
           userId,
           leadId: lead.id,
           voiceAgentId: voiceAgent.id,
+          name: `Feedback Collection - ${lead.contactPerson || lead.businessName || 'Customer'}`,
           phoneNumber: lead.phone!,
           purpose: 'Collect service feedback',
-          notes: `Automated feedback collection call after service completion. Ask about their experience and listen for positive or negative sentiment.`,
+          notes: `Automated feedback collection call after service completion. Ask about their experience and listen for positive or negative sentiment. Feedback Collection ID: ${feedbackId}`,
           status: 'SCHEDULED',
           scheduledFor: new Date(),
-          metadata: {
-            feedbackCollectionId: feedbackId,
-            type: 'FEEDBACK_COLLECTION',
-          } as any,
         },
       });
 
       // Initiate the call immediately
-      await elevenLabsService.initiatePhoneCall({
-        agentId: voiceAgent.id,
-        phoneNumber: lead.phone!,
-        purpose: `Hi ${lead.contactPerson || lead.businessName}! We just completed your service and I'm calling to get your feedback. How was your experience? Please rate it 1-5 stars and share any thoughts.`,
-        notes: 'This is an automated feedback collection call. Listen carefully for sentiment - if positive, encourage a public review. If negative, offer solutions and discounts.',
-        outboundCallId: outboundCall.id,
-      });
+      if (!voiceAgent.elevenLabsAgentId) {
+        console.warn('Voice agent does not have an ElevenLabs agent ID configured');
+        return;
+      }
+
+      await elevenLabsService.initiatePhoneCall(
+        voiceAgent.elevenLabsAgentId,
+        lead.phone!
+      );
 
       console.log('📞 Feedback call initiated to:', lead.phone);
     } catch (error) {
@@ -259,7 +251,7 @@ export class ReviewFeedbackService {
         where: {
           userId,
           name: 'Review Collection',
-          type: 'REVIEW',
+          type: 'REVIEW_REQUEST',
         },
       });
 
@@ -268,7 +260,7 @@ export class ReviewFeedbackService {
           data: {
             userId,
             name: 'Review Collection',
-            type: 'REVIEW',
+            type: 'REVIEW_REQUEST',
             status: 'ACTIVE',
           },
         });
@@ -283,13 +275,6 @@ export class ReviewFeedbackService {
           leadId: lead.id,
           content: reviewRequestMessage,
           messageType: 'review_request',
-          metadata: {
-            type: 'REVIEW_REQUEST',
-            rating: feedback.rating,
-            direction: 'OUTBOUND',
-            channel: 'SMS',
-            status: 'SENT',
-          } as any,
         },
       });
 
@@ -317,13 +302,6 @@ export class ReviewFeedbackService {
           leadId: lead.id,
           content: resolutionMessage,
           messageType: 'resolution_offer',
-          metadata: {
-            type: 'RESOLUTION_OFFER',
-            rating: feedback.rating,
-            direction: 'OUTBOUND',
-            channel: 'SMS',
-            status: 'SENT',
-          } as any,
         },
       });
 
