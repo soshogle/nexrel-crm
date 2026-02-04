@@ -29,7 +29,6 @@ import {
   Link2,
   Copy,
   Check,
-  Copy as CopyIcon,
   AlertTriangle,
 } from 'lucide-react';
 import ContactsList from './contacts-list';
