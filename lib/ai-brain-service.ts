@@ -62,8 +62,8 @@ export class AIBrainService {
   async generateGeneralInsights(userId: string): Promise<GeneralInsight[]> {
     const insights: GeneralInsight[] = [];
 
-    // Fetch all relevant data
-    const [leads, deals, tasks, appointments, callLogs] = await Promise.all([
+    // Fetch all relevant data with error handling
+    const results = await Promise.allSettled([
       prisma.lead.findMany({
         where: { userId },
         include: { notes: true },
@@ -90,6 +90,28 @@ export class AIBrainService {
         take: 100,
       }),
     ]);
+
+    // Extract results with error handling
+    const getResult = <T>(result: PromiseSettledResult<T[]>, name: string): T[] => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        // Handle Prisma errors for missing columns/tables gracefully
+        const error = result.reason;
+        if (error?.code === 'P2022' || error?.code === 'P2021') {
+          console.warn(`Database schema mismatch for ${name}:`, error.message);
+          return [];
+        }
+        console.error(`Error fetching ${name}:`, error);
+        return [];
+      }
+    };
+
+    const leads = getResult(results[0], 'leads');
+    const deals = getResult(results[1], 'deals');
+    const tasks = getResult(results[2], 'tasks');
+    const appointments = getResult(results[3], 'appointments');
+    const callLogs = getResult(results[4], 'callLogs');
 
     // 1. Lead Velocity Analysis
     const recentLeads = leads.filter(
@@ -340,7 +362,8 @@ export class AIBrainService {
    * Generate predictive analytics
    */
   async generatePredictiveAnalytics(userId: string): Promise<PredictiveAnalytics> {
-    const [leads, deals] = await Promise.all([
+    // Fetch data with error handling
+    const results = await Promise.allSettled([
       prisma.lead.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
@@ -351,6 +374,24 @@ export class AIBrainService {
         orderBy: { createdAt: 'desc' },
       }),
     ]);
+
+    // Extract results with error handling
+    const getResult = <T>(result: PromiseSettledResult<T[]>, name: string): T[] => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        const error = result.reason;
+        if (error?.code === 'P2022' || error?.code === 'P2021') {
+          console.warn(`Database schema mismatch for ${name}:`, error.message);
+          return [];
+        }
+        console.error(`Error fetching ${name}:`, error);
+        return [];
+      }
+    };
+
+    const leads = getResult(results[0], 'leads');
+    const deals = getResult(results[1], 'deals');
 
     // Calculate recent trends
     const last30DaysLeads = leads.filter(
@@ -426,7 +467,8 @@ export class AIBrainService {
   async generateWorkflowRecommendations(userId: string): Promise<WorkflowRecommendation[]> {
     const recommendations: WorkflowRecommendation[] = [];
 
-    const [leads, tasks, deals] = await Promise.all([
+    // Fetch data with error handling
+    const results = await Promise.allSettled([
       prisma.lead.findMany({ where: { userId } }),
       prisma.task.findMany({
         where: {
@@ -435,6 +477,25 @@ export class AIBrainService {
       }),
       prisma.deal.findMany({ where: { userId } }),
     ]);
+
+    // Extract results with error handling
+    const getResult = <T>(result: PromiseSettledResult<T[]>, name: string): T[] => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        const error = result.reason;
+        if (error?.code === 'P2022' || error?.code === 'P2021') {
+          console.warn(`Database schema mismatch for ${name}:`, error.message);
+          return [];
+        }
+        console.error(`Error fetching ${name}:`, error);
+        return [];
+      }
+    };
+
+    const leads = getResult(results[0], 'leads');
+    const tasks = getResult(results[1], 'tasks');
+    const deals = getResult(results[2], 'deals');
 
     // 1. Auto-follow-up for new leads
     const newLeads = leads.filter(

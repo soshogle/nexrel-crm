@@ -184,6 +184,12 @@ export class AIBrainEnhancedService {
       if (result.status === 'fulfilled') {
         return result.value;
       } else {
+        // Handle Prisma errors for missing columns/tables gracefully
+        const error = result.reason;
+        if (error?.code === 'P2022' || error?.code === 'P2021') {
+          console.warn(`Database schema mismatch for ${name}:`, error.message);
+          return [];
+        }
         console.error(`Error fetching ${name}:`, result.reason);
         return [];
       }
