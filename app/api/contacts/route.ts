@@ -28,6 +28,7 @@ export async function POST(request: Request) {
       state,
       zipCode,
       country,
+      dateOfBirth,
       notes,
       contactType,
       status,
@@ -57,6 +58,7 @@ export async function POST(request: Request) {
         state: state || null,
         zipCode: zipCode || null,
         country: country || null,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         contactType: contactType || 'CUSTOMER',
         status: status || 'ACTIVE',
         source: 'Manual Entry',
@@ -155,6 +157,7 @@ export async function GET(request: Request) {
         contactType: true,
         tags: true,
         lastContactedAt: true,
+        dateOfBirth: true,
         createdAt: true,
         _count: {
           select: {

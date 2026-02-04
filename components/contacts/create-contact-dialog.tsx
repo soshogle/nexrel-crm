@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertCircle, User, Mail, Phone, MapPin, Briefcase } from 'lucide-react';
+import { Loader2, AlertCircle, User, Mail, Phone, MapPin, Briefcase, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CreateContactDialogProps {
@@ -54,6 +54,7 @@ export default function CreateContactDialog({
     state: '',
     zipCode: '',
     country: '',
+    dateOfBirth: '',
     notes: '',
     contactType: 'CUSTOMER',
     status: 'ACTIVE',
@@ -190,6 +191,21 @@ export default function CreateContactDialog({
                     placeholder="Enter phone number"
                     className="pl-10"
                     autoComplete="off"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Birthday</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                    placeholder="Select birthday"
+                    className="pl-10"
                   />
                 </div>
               </div>
