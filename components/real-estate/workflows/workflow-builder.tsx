@@ -103,10 +103,10 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
     setWorkflow({
       id: 'new',
       name: 'New Custom Workflow',
-      type: 'CUSTOM',
+      description: '',
+      workflowType: 'CUSTOM',
       tasks: [],
-      userId: '',
-      isActive: false,
+      isDefault: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
