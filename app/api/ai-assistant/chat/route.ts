@@ -545,7 +545,7 @@ You have access to FUNCTIONS that can actually execute actions. When a user asks
 - debug_voice_agent - Debug a voice agent (required: name)
 - fix_voice_agent - Fix a voice agent (required: name)
 - make_outbound_call - Make or schedule a call to a contact using a voice AI agent (required: contactName, purpose; optional: phoneNumber, notes, voiceAgentName, immediate, scheduledFor)
-- create_workflow - Create a workflow (required: name, description)
+- create_workflow - Create complex automation workflows with multiple steps, timing, and personalization (required: description). Can handle birthday triggers, voice calls, email/SMS sequences, delays (weeks/days/hours), and personalized messages. Example: "Create a workflow that calls contacts on their birthday with personalized message, waits a week, invites to webinar, emails invitation, SMS link, reminds day before and 2 hours before"
 - navigate_to - Navigate to a page (required: path)
 
 **HOW IT WORKS:**

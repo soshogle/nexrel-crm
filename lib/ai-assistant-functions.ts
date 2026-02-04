@@ -352,17 +352,21 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
       type: "function",
       function: {
         name: "create_workflow",
-        description: "Create an automation workflow",
+        description: "Create a complex automation workflow with multiple steps, timing, and personalization. Use this when the user wants to automate a sequence of actions like calling contacts, sending emails/SMS, scheduling follow-ups, etc. The workflow can include delays (wait X days/weeks/hours), personalization, and conditional logic.",
         parameters: {
           type: "object",
           properties: {
             description: {
               type: "string",
-              description: "Workflow description in natural language (required)",
+              description: "Detailed workflow description in natural language describing all steps, timing, and personalization (required). Example: 'Call contacts on their birthday with personalized message, then wait a week, invite them to webinar, email invitation, SMS link, remind day before and 2 hours before'",
             },
             goal: {
               type: "string",
-              description: "Workflow goal (optional)",
+              description: "Workflow goal or objective (optional)",
+            },
+            name: {
+              type: "string",
+              description: "Workflow name (optional - will be generated from description if not provided)",
             },
           },
           required: ["description"],

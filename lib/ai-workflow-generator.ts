@@ -104,7 +104,8 @@ export class AIWorkflowGenerator {
       'DEAL_CREATED - New deal created',
       'DEAL_STAGE_CHANGED - Deal stage changes',
       'DEAL_STALE - Deal hasn\'t moved in X days',
-      'TIME_BASED - Schedule at specific time',
+      'TIME_BASED - Schedule at specific time (use for birthdays, recurring events, scheduled workflows)',
+      'CUSTOM_FIELD_CHANGED - Trigger when a custom field changes (can be used for birthday field)',
     ];
 
     const availableActions = [
@@ -112,21 +113,33 @@ export class AIWorkflowGenerator {
       'CREATE_DEAL_FROM_LEAD - Convert lead to deal',
       'AUTO_REPLY - Send auto-reply message',
       'SEND_MESSAGE - Send message via any channel',
-      'SEND_SMS - Send SMS message',
-      'SEND_EMAIL - Send email',
+      'SEND_SMS - Send SMS message (supports personalization with {{contactName}}, {{businessName}}, etc.)',
+      'SEND_EMAIL - Send email (supports personalization with {{contactName}}, {{businessName}}, etc.)',
+      'AI_GENERATE_MESSAGE - Generate personalized message using AI (use for personalization)',
       'UPDATE_LEAD - Update lead properties',
       'CHANGE_LEAD_STATUS - Change lead status',
       'UPDATE_DEAL - Update deal properties',
       'MOVE_DEAL_STAGE - Move deal to different stage',
       'ASSIGN_TO_DEAL - Assign conversation/lead to deal',
       'CREATE_TASK - Create a task',
+      'CREATE_APPOINTMENT - Create an appointment',
       'SCHEDULE_FOLLOW_UP - Schedule follow-up task',
       'NOTIFY_USER - Send notification to user',
       'ADD_TAG - Add tag to lead/deal',
-      'WAIT_DELAY - Wait for specified time',
+      'WAIT_DELAY - Wait for specified time (delayMinutes: convert weeks to minutes = weeks * 7 * 24 * 60, days = days * 24 * 60, hours = hours * 60)',
+      'WEBHOOK - Call external API (can be used for voice calls via /api/outbound-calls)',
     ];
 
     return `You are a CRM workflow automation expert. Your job is to parse natural language descriptions of automation workflows and convert them into structured JSON configurations.
+
+You can create complex multi-step workflows with:
+- Voice calls to contacts
+- Email and SMS sequences
+- Personalized messages using AI
+- Precise timing (weeks, days, hours delays)
+- Birthday triggers
+- Conditional logic
+- Variable substitution for personalization
 
 AVAILABLE TRIGGERS:
 ${availableTriggers.join('\n')}
@@ -145,8 +158,10 @@ RESPONSE FORMAT (JSON only, no markdown):
     // Trigger-specific configuration
     // For MESSAGE_WITH_KEYWORDS: {"keywords": ["pricing", "quote", "cost"]}
     // For LEAD_STATUS_CHANGED: {"fromStatus": "NEW", "toStatus": "CONTACTED"}
-    // For TIME_BASED: {"schedule": "0 9 * * 1-5", "timezone": "America/New_York"}
+    // For TIME_BASED: {"schedule": "0 9 * * 1-5", "timezone": "America/New_York"} or {"type": "birthday", "field": "birthday"} for birthday triggers
+    // For birthday workflows: Use TIME_BASED with {"type": "birthday"} or CUSTOM_FIELD_CHANGED with {"fieldName": "birthday"}
     // For LEAD_NO_RESPONSE: {"daysInactive": 3}
+    // For CUSTOM_FIELD_CHANGED: {"fieldName": "birthday", "fieldType": "date"} - can trigger on birthday
   },
   "actions": [
     {
@@ -156,9 +171,14 @@ RESPONSE FORMAT (JSON only, no markdown):
         // Action-specific configuration
         // For CREATE_LEAD_FROM_MESSAGE: {"status": "NEW", "source": "messaging"}
         // For AUTO_REPLY: {"message": "Thanks for reaching out!"}
-        // For SEND_SMS: {"template": "Message content", "phoneField": "phone"}
+        // For SEND_SMS: {"template": "Message content with {{contactName}} for personalization", "phoneField": "phone"}
+        // For SEND_EMAIL: {"subject": "Email subject", "body": "Email body with {{contactName}} for personalization", "toField": "email"}
+        // For AI_GENERATE_MESSAGE: {"prompt": "Generate personalized birthday message for {{contactName}}", "channel": "SMS" or "EMAIL"}
+        // For WEBHOOK (voice calls): {"url": "${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/outbound-calls", "method": "POST", "payload": {"contactName": "{{contactPerson}}", "phoneNumber": "{{phone}}", "purpose": "Birthday call", "notes": "Personalized birthday greeting for {{contactPerson}}", "immediate": true, "leadId": "{{leadId}}"}}
+        // Note: For internal API calls, use full URL with NEXTAUTH_URL. Variables like {{contactPerson}}, {{phone}}, {{leadId}} will be replaced with actual values.
         // For MOVE_DEAL_STAGE: {"pipelineId": "xxx", "stageId": "yyy"}
         // For CREATE_TASK: {"title": "Task title", "priority": "HIGH", "dueInDays": 1}
+        // For CREATE_APPOINTMENT: {"title": "Appointment title", "date": "{{date}}", "time": "{{time}}"}
       },
       "delayMinutes": 0 // Optional delay before this action
     }
@@ -166,14 +186,40 @@ RESPONSE FORMAT (JSON only, no markdown):
   "suggestions": ["Additional improvements or considerations"]
 }
 
+TIMING CONVERSIONS:
+- Convert all time delays to minutes for delayMinutes field:
+  * 1 week = 7 * 24 * 60 = 10,080 minutes
+  * 1 day = 24 * 60 = 1,440 minutes
+  * 1 hour = 60 minutes
+  * Examples: "wait a week" = delayMinutes: 10080, "wait 2 hours" = delayMinutes: 120, "wait 3 days" = delayMinutes: 4320
+
+PERSONALIZATION:
+- Use {{contactPerson}}, {{businessName}}, {{email}}, {{phone}}, {{leadId}} for variable substitution in messages
+- Available variables from lead context: contactPerson, businessName, email, phone, id (as leadId)
+- For personalized content, use AI_GENERATE_MESSAGE action with a prompt describing what to personalize
+- Example: {"prompt": "Write a personalized birthday message for {{contactPerson}} mentioning their business {{businessName}}", "channel": "SMS"}
+- Variables are automatically replaced by the workflow engine with actual lead data
+
+VOICE CALLS IN WORKFLOWS:
+- Use WEBHOOK action to trigger voice calls via /api/outbound-calls endpoint
+- Include contactName, phoneNumber (use {{phone}}), purpose, and notes in the webhook body
+- Example: {"type": "WEBHOOK", "actionConfig": {"url": "/api/outbound-calls", "method": "POST", "body": {"contactName": "{{contactName}}", "phoneNumber": "{{phone}}", "purpose": "Birthday call", "notes": "Personalized birthday greeting", "immediate": true}}}
+
+BIRTHDAY TRIGGERS:
+- Use TIME_BASED trigger with {"type": "birthday", "field": "birthday"} or CUSTOM_FIELD_CHANGED trigger
+- For birthday workflows, trigger should fire on each contact's birthday
+
 RULES:
 1. Always use exact trigger/action type names from the lists above
 2. Keep workflow names concise and descriptive
 3. For messaging triggers, include relevant keywords in triggerConfig
 4. For actions, provide complete configuration with all required fields
-5. Use realistic delays (in minutes) between actions
-6. Return ONLY valid JSON, no markdown code blocks or explanations
-7. If the description is unclear, make reasonable assumptions and note them in suggestions`;
+5. Convert all time delays to minutes (weeks, days, hours → minutes)
+6. Use AI_GENERATE_MESSAGE for personalization when user requests personalized content
+7. Use WEBHOOK action for voice calls with proper /api/outbound-calls configuration
+8. Return ONLY valid JSON, no markdown code blocks or explanations
+9. If the description is unclear, make reasonable assumptions and note them in suggestions
+10. For complex workflows with multiple steps, ensure proper delayMinutes between actions`;
   }
 
   /**
