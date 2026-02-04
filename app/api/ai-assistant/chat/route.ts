@@ -99,9 +99,9 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // Handle regular JSON request
-      const body = await req.json();
-      message = body.message;
-      conversationHistory = body.conversationHistory || [];
+      requestBody = await req.json();
+      message = requestBody.message;
+      conversationHistory = requestBody.conversationHistory || [];
     }
 
     if (!message || !message.trim()) {
@@ -1175,10 +1175,79 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
         }
       }
     } catch (parseError: any) {
-      // Not a JSON action request, just return the regular reply
-      console.log("ℹ️ [Chat] Not an action request, returning normal reply:", parseError.message);
+      // Not a JSON action request, but check if we should try to detect action intent
+      console.log("ℹ️ [Chat] JSON parsing failed, checking for action intent in natural language");
+      
+      // Fallback: Try to detect action intent from the reply text
+      const lowerReply = reply.toLowerCase();
+      const userMessage = (requestBody?.message || message || '').toLowerCase();
+      
+      // Check if user requested an action
+      if ((lowerReply.includes('create') || lowerReply.includes('creating') || lowerReply.includes('created')) &&
+          (lowerReply.includes('contact') || lowerReply.includes('lead') || userMessage.includes('create') && (userMessage.includes('contact') || userMessage.includes('lead')))) {
+        
+        // Try to extract contact info from user message
+        const nameMatch = userMessage.match(/(?:for|named|name is|contact for)\s+([^@\n]+?)(?:\s+at|\s+with|$)/i);
+        const emailMatch = userMessage.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        const phoneMatch = userMessage.match(/(\d{3}[-.\s]?\d{3}[-.\s]?\d{4}|\d{10})/);
+        
+        if (nameMatch || emailMatch || phoneMatch) {
+          console.log("🔍 [Chat] Detected create_lead intent from natural language, attempting to execute");
+          
+          const parameters: any = {};
+          if (nameMatch) parameters.name = nameMatch[1].trim();
+          if (emailMatch) parameters.email = emailMatch[1];
+          if (phoneMatch) parameters.phone = phoneMatch[1].replace(/[-.\s]/g, '');
+          
+          if (parameters.name) {
+            try {
+              // Execute the action directly
+              const cookieHeader = req.headers.get("cookie") || "";
+              const actionResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/ai-assistant/actions`, {
+                method: "POST",
+                headers: { 
+                  "Content-Type": "application/json",
+                  "Cookie": cookieHeader
+                },
+                body: JSON.stringify({
+                  action: "create_lead",
+                  parameters: parameters,
+                  userId: user.id,
+                }),
+              });
+
+              if (actionResponse.ok) {
+                const actionResponseData = await actionResponse.json();
+                console.log("✅ [Chat] Action executed via fallback detection:", actionResponseData);
+                actionResult = actionResponseData;
+                
+                const result = actionResponseData.result;
+                const leadId = result?.lead?.id;
+                const leadName = result?.lead?.contactPerson || result?.lead?.businessName || parameters.name;
+                const leadEmail = result?.lead?.email || parameters.email || 'No email';
+                const leadPhone = result?.lead?.phone || parameters.phone || 'No phone';
+                
+                finalReply = `✓ Contact created successfully!\n\nContact Details:\n• Name: ${leadName}`;
+                if (leadEmail !== 'No email') finalReply += `\n• Email: ${leadEmail}`;
+                if (leadPhone !== 'No phone') finalReply += `\n• Phone: ${leadPhone}`;
+                finalReply += `\n\nTaking you to your Contacts page...`;
+                
+                navigationUrl = leadId ? `/dashboard/contacts?id=${leadId}` : "/dashboard/contacts";
+              } else {
+                const errorData = await actionResponse.json();
+                console.error("❌ [Chat] Fallback action execution failed:", errorData);
+                finalReply = `I tried to create the contact but encountered an error: ${errorData.error || 'Unknown error'}. Please try again.`;
+              }
+            } catch (fallbackError: any) {
+              console.error("❌ [Chat] Fallback action execution error:", fallbackError);
+              finalReply = `I detected you wanted to create a contact, but encountered an error. Please try again or contact support.`;
+            }
+          }
+        }
+      }
+      
       // Log the actual reply to help debug why JSON wasn't detected
-      if (reply.length < 500) {
+      if (reply.length < 500 && !actionResult) {
         console.log("ℹ️ [Chat] Reply content:", reply);
       }
     }
@@ -1193,9 +1262,8 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
         (reply.toLowerCase().includes('contact') || reply.toLowerCase().includes('lead') || reply.toLowerCase().includes('deal'))
       );
       if (hasActionKeyword) {
-        console.warn("⚠️ [Chat] Detected action keyword but no action executed - user may have been navigated incorrectly");
-        // Don't clear navigationUrl here - let it navigate but log the issue
-        // The action might have been in the LLM's intent but not executed
+        console.warn("⚠️ [Chat] Detected action keyword but no action executed - clearing navigation");
+        navigationUrl = null; // Clear navigation if action didn't execute
       }
     }
 
