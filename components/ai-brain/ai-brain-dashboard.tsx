@@ -395,7 +395,14 @@ export function AIBrainDashboard() {
                 ))}
               </div>
             </div>
-          </div>
+              </div>
+            </Card>
+          ) : (
+            <Card className="p-6 bg-gray-900 border-gray-800">
+              <div className="text-center py-8 text-gray-400">
+                <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No predictions available yet. Keep using the CRM to generate predictions.</p>
+              </div>
             </Card>
           )}
 
