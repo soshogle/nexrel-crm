@@ -313,7 +313,7 @@ export class ReviewFeedbackService {
           description: `Customer provided ${feedback.rating}-star feedback: ${feedback.feedbackText || 'No text provided'}. Resolution offer sent.`,
           priority: 'HIGH',
           dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-          status: 'PENDING',
+          status: 'TODO',
         },
       });
 
