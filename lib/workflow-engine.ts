@@ -801,81 +801,72 @@ export class WorkflowEngine {
     const purpose = this.replaceVariables(config.purpose || 'Workflow call', lead);
     const notes = config.notes ? this.replaceVariables(config.notes, lead) : null;
 
-    // Call the makeOutboundCall function from actions route
-    // Since we're in the same server context, we can import and call it directly
-    try {
-      const { makeOutboundCall: makeCall } = await import('../app/api/ai-assistant/actions/route');
-      // Actually, we can't import from route files easily. Let's call the API internally
-      // Or better: implement the logic directly here
-      
-      const contactName = lead.contactPerson || lead.businessName || 'Contact';
-      
-      // Create outbound call record
-      const outboundCall = await prisma.outboundCall.create({
-        data: {
-          userId: context.userId,
-          voiceAgentId: voiceAgent.id,
-          leadId: lead.id,
-          name: contactName,
-          phoneNumber: lead.phone,
-          status: config.immediate !== false ? 'IN_PROGRESS' : 'SCHEDULED',
-          scheduledFor: config.scheduledFor ? new Date(config.scheduledFor) : undefined,
-          purpose: purpose,
-          notes: notes,
-        },
-      });
+    const contactName = lead.contactPerson || lead.businessName || 'Contact';
+    
+    // Create outbound call record
+    const outboundCall = await prisma.outboundCall.create({
+      data: {
+        userId: context.userId,
+        voiceAgentId: voiceAgent.id,
+        leadId: lead.id,
+        name: contactName,
+        phoneNumber: lead.phone,
+        status: config.immediate !== false ? 'IN_PROGRESS' : 'SCHEDULED',
+        scheduledFor: config.scheduledFor ? new Date(config.scheduledFor) : undefined,
+        purpose: purpose,
+        notes: notes,
+      },
+    });
 
-      // If immediate, initiate the call
-      if (config.immediate !== false) {
-        try {
-          const { elevenLabsService } = await import('./elevenlabs');
-          const callResult = await elevenLabsService.initiatePhoneCall(
-            voiceAgent.elevenLabsAgentId!,
-            lead.phone
-          );
+    // If immediate, initiate the call
+    if (config.immediate !== false) {
+      try {
+        const { elevenLabsService } = await import('./elevenlabs');
+        const callResult = await elevenLabsService.initiatePhoneCall(
+          voiceAgent.elevenLabsAgentId!,
+          lead.phone
+        );
 
-          // Create call log
-          await prisma.callLog.create({
-            data: {
-              userId: context.userId,
-              voiceAgentId: voiceAgent.id,
-              leadId: lead.id,
-              direction: 'OUTBOUND',
-              status: 'INITIATED',
-              fromNumber: voiceAgent.twilioPhoneNumber || 'System',
-              toNumber: lead.phone,
-              elevenLabsConversationId: callResult.conversation_id || callResult.call_id || callResult.id || undefined,
-            },
-          });
+        // Create call log
+        const callLog = await prisma.callLog.create({
+          data: {
+            userId: context.userId,
+            voiceAgentId: voiceAgent.id,
+            leadId: lead.id,
+            direction: 'OUTBOUND',
+            status: 'INITIATED',
+            fromNumber: voiceAgent.twilioPhoneNumber || 'System',
+            toNumber: lead.phone,
+            elevenLabsConversationId: callResult.conversation_id || callResult.call_id || callResult.id || undefined,
+          },
+        });
 
-          // Update outbound call
-          await prisma.outboundCall.update({
-            where: { id: outboundCall.id },
-            data: {
-              status: 'IN_PROGRESS',
-              attemptCount: 1,
-              lastAttemptAt: new Date(),
-            },
-          });
-        } catch (callError: any) {
-          console.error('Error initiating call in workflow:', callError);
-          await prisma.outboundCall.update({
-            where: { id: outboundCall.id },
-            data: { status: 'FAILED' },
-          });
-        }
+        // Update outbound call
+        await prisma.outboundCall.update({
+          where: { id: outboundCall.id },
+          data: {
+            status: 'IN_PROGRESS',
+            callLogId: callLog.id,
+            attemptCount: 1,
+            lastAttemptAt: new Date(),
+          },
+        });
+      } catch (callError: any) {
+        console.error('Error initiating call in workflow:', callError);
+        await prisma.outboundCall.update({
+          where: { id: outboundCall.id },
+          data: { status: 'FAILED' },
+        });
+        throw new Error(`Failed to initiate call: ${callError.message}`);
       }
-
-      return {
-        action: 'call_initiated',
-        outboundCallId: outboundCall.id,
-        phone: lead.phone,
-        contactName: contactName,
-      };
-    } catch (error: any) {
-      console.error('Error making outbound call in workflow:', error);
-      throw new Error(`Failed to make outbound call: ${error.message}`);
     }
+
+    return {
+      action: 'call_initiated',
+      outboundCallId: outboundCall.id,
+      phone: lead.phone,
+      contactName: contactName,
+    };
   }
 
   /**
