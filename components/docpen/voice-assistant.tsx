@@ -69,8 +69,6 @@ export function VoiceAssistant({
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const audioQueueRef = useRef<AudioBuffer[]>([]);
-  const isPlayingAudioRef = useRef<boolean>(false);
 
   // Scroll to bottom when messages change
   useEffect(() => {
