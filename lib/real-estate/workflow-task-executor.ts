@@ -575,15 +575,6 @@ async function generatePresentation(
         slides: [],
       },
     };
-    
-    // Store presentation ID in workflow instance metadata
-    const instanceMetadata = (instance.metadata as any) || {};
-    instanceMetadata.presentationId = result.presentation?.id;
-    
-    await prisma.rEWorkflowInstance.update({
-      where: { id: instance.id },
-      data: { metadata: instanceMetadata },
-    });
 
     return {
       success: true,
