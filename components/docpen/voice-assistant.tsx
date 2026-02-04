@@ -63,6 +63,7 @@ export function VoiceAssistant({
   const [error, setError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [connectionStartTime, setConnectionStartTime] = useState<Date | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -89,7 +90,13 @@ export function VoiceAssistant({
         sessionContext: { patientName, chiefComplaint, sessionId },
       });
 
-      const response = await fetch('/api/docpen/voice-agent', {
+      // Use forceCreate if we've had connection issues
+      const forceCreate = retryCount > 0;
+      const url = forceCreate 
+        ? '/api/docpen/voice-agent?forceCreate=true'
+        : '/api/docpen/voice-agent';
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,6 +107,7 @@ export function VoiceAssistant({
             chiefComplaint,
             sessionId,
           },
+          forceCreate: forceCreate,
         }),
       });
 
@@ -791,17 +799,77 @@ export function VoiceAssistant({
           reason: event.reason,
           wasClean: event.wasClean,
           timestamp: new Date().toISOString(),
+          connectionDuration: connectionStartTime 
+            ? `${Math.round((Date.now() - connectionStartTime.getTime()) / 1000)}s`
+            : 'unknown',
         });
         setIsConnected(false);
         setIsConnecting(false);
         await saveConversation();
         cleanup();
+        
+        // If connection closed immediately (within 5 seconds) with code 1005, agent likely doesn't exist
+        const connectionDuration = connectionStartTime 
+          ? Date.now() - connectionStartTime.getTime()
+          : 0;
+        const closedImmediately = connectionDuration < 5000 && event.code === 1005;
+        
         if (!event.wasClean && event.code !== 1000) {
-          const errorMsg = event.code === 1005 
-            ? 'Connection closed unexpectedly. The agent may not exist in ElevenLabs.'
-            : t('connectionClosed', { code: event.code });
-          toast.error(errorMsg);
-          setError(errorMsg);
+          let errorMsg = '';
+          if (closedImmediately && retryCount < 1) {
+            // First time this happens - try forcing a new agent creation
+            errorMsg = 'Connection closed immediately. Creating a new agent...';
+            console.error('❌ [Docpen] Connection closed immediately - agent likely missing from ElevenLabs');
+            console.log('🔄 [Docpen] Retrying with forceCreate=true...');
+            
+            // Retry with forceCreate
+            setRetryCount(prev => prev + 1);
+            setTimeout(async () => {
+              try {
+                console.log('🔄 [Docpen] Retrying agent initialization with forceCreate...');
+                const response = await fetch('/api/docpen/voice-agent?forceCreate=true', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    profession,
+                    customProfession,
+                    sessionContext: {
+                      patientName,
+                      chiefComplaint,
+                      sessionId,
+                    },
+                  }),
+                });
+                
+                if (response.ok) {
+                  const data = await response.json();
+                  console.log('✅ [Docpen] New agent created:', data.agentId);
+                  setAgentId(data.agentId);
+                  // Retry connection with new agent
+                  setTimeout(() => connect(), 1000);
+                } else {
+                  const error = await response.json();
+                  console.error('❌ [Docpen] Failed to create new agent:', error);
+                  setError('Failed to create new agent. Please check ElevenLabs API key.');
+                  toast.error('Failed to create new agent. Please check ElevenLabs API key.');
+                }
+              } catch (retryError: any) {
+                console.error('❌ [Docpen] Retry failed:', retryError);
+                setError('Failed to retry connection. Please refresh the page.');
+                toast.error('Failed to retry connection. Please refresh the page.');
+              }
+            }, 1000);
+          } else {
+            errorMsg = closedImmediately
+              ? 'Connection closed immediately. The agent may not exist in ElevenLabs. Please refresh and try again.'
+              : event.code === 1005 
+                ? 'Connection closed unexpectedly. Please try again.'
+                : t('connectionClosed', { code: event.code });
+          }
+          if (errorMsg) {
+            toast.error(errorMsg);
+            setError(errorMsg);
+          }
         }
       };
     } catch (err: any) {
