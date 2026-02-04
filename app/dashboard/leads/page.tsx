@@ -16,7 +16,26 @@ export default async function LeadsPage() {
 
     // Fetch leads without relations first to avoid potential issues
     // Explicitly select fields to avoid issues with missing columns like dateOfBirth
-    let leadsData;
+    let leadsData: Array<{
+      id: string;
+      businessName: string;
+      contactPerson: string | null;
+      email: string | null;
+      phone: string | null;
+      website: string | null;
+      address: string | null;
+      city: string | null;
+      state: string | null;
+      zipCode: string | null;
+      country: string | null;
+      status: string;
+      source: string;
+      contactType: string;
+      tags: any;
+      createdAt: Date;
+      updatedAt: Date;
+      lastContactedAt: Date | null;
+    }> = [];
     try {
       leadsData = await prisma.lead.findMany({
         where: { userId: session.user.id },
