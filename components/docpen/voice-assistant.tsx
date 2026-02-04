@@ -304,8 +304,18 @@ export function VoiceAssistant({
       // Step 4: Set up SDK session options
       const sessionOptions = {
         conversationToken,
-        onConnect: () => {
-          console.log('✅ [Docpen] SDK connected');
+        onConnect: (event?: any) => {
+          console.log('✅ [Docpen] SDK connected', event);
+          
+          // Try to get conversation ID from event or session object
+          if (event?.conversation_id) {
+            console.log('📝 [Docpen] Conversation ID from onConnect:', event.conversation_id);
+            setConversationId(event.conversation_id);
+          } else if (conversationRef.current?.conversation_id) {
+            console.log('📝 [Docpen] Conversation ID from session object:', conversationRef.current.conversation_id);
+            setConversationId(conversationRef.current.conversation_id);
+          }
+          
           setIsConnected(true);
           setIsConnecting(false);
           setConnectionStartTime(new Date());
@@ -333,9 +343,9 @@ export function VoiceAssistant({
         onMessage: (message: any) => {
           console.log('📨 [Docpen] SDK message:', message);
           
-          // Capture conversation ID if provided
+          // Capture conversation ID if provided in message
           if (message.conversation_id && !conversationId) {
-            console.log('📝 [Docpen] Captured conversation ID:', message.conversation_id);
+            console.log('📝 [Docpen] Captured conversation ID from message:', message.conversation_id);
             setConversationId(message.conversation_id);
           }
           
@@ -348,6 +358,15 @@ export function VoiceAssistant({
             };
             setMessages((prev) => [...prev, newMsg]);
             onTranscript?.(message.message, message.source === 'ai' ? 'assistant' : 'user');
+          }
+        },
+        onEvent: (event: any) => {
+          console.log('📡 [Docpen] SDK event:', event);
+          
+          // Capture conversation ID from events
+          if (event?.conversation_id && !conversationId) {
+            console.log('📝 [Docpen] Captured conversation ID from event:', event.conversation_id);
+            setConversationId(event.conversation_id);
           }
         },
         onModeChange: (mode: any) => {
@@ -379,6 +398,19 @@ export function VoiceAssistant({
         console.log('🔗 [Docpen] Starting WebRTC session...');
         conversationRef.current = await startWebrtcSession();
         console.log('✅ [Docpen] WebRTC session started');
+        
+        // Try to get conversation ID from session object after connection
+        setTimeout(() => {
+          if (conversationRef.current) {
+            const sessionConvId = (conversationRef.current as any).conversation_id || 
+                                 (conversationRef.current as any).conversationId ||
+                                 (conversationRef.current as any).getConversationId?.();
+            if (sessionConvId && !conversationId) {
+              console.log('📝 [Docpen] Conversation ID from session object:', sessionConvId);
+              setConversationId(sessionConvId);
+            }
+          }
+        }, 1000);
       } catch (sessionError: any) {
         const message = sessionError?.message || '';
         if (message.includes('Failed to fetch') || message.includes('signal')) {
