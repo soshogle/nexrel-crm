@@ -265,7 +265,7 @@ export function VoiceAssistant({
           setRetryCount(0);
           toast.success(t('voiceAssistantConnected'));
         },
-        onDisconnect: () => {
+        onDisconnect: async () => {
           console.log('🔔 [Docpen] SDK disconnected');
           setIsConnected(false);
           setIsAgentSpeaking(false);
