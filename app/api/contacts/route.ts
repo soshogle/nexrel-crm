@@ -149,6 +149,7 @@ export async function GET(request: Request) {
     let contacts;
     try {
       // First, get the contacts without _count
+      // Explicitly select fields to avoid issues with missing columns like dateOfBirth
       contacts = await prisma.lead.findMany({
         where,
         select: {
@@ -161,7 +162,7 @@ export async function GET(request: Request) {
           contactType: true,
           tags: true,
           lastContactedAt: true,
-          dateOfBirth: true,
+          // Exclude dateOfBirth if it doesn't exist in database yet
           createdAt: true,
         },
         orderBy: {

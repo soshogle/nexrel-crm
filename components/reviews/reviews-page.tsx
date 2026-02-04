@@ -133,7 +133,7 @@ export function ReviewsPage() {
       FACEBOOK: 'bg-blue-600/20 text-blue-300 border-blue-600/30',
       YELP: 'bg-red-500/20 text-red-400 border-red-500/30',
       TRUSTPILOT: 'bg-green-500/20 text-green-400 border-green-500/30',
-      OTHER: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+      OTHER: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
     };
     return colors[source] || colors.OTHER;
   };
@@ -147,7 +147,7 @@ export function ReviewsPage() {
             className={`h-4 w-4 ${
               star <= rating
                 ? 'fill-yellow-400 text-yellow-400'
-                : 'text-gray-400'
+                : 'text-purple-400/50'
             }`}
           />
         ))}
@@ -264,7 +264,7 @@ export function ReviewsPage() {
               <SelectTrigger className="w-full md:w-[180px] bg-white/5 border-white/10 text-white">
                 <SelectValue placeholder="All Sources" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-gray-700">
+              <SelectContent className="bg-purple-900/90 border-purple-500/30 backdrop-blur-xl">
                 <SelectItem value="all">All Sources</SelectItem>
                 <SelectItem value="GOOGLE">Google</SelectItem>
                 <SelectItem value="FACEBOOK">Facebook</SelectItem>
@@ -277,7 +277,7 @@ export function ReviewsPage() {
               <SelectTrigger className="w-full md:w-[180px] bg-white/5 border-white/10 text-white">
                 <SelectValue placeholder="All Ratings" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-gray-700">
+              <SelectContent className="bg-purple-900/90 border-purple-500/30 backdrop-blur-xl">
                 <SelectItem value="all">All Ratings</SelectItem>
                 <SelectItem value="5">5 Stars</SelectItem>
                 <SelectItem value="4">4 Stars</SelectItem>
