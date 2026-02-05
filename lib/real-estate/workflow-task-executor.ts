@@ -430,6 +430,7 @@ async function generateCMA(
       city: actionConfig?.city || lead?.city || '',
       state: actionConfig?.state || lead?.state || '',
       zip: actionConfig?.zip || lead?.zipCode || '',
+      propertyType: actionConfig?.propertyType || 'Single Family',
     };
 
     // Use the CMA library function directly
@@ -438,13 +439,14 @@ async function generateCMA(
     const cmaResult = await generateCMALib(
       {
         address: propertyData.address,
+        city: propertyData.city,
+        state: propertyData.state,
+        zip: propertyData.zip,
+        propertyType: propertyData.propertyType,
         beds: propertyData.beds,
         baths: propertyData.baths,
         sqft: propertyData.sqft,
         yearBuilt: propertyData.yearBuilt,
-        city: propertyData.city,
-        state: propertyData.state,
-        zip: propertyData.zip,
       },
       instance.userId
     );
