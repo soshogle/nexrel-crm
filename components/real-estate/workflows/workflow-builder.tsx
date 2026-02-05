@@ -240,7 +240,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
             <SelectTrigger className="w-[200px] bg-white border-purple-200 text-gray-900">
               <SelectValue placeholder="Select workflow" />
             </SelectTrigger>
-            <SelectContent className="bg-white border-purple-200 z-50">
+            <SelectContent className="bg-white border-purple-200">
               {workflows.map((w) => (
                 <SelectItem key={w.id} value={w.id} className="text-gray-900 hover:bg-purple-50">
                   {w.name}
