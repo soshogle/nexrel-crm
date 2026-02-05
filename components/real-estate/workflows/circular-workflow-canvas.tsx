@@ -167,26 +167,28 @@ export function CircularWorkflowCanvas({
       const fromPos = getPosition(from.angle, from.radius * maxRadius);
       const toPos = getPosition(to.angle, to.radius * maxRadius);
       
-      // Calculate direction from control point to target
-      const midX = (fromPos.x + toPos.x) / 2;
-      const midY = (fromPos.y + toPos.y) / 2;
+      // Calculate direct angle from source to target
+      const directAngle = Math.atan2(toPos.y - fromPos.y, toPos.x - fromPos.x);
+      
+      // Calculate connection point on the edge of the source node (exit point)
+      const fromConnectionX = fromPos.x + nodeRadius * Math.cos(directAngle);
+      const fromConnectionY = fromPos.y + nodeRadius * Math.sin(directAngle);
+      
+      // Calculate connection point on the edge of the target node (entry point)
+      const connectionX = toPos.x - nodeRadius * Math.cos(directAngle);
+      const connectionY = toPos.y - nodeRadius * Math.sin(directAngle);
+      
+      // Calculate control points for curved line
+      const midX = (fromConnectionX + connectionX) / 2;
+      const midY = (fromConnectionY + connectionY) / 2;
       
       // Pull toward center for curve
       const pullFactor = 0.2;
       const ctrlX = midX + (center.x - midX) * pullFactor;
       const ctrlY = midY + (center.y - midY) * pullFactor;
       
-      // Calculate angle from control point to target center
-      const angleToTarget = Math.atan2(toPos.y - ctrlY, toPos.x - ctrlX);
-      
-      // Calculate connection point on the edge of the target node
-      const connectionX = toPos.x - nodeRadius * Math.cos(angleToTarget);
-      const connectionY = toPos.y - nodeRadius * Math.sin(angleToTarget);
-      
-      // Calculate connection point on the edge of the source node
-      const angleFromSource = Math.atan2(toPos.y - fromPos.y, toPos.x - fromPos.x);
-      const fromConnectionX = fromPos.x + nodeRadius * Math.cos(angleFromSource);
-      const fromConnectionY = fromPos.y + nodeRadius * Math.sin(angleFromSource);
+      // Calculate angle from control point to target connection point (for arrow direction)
+      const angleToTarget = Math.atan2(connectionY - ctrlY, connectionX - ctrlX);
       
       const isHovered = hoveredTaskId === from.id || hoveredTaskId === to.id;
       
@@ -234,24 +236,26 @@ export function CircularWorkflowCanvas({
         const parentPos = getPosition(parentTask.angle, parentTask.radius * maxRadius);
         const childPos = getPosition(task.angle, task.radius * maxRadius);
         
+        // Calculate direct angle from parent to child
+        const directAngle = Math.atan2(childPos.y - parentPos.y, childPos.x - parentPos.x);
+        
+        // Calculate connection point on the edge of the parent node (exit point)
+        const parentConnectionX = parentPos.x + nodeRadius * Math.cos(directAngle);
+        const parentConnectionY = parentPos.y + nodeRadius * Math.sin(directAngle);
+        
+        // Calculate connection point on the edge of the child node (entry point)
+        const childConnectionX = childPos.x - nodeRadius * Math.cos(directAngle);
+        const childConnectionY = childPos.y - nodeRadius * Math.sin(directAngle);
+        
         // Branch lines are more curved and use green color
-        const midX = (parentPos.x + childPos.x) / 2;
-        const midY = (parentPos.y + childPos.y) / 2;
+        const midX = (parentConnectionX + childConnectionX) / 2;
+        const midY = (parentConnectionY + childConnectionY) / 2;
         const pullFactor = 0.4; // More curve for branches
         const ctrlX = midX + (center.x - midX) * pullFactor;
         const ctrlY = midY + (center.y - midY) * pullFactor;
         
-        // Calculate angle from control point to child center
-        const angleToChild = Math.atan2(childPos.y - ctrlY, childPos.x - ctrlX);
-        
-        // Calculate connection point on the edge of the child node
-        const childConnectionX = childPos.x - nodeRadius * Math.cos(angleToChild);
-        const childConnectionY = childPos.y - nodeRadius * Math.sin(angleToChild);
-        
-        // Calculate connection point on the edge of the parent node
-        const angleFromParent = Math.atan2(childPos.y - parentPos.y, childPos.x - parentPos.x);
-        const parentConnectionX = parentPos.x + nodeRadius * Math.cos(angleFromParent);
-        const parentConnectionY = parentPos.y + nodeRadius * Math.sin(angleFromParent);
+        // Calculate angle from control point to child connection point (for arrow direction)
+        const angleToChild = Math.atan2(childConnectionY - ctrlY, childConnectionX - ctrlX);
         
         const isHovered = hoveredTaskId === parentTask.id || hoveredTaskId === task.id;
         
