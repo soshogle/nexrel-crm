@@ -154,9 +154,6 @@ export function CircularWorkflowCanvas({
     const lines: React.ReactNode[] = [];
     
     // Draw sequential connections
-    // Task node size is w-20 h-20 (80px), so radius is 40px
-    const nodeRadius = 40;
-    
     for (let i = 0; i < sortedTasks.length - 1; i++) {
       const from = sortedTasks[i];
       const to = sortedTasks[i + 1];
@@ -167,7 +164,7 @@ export function CircularWorkflowCanvas({
       const fromPos = getPosition(from.angle, from.radius * maxRadius);
       const toPos = getPosition(to.angle, to.radius * maxRadius);
       
-      // Calculate direction from control point to target
+      // Calculate control points for curved line
       const midX = (fromPos.x + toPos.x) / 2;
       const midY = (fromPos.y + toPos.y) / 2;
       
@@ -176,24 +173,12 @@ export function CircularWorkflowCanvas({
       const ctrlX = midX + (center.x - midX) * pullFactor;
       const ctrlY = midY + (center.y - midY) * pullFactor;
       
-      // Calculate angle from control point to target center
-      const angleToTarget = Math.atan2(toPos.y - ctrlY, toPos.x - ctrlX);
-      
-      // Calculate connection point on the edge of the target node
-      const connectionX = toPos.x - nodeRadius * Math.cos(angleToTarget);
-      const connectionY = toPos.y - nodeRadius * Math.sin(angleToTarget);
-      
-      // Calculate connection point on the edge of the source node
-      const angleFromSource = Math.atan2(toPos.y - fromPos.y, toPos.x - fromPos.x);
-      const fromConnectionX = fromPos.x + nodeRadius * Math.cos(angleFromSource);
-      const fromConnectionY = fromPos.y + nodeRadius * Math.sin(angleFromSource);
-      
       const isHovered = hoveredTaskId === from.id || hoveredTaskId === to.id;
       
       lines.push(
         <motion.path
           key={`line-${from.id}-${to.id}`}
-          d={`M ${fromConnectionX} ${fromConnectionY} Q ${ctrlX} ${ctrlY} ${connectionX} ${connectionY}`}
+          d={`M ${fromPos.x} ${fromPos.y} Q ${ctrlX} ${ctrlY} ${toPos.x} ${toPos.y}`}
           stroke={isHovered ? 'rgba(139, 92, 246, 0.6)' : 'rgba(139, 92, 246, 0.3)'}
           strokeWidth={isHovered ? '3' : '2'}
           fill="none"
@@ -204,18 +189,19 @@ export function CircularWorkflowCanvas({
         />
       );
       
-      // Add arrow at the connection point (right at the edge)
+      // Add arrow at the end
+      const angle = Math.atan2(toPos.y - ctrlY, toPos.x - ctrlX);
       const arrowSize = 6;
-      const arrowX = connectionX;
-      const arrowY = connectionY;
+      const arrowX = toPos.x - 25 * Math.cos(angle);
+      const arrowY = toPos.y - 25 * Math.sin(angle);
       
       lines.push(
         <motion.polygon
           key={`arrow-${from.id}-${to.id}`}
           points={`
             ${arrowX},${arrowY}
-            ${arrowX - arrowSize * Math.cos(angleToTarget - Math.PI / 6)},${arrowY - arrowSize * Math.sin(angleToTarget - Math.PI / 6)}
-            ${arrowX - arrowSize * Math.cos(angleToTarget + Math.PI / 6)},${arrowY - arrowSize * Math.sin(angleToTarget + Math.PI / 6)}
+            ${arrowX - arrowSize * Math.cos(angle - Math.PI / 6)},${arrowY - arrowSize * Math.sin(angle - Math.PI / 6)}
+            ${arrowX - arrowSize * Math.cos(angle + Math.PI / 6)},${arrowY - arrowSize * Math.sin(angle + Math.PI / 6)}
           `}
           fill={isHovered ? 'rgba(139, 92, 246, 0.8)' : 'rgba(139, 92, 246, 0.5)'}
           initial={{ opacity: 0 }}
@@ -241,24 +227,12 @@ export function CircularWorkflowCanvas({
         const ctrlX = midX + (center.x - midX) * pullFactor;
         const ctrlY = midY + (center.y - midY) * pullFactor;
         
-        // Calculate angle from control point to child center
-        const angleToChild = Math.atan2(childPos.y - ctrlY, childPos.x - ctrlX);
-        
-        // Calculate connection point on the edge of the child node
-        const childConnectionX = childPos.x - nodeRadius * Math.cos(angleToChild);
-        const childConnectionY = childPos.y - nodeRadius * Math.sin(angleToChild);
-        
-        // Calculate connection point on the edge of the parent node
-        const angleFromParent = Math.atan2(childPos.y - parentPos.y, childPos.x - parentPos.x);
-        const parentConnectionX = parentPos.x + nodeRadius * Math.cos(angleFromParent);
-        const parentConnectionY = parentPos.y + nodeRadius * Math.sin(angleFromParent);
-        
         const isHovered = hoveredTaskId === parentTask.id || hoveredTaskId === task.id;
         
         lines.push(
           <motion.path
             key={`branch-${parentTask.id}-${task.id}`}
-            d={`M ${parentConnectionX} ${parentConnectionY} Q ${ctrlX} ${ctrlY} ${childConnectionX} ${childConnectionY}`}
+            d={`M ${parentPos.x} ${parentPos.y} Q ${ctrlX} ${ctrlY} ${childPos.x} ${childPos.y}`}
             stroke={isHovered ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.4)'}
             strokeWidth={isHovered ? '2.5' : '2'}
             strokeDasharray="4 4"
@@ -270,18 +244,19 @@ export function CircularWorkflowCanvas({
           />
         );
         
-        // Branch arrow at the connection point (right at the edge)
+        // Branch arrow
+        const angle = Math.atan2(childPos.y - ctrlY, childPos.x - ctrlX);
         const arrowSize = 5;
-        const arrowX = childConnectionX;
-        const arrowY = childConnectionY;
+        const arrowX = childPos.x - 25 * Math.cos(angle);
+        const arrowY = childPos.y - 25 * Math.sin(angle);
         
         lines.push(
           <motion.polygon
             key={`branch-arrow-${parentTask.id}-${task.id}`}
             points={`
               ${arrowX},${arrowY}
-              ${arrowX - arrowSize * Math.cos(angleToChild - Math.PI / 6)},${arrowY - arrowSize * Math.sin(angleToChild - Math.PI / 6)}
-              ${arrowX - arrowSize * Math.cos(angleToChild + Math.PI / 6)},${arrowY - arrowSize * Math.sin(angleToChild + Math.PI / 6)}
+              ${arrowX - arrowSize * Math.cos(angle - Math.PI / 6)},${arrowY - arrowSize * Math.sin(angle - Math.PI / 6)}
+              ${arrowX - arrowSize * Math.cos(angle + Math.PI / 6)},${arrowY - arrowSize * Math.sin(angle + Math.PI / 6)}
             `}
             fill={isHovered ? 'rgba(34, 197, 94, 0.9)' : 'rgba(34, 197, 94, 0.6)'}
             initial={{ opacity: 0 }}
