@@ -611,24 +611,31 @@ ${transcription}
 ---
 
 ## Your Task:
-Analyze the above clinical conversation and generate a comprehensive SOAP note following the specialty-specific guidelines. Structure your output as:
+Analyze the above clinical conversation and generate a comprehensive SOAP note following the specialty-specific guidelines. Write the note in natural, professional medical documentation style as a doctor would document in a patient chart. Do NOT use markdown formatting, asterisks, or bold text. Write in plain, professional medical prose.
 
-**SUBJECTIVE:**
-[Content]
+Structure your output as:
 
-**OBJECTIVE:**
-[Content]
+SUBJECTIVE:
+[Write in natural medical documentation style - describe the patient's history, symptoms, and subjective complaints as a physician would document them]
 
-**ASSESSMENT:**
-[Content with ICD-10 codes where identifiable]
+OBJECTIVE:
+[Write in natural medical documentation style - describe physical examination findings, vital signs, and objective observations as a physician would document them]
 
-**PLAN:**
-[Content with specific, actionable items]
+ASSESSMENT:
+[Write in natural medical documentation style - provide clinical assessment, diagnosis, and reasoning. Include ICD-10 codes where identifiable, but write them naturally within the text]
 
-**ADDITIONAL NOTES:** (if applicable)
-[Specialty-specific documentation, codes, or charting]
+PLAN:
+[Write in natural medical documentation style - describe treatment plan, medications, referrals, follow-up instructions as a physician would document them]
 
-IMPORTANT: Only include information explicitly mentioned or clearly implied in the transcript. Do not invent findings or diagnoses.`;
+ADDITIONAL NOTES: (if applicable)
+[Write any additional specialty-specific documentation, codes, or charting notes in natural medical prose]
+
+IMPORTANT: 
+- Write in natural, professional medical documentation style without any markdown formatting
+- Only include information explicitly mentioned or clearly implied in the transcript
+- Do not invent findings or diagnoses
+- Use standard medical terminology and abbreviations
+- Write as a physician would document in a patient chart`;
 }
 
 /**

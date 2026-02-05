@@ -92,36 +92,39 @@ function parseSOAPResponse(content: string): Omit<SOAPNote, 'processingTime' | '
     additionalNotes: '',
   };
 
-  // Try to find each section using common patterns
-  const patterns = [
-    { key: 'subjective', pattern: /\*\*SUBJECTIVE:\*\*\s*([\s\S]*?)(?=\*\*OBJECTIVE:|$)/i },
-    { key: 'objective', pattern: /\*\*OBJECTIVE:\*\*\s*([\s\S]*?)(?=\*\*ASSESSMENT:|$)/i },
-    { key: 'assessment', pattern: /\*\*ASSESSMENT:\*\*\s*([\s\S]*?)(?=\*\*PLAN:|$)/i },
-    { key: 'plan', pattern: /\*\*PLAN:\*\*\s*([\s\S]*?)(?=\*\*ADDITIONAL|$)/i },
-    { key: 'additionalNotes', pattern: /\*\*ADDITIONAL NOTES:\*\*\s*([\s\S]*?)$/i },
+  // Try to find each section using patterns (prioritize plain text, fallback to markdown)
+  // First try plain text patterns (no markdown)
+  const plainTextPatterns = [
+    { key: 'subjective', pattern: /SUBJECTIVE:?\s*([\s\S]*?)(?=OBJECTIVE:|$)/i },
+    { key: 'objective', pattern: /OBJECTIVE:?\s*([\s\S]*?)(?=ASSESSMENT:|$)/i },
+    { key: 'assessment', pattern: /ASSESSMENT:?\s*([\s\S]*?)(?=PLAN:|$)/i },
+    { key: 'plan', pattern: /PLAN:?\s*([\s\S]*?)(?=ADDITIONAL NOTES:|ADDITIONAL|$)/i },
+    { key: 'additionalNotes', pattern: /ADDITIONAL NOTES:?\s*([\s\S]*?)$/i },
   ];
 
-  for (const { key, pattern } of patterns) {
+  for (const { key, pattern } of plainTextPatterns) {
     const match = content.match(pattern);
     if (match) {
       sections[key] = match[1].trim();
     }
   }
 
-  // Fallback: try simpler patterns without markdown
+  // Fallback: try markdown patterns if plain text didn't work
   if (!sections.subjective) {
-    const altPatterns = [
-      { key: 'subjective', pattern: /SUBJECTIVE:?\s*([\s\S]*?)(?=OBJECTIVE:|$)/i },
-      { key: 'objective', pattern: /OBJECTIVE:?\s*([\s\S]*?)(?=ASSESSMENT:|$)/i },
-      { key: 'assessment', pattern: /ASSESSMENT:?\s*([\s\S]*?)(?=PLAN:|$)/i },
-      { key: 'plan', pattern: /PLAN:?\s*([\s\S]*?)(?=ADDITIONAL|$)/i },
+    const markdownPatterns = [
+      { key: 'subjective', pattern: /\*\*SUBJECTIVE:\*\*\s*([\s\S]*?)(?=\*\*OBJECTIVE:|$)/i },
+      { key: 'objective', pattern: /\*\*OBJECTIVE:\*\*\s*([\s\S]*?)(?=\*\*ASSESSMENT:|$)/i },
+      { key: 'assessment', pattern: /\*\*ASSESSMENT:\*\*\s*([\s\S]*?)(?=\*\*PLAN:|$)/i },
+      { key: 'plan', pattern: /\*\*PLAN:\*\*\s*([\s\S]*?)(?=\*\*ADDITIONAL|$)/i },
+      { key: 'additionalNotes', pattern: /\*\*ADDITIONAL NOTES:\*\*\s*([\s\S]*?)$/i },
     ];
 
-    for (const { key, pattern } of altPatterns) {
+    for (const { key, pattern } of markdownPatterns) {
       if (!sections[key]) {
         const match = content.match(pattern);
         if (match) {
-          sections[key] = match[1].trim();
+          // Remove any remaining markdown formatting from the content
+          sections[key] = match[1].trim().replace(/\*\*/g, '').replace(/\*/g, '');
         }
       }
     }

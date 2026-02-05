@@ -129,19 +129,15 @@ export function CircularWorkflowCanvas({
       return;
     }
     
-    const { displayOrder } = getGridFromPosition(draggedPosition.x, draggedPosition.y);
+    const { displayOrder: newDisplayOrder } = getGridFromPosition(draggedPosition.x, draggedPosition.y);
     const task = workflow.tasks.find(t => t.id === dragState.taskId);
     
     if (task) {
-      // Update the task with new display order (angle/radius kept for compatibility)
-      const updatedTask = {
-        ...task,
-        displayOrder: Math.max(1, Math.min(displayOrder, workflow.tasks.length)),
-      };
-      onUpdateTask(updatedTask);
-      
-      // Check for task swapping based on proximity
+      // Find the closest task to swap with, or insert at new position
       const otherTasks = workflow.tasks.filter(t => t.id !== task.id);
+      let closestTask: WorkflowTask | null = null;
+      let minDistance = Infinity;
+      
       for (const other of otherTasks) {
         const otherPos = getGridPosition(other.displayOrder);
         const distance = Math.sqrt(
@@ -149,20 +145,60 @@ export function CircularWorkflowCanvas({
           Math.pow(draggedPosition.y - otherPos.y, 2)
         );
         
-        // If dropped close to another task, swap positions
-        if (distance < 100) {
-          const updatedTasks = workflow.tasks.map(t => {
-            if (t.id === task.id) {
-              return { ...t, displayOrder: other.displayOrder };
-            }
-            if (t.id === other.id) {
-              return { ...t, displayOrder: task.displayOrder };
-            }
-            return t;
-          });
-          onReorderTasks(updatedTasks);
-          break;
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestTask = other;
         }
+      }
+      
+      // If dropped close to another task, swap positions
+      if (closestTask && minDistance < 100) {
+        const updatedTasks = workflow.tasks.map(t => {
+          if (t.id === task.id) {
+            return { ...t, displayOrder: closestTask!.displayOrder };
+          }
+          if (t.id === closestTask!.id) {
+            return { ...t, displayOrder: task.displayOrder };
+          }
+          return t;
+        });
+        // Ensure all displayOrders are valid (1 to tasks.length)
+        const sorted = [...updatedTasks].sort((a, b) => a.displayOrder - b.displayOrder);
+        const finalTasks = sorted.map((t, index) => ({ ...t, displayOrder: index + 1 }));
+        onReorderTasks(finalTasks);
+      } else {
+        // Update to new position, reordering other tasks if needed
+        const clampedOrder = Math.max(1, Math.min(newDisplayOrder, workflow.tasks.length));
+        const oldOrder = task.displayOrder;
+        
+        // Create updated tasks array
+        const updatedTasks = workflow.tasks.map(t => {
+          if (t.id === task.id) {
+            return { ...t, displayOrder: clampedOrder };
+          }
+          // Shift other tasks to make room
+          if (oldOrder < clampedOrder) {
+            // Moving forward: shift tasks between old and new position backward
+            if (t.displayOrder > oldOrder && t.displayOrder <= clampedOrder) {
+              return { ...t, displayOrder: t.displayOrder - 1 };
+            }
+          } else if (oldOrder > clampedOrder) {
+            // Moving backward: shift tasks between new and old position forward
+            if (t.displayOrder >= clampedOrder && t.displayOrder < oldOrder) {
+              return { ...t, displayOrder: t.displayOrder + 1 };
+            }
+          }
+          return t;
+        });
+        
+        // Ensure all displayOrders are valid and sequential (1 to tasks.length)
+        const sorted = [...updatedTasks].sort((a, b) => {
+          if (a.id === task.id) return clampedOrder - b.displayOrder;
+          if (b.id === task.id) return a.displayOrder - clampedOrder;
+          return a.displayOrder - b.displayOrder;
+        });
+        const finalTasks = sorted.map((t, index) => ({ ...t, displayOrder: index + 1 }));
+        onReorderTasks(finalTasks);
       }
     }
     
@@ -419,23 +455,6 @@ export function CircularWorkflowCanvas({
         })}
       </AnimatePresence>
       
-      {/* Add Task Button */}
-      {onAddTask && workflow.tasks.length > 0 && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-          <motion.button
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddTask();
-            }}
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 font-medium"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Plus className="w-4 h-4" />
-            Add Task
-          </motion.button>
-        </div>
-      )}
       
       {/* Instructions */}
       <motion.div 
@@ -453,19 +472,19 @@ export function CircularWorkflowCanvas({
         <p className="text-gray-600">Drop on task to swap</p>
       </motion.div>
       
-      {/* Stats */}
-      <div className="absolute bottom-4 right-4 flex gap-3 text-xs">
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
+      {/* Stats - positioned to not overlap diagram content */}
+      <div className="absolute bottom-4 right-4 flex gap-3 text-xs z-10">
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
           <div className="text-gray-500">Tasks</div>
           <div className="text-gray-900 font-bold">{workflow.tasks.length}</div>
         </div>
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
           <div className="text-gray-500">HITL Gates</div>
           <div className="text-purple-600 font-bold">
             {workflow.tasks.filter(t => t.isHITL).length}
           </div>
         </div>
-        <div className="bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
           <div className="text-gray-500">Agents</div>
           <div className="text-gray-900 font-bold">
             {new Set(workflow.tasks.map(t => t.assignedAgentId).filter(Boolean)).size}
