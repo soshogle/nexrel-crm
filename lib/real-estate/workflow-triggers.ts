@@ -19,19 +19,21 @@ export async function detectLeadWorkflowTriggers(
       select: { 
         id: true, 
         status: true,
-        metadata: true,
         tags: true,
+        businessCategory: true,
       },
     });
 
     if (!lead) return;
 
-    // Determine workflow type based on lead metadata or tags
-    const leadType = (lead.metadata as any)?.leadType || 
-                     lead.tags?.find(tag => tag.toLowerCase().includes('buyer') || tag.toLowerCase().includes('seller')) ||
-                     'BUYER'; // Default to buyer
-
-    const workflowType = leadType.toLowerCase().includes('seller') ? 'SELLER' : 'BUYER';
+    // Determine workflow type based on lead tags or business category
+    const tagsArray = (lead.tags as any) || [];
+    const leadType = Array.isArray(tagsArray) 
+      ? tagsArray.find((tag: string) => tag.toLowerCase().includes('buyer') || tag.toLowerCase().includes('seller'))
+      : null;
+    
+    // Default to buyer if no type found
+    const workflowType = leadType?.toLowerCase().includes('seller') ? 'SELLER' : 'BUYER';
 
     // Find active workflow templates for this type
     const templates = await prisma.rEWorkflowTemplate.findMany({
@@ -84,8 +86,16 @@ export async function detectDealStageWorkflowTriggers(
 
     if (!deal) return;
 
-    // Determine workflow type based on deal metadata or lead type
-    const workflowType = (deal.metadata as any)?.workflowType || 'BUYER';
+    // Determine workflow type based on deal customFields, lead tags, or default to buyer
+    const dealType = (deal.customFields as any)?.workflowType;
+    const leadTags = deal.lead?.tags as any;
+    const tagsArray = Array.isArray(leadTags) ? leadTags : [];
+    const leadTypeTag = tagsArray.find((tag: string) => 
+      tag.toLowerCase().includes('buyer') || tag.toLowerCase().includes('seller')
+    );
+    const workflowType = dealType || 
+                        (leadTypeTag?.toLowerCase().includes('seller') ? 'SELLER' : 'BUYER') ||
+                        'BUYER';
 
     // Find active workflow templates
     const templates = await prisma.rEWorkflowTemplate.findMany({
