@@ -11,8 +11,10 @@ import {
   DEFAULT_WORKFLOW_TEMPLATES, 
   RE_AGENT_NAMES, 
   RE_AGENT_COLORS,
-  TASK_TYPE_LABELS 
+  TASK_TYPE_LABELS,
+  getWorkflowTemplateByType
 } from '@/lib/real-estate/workflow-templates';
+import { REWorkflowType } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -38,7 +40,57 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Return templates with agent metadata
+    // Check if a specific type is requested
+    const { searchParams } = new URL(request.url);
+    const typeParam = searchParams.get('type');
+
+    if (typeParam === 'BUYER_PIPELINE' || typeParam === 'SELLER_PIPELINE') {
+      // Map BUYER_PIPELINE -> BUYER, SELLER_PIPELINE -> SELLER
+      const templateType: REWorkflowType = typeParam === 'BUYER_PIPELINE' ? 'BUYER' : 'SELLER';
+      const baseTemplate = getWorkflowTemplateByType(templateType);
+
+      if (!baseTemplate) {
+        return NextResponse.json(
+          { error: `Template not found for type: ${typeParam}` },
+          { status: 404 }
+        );
+      }
+
+      // Transform template to match WorkflowTemplate interface
+      const template = {
+        id: `template-${templateType.toLowerCase()}`,
+        name: baseTemplate.name,
+        description: baseTemplate.description || '',
+        workflowType: typeParam as 'BUYER_PIPELINE' | 'SELLER_PIPELINE',
+        tasks: baseTemplate.tasks.map((task, index) => ({
+          id: `task-${Date.now()}-${index}`,
+          name: task.name,
+          description: task.description || '',
+          taskType: task.taskType,
+          assignedAgentId: null,
+          assignedAgentName: task.assignedAgentType ? RE_AGENT_NAMES[task.assignedAgentType] : null,
+          agentColor: task.assignedAgentType ? RE_AGENT_COLORS[task.assignedAgentType]?.bg?.replace('/20', '') || '#6B7280' : '#6B7280',
+          displayOrder: task.displayOrder || index + 1,
+          isHITL: task.isHITL || false,
+          delayMinutes: task.delayValue || 0,
+          delayUnit: task.delayUnit || 'MINUTES',
+          angle: task.position?.angle || (360 / baseTemplate.tasks.length) * index,
+          radius: task.position?.radius || 0.7,
+          parentTaskId: null,
+          branchCondition: null,
+        })),
+        isDefault: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      return NextResponse.json({
+        success: true,
+        template,
+      });
+    }
+
+    // Return all templates with agent metadata (for gallery)
     const templates = DEFAULT_WORKFLOW_TEMPLATES.map(template => ({
       ...template,
       tasks: template.tasks.map(task => ({

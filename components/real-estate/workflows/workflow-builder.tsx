@@ -71,7 +71,76 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
       const res = await fetch('/api/real-estate/workflows');
       if (res.ok) {
         const data = await res.json();
-        setWorkflows(data.workflows || []);
+        // API returns 'templates' not 'workflows'
+        const dbTemplates = data.templates || [];
+        
+        // Also fetch default templates and add them to the list
+        const templatesRes = await fetch('/api/real-estate/workflows/templates');
+        let defaultTemplates: WorkflowTemplate[] = [];
+        
+        if (templatesRes.ok) {
+          const templatesData = await templatesRes.json();
+          if (templatesData.templates) {
+            // Transform default templates to match WorkflowTemplate interface
+            defaultTemplates = templatesData.templates.map((t: any, index: number) => ({
+              id: `default-${t.type.toLowerCase()}`,
+              name: t.name,
+              description: t.description || '',
+              workflowType: t.type === 'BUYER' ? 'BUYER_PIPELINE' : t.type === 'SELLER' ? 'SELLER_PIPELINE' : 'CUSTOM',
+              tasks: (t.tasks || []).map((task: any, taskIndex: number) => ({
+                id: `task-${index}-${taskIndex}`,
+                name: task.name,
+                description: task.description || '',
+                taskType: task.taskType,
+                assignedAgentId: null,
+                assignedAgentName: task.agentName || null,
+                agentColor: task.agentColors?.bg?.replace('/20', '') || '#6B7280',
+                displayOrder: task.displayOrder || taskIndex + 1,
+                isHITL: task.isHITL || false,
+                delayMinutes: task.delayValue || 0,
+                delayUnit: task.delayUnit || 'MINUTES',
+                angle: task.position?.angle || (360 / (t.tasks?.length || 1)) * taskIndex,
+                radius: task.position?.radius || 0.7,
+                parentTaskId: null,
+                branchCondition: null,
+              })),
+              isDefault: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }));
+          }
+        }
+        
+        // Transform DB templates to match WorkflowTemplate interface
+        const transformedDbTemplates = dbTemplates.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          description: t.description || '',
+          workflowType: t.type === 'BUYER' ? 'BUYER_PIPELINE' : t.type === 'SELLER' ? 'SELLER_PIPELINE' : 'CUSTOM',
+          tasks: (t.tasks || []).map((task: any) => ({
+            id: task.id,
+            name: task.name,
+            description: task.description || '',
+            taskType: task.taskType,
+            assignedAgentId: null,
+            assignedAgentName: null,
+            agentColor: '#6B7280',
+            displayOrder: task.displayOrder || 0,
+            isHITL: task.isHITL || false,
+            delayMinutes: task.delayValue || 0,
+            delayUnit: task.delayUnit || 'MINUTES',
+            angle: task.position?.angle || 0,
+            radius: task.position?.radius || 0.7,
+            parentTaskId: null,
+            branchCondition: null,
+          })),
+          isDefault: t.isDefault || false,
+          createdAt: t.createdAt || new Date().toISOString(),
+          updatedAt: t.updatedAt || new Date().toISOString(),
+        }));
+        
+        // Combine default templates with user templates
+        setWorkflows([...defaultTemplates, ...transformedDbTemplates]);
       }
     } catch (error) {
       console.error('Error fetching workflows:', error);
@@ -87,13 +156,23 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
       const res = await fetch(`/api/real-estate/workflows/templates?type=${type}`);
       if (res.ok) {
         const data = await res.json();
-        setWorkflow(data.template);
-        setSelectedTaskId(null);
-        toast.success(`Loaded ${type === 'BUYER_PIPELINE' ? 'Buyer' : 'Seller'} template`);
+        if (data.template) {
+          setWorkflow(data.template);
+          setSelectedTaskId(null);
+          toast.success(`Loaded ${type === 'BUYER_PIPELINE' ? 'Buyer' : 'Seller'} template`);
+        } else {
+          toast.error('Template not found');
+          setShowTemplateGallery(true);
+        }
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.error || 'Failed to load template');
+        setShowTemplateGallery(true);
       }
     } catch (error) {
       console.error('Error loading template:', error);
       toast.error('Failed to load template');
+      setShowTemplateGallery(true);
     } finally {
       setIsLoading(false);
     }
