@@ -135,6 +135,7 @@ async function executeVoiceCall(
         leadId: instance.leadId,
         direction: 'OUTBOUND',
         status: 'INITIATED',
+        fromNumber: process.env.TWILIO_PHONE_NUMBER || '', // Use Twilio phone number as fromNumber
         toNumber: lead.phone,
         elevenLabsConversationId: callResult.conversation_id || callResult.call_id || callResult.id || undefined,
       },
