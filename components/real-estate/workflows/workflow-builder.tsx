@@ -310,7 +310,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
         <div className="flex items-center gap-4">
           {/* Workflow Selector */}
           <Select
-            value={workflow?.id || ''}
+            value={workflow?.id || undefined}
             onValueChange={(id) => {
               const found = workflows.find(w => w.id === id);
               if (found) setWorkflow(found);
