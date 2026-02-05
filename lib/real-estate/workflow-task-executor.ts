@@ -342,7 +342,7 @@ async function createCalendarEvent(
         userId: instance.userId,
         customerName: lead.businessName || lead.contactPerson || 'Contact',
         customerEmail: lead.email || undefined,
-        customerPhone: lead.phone || undefined,
+        customerPhone: lead.phone || '', // customerPhone is required, use empty string as fallback
         appointmentDate: eventDate,
         duration,
         status: 'SCHEDULED',
