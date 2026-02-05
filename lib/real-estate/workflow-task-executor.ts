@@ -132,7 +132,7 @@ async function executeVoiceCall(
       data: {
         userId: instance.userId,
         voiceAgentId: null, // REAIEmployeeAgent doesn't have voiceAgentId, using ElevenLabs directly
-        leadId: instance.leadId,
+        leadId: instance.leadId || undefined,
         direction: 'OUTBOUND',
         status: 'INITIATED',
         fromNumber: process.env.TWILIO_PHONE_NUMBER || '', // Use Twilio phone number as fromNumber
@@ -193,7 +193,7 @@ async function executeSMS(
     await prisma.message.create({
       data: {
         userId: instance.userId,
-        leadId: instance.leadId,
+        leadId: instance.leadId || undefined,
         channel: 'SMS',
         direction: 'OUTBOUND',
         content: personalizedMessage,
@@ -276,7 +276,7 @@ async function executeEmail(
     await prisma.message.create({
       data: {
         userId: instance.userId,
-        leadId: instance.leadId,
+        leadId: instance.leadId || undefined,
         channel: 'EMAIL',
         direction: 'OUTBOUND',
         content: personalizedBody,
@@ -366,7 +366,7 @@ async function createCalendarEvent(
         status: 'SCHEDULED',
         notes: eventDescription,
         meetingLocation: location || 'PHONE_CALL',
-        leadId: instance.leadId,
+        leadId: instance.leadId || undefined,
       },
     });
 
