@@ -305,6 +305,12 @@ const merchantItems = [
     href: '/dashboard/real-estate/analytics',
     icon: TrendingUp,
   },
+  {
+    id: 'real-estate-workflows' as MenuItemId,
+    title: 'RE Workflows',
+    href: '/dashboard/real-estate/workflows',
+    icon: Workflow,
+  },
 ];
 
 // Admin items - Secure section requiring re-authentication
