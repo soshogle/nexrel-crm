@@ -149,9 +149,7 @@ export function CircularWorkflowCanvas({
   }, [dragState, draggedPosition, workflow.tasks, getAngleAndRadius, getPosition, maxRadius, onUpdateTask, onReorderTasks]);
   
   // Draw connection lines between tasks (including branches)
-  // Task node size is w-20 h-20 (80px), so radius is 40px
-  const nodeRadius = 40;
-  
+  // Lines connect through the center of task nodes so nodes sit on the line
   const renderConnections = () => {
     const sortedTasks = [...workflow.tasks].sort((a, b) => a.displayOrder - b.displayOrder);
     const lines: React.ReactNode[] = [];
@@ -167,35 +165,25 @@ export function CircularWorkflowCanvas({
       const fromPos = getPosition(from.angle, from.radius * maxRadius);
       const toPos = getPosition(to.angle, to.radius * maxRadius);
       
-      // Calculate direct angle from source to target
-      const directAngle = Math.atan2(toPos.y - fromPos.y, toPos.x - fromPos.x);
-      
-      // Calculate connection point on the edge of the source node (exit point)
-      const fromConnectionX = fromPos.x + nodeRadius * Math.cos(directAngle);
-      const fromConnectionY = fromPos.y + nodeRadius * Math.sin(directAngle);
-      
-      // Calculate connection point on the edge of the target node (entry point)
-      const connectionX = toPos.x - nodeRadius * Math.cos(directAngle);
-      const connectionY = toPos.y - nodeRadius * Math.sin(directAngle);
-      
-      // Calculate control points for curved line
-      const midX = (fromConnectionX + connectionX) / 2;
-      const midY = (fromConnectionY + connectionY) / 2;
+      // Calculate control points for curved line (connecting through centers)
+      const midX = (fromPos.x + toPos.x) / 2;
+      const midY = (fromPos.y + toPos.y) / 2;
       
       // Pull toward center for curve
       const pullFactor = 0.2;
       const ctrlX = midX + (center.x - midX) * pullFactor;
       const ctrlY = midY + (center.y - midY) * pullFactor;
       
-      // Calculate angle from control point to target connection point (for arrow direction)
-      const angleToTarget = Math.atan2(connectionY - ctrlY, connectionX - ctrlX);
+      // Calculate angle from control point to target center (for arrow direction)
+      const angleToTarget = Math.atan2(toPos.y - ctrlY, toPos.x - ctrlX);
       
       const isHovered = hoveredTaskId === from.id || hoveredTaskId === to.id;
       
+      // Line connects through centers so nodes sit on the line
       lines.push(
         <motion.path
           key={`line-${from.id}-${to.id}`}
-          d={`M ${fromConnectionX} ${fromConnectionY} Q ${ctrlX} ${ctrlY} ${connectionX} ${connectionY}`}
+          d={`M ${fromPos.x} ${fromPos.y} Q ${ctrlX} ${ctrlY} ${toPos.x} ${toPos.y}`}
           stroke={isHovered ? 'rgba(139, 92, 246, 0.6)' : 'rgba(139, 92, 246, 0.3)'}
           strokeWidth={isHovered ? '3' : '2'}
           fill="none"
@@ -206,10 +194,10 @@ export function CircularWorkflowCanvas({
         />
       );
       
-      // Add arrow at the connection point (right at the edge)
+      // Add arrow at the target center (line passes through it)
       const arrowSize = 6;
-      const arrowX = connectionX;
-      const arrowY = connectionY;
+      const arrowX = toPos.x;
+      const arrowY = toPos.y;
       
       lines.push(
         <motion.polygon
@@ -236,33 +224,23 @@ export function CircularWorkflowCanvas({
         const parentPos = getPosition(parentTask.angle, parentTask.radius * maxRadius);
         const childPos = getPosition(task.angle, task.radius * maxRadius);
         
-        // Calculate direct angle from parent to child
-        const directAngle = Math.atan2(childPos.y - parentPos.y, childPos.x - parentPos.x);
-        
-        // Calculate connection point on the edge of the parent node (exit point)
-        const parentConnectionX = parentPos.x + nodeRadius * Math.cos(directAngle);
-        const parentConnectionY = parentPos.y + nodeRadius * Math.sin(directAngle);
-        
-        // Calculate connection point on the edge of the child node (entry point)
-        const childConnectionX = childPos.x - nodeRadius * Math.cos(directAngle);
-        const childConnectionY = childPos.y - nodeRadius * Math.sin(directAngle);
-        
-        // Branch lines are more curved and use green color
-        const midX = (parentConnectionX + childConnectionX) / 2;
-        const midY = (parentConnectionY + childConnectionY) / 2;
+        // Branch lines are more curved and use green color (connecting through centers)
+        const midX = (parentPos.x + childPos.x) / 2;
+        const midY = (parentPos.y + childPos.y) / 2;
         const pullFactor = 0.4; // More curve for branches
         const ctrlX = midX + (center.x - midX) * pullFactor;
         const ctrlY = midY + (center.y - midY) * pullFactor;
         
-        // Calculate angle from control point to child connection point (for arrow direction)
-        const angleToChild = Math.atan2(childConnectionY - ctrlY, childConnectionX - ctrlX);
+        // Calculate angle from control point to child center (for arrow direction)
+        const angleToChild = Math.atan2(childPos.y - ctrlY, childPos.x - ctrlX);
         
         const isHovered = hoveredTaskId === parentTask.id || hoveredTaskId === task.id;
         
+        // Line connects through centers so nodes sit on the line
         lines.push(
           <motion.path
             key={`branch-${parentTask.id}-${task.id}`}
-            d={`M ${parentConnectionX} ${parentConnectionY} Q ${ctrlX} ${ctrlY} ${childConnectionX} ${childConnectionY}`}
+            d={`M ${parentPos.x} ${parentPos.y} Q ${ctrlX} ${ctrlY} ${childPos.x} ${childPos.y}`}
             stroke={isHovered ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.4)'}
             strokeWidth={isHovered ? '2.5' : '2'}
             strokeDasharray="4 4"
@@ -274,10 +252,10 @@ export function CircularWorkflowCanvas({
           />
         );
         
-        // Branch arrow at the connection point (right at the edge)
+        // Branch arrow at the child center (line passes through it)
         const arrowSize = 5;
-        const arrowX = childConnectionX;
-        const arrowY = childConnectionY;
+        const arrowX = childPos.x;
+        const arrowY = childPos.y;
         
         lines.push(
           <motion.polygon
