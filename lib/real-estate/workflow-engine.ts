@@ -123,9 +123,10 @@ export async function processTaskExecution(executionId: string): Promise<void> {
         await processNextTask(execution.instanceId);
         return;
       }
+      const resultData = (parentExecution.result as Record<string, any>) || {};
       const conditionMet = evaluateBranchCondition(
         branchCondition,
-        parentExecution.result || {}
+        resultData
       );
 
       if (!conditionMet) {
