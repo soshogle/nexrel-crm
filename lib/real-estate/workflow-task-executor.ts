@@ -189,18 +189,17 @@ async function executeSMS(
     // Send SMS via Twilio
     const twilioResult = await sendSMS(lead.phone, personalizedMessage);
 
-    // Log message in database
-    await prisma.message.create({
-      data: {
-        userId: instance.userId,
-        leadId: instance.leadId || undefined,
-        channel: 'SMS',
-        direction: 'OUTBOUND',
-        content: personalizedMessage,
-        status: 'SENT',
-        externalId: twilioResult.sid,
-      },
-    });
+    // Log message in database (only if leadId exists, as Message model requires it)
+    if (instance.leadId) {
+      await prisma.message.create({
+        data: {
+          userId: instance.userId,
+          leadId: instance.leadId,
+          content: personalizedMessage,
+          messageType: 'sms',
+        },
+      });
+    }
 
     return {
       success: true,
@@ -273,16 +272,17 @@ async function executeEmail(
     }
 
     // Log email in database
-    await prisma.message.create({
-      data: {
-        userId: instance.userId,
-        leadId: instance.leadId || undefined,
-        channel: 'EMAIL',
-        direction: 'OUTBOUND',
-        content: personalizedBody,
-        status: 'SENT',
-      },
-    });
+    // Log message in database (only if leadId exists, as Message model requires it)
+    if (instance.leadId) {
+      await prisma.message.create({
+        data: {
+          userId: instance.userId,
+          leadId: instance.leadId,
+          content: personalizedBody,
+          messageType: 'email',
+        },
+      });
+    }
 
     return {
       success: true,
