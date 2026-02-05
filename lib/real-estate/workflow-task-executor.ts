@@ -131,7 +131,7 @@ async function executeVoiceCall(
     const callLog = await prisma.callLog.create({
       data: {
         userId: instance.userId,
-        voiceAgentId: agent.voiceAgentId || null,
+        voiceAgentId: null, // REAIEmployeeAgent doesn't have voiceAgentId, using ElevenLabs directly
         leadId: instance.leadId,
         direction: 'OUTBOUND',
         status: 'INITIATED',
