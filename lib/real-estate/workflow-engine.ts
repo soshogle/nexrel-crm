@@ -180,7 +180,7 @@ export async function processTaskExecution(executionId: string): Promise<void> {
       data: {
         status: RETaskExecutionStatus.COMPLETED,
         completedAt: new Date(),
-        result: result,
+        result: result as any, // Cast to any for Prisma Json type compatibility
       },
     });
 
@@ -300,7 +300,7 @@ export async function approveHITLGate(
       data: {
         status: RETaskExecutionStatus.COMPLETED,
         completedAt: new Date(),
-        result: result,
+        result: result as any, // Cast to any for Prisma Json type compatibility
       },
     });
 
