@@ -170,21 +170,30 @@ export function CircularWorkflowCanvas({
     setDraggedPosition(null);
   }, [dragState, draggedPosition, workflow.tasks, getGridFromPosition, getGridPosition, onUpdateTask, onReorderTasks]);
   
+  // Helper to get actual position of a task (including dragged position)
+  const getActualPosition = useCallback((task: WorkflowTask) => {
+    if (dragState.isDragging && dragState.taskId === task.id && draggedPosition) {
+      return draggedPosition;
+    }
+    return getGridPosition(task.displayOrder);
+  }, [dragState, draggedPosition, getGridPosition]);
+  
   // Draw connection lines between tasks (horizontal within rows, vertical between rows)
   const renderConnections = () => {
     const sortedTasks = [...workflow.tasks].sort((a, b) => a.displayOrder - b.displayOrder);
     const lines: React.ReactNode[] = [];
     
-    // Draw sequential connections
+    // Draw sequential connections - connect ALL tasks in sequential order
     for (let i = 0; i < sortedTasks.length - 1; i++) {
       const from = sortedTasks[i];
       const to = sortedTasks[i + 1];
       
-      // Skip if to has a parent task (it's a branch, handled separately)
-      if (to.parentTaskId && to.parentTaskId !== from.id) continue;
+      // Always connect sequential tasks - branches are handled separately below
+      // Don't skip connections based on parentTaskId for sequential flow
       
-      const fromPos = getGridPosition(from.displayOrder);
-      const toPos = getGridPosition(to.displayOrder);
+      // Get actual positions (including dragged positions)
+      const fromPos = getActualPosition(from);
+      const toPos = getActualPosition(to);
       
       const fromRow = Math.floor((from.displayOrder - 1) / tasksPerRow);
       const toRow = Math.floor((to.displayOrder - 1) / tasksPerRow);
@@ -295,8 +304,9 @@ export function CircularWorkflowCanvas({
         const parentTask = workflow.tasks.find(t => t.id === task.parentTaskId);
         if (!parentTask) return;
         
-        const parentPos = getGridPosition(parentTask.displayOrder);
-        const childPos = getGridPosition(task.displayOrder);
+        // Get actual positions (including dragged positions)
+        const parentPos = getActualPosition(parentTask);
+        const childPos = getActualPosition(task);
         
         const isHovered = hoveredTaskId === parentTask.id || hoveredTaskId === task.id;
         
