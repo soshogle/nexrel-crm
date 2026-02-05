@@ -189,17 +189,8 @@ async function executeSMS(
     // Send SMS via Twilio
     const twilioResult = await sendSMS(lead.phone, personalizedMessage);
 
-    // Log message in database (only if leadId exists, as Message model requires it)
-    if (instance.leadId) {
-      await prisma.message.create({
-        data: {
-          userId: instance.userId,
-          leadId: instance.leadId,
-          content: personalizedMessage,
-          messageType: 'sms',
-        },
-      });
-    }
+    // Note: Message model is for AI-generated templates, not tracking sent messages
+    // SMS tracking is handled by Twilio webhooks and CallLog/ConversationMessage models
 
     return {
       success: true,
@@ -272,17 +263,8 @@ async function executeEmail(
     }
 
     // Log email in database
-    // Log message in database (only if leadId exists, as Message model requires it)
-    if (instance.leadId) {
-      await prisma.message.create({
-        data: {
-          userId: instance.userId,
-          leadId: instance.leadId,
-          content: personalizedBody,
-          messageType: 'email',
-        },
-      });
-    }
+    // Note: Message model is for AI-generated templates, not tracking sent messages
+    // Email tracking is handled by SendGrid webhooks and ConversationMessage models
 
     return {
       success: true,
