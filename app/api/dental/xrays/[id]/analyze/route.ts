@@ -14,9 +14,21 @@ import { t } from '@/lib/i18n-server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization - only create client when actually needed
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openaiClient = new OpenAI({
+      apiKey,
+    });
+  }
+  return openaiClient;
+}
 
 // POST /api/dental/xrays/[id]/analyze - Analyze X-ray with AI
 export async function POST(
@@ -92,7 +104,7 @@ export async function POST(
     const mimeType = imageResponse.headers.get('content-type') || 'image/png';
 
     // Analyze with GPT-4 Vision
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4-vision-preview',
       messages: [
         {
