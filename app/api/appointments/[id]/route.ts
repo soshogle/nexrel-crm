@@ -78,6 +78,7 @@ export async function PATCH(
       notes,
       startTime,
       endTime,
+      metadata,
     } = body
 
     // Verify ownership
@@ -99,6 +100,15 @@ export async function PATCH(
     const updateData: any = {}
     if (status !== undefined) updateData.status = status
     if (notes !== undefined) updateData.notes = notes
+    if (metadata !== undefined) {
+      // Merge with existing metadata
+      const existingMetadata = existingAppointment.customerResponses
+      if (existingMetadata && typeof existingMetadata === 'object' && !Array.isArray(existingMetadata)) {
+        updateData.customerResponses = { ...existingMetadata, ...metadata }
+      } else {
+        updateData.customerResponses = metadata
+      }
+    }
     
     // Handle date/time updates - convert to appointmentDate and duration
     if (startTime !== undefined && endTime !== undefined) {

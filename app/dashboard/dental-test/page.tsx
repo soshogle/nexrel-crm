@@ -20,7 +20,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { FileText, Activity, ClipboardList, Calendar, Stethoscope, FormInput, FileCheck, FilePlus } from 'lucide-react';
+import { FileText, Activity, ClipboardList, Calendar, Stethoscope, FormInput, FileCheck, FilePlus, Monitor, Grid3x3, Building2, PenTool, Scan } from 'lucide-react';
+import { TouchScreenWelcome } from '@/components/dental/touch-screen-welcome';
+import { MultiChairAgenda } from '@/components/dental/multi-chair-agenda';
+import { RAMQIntegration } from '@/components/dental/ramq-integration';
+import { ElectronicSignature } from '@/components/dental/electronic-signature';
+import { XRayUpload } from '@/components/dental/xray-upload';
 
 export default function DentalTestPage() {
   const { data: session } = useSession();
@@ -322,7 +327,7 @@ export default function DentalTestPage() {
 
       {selectedLeadId ? (
         <Tabs defaultValue="odontogram" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-14">
             <TabsTrigger value="odontogram" className="gap-2">
               <Activity className="h-4 w-4" />
               Odontogram
@@ -358,6 +363,26 @@ export default function DentalTestPage() {
             <TabsTrigger value="documents" className="gap-2">
               <FileText className="h-4 w-4" />
               Documents
+            </TabsTrigger>
+            <TabsTrigger value="touch-screen" className="gap-2">
+              <Monitor className="h-4 w-4" />
+              Check-In
+            </TabsTrigger>
+            <TabsTrigger value="multi-chair" className="gap-2">
+              <Grid3x3 className="h-4 w-4" />
+              Multi-Chair
+            </TabsTrigger>
+            <TabsTrigger value="ramq" className="gap-2">
+              <Building2 className="h-4 w-4" />
+              RAMQ
+            </TabsTrigger>
+            <TabsTrigger value="signature" className="gap-2">
+              <PenTool className="h-4 w-4" />
+              Signature
+            </TabsTrigger>
+            <TabsTrigger value="xray" className="gap-2">
+              <Scan className="h-4 w-4" />
+              X-Ray
             </TabsTrigger>
           </TabsList>
 
@@ -466,6 +491,92 @@ export default function DentalTestPage() {
               leadId={selectedLeadId}
               onUploadComplete={handleDocumentUploadComplete}
             />
+          </TabsContent>
+
+          <TabsContent value="touch-screen">
+            {session?.user?.id ? (
+              <TouchScreenWelcome
+                userId={session.user.id}
+                onCheckIn={() => {
+                  toast.success('Patient checked in');
+                }}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please sign in to use check-in system</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="multi-chair">
+            {session?.user?.id ? (
+              <MultiChairAgenda
+                userId={session.user.id}
+                selectedDate={new Date()}
+                onAppointmentUpdated={() => {
+                  toast.success('Appointment updated');
+                }}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please sign in to view multi-chair agenda</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="ramq">
+            {session?.user?.id ? (
+              <RAMQIntegration
+                userId={session.user.id}
+                leadId={selectedLeadId || undefined}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please sign in to manage RAMQ claims</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="signature">
+            {session?.user?.id ? (
+              <ElectronicSignature
+                userId={session.user.id}
+                leadId={selectedLeadId || undefined}
+                onSignatureComplete={(signatureData) => {
+                  toast.success('Signature completed');
+                }}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please sign in to use electronic signature</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="xray">
+            {session?.user?.id && selectedLeadId ? (
+              <XRayUpload
+                userId={session.user.id}
+                leadId={selectedLeadId}
+                onUploadComplete={() => {
+                  toast.success('X-ray uploaded successfully');
+                }}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please sign in and select a patient to upload X-rays</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       ) : (

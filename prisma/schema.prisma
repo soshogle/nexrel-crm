@@ -229,6 +229,7 @@ model User {
   dentalProcedures            DentalProcedure[]
   dentalForms                 DentalForm[]
   dentalFormResponses         DentalFormResponse[]
+  dentalXRays                 DentalXRay[]
   practiceDocuments           PatientDocument[]            @relation("PracticeDocuments")
   documentConsents            DocumentConsent[]
   documentAccessLogs          DocumentAccessLog[]          @relation("DocumentAccessLogUser")
@@ -351,6 +352,7 @@ model Lead {
   dentalTreatmentPlans    DentalTreatmentPlan[]
   dentalProcedures        DentalProcedure[]
   dentalFormResponses     DentalFormResponse[]
+  dentalXRays             DentalXRay[]
   patientDocuments        PatientDocument[]        @relation("PatientDocuments")
   documentConsents        DocumentConsent[]
   dataAccessRequests      DataAccessRequest[]
@@ -8337,6 +8339,47 @@ model DentalFormResponse {
   @@index([userId])
   @@index([formId])
   @@index([submittedAt])
+}
+
+// Dental X-Ray - X-ray images with AI analysis
+model DentalXRay {
+  id              String   @id @default(cuid())
+  leadId          String   // Patient
+  userId          String   // Practice
+  
+  // File info
+  dicomFile       String?  // Path to DICOM file in Canadian storage
+  imageFile       String?  // Path to converted image (for display)
+  imageUrl        String?  // URL for preview
+  
+  // X-ray metadata
+  xrayType        String   // PANORAMIC, BITEWING, PERIAPICAL, CEPHALOMETRIC, CBCT
+  teethIncluded   String[] // ["1", "2", "3"] - Universal numbering
+  dateTaken       DateTime
+  
+  // AI Analysis
+  aiAnalysis      Json?    // { findings: "...", confidence: 0.95, recommendations: "...", model: "gpt-4-vision" }
+  aiAnalyzedAt    DateTime?
+  aiModel         String?  // "gpt-4-vision", "denti-ai", etc.
+  
+  // Comparison
+  comparedToXRayId String? // Link to previous X-ray for comparison
+  
+  // Notes
+  notes           String?  @db.Text
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  // Relations
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([leadId])
+  @@index([userId])
+  @@index([dateTaken])
+  @@index([xrayType])
 }
 
 // Enums for dental models
