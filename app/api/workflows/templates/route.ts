@@ -88,12 +88,23 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Return all templates
+    // Return all templates with transformed structure for WorkflowTemplatesBrowser
     const templates = industryConfig.templates.map(template => ({
       id: template.id,
       name: template.name,
       description: template.description,
       workflowType: template.workflowType,
+      category: 'automation', // Default category
+      tags: [template.workflowType.toLowerCase().replace(/_/g, '-'), 'automation'],
+      icon: '⚡', // Default icon
+      estimatedDuration: `${template.tasks.length * 5} minutes`,
+      difficulty: template.tasks.length > 5 ? 'advanced' : template.tasks.length > 3 ? 'intermediate' : 'beginner',
+      variables: [],
+      actions: template.tasks.map(task => ({
+        type: task.taskType,
+        name: task.name,
+        description: task.description,
+      })),
       taskCount: template.tasks.length,
       hitlGates: template.tasks.filter(t => t.isHITL).length,
       agentsAssigned: new Set(
