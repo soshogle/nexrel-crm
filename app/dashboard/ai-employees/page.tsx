@@ -53,6 +53,19 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { RealEstateAIEmployees } from '@/components/ai-employees/real-estate-employees';
 import { REWorkflowsTab } from '@/components/real-estate/workflows/re-workflows-tab';
+// Generic Multi-Industry Workflow Tabs
+import { IndustryWorkflowsTab } from '@/components/workflows/industry-workflows-tab';
+import { MedicalWorkflowsTab } from '@/components/medical/workflows/medical-workflows-tab';
+import { RestaurantWorkflowsTab } from '@/components/restaurant/workflows/restaurant-workflows-tab';
+import { ConstructionWorkflowsTab } from '@/components/construction/workflows/construction-workflows-tab';
+import { DentistWorkflowsTab } from '@/components/dentist/workflows/dentist-workflows-tab';
+import { MedicalSpaWorkflowsTab } from '@/components/medical-spa/workflows/medical-spa-workflows-tab';
+import { OptometristWorkflowsTab } from '@/components/optometrist/workflows/optometrist-workflows-tab';
+import { HealthClinicWorkflowsTab } from '@/components/health-clinic/workflows/health-clinic-workflows-tab';
+import { HospitalWorkflowsTab } from '@/components/hospital/workflows/hospital-workflows-tab';
+import { TechnologyWorkflowsTab } from '@/components/technology/workflows/technology-workflows-tab';
+import { SportsClubWorkflowsTab } from '@/components/sports-club/workflows/sports-club-workflows-tab';
+import { getIndustryConfig } from '@/lib/workflows/industry-configs';
 
 // Full Task Manager Component - Imported from admin tasks page
 import CreateTaskDialog from '@/components/tasks/create-task-dialog';
@@ -560,11 +573,12 @@ export default function AIEmployeesPage() {
   const { data: session } = useSession() || {};
   const userIndustry = (session?.user as any)?.industry;
   const isRealEstateUser = userIndustry === 'REAL_ESTATE';
+  const hasWorkflowSystem = userIndustry && userIndustry !== 'REAL_ESTATE' && getIndustryConfig(userIndustry) !== null;
 
   // Tab parameter from URL
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const defaultTab = tabParam && ['trigger', 'ai-team', 're-team', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'trigger';
+  const defaultTab = tabParam && ['trigger', 'ai-team', 're-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'trigger';
 
   useEffect(() => {
     fetchJobs();
@@ -1142,7 +1156,11 @@ export default function AIEmployeesPage() {
       </div>
 
       <Tabs defaultValue={defaultTab} className="space-y-6">
-        <TabsList className={`grid w-full ${isRealEstateUser ? 'grid-cols-6' : 'grid-cols-4'}`}>
+        <TabsList className={`grid w-full ${
+          isRealEstateUser ? 'grid-cols-6' : 
+          hasWorkflowSystem ? 'grid-cols-5' : 
+          'grid-cols-4'
+        }`}>
           <TabsTrigger value="trigger">Trigger Tasks</TabsTrigger>
           <TabsTrigger value="ai-team">AI Team</TabsTrigger>
           {isRealEstateUser && (
@@ -1153,7 +1171,7 @@ export default function AIEmployeesPage() {
               RE Team
             </TabsTrigger>
           )}
-          {isRealEstateUser && (
+          {(isRealEstateUser || hasWorkflowSystem) && (
             <TabsTrigger 
               value="workflows"
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
@@ -1227,307 +1245,8 @@ export default function AIEmployeesPage() {
             </CardContent>
           </Card>
 
-          {/* Complete Workflow Card - Flexible Builder */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Workflow className="h-5 w-5" />
-                Workflow Builder
-              </CardTitle>
-              <CardDescription>
-                Create custom automated workflows with drag-and-drop sequences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Workflow Purpose & Template Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Target className="h-4 w-4" /> Workflow Purpose
-                  </Label>
-                  <select
-                    value={workflowPurpose}
-                    onChange={(e) => loadWorkflowTemplate(e.target.value)}
-                    className="w-full p-2 border rounded-md bg-background"
-                  >
-                    <option value="customer_onboarding">🎉 Customer Onboarding</option>
-                    <option value="lead_nurturing">🌱 Lead Nurturing</option>
-                    <option value="appointment_reminder">📅 Appointment Reminder</option>
-                    <option value="project_kickoff">🚀 Project Kickoff</option>
-                    <option value="from_scratch">✨ Start from Scratch</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Zap className="h-4 w-4" /> Desired Outcome
-                  </Label>
-                  <Input
-                    placeholder="e.g., Convert lead to paying customer"
-                    value={workflowGoal}
-                    onChange={(e) => setWorkflowGoal(e.target.value)}
-                  />
-                </div>
-              </div>
+          {/* Note: Simple workflow builder removed - use the Workflows tab for visual workflow builder */}
 
-              {/* Load from Lead Research */}
-              {completedLeadJobs.length > 0 && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <Label className="flex items-center gap-2 text-blue-700 dark:text-blue-300 mb-2">
-                    <Search className="h-4 w-4" />
-                    Load from Lead Research
-                  </Label>
-                  <select
-                    value={selectedLeadJob}
-                    onChange={(e) => handleSelectLeadJob(e.target.value)}
-                    className="w-full p-2 border rounded-md bg-white dark:bg-gray-800 text-sm"
-                  >
-                    <option value="">-- Select a completed research --</option>
-                    {completedLeadJobs.map((job) => {
-                      const name = job.output?.companyInfo?.name || job.input?.businessName || 'Unknown';
-                      const date = new Date(job.completedAt || job.createdAt);
-                      return (
-                        <option key={job.id} value={job.id}>
-                          {name} | {date.toLocaleDateString()}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-              )}
-
-              {/* Customer Info */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Customer Name *</Label>
-                  <Input placeholder="John Doe" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email *</Label>
-                  <Input type="email" placeholder="john@example.com" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Phone</Label>
-                  <Input placeholder="(555) 123-4567" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
-                </div>
-              </div>
-
-              {/* Workflow Progress */}
-              {workflowProgress.active && (
-                <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950 p-4 rounded-lg border border-purple-200 dark:border-purple-800 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-                    <span className="font-medium">Workflow in Progress...</span>
-                  </div>
-                  {workflowProgress.steps.map((step, idx) => (
-                    <div key={idx} className="flex items-center gap-3 text-sm">
-                      {step.status === 'completed' ? <CheckCircle2 className="h-4 w-4 text-green-500" /> :
-                       step.status === 'running' ? <Loader2 className="h-4 w-4 text-blue-500 animate-spin" /> :
-                       <Clock className="h-4 w-4 text-gray-400" />}
-                      <span className={step.status === 'completed' ? 'text-green-600' : step.status === 'running' ? 'text-blue-600' : 'text-gray-500'}>
-                        {step.agent}: {step.message}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Workflow Steps Builder */}
-              {!workflowProgress.active && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-base font-semibold">Workflow Sequence</Label>
-                    <div className="flex gap-2">
-                      <Badge variant="outline">{workflowSteps.filter(s => s.enabled).length} active steps</Badge>
-                      <Button size="sm" variant="outline" onClick={addWorkflowStep}>
-                        <Plus className="h-4 w-4 mr-1" /> Add Step
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <p className="text-xs text-muted-foreground">Drag to reorder • Click to configure • Set delays between steps</p>
-                  
-                  <div className="space-y-2">
-                    {workflowSteps.sort((a, b) => a.order - b.order).map((step, idx) => (
-                      <div
-                        key={step.id}
-                        draggable
-                        onDragStart={() => handleDragStart(step.id)}
-                        onDragOver={(e) => handleDragOver(e, step.id)}
-                        onDragEnd={handleDragEnd}
-                        className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-move
-                          ${draggedStep === step.id ? 'opacity-50 border-dashed border-primary' : 
-                            step.enabled ? 'bg-background border-primary/20 hover:border-primary/40' : 'bg-muted/30 border-transparent opacity-50'}`}
-                      >
-                        {/* Drag Handle */}
-                        <div className="text-muted-foreground hover:text-foreground">
-                          <GripVertical className="h-5 w-5" />
-                        </div>
-                        
-                        {/* Step Number */}
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
-                          ${step.enabled ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-                          {idx + 1}
-                        </div>
-                        
-                        {/* Enable Toggle */}
-                        <input
-                          type="checkbox"
-                          checked={step.enabled}
-                          onChange={() => updateWorkflowStep(step.id, { enabled: !step.enabled })}
-                          className="h-4 w-4"
-                        />
-                        
-                        {/* Step Type Icon */}
-                        <div className={`p-1.5 rounded ${
-                          step.type === 'call' ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' :
-                          step.type === 'sms' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400' :
-                          step.type === 'email' ? 'bg-pink-100 text-pink-600 dark:bg-pink-900 dark:text-pink-400' :
-                          step.type === 'task' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-400' :
-                          step.type === 'appointment' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-400' :
-                          step.type === 'project' ? 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900 dark:text-cyan-400' :
-                          'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                        }`}>
-                          {step.type === 'call' && <Phone className="h-4 w-4" />}
-                          {step.type === 'sms' && <MessageSquare className="h-4 w-4" />}
-                          {step.type === 'email' && <Mail className="h-4 w-4" />}
-                          {step.type === 'task' && <ClipboardList className="h-4 w-4" />}
-                          {step.type === 'appointment' && <Calendar className="h-4 w-4" />}
-                          {step.type === 'project' && <Briefcase className="h-4 w-4" />}
-                          {step.type === 'custom' && <Zap className="h-4 w-4" />}
-                        </div>
-                        
-                        {/* Step Name */}
-                        <Input
-                          value={step.name}
-                          onChange={(e) => updateWorkflowStep(step.id, { name: e.target.value })}
-                          className="flex-1 h-8 text-sm"
-                          disabled={!step.enabled}
-                        />
-                        
-                        {/* Step Type Selector */}
-                        <select
-                          value={step.type}
-                          onChange={(e) => updateWorkflowStep(step.id, { type: e.target.value as any })}
-                          className="p-1.5 text-xs border rounded bg-background w-28"
-                          disabled={!step.enabled}
-                        >
-                          <option value="call">📞 Call</option>
-                          <option value="sms">💬 SMS</option>
-                          <option value="email">📧 Email</option>
-                          <option value="task">📋 Task</option>
-                          <option value="appointment">📅 Appointment</option>
-                          <option value="project">📊 Project</option>
-                          <option value="custom">⚡ Custom</option>
-                        </select>
-                        
-                        {/* Voice Agent Selector for Calls */}
-                        {step.type === 'call' && step.enabled && voiceAgents.length > 0 && (
-                          <select
-                            value={step.voiceAgentId || ''}
-                            onChange={(e) => updateWorkflowStep(step.id, { voiceAgentId: e.target.value })}
-                            className="p-1.5 text-xs border rounded bg-background w-32"
-                          >
-                            <option value="">Auto-select</option>
-                            {voiceAgents.map(a => (
-                              <option key={a.id} value={a.id}>{a.name}</option>
-                            ))}
-                          </select>
-                        )}
-                        
-                        {/* Delay Settings */}
-                        <div className="flex items-center gap-1">
-                          <Input
-                            type="number"
-                            min="0"
-                            value={step.delay}
-                            onChange={(e) => updateWorkflowStep(step.id, { delay: parseInt(e.target.value) || 0 })}
-                            className="w-14 h-8 text-xs text-center"
-                            disabled={!step.enabled}
-                          />
-                          <select
-                            value={step.delayUnit}
-                            onChange={(e) => updateWorkflowStep(step.id, { delayUnit: e.target.value as any })}
-                            className="p-1 text-xs border rounded bg-background"
-                            disabled={!step.enabled}
-                          >
-                            <option value="minutes">min</option>
-                            <option value="hours">hr</option>
-                            <option value="days">day</option>
-                          </select>
-                        </div>
-                        
-                        {/* Assign To */}
-                        <select
-                          value={step.assignedTo}
-                          onChange={(e) => updateWorkflowStep(step.id, { assignedTo: e.target.value })}
-                          className="p-1.5 text-xs border rounded bg-background w-36"
-                          disabled={!step.enabled}
-                        >
-                          <option value="">🤖 Auto (AI)</option>
-                          {aiTeam.filter(e => e.isActive).length > 0 && (
-                            <optgroup label="🧠 AI Employees">
-                              {aiTeam.filter(e => e.isActive).map(employee => {
-                                const prof = getProfessionInfo(employee.profession);
-                                return (
-                                  <option key={employee.id} value={`ai:${employee.id}`}>
-                                    {prof?.icon || '🤖'} {employee.customName}
-                                  </option>
-                                );
-                              })}
-                            </optgroup>
-                          )}
-                          {teamMembers.length > 0 && (
-                            <optgroup label="👥 Human Team">
-                              {teamMembers.map(m => (
-                                <option key={m.id} value={`human:${m.id}`}>👤 {m.name}</option>
-                              ))}
-                            </optgroup>
-                          )}
-                        </select>
-                        
-                        {/* Delete Button */}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeWorkflowStep(step.id)}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {workflowSteps.length === 0 && (
-                    <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                      <p className="text-muted-foreground mb-2">No steps added yet</p>
-                      <Button variant="outline" onClick={addWorkflowStep}>
-                        <Plus className="h-4 w-4 mr-1" /> Add First Step
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <Button 
-                onClick={handleWorkflowTrigger} 
-                disabled={workflowLoading || workflowProgress.active || workflowSteps.filter(s => s.enabled).length === 0}
-                className="w-full"
-              >
-                {workflowLoading || workflowProgress.active ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Workflow Running...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 mr-2" />
-                    Execute Workflow ({workflowSteps.filter(s => s.enabled).length} steps)
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* AI Team Tab */}
@@ -1941,10 +1660,34 @@ export default function AIEmployeesPage() {
           </TabsContent>
         )}
 
-        {/* Workflows Tab - Only for Real Estate users */}
-        {isRealEstateUser && (
+        {/* Workflows Tab - For Real Estate and other industries */}
+        {(isRealEstateUser || hasWorkflowSystem) && (
           <TabsContent value="workflows" className="space-y-4">
-            <REWorkflowsTab />
+            {isRealEstateUser ? (
+              <REWorkflowsTab />
+            ) : userIndustry === 'MEDICAL' ? (
+              <MedicalWorkflowsTab />
+            ) : userIndustry === 'RESTAURANT' ? (
+              <RestaurantWorkflowsTab />
+            ) : userIndustry === 'CONSTRUCTION' ? (
+              <ConstructionWorkflowsTab />
+            ) : userIndustry === 'DENTIST' ? (
+              <DentistWorkflowsTab />
+            ) : userIndustry === 'MEDICAL_SPA' ? (
+              <MedicalSpaWorkflowsTab />
+            ) : userIndustry === 'OPTOMETRIST' ? (
+              <OptometristWorkflowsTab />
+            ) : userIndustry === 'HEALTH_CLINIC' ? (
+              <HealthClinicWorkflowsTab />
+            ) : userIndustry === 'HOSPITAL' ? (
+              <HospitalWorkflowsTab />
+            ) : userIndustry === 'TECHNOLOGY' ? (
+              <TechnologyWorkflowsTab />
+            ) : userIndustry === 'SPORTS_CLUB' ? (
+              <SportsClubWorkflowsTab />
+            ) : (
+              <IndustryWorkflowsTab industry={userIndustry} />
+            )}
           </TabsContent>
         )}
       </Tabs>

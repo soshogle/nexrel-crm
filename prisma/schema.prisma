@@ -1,12 +1,11 @@
 generator client {
-    provider = "prisma-client-js"
-    binaryTargets = ["native", "rhel-openssl-3.0.x"]
-    
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Account {
@@ -243,95 +242,101 @@ model User {
   docpenKnowledgeBaseFiles    DocpenKnowledgeBaseFile[]
   feedbackCollections         FeedbackCollection[]
   // Real Estate Industry Relations
-  reProperties              REProperty[]                 @relation("REUserProperties")
-  reFsboAssignedListings    REFSBOListing[]              @relation("REFSBOAssignedUser")
-  reScrapingJobs            REScrapingJob[]              @relation("REScrapingJobUser")
-  reMarketStats             REMarketStats[]              @relation("REMarketStatsUser")
-  reMarketReports           REMarketReport[]             @relation("REMarketReportUser")
-  reStaleDiagnostics        REStaleDiagnostic[]          @relation("REStaleDiagnosticUser")
-  reListingPresentations    REListingPresentation[]      @relation("REListingPresentationUser")
-  reSellerNetSheets         RESellerNetSheet[]           @relation("RESellerNetSheetUser")
-  reCMAReports              RECMAReport[]                @relation("RECMAReportUser")
-  reTransactions            RETransaction[]              @relation("RETransactionUser")
-  reBuyerCriteria           REBuyerCriteria[]            @relation("REBuyerCriteriaUser")
-  reExpiredAssignedListings REExpiredListing[]           @relation("REExpiredAssignedUser")
-  reAIEmployeeExecutions    REAIEmployeeExecution[]      @relation("REAIEmployeeExecutionUser")
-  reAIEmployeeAgents        REAIEmployeeAgent[]          @relation("REAIEmployeeAgentUser")
+  reProperties                REProperty[]                 @relation("REUserProperties")
+  reFsboAssignedListings      REFSBOListing[]              @relation("REFSBOAssignedUser")
+  reScrapingJobs              REScrapingJob[]              @relation("REScrapingJobUser")
+  reMarketStats               REMarketStats[]              @relation("REMarketStatsUser")
+  reMarketReports             REMarketReport[]             @relation("REMarketReportUser")
+  reStaleDiagnostics          REStaleDiagnostic[]          @relation("REStaleDiagnosticUser")
+  reListingPresentations      REListingPresentation[]      @relation("REListingPresentationUser")
+  reSellerNetSheets           RESellerNetSheet[]           @relation("RESellerNetSheetUser")
+  reCMAReports                RECMAReport[]                @relation("RECMAReportUser")
+  reTransactions              RETransaction[]              @relation("RETransactionUser")
+  reBuyerCriteria             REBuyerCriteria[]            @relation("REBuyerCriteriaUser")
+  reExpiredAssignedListings   REExpiredListing[]           @relation("REExpiredAssignedUser")
+  reAIEmployeeExecutions      REAIEmployeeExecution[]      @relation("REAIEmployeeExecutionUser")
+  reAIEmployeeAgents          REAIEmployeeAgent[]          @relation("REAIEmployeeAgentUser")
   // Real Estate Workflow Relations
-  reWorkflowTemplates       REWorkflowTemplate[]         @relation("UserREWorkflowTemplates")
-  reWorkflowInstances       REWorkflowInstance[]         @relation("UserREWorkflowInstances")
-  reHITLNotifications       REHITLNotification[]         @relation("UserREHITLNotifications")
+  reWorkflowTemplates         REWorkflowTemplate[]         @relation("UserREWorkflowTemplates")
+  reWorkflowInstances         REWorkflowInstance[]         @relation("UserREWorkflowInstances")
+  reHITLNotifications         REHITLNotification[]         @relation("UserREHITLNotifications")
+  // Generic Multi-Industry Workflow Relations
+  workflowTemplates           WorkflowTemplate[]           @relation("UserWorkflowTemplates")
+  industryWorkflowInstances   WorkflowInstance[]           @relation("UserIndustryWorkflowInstances")
+  hitlNotifications           HITLNotification[]           @relation("UserHITLNotifications")
   // White-Label Voice AI Platform Relations
-  voiceAISubscription       VoiceAISubscription?         @relation("VoiceAISubscriptionUser")
-  voiceAIUsageLogs          VoiceAIUsageLog[]            @relation("VoiceAIUsageLogUser")
-  voiceAIBillingRecords     VoiceAIBillingRecord[]       @relation("VoiceAIBillingRecordUser")
+  voiceAISubscription         VoiceAISubscription?         @relation("VoiceAISubscriptionUser")
+  voiceAIUsageLogs            VoiceAIUsageLog[]            @relation("VoiceAIUsageLogUser")
+  voiceAIBillingRecords       VoiceAIBillingRecord[]       @relation("VoiceAIBillingRecordUser")
 }
 
 model Lead {
-  id                  String               @id @default(cuid())
-  userId              String
-  businessName        String
-  contactPerson       String?
-  email               String?
-  phone               String?
-  website             String?
-  address             String?
-  city                String?
-  state               String?
-  zipCode             String?
-  country             String?
-  businessCategory    String?
-  googlePlaceId       String?
-  rating              Float?
-  status              LeadStatus           @default(NEW)
-  source              String               @default("manual")
-  tags                Json?                @default("[]")
-  contactType         String?
-  lastContactedAt     DateTime?
-  dateOfBirth         DateTime?            // Birthday for contact person
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  id                     String               @id @default(cuid())
+  userId                 String
+  businessName           String
+  contactPerson          String?
+  email                  String?
+  phone                  String?
+  website                String?
+  address                String?
+  city                   String?
+  state                  String?
+  zipCode                String?
+  country                String?
+  businessCategory       String?
+  googlePlaceId          String?
+  rating                 Float?
+  status                 LeadStatus           @default(NEW)
+  source                 String               @default("manual")
+  tags                   Json?                @default("[]")
+  contactType            String?
+  lastContactedAt        DateTime?
+  dateOfBirth            DateTime? // Birthday for contact person
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
   // AI Lead Generation System fields
-  enrichedData        Json?                // Company research, decision-makers, email, etc.
-  lastEnrichedAt      DateTime?            // Last time data was enriched
-  leadScore           Int?                 // 0-100 weighted score
-  engagementHistory   Json?                // Email opens, SMS replies, call history
-  nextAction          String?              // call, email, sms, manual_followup, etc.
-  nextActionDate      DateTime?            // When to execute next action
-  validationScore     Int?                 // Data quality score 0-100
-  validationErrors    Json?                // Array of validation errors
-  qualityFlag         String?              // low_quality, high_quality, etc.
-  mergeHistory        Json?                // Track lead merges for deduplication
-  contactAppointments BookingAppointment[] @relation("contact_appointments")
-  leadAppointments    BookingAppointment[] @relation("lead_appointments")
-  callLogs            CallLog[]
-  campaignLeads       CampaignLead[]
-  conversations       Conversation[]
-  deals               Deal[]
-  emailCampaignDeals  EmailCampaignDeal[]
-  invoices            Invoice[]
-  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages            Message[]
-  notes               Note[]
-  outboundCalls       OutboundCall[]
-  payments            Payment[]
-  referralConverted   Referral[]           @relation("ConvertedFromReferral")
-  referralsMade       Referral[]           @relation("ReferrerLeads")
-  reviews             Review[]
-  feedbackCollections FeedbackCollection[]
-  smsCampaignDeals    SmsCampaignDeal[]
-  smsEnrollments      SmsEnrollment[]
-  tasks               Task[]
-  workflowEnrollments WorkflowEnrollment[]
-  docpenSessions      DocpenSession[]
+  enrichedData           Json? // Company research, decision-makers, email, etc.
+  lastEnrichedAt         DateTime? // Last time data was enriched
+  leadScore              Int? // 0-100 weighted score
+  engagementHistory      Json? // Email opens, SMS replies, call history
+  nextAction             String? // call, email, sms, manual_followup, etc.
+  nextActionDate         DateTime? // When to execute next action
+  validationScore        Int? // Data quality score 0-100
+  validationErrors       Json? // Array of validation errors
+  qualityFlag            String? // low_quality, high_quality, etc.
+  mergeHistory           Json? // Track lead merges for deduplication
+  contactAppointments    BookingAppointment[] @relation("contact_appointments")
+  leadAppointments       BookingAppointment[] @relation("lead_appointments")
+  callLogs               CallLog[]
+  campaignLeads          CampaignLead[]
+  conversations          Conversation[]
+  deals                  Deal[]
+  emailCampaignDeals     EmailCampaignDeal[]
+  invoices               Invoice[]
+  user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages               Message[]
+  notes                  Note[]
+  outboundCalls          OutboundCall[]
+  payments               Payment[]
+  referralConverted      Referral[]           @relation("ConvertedFromReferral")
+  referralsMade          Referral[]           @relation("ReferrerLeads")
+  reviews                Review[]
+  feedbackCollections    FeedbackCollection[]
+  smsCampaignDeals       SmsCampaignDeal[]
+  smsEnrollments         SmsEnrollment[]
+  tasks                  Task[]
+  workflowEnrollments    WorkflowEnrollment[]
+  docpenSessions         DocpenSession[]
   // Real Estate Industry Relations
-  rePropertySeller      REProperty[]         @relation("REPropertySeller")
-  reFsboConvertedLead   REFSBOListing[]      @relation("REFSBOConvertedLead")
-  reTransactions        RETransaction[]      @relation("RETransactionLead")
-  reBuyerCriteria       REBuyerCriteria?     @relation("REBuyerCriteriaLead")
-  reExpiredConvertedLead REExpiredListing[]  @relation("REExpiredConvertedLead")
+  rePropertySeller       REProperty[]         @relation("REPropertySeller")
+  reFsboConvertedLead    REFSBOListing[]      @relation("REFSBOConvertedLead")
+  reTransactions         RETransaction[]      @relation("RETransactionLead")
+  reBuyerCriteria        REBuyerCriteria?     @relation("REBuyerCriteriaLead")
+  reExpiredConvertedLead REExpiredListing[]   @relation("REExpiredConvertedLead")
   // Real Estate Workflow Relations
   reWorkflowInstances    REWorkflowInstance[] @relation("LeadREWorkflowInstances")
+  // Generic Multi-Industry Workflow Relations
+  workflowInstances      WorkflowInstance[]   @relation("LeadWorkflowInstances")
 
   @@index([userId])
   @@index([status])
@@ -413,26 +418,26 @@ model Campaign {
   totalRecipients Int               @default(0)
   callScript      String?
   voiceAgentId    String?
-  
+
   // Voice Campaign specific fields (Phase 2)
-  maxCallsPerDay     Int?            @default(50)
-  callWindowStart    String?         @default("09:00")
-  callWindowEnd      String?         @default("17:00")
-  retryFailedCalls   Boolean         @default(true)
-  maxRetries         Int?            @default(2)
-  minLeadScore       Int?            @default(75)
-  
+  maxCallsPerDay   Int?    @default(50)
+  callWindowStart  String? @default("09:00")
+  callWindowEnd    String? @default("17:00")
+  retryFailedCalls Boolean @default(true)
+  maxRetries       Int?    @default(2)
+  minLeadScore     Int?    @default(75)
+
   // Voice analytics
-  totalCalls         Int             @default(0)
-  answeredCalls      Int             @default(0)
-  voicemails         Int             @default(0)
-  avgCallDuration    Int             @default(0)
-  
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  voiceAgent      VoiceAgent?       @relation(fields: [voiceAgentId], references: [id])
-  campaignLeads   CampaignLead[]
-  messages        CampaignMessage[]
-  reviews         Review[]
+  totalCalls      Int @default(0)
+  answeredCalls   Int @default(0)
+  voicemails      Int @default(0)
+  avgCallDuration Int @default(0)
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  voiceAgent    VoiceAgent?       @relation(fields: [voiceAgentId], references: [id])
+  campaignLeads CampaignLead[]
+  messages      CampaignMessage[]
+  reviews       Review[]
 
   @@index([userId])
   @@index([status])
@@ -508,22 +513,22 @@ model Review {
 }
 
 model FeedbackCollection {
-  id              String    @id @default(cuid())
-  userId          String
-  leadId          String
-  appointmentId   String?
-  method          String   // SMS, VOICE, BOTH
-  status          String   @default("PENDING") // PENDING, COMPLETED, FAILED
-  sentiment       String?  // POSITIVE, NEGATIVE, NEUTRAL
-  rating          Int?
-  feedbackText    String?
-  triggeredAt     DateTime @default(now())
-  completedAt     DateTime?
-  metadata        Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String    @id @default(cuid())
+  userId        String
+  leadId        String
+  appointmentId String?
+  method        String // SMS, VOICE, BOTH
+  status        String    @default("PENDING") // PENDING, COMPLETED, FAILED
+  sentiment     String? // POSITIVE, NEGATIVE, NEUTRAL
+  rating        Int?
+  feedbackText  String?
+  triggeredAt   DateTime  @default(now())
+  completedAt   DateTime?
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lead          Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([leadId])
@@ -932,6 +937,8 @@ model Deal {
   workflowEnrollments WorkflowEnrollment[]
   // Real Estate Workflow Relations
   reWorkflowInstances REWorkflowInstance[] @relation("DealREWorkflowInstances")
+  // Generic Multi-Industry Workflow Relations
+  workflowInstances   WorkflowInstance[]   @relation("DealWorkflowInstances")
 
   @@index([userId])
   @@index([pipelineId])
@@ -1094,26 +1101,26 @@ model SmsCampaign {
   completedAt     DateTime?
   tags            String?
   // Phase 1: Lead filtering
-  minLeadScore    Int?              @default(75)  // Only send to leads with score >= this value
-  targetLeadIds   Json?             // Optional: specific lead IDs to target
+  minLeadScore    Int?              @default(75) // Only send to leads with score >= this value
+  targetLeadIds   Json? // Optional: specific lead IDs to target
   // Phase 1: Frequency capping
-  dailyLimit      Int?              // Max messages per day (null = unlimited)
-  weeklyLimit     Int?              // Max messages per week (null = unlimited)
-  lastSentDate    DateTime?         // Track when last message was sent for rate limiting
-  sentToday       Int               @default(0)   // Counter for messages sent today
-  sentThisWeek    Int               @default(0)   // Counter for messages sent this week
+  dailyLimit      Int? // Max messages per day (null = unlimited)
+  weeklyLimit     Int? // Max messages per week (null = unlimited)
+  lastSentDate    DateTime? // Track when last message was sent for rate limiting
+  sentToday       Int               @default(0) // Counter for messages sent today
+  sentThisWeek    Int               @default(0) // Counter for messages sent this week
   // Phase 1: Campaign metrics
-  totalRecipients Int               @default(0)   // Total leads targeted
-  totalSent       Int               @default(0)   // Total successfully sent
-  totalDelivered  Int               @default(0)   // Total delivered
-  totalReplied    Int               @default(0)   // Total replied
-  totalFailed     Int               @default(0)   // Total failed
+  totalRecipients Int               @default(0) // Total leads targeted
+  totalSent       Int               @default(0) // Total successfully sent
+  totalDelivered  Int               @default(0) // Total delivered
+  totalReplied    Int               @default(0) // Total replied
+  totalFailed     Int               @default(0) // Total failed
   // Multi-step sequence support
   isSequence      Boolean           @default(false) // Whether this is a multi-step campaign
-  triggerType     String?           // MANUAL, LEAD_CREATED, etc.
-  avgReplyRate    Float             @default(0)    // Average reply rate across sequences
-  totalCompleted  Int               @default(0)    // Total leads who completed sequence
-  totalEnrolled   Int               @default(0)    // Total leads enrolled
+  triggerType     String? // MANUAL, LEAD_CREATED, etc.
+  avgReplyRate    Float             @default(0) // Average reply rate across sequences
+  totalCompleted  Int               @default(0) // Total leads who completed sequence
+  totalEnrolled   Int               @default(0) // Total leads enrolled
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1128,32 +1135,32 @@ model SmsCampaign {
 
 // Multi-step SMS sequences
 model SmsSequence {
-  id                String                    @id @default(cuid())
-  campaignId        String
-  sequenceOrder     Int                       // Order in the sequence (1, 2, 3, etc.)
-  name              String
-  message           String
-  
+  id            String @id @default(cuid())
+  campaignId    String
+  sequenceOrder Int // Order in the sequence (1, 2, 3, etc.)
+  name          String
+  message       String
+
   // Timing
-  delayDays         Int                       @default(0)  // Days to wait after previous SMS
-  delayHours        Int                       @default(0)  // Additional hours to wait
-  sendTime          String?                   // Preferred send time (HH:MM)
-  
+  delayDays  Int     @default(0) // Days to wait after previous SMS
+  delayHours Int     @default(0) // Additional hours to wait
+  sendTime   String? // Preferred send time (HH:MM)
+
   // Conditions
-  skipIfReplied     Boolean                   @default(false)  // Skip if lead replied to previous SMS
-  
+  skipIfReplied Boolean @default(false) // Skip if lead replied to previous SMS
+
   // Analytics
-  totalSent         Int                       @default(0)
-  totalDelivered    Int                       @default(0)
-  totalReplied      Int                       @default(0)
-  totalFailed       Int                       @default(0)
-  
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  
-  campaign          SmsCampaign               @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  messages          SmsSequenceMessage[]
-  
+  totalSent      Int @default(0)
+  totalDelivered Int @default(0)
+  totalReplied   Int @default(0)
+  totalFailed    Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign SmsCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  messages SmsSequenceMessage[]
+
   @@unique([campaignId, sequenceOrder])
   @@index([campaignId])
   @@index([sequenceOrder])
@@ -1161,33 +1168,33 @@ model SmsSequence {
 
 // Track leads enrolled in SMS sequences
 model SmsEnrollment {
-  id                String                    @id @default(cuid())
-  campaignId        String
-  leadId            String
-  status            String                    @default("ACTIVE") // ACTIVE, COMPLETED, PAUSED, CANCELLED
-  
+  id         String @id @default(cuid())
+  campaignId String
+  leadId     String
+  status     String @default("ACTIVE") // ACTIVE, COMPLETED, PAUSED, CANCELLED
+
   // Progress tracking
-  currentSequenceId String?                   // Current sequence in the campaign
-  currentStep       Int                       @default(0)  // Current step number
-  nextSendAt        DateTime?                 // When to send next SMS
-  
+  currentSequenceId String? // Current sequence in the campaign
+  currentStep       Int       @default(0) // Current step number
+  nextSendAt        DateTime? // When to send next SMS
+
   // Engagement tracking
-  totalReplied      Int                       @default(0)
-  lastRepliedAt     DateTime?
-  
+  totalReplied  Int       @default(0)
+  lastRepliedAt DateTime?
+
   // Status tracking
-  enrolledAt        DateTime                  @default(now())
-  completedAt       DateTime?
-  pausedAt          DateTime?
-  cancelledAt       DateTime?
-  
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  
-  campaign          SmsCampaign               @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  lead              Lead                      @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  messages          SmsSequenceMessage[]
-  
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+  pausedAt    DateTime?
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign SmsCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead     Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  messages SmsSequenceMessage[]
+
   @@unique([campaignId, leadId])
   @@index([campaignId])
   @@index([leadId])
@@ -1197,34 +1204,34 @@ model SmsEnrollment {
 
 // Track individual SMS messages in sequences
 model SmsSequenceMessage {
-  id                String                    @id @default(cuid())
-  enrollmentId      String
-  sequenceId        String
-  
+  id           String @id @default(cuid())
+  enrollmentId String
+  sequenceId   String
+
   // Recipient info
-  recipientPhone    String
-  recipientName     String?
-  
+  recipientPhone String
+  recipientName  String?
+
   // Message content (snapshot at send time)
-  message           String
-  
+  message String
+
   // Delivery tracking
-  status            String                    @default("PENDING") // PENDING, SENT, DELIVERED, FAILED
-  scheduledFor      DateTime
-  sentAt            DateTime?
-  deliveredAt       DateTime?
-  repliedAt         DateTime?
-  
+  status       String    @default("PENDING") // PENDING, SENT, DELIVERED, FAILED
+  scheduledFor DateTime
+  sentAt       DateTime?
+  deliveredAt  DateTime?
+  repliedAt    DateTime?
+
   // Provider data
-  twilioSid         String?
-  errorMessage      String?
-  
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  
-  enrollment        SmsEnrollment             @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  sequence          SmsSequence               @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
-  
+  twilioSid    String?
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  enrollment SmsEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  sequence   SmsSequence   @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+
   @@index([enrollmentId])
   @@index([sequenceId])
   @@index([status])
@@ -5701,106 +5708,106 @@ enum EnrichmentProvider {
 }
 
 model LeadGenerationCampaign {
-  id                String                   @id @default(cuid())
-  userId            String
-  user              User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  name              String
-  description       String?
-  source            LeadGenerationSource
-  status            LeadGenerationStatus     @default(PENDING)
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  source      LeadGenerationSource
+  status      LeadGenerationStatus @default(PENDING)
+
   // Search Parameters
-  searchQuery       String
-  location          String?
-  radius            Float?                   // in km
-  maxResults        Int?                     @default(100)
-  
+  searchQuery String
+  location    String?
+  radius      Float? // in km
+  maxResults  Int?    @default(100)
+
   // Filters
-  minRating         Float?
-  categories        Json?                    // Array of business categories
-  excludeKeywords   Json?                    // Array of keywords to exclude
-  
+  minRating       Float?
+  categories      Json? // Array of business categories
+  excludeKeywords Json? // Array of keywords to exclude
+
   // Progress Tracking
-  totalFound        Int                      @default(0)
-  totalScraped      Int                      @default(0)
-  totalEnriched     Int                      @default(0)
-  totalImported     Int                      @default(0)
-  
+  totalFound    Int @default(0)
+  totalScraped  Int @default(0)
+  totalEnriched Int @default(0)
+  totalImported Int @default(0)
+
   // Metadata
-  startedAt         DateTime?
-  completedAt       DateTime?
-  errorMessage      String?
-  
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
-  
+  startedAt    DateTime?
+  completedAt  DateTime?
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  scrapedLeads      ScrapedLead[]
-  
+  scrapedLeads ScrapedLead[]
+
   @@index([userId])
   @@index([status])
   @@index([source])
 }
 
 model ScrapedLead {
-  id                    String                      @id @default(cuid())
-  campaignId            String
-  campaign              LeadGenerationCampaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  userId                String
-  user                  User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id         String                 @id @default(cuid())
+  campaignId String
+  campaign   LeadGenerationCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Raw Scraped Data
-  businessName          String
-  address               String?
-  city                  String?
-  state                 String?
-  zipCode               String?
-  country               String?
-  phone                 String?
-  website               String?
-  email                 String?
-  category              String?
-  
+  businessName String
+  address      String?
+  city         String?
+  state        String?
+  zipCode      String?
+  country      String?
+  phone        String?
+  website      String?
+  email        String?
+  category     String?
+
   // Google Maps Specific
-  googlePlaceId         String?                     @unique
-  googleRating          Float?
-  googleReviewCount     Int?
-  googleMapUrl          String?
-  latitude              Float?
-  longitude             Float?
-  businessHours         Json?                       // Operating hours
-  
+  googlePlaceId     String? @unique
+  googleRating      Float?
+  googleReviewCount Int?
+  googleMapUrl      String?
+  latitude          Float?
+  longitude         Float?
+  businessHours     Json? // Operating hours
+
   // LinkedIn Specific
-  linkedinUrl           String?
-  linkedinCompanySize   String?
-  linkedinIndustry      String?
-  
+  linkedinUrl         String?
+  linkedinCompanySize String?
+  linkedinIndustry    String?
+
   // Social Media
-  facebookUrl           String?
-  instagramUrl          String?
-  twitterUrl            String?
-  
+  facebookUrl  String?
+  instagramUrl String?
+  twitterUrl   String?
+
   // Enrichment Status
-  enrichmentStatus      EnrichmentStatus            @default(PENDING)
-  isImportedToCRM       Boolean                     @default(false)
-  importedLeadId        String?                     // Reference to Lead if imported
-  
+  enrichmentStatus EnrichmentStatus @default(PENDING)
+  isImportedToCRM  Boolean          @default(false)
+  importedLeadId   String? // Reference to Lead if imported
+
   // AI Scoring (will be added in Phase 1C)
-  aiScore               Float?                      // 0-100 score
-  aiScoreReasons        Json?                       // Array of scoring factors
-  
+  aiScore        Float? // 0-100 score
+  aiScoreReasons Json? // Array of scoring factors
+
   // Metadata
-  rawData               Json?                       // Store original scrape data
-  scrapedAt             DateTime                    @default(now())
-  lastEnrichedAt        DateTime?
-  
-  createdAt             DateTime                    @default(now())
-  updatedAt             DateTime                    @updatedAt
-  
+  rawData        Json? // Store original scrape data
+  scrapedAt      DateTime  @default(now())
+  lastEnrichedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  enrichments           LeadEnrichment[]
-  
+  enrichments LeadEnrichment[]
+
   @@index([campaignId])
   @@index([userId])
   @@index([enrichmentStatus])
@@ -5809,37 +5816,37 @@ model ScrapedLead {
 }
 
 model LeadEnrichment {
-  id                  String               @id @default(cuid())
-  scrapedLeadId       String
-  scrapedLead         ScrapedLead          @relation(fields: [scrapedLeadId], references: [id], onDelete: Cascade)
-  
-  provider            EnrichmentProvider
-  status              EnrichmentStatus     @default(PENDING)
-  
+  id            String      @id @default(cuid())
+  scrapedLeadId String
+  scrapedLead   ScrapedLead @relation(fields: [scrapedLeadId], references: [id], onDelete: Cascade)
+
+  provider EnrichmentProvider
+  status   EnrichmentStatus   @default(PENDING)
+
   // Enriched Data
-  emails              Json?                // Array of found emails with confidence scores
-  phoneNumbers        Json?                // Array of found phone numbers
-  socialProfiles      Json?                // Social media URLs
-  companyInfo         Json?                // Company size, revenue, etc.
-  contactInfo         Json?                // Decision maker contacts
-  technologies        Json?                // Tech stack (from BuiltWith, etc.)
-  
+  emails         Json? // Array of found emails with confidence scores
+  phoneNumbers   Json? // Array of found phone numbers
+  socialProfiles Json? // Social media URLs
+  companyInfo    Json? // Company size, revenue, etc.
+  contactInfo    Json? // Decision maker contacts
+  technologies   Json? // Tech stack (from BuiltWith, etc.)
+
   // Verification Status
-  emailVerified       Boolean?
-  phoneVerified       Boolean?
-  
+  emailVerified Boolean?
+  phoneVerified Boolean?
+
   // Metadata
-  confidence          Float?               // 0-1 confidence score
-  cost                Float?               // API call cost
-  creditsUsed         Int?                 // Credits consumed
-  
-  apiResponse         Json?                // Full API response for debugging
-  errorMessage        String?
-  
-  enrichedAt          DateTime             @default(now())
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  
+  confidence  Float? // 0-1 confidence score
+  cost        Float? // API call cost
+  creditsUsed Int? // Credits consumed
+
+  apiResponse  Json? // Full API response for debugging
+  errorMessage String?
+
+  enrichedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   @@index([scrapedLeadId])
   @@index([provider])
   @@index([status])
@@ -5851,16 +5858,16 @@ model LeadEnrichment {
 
 // EnrichmentCache: Cache enrichment API responses to reduce costs
 model EnrichmentCache {
-  id            String    @id @default(cuid())
-  companyId     String    @unique  // Unique identifier for company
-  companyName   String
-  domain        String?
-  enrichedData  Json      // Cached enrichment data from Hunter.io, Clearbit, etc.
-  lastUpdated   DateTime  @default(now())
-  expiresAt     DateTime  // Cache expiration (typically 90 days)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  id           String   @id @default(cuid())
+  companyId    String   @unique // Unique identifier for company
+  companyName  String
+  domain       String?
+  enrichedData Json // Cached enrichment data from Hunter.io, Clearbit, etc.
+  lastUpdated  DateTime @default(now())
+  expiresAt    DateTime // Cache expiration (typically 90 days)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
   @@index([companyId])
   @@index([domain])
   @@index([expiresAt])
@@ -5868,13 +5875,13 @@ model EnrichmentCache {
 
 // LeadScore: Track lead scoring history for analytics
 model LeadScore {
-  id              String   @id @default(cuid())
-  leadId          String
-  score           Int      // 0-100 weighted score
-  scoreBreakdown  Json     // { firmographics: 40, intent: 30, engagement: 20, fit: 10 }
-  calculatedAt    DateTime @default(now())
-  createdAt       DateTime @default(now())
-  
+  id             String   @id @default(cuid())
+  leadId         String
+  score          Int // 0-100 weighted score
+  scoreBreakdown Json // { firmographics: 40, intent: 30, engagement: 20, fit: 10 }
+  calculatedAt   DateTime @default(now())
+  createdAt      DateTime @default(now())
+
   @@index([leadId])
   @@index([score])
   @@index([calculatedAt])
@@ -5884,35 +5891,34 @@ model LeadScore {
 model OutreachLog {
   id                String    @id @default(cuid())
   leadId            String
-  channel           String    // email, sms, voice, linkedin
+  channel           String // email, sms, voice, linkedin
   sentAt            DateTime  @default(now())
   openedAt          DateTime? // Email only
   clickedAt         DateTime? // Email only
   repliedAt         DateTime? // Email, SMS only
-  responseText      String?   // Response content
-  responseSentiment String?   // positive, neutral, negative
-  messageId         String?   // External message ID for tracking
-  errorMessage      String?   // If delivery failed
+  responseText      String? // Response content
+  responseSentiment String? // positive, neutral, negative
+  messageId         String? // External message ID for tracking
+  errorMessage      String? // If delivery failed
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  
+
   @@index([leadId])
   @@index([channel])
   @@index([sentAt])
   @@index([openedAt])
 }
 
-
 // LeadEnrichmentCache: Cache enriched lead data to minimize API costs
 model LeadEnrichmentCache {
-  id            String    @id @default(cuid())
-  email         String?   
-  domain        String?   
-  enrichedData  Json      // Cached data from Hunter.io, Clearbit APIs
-  expiresAt     DateTime  // Cache expiration (typically 30 days)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  id           String   @id @default(cuid())
+  email        String?
+  domain       String?
+  enrichedData Json // Cached data from Hunter.io, Clearbit APIs
+  expiresAt    DateTime // Cache expiration (typically 30 days)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
   @@index([email])
   @@index([domain])
   @@index([expiresAt])
@@ -5924,42 +5930,42 @@ model LeadEnrichmentCache {
 
 // EmailDripCampaign: Main drip campaign configuration
 model EmailDripCampaign {
-  id                String                    @id @default(cuid())
-  userId            String
-  name              String
-  description       String?
-  status            EmailDripCampaignStatus   @default(DRAFT)
-  triggerType       DripTriggerType           @default(MANUAL)
-  
+  id          String                  @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  status      EmailDripCampaignStatus @default(DRAFT)
+  triggerType DripTriggerType         @default(MANUAL)
+
   // Trigger configuration
-  triggerConfig     Json?                     // Additional trigger settings
-  
+  triggerConfig Json? // Additional trigger settings
+
   // Campaign settings
-  fromName          String?
-  fromEmail         String?
-  replyTo           String?
-  
+  fromName  String?
+  fromEmail String?
+  replyTo   String?
+
   // Analytics
-  totalEnrolled     Int                       @default(0)
-  totalCompleted    Int                       @default(0)
-  totalUnsubscribed Int                       @default(0)
-  totalBounced      Int                       @default(0)
-  avgOpenRate       Float                     @default(0)
-  avgClickRate      Float                     @default(0)
-  avgReplyRate      Float                     @default(0)
-  
+  totalEnrolled     Int   @default(0)
+  totalCompleted    Int   @default(0)
+  totalUnsubscribed Int   @default(0)
+  totalBounced      Int   @default(0)
+  avgOpenRate       Float @default(0)
+  avgClickRate      Float @default(0)
+  avgReplyRate      Float @default(0)
+
   // A/B Testing
-  enableAbTesting   Boolean                   @default(false)
-  abTestConfig      Json?                     // A/B test configuration
-  
+  enableAbTesting Boolean @default(false)
+  abTestConfig    Json? // A/B test configuration
+
   // Metadata
-  tags              String?
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  
-  sequences         EmailDripSequence[]
-  enrollments       EmailDripEnrollment[]
-  
+  tags      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sequences   EmailDripSequence[]
+  enrollments EmailDripEnrollment[]
+
   @@index([userId])
   @@index([status])
   @@index([triggerType])
@@ -5967,44 +5973,44 @@ model EmailDripCampaign {
 
 // EmailDripSequence: Individual emails in the drip sequence
 model EmailDripSequence {
-  id                String                    @id @default(cuid())
-  campaignId        String
-  sequenceOrder     Int                       // Order in the sequence (1, 2, 3, etc.)
-  name              String
-  subject           String
-  previewText       String?
-  htmlContent       String
-  textContent       String?
-  
+  id            String  @id @default(cuid())
+  campaignId    String
+  sequenceOrder Int // Order in the sequence (1, 2, 3, etc.)
+  name          String
+  subject       String
+  previewText   String?
+  htmlContent   String
+  textContent   String?
+
   // Timing
-  delayDays         Int                       @default(0)  // Days to wait after previous email
-  delayHours        Int                       @default(0)  // Additional hours to wait
-  sendTime          String?                   // Preferred send time (HH:MM)
-  
+  delayDays  Int     @default(0) // Days to wait after previous email
+  delayHours Int     @default(0) // Additional hours to wait
+  sendTime   String? // Preferred send time (HH:MM)
+
   // Conditions
-  sendConditions    Json?                     // Conditions to check before sending
-  skipIfEngaged     Boolean                   @default(false)  // Skip if lead engaged with previous email
-  
+  sendConditions Json? // Conditions to check before sending
+  skipIfEngaged  Boolean @default(false) // Skip if lead engaged with previous email
+
   // A/B Testing variants
-  isAbTestVariant   Boolean                   @default(false)
-  abTestGroup       String?                   // A or B
-  variantOf         String?                   // ID of the main sequence if this is a variant
-  
+  isAbTestVariant Boolean @default(false)
+  abTestGroup     String? // A or B
+  variantOf       String? // ID of the main sequence if this is a variant
+
   // Analytics
-  totalSent         Int                       @default(0)
-  totalDelivered    Int                       @default(0)
-  totalOpened       Int                       @default(0)
-  totalClicked      Int                       @default(0)
-  totalReplied      Int                       @default(0)
-  totalBounced      Int                       @default(0)
-  totalUnsubscribed Int                       @default(0)
-  
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  
-  campaign          EmailDripCampaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  messages          EmailDripMessage[]
-  
+  totalSent         Int @default(0)
+  totalDelivered    Int @default(0)
+  totalOpened       Int @default(0)
+  totalClicked      Int @default(0)
+  totalReplied      Int @default(0)
+  totalBounced      Int @default(0)
+  totalUnsubscribed Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign EmailDripCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  messages EmailDripMessage[]
+
   @@unique([campaignId, sequenceOrder])
   @@index([campaignId])
   @@index([sequenceOrder])
@@ -6012,38 +6018,38 @@ model EmailDripSequence {
 
 // EmailDripEnrollment: Track which leads are enrolled in campaigns
 model EmailDripEnrollment {
-  id                String                    @id @default(cuid())
-  campaignId        String
-  leadId            String
-  status            DripEnrollmentStatus      @default(ACTIVE)
-  
+  id         String               @id @default(cuid())
+  campaignId String
+  leadId     String
+  status     DripEnrollmentStatus @default(ACTIVE)
+
   // Progress tracking
-  currentSequenceId String?                   // Current sequence in the campaign
-  currentStep       Int                       @default(0)  // Current step number
-  nextSendAt        DateTime?                 // When to send next email
-  
+  currentSequenceId String? // Current sequence in the campaign
+  currentStep       Int       @default(0) // Current step number
+  nextSendAt        DateTime? // When to send next email
+
   // Engagement tracking
-  totalOpened       Int                       @default(0)
-  totalClicked      Int                       @default(0)
-  totalReplied      Int                       @default(0)
-  lastEngagedAt     DateTime?
-  
+  totalOpened   Int       @default(0)
+  totalClicked  Int       @default(0)
+  totalReplied  Int       @default(0)
+  lastEngagedAt DateTime?
+
   // A/B Testing
-  abTestGroup       String?                   // A or B
-  
+  abTestGroup String? // A or B
+
   // Status tracking
-  enrolledAt        DateTime                  @default(now())
-  completedAt       DateTime?
-  unsubscribedAt    DateTime?
-  bouncedAt         DateTime?
-  pausedAt          DateTime?
-  
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  
-  campaign          EmailDripCampaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  messages          EmailDripMessage[]
-  
+  enrolledAt     DateTime  @default(now())
+  completedAt    DateTime?
+  unsubscribedAt DateTime?
+  bouncedAt      DateTime?
+  pausedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign EmailDripCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  messages EmailDripMessage[]
+
   @@unique([campaignId, leadId])
   @@index([campaignId])
   @@index([leadId])
@@ -6053,51 +6059,51 @@ model EmailDripEnrollment {
 
 // EmailDripMessage: Track individual sent emails
 model EmailDripMessage {
-  id                String                    @id @default(cuid())
-  enrollmentId      String
-  sequenceId        String
-  
+  id           String @id @default(cuid())
+  enrollmentId String
+  sequenceId   String
+
   // Recipient info
-  recipientEmail    String
-  recipientName     String?
-  
+  recipientEmail String
+  recipientName  String?
+
   // Message content (snapshot at send time)
-  subject           String
-  htmlContent       String
-  textContent       String?
-  
+  subject     String
+  htmlContent String
+  textContent String?
+
   // Delivery tracking
-  status            EmailDripMessageStatus    @default(PENDING)
-  scheduledFor      DateTime
-  sentAt            DateTime?
-  deliveredAt       DateTime?
-  openedAt          DateTime?
-  firstOpenedAt     DateTime?
-  clickedAt         DateTime?
-  firstClickedAt    DateTime?
-  repliedAt         DateTime?
-  bouncedAt         DateTime?
-  unsubscribedAt    DateTime?
-  
+  status         EmailDripMessageStatus @default(PENDING)
+  scheduledFor   DateTime
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  firstOpenedAt  DateTime?
+  clickedAt      DateTime?
+  firstClickedAt DateTime?
+  repliedAt      DateTime?
+  bouncedAt      DateTime?
+  unsubscribedAt DateTime?
+
   // Tracking data
-  openCount         Int                       @default(0)
-  clickCount        Int                       @default(0)
-  clickedLinks      Json?                     // Array of clicked links
-  
+  openCount    Int   @default(0)
+  clickCount   Int   @default(0)
+  clickedLinks Json? // Array of clicked links
+
   // Provider data
-  emailProvider     String?                   // gmail, sendgrid, etc.
+  emailProvider     String? // gmail, sendgrid, etc.
   providerMessageId String?
   errorMessage      String?
-  
+
   // Tracking pixels/links
-  trackingId        String                    @unique @default(cuid())
-  
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  
-  enrollment        EmailDripEnrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  sequence          EmailDripSequence         @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
-  
+  trackingId String @unique @default(cuid())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  enrollment EmailDripEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  sequence   EmailDripSequence   @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+
   @@index([enrollmentId])
   @@index([sequenceId])
   @@index([status])
@@ -6116,37 +6122,36 @@ enum EmailDripCampaignStatus {
 }
 
 enum DripTriggerType {
-  MANUAL          // Manually enroll leads
-  LEAD_CREATED    // Trigger when new lead is created
-  LEAD_STATUS     // Trigger when lead status changes
-  TAG_ADDED       // Trigger when tag is added
-  FORM_SUBMITTED  // Trigger when form is submitted
-  LIST_ADDED      // Trigger when added to list
-  SCHEDULED       // Trigger on specific date/time
+  MANUAL // Manually enroll leads
+  LEAD_CREATED // Trigger when new lead is created
+  LEAD_STATUS // Trigger when lead status changes
+  TAG_ADDED // Trigger when tag is added
+  FORM_SUBMITTED // Trigger when form is submitted
+  LIST_ADDED // Trigger when added to list
+  SCHEDULED // Trigger on specific date/time
 }
 
 enum DripEnrollmentStatus {
-  ACTIVE          // Currently enrolled and receiving emails
-  COMPLETED       // Finished all sequences
-  PAUSED          // Temporarily paused
-  UNSUBSCRIBED    // Unsubscribed from campaign
-  BOUNCED         // Email bounced
-  FAILED          // Failed to send
+  ACTIVE // Currently enrolled and receiving emails
+  COMPLETED // Finished all sequences
+  PAUSED // Temporarily paused
+  UNSUBSCRIBED // Unsubscribed from campaign
+  BOUNCED // Email bounced
+  FAILED // Failed to send
 }
 
 enum EmailDripMessageStatus {
-  PENDING         // Scheduled but not sent
-  SENDING         // Currently sending
-  SENT            // Successfully sent
-  DELIVERED       // Confirmed delivered
-  OPENED          // Recipient opened email
-  CLICKED         // Recipient clicked link
-  REPLIED         // Recipient replied
-  BOUNCED         // Email bounced
-  FAILED          // Failed to send
-  UNSUBSCRIBED    // Recipient unsubscribed
+  PENDING // Scheduled but not sent
+  SENDING // Currently sending
+  SENT // Successfully sent
+  DELIVERED // Confirmed delivered
+  OPENED // Recipient opened email
+  CLICKED // Recipient clicked link
+  REPLIED // Recipient replied
+  BOUNCED // Email bounced
+  FAILED // Failed to send
+  UNSUBSCRIBED // Recipient unsubscribed
 }
-
 
 // Lead Blacklist for data validation
 model LeadBlacklist {
@@ -6168,35 +6173,35 @@ model LeadBlacklist {
 
 // A/B Testing Framework
 model ABTest {
-  id          String        @id @default(cuid())
+  id          String          @id @default(cuid())
   userId      String
   name        String
-  testType    String        // email_subject, email_body, sms_template, voice_script
-  status      String        @default("ACTIVE") // ACTIVE, COMPLETED, PAUSED
+  testType    String // email_subject, email_body, sms_template, voice_script
+  status      String          @default("ACTIVE") // ACTIVE, COMPLETED, PAUSED
   winnerId    String?
   completedAt DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  user        User          @relation("ABTests", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  user        User            @relation("ABTests", fields: [userId], references: [id], onDelete: Cascade)
   variants    ABTestVariant[]
-  winner      ABTestVariant? @relation("ABTestWinner", fields: [winnerId], references: [id])
+  winner      ABTestVariant?  @relation("ABTestWinner", fields: [winnerId], references: [id])
 
   @@index([userId])
   @@index([status])
 }
 
 model ABTestVariant {
-  id            String   @id @default(cuid())
-  testId        String
-  name          String
-  content       String
-  variantIndex  Int
-  sendCount     Int      @default(0)
-  successCount  Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  test          ABTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
-  wonTests      ABTest[] @relation("ABTestWinner")
+  id           String   @id @default(cuid())
+  testId       String
+  name         String
+  content      String
+  variantIndex Int
+  sendCount    Int      @default(0)
+  successCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  test         ABTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
+  wonTests     ABTest[] @relation("ABTestWinner")
 
   @@index([testId])
 }
@@ -6205,9 +6210,9 @@ model ABTestVariant {
 model SocialMediaSettings {
   id        String   @id @default(cuid())
   userId    String
-  platform  String   // META, TWITTER, LINKEDIN, etc.
-  appId     String   // Platform App ID
-  appSecret String   // Platform App Secret
+  platform  String // META, TWITTER, LINKEDIN, etc.
+  appId     String // Platform App ID
+  appSecret String // Platform App Secret
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation("SocialMediaSettings", fields: [userId], references: [id], onDelete: Cascade)
@@ -6221,20 +6226,20 @@ model SocialMediaSettings {
 // ═══════════════════════════════════════════════════════════════
 
 enum AIEmployeeType {
-  LEAD_RESEARCHER      // Researches and enriches lead data
-  CUSTOMER_ONBOARDING  // Handles customer onboarding, invoices, emails
-  BOOKING_COORDINATOR  // Manages calendar and booking automation
-  PROJECT_MANAGER      // Creates projects, assigns teams
+  LEAD_RESEARCHER // Researches and enriches lead data
+  CUSTOMER_ONBOARDING // Handles customer onboarding, invoices, emails
+  BOOKING_COORDINATOR // Manages calendar and booking automation
+  PROJECT_MANAGER // Creates projects, assigns teams
   COMMUNICATION_SPECIALIST // Sends welcome packages, follow-ups
 }
 
 enum AIJobStatus {
-  PENDING       // Job queued, waiting to start
-  RUNNING       // Currently executing
-  COMPLETED     // Successfully completed
-  FAILED        // Failed with error
-  CANCELLED     // Manually cancelled
-  PAUSED        // Temporarily paused
+  PENDING // Job queued, waiting to start
+  RUNNING // Currently executing
+  COMPLETED // Successfully completed
+  FAILED // Failed with error
+  CANCELLED // Manually cancelled
+  PAUSED // Temporarily paused
 }
 
 enum AIJobPriority {
@@ -6246,16 +6251,16 @@ enum AIJobPriority {
 
 // AI Employee - represents different types of AI workers
 model AIEmployee {
-  id           String          @id @default(cuid())
+  id           String         @id @default(cuid())
   userId       String
-  name         String          // e.g., "Sarah - Lead Researcher"
+  name         String // e.g., "Sarah - Lead Researcher"
   type         AIEmployeeType
   description  String?
-  isActive     Boolean         @default(true)
-  capabilities Json            // Stores specific capabilities and settings
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  user         User            @relation("AIEmployees", fields: [userId], references: [id], onDelete: Cascade)
+  isActive     Boolean        @default(true)
+  capabilities Json // Stores specific capabilities and settings
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  user         User           @relation("AIEmployees", fields: [userId], references: [id], onDelete: Cascade)
   jobs         AIJob[]
 
   @@index([userId])
@@ -6265,29 +6270,29 @@ model AIEmployee {
 
 // AI Job - represents a task assigned to an AI employee
 model AIJob {
-  id             String         @id @default(cuid())
-  userId         String
-  employeeId     String
-  workflowId     String?        // Links multiple jobs in a workflow
-  jobType        String         // lead_enrichment, invoice_generation, etc.
-  priority       AIJobPriority  @default(MEDIUM)
-  status         AIJobStatus    @default(PENDING)
-  input          Json           // Input data for the job
-  output         Json?          // Result/output data
-  error          String?        // Error message if failed
-  progress       Int            @default(0) // 0-100
-  startedAt      DateTime?
-  completedAt    DateTime?
-  estimatedTime  Int?           // Estimated seconds to complete
-  actualTime     Int?           // Actual seconds taken
-  retryCount     Int            @default(0)
-  maxRetries     Int            @default(3)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  user           User           @relation("AIJobs", fields: [userId], references: [id], onDelete: Cascade)
-  employee       AIEmployee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  logs           AIJobLog[]
-  
+  id            String        @id @default(cuid())
+  userId        String
+  employeeId    String
+  workflowId    String? // Links multiple jobs in a workflow
+  jobType       String // lead_enrichment, invoice_generation, etc.
+  priority      AIJobPriority @default(MEDIUM)
+  status        AIJobStatus   @default(PENDING)
+  input         Json // Input data for the job
+  output        Json? // Result/output data
+  error         String? // Error message if failed
+  progress      Int           @default(0) // 0-100
+  startedAt     DateTime?
+  completedAt   DateTime?
+  estimatedTime Int? // Estimated seconds to complete
+  actualTime    Int? // Actual seconds taken
+  retryCount    Int           @default(0)
+  maxRetries    Int           @default(3)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation("AIJobs", fields: [userId], references: [id], onDelete: Cascade)
+  employee      AIEmployee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  logs          AIJobLog[]
+
   @@index([userId])
   @@index([employeeId])
   @@index([workflowId])
@@ -6300,16 +6305,15 @@ model AIJob {
 model AIJobLog {
   id        String   @id @default(cuid())
   jobId     String
-  level     String   // INFO, WARNING, ERROR, SUCCESS
+  level     String // INFO, WARNING, ERROR, SUCCESS
   message   String
-  data      Json?    // Additional structured data
+  data      Json? // Additional structured data
   createdAt DateTime @default(now())
   job       AIJob    @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  
+
   @@index([jobId])
   @@index([createdAt])
 }
-
 
 // ==========================================
 // AI DOCPEN - Ambient Medical Scribe System
@@ -6355,46 +6359,46 @@ enum DocpenSOAPType {
 
 // Main session/consultation record
 model DocpenSession {
-  id                String              @id @default(cuid())
-  userId            String
-  leadId            String?             // Link to CRM Client Record
-  patientName       String?             // For quick reference
-  profession        DocpenProfession    @default(GENERAL_PRACTICE)
-  customProfession  String?             // If CUSTOM selected
-  status            DocpenSessionStatus @default(RECORDING)
-  
+  id               String              @id @default(cuid())
+  userId           String
+  leadId           String? // Link to CRM Client Record
+  patientName      String? // For quick reference
+  profession       DocpenProfession    @default(GENERAL_PRACTICE)
+  customProfession String? // If CUSTOM selected
+  status           DocpenSessionStatus @default(RECORDING)
+
   // Session metadata
-  sessionDate       DateTime            @default(now())
-  sessionDuration   Int?                // Duration in seconds
-  chiefComplaint    String?             // Initial reason for visit
-  consultantName    String?             // Name of consultant signing off on notes approval
-  
+  sessionDate     DateTime @default(now())
+  sessionDuration Int? // Duration in seconds
+  chiefComplaint  String? // Initial reason for visit
+  consultantName  String? // Name of consultant signing off on notes approval
+
   // Audio storage (encrypted reference)
-  audioStoragePath  String?             // S3 path for encrypted audio
-  audioRetained     Boolean             @default(false) // HIPAA: track if retained
-  retentionExpiry   DateTime?           // When audio will be deleted
-  
+  audioStoragePath String? // S3 path for encrypted audio
+  audioRetained    Boolean   @default(false) // HIPAA: track if retained
+  retentionExpiry  DateTime? // When audio will be deleted
+
   // Processing status
-  transcriptionComplete Boolean         @default(false)
-  soapNoteGenerated     Boolean         @default(false)
-  
+  transcriptionComplete Boolean @default(false)
+  soapNoteGenerated     Boolean @default(false)
+
   // Signing workflow
-  reviewedAt        DateTime?
-  signedAt          DateTime?
-  signedBy          String?             // Name of signing practitioner
-  signatureHash     String?             // Digital signature verification
-  
+  reviewedAt    DateTime?
+  signedAt      DateTime?
+  signedBy      String? // Name of signing practitioner
+  signatureHash String? // Digital signature verification
+
   // Timestamps
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lead              Lead?               @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  transcriptions    DocpenTranscription[]
-  soapNotes         DocpenSOAPNote[]
-  assistantQueries  DocpenAssistantQuery[]
-  
+  user             User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead             Lead?                  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  transcriptions   DocpenTranscription[]
+  soapNotes        DocpenSOAPNote[]
+  assistantQueries DocpenAssistantQuery[]
+
   @@index([userId])
   @@index([leadId])
   @@index([status])
@@ -6403,64 +6407,64 @@ model DocpenSession {
 
 // Individual transcription segments with speaker identification
 model DocpenTranscription {
-  id            String            @id @default(cuid())
-  sessionId     String
-  
+  id        String @id @default(cuid())
+  sessionId String
+
   // Speaker diarization
-  speakerRole   DocpenSpeakerRole
-  speakerLabel  String?           // "Dr. Smith", "Patient", etc.
-  
+  speakerRole  DocpenSpeakerRole
+  speakerLabel String? // "Dr. Smith", "Patient", etc.
+
   // Transcription content
-  content       String            // The spoken text
-  startTime     Float             // Start time in seconds
-  endTime       Float             // End time in seconds
-  confidence    Float?            // STT confidence score
-  
+  content    String // The spoken text
+  startTime  Float // Start time in seconds
+  endTime    Float // End time in seconds
+  confidence Float? // STT confidence score
+
   // Processing flags
-  isEdited      Boolean           @default(false)
-  originalContent String?         // Store original if edited
-  
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  
-  session       DocpenSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  
+  isEdited        Boolean @default(false)
+  originalContent String? // Store original if edited
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session DocpenSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
   @@index([sessionId])
   @@index([speakerRole])
 }
 
 // Generated SOAP Notes
 model DocpenSOAPNote {
-  id                String          @id @default(cuid())
-  sessionId         String
-  version           Int             @default(1)
-  
+  id        String @id @default(cuid())
+  sessionId String
+  version   Int    @default(1)
+
   // SOAP Type
-  soapType          DocpenSOAPType  @default(STANDARD_SOAP) // Type of SOAP note
-  
+  soapType DocpenSOAPType @default(STANDARD_SOAP) // Type of SOAP note
+
   // SOAP Format
-  subjective        String?         @db.Text  // Patient's complaints, history
-  objective         String?         @db.Text  // Exam findings, measurements
-  assessment        String?         @db.Text  // Diagnosis, clinical impression
-  plan              String?         @db.Text  // Treatment plan, follow-up
-  
+  subjective String? @db.Text // Patient's complaints, history
+  objective  String? @db.Text // Exam findings, measurements
+  assessment String? @db.Text // Diagnosis, clinical impression
+  plan       String? @db.Text // Treatment plan, follow-up
+
   // Additional sections based on profession
-  additionalNotes   String?         @db.Text  // ICD-10 codes, dental charting, etc.
-  
+  additionalNotes String? @db.Text // ICD-10 codes, dental charting, etc.
+
   // AI Processing metadata
-  aiModel           String?         // GPT-4o, etc.
-  processingTime    Int?            // Processing time in ms
-  promptVersion     String?         // Track prompt version used
-  
+  aiModel        String? // GPT-4o, etc.
+  processingTime Int? // Processing time in ms
+  promptVersion  String? // Track prompt version used
+
   // Review workflow
-  isCurrentVersion  Boolean         @default(true)
-  editedByUser      Boolean         @default(false)
-  
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  
-  session           DocpenSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  
+  isCurrentVersion Boolean @default(true)
+  editedByUser     Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session DocpenSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
   @@index([sessionId])
   @@index([isCurrentVersion])
   @@index([soapType])
@@ -6468,102 +6472,102 @@ model DocpenSOAPNote {
 
 // Active Assistant queries during session
 model DocpenAssistantQuery {
-  id            String          @id @default(cuid())
-  sessionId     String
-  
+  id        String @id @default(cuid())
+  sessionId String
+
   // Query details
-  queryType     String          // "patient_history", "drug_interaction", "medical_lookup", "feedback"
-  queryText     String          // The user's question
-  responseText  String?         @db.Text // AI response
-  
+  queryType    String // "patient_history", "drug_interaction", "medical_lookup", "feedback"
+  queryText    String // The user's question
+  responseText String? @db.Text // AI response
+
   // Context
-  triggerMethod String?         // "voice", "text", "wake_word"
-  timestamp     Float?          // When during session (seconds)
-  
+  triggerMethod String? // "voice", "text", "wake_word"
+  timestamp     Float? // When during session (seconds)
+
   // Sources/References
-  sourcesCited  Json?           // Array of sources used in response
-  
-  createdAt     DateTime        @default(now())
-  
-  session       DocpenSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  
+  sourcesCited Json? // Array of sources used in response
+
+  createdAt DateTime @default(now())
+
+  session DocpenSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
   @@index([sessionId])
   @@index([queryType])
 }
 
 // Docpen Voice Agent tracking (per user, per profession)
 model DocpenVoiceAgent {
-  id                  String            @id @default(cuid())
-  userId              String
-  profession          DocpenProfession
-  customProfession    String?           // If CUSTOM selected
-  
+  id               String           @id @default(cuid())
+  userId           String
+  profession       DocpenProfession
+  customProfession String? // If CUSTOM selected
+
   // ElevenLabs configuration
-  elevenLabsAgentId   String            @unique
-  voiceId             String?           // ElevenLabs voice ID used
-  voiceName           String?           // Human-readable voice name
-  systemPrompt        String?           @db.Text
-  
+  elevenLabsAgentId String  @unique
+  voiceId           String? // ElevenLabs voice ID used
+  voiceName         String? // Human-readable voice name
+  systemPrompt      String? @db.Text
+
   // Language & Voice Settings
-  language            String            @default("en")   // ISO 639-1 code
-  languageName        String?           @default("English")
-  voiceGender         String?           @default("neutral") // male, female, neutral
-  stability           Float?            @default(0.6)
-  similarityBoost     Float?            @default(0.8)
-  
+  language        String  @default("en") // ISO 639-1 code
+  languageName    String? @default("English")
+  voiceGender     String? @default("neutral") // male, female, neutral
+  stability       Float?  @default(0.6)
+  similarityBoost Float?  @default(0.8)
+
   // Status
-  isActive            Boolean           @default(true)
-  lastUsedAt          DateTime?
-  conversationCount   Int               @default(0)
-  totalDurationSec    Int               @default(0)       // Total conversation time
-  
+  isActive          Boolean   @default(true)
+  lastUsedAt        DateTime?
+  conversationCount Int       @default(0)
+  totalDurationSec  Int       @default(0) // Total conversation time
+
   // Timestamps
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversations       DocpenConversation[]
-  knowledgeBaseFiles  DocpenAgentKnowledgeBaseFile[]
-  
+  user               User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations      DocpenConversation[]
+  knowledgeBaseFiles DocpenAgentKnowledgeBaseFile[]
+
+  @@unique([userId, profession, customProfession])
   @@index([userId])
   @@index([profession])
   @@index([elevenLabsAgentId])
-  @@unique([userId, profession, customProfession])
 }
 
 // Docpen Conversation History (synced from ElevenLabs)
 model DocpenConversation {
-  id                  String            @id @default(cuid())
-  agentId             String
-  elevenLabsConvId    String            @unique // ElevenLabs conversation_id
-  
+  id               String @id @default(cuid())
+  agentId          String
+  elevenLabsConvId String @unique // ElevenLabs conversation_id
+
   // Session info
-  sessionId           String?           // Link to DocpenSession if applicable
-  patientName         String?
-  
+  sessionId   String? // Link to DocpenSession if applicable
+  patientName String?
+
   // Conversation data
-  status              String            @default("completed") // active, completed, error
-  startedAt           DateTime
-  endedAt             DateTime?
-  durationSec         Int?
-  
+  status      String    @default("completed") // active, completed, error
+  startedAt   DateTime
+  endedAt     DateTime?
+  durationSec Int?
+
   // Audio & Transcript
-  audioUrl            String?           @db.Text   // Recording URL from ElevenLabs
-  transcript          String?           @db.Text   // Full transcript JSON
-  summary             String?           @db.Text   // AI-generated summary
-  
+  audioUrl   String? @db.Text // Recording URL from ElevenLabs
+  transcript String? @db.Text // Full transcript JSON
+  summary    String? @db.Text // AI-generated summary
+
   // Metadata
-  messageCount        Int               @default(0)
-  turnCount           Int               @default(0)
-  
+  messageCount Int @default(0)
+  turnCount    Int @default(0)
+
   // Timestamps
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  agent               DocpenVoiceAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  
+  agent DocpenVoiceAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
   @@index([agentId])
   @@index([sessionId])
   @@index([startedAt])
@@ -6571,52 +6575,53 @@ model DocpenConversation {
 
 // Docpen Knowledge Base Files
 model DocpenKnowledgeBaseFile {
-  id                  String            @id @default(cuid())
-  userId              String
-  
+  id     String @id @default(cuid())
+  userId String
+
   // File info
-  fileName            String
-  fileType            String            // MIME type
-  fileSize            Int               // bytes
-  cloudStoragePath    String?           // S3 path
-  
+  fileName         String
+  fileType         String // MIME type
+  fileSize         Int // bytes
+  cloudStoragePath String? // S3 path
+
   // Content
-  extractedText       String?           @db.Text
-  
+  extractedText String? @db.Text
+
   // Specialty categorization
-  specialty           DocpenProfession?
-  customSpecialty     String?
-  tags                String[]          @default([])
-  
+  specialty       DocpenProfession?
+  customSpecialty String?
+  tags            String[]          @default([])
+
   // ElevenLabs sync
-  elevenLabsDocId     String?           // If uploaded to ElevenLabs knowledge base
-  
+  elevenLabsDocId String? // If uploaded to ElevenLabs knowledge base
+
   // Timestamps
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agents              DocpenAgentKnowledgeBaseFile[]
-  
+  user   User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agents DocpenAgentKnowledgeBaseFile[]
+
   @@index([userId])
   @@index([specialty])
 }
 
 // Junction table for Docpen Agent <-> Knowledge Base Files (many-to-many)
 model DocpenAgentKnowledgeBaseFile {
-  id                  String                  @id @default(cuid())
-  agentId             String
-  fileId              String
-  addedAt             DateTime                @default(now())
-  
-  agent               DocpenVoiceAgent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  knowledgeBaseFile   DocpenKnowledgeBaseFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  
+  id      String   @id @default(cuid())
+  agentId String
+  fileId  String
+  addedAt DateTime @default(now())
+
+  agent             DocpenVoiceAgent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  knowledgeBaseFile DocpenKnowledgeBaseFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
   @@unique([agentId, fileId])
   @@index([agentId])
   @@index([fileId])
 }
+
 // ==========================================
 // REAL ESTATE INDUSTRY ENUMS
 // ==========================================
@@ -6749,45 +6754,45 @@ enum REAIEmployeeType {
 // ==========================================
 
 model REProperty {
-  id             String                  @id @default(cuid())
+  id             String          @id @default(cuid())
   userId         String
   address        String
   unit           String?
   city           String
   state          String
   zip            String
-  country        String                  @default("US")
+  country        String          @default("US")
   beds           Int?
   baths          Float?
   sqft           Int?
   lotSize        Int?
   yearBuilt      Int?
-  propertyType   REPropertyType          @default(SINGLE_FAMILY)
-  listingStatus  REListingStatus         @default(ACTIVE)
+  propertyType   REPropertyType  @default(SINGLE_FAMILY)
+  listingStatus  REListingStatus @default(ACTIVE)
   listPrice      Float?
   soldPrice      Float?
   mlsNumber      String?
-  daysOnMarket   Int                     @default(0)
+  daysOnMarket   Int             @default(0)
   photos         Json?
   virtualTourUrl String?
   description    String?
-  features       String[]                @default([])
+  features       String[]        @default([])
   sellerLeadId   String?
   listingDate    DateTime?
   soldDate       DateTime?
   expirationDate DateTime?
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
-  
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
   // Relations
-  user           User                    @relation("REUserProperties", fields: [userId], references: [id], onDelete: Cascade)
-  sellerLead     Lead?                   @relation("REPropertySeller", fields: [sellerLeadId], references: [id])
-  cmaReports     RECMAReport[]
-  comps          REComparable[]
-  presentations  REListingPresentation[]
-  netSheets      RESellerNetSheet[]
-  diagnostics    REStaleDiagnostic[]
-  transactions   RETransaction[]
+  user          User                    @relation("REUserProperties", fields: [userId], references: [id], onDelete: Cascade)
+  sellerLead    Lead?                   @relation("REPropertySeller", fields: [sellerLeadId], references: [id])
+  cmaReports    RECMAReport[]
+  comps         REComparable[]
+  presentations REListingPresentation[]
+  netSheets     RESellerNetSheet[]
+  diagnostics   REStaleDiagnostic[]
+  transactions  RETransaction[]
 
   @@index([userId])
   @@index([city, state])
@@ -6829,10 +6834,10 @@ model REFSBOListing {
   convertedLeadId String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  
+
   // Relations
-  assignedUser    User?        @relation("REFSBOAssignedUser", fields: [assignedUserId], references: [id])
-  convertedLead   Lead?        @relation("REFSBOConvertedLead", fields: [convertedLeadId], references: [id])
+  assignedUser  User? @relation("REFSBOAssignedUser", fields: [assignedUserId], references: [id])
+  convertedLead Lead? @relation("REFSBOConvertedLead", fields: [convertedLeadId], references: [id])
 
   @@index([source])
   @@index([city, state])
@@ -6882,9 +6887,9 @@ model REScrapingJob {
   totalListingsFound Int           @default(0)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
-  
+
   // Relations
-  user               User          @relation("REScrapingJobUser", fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("REScrapingJobUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isActive])
@@ -6913,9 +6918,9 @@ model REMarketStats {
   source          String?
   rawData         Json?
   createdAt       DateTime     @default(now())
-  
+
   // Relations
-  user            User         @relation("REMarketStatsUser", fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("REMarketStatsUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([region])
@@ -6941,9 +6946,9 @@ model REMarketReport {
   sentTo           Json?
   sentAt           DateTime?
   createdAt        DateTime     @default(now())
-  
+
   // Relations
-  user             User         @relation("REMarketReportUser", fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("REMarketReportUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([type])
@@ -6971,10 +6976,10 @@ model REStaleDiagnostic {
   actionedAt       DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
-  
+
   // Relations
-  user             User               @relation("REStaleDiagnosticUser", fields: [userId], references: [id], onDelete: Cascade)
-  property         REProperty?        @relation(fields: [propertyId], references: [id])
+  user     User        @relation("REStaleDiagnosticUser", fields: [userId], references: [id], onDelete: Cascade)
+  property REProperty? @relation(fields: [propertyId], references: [id])
 
   @@index([userId])
   @@index([status])
@@ -6982,7 +6987,7 @@ model REStaleDiagnostic {
 }
 
 model REListingPresentation {
-  id              String      @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
   propertyId      String?
   address         String
@@ -6997,26 +7002,26 @@ model REListingPresentation {
   timelinePhases  Json?
   pdfUrl          String?
   slidesUrl       String?
-  status          String      @default("draft")
+  status          String    @default("draft")
   presentedAt     DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
   // Relations
-  user            User        @relation("REListingPresentationUser", fields: [userId], references: [id], onDelete: Cascade)
-  property        REProperty? @relation(fields: [propertyId], references: [id])
+  user     User        @relation("REListingPresentationUser", fields: [userId], references: [id], onDelete: Cascade)
+  property REProperty? @relation(fields: [propertyId], references: [id])
 
   @@index([userId])
 }
 
 model RESellerNetSheet {
-  id               String      @id @default(cuid())
+  id               String   @id @default(cuid())
   userId           String
   propertyId       String?
   address          String
   salePrice        Float
   mortgagePayoff   Float?
-  commissionRate   Float       @default(5.0)
+  commissionRate   Float    @default(5.0)
   commissionAmount Float?
   listingAgentComm Float?
   buyerAgentComm   Float?
@@ -7028,18 +7033,18 @@ model RESellerNetSheet {
   otherCosts       Float?
   estimatedNet     Float?
   pdfUrl           String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
   // Relations
-  user             User        @relation("RESellerNetSheetUser", fields: [userId], references: [id], onDelete: Cascade)
-  property         REProperty? @relation(fields: [propertyId], references: [id])
+  user     User        @relation("RESellerNetSheetUser", fields: [userId], references: [id], onDelete: Cascade)
+  property REProperty? @relation(fields: [propertyId], references: [id])
 
   @@index([userId])
 }
 
 model RECMAReport {
-  id                String      @id @default(cuid())
+  id                String   @id @default(cuid())
   userId            String
   propertyId        String?
   address           String
@@ -7055,17 +7060,17 @@ model RECMAReport {
   pricePerSqft      Float?
   pdfUrl            String?
   fullPdfUrl        String?
-  createdAt         DateTime    @default(now())
-  
+  createdAt         DateTime @default(now())
+
   // Relations
-  user              User        @relation("RECMAReportUser", fields: [userId], references: [id], onDelete: Cascade)
-  property          REProperty? @relation(fields: [propertyId], references: [id])
+  user     User        @relation("RECMAReportUser", fields: [userId], references: [id], onDelete: Cascade)
+  property REProperty? @relation(fields: [propertyId], references: [id])
 
   @@index([userId])
 }
 
 model REComparable {
-  id             String     @id @default(cuid())
+  id             String    @id @default(cuid())
   propertyId     String
   status         String
   address        String?
@@ -7081,19 +7086,19 @@ model REComparable {
   lotSize        Int?
   adjustedPrice  Float?
   adjustments    Json?
-  features       String[]   @default([])
+  features       String[]  @default([])
   conditionScore Int?
   notes          String?
-  createdAt      DateTime   @default(now())
-  
+  createdAt      DateTime  @default(now())
+
   // Relations
-  property       REProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property REProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
 }
 
 model RETransaction {
-  id               String                  @id @default(cuid())
+  id               String             @id @default(cuid())
   userId           String
   propertyId       String?
   leadId           String?
@@ -7109,18 +7114,18 @@ model RETransaction {
   contractDate     DateTime?
   closingDate      DateTime?
   possessionDate   DateTime?
-  stage            RETransactionStage      @default(OFFER_SUBMITTED)
+  stage            RETransactionStage @default(OFFER_SUBMITTED)
   vendorContacts   Json?
   notes            String?
-  createdAt        DateTime                @default(now())
-  updatedAt        DateTime                @updatedAt
-  
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
   // Relations
-  user             User                    @relation("RETransactionUser", fields: [userId], references: [id], onDelete: Cascade)
-  property         REProperty?             @relation(fields: [propertyId], references: [id])
-  lead             Lead?                   @relation("RETransactionLead", fields: [leadId], references: [id])
-  activities       RETransactionActivity[]
-  tasks            RETransactionTask[]
+  user       User                    @relation("RETransactionUser", fields: [userId], references: [id], onDelete: Cascade)
+  property   REProperty?             @relation(fields: [propertyId], references: [id])
+  lead       Lead?                   @relation("RETransactionLead", fields: [leadId], references: [id])
+  activities RETransactionActivity[]
+  tasks      RETransactionTask[]
 
   @@index([userId])
   @@index([stage])
@@ -7128,15 +7133,15 @@ model RETransaction {
 }
 
 model RETransactionActivity {
-  id            String        @id @default(cuid())
+  id            String   @id @default(cuid())
   transactionId String
   type          String
   description   String
   metadata      Json?
-  createdAt     DateTime      @default(now())
-  
+  createdAt     DateTime @default(now())
+
   // Relations
-  transaction   RETransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transaction RETransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
   @@index([transactionId])
 }
@@ -7152,9 +7157,9 @@ model RETransactionTask {
   completedAt   DateTime?
   assignedTo    String?
   createdAt     DateTime            @default(now())
-  
+
   // Relations
-  transaction   RETransaction       @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transaction RETransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
   @@index([transactionId])
   @@index([dueDate])
@@ -7184,10 +7189,10 @@ model REBuyerCriteria {
   timeline            String?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
-  
+
   // Relations
-  user                User             @relation("REBuyerCriteriaUser", fields: [userId], references: [id], onDelete: Cascade)
-  lead                Lead             @relation("REBuyerCriteriaLead", fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation("REBuyerCriteriaUser", fields: [userId], references: [id], onDelete: Cascade)
+  lead Lead @relation("REBuyerCriteriaLead", fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -7217,10 +7222,10 @@ model REExpiredListing {
   convertedLeadId   String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
-  
+
   // Relations
-  assignedUser      User?           @relation("REExpiredAssignedUser", fields: [assignedUserId], references: [id])
-  convertedLead     Lead?           @relation("REExpiredConvertedLead", fields: [convertedLeadId], references: [id])
+  assignedUser  User? @relation("REExpiredAssignedUser", fields: [assignedUserId], references: [id])
+  convertedLead Lead? @relation("REExpiredConvertedLead", fields: [convertedLeadId], references: [id])
 
   @@index([status])
   @@index([assignedUserId])
@@ -7244,9 +7249,9 @@ model REAIEmployeeExecution {
   emailSent    Boolean          @default(false)
   taskCreated  Boolean          @default(false)
   createdAt    DateTime         @default(now())
-  
+
   // Relations
-  user         User             @relation("REAIEmployeeExecutionUser", fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("REAIEmployeeExecutionUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([employeeType])
@@ -7257,21 +7262,21 @@ model REAIEmployeeExecution {
 // Real Estate AI Employee Voice Agents
 // Maps RE AI Employee types to their ElevenLabs agent instances per user
 model REAIEmployeeAgent {
-  id                  String           @id @default(cuid())
-  userId              String
-  employeeType        REAIEmployeeType
-  name                String
-  elevenLabsAgentId   String
-  twilioPhoneNumber   String?
-  voiceId             String?
-  status              String           @default("active")
-  lastUsedAt          DateTime?
-  callCount           Int              @default(0)
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  id                String           @id @default(cuid())
+  userId            String
+  employeeType      REAIEmployeeType
+  name              String
+  elevenLabsAgentId String
+  twilioPhoneNumber String?
+  voiceId           String?
+  status            String           @default("active")
+  lastUsedAt        DateTime?
+  callCount         Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   // Relations
-  user                User             @relation("REAIEmployeeAgentUser", fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation("REAIEmployeeAgentUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, employeeType])
   @@index([userId])
@@ -7321,43 +7326,43 @@ enum VoiceAIBillingStatus {
 // Platform-level Voice AI configuration (admin only)
 // Stores the master ElevenLabs API key and global settings
 model PlatformVoiceAIConfig {
-  id                    String    @id @default(cuid())
-  masterElevenLabsKey   String    // Encrypted master API key
-  masterTwilioSid       String?   // Optional: Master Twilio Account SID
-  masterTwilioToken     String?   // Optional: Master Twilio Auth Token
-  defaultPricePerMin    Decimal   @default(0.50) @db.Decimal(10, 4)
-  defaultOverageRate    Decimal   @default(0.75) @db.Decimal(10, 4)
-  totalMonthlyQuota     Int       @default(2000) // Your ElevenLabs plan limit
-  usedThisMonth         Int       @default(0)    // Total used by all agencies
-  billingCycleStart     DateTime  @default(now())
-  isActive              Boolean   @default(true)
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id                  String   @id @default(cuid())
+  masterElevenLabsKey String // Encrypted master API key
+  masterTwilioSid     String? // Optional: Master Twilio Account SID
+  masterTwilioToken   String? // Optional: Master Twilio Auth Token
+  defaultPricePerMin  Decimal  @default(0.50) @db.Decimal(10, 4)
+  defaultOverageRate  Decimal  @default(0.75) @db.Decimal(10, 4)
+  totalMonthlyQuota   Int      @default(2000) // Your ElevenLabs plan limit
+  usedThisMonth       Int      @default(0) // Total used by all agencies
+  billingCycleStart   DateTime @default(now())
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   @@index([isActive])
 }
 
 // Per-agency Voice AI subscription and quota management
 model VoiceAISubscription {
-  id                    String                   @id @default(cuid())
-  userId                String                   @unique
-  tier                  VoiceAISubscriptionTier  @default(STARTER)
-  monthlyMinutesQuota   Int                      @default(100)
-  pricePerMinute        Decimal                  @default(0.50) @db.Decimal(10, 4)
-  minutesUsedThisMonth  Int                      @default(0)
-  overageAllowed        Boolean                  @default(false)
-  overageRate           Decimal                  @default(0.75) @db.Decimal(10, 4)
-  billingCycleStart     DateTime                 @default(now())
-  isActive              Boolean                  @default(true)
-  agentPrefix           String?                  // Unique prefix for this agency's agents in ElevenLabs
-  notes                 String?                  // Admin notes
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
+  id                   String                  @id @default(cuid())
+  userId               String                  @unique
+  tier                 VoiceAISubscriptionTier @default(STARTER)
+  monthlyMinutesQuota  Int                     @default(100)
+  pricePerMinute       Decimal                 @default(0.50) @db.Decimal(10, 4)
+  minutesUsedThisMonth Int                     @default(0)
+  overageAllowed       Boolean                 @default(false)
+  overageRate          Decimal                 @default(0.75) @db.Decimal(10, 4)
+  billingCycleStart    DateTime                @default(now())
+  isActive             Boolean                 @default(true)
+  agentPrefix          String? // Unique prefix for this agency's agents in ElevenLabs
+  notes                String? // Admin notes
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
 
   // Relations
-  user                  User                     @relation("VoiceAISubscriptionUser", fields: [userId], references: [id], onDelete: Cascade)
-  usageLogs             VoiceAIUsageLog[]        @relation("VoiceAISubscriptionUsage")
-  billingRecords        VoiceAIBillingRecord[]   @relation("VoiceAISubscriptionBilling")
+  user           User                   @relation("VoiceAISubscriptionUser", fields: [userId], references: [id], onDelete: Cascade)
+  usageLogs      VoiceAIUsageLog[]      @relation("VoiceAISubscriptionUsage")
+  billingRecords VoiceAIBillingRecord[] @relation("VoiceAISubscriptionBilling")
 
   @@index([userId])
   @@index([tier])
@@ -7366,28 +7371,28 @@ model VoiceAISubscription {
 
 // Tracks every Voice AI call for usage and billing
 model VoiceAIUsageLog {
-  id                    String                @id @default(cuid())
-  userId                String
-  subscriptionId        String?
-  agentId               String?               // VoiceAgent or REAIEmployeeAgent ID
-  elevenLabsAgentId     String?               // ElevenLabs agent ID
-  elevenLabsCallId      String?               // ElevenLabs call ID
-  direction             VoiceAICallDirection  @default(OUTBOUND)
-  durationSeconds       Int                   @default(0)
-  durationMinutes       Decimal               @default(0) @db.Decimal(10, 2) // Rounded up for billing
-  cost                  Decimal               @default(0) @db.Decimal(10, 4) // minutes × rate
-  callerNumber          String?
-  recipientNumber       String?
-  status                VoiceAICallStatus     @default(INITIATED)
-  recordingUrl          String?
-  transcriptUrl         String?
-  metadata              Json?                 // Extra data from ElevenLabs
-  errorMessage          String?
-  createdAt             DateTime              @default(now())
+  id                String               @id @default(cuid())
+  userId            String
+  subscriptionId    String?
+  agentId           String? // VoiceAgent or REAIEmployeeAgent ID
+  elevenLabsAgentId String? // ElevenLabs agent ID
+  elevenLabsCallId  String? // ElevenLabs call ID
+  direction         VoiceAICallDirection @default(OUTBOUND)
+  durationSeconds   Int                  @default(0)
+  durationMinutes   Decimal              @default(0) @db.Decimal(10, 2) // Rounded up for billing
+  cost              Decimal              @default(0) @db.Decimal(10, 4) // minutes × rate
+  callerNumber      String?
+  recipientNumber   String?
+  status            VoiceAICallStatus    @default(INITIATED)
+  recordingUrl      String?
+  transcriptUrl     String?
+  metadata          Json? // Extra data from ElevenLabs
+  errorMessage      String?
+  createdAt         DateTime             @default(now())
 
   // Relations
-  user                  User                  @relation("VoiceAIUsageLogUser", fields: [userId], references: [id], onDelete: Cascade)
-  subscription          VoiceAISubscription?  @relation("VoiceAISubscriptionUsage", fields: [subscriptionId], references: [id], onDelete: SetNull)
+  user         User                 @relation("VoiceAIUsageLogUser", fields: [userId], references: [id], onDelete: Cascade)
+  subscription VoiceAISubscription? @relation("VoiceAISubscriptionUsage", fields: [subscriptionId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([subscriptionId])
@@ -7399,27 +7404,27 @@ model VoiceAIUsageLog {
 
 // Monthly billing records per agency
 model VoiceAIBillingRecord {
-  id                    String                @id @default(cuid())
-  userId                String
-  subscriptionId        String?
-  billingPeriodStart    DateTime
-  billingPeriodEnd      DateTime
-  totalMinutesUsed      Int                   @default(0)
-  quotaMinutes          Int                   @default(0)
-  overageMinutes        Int                   @default(0)
-  baseCost              Decimal               @default(0) @db.Decimal(10, 2)
-  overageCost           Decimal               @default(0) @db.Decimal(10, 2)
-  totalCost             Decimal               @default(0) @db.Decimal(10, 2)
-  status                VoiceAIBillingStatus  @default(PENDING)
-  invoiceNumber         String?               @unique
-  paidAt                DateTime?
-  notes                 String?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  id                 String               @id @default(cuid())
+  userId             String
+  subscriptionId     String?
+  billingPeriodStart DateTime
+  billingPeriodEnd   DateTime
+  totalMinutesUsed   Int                  @default(0)
+  quotaMinutes       Int                  @default(0)
+  overageMinutes     Int                  @default(0)
+  baseCost           Decimal              @default(0) @db.Decimal(10, 2)
+  overageCost        Decimal              @default(0) @db.Decimal(10, 2)
+  totalCost          Decimal              @default(0) @db.Decimal(10, 2)
+  status             VoiceAIBillingStatus @default(PENDING)
+  invoiceNumber      String?              @unique
+  paidAt             DateTime?
+  notes              String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
   // Relations
-  user                  User                  @relation("VoiceAIBillingRecordUser", fields: [userId], references: [id], onDelete: Cascade)
-  subscription          VoiceAISubscription?  @relation("VoiceAISubscriptionBilling", fields: [subscriptionId], references: [id], onDelete: SetNull)
+  user         User                 @relation("VoiceAIBillingRecordUser", fields: [userId], references: [id], onDelete: Cascade)
+  subscription VoiceAISubscription? @relation("VoiceAISubscriptionBilling", fields: [subscriptionId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([subscriptionId])
@@ -7427,7 +7432,6 @@ model VoiceAIBillingRecord {
   @@index([billingPeriodStart])
   @@index([createdAt])
 }
-
 
 // ==========================================
 // REAL ESTATE WORKFLOW AUTOMATION SYSTEM
@@ -7477,21 +7481,21 @@ enum RETaskExecutionStatus {
 
 // RE Workflow Template - defines a buyer/seller pipeline
 model REWorkflowTemplate {
-  id            String                 @id @default(cuid())
-  userId        String
-  name          String
-  type          REWorkflowType
-  description   String?
-  isDefault     Boolean                @default(false)
-  isActive      Boolean                @default(true)
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  
+  id          String         @id @default(cuid())
+  userId      String
+  name        String
+  type        REWorkflowType
+  description String?
+  isDefault   Boolean        @default(false)
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
   // Relations
-  user          User                   @relation("UserREWorkflowTemplates", fields: [userId], references: [id], onDelete: Cascade)
-  tasks         REWorkflowTask[]       @relation("REWorkflowTemplateTasks")
-  instances     REWorkflowInstance[]   @relation("REWorkflowTemplateInstances")
-  
+  user      User                 @relation("UserREWorkflowTemplates", fields: [userId], references: [id], onDelete: Cascade)
+  tasks     REWorkflowTask[]     @relation("REWorkflowTemplateTasks")
+  instances REWorkflowInstance[] @relation("REWorkflowTemplateInstances")
+
   @@index([userId])
   @@index([type])
   @@index([isDefault])
@@ -7499,30 +7503,30 @@ model REWorkflowTemplate {
 
 // RE Workflow Task - a single task/step in the workflow
 model REWorkflowTask {
-  id                String              @id @default(cuid())
+  id                String            @id @default(cuid())
   templateId        String
   name              String
   description       String?
   taskType          RETaskType
   assignedAgentType REAIEmployeeType?
-  delayValue        Int                 @default(0)
-  delayUnit         String              @default("MINUTES") // MINUTES, HOURS, DAYS
-  isHITL            Boolean             @default(false)
-  isOptional        Boolean             @default(false)
-  position          Json                // {angle: 45, radius: 1, x: 0, y: 0} for circular UI
+  delayValue        Int               @default(0)
+  delayUnit         String            @default("MINUTES") // MINUTES, HOURS, DAYS
+  isHITL            Boolean           @default(false)
+  isOptional        Boolean           @default(false)
+  position          Json // {angle: 45, radius: 1, x: 0, y: 0} for circular UI
   displayOrder      Int
   parentTaskId      String?
-  branchCondition   Json?               // {field: "feedback", operator: "equals", value: "liked"}
-  actionConfig      Json                // {actions: ["voice_call", "sms"], script: "...", etc}
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  
+  branchCondition   Json? // {field: "feedback", operator: "equals", value: "liked"}
+  actionConfig      Json // {actions: ["voice_call", "sms"], script: "...", etc}
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
   // Relations
-  template          REWorkflowTemplate  @relation("REWorkflowTemplateTasks", fields: [templateId], references: [id], onDelete: Cascade)
-  parentTask        REWorkflowTask?     @relation("RETaskBranches", fields: [parentTaskId], references: [id])
-  childTasks        REWorkflowTask[]    @relation("RETaskBranches")
-  executions        RETaskExecution[]   @relation("RETaskExecutions")
-  
+  template   REWorkflowTemplate @relation("REWorkflowTemplateTasks", fields: [templateId], references: [id], onDelete: Cascade)
+  parentTask REWorkflowTask?    @relation("RETaskBranches", fields: [parentTaskId], references: [id])
+  childTasks REWorkflowTask[]   @relation("RETaskBranches")
+  executions RETaskExecution[]  @relation("RETaskExecutions")
+
   @@index([templateId])
   @@index([parentTaskId])
   @@index([displayOrder])
@@ -7530,26 +7534,26 @@ model REWorkflowTask {
 
 // RE Workflow Instance - a running instance of a workflow for a specific lead/deal
 model REWorkflowInstance {
-  id            String                    @id @default(cuid())
+  id            String                   @id @default(cuid())
   templateId    String
   userId        String
   leadId        String?
   dealId        String?
-  status        REWorkflowInstanceStatus  @default(ACTIVE)
+  status        REWorkflowInstanceStatus @default(ACTIVE)
   currentTaskId String?
-  metadata      Json?                     // Buyer/Seller specific data collected
-  startedAt     DateTime                  @default(now())
+  metadata      Json? // Buyer/Seller specific data collected
+  startedAt     DateTime                 @default(now())
   completedAt   DateTime?
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
-  
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
   // Relations
-  template      REWorkflowTemplate        @relation("REWorkflowTemplateInstances", fields: [templateId], references: [id])
-  user          User                      @relation("UserREWorkflowInstances", fields: [userId], references: [id], onDelete: Cascade)
-  lead          Lead?                     @relation("LeadREWorkflowInstances", fields: [leadId], references: [id])
-  deal          Deal?                     @relation("DealREWorkflowInstances", fields: [dealId], references: [id])
-  executions    RETaskExecution[]         @relation("REInstanceExecutions")
-  
+  template   REWorkflowTemplate @relation("REWorkflowTemplateInstances", fields: [templateId], references: [id])
+  user       User               @relation("UserREWorkflowInstances", fields: [userId], references: [id], onDelete: Cascade)
+  lead       Lead?              @relation("LeadREWorkflowInstances", fields: [leadId], references: [id])
+  deal       Deal?              @relation("DealREWorkflowInstances", fields: [dealId], references: [id])
+  executions RETaskExecution[]  @relation("REInstanceExecutions")
+
   @@index([templateId])
   @@index([userId])
   @@index([leadId])
@@ -7559,27 +7563,27 @@ model REWorkflowInstance {
 
 // RE Task Execution - tracks execution of a single task within an instance
 model RETaskExecution {
-  id              String                @id @default(cuid())
-  instanceId      String
-  taskId          String
-  status          RETaskExecutionStatus @default(PENDING)
-  scheduledFor    DateTime?
-  startedAt       DateTime?
-  completedAt     DateTime?
-  agentUsed       REAIEmployeeType?
-  callLogId       String?               // Link to CallLog if voice call made
-  result          Json?                 // Outcome data
-  hitlApprovedBy  String?               // User who approved HITL
-  hitlApprovedAt  DateTime?
-  hitlNotes       String?
-  errorMessage    String?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  
+  id             String                @id @default(cuid())
+  instanceId     String
+  taskId         String
+  status         RETaskExecutionStatus @default(PENDING)
+  scheduledFor   DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  agentUsed      REAIEmployeeType?
+  callLogId      String? // Link to CallLog if voice call made
+  result         Json? // Outcome data
+  hitlApprovedBy String? // User who approved HITL
+  hitlApprovedAt DateTime?
+  hitlNotes      String?
+  errorMessage   String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
   // Relations
-  instance        REWorkflowInstance    @relation("REInstanceExecutions", fields: [instanceId], references: [id], onDelete: Cascade)
-  task            REWorkflowTask        @relation("RETaskExecutions", fields: [taskId], references: [id])
-  
+  instance REWorkflowInstance @relation("REInstanceExecutions", fields: [instanceId], references: [id], onDelete: Cascade)
+  task     REWorkflowTask     @relation("RETaskExecutions", fields: [taskId], references: [id])
+
   @@index([instanceId])
   @@index([taskId])
   @@index([status])
@@ -7588,24 +7592,511 @@ model RETaskExecution {
 
 // HITL Notification Queue - tracks pending human-in-the-loop approvals
 model REHITLNotification {
-  id              String    @id @default(cuid())
-  userId          String
-  executionId     String    @unique
-  taskName        String
-  contactName     String?
-  dealAddress     String?
-  message         String
-  urgency         String    @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
-  isRead          Boolean   @default(false)
-  isActioned      Boolean   @default(false)
-  smsSent         Boolean   @default(false)
-  emailSent       Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
+  id          String   @id @default(cuid())
+  userId      String
+  executionId String   @unique
+  taskName    String
+  contactName String?
+  dealAddress String?
+  message     String
+  urgency     String   @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  isRead      Boolean  @default(false)
+  isActioned  Boolean  @default(false)
+  smsSent     Boolean  @default(false)
+  emailSent   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   // Relations
-  user            User      @relation("UserREHITLNotifications", fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation("UserREHITLNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActioned])
+  @@index([createdAt])
+}
+
+// ==========================================
+// GENERIC MULTI-INDUSTRY WORKFLOW ENUMS
+// ==========================================
+
+enum WorkflowType {
+  CUSTOM
+  TEMPLATE
+}
+
+enum WorkflowInstanceStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskExecutionStatus {
+  PENDING
+  IN_PROGRESS
+  AWAITING_HITL
+  APPROVED
+  REJECTED
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+// ==========================================
+// MEDICAL INDUSTRY ENUMS
+// ==========================================
+
+enum MedicalTaskType {
+  LEAD_RESEARCH
+  PATIENT_RESEARCH
+  APPOINTMENT_BOOKING
+  APPOINTMENT_REMINDER
+  PRESCRIPTION_REMINDER
+  TEST_RESULTS_NOTIFICATION
+  REFERRAL_COORDINATION
+  FOLLOW_UP_CALL
+  PATIENT_ONBOARDING
+  POST_VISIT_FOLLOWUP
+  INSURANCE_VERIFICATION
+  CUSTOM
+}
+
+enum MedicalAIEmployeeType {
+  MEDICAL_APPOINTMENT_SCHEDULER
+  PATIENT_COORDINATOR
+  REFERRAL_SPECIALIST
+  PRESCRIPTION_MANAGER
+  INSURANCE_VERIFIER
+  FOLLOW_UP_COORDINATOR
+}
+
+enum MedicalWorkflowType {
+  PATIENT_ONBOARDING
+  APPOINTMENT_REMINDER_SEQUENCE
+  POST_VISIT_FOLLOWUP
+  PRESCRIPTION_REFILL_REMINDER
+  REFERRAL_PROCESS
+  CUSTOM
+}
+
+// ==========================================
+// RESTAURANT INDUSTRY ENUMS
+// ==========================================
+
+enum RestaurantTaskType {
+  LEAD_RESEARCH
+  CUSTOMER_RESEARCH
+  RESERVATION_CONFIRMATION
+  RESERVATION_REMINDER
+  ORDER_TRACKING
+  MENU_RECOMMENDATION
+  LOYALTY_POINTS_UPDATE
+  FEEDBACK_REQUEST
+  SPECIAL_OFFER_NOTIFICATION
+  BIRTHDAY_GREETING
+  CUSTOM
+}
+
+enum RestaurantAIEmployeeType {
+  RESERVATION_COORDINATOR
+  ORDER_TRACKER
+  LOYALTY_MANAGER
+  MENU_ADVISOR
+  CUSTOMER_SERVICE_SPECIALIST
+  MARKETING_COORDINATOR
+}
+
+enum RestaurantWorkflowType {
+  NEW_CUSTOMER_WELCOME
+  RESERVATION_CONFIRMATION
+  ORDER_FOLLOWUP
+  LOYALTY_PROGRAM_ENROLLMENT
+  FEEDBACK_COLLECTION
+  CUSTOM
+}
+
+// ==========================================
+// CONSTRUCTION INDUSTRY ENUMS
+// ==========================================
+
+enum ConstructionTaskType {
+  LEAD_RESEARCH
+  PROJECT_RESEARCH
+  QUOTE_GENERATION
+  QUOTE_FOLLOWUP
+  PERMIT_TRACKING
+  INSPECTION_SCHEDULING
+  MATERIAL_ORDERING
+  PROGRESS_UPDATE
+  PAYMENT_REMINDER
+  PROJECT_COMPLETION
+  CUSTOM
+}
+
+enum ConstructionAIEmployeeType {
+  QUOTE_SPECIALIST
+  PERMIT_COORDINATOR
+  INSPECTION_SCHEDULER
+  MATERIAL_MANAGER
+  PROJECT_COORDINATOR
+  CLIENT_COMMUNICATOR
+}
+
+enum ConstructionWorkflowType {
+  LEAD_QUALIFICATION
+  QUOTE_FOLLOWUP
+  PROJECT_KICKOFF
+  INSPECTION_REMINDER
+  MATERIAL_ORDERING
+  CUSTOM
+}
+
+// ==========================================
+// DENTIST INDUSTRY ENUMS
+// ==========================================
+
+enum DentistTaskType {
+  LEAD_RESEARCH
+  PATIENT_RESEARCH
+  APPOINTMENT_BOOKING
+  APPOINTMENT_REMINDER
+  CLEANING_REMINDER
+  TREATMENT_FOLLOWUP
+  PAYMENT_REMINDER
+  REFERRAL_COORDINATION
+  CUSTOM
+}
+
+enum DentistAIEmployeeType {
+  APPOINTMENT_SCHEDULER
+  PATIENT_COORDINATOR
+  TREATMENT_COORDINATOR
+  BILLING_SPECIALIST
+}
+
+enum DentistWorkflowType {
+  PATIENT_ONBOARDING
+  CLEANING_REMINDER
+  TREATMENT_FOLLOWUP
+  CUSTOM
+}
+
+// ==========================================
+// MEDICAL_SPA INDUSTRY ENUMS
+// ==========================================
+
+enum MedicalSpaTaskType {
+  LEAD_RESEARCH
+  CLIENT_RESEARCH
+  APPOINTMENT_BOOKING
+  APPOINTMENT_REMINDER
+  TREATMENT_FOLLOWUP
+  PACKAGE_PROMOTION
+  MEMBERSHIP_RENEWAL
+  CUSTOM
+}
+
+enum MedicalSpaAIEmployeeType {
+  APPOINTMENT_COORDINATOR
+  CLIENT_ADVISOR
+  TREATMENT_SPECIALIST
+  MEMBERSHIP_MANAGER
+}
+
+enum MedicalSpaWorkflowType {
+  NEW_CLIENT_WELCOME
+  TREATMENT_FOLLOWUP
+  MEMBERSHIP_RENEWAL
+  CUSTOM
+}
+
+// ==========================================
+// OPTOMETRIST INDUSTRY ENUMS
+// ==========================================
+
+enum OptometristTaskType {
+  LEAD_RESEARCH
+  PATIENT_RESEARCH
+  APPOINTMENT_BOOKING
+  EXAM_REMINDER
+  PRESCRIPTION_REMINDER
+  FRAME_SELECTION_FOLLOWUP
+  CONTACT_LENS_REORDER
+  CUSTOM
+}
+
+enum OptometristAIEmployeeType {
+  APPOINTMENT_SCHEDULER
+  PATIENT_COORDINATOR
+  OPTICAL_ADVISOR
+  CONTACT_LENS_SPECIALIST
+}
+
+enum OptometristWorkflowType {
+  PATIENT_ONBOARDING
+  EXAM_REMINDER
+  PRESCRIPTION_FOLLOWUP
+  CUSTOM
+}
+
+// ==========================================
+// HEALTH_CLINIC INDUSTRY ENUMS
+// ==========================================
+
+enum HealthClinicTaskType {
+  LEAD_RESEARCH
+  PATIENT_RESEARCH
+  APPOINTMENT_BOOKING
+  APPOINTMENT_REMINDER
+  TEST_RESULTS_NOTIFICATION
+  TREATMENT_FOLLOWUP
+  REFERRAL_COORDINATION
+  CUSTOM
+}
+
+enum HealthClinicAIEmployeeType {
+  APPOINTMENT_COORDINATOR
+  PATIENT_NAVIGATOR
+  TEST_RESULTS_COORDINATOR
+  REFERRAL_SPECIALIST
+}
+
+enum HealthClinicWorkflowType {
+  PATIENT_ONBOARDING
+  APPOINTMENT_REMINDER
+  TEST_RESULTS_NOTIFICATION
+  CUSTOM
+}
+
+// ==========================================
+// HOSPITAL INDUSTRY ENUMS
+// ==========================================
+
+enum HospitalTaskType {
+  LEAD_RESEARCH
+  PATIENT_RESEARCH
+  ADMISSION_COORDINATION
+  DISCHARGE_FOLLOWUP
+  TEST_RESULTS_NOTIFICATION
+  APPOINTMENT_SCHEDULING
+  REFERRAL_COORDINATION
+  BILLING_FOLLOWUP
+  CUSTOM
+}
+
+enum HospitalAIEmployeeType {
+  ADMISSION_COORDINATOR
+  PATIENT_NAVIGATOR
+  DISCHARGE_PLANNER
+  TEST_RESULTS_COORDINATOR
+  REFERRAL_SPECIALIST
+}
+
+enum HospitalWorkflowType {
+  ADMISSION_PROCESS
+  DISCHARGE_FOLLOWUP
+  TEST_RESULTS_NOTIFICATION
+  CUSTOM
+}
+
+// ==========================================
+// TECHNOLOGY INDUSTRY ENUMS
+// ==========================================
+
+enum TechnologyTaskType {
+  LEAD_RESEARCH
+  ACCOUNT_RESEARCH
+  TRIAL_ONBOARDING
+  FEATURE_ANNOUNCEMENT
+  RENEWAL_REMINDER
+  SUPPORT_FOLLOWUP
+  UPSELL_OPPORTUNITY
+  CUSTOM
+}
+
+enum TechnologyAIEmployeeType {
+  ACCOUNT_MANAGER
+  ONBOARDING_SPECIALIST
+  SUPPORT_COORDINATOR
+  SALES_SPECIALIST
+}
+
+enum TechnologyWorkflowType {
+  TRIAL_USER_NURTURE
+  ONBOARDING_SEQUENCE
+  RENEWAL_REMINDER
+  CUSTOM
+}
+
+// ==========================================
+// SPORTS_CLUB INDUSTRY ENUMS
+// ==========================================
+
+enum SportsClubTaskType {
+  LEAD_RESEARCH
+  MEMBER_RESEARCH
+  MEMBERSHIP_ENROLLMENT
+  CLASS_REMINDER
+  PAYMENT_REMINDER
+  EVENT_NOTIFICATION
+  ACHIEVEMENT_CONGratulations
+  CUSTOM
+}
+
+enum SportsClubAIEmployeeType {
+  MEMBERSHIP_COORDINATOR
+  CLASS_SCHEDULER
+  EVENT_COORDINATOR
+  MEMBER_SERVICES_SPECIALIST
+}
+
+enum SportsClubWorkflowType {
+  NEW_MEMBER_WELCOME
+  CLASS_REMINDER
+  MEMBERSHIP_RENEWAL
+  CUSTOM
+}
+
+// ==========================================
+// GENERIC MULTI-INDUSTRY WORKFLOW MODELS
+// ==========================================
+
+// Generic Workflow Template - defines workflows for all industries except Real Estate
+model WorkflowTemplate {
+  id          String       @id @default(cuid())
+  userId      String
+  industry    Industry
+  name        String
+  type        WorkflowType @default(CUSTOM)
+  description String?
+  isDefault   Boolean      @default(false)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  user      User               @relation("UserWorkflowTemplates", fields: [userId], references: [id], onDelete: Cascade)
+  tasks     WorkflowTask[]     @relation("WorkflowTemplateTasks")
+  instances WorkflowInstance[] @relation("WorkflowTemplateInstances")
+
+  @@index([userId])
+  @@index([industry])
+  @@index([type])
+  @@index([isDefault])
+}
+
+// Generic Workflow Task - a single task/step in the workflow
+model WorkflowTask {
+  id                String   @id @default(cuid())
+  templateId        String
+  name              String
+  description       String?
+  taskType          String // JSON string of industry-specific task type enum
+  assignedAgentType String? // JSON string of industry-specific AI employee type enum
+  delayValue        Int      @default(0)
+  delayUnit         String   @default("MINUTES") // MINUTES, HOURS, DAYS
+  isHITL            Boolean  @default(false)
+  isOptional        Boolean  @default(false)
+  position          Json // {row: 0, col: 0} for serpentine UI
+  displayOrder      Int
+  parentTaskId      String?
+  branchCondition   Json? // {field: "status", operator: "equals", value: "completed"}
+  actionConfig      Json // {actions: ["voice_call", "sms"], script: "...", etc}
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  template   WorkflowTemplate @relation("WorkflowTemplateTasks", fields: [templateId], references: [id], onDelete: Cascade)
+  parentTask WorkflowTask?    @relation("WorkflowTaskBranches", fields: [parentTaskId], references: [id])
+  childTasks WorkflowTask[]   @relation("WorkflowTaskBranches")
+  executions TaskExecution[]  @relation("WorkflowTaskExecutions")
+
+  @@index([templateId])
+  @@index([parentTaskId])
+  @@index([displayOrder])
+}
+
+// Generic Workflow Instance - a running instance of a workflow
+model WorkflowInstance {
+  id            String                 @id @default(cuid())
+  templateId    String
+  userId        String
+  industry      Industry
+  leadId        String?
+  dealId        String?
+  contactId     String?
+  status        WorkflowInstanceStatus @default(ACTIVE)
+  currentTaskId String?
+  metadata      Json? // Industry-specific data collected
+  startedAt     DateTime               @default(now())
+  completedAt   DateTime?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  // Relations
+  template   WorkflowTemplate @relation("WorkflowTemplateInstances", fields: [templateId], references: [id])
+  user       User             @relation("UserIndustryWorkflowInstances", fields: [userId], references: [id], onDelete: Cascade)
+  lead       Lead?            @relation("LeadWorkflowInstances", fields: [leadId], references: [id])
+  deal       Deal?            @relation("DealWorkflowInstances", fields: [dealId], references: [id])
+  executions TaskExecution[]  @relation("WorkflowInstanceExecutions")
+
+  @@index([templateId])
+  @@index([userId])
+  @@index([industry])
+  @@index([leadId])
+  @@index([dealId])
+  @@index([status])
+}
+
+// Generic Task Execution - tracks execution of a single task within an instance
+model TaskExecution {
+  id             String              @id @default(cuid())
+  instanceId     String
+  taskId         String
+  status         TaskExecutionStatus @default(PENDING)
+  scheduledFor   DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  agentUsed      String? // JSON string of industry-specific AI employee type
+  callLogId      String? // Link to CallLog if voice call made
+  result         Json? // Outcome data
+  hitlApprovedBy String? // User who approved HITL
+  hitlApprovedAt DateTime?
+  hitlNotes      String?
+  errorMessage   String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  // Relations
+  instance WorkflowInstance @relation("WorkflowInstanceExecutions", fields: [instanceId], references: [id], onDelete: Cascade)
+  task     WorkflowTask     @relation("WorkflowTaskExecutions", fields: [taskId], references: [id])
+
+  @@index([instanceId])
+  @@index([taskId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+// Generic HITL Notification Queue - tracks pending human-in-the-loop approvals
+model HITLNotification {
+  id          String   @id @default(cuid())
+  userId      String
+  executionId String   @unique
+  taskName    String
+  contactName String?
+  metadata    Json? // Industry-specific context (e.g., dealAddress for RE, appointmentTime for Medical)
+  message     String
+  urgency     String   @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  isRead      Boolean  @default(false)
+  isActioned  Boolean  @default(false)
+  smsSent     Boolean  @default(false)
+  emailSent   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation("UserHITLNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([isActioned])
   @@index([createdAt])
