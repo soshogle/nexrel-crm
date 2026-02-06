@@ -229,11 +229,11 @@ model User {
   dentalProcedures            DentalProcedure[]
   dentalForms                 DentalForm[]
   dentalFormResponses         DentalFormResponse[]
-  practiceDocuments           PatientDocument[]           @relation("PracticeDocuments")
+  practiceDocuments           PatientDocument[]            @relation("PracticeDocuments")
   documentConsents            DocumentConsent[]
   documentAccessLogs          DocumentAccessLog[]          @relation("DocumentAccessLogUser")
   dataAccessRequests          DataAccessRequest[]          @relation("DataAccessRequestUser")
-  dataBreaches                DataBreach[]                @relation("DataBreachUser")
+  dataBreaches                DataBreach[]                 @relation("DataBreachUser")
   voiceUsage                  VoiceUsage[]
   widgetConfigurations        WidgetConfiguration[]
   widgetEmbeds                WidgetEmbed[]
@@ -283,84 +283,84 @@ model User {
 }
 
 model Lead {
-  id                     String               @id @default(cuid())
-  userId                 String
-  businessName           String
-  contactPerson          String?
-  email                  String?
-  phone                  String?
-  website                String?
-  address                String?
-  city                   String?
-  state                  String?
-  zipCode                String?
-  country                String?
-  businessCategory       String?
-  googlePlaceId          String?
-  rating                 Float?
-  status                 LeadStatus           @default(NEW)
-  source                 String               @default("manual")
-  tags                   Json?                @default("[]")
-  contactType            String?
-  lastContactedAt        DateTime?
-  dateOfBirth            DateTime? // Birthday for contact person
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
+  id                      String                   @id @default(cuid())
+  userId                  String
+  businessName            String
+  contactPerson           String?
+  email                   String?
+  phone                   String?
+  website                 String?
+  address                 String?
+  city                    String?
+  state                   String?
+  zipCode                 String?
+  country                 String?
+  businessCategory        String?
+  googlePlaceId           String?
+  rating                  Float?
+  status                  LeadStatus               @default(NEW)
+  source                  String                   @default("manual")
+  tags                    Json?                    @default("[]")
+  contactType             String?
+  lastContactedAt         DateTime?
+  dateOfBirth             DateTime? // Birthday for contact person
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
   // AI Lead Generation System fields
-  enrichedData           Json? // Company research, decision-makers, email, etc.
-  lastEnrichedAt         DateTime? // Last time data was enriched
-  leadScore              Int? // 0-100 weighted score
-  engagementHistory      Json? // Email opens, SMS replies, call history
-  nextAction             String? // call, email, sms, manual_followup, etc.
-  nextActionDate         DateTime? // When to execute next action
-  validationScore        Int? // Data quality score 0-100
-  validationErrors       Json? // Array of validation errors
-  qualityFlag            String? // low_quality, high_quality, etc.
-  mergeHistory           Json? // Track lead merges for deduplication
-  contactAppointments    BookingAppointment[] @relation("contact_appointments")
-  leadAppointments       BookingAppointment[] @relation("lead_appointments")
-  callLogs               CallLog[]
-  campaignLeads          CampaignLead[]
-  conversations          Conversation[]
-  deals                  Deal[]
-  emailCampaignDeals     EmailCampaignDeal[]
-  invoices               Invoice[]
-  user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages               Message[]
-  notes                  Note[]
-  outboundCalls          OutboundCall[]
-  payments               Payment[]
-  referralConverted      Referral[]           @relation("ConvertedFromReferral")
-  referralsMade          Referral[]           @relation("ReferrerLeads")
-  reviews                Review[]
-  feedbackCollections    FeedbackCollection[]
-  smsCampaignDeals       SmsCampaignDeal[]
-  smsEnrollments         SmsEnrollment[]
-  tasks                  Task[]
-  workflowEnrollments    WorkflowEnrollment[]
-  docpenSessions         DocpenSession[]
+  enrichedData            Json? // Company research, decision-makers, email, etc.
+  lastEnrichedAt          DateTime? // Last time data was enriched
+  leadScore               Int? // 0-100 weighted score
+  engagementHistory       Json? // Email opens, SMS replies, call history
+  nextAction              String? // call, email, sms, manual_followup, etc.
+  nextActionDate          DateTime? // When to execute next action
+  validationScore         Int? // Data quality score 0-100
+  validationErrors        Json? // Array of validation errors
+  qualityFlag             String? // low_quality, high_quality, etc.
+  mergeHistory            Json? // Track lead merges for deduplication
+  contactAppointments     BookingAppointment[]     @relation("contact_appointments")
+  leadAppointments        BookingAppointment[]     @relation("lead_appointments")
+  callLogs                CallLog[]
+  campaignLeads           CampaignLead[]
+  conversations           Conversation[]
+  deals                   Deal[]
+  emailCampaignDeals      EmailCampaignDeal[]
+  invoices                Invoice[]
+  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages                Message[]
+  notes                   Note[]
+  outboundCalls           OutboundCall[]
+  payments                Payment[]
+  referralConverted       Referral[]               @relation("ConvertedFromReferral")
+  referralsMade           Referral[]               @relation("ReferrerLeads")
+  reviews                 Review[]
+  feedbackCollections     FeedbackCollection[]
+  smsCampaignDeals        SmsCampaignDeal[]
+  smsEnrollments          SmsEnrollment[]
+  tasks                   Task[]
+  workflowEnrollments     WorkflowEnrollment[]
+  docpenSessions          DocpenSession[]
   // Real Estate Industry Relations
-  rePropertySeller       REProperty[]         @relation("REPropertySeller")
-  reFsboConvertedLead    REFSBOListing[]      @relation("REFSBOConvertedLead")
+  rePropertySeller        REProperty[]             @relation("REPropertySeller")
+  reFsboConvertedLead     REFSBOListing[]          @relation("REFSBOConvertedLead")
   // Dental Industry Relations
-  familyGroupId          String? // For family grouping (links to same familyGroupId)
-  dentalHistory          Json? // Dental history, allergies, medications, etc.
-  insuranceInfo          Json? // Insurance provider, policy number, coverage, etc.
-  dentalOdontograms      DentalOdontogram[]
+  familyGroupId           String? // For family grouping (links to same familyGroupId)
+  dentalHistory           Json? // Dental history, allergies, medications, etc.
+  insuranceInfo           Json? // Insurance provider, policy number, coverage, etc.
+  dentalOdontograms       DentalOdontogram[]
   dentalPeriodontalCharts DentalPeriodontalChart[]
-  dentalTreatmentPlans  DentalTreatmentPlan[]
-  dentalProcedures       DentalProcedure[]
-  dentalFormResponses   DentalFormResponse[]
-  patientDocuments       PatientDocument[]    @relation("PatientDocuments")
-  documentConsents       DocumentConsent[]
-  dataAccessRequests     DataAccessRequest[]
-  reTransactions         RETransaction[]      @relation("RETransactionLead")
-  reBuyerCriteria        REBuyerCriteria?     @relation("REBuyerCriteriaLead")
-  reExpiredConvertedLead REExpiredListing[]   @relation("REExpiredConvertedLead")
+  dentalTreatmentPlans    DentalTreatmentPlan[]
+  dentalProcedures        DentalProcedure[]
+  dentalFormResponses     DentalFormResponse[]
+  patientDocuments        PatientDocument[]        @relation("PatientDocuments")
+  documentConsents        DocumentConsent[]
+  dataAccessRequests      DataAccessRequest[]
+  reTransactions          RETransaction[]          @relation("RETransactionLead")
+  reBuyerCriteria         REBuyerCriteria?         @relation("REBuyerCriteriaLead")
+  reExpiredConvertedLead  REExpiredListing[]       @relation("REExpiredConvertedLead")
   // Real Estate Workflow Relations
-  reWorkflowInstances    REWorkflowInstance[] @relation("LeadREWorkflowInstances")
+  reWorkflowInstances     REWorkflowInstance[]     @relation("LeadREWorkflowInstances")
   // Generic Multi-Industry Workflow Relations
-  workflowInstances      WorkflowInstance[]   @relation("LeadWorkflowInstances")
+  workflowInstances       WorkflowInstance[]       @relation("LeadWorkflowInstances")
 
   @@index([userId])
   @@index([status])
@@ -8132,26 +8132,26 @@ model HITLNotification {
 
 // Dental Odontogram - Interactive tooth chart
 model DentalOdontogram {
-  id                    String   @id @default(cuid())
-  leadId                String   // Patient
-  userId                String   // Practice
-  
+  id     String @id @default(cuid())
+  leadId String // Patient
+  userId String // Practice
+
   // Tooth data (Universal Numbering System: 1-32)
-  toothData             Json     // { "1": { condition: "crown", date: "2024-01-15", ... }, "2": {...} }
-  
+  toothData Json // { "1": { condition: "crown", date: "2024-01-15", ... }, "2": {...} }
+
   // Chart metadata
-  chartDate             DateTime @default(now())
-  chartedBy             String   // User who created/updated chart
-  notes                 String?  @db.Text
-  
+  chartDate DateTime @default(now())
+  chartedBy String // User who created/updated chart
+  notes     String?  @db.Text
+
   // Timestamps
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  lead                  Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([leadId])
   @@index([userId])
   @@index([chartDate])
@@ -8159,26 +8159,26 @@ model DentalOdontogram {
 
 // Dental Periodontal Chart - Periodontal measurements
 model DentalPeriodontalChart {
-  id                    String   @id @default(cuid())
-  leadId                String   // Patient
-  userId                String   // Practice
-  
+  id     String @id @default(cuid())
+  leadId String // Patient
+  userId String // Practice
+
   // Periodontal measurements (pocket depths, BOP, recession, mobility)
-  measurements          Json     // { "tooth": "1", "mesial": {pd: 3, bop: false}, "buccal": {...}, ... }
-  
+  measurements Json // { "tooth": "1", "mesial": {pd: 3, bop: false}, "buccal": {...}, ... }
+
   // Chart metadata
-  chartDate             DateTime @default(now())
-  chartedBy             String
-  notes                 String?  @db.Text
-  
+  chartDate DateTime @default(now())
+  chartedBy String
+  notes     String?  @db.Text
+
   // Timestamps
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  lead                  Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([leadId])
   @@index([userId])
   @@index([chartDate])
@@ -8186,43 +8186,43 @@ model DentalPeriodontalChart {
 
 // Dental Treatment Plan - Treatment plans with procedures
 model DentalTreatmentPlan {
-  id                    String   @id @default(cuid())
-  leadId                String   // Patient
-  userId                String   // Practice
-  
+  id     String @id @default(cuid())
+  leadId String // Patient
+  userId String // Practice
+
   // Treatment plan details
-  planName              String
-  description           String?  @db.Text
-  status                TreatmentPlanStatus @default(DRAFT)
-  
+  planName    String
+  description String?             @db.Text
+  status      TreatmentPlanStatus @default(DRAFT)
+
   // Procedures (ordered sequence)
-  procedures            Json     // Array of {procedureCode: "D0120", description: "...", cost: 150, sequence: 1, ...}
-  
+  procedures Json // Array of {procedureCode: "D0120", description: "...", cost: 150, sequence: 1, ...}
+
   // Financial
-  totalCost             Float    @default(0)
-  insuranceCoverage     Float?  @default(0)
-  patientResponsibility Float?  @default(0)
-  
+  totalCost             Float  @default(0)
+  insuranceCoverage     Float? @default(0)
+  patientResponsibility Float? @default(0)
+
   // Dates
-  createdDate           DateTime @default(now())
-  startDate             DateTime?
-  completionDate        DateTime?
-  
+  createdDate    DateTime  @default(now())
+  startDate      DateTime?
+  completionDate DateTime?
+
   // Approval
-  approvedBy            String?
-  approvedAt            DateTime?
-  patientConsent        Boolean  @default(false)
-  patientConsentDate     DateTime?
-  
+  approvedBy         String?
+  approvedAt         DateTime?
+  patientConsent     Boolean   @default(false)
+  patientConsentDate DateTime?
+
   // Timestamps
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  lead                  Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  proceduresLog         DentalProcedure[]
-  
+  lead          Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proceduresLog DentalProcedure[]
+
   @@index([leadId])
   @@index([userId])
   @@index([status])
@@ -8230,45 +8230,45 @@ model DentalTreatmentPlan {
 
 // Dental Procedure - Procedure log/activity log
 model DentalProcedure {
-  id                    String   @id @default(cuid())
-  leadId                String   // Patient
-  userId                String   // Practice
-  treatmentPlanId       String?  // Link to treatment plan
-  
+  id              String  @id @default(cuid())
+  leadId          String // Patient
+  userId          String // Practice
+  treatmentPlanId String? // Link to treatment plan
+
   // Procedure details
-  procedureCode         String   // CDT code (e.g., "D0120", "D1110")
-  procedureName         String
-  description           String?  @db.Text
-  
+  procedureCode String // CDT code (e.g., "D0120", "D1110")
+  procedureName String
+  description   String? @db.Text
+
   // Tooth/teeth involved
-  teethInvolved         String[] // ["1", "2", "3"] - Universal numbering
-  
+  teethInvolved String[] // ["1", "2", "3"] - Universal numbering
+
   // Status
-  status                ProcedureStatus @default(SCHEDULED)
-  
+  status ProcedureStatus @default(SCHEDULED)
+
   // Dates
-  scheduledDate         DateTime?
-  performedDate         DateTime?
-  
+  scheduledDate DateTime?
+  performedDate DateTime?
+
   // Financial
-  cost                  Float    @default(0)
-  insuranceCoverage     Float?  @default(0)
-  
+  cost              Float  @default(0)
+  insuranceCoverage Float? @default(0)
+
   // Performed by
-  performedBy           String?  // Dentist/hygienist name
-  
+  performedBy String? // Dentist/hygienist name
+
   // Notes
-  notes                 String?  @db.Text
-  
+  notes String? @db.Text
+
   // Timestamps
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  lead                  Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  treatmentPlan         DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
-  
+  lead          Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  treatmentPlan DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
+
   @@index([leadId])
   @@index([userId])
   @@index([treatmentPlanId])
@@ -8279,29 +8279,29 @@ model DentalProcedure {
 
 // Dental Form - Dynamic form templates
 model DentalForm {
-  id                    String   @id @default(cuid())
-  userId                String   // Practice
-  
+  id     String @id @default(cuid())
+  userId String // Practice
+
   // Form details
-  formName              String
-  description           String?  @db.Text
-  category              String?  // "Medical History", "Consent", "Treatment", etc.
-  
+  formName    String
+  description String? @db.Text
+  category    String? // "Medical History", "Consent", "Treatment", etc.
+
   // Form structure (JSON schema)
-  formSchema            Json     // { fields: [{type: "text", label: "...", required: true}, ...]}
-  
+  formSchema Json // { fields: [{type: "text", label: "...", required: true}, ...]}
+
   // Settings
-  isActive              Boolean  @default(true)
-  isDefault             Boolean  @default(false)
-  
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false)
+
   // Timestamps
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  responses             DentalFormResponse[]
-  
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses DentalFormResponse[]
+
   @@index([userId])
   @@index([isActive])
   @@index([category])
@@ -8309,30 +8309,30 @@ model DentalForm {
 
 // Dental Form Response - Form submissions
 model DentalFormResponse {
-  id                    String   @id @default(cuid())
-  leadId                String   // Patient
-  userId                String   // Practice
-  formId                String   // Form template
-  
+  id     String @id @default(cuid())
+  leadId String // Patient
+  userId String // Practice
+  formId String // Form template
+
   // Response data
-  responseData          Json     // { fieldId: "value", ... }
-  
+  responseData Json // { fieldId: "value", ... }
+
   // Submission metadata
-  submittedAt           DateTime @default(now())
-  submittedBy           String?  // Patient or staff member
-  
+  submittedAt DateTime @default(now())
+  submittedBy String? // Patient or staff member
+
   // Digital signature
-  signatureData         Json?    // { signature: "...", signedBy: "...", signedAt: "..." }
-  
+  signatureData Json? // { signature: "...", signedBy: "...", signedAt: "..." }
+
   // Timestamps
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  lead                  Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  form                  DentalForm @relation(fields: [formId], references: [id], onDelete: Cascade)
-  
+  lead Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  form DentalForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+
   @@index([leadId])
   @@index([userId])
   @@index([formId])
@@ -8363,54 +8363,54 @@ enum ProcedureStatus {
 
 // Main document storage model (Law 25 compliant)
 model PatientDocument {
-  id                    String   @id @default(cuid())
-  userId                String   // Practice owner
-  leadId                String?  // Patient/Lead reference
-  documentType          DocumentType
-  category              String?  // "X-Ray", "Consent Form", "Insurance", etc.
-  
+  id           String       @id @default(cuid())
+  userId       String // Practice owner
+  leadId       String? // Patient/Lead reference
+  documentType DocumentType
+  category     String? // "X-Ray", "Consent Form", "Insurance", etc.
+
   // File metadata
-  fileName              String
-  fileType              String   // MIME type
-  fileSize              Int      // bytes
-  encryptedStoragePath  String   // Encrypted S3 path (Canada region)
-  encryptionKeyId       String   // Reference to encryption key
-  
+  fileName             String
+  fileType             String // MIME type
+  fileSize             Int // bytes
+  encryptedStoragePath String // Encrypted S3 path (Canada region)
+  encryptionKeyId      String // Reference to encryption key
+
   // Law 25 compliance fields
-  consentId             String?  // Link to consent record
-  dataResidency         String   @default("CA-QC") // Must be Canada/Quebec
-  retentionPolicy       String   @default("MEDICAL_7_YEARS")
-  retentionExpiry       DateTime // Auto-delete after this date
-  
+  consentId       String? // Link to consent record
+  dataResidency   String   @default("CA-QC") // Must be Canada/Quebec
+  retentionPolicy String   @default("MEDICAL_7_YEARS")
+  retentionExpiry DateTime // Auto-delete after this date
+
   // Access control
-  accessLevel           DocumentAccessLevel @default(RESTRICTED)
-  createdBy             String   // User who uploaded
-  lastAccessedBy        String?
-  lastAccessedAt        DateTime?
-  
+  accessLevel    DocumentAccessLevel @default(RESTRICTED)
+  createdBy      String // User who uploaded
+  lastAccessedBy String?
+  lastAccessedAt DateTime?
+
   // Patient rights
-  deletionRequested     Boolean  @default(false)
-  deletionRequestDate   DateTime?
-  deletionReason        String?
-  deletionBlocked       Boolean  @default(false) // Legal hold
-  
+  deletionRequested   Boolean   @default(false)
+  deletionRequestDate DateTime?
+  deletionReason      String?
+  deletionBlocked     Boolean   @default(false) // Legal hold
+
   // Metadata
-  tags                  String[]
-  description           String?
-  metadata              Json?    // Flexible metadata (procedure codes, etc.)
-  
+  tags        String[]
+  description String?
+  metadata    Json? // Flexible metadata (procedure codes, etc.)
+
   // Timestamps
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  deletedAt             DateTime? // Soft delete
-  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft delete
+
   // Relations
-  user                  User     @relation("PracticeDocuments", fields: [userId], references: [id], onDelete: Cascade)
-  lead                  Lead?    @relation("PatientDocuments", fields: [leadId], references: [id], onDelete: SetNull)
-  consent               DocumentConsent? @relation(fields: [consentId], references: [id])
-  accessLogs            DocumentAccessLog[]
-  versions              DocumentVersion[]
-  
+  user       User                @relation("PracticeDocuments", fields: [userId], references: [id], onDelete: Cascade)
+  lead       Lead?               @relation("PatientDocuments", fields: [leadId], references: [id], onDelete: SetNull)
+  consent    DocumentConsent?    @relation(fields: [consentId], references: [id])
+  accessLogs DocumentAccessLog[]
+  versions   DocumentVersion[]
+
   @@index([userId])
   @@index([leadId])
   @@index([documentType])
@@ -8421,54 +8421,54 @@ model PatientDocument {
 
 // Document versions (for audit trail)
 model DocumentVersion {
-  id                    String   @id @default(cuid())
-  documentId            String
-  versionNumber         Int
-  encryptedStoragePath  String
-  changeReason          String?
-  changedBy              String
-  createdAt             DateTime @default(now())
-  
-  document              PatientDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  
+  id                   String   @id @default(cuid())
+  documentId           String
+  versionNumber        Int
+  encryptedStoragePath String
+  changeReason         String?
+  changedBy            String
+  createdAt            DateTime @default(now())
+
+  document PatientDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
   @@unique([documentId, versionNumber])
   @@index([documentId])
 }
 
 // Consent management (Law 25 requirement)
 model DocumentConsent {
-  id                    String   @id @default(cuid())
-  leadId                String   // Patient
-  userId                String   // Practice
-  
+  id     String @id @default(cuid())
+  leadId String // Patient
+  userId String // Practice
+
   // Consent details
-  consentType           ConsentType
-  purpose               String   // "Treatment", "Insurance", "Legal", etc.
-  granted               Boolean  @default(false)
-  grantedAt             DateTime?
-  grantedBy             String?  // Patient or authorized representative
-  
+  consentType ConsentType
+  purpose     String // "Treatment", "Insurance", "Legal", etc.
+  granted     Boolean     @default(false)
+  grantedAt   DateTime?
+  grantedBy   String? // Patient or authorized representative
+
   // Consent withdrawal
-  withdrawn             Boolean  @default(false)
-  withdrawnAt           DateTime?
-  withdrawalReason      String?
-  
+  withdrawn        Boolean   @default(false)
+  withdrawnAt      DateTime?
+  withdrawalReason String?
+
   // Legal basis
-  legalBasis            String   // "Consent", "Legal obligation", "Vital interests", etc.
-  consentMethod         String   // "Written", "Digital signature", "Verbal", etc.
-  
+  legalBasis    String // "Consent", "Legal obligation", "Vital interests", etc.
+  consentMethod String // "Written", "Digital signature", "Verbal", etc.
+
   // Retention
-  consentExpiry         DateTime?
-  
+  consentExpiry DateTime?
+
   // Timestamps
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  lead                  Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  documents             PatientDocument[]
-  
+  lead      Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents PatientDocument[]
+
   @@index([leadId])
   @@index([userId])
   @@index([granted])
@@ -8477,20 +8477,20 @@ model DocumentConsent {
 
 // Access audit log (Law 25 requirement)
 model DocumentAccessLog {
-  id                    String   @id @default(cuid())
-  documentId            String
-  userId                String   // Who accessed
-  action                DocumentAccessAction
-  ipAddress             String?
-  userAgent             String?
-  reason                String?  // "Treatment", "Billing", "Legal request", etc.
-  success               Boolean  @default(true)
-  errorMessage          String?
-  createdAt             DateTime @default(now())
-  
-  document              PatientDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  user                  User            @relation("DocumentAccessLogUser", fields: [userId], references: [id])
-  
+  id           String               @id @default(cuid())
+  documentId   String
+  userId       String // Who accessed
+  action       DocumentAccessAction
+  ipAddress    String?
+  userAgent    String?
+  reason       String? // "Treatment", "Billing", "Legal request", etc.
+  success      Boolean              @default(true)
+  errorMessage String?
+  createdAt    DateTime             @default(now())
+
+  document PatientDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User            @relation("DocumentAccessLogUser", fields: [userId], references: [id])
+
   @@index([documentId])
   @@index([userId])
   @@index([action])
@@ -8499,31 +8499,31 @@ model DocumentAccessLog {
 
 // Patient data access requests (Law 25 right to access)
 model DataAccessRequest {
-  id                    String   @id @default(cuid())
-  leadId                String   // Patient
-  userId                String   // Practice
-  
-  requestType           DataRequestType
-  status                DataRequestStatus @default(PENDING)
-  
+  id     String @id @default(cuid())
+  leadId String // Patient
+  userId String // Practice
+
+  requestType DataRequestType
+  status      DataRequestStatus @default(PENDING)
+
   // Request details
-  requestedAt           DateTime @default(now())
-  requestedBy           String   // Patient name/ID
-  requestReason         String?
-  
+  requestedAt   DateTime @default(now())
+  requestedBy   String // Patient name/ID
+  requestReason String?
+
   // Response
-  respondedAt           DateTime?
-  responseMethod        String?  // "Email", "Portal", "Mail", etc.
-  responseData          Json?    // Links to exported documents
-  
+  respondedAt    DateTime?
+  responseMethod String? // "Email", "Portal", "Mail", etc.
+  responseData   Json? // Links to exported documents
+
   // Completion
-  completedAt            DateTime?
-  notes                  String?
-  
+  completedAt DateTime?
+  notes       String?
+
   // Relations
-  lead                  Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user                  User     @relation("DataAccessRequestUser", fields: [userId], references: [id], onDelete: Cascade)
-  
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation("DataAccessRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([leadId])
   @@index([userId])
   @@index([status])
@@ -8532,37 +8532,37 @@ model DataAccessRequest {
 
 // Data breach tracking (Law 25 requirement - notify within 72 hours)
 model DataBreach {
-  id                    String   @id @default(cuid())
-  userId                String   // Practice
-  
+  id     String @id @default(cuid())
+  userId String // Practice
+
   // Breach details
-  breachType            BreachType
-  severity              BreachSeverity
-  description           String   @db.Text
-  affectedRecords       Int      @default(0)
-  affectedPatients      Int      @default(0)
-  
+  breachType       BreachType
+  severity         BreachSeverity
+  description      String         @db.Text
+  affectedRecords  Int            @default(0)
+  affectedPatients Int            @default(0)
+
   // Discovery
-  discoveredAt          DateTime
-  reportedAt            DateTime? // When reported to authorities
-  
+  discoveredAt DateTime
+  reportedAt   DateTime? // When reported to authorities
+
   // Notification
-  patientsNotified       Boolean  @default(false)
-  notificationDate      DateTime?
-  notificationMethod    String?  // "Email", "Mail", "Phone", etc.
-  
+  patientsNotified   Boolean   @default(false)
+  notificationDate   DateTime?
+  notificationMethod String? // "Email", "Mail", "Phone", etc.
+
   // Resolution
-  resolved              Boolean  @default(false)
-  resolvedAt            DateTime?
-  resolutionNotes       String?  @db.Text
-  
+  resolved        Boolean   @default(false)
+  resolvedAt      DateTime?
+  resolutionNotes String?   @db.Text
+
   // Timestamps
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  user                  User     @relation("DataBreachUser", fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation("DataBreachUser", fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([severity])
   @@index([resolved])
@@ -8583,9 +8583,9 @@ enum DocumentType {
 }
 
 enum DocumentAccessLevel {
-  PUBLIC          // Anyone in practice
-  RESTRICTED      // Specific roles only
-  CONFIDENTIAL    // Only creator and admins
+  PUBLIC // Anyone in practice
+  RESTRICTED // Specific roles only
+  CONFIDENTIAL // Only creator and admins
 }
 
 enum ConsentType {
@@ -8605,10 +8605,10 @@ enum DocumentAccessAction {
 }
 
 enum DataRequestType {
-  ACCESS      // Right to access
-  DELETION    // Right to deletion
+  ACCESS // Right to access
+  DELETION // Right to deletion
   PORTABILITY // Data portability
-  CORRECTION  // Correction of data
+  CORRECTION // Correction of data
 }
 
 enum DataRequestStatus {
