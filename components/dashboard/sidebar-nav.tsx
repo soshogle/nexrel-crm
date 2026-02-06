@@ -47,6 +47,7 @@ import {
   Mic,
   Brain,
   Bot,
+  Stethoscope,
 } from 'lucide-react';
 
 // Parent Portal items - what parents see when they log in
@@ -305,6 +306,13 @@ const merchantItems = [
     href: '/dashboard/real-estate/analytics',
     icon: TrendingUp,
   },
+  // Dental/Orthodontist specific items - only visible to DENTIST industry
+  {
+    id: 'dental-management' as MenuItemId,
+    title: 'Dental Management',
+    href: '/dashboard/dental-test',
+    icon: Stethoscope,
+  },
 ];
 
 // Admin items - Secure section requiring re-authentication
@@ -416,7 +424,7 @@ interface SidebarNavProps {
 export function SidebarNav({ isExpanded }: SidebarNavProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const t = useTranslations('navigation');
   const [adminExpanded, setAdminExpanded] = useState(false);
   const [isParent, setIsParent] = useState(false);
@@ -456,6 +464,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       'market-insights': 'marketInsights',
       'seller-net-sheet': 'sellerNetSheet',
       'real-estate-analytics': 'realEstateAnalytics',
+      'dental-management': 'dentalManagement',
       'voice-agents': 'voiceAgents',
       'voice-agent-preview': 'testVoiceAgent',
       'voice-ai-notifications': 'callNotifications',
@@ -500,6 +509,30 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
 
   // Get user industry directly from session (already populated in auth.ts)
   const userIndustry = (session?.user?.industry as Industry) || null;
+
+  // Debug: Log industry for troubleshooting
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      console.log('🔍 Sidebar - User industry check:', {
+        userId: session.user.id,
+        industry: session.user.industry,
+        email: session.user.email,
+        hasIndustry: !!session.user.industry,
+      });
+    }
+  }, [status, session]);
+
+  // Refresh session if industry is missing but user is authenticated
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.id && !userIndustry) {
+      console.log('⚠️ Industry missing from session, attempting refresh...');
+      update().then(() => {
+        console.log('✅ Session refreshed');
+      }).catch((err) => {
+        console.error('❌ Failed to refresh session:', err);
+      });
+    }
+  }, [status, session, userIndustry, update]);
 
   // Check admin session validity on mount
   useEffect(() => {

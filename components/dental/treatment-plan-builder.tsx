@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Save, Plus, Trash2, GripVertical, Calculator, Calendar, CheckCircle2 } from 'lucide-react';
 import { CDT_CODES, getCDTCodeByCode, searchCDTCodes, type CDTCode } from '@/lib/dental/cdt-codes';
 import { TreatmentPlanStatus } from '@prisma/client';
@@ -52,6 +53,10 @@ export function TreatmentPlanBuilder({
   onSave,
   readOnly = false,
 }: TreatmentPlanBuilderProps) {
+  const t = useTranslations('dental.treatmentPlan');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
   const [planName, setPlanName] = useState(initialData?.planName || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [procedures, setProcedures] = useState<TreatmentProcedure[]>(
@@ -91,7 +96,7 @@ export function TreatmentPlanBuilder({
     };
 
     setProcedures([...procedures, newProcedure]);
-    toast.success(`Added ${cdtCode.name}`);
+    toast.success(t('procedureAdded', { name: cdtCode.name }));
   };
 
   const removeProcedure = (index: number) => {
@@ -127,7 +132,7 @@ export function TreatmentPlanBuilder({
     if (readOnly || !onSave) return;
 
     if (!planName.trim()) {
-      toast.error('Please enter a plan name');
+      toast.error(t('planNameRequired'));
       return;
     }
 
@@ -144,9 +149,9 @@ export function TreatmentPlanBuilder({
         patientResponsibility,
         status,
       });
-      toast.success('Treatment plan saved successfully');
+      toast.success(tToasts('treatmentPlanSaved'));
     } catch (error: any) {
-      toast.error('Failed to save plan: ' + error.message);
+      toast.error(tToasts('treatmentPlanSaveFailed') + ': ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -157,15 +162,15 @@ export function TreatmentPlanBuilder({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Treatment Plan Builder</CardTitle>
+            <CardTitle>{t('title')}</CardTitle>
             <CardDescription>
-              Create and sequence treatment procedures with cost calculation
+              {t('description')}
             </CardDescription>
           </div>
           {!readOnly && (
             <Button onClick={handleSave} disabled={saving}>
               <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Plan'}
+              {saving ? tCommon('loading') : t('save')}
             </Button>
           )}
         </div>
@@ -174,24 +179,24 @@ export function TreatmentPlanBuilder({
       <CardContent>
         <Tabs defaultValue="builder" className="w-full">
           <TabsList>
-            <TabsTrigger value="builder">Plan Builder</TabsTrigger>
-            <TabsTrigger value="financial">Financial Summary</TabsTrigger>
+            <TabsTrigger value="builder">{t('title')}</TabsTrigger>
+            <TabsTrigger value="financial">{tCommon('financial') || 'Financial Summary'}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="builder" className="space-y-4">
             {/* Plan Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Plan Name *</Label>
+                <Label>{t('planName')} *</Label>
                 <Input
                   value={planName}
                   onChange={(e) => setPlanName(e.target.value)}
                   disabled={readOnly}
-                  placeholder="e.g., Comprehensive Treatment Plan"
+                  placeholder={t('planName')}
                 />
               </div>
               <div>
-                <Label>Status</Label>
+                <Label>{t('status')}</Label>
                 <Select
                   value={status}
                   onValueChange={(value) => setStatus(value as TreatmentPlanStatus)}
@@ -201,23 +206,23 @@ export function TreatmentPlanBuilder({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={TreatmentPlanStatus.DRAFT}>Draft</SelectItem>
-                    <SelectItem value={TreatmentPlanStatus.PENDING_APPROVAL}>Pending Approval</SelectItem>
-                    <SelectItem value={TreatmentPlanStatus.APPROVED}>Approved</SelectItem>
-                    <SelectItem value={TreatmentPlanStatus.IN_PROGRESS}>In Progress</SelectItem>
-                    <SelectItem value={TreatmentPlanStatus.COMPLETED}>Completed</SelectItem>
+                    <SelectItem value={TreatmentPlanStatus.DRAFT}>{t('draft')}</SelectItem>
+                    <SelectItem value={TreatmentPlanStatus.PENDING_APPROVAL}>{t('pendingApproval')}</SelectItem>
+                    <SelectItem value={TreatmentPlanStatus.APPROVED}>{t('approved')}</SelectItem>
+                    <SelectItem value={TreatmentPlanStatus.IN_PROGRESS}>{t('inProgress')}</SelectItem>
+                    <SelectItem value={TreatmentPlanStatus.COMPLETED}>{t('completed')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div>
-              <Label>Description</Label>
+              <Label>{t('planDescription')}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={readOnly}
-                placeholder="Treatment plan description and notes..."
+                placeholder={t('planDescription')}
                 rows={3}
               />
             </div>
@@ -225,10 +230,10 @@ export function TreatmentPlanBuilder({
             {/* Procedure Library */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Procedure Library</CardTitle>
+                <CardTitle className="text-lg">{t('procedures')}</CardTitle>
                 <div className="flex gap-2 mt-2">
                   <Input
-                    placeholder="Search procedures..."
+                    placeholder={t('searchProcedures')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="flex-1"
@@ -239,7 +244,7 @@ export function TreatmentPlanBuilder({
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        <SelectItem key={cat} value={cat}>{cat === 'All' ? t('allCategories') : cat}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -275,15 +280,15 @@ export function TreatmentPlanBuilder({
             {/* Selected Procedures */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Treatment Sequence</CardTitle>
+                <CardTitle className="text-lg">{t('procedures')}</CardTitle>
                 <CardDescription>
-                  Drag to reorder procedures (sequence determines treatment order)
+                  {t('noProcedures')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {procedures.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    No procedures added yet. Select procedures from the library above.
+                    {t('noProcedures')}
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -316,7 +321,7 @@ export function TreatmentPlanBuilder({
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                                 <div>
-                                  <Label className="text-xs">Cost ($)</Label>
+                                  <Label className="text-xs">{t('cost')} ($)</Label>
                                   <Input
                                     type="number"
                                     value={procedure.cost}
@@ -328,7 +333,7 @@ export function TreatmentPlanBuilder({
                                   />
                                 </div>
                                 <div>
-                                  <Label className="text-xs">Teeth Involved</Label>
+                                  <Label className="text-xs">{t('teethInvolved')}</Label>
                                   <Input
                                     value={procedure.teethInvolved?.join(', ') || ''}
                                     onChange={(e) =>
@@ -344,7 +349,7 @@ export function TreatmentPlanBuilder({
                                   />
                                 </div>
                                 <div>
-                                  <Label className="text-xs">Scheduled Date</Label>
+                                  <Label className="text-xs">{t('scheduledDate')}</Label>
                                   <Input
                                     type="date"
                                     value={procedure.scheduledDate || ''}
@@ -384,19 +389,19 @@ export function TreatmentPlanBuilder({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calculator className="h-5 w-5" />
-                  Financial Summary
+                  {tCommon('financial') || 'Financial Summary'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Total Treatment Cost</Label>
+                    <Label>{t('totalCost')}</Label>
                     <div className="text-2xl font-bold text-gray-900">
                       ${totalCost.toFixed(2)}
                     </div>
                   </div>
                   <div>
-                    <Label>Insurance Coverage</Label>
+                    <Label>{t('insuranceCoverage')}</Label>
                     <Input
                       type="number"
                       value={insuranceCoverage}
@@ -410,7 +415,7 @@ export function TreatmentPlanBuilder({
                 </div>
                 <div className="border-t pt-4">
                   <div className="flex items-center justify-between">
-                    <Label className="text-lg">Patient Responsibility</Label>
+                    <Label className="text-lg">{t('patientResponsibility')}</Label>
                     <div className="text-2xl font-bold text-green-600">
                       ${patientResponsibility.toFixed(2)}
                     </div>
@@ -418,7 +423,7 @@ export function TreatmentPlanBuilder({
                 </div>
                 {insuranceCoverage > 0 && (
                   <div className="text-sm text-gray-600">
-                    Coverage: {((insuranceCoverage / totalCost) * 100).toFixed(1)}%
+                    {tCommon('coverage') || 'Coverage'}: {((insuranceCoverage / totalCost) * 100).toFixed(1)}%
                   </div>
                 )}
               </CardContent>

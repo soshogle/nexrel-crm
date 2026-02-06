@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { FileText, Download, Save, Plus, Trash2 } from 'lucide-react';
 
 interface DocumentTemplate {
@@ -72,6 +73,10 @@ Best regards,
 ];
 
 export function DocumentGenerator({ leadId, onDocumentGenerated }: DocumentGeneratorProps) {
+  const t = useTranslations('dental.documentGenerator');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
   const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate | null>(null);
   const [templates, setTemplates] = useState<DocumentTemplate[]>(DEFAULT_TEMPLATES);
   const [mergeData, setMergeData] = useState<Record<string, string>>({});
@@ -127,7 +132,7 @@ export function DocumentGenerator({ leadId, onDocumentGenerated }: DocumentGener
 
   const handlePreview = () => {
     if (!selectedTemplate) {
-      toast.error('Please select a template');
+      toast.error(t('selectTemplateError'));
       return;
     }
 
@@ -137,12 +142,12 @@ export function DocumentGenerator({ leadId, onDocumentGenerated }: DocumentGener
 
   const handleSaveDocument = async () => {
     if (!selectedTemplate || !generatedContent) {
-      toast.error('Please generate a document first');
+      toast.error(t('generateFirst'));
       return;
     }
 
     if (!documentName.trim()) {
-      toast.error('Please enter a document name');
+      toast.error(t('nameRequired'));
       return;
     }
 
@@ -177,17 +182,17 @@ export function DocumentGenerator({ leadId, onDocumentGenerated }: DocumentGener
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Document saved successfully');
+        toast.success(tToasts('documentSaved'));
         onDocumentGenerated?.(data.document.id);
         // Reset
         setGeneratedContent('');
         setDocumentName('');
         setSelectedTemplate(null);
       } else {
-        toast.error(data.error || 'Failed to save document');
+        toast.error(data.error || tToasts('documentSaveFailed'));
       }
     } catch (error: any) {
-      toast.error('Failed to save document: ' + error.message);
+      toast.error(tToasts('documentSaveFailed') + ': ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -195,7 +200,7 @@ export function DocumentGenerator({ leadId, onDocumentGenerated }: DocumentGener
 
   const handleDownload = () => {
     if (!generatedContent) {
-      toast.error('Please generate a document first');
+      toast.error(t('generateFirst'));
       return;
     }
 

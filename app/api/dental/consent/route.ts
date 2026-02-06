@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ConsentService } from '@/lib/storage/consent-service';
 import { ConsentType } from '@prisma/client';
+import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     if (!leadId || !consentType || !purpose || !legalBasis || !consentMethod) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: await t('api.missingRequiredFields') },
         { status: 400 }
       );
     }
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error creating consent:', error);
     return NextResponse.json(
-      { error: 'Failed to create consent', details: error.message },
+      { error: await t('api.createConsentFailed'), details: error.message },
       { status: 500 }
     );
   }
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching consents:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch consents' },
+      { error: await t('api.fetchConsentFailed') },
       { status: 500 }
     );
   }

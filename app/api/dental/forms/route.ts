@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('Error fetching forms:', error);
-    return NextResponse.json({ error: 'Failed to fetch forms' }, { status: 500 });
+    return NextResponse.json({ error: await t('api.fetchFormsFailed') }, { status: 500 });
   }
 }
 
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const body = await request.json();
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
       // Create form template
       if (!formName || !formSchema) {
         return NextResponse.json(
-          { error: 'Form name and schema are required' },
+          { error: await t('api.formNameSchemaRequired') },
           { status: 400 }
         );
       }
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       // Submit form response
       if (!formId || !leadId || !formData) {
         return NextResponse.json(
-          { error: 'Form ID, patient ID, and form data are required' },
+          { error: await t('api.formIdLeadIdDataRequired') },
           { status: 400 }
         );
       }
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error saving form:', error);
     return NextResponse.json(
-      { error: 'Failed to save form', details: error.message },
+      { error: await t('api.saveFormFailed'), details: error.message },
       { status: 500 }
     );
   }

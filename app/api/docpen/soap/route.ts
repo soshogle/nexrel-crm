@@ -23,6 +23,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get user's language preference
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { language: true },
+    });
+    const userLanguage = user?.language || 'en';
+
     const body = await request.json();
     const { sessionId, regenerate = false, section, feedback } = body;
 
@@ -95,6 +102,7 @@ export async function POST(request: NextRequest) {
             promptVersion: existingNote.promptVersion || 'v1.0',
           },
           feedback,
+          userLanguage,
         }
       );
 
@@ -151,6 +159,7 @@ export async function POST(request: NextRequest) {
       patientName: docpenSession.patientName || docpenSession.lead?.contactPerson || undefined,
       chiefComplaint: docpenSession.chiefComplaint || undefined,
       patientHistory,
+      userLanguage,
     });
 
     // Mark previous versions as not current

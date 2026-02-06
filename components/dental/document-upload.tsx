@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Upload, File, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { DocumentType, DocumentAccessLevel } from '@prisma/client';
 
@@ -24,6 +25,10 @@ interface DocumentUploadProps {
 }
 
 export function DocumentUpload({ leadId, onUploadComplete }: DocumentUploadProps) {
+  const t = useTranslations('dental.documentUpload');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
   const [file, setFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState<DocumentType>('OTHER');
   const [category, setCategory] = useState('');
@@ -77,12 +82,12 @@ export function DocumentUpload({ leadId, onUploadComplete }: DocumentUploadProps
 
   const handleUpload = async () => {
     if (!file) {
-      toast.error('Please select a file');
+      toast.error(t('selectFile'));
       return;
     }
 
     if (hasConsent === false) {
-      toast.error('Patient consent is required for document storage (Law 25)');
+      toast.error(t('consentRequired'));
       return;
     }
 
@@ -106,10 +111,10 @@ export function DocumentUpload({ leadId, onUploadComplete }: DocumentUploadProps
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Upload failed');
+        throw new Error(data.error || tToasts('documentUploadFailed'));
       }
 
-      toast.success('Document uploaded successfully');
+      toast.success(tToasts('documentUploaded'));
       
       // Reset form
       setFile(null);
@@ -122,7 +127,7 @@ export function DocumentUpload({ leadId, onUploadComplete }: DocumentUploadProps
         onUploadComplete();
       }
     } catch (error: any) {
-      toast.error('Failed to upload document: ' + error.message);
+      toast.error(tToasts('documentUploadFailed') + ': ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -139,9 +144,9 @@ export function DocumentUpload({ leadId, onUploadComplete }: DocumentUploadProps
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Upload Document</CardTitle>
+        <CardTitle>{t('title')}</CardTitle>
         <CardDescription>
-          Upload patient documents (Law 25 compliant - stored in Canada)
+          {t('description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -150,7 +155,7 @@ export function DocumentUpload({ leadId, onUploadComplete }: DocumentUploadProps
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Patient consent is required before uploading documents. Please obtain consent first.
+              {t('consentRequired')}
             </AlertDescription>
           </Alert>
         )}
@@ -180,7 +185,7 @@ export function DocumentUpload({ leadId, onUploadComplete }: DocumentUploadProps
                 disabled={uploading}
               >
                 <X className="h-4 w-4 mr-2" />
-                Remove
+                {tCommon('remove') || 'Remove'}
               </Button>
             </div>
           ) : (
@@ -189,7 +194,7 @@ export function DocumentUpload({ leadId, onUploadComplete }: DocumentUploadProps
               <div>
                 <Label htmlFor="file-upload" className="cursor-pointer">
                   <span className="text-purple-600 hover:text-purple-700 font-medium">
-                    Click to upload
+                    {t('selectFile')}
                   </span>
                   {' '}or drag and drop
                 </Label>
@@ -212,7 +217,7 @@ export function DocumentUpload({ leadId, onUploadComplete }: DocumentUploadProps
         {file && (
           <div className="space-y-4 pt-4 border-t">
             <div>
-              <Label>Document Type *</Label>
+              <Label>{t('documentType')} *</Label>
               <Select value={documentType} onValueChange={(value) => setDocumentType(value as DocumentType)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -232,7 +237,7 @@ export function DocumentUpload({ leadId, onUploadComplete }: DocumentUploadProps
             </div>
 
             <div>
-              <Label>Category</Label>
+              <Label>{tCommon('category') || 'Category'}</Label>
               <Input
                 placeholder="e.g., Initial Exam, Follow-up, Pre-treatment"
                 value={category}

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,14 +17,14 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
 
     if (!leadId) {
-      return NextResponse.json({ error: 'Patient ID (leadId) is required' }, { status: 400 });
+      return NextResponse.json({ error: await t('api.leadIdRequired') }, { status: 400 });
     }
 
     // Get most recent odontogram
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching odontogram:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch odontogram' },
+      { error: await t('api.fetchOdontogramFailed') },
       { status: 500 }
     );
   }
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const body = await request.json();
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     if (!leadId || !toothData) {
       return NextResponse.json(
-        { error: 'Patient ID (leadId) and toothData are required' },
+        { error: await t('api.toothDataRequired') },
         { status: 400 }
       );
     }
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error saving odontogram:', error);
     return NextResponse.json(
-      { error: 'Failed to save odontogram', details: error.message },
+      { error: await t('api.saveOdontogramFailed'), details: error.message },
       { status: 500 }
     );
   }

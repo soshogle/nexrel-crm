@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { TreatmentPlanStatus } from '@prisma/client';
+import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching treatment plans:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch treatment plans' },
+      { error: await t('api.fetchTreatmentPlansFailed') },
       { status: 500 }
     );
   }
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const body = await request.json();
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     if (!leadId || !planName) {
       return NextResponse.json(
-        { error: 'Patient ID (leadId) and plan name are required' },
+        { error: await t('api.planNameRequired') },
         { status: 400 }
       );
     }
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error saving treatment plan:', error);
     return NextResponse.json(
-      { error: 'Failed to save treatment plan', details: error.message },
+      { error: await t('api.saveTreatmentPlanFailed'), details: error.message },
       { status: 500 }
     );
   }
@@ -137,7 +138,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const body = await request.json();
@@ -145,7 +146,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!id || !status) {
       return NextResponse.json(
-        { error: 'Plan ID and status are required' },
+        { error: await t('api.planIdStatusRequired') },
         { status: 400 }
       );
     }
@@ -178,7 +179,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error: any) {
     console.error('Error updating treatment plan:', error);
     return NextResponse.json(
-      { error: 'Failed to update treatment plan', details: error.message },
+      { error: await t('api.updateTreatmentPlanFailed'), details: error.message },
       { status: 500 }
     );
   }

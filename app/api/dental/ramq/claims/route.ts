@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     // Verify user owns the requested userId
     if (userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
     }
 
     // For now, store RAMQ claims in Lead.insuranceInfo JSON field
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching RAMQ claims:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch claims' },
+      { error: await t('api.fetchClaimsFailed') },
       { status: 500 }
     );
   }
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const body = await request.json();
@@ -93,14 +94,14 @@ export async function POST(request: NextRequest) {
 
     if (!userId || !patientName || !patientRAMQNumber || !procedureCode || !serviceDate || !amount) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: await t('api.missingRequiredFields') },
         { status: 400 }
       );
     }
 
     // Verify user owns the userId
     if (userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
     }
 
     // Create claim object
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
 
       if (!lead) {
         return NextResponse.json(
-          { error: 'Lead not found' },
+          { error: await t('api.leadNotFound') },
           { status: 404 }
         );
       }
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
       // If no leadId, create a new lead or store in user metadata
       // For now, we'll require a leadId
       return NextResponse.json(
-        { error: 'leadId is required' },
+        { error: await t('api.leadIdRequired') },
         { status: 400 }
       );
     }
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating RAMQ claim:', error);
     return NextResponse.json(
-      { error: 'Failed to create claim' },
+      { error: await t('api.createClaimFailed') },
       { status: 500 }
     );
   }

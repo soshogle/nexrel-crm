@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { ProcedureStatus } from '@prisma/client';
+import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching procedures:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch procedures' },
+      { error: await t('api.fetchProceduresFailed') },
       { status: 500 }
     );
   }
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const body = await request.json();
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     if (!leadId || !procedureCode || !procedureName) {
       return NextResponse.json(
-        { error: 'Patient ID, procedure code, and procedure name are required' },
+        { error: await t('api.missingRequiredFields') },
         { status: 400 }
       );
     }
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error creating procedure:', error);
     return NextResponse.json(
-      { error: 'Failed to create procedure', details: error.message },
+      { error: await t('api.saveProcedureFailed'), details: error.message },
       { status: 500 }
     );
   }
@@ -136,7 +137,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const body = await request.json();
@@ -144,7 +145,7 @@ export async function PATCH(request: NextRequest) {
 
     if (!id || !status) {
       return NextResponse.json(
-        { error: 'Procedure ID and status are required' },
+        { error: await t('api.missingRequiredFields') },
         { status: 400 }
       );
     }
@@ -177,7 +178,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error: any) {
     console.error('Error updating procedure:', error);
     return NextResponse.json(
-      { error: 'Failed to update procedure', details: error.message },
+      { error: await t('api.saveProcedureFailed'), details: error.message },
       { status: 500 }
     );
   }

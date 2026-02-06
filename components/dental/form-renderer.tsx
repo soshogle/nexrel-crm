@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Save, FileText } from 'lucide-react';
 
 interface FormField {
@@ -47,6 +48,10 @@ export function FormRenderer({
   onSave,
   readOnly = false,
 }: FormRendererProps) {
+  const t = useTranslations('dental.forms.renderer');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
   const [formData, setFormData] = useState<Record<string, any>>(initialData || {});
   const [saving, setSaving] = useState(false);
   const [fileUploads, setFileUploads] = useState<Record<string, File>>({});
@@ -75,7 +80,7 @@ export function FormRenderer({
   const validateForm = () => {
     for (const field of formSchema.fields) {
       if (field.required && !formData[field.id]) {
-        toast.error(`Please fill in ${field.label}`);
+        toast.error(t('fillRequired', { label: field.label }));
         return false;
       }
     }
@@ -92,9 +97,9 @@ export function FormRenderer({
     try {
       setSaving(true);
       await onSave(formData);
-      toast.success('Form submitted successfully');
+      toast.success(tToasts('formSubmitted'));
     } catch (error: any) {
-      toast.error('Failed to submit form: ' + error.message);
+      toast.error(tToasts('formSubmitFailed') + ': ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -238,7 +243,7 @@ export function FormRenderer({
               className="w-full text-lg py-6"
             >
               <Save className="h-5 w-5 mr-2" />
-              {saving ? 'Submitting...' : 'Submit Form'}
+              {saving ? tCommon('loading') : t('submit')}
             </Button>
           </div>
         )}

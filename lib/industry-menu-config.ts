@@ -81,7 +81,9 @@ export type MenuItemId =
   | 'cma-tools'
   | 'market-insights'
   | 'seller-net-sheet'
-  | 'real-estate-analytics';
+  | 'real-estate-analytics'
+  // Dental/Orthodontist specific
+  | 'dental-management';
 
 // Core menu items visible to ALL industries
 const CORE_MENU_ITEMS: MenuItemId[] = [
@@ -165,6 +167,7 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
 
   DENTIST: [
     ...CORE_MENU_ITEMS,
+    'dental-management', // Dental practice management (odontogram, periodontal chart, treatment plans, etc.)
     'general-inventory', // For dental supplies
     'payments',
     'credit-scoring',
@@ -383,5 +386,8 @@ export function getAllFeatures(): {
     { id: 'market-insights', label: 'Market Insights', category: 'Real Estate' },
     { id: 'seller-net-sheet', label: 'Seller Net Sheet', category: 'Real Estate' },
     { id: 'real-estate-analytics', label: 'RE Analytics', category: 'Real Estate' },
+
+    // Dental/Orthodontist Features
+    { id: 'dental-management', label: 'Dental Management', category: 'Dental/Orthodontist' },
   ];
 }

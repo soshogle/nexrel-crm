@@ -10,6 +10,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
 import crypto from 'crypto';
+import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     if (!leadId) {
       return NextResponse.json(
-        { error: 'leadId is required' },
+        { error: await t('api.leadIdRequired') },
         { status: 400 }
       );
     }
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching X-rays:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch X-rays' },
+      { error: await t('api.fetchXraysFailed') },
       { status: 500 }
     );
   }
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const formData = await request.formData();
@@ -73,14 +74,14 @@ export async function POST(request: NextRequest) {
 
     if (!file || !leadId || !xrayType || !dateTaken) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: await t('api.missingRequiredFields') },
         { status: 400 }
       );
     }
 
     // Verify user owns the userId
     if (userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
     }
 
     // Verify lead belongs to user
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     if (!lead) {
       return NextResponse.json(
-        { error: 'Lead not found' },
+        { error: await t('api.leadNotFound') },
         { status: 404 }
       );
     }
@@ -173,7 +174,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error uploading X-ray:', error);
     return NextResponse.json(
-      { error: 'Failed to upload X-ray' },
+      { error: await t('api.uploadXrayFailed') },
       { status: 500 }
     );
   }
