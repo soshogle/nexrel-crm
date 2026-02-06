@@ -9,9 +9,21 @@
 
 import OpenAI from 'openai';
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization - only create client when actually needed
+let client: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!client) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    client = new OpenAI({
+      apiKey,
+    });
+  }
+  return client;
+}
 
 export interface ConversationAnalysis {
   sentiment: {
@@ -106,7 +118,7 @@ Provide a comprehensive analysis in the following JSON format:
 Provide ONLY the JSON response, no additional text.`;
 
   try {
-    const completion = await client.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3,
