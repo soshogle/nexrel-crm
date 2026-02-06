@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { PeriodontalBarChart } from '@/components/dental/periodontal-bar-chart';
 import { CustomOdontogramDisplay } from '@/components/dental/custom-odontogram-display';
@@ -121,34 +121,7 @@ export default function DentalTestPage() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
-
-  useEffect(() => {
-    if (leads.length > 0) {
-      fetchStats();
-      // Auto-select first patient
-      if (!selectedLeadId && leads[0]) {
-        setSelectedLeadId(leads[0].id);
-      }
-    }
-  }, [leads]);
-
-  useEffect(() => {
-    if (selectedLeadId) {
-      fetchOdontogram();
-      fetchPeriodontalChart();
-      fetchTreatmentPlans();
-      fetchProcedures();
-      fetchForms();
-      fetchFormResponses();
-      fetchRAMQClaims();
-      fetchXrays();
-    }
-  }, [selectedLeadId]);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -212,9 +185,9 @@ export default function DentalTestPage() {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  };
+  }, [leads, session?.user?.id]);
 
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       const response = await fetch('/api/leads');
       if (response.ok) {
@@ -229,9 +202,9 @@ export default function DentalTestPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchOdontogram = async () => {
+  const fetchOdontogram = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/odontogram?leadId=${selectedLeadId}`);
@@ -243,9 +216,9 @@ export default function DentalTestPage() {
       console.error('Error fetching odontogram:', error);
       setOdontogramData(null);
     }
-  };
+  }, [selectedLeadId]);
 
-  const fetchPeriodontalChart = async () => {
+  const fetchPeriodontalChart = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/periodontal?leadId=${selectedLeadId}`);
@@ -258,9 +231,9 @@ export default function DentalTestPage() {
       console.error('Error fetching periodontal chart:', error);
       setPeriodontalData(null);
     }
-  };
+  }, [selectedLeadId]);
 
-  const fetchTreatmentPlans = async () => {
+  const fetchTreatmentPlans = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/treatment-plans?leadId=${selectedLeadId}`);
@@ -272,9 +245,9 @@ export default function DentalTestPage() {
       console.error('Error fetching treatment plans:', error);
       setTreatmentPlans([]);
     }
-  };
+  }, [selectedLeadId]);
 
-  const fetchProcedures = async () => {
+  const fetchProcedures = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/procedures?leadId=${selectedLeadId}`);
@@ -286,9 +259,9 @@ export default function DentalTestPage() {
       console.error('Error fetching procedures:', error);
       setProcedures([]);
     }
-  };
+  }, [selectedLeadId]);
 
-  const fetchForms = async () => {
+  const fetchForms = useCallback(async () => {
     try {
       const response = await fetch('/api/dental/forms?type=templates');
       if (response.ok) {
@@ -298,9 +271,9 @@ export default function DentalTestPage() {
     } catch (error) {
       console.error('Error fetching forms:', error);
     }
-  };
+  }, []);
 
-  const fetchFormResponses = async () => {
+  const fetchFormResponses = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/forms?type=responses&leadId=${selectedLeadId}`);
@@ -312,9 +285,9 @@ export default function DentalTestPage() {
       console.error('Error fetching form responses:', error);
       setFormResponses([]);
     }
-  };
+  }, [selectedLeadId]);
 
-  const fetchRAMQClaims = async () => {
+  const fetchRAMQClaims = useCallback(async () => {
     if (!session?.user?.id) return;
     try {
       const response = await fetch(`/api/dental/ramq/claims?userId=${session.user.id}${selectedLeadId ? `&leadId=${selectedLeadId}` : ''}`);
@@ -326,9 +299,9 @@ export default function DentalTestPage() {
       console.error('Error fetching RAMQ claims:', error);
       setRamqClaims([]);
     }
-  };
+  }, [session?.user?.id, selectedLeadId]);
 
-  const fetchXrays = async () => {
+  const fetchXrays = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/xrays?leadId=${selectedLeadId}`);
@@ -343,7 +316,35 @@ export default function DentalTestPage() {
       console.error('Error fetching X-rays:', error);
       setXrays([]);
     }
-  };
+  }, [selectedLeadId, selectedXray]);
+
+  // useEffect hooks after function declarations
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
+
+  useEffect(() => {
+    if (leads.length > 0) {
+      fetchStats();
+      // Auto-select first patient
+      if (!selectedLeadId && leads[0]) {
+        setSelectedLeadId(leads[0].id);
+      }
+    }
+  }, [leads, selectedLeadId, fetchStats]);
+
+  useEffect(() => {
+    if (selectedLeadId) {
+      fetchOdontogram();
+      fetchPeriodontalChart();
+      fetchTreatmentPlans();
+      fetchProcedures();
+      fetchForms();
+      fetchFormResponses();
+      fetchRAMQClaims();
+      fetchXrays();
+    }
+  }, [selectedLeadId, fetchOdontogram, fetchPeriodontalChart, fetchTreatmentPlans, fetchProcedures, fetchForms, fetchFormResponses, fetchRAMQClaims, fetchXrays]);
 
   const handleSaveOdontogram = async (toothData: any) => {
     if (!selectedLeadId) {
