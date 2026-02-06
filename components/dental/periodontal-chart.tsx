@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Save, RotateCcw, History, TrendingUp } from 'lucide-react';
 
 interface PeriodontalMeasurement {
@@ -41,6 +42,10 @@ const TOOTH_NUMBERS = Array.from({ length: 32 }, (_, i) => String(i + 1));
 const MEASUREMENT_SITES = ['mesial', 'buccal', 'distal', 'lingual'] as const;
 
 export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false }: PeriodontalChartProps) {
+  const t = useTranslations('dental.periodontal');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
   const [chartData, setChartData] = useState<PeriodontalChartData>(initialData || {});
   const [selectedTooth, setSelectedTooth] = useState<string | null>(null);
   const [selectedSite, setSelectedSite] = useState<string | null>(null);
@@ -101,10 +106,10 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
     try {
       setSaving(true);
       await onSave(chartData);
-      toast.success('Periodontal chart saved successfully');
+      toast.success(tToasts('periodontalSaved'));
       await loadChartHistory();
     } catch (error: any) {
-      toast.error('Failed to save chart: ' + error.message);
+      toast.error(tToasts('periodontalSaveFailed') + ': ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -116,7 +121,7 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
     setSelectedTooth(null);
     setSelectedSite(null);
     setNotes('');
-    toast.info('Chart reset');
+    toast.info(t('chartReset'));
   };
 
   const compareCharts = (chart1: any, chart2: any) => {
@@ -146,9 +151,9 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Periodontal Chart</CardTitle>
+            <CardTitle>{t('title')}</CardTitle>
             <CardDescription>
-              Record pocket depths, BOP, recession, and mobility for each tooth
+              {t('description')}
             </CardDescription>
           </div>
           {!readOnly && (
@@ -159,15 +164,15 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
                 onClick={() => setShowHistory(!showHistory)}
               >
                 <History className="h-4 w-4 mr-2" />
-                History
+                {t('history')}
               </Button>
               <Button variant="outline" size="sm" onClick={handleReset}>
                 <RotateCcw className="h-4 w-4 mr-2" />
-                Reset
+                {t('reset')}
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
                 <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Chart'}
+                {saving ? tCommon('loading') : t('save')}
               </Button>
             </div>
           )}
@@ -177,9 +182,9 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
       <CardContent>
         <Tabs defaultValue="chart" className="w-full">
           <TabsList>
-            <TabsTrigger value="chart">Chart Entry</TabsTrigger>
+            <TabsTrigger value="chart">{t('title')}</TabsTrigger>
             {chartHistory.length > 0 && (
-              <TabsTrigger value="comparison">Comparison</TabsTrigger>
+              <TabsTrigger value="comparison">{t('comparison')}</TabsTrigger>
             )}
           </TabsList>
 
@@ -216,7 +221,7 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
                     <div className="text-sm font-semibold">{toothNumber}</div>
                     {hasData && (
                       <div className="text-xs text-gray-600 mt-1">
-                        {Object.keys(toothData).length} sites
+                        {Object.keys(toothData).length} {t('sites') || 'sites'}
                       </div>
                     )}
                   </button>
@@ -228,7 +233,7 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
             {selectedTooth && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Tooth {selectedTooth} - Measurements</CardTitle>
+                  <CardTitle>{t('selectTooth')} {selectedTooth}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -250,7 +255,7 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
                           
                           <div className="space-y-2">
                             <div>
-                              <Label className="text-xs">Pocket Depth (mm)</Label>
+                              <Label className="text-xs">{t('pocketDepth')}</Label>
                               <Input
                                 type="number"
                                 min="0"
@@ -285,11 +290,11 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
                                 disabled={readOnly}
                                 className="h-4 w-4"
                               />
-                              <Label className="text-xs">BOP</Label>
+                              <Label className="text-xs">{t('bleedingOnProbing')}</Label>
                             </div>
                             
                             <div>
-                              <Label className="text-xs">Recession (mm)</Label>
+                              <Label className="text-xs">{t('recession')}</Label>
                               <Input
                                 type="number"
                                 min="0"
@@ -310,7 +315,7 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
                             </div>
                             
                             <div>
-                              <Label className="text-xs">Mobility (0-3)</Label>
+                              <Label className="text-xs">{t('mobility')}</Label>
                               <Input
                                 type="number"
                                 min="0"

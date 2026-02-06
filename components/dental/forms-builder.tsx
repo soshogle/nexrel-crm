@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Save, Plus, Trash2, GripVertical, Eye, FileText } from 'lucide-react';
 
 interface FormField {
@@ -37,6 +38,10 @@ export function FormsBuilder({ userId, onFormCreated }: FormsBuilderProps) {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [fields, setFields] = useState<FormField[]>([]);
+  const t = useTranslations('dental.forms.builder');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
   const [selectedField, setSelectedField] = useState<FormField | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -80,12 +85,12 @@ export function FormsBuilder({ userId, onFormCreated }: FormsBuilderProps) {
 
   const handleSave = async () => {
     if (!formName.trim()) {
-      toast.error('Please enter a form name');
+      toast.error(t('nameRequired'));
       return;
     }
 
     if (fields.length === 0) {
-      toast.error('Please add at least one field');
+      toast.error(t('fieldsRequired'));
       return;
     }
 
@@ -114,7 +119,7 @@ export function FormsBuilder({ userId, onFormCreated }: FormsBuilderProps) {
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Form template saved successfully');
+        toast.success(tToasts('formSaved'));
         setFormName('');
         setDescription('');
         setCategory('');
@@ -122,10 +127,10 @@ export function FormsBuilder({ userId, onFormCreated }: FormsBuilderProps) {
         setSelectedField(null);
         onFormCreated?.();
       } else {
-        toast.error(data.error || 'Failed to save form');
+        toast.error(data.error || tToasts('formSaveFailed'));
       }
     } catch (error: any) {
-      toast.error('Failed to save form: ' + error.message);
+      toast.error(tToasts('formSaveFailed') + ': ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -136,19 +141,19 @@ export function FormsBuilder({ userId, onFormCreated }: FormsBuilderProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Dynamic Forms Builder</CardTitle>
+            <CardTitle>{t('title')}</CardTitle>
             <CardDescription>
-              Create custom forms for patient questionnaires and documentation
+              {t('description')}
             </CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setPreviewMode(!previewMode)}>
               <Eye className="h-4 w-4 mr-2" />
-              {previewMode ? 'Edit' : 'Preview'}
+              {previewMode ? tCommon('edit') : tCommon('preview') || 'Preview'}
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Form'}
+              {saving ? tCommon('loading') : t('save')}
             </Button>
           </div>
         </div>
@@ -160,18 +165,18 @@ export function FormsBuilder({ userId, onFormCreated }: FormsBuilderProps) {
             {/* Form Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Form Name *</Label>
+                <Label>{t('formName')} *</Label>
                 <Input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  placeholder="e.g., Medical History Questionnaire"
+                  placeholder={t('formName')}
                 />
               </div>
               <div>
-                <Label>Category</Label>
+                <Label>{tCommon('category') || 'Category'}</Label>
                 <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder={`${tCommon('select') || 'Select'} ${tCommon('category') || 'category'}`} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Medical History">Medical History</SelectItem>
@@ -184,11 +189,11 @@ export function FormsBuilder({ userId, onFormCreated }: FormsBuilderProps) {
               </div>
             </div>
             <div>
-              <Label>Description</Label>
+              <Label>{tCommon('description') || 'Description'}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Form description..."
+                placeholder={tCommon('description') || 'Form description...'}
                 rows={2}
               />
             </div>
@@ -196,7 +201,7 @@ export function FormsBuilder({ userId, onFormCreated }: FormsBuilderProps) {
             {/* Field Types */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Add Fields</CardTitle>
+                <CardTitle className="text-lg">{t('addField')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -219,7 +224,7 @@ export function FormsBuilder({ userId, onFormCreated }: FormsBuilderProps) {
             {fields.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Form Fields ({fields.length})</CardTitle>
+                  <CardTitle className="text-lg">{t('title')} ({fields.length})</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {fields.map((field, index) => (

@@ -30,6 +30,7 @@ export async function generateSOAPNote(params: {
   patientName?: string;
   chiefComplaint?: string;
   patientHistory?: string;
+  userLanguage?: string; // User's language preference for AI generation
 }): Promise<SOAPNote> {
   const startTime = Date.now();
 
@@ -46,17 +47,35 @@ export async function generateSOAPNote(params: {
     transcription,
   });
 
+  // Get user's language preference (default to 'en')
+  const userLanguage = params.userLanguage || 'en';
+
+  // Language instructions for AI responses
+  const languageInstructions: Record<string, string> = {
+    'en': 'CRITICAL: You MUST generate the SOAP note ONLY in English. Every single word must be in English.',
+    'fr': 'CRITIQUE : Vous DEVEZ générer la note SOAP UNIQUEMENT en français. Chaque mot doit être en français.',
+    'es': 'CRÍTICO: DEBES generar la nota SOAP SOLO en español. Cada palabra debe estar en español.',
+    'zh': '关键：您必须仅用中文生成SOAP笔记。每个词都必须是中文。',
+  };
+  const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+
   // Call GPT-4o via OpenAI
   const result = await chatCompletion({
     model: 'gpt-4o',
     messages: [
       {
         role: 'system',
-        content: 'You are an expert medical documentation AI. Generate accurate, professional SOAP notes based on clinical conversation transcripts.'
+        content: `${languageInstruction}
+
+You are an expert medical documentation AI. Generate accurate, professional SOAP notes based on clinical conversation transcripts.
+
+${userLanguage === 'fr' ? 'Générez la note SOAP complète en français professionnel.' : ''}
+${userLanguage === 'es' ? 'Genera la nota SOAP completa en español profesional.' : ''}
+${userLanguage === 'zh' ? '用专业中文生成完整的SOAP笔记。' : ''}`
       },
       {
         role: 'user',
-        content: prompt
+        content: `${languageInstruction}\n\n${prompt}`
       }
     ],
     temperature: 0.3, // Lower temperature for consistent, accurate output
@@ -143,6 +162,7 @@ export async function regenerateSection(
     profession: DocpenProfessionType;
     existingNote: SOAPNote;
     feedback?: string;
+    userLanguage?: string; // User's language preference for AI generation
   }
 ): Promise<string> {
   const sectionNames: Record<string, string> = {
@@ -152,7 +172,21 @@ export async function regenerateSection(
     plan: 'PLAN',
   };
 
-  const prompt = `You are regenerating the ${sectionNames[section]} section of a SOAP note.
+  // Get user's language preference (default to 'en')
+  const userLanguage = context.userLanguage || 'en';
+
+  // Language instructions for AI responses
+  const languageInstructions: Record<string, string> = {
+    'en': 'CRITICAL: You MUST generate the section ONLY in English. Every single word must be in English.',
+    'fr': 'CRITIQUE : Vous DEVEZ générer la section UNIQUEMENT en français. Chaque mot doit être en français.',
+    'es': 'CRÍTICO: DEBES generar la sección SOLO en español. Cada palabra debe estar en español.',
+    'zh': '关键：您必须仅用中文生成该部分。每个词都必须是中文。',
+  };
+  const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+
+  const prompt = `${languageInstruction}
+
+You are regenerating the ${sectionNames[section]} section of a SOAP note.
 
 Profession: ${context.profession}
 
@@ -164,7 +198,7 @@ ${context.existingNote[section]}
 
 ${context.feedback ? `User Feedback: ${context.feedback}` : ''}
 
-Please regenerate ONLY the ${sectionNames[section]} section with improvements. Return just the content for this section, without the header.`;
+Please regenerate ONLY the ${sectionNames[section]} section with improvements. Return just the content for this section, without the header. Generate the content in ${userLanguage === 'en' ? 'English' : userLanguage === 'fr' ? 'French' : userLanguage === 'es' ? 'Spanish' : 'Chinese'}.`;
 
   const result = await chatCompletion({
     model: 'gpt-4o',

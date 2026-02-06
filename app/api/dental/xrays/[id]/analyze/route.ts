@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
 import OpenAI from 'openai';
+import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -25,8 +26,24 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
+
+    // Get user's language preference
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { language: true },
+    });
+    const userLanguage = user?.language || 'en';
+
+    // Language instructions for AI responses
+    const languageInstructions: Record<string, string> = {
+      'en': 'CRITICAL: You MUST generate the analysis ONLY in English. Every single word must be in English.',
+      'fr': 'CRITIQUE : Vous DEVEZ générer l\'analyse UNIQUEMENT en français. Chaque mot doit être en français.',
+      'es': 'CRÍTICO: DEBES generar el análisis SOLO en español. Cada palabra debe estar en español.',
+      'zh': '关键：您必须仅用中文生成分析。每个词都必须是中文。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
 
     // Find X-ray
     // Note: Model name will be available after running: npx prisma generate
@@ -39,7 +56,7 @@ export async function POST(
 
     if (!xray) {
       return NextResponse.json(
-        { error: 'X-ray not found' },
+        { error: await t('api.notFound') },
         { status: 404 }
       );
     }
@@ -56,14 +73,14 @@ export async function POST(
       // TODO: Convert DICOM to image for analysis
       // For now, return error if only DICOM is available
       return NextResponse.json(
-        { error: 'DICOM conversion not yet implemented. Please upload an image file for AI analysis.' },
+        { error: await t('api.dicomConversionNotImplemented') },
         { status: 400 }
       );
     }
 
     if (!imageUrl) {
       return NextResponse.json(
-        { error: 'No image available for analysis' },
+        { error: await t('api.missingRequiredFields') },
         { status: 400 }
       );
     }
@@ -80,24 +97,32 @@ export async function POST(
       messages: [
         {
           role: 'system',
-          content: `You are a dental radiologist AI assistant. Analyze dental X-ray images and provide:
+          content: `${languageInstruction}
+
+You are a dental radiologist AI assistant. Analyze dental X-ray images and provide:
 1. Detailed findings (caries, periodontal issues, restorations, missing teeth, etc.)
 2. Tooth-by-tooth analysis if applicable
 3. Recommendations for treatment
 4. Confidence level in your analysis
 
-Be specific about tooth numbers using Universal Numbering System (1-32).`,
+Be specific about tooth numbers using Universal Numbering System (1-32).
+
+${userLanguage === 'fr' ? 'Générez l\'analyse complète en français professionnel.' : ''}
+${userLanguage === 'es' ? 'Genera el análisis completo en español profesional.' : ''}
+${userLanguage === 'zh' ? '用专业中文生成完整分析。' : ''}`,
         },
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: `Analyze this ${xray.xrayType} X-ray taken on ${new Date(xray.dateTaken).toLocaleDateString()}. 
+              text: `${languageInstruction}
+
+Analyze this ${xray.xrayType} X-ray taken on ${new Date(xray.dateTaken).toLocaleDateString()}. 
 ${xray.teethIncluded.length > 0 ? `Teeth included: ${xray.teethIncluded.join(', ')}` : ''}
 ${xray.notes ? `Notes: ${xray.notes}` : ''}
 
-Provide a comprehensive analysis including findings, recommendations, and confidence level.`,
+Provide a comprehensive analysis including findings, recommendations, and confidence level. Generate the entire response in ${userLanguage === 'en' ? 'English' : userLanguage === 'fr' ? 'French' : userLanguage === 'es' ? 'Spanish' : 'Chinese'}.`,
             },
             {
               type: 'image_url',
@@ -140,7 +165,7 @@ Provide a comprehensive analysis including findings, recommendations, and confid
   } catch (error: any) {
     console.error('Error analyzing X-ray:', error);
     return NextResponse.json(
-      { error: 'Failed to analyze X-ray: ' + (error.message || 'Unknown error') },
+      { error: await t('api.analyzeXrayFailed') + ': ' + (error.message || 'Unknown error') },
       { status: 500 }
     );
   }

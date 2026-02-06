@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Plus, Calendar, Clock, CheckCircle2, XCircle, AlertCircle, FileText } from 'lucide-react';
 import { ProcedureStatus } from '@prisma/client';
 import { CDT_CODES, getCDTCodeByCode } from '@/lib/dental/cdt-codes';
@@ -42,6 +43,10 @@ interface Procedure {
 }
 
 export function ProcedureLog({ leadId, treatmentPlanId, readOnly = false }: ProcedureLogProps) {
+  const t = useTranslations('dental.procedureLog');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
   const [procedures, setProcedures] = useState<Procedure[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -72,7 +77,7 @@ export function ProcedureLog({ leadId, treatmentPlanId, readOnly = false }: Proc
       }
     } catch (error) {
       console.error('Failed to load procedures:', error);
-      toast.error('Failed to load procedures');
+      toast.error(tToasts('procedureAddFailed'));
     } finally {
       setLoading(false);
     }
@@ -80,7 +85,7 @@ export function ProcedureLog({ leadId, treatmentPlanId, readOnly = false }: Proc
 
   const handleAddProcedure = async () => {
     if (!newProcedure.procedureCode || !newProcedure.procedureName) {
-      toast.error('Procedure code and name are required');
+      toast.error(t('codeRequired'));
       return;
     }
 
@@ -97,7 +102,7 @@ export function ProcedureLog({ leadId, treatmentPlanId, readOnly = false }: Proc
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Procedure added successfully');
+        toast.success(tToasts('procedureAdded'));
         setShowAddDialog(false);
         setNewProcedure({
           procedureCode: '',
@@ -108,10 +113,10 @@ export function ProcedureLog({ leadId, treatmentPlanId, readOnly = false }: Proc
         });
         loadProcedures();
       } else {
-        toast.error(data.error || 'Failed to add procedure');
+        toast.error(data.error || tToasts('procedureAddFailed'));
       }
     } catch (error: any) {
-      toast.error('Failed to add procedure: ' + error.message);
+      toast.error(tToasts('procedureAddFailed') + ': ' + error.message);
     }
   };
 
@@ -129,11 +134,11 @@ export function ProcedureLog({ leadId, treatmentPlanId, readOnly = false }: Proc
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Procedure status updated');
+        toast.success(tToasts('procedureStatusUpdated'));
         loadProcedures();
       }
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error(tToasts('procedureStatusFailed'));
     }
   };
 

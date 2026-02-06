@@ -29,6 +29,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get user's language preference
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { language: true },
+    });
+    const userLanguage = user?.language || 'en';
+
+    // Language instructions for AI responses
+    const languageInstructions: Record<string, string> = {
+      'en': 'CRITICAL: You MUST generate the report ONLY in English. Every single word must be in English.',
+      'fr': 'CRITIQUE : Vous DEVEZ générer le rapport UNIQUEMENT en français. Chaque mot doit être en français.',
+      'es': 'CRÍTICO: DEBES generar el informe SOLO en español. Cada palabra debe estar en español.',
+      'zh': '关键：您必须仅用中文生成报告。每个词都必须是中文。',
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+
     const body: MarketReportRequest = await request.json();
     const { region, reportType, marketData, customPrompt } = body;
 
@@ -61,13 +77,15 @@ export async function POST(request: NextRequest) {
         periodStart.setDate(currentDate.getDate() - 30);
     }
 
-    const systemPrompt = `You are a professional real estate market analyst creating reports for real estate agents to share with clients. Your reports should be:
+    const systemPrompt = `${languageInstruction}
+
+You are a professional real estate market analyst creating reports for real estate agents to share with clients. Your reports should be:
 - Data-driven but accessible
 - Professional yet engaging
 - Actionable with clear insights
 - Suitable for both buyers and sellers
 
-Generate a comprehensive market report in the following JSON format:
+Generate a comprehensive market report in the following JSON format. ALL text content (title, summaries, insights, predictions, captions) must be in ${userLanguage === 'en' ? 'English' : userLanguage === 'fr' ? 'French' : userLanguage === 'es' ? 'Spanish' : 'Chinese'}:
 {
   "title": "Catchy, professional report title",
   "executiveSummary": "2-3 paragraph executive summary of the market conditions",
@@ -93,9 +111,13 @@ Generate a comprehensive market report in the following JSON format:
 
 Respond with raw JSON only. Do not include code blocks, markdown, or any other formatting.`;
 
-    let userPrompt = `Generate a ${reportType.toLowerCase()} real estate market report for: ${region}
+    let userPrompt = `${languageInstruction}
 
-Report Period: ${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}`;
+Generate a ${reportType.toLowerCase()} real estate market report for: ${region}
+
+Report Period: ${periodStart.toLocaleDateString()} - ${periodEnd.toLocaleDateString()}
+
+IMPORTANT: Generate the entire report in ${userLanguage === 'en' ? 'English' : userLanguage === 'fr' ? 'French' : userLanguage === 'es' ? 'Spanish' : 'Chinese'}. All text fields in the JSON response must be in this language.`;
 
     if (marketData) {
       userPrompt += `\n\nAvailable Market Data:\n`;

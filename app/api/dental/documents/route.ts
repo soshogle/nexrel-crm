@@ -12,6 +12,7 @@ import { ConsentService } from '@/lib/storage/consent-service';
 import { AccessAuditService } from '@/lib/storage/access-audit-service';
 import { generateEncryptionKey } from '@/lib/docpen/security';
 import { DocumentType, DocumentAccessLevel, ConsentType } from '@prisma/client';
+import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const formData = await request.formData();
@@ -39,11 +40,11 @@ export async function POST(request: NextRequest) {
     const accessLevel = (formData.get('accessLevel') as DocumentAccessLevel) || 'RESTRICTED';
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      return NextResponse.json({ error: await t('api.missingRequiredFields') }, { status: 400 });
     }
 
     if (!leadId) {
-      return NextResponse.json({ error: 'Patient ID (leadId) is required' }, { status: 400 });
+      return NextResponse.json({ error: await t('api.leadIdRequired') }, { status: 400 });
     }
 
     // Check consent (Law 25 requirement)
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
 
       if (!hasConsent) {
         return NextResponse.json(
-          { error: 'Patient consent required for document storage (Law 25)' },
+          { error: await t('api.missingRequiredFields') },
           { status: 403 }
         );
       }
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error uploading document:', error);
     return NextResponse.json(
-      { error: 'Failed to upload document', details: error.message },
+      { error: await t('api.uploadDocumentFailed'), details: error.message },
       { status: 500 }
     );
   }
@@ -144,14 +145,14 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
 
     if (!leadId) {
-      return NextResponse.json({ error: 'Patient ID (leadId) is required' }, { status: 400 });
+      return NextResponse.json({ error: await t('api.leadIdRequired') }, { status: 400 });
     }
 
     const documents = await prisma.patientDocument.findMany({
@@ -183,7 +184,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching documents:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch documents' },
+      { error: await t('api.fetchDocumentsFailed') },
       { status: 500 }
     );
   }

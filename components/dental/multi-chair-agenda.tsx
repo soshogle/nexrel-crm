@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Calendar, Clock, User, Plus, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, startOfDay, addHours, setHours, setMinutes, isSameDay, isToday, addDays, subDays } from 'date-fns';
 import {
@@ -60,6 +61,10 @@ const DEFAULT_CHAIRS: Chair[] = [
 const TIME_SLOTS = Array.from({ length: 16 }, (_, i) => i + 8); // 8 AM to 11 PM
 
 export function MultiChairAgenda({ userId, selectedDate, onAppointmentUpdated }: MultiChairAgendaProps) {
+  const t = useTranslations('dental.multiChair');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
   const [chairs, setChairs] = useState<Chair[]>(DEFAULT_CHAIRS);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [currentDate, setCurrentDate] = useState<Date>(selectedDate || new Date());
@@ -106,7 +111,7 @@ export function MultiChairAgenda({ userId, selectedDate, onAppointmentUpdated }:
       }
     } catch (error) {
       console.error('Error fetching appointments:', error);
-      toast.error('Failed to load appointments');
+      toast.error(tToasts('appointmentsLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -131,12 +136,13 @@ export function MultiChairAgenda({ userId, selectedDate, onAppointmentUpdated }:
         });
 
         if (response.ok) {
-          toast.success('Appointment moved to ' + chairs.find(c => c.id === targetChairId)?.name);
+          const chairName = chairs.find(c => c.id === targetChairId)?.name || targetChairId;
+          toast.success(t('appointmentMoved', { chair: chairName }));
           await fetchAppointments();
           onAppointmentUpdated?.();
         }
       } catch (error: any) {
-        toast.error('Failed to move appointment: ' + error.message);
+        toast.error(tToasts('appointmentsLoadFailed') + ': ' + error.message);
       }
     }
 
@@ -200,9 +206,9 @@ export function MultiChairAgenda({ userId, selectedDate, onAppointmentUpdated }:
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Multi-Chair Agenda</CardTitle>
+            <CardTitle>{t('title')}</CardTitle>
             <CardDescription>
-              Manage appointments across multiple dental chairs
+              {t('description')}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -220,8 +226,8 @@ export function MultiChairAgenda({ userId, selectedDate, onAppointmentUpdated }:
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="day">Day View</SelectItem>
-                <SelectItem value="week">Week View</SelectItem>
+                <SelectItem value="day">{t('day')}</SelectItem>
+                <SelectItem value="week">{t('week')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -240,7 +246,7 @@ export function MultiChairAgenda({ userId, selectedDate, onAppointmentUpdated }:
               {/* Time Column */}
               <div className="sticky left-0 bg-white z-10 border-r">
                 <div className="h-16 border-b font-semibold text-center flex items-center justify-center">
-                  Time
+                  {tCommon('time') || 'Time'}
                 </div>
                 {TIME_SLOTS.map((hour) => (
                   <div
@@ -323,12 +329,12 @@ export function MultiChairAgenda({ userId, selectedDate, onAppointmentUpdated }:
 
         {/* Legend */}
         <div className="mt-6 flex flex-wrap gap-4 items-center">
-          <span className="text-sm font-semibold">Status:</span>
-          <Badge className="bg-blue-500">Scheduled</Badge>
-          <Badge className="bg-green-500">Checked In</Badge>
-          <Badge className="bg-yellow-500">In Progress</Badge>
-          <Badge className="bg-gray-500">Completed</Badge>
-          <Badge className="bg-red-500">Cancelled</Badge>
+          <span className="text-sm font-semibold">{t('status') || tCommon('status')}:</span>
+          <Badge className="bg-blue-500">{tCommon('scheduled') || 'Scheduled'}</Badge>
+          <Badge className="bg-green-500">{t('checkedIn') || 'Checked In'}</Badge>
+          <Badge className="bg-yellow-500">{tCommon('inProgress') || 'In Progress'}</Badge>
+          <Badge className="bg-gray-500">{tCommon('completed') || 'Completed'}</Badge>
+          <Badge className="bg-red-500">{tCommon('cancelled') || 'Cancelled'}</Badge>
         </div>
       </CardContent>
     </Card>

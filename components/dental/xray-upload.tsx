@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Upload, File, X, CheckCircle2, AlertCircle, Brain, Image as ImageIcon, FileText } from 'lucide-react';
 
 interface XRayUploadProps {
@@ -34,6 +35,10 @@ enum XRayType {
 }
 
 export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps) {
+  const t = useTranslations('dental.xray');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
   const [file, setFile] = useState<File | null>(null);
   const [xrayType, setXrayType] = useState<XRayType>(XRayType.PANORAMIC);
   const [dateTaken, setDateTaken] = useState(new Date().toISOString().split('T')[0]);
@@ -78,14 +83,14 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
       } else if (isDicom) {
         // DICOM files will be processed server-side
         setPreviewUrl(null);
-        toast.info('DICOM file selected. Preview will be available after upload.');
+        toast.info(t('dicomSelected'));
       }
     }
   };
 
   const handleUpload = async () => {
     if (!file) {
-      toast.error('Please select a file');
+      toast.error(t('selectFileError'));
       return;
     }
 
@@ -109,7 +114,7 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
       const data = await response.json();
 
       if (response.ok) {
-        toast.success('X-ray uploaded successfully');
+        toast.success(tToasts('xrayUploaded'));
         setFile(null);
         setPreviewUrl(null);
         setNotes('');
@@ -117,10 +122,10 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
         await fetchXrays();
         onUploadComplete?.();
       } else {
-        toast.error(data.error || 'Failed to upload X-ray');
+        toast.error(data.error || tToasts('xrayUploadFailed'));
       }
     } catch (error: any) {
-      toast.error('Failed to upload X-ray: ' + error.message);
+      toast.error(tToasts('xrayUploadFailed') + ': ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -136,14 +141,14 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
       const data = await response.json();
 
       if (response.ok) {
-        toast.success('AI analysis completed');
+        toast.success(tToasts('xrayAnalyzed'));
         await fetchXrays();
         setSelectedXray(data.xray);
       } else {
-        toast.error(data.error || 'Failed to analyze X-ray');
+        toast.error(data.error || tToasts('xrayAnalyzeFailed'));
       }
     } catch (error: any) {
-      toast.error('Failed to analyze X-ray: ' + error.message);
+      toast.error(tToasts('xrayAnalyzeFailed') + ': ' + error.message);
     } finally {
       setAnalyzing(false);
     }
@@ -151,11 +156,11 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
 
   const getXRayTypeLabel = (type: string) => {
     const labels: { [key: string]: string } = {
-      PANORAMIC: 'Panoramic',
-      BITEWING: 'Bitewing',
-      PERIAPICAL: 'Periapical',
-      CEPHALOMETRIC: 'Cephalometric',
-      CBCT: 'CBCT (3D)',
+      PANORAMIC: t('panoramic'),
+      BITEWING: t('bitewing'),
+      PERIAPICAL: t('periapical'),
+      CEPHALOMETRIC: t('cephalometric'),
+      CBCT: t('cbct'),
     };
     return labels[type] || type;
   };
@@ -164,23 +169,22 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>X-Ray Upload & AI Analysis</CardTitle>
+          <CardTitle>{t('title')}</CardTitle>
           <CardDescription>
-            Upload DICOM files from X-ray systems (Carestream, Planmeca, Sirona, Vatech) or standard image files.
-            AI analysis available using GPT-4 Vision.
+            {t('description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="upload">
             <TabsList>
-              <TabsTrigger value="upload">Upload X-Ray</TabsTrigger>
-              <TabsTrigger value="xrays">View X-Rays</TabsTrigger>
+              <TabsTrigger value="upload">{t('upload')}</TabsTrigger>
+              <TabsTrigger value="xrays">{t('list')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="upload" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="file">X-Ray File *</Label>
+                  <Label htmlFor="file">{t('selectFile')} *</Label>
                   <Input
                     id="file"
                     type="file"
@@ -194,7 +198,7 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
                 </div>
 
                 <div>
-                  <Label htmlFor="xrayType">X-Ray Type *</Label>
+                  <Label htmlFor="xrayType">{t('xrayType')} *</Label>
                   <Select value={xrayType} onValueChange={(value: XRayType) => setXrayType(value)}>
                     <SelectTrigger>
                       <SelectValue />
@@ -210,7 +214,7 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
                 </div>
 
                 <div>
-                  <Label htmlFor="dateTaken">Date Taken *</Label>
+                  <Label htmlFor="dateTaken">{t('dateTaken')} *</Label>
                   <Input
                     id="dateTaken"
                     type="date"
@@ -220,10 +224,10 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
                 </div>
 
                 <div>
-                  <Label htmlFor="teethIncluded">Teeth Included (comma-separated)</Label>
+                  <Label htmlFor="teethIncluded">{t('teethIncluded')}</Label>
                   <Input
                     id="teethIncluded"
-                    placeholder="1,2,3,4,5"
+                    placeholder={t('teethPlaceholder')}
                     value={teethIncluded.join(',')}
                     onChange={(e) => {
                       const teeth = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
@@ -237,19 +241,19 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
               </div>
 
               <div>
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t('notes')}</Label>
                 <Textarea
                   id="notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Additional notes about this X-ray"
+                  placeholder={t('notes')}
                   rows={3}
                 />
               </div>
 
               {previewUrl && (
                 <div>
-                  <Label>Preview</Label>
+                  <Label>{tCommon('preview') || 'Preview'}</Label>
                   <div className="mt-2 border rounded-lg p-4 bg-gray-50">
                     <img src={previewUrl} alt="X-ray preview" className="max-w-full h-auto max-h-96" />
                   </div>
@@ -262,7 +266,7 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
                 className="w-full"
               >
                 <Upload className="h-4 w-4 mr-2" />
-                {uploading ? 'Uploading...' : 'Upload X-Ray'}
+                {uploading ? tCommon('loading') : t('uploadButton')}
               </Button>
 
               <Alert>
@@ -270,7 +274,7 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
                 <AlertDescription>
                   <strong>Supported X-Ray Systems:</strong> Carestream, Planmeca, Sirona, Vatech (DICOM format)
                   <br />
-                  <strong>AI Analysis:</strong> After upload, click "Analyze" to generate AI report using GPT-4 Vision
+                  <strong>AI Analysis:</strong> After upload, click "{t('analyze')}" to generate AI report using GPT-4 Vision
                 </AlertDescription>
               </Alert>
             </TabsContent>
@@ -279,7 +283,7 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
               {xrays.length === 0 ? (
                 <div className="text-center py-12">
                   <File className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No X-rays found</p>
+                  <p className="text-muted-foreground">{t('noXrays')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -321,7 +325,7 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
                             onClick={() => setSelectedXray(xray)}
                           >
                             <FileText className="h-3 w-3 mr-1" />
-                            View Details
+                            {tCommon('view') || 'View'} {tCommon('details') || 'Details'}
                           </Button>
                           {!xray.aiAnalysis && (
                             <Button
@@ -330,7 +334,7 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
                               disabled={analyzing}
                             >
                               <Brain className="h-3 w-3 mr-1" />
-                              {analyzing ? 'Analyzing...' : 'Analyze'}
+                              {analyzing ? t('analyzing') : t('analyze')}
                             </Button>
                           )}
                         </div>
@@ -349,7 +353,7 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>X-Ray Details</CardTitle>
+              <CardTitle>{t('title')} {tCommon('details') || 'Details'}</CardTitle>
               <Button variant="ghost" size="sm" onClick={() => setSelectedXray(null)}>
                 <X className="h-4 w-4" />
               </Button>
@@ -364,16 +368,16 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Type</Label>
+                <Label>{t('xrayType')}</Label>
                 <p className="font-semibold">{getXRayTypeLabel(selectedXray.xrayType)}</p>
               </div>
               <div>
-                <Label>Date Taken</Label>
+                <Label>{t('dateTaken')}</Label>
                 <p className="font-semibold">{new Date(selectedXray.dateTaken).toLocaleDateString()}</p>
               </div>
               {selectedXray.teethIncluded && selectedXray.teethIncluded.length > 0 && (
                 <div>
-                  <Label>Teeth Included</Label>
+                  <Label>{t('teethIncluded')}</Label>
                   <p className="font-semibold">{selectedXray.teethIncluded.join(', ')}</p>
                 </div>
               )}
@@ -383,33 +387,36 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <Brain className="h-4 w-4" />
-                  AI Analysis Report
+                  {t('findings')}
                 </h4>
                 {selectedXray.aiAnalysis.findings && (
                   <div className="text-sm space-y-2">
                     <div>
-                      <strong>Findings:</strong>
+                      <strong>{t('findings')}:</strong>
                       <p className="mt-1">{selectedXray.aiAnalysis.findings}</p>
                     </div>
                     {selectedXray.aiAnalysis.confidence && (
                       <div>
-                        <strong>Confidence:</strong> {(selectedXray.aiAnalysis.confidence * 100).toFixed(1)}%
+                        <strong>{tCommon('confidence') || 'Confidence'}:</strong> {(selectedXray.aiAnalysis.confidence * 100).toFixed(1)}%
                       </div>
                     )}
                     {selectedXray.aiAnalysis.recommendations && (
                       <div>
-                        <strong>Recommendations:</strong>
+                        <strong>{t('recommendations')}:</strong>
                         <p className="mt-1">{selectedXray.aiAnalysis.recommendations}</p>
                       </div>
                     )}
                   </div>
+                )}
+                {!selectedXray.aiAnalysis.findings && (
+                  <p className="text-sm text-muted-foreground">{t('noAnalysis')}</p>
                 )}
               </div>
             )}
 
             {selectedXray.notes && (
               <div>
-                <Label>Notes</Label>
+                <Label>{t('notes')}</Label>
                 <p className="text-sm text-muted-foreground">{selectedXray.notes}</p>
               </div>
             )}

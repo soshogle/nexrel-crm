@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { FileText, Send, CheckCircle2, Clock, XCircle, AlertCircle, RefreshCw, Download } from 'lucide-react';
 import { CDT_CODES } from '@/lib/dental/cdt-codes';
 
@@ -42,6 +43,10 @@ interface RAMQIntegrationProps {
 }
 
 export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
+  const t = useTranslations('dental.ramq');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
   const [claims, setClaims] = useState<RAMQClaim[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedClaim, setSelectedClaim] = useState<RAMQClaim | null>(null);
@@ -95,7 +100,7 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
 
   const handleSubmitClaim = async () => {
     if (!patientRAMQNumber || !patientName || !procedureCode || !serviceDate || !amount) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('fillRequired'));
       return;
     }
 
@@ -120,16 +125,16 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
       });
 
       if (response.ok) {
-        toast.success('Claim created successfully');
+        toast.success(tToasts('claimCreated'));
         setShowSubmitForm(false);
         resetForm();
         await fetchClaims();
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Failed to create claim');
+        toast.error(error.error || tToasts('claimCreateFailed'));
       }
     } catch (error: any) {
-      toast.error('Failed to submit claim: ' + error.message);
+      toast.error(tToasts('claimCreateFailed') + ': ' + error.message);
     }
   };
 
@@ -140,14 +145,14 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
       });
 
       if (response.ok) {
-        toast.success('Claim submitted to RAMQ');
+        toast.success(tToasts('claimSubmitted'));
         await fetchClaims();
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Failed to submit claim');
+        toast.error(error.error || tToasts('claimSubmitFailed'));
       }
     } catch (error: any) {
-      toast.error('Failed to submit claim: ' + error.message);
+      toast.error(tToasts('claimSubmitFailed') + ': ' + error.message);
     }
   };
 
@@ -200,14 +205,14 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>RAMQ Claim Management</CardTitle>
+              <CardTitle>{t('title')}</CardTitle>
               <CardDescription>
-                Submit and track RAMQ insurance claims. Claims can be submitted via Facturation.net integration.
+                {t('description')}
               </CardDescription>
             </div>
             <Button onClick={() => setShowSubmitForm(true)}>
               <FileText className="h-4 w-4 mr-2" />
-              New Claim
+              {t('createClaim')}
             </Button>
           </div>
         </CardHeader>
@@ -215,22 +220,22 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
         <CardContent>
           <Tabs defaultValue="claims">
             <TabsList>
-              <TabsTrigger value="claims">Claims</TabsTrigger>
-              <TabsTrigger value="submit">Submit New Claim</TabsTrigger>
+              <TabsTrigger value="claims">{t('claims')}</TabsTrigger>
+              <TabsTrigger value="submit">{t('createClaim')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="claims" className="space-y-4">
               {loading ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading claims...</p>
+                  <p className="text-muted-foreground">{tCommon('loading')}</p>
                 </div>
               ) : claims.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No claims found</p>
+                  <p className="text-muted-foreground">{t('noClaims')}</p>
                   <Button onClick={() => setShowSubmitForm(true)} className="mt-4">
-                    Create First Claim
+                    {t('createClaim')}
                   </Button>
                 </div>
               ) : (
@@ -282,13 +287,13 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
                                 onClick={() => handleSubmitToRAMQ(claim.id)}
                               >
                                 <Send className="h-4 w-4 mr-1" />
-                                Submit
+                                {t('submitToRAMQ')}
                               </Button>
                             )}
                             {claim.status === 'APPROVED' && (
                               <Button size="sm" variant="outline">
                                 <Download className="h-4 w-4 mr-1" />
-                                Download
+                                {tCommon('download') || 'Download'}
                               </Button>
                             )}
                             <Button
@@ -296,7 +301,7 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
                               variant="outline"
                               onClick={() => setSelectedClaim(claim)}
                             >
-                              View Details
+                              {tCommon('view') || 'View'} {tCommon('details') || 'Details'}
                             </Button>
                           </div>
                         </div>
@@ -310,37 +315,37 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
             <TabsContent value="submit" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Submit New RAMQ Claim</CardTitle>
+                  <CardTitle>{t('createClaim')}</CardTitle>
                   <CardDescription>
-                    Enter claim information. Claims will be submitted through Facturation.net integration.
+                    {t('description')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="patientName">Patient Name *</Label>
+                      <Label htmlFor="patientName">{t('patientName')} *</Label>
                       <Input
                         id="patientName"
                         value={patientName}
                         onChange={(e) => setPatientName(e.target.value)}
-                        placeholder="Enter patient name"
+                        placeholder={t('patientName')}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="ramqNumber">RAMQ Number *</Label>
+                      <Label htmlFor="ramqNumber">{t('ramqNumber')} *</Label>
                       <Input
                         id="ramqNumber"
                         value={patientRAMQNumber}
                         onChange={(e) => setPatientRAMQNumber(e.target.value)}
-                        placeholder="Enter RAMQ number"
+                        placeholder={t('ramqNumber')}
                         maxLength={12}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="procedureCode">Procedure Code *</Label>
+                      <Label htmlFor="procedureCode">{t('procedureCode')} *</Label>
                       <Select value={procedureCode} onValueChange={setProcedureCode}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select procedure" />
+                          <SelectValue placeholder={`${tCommon('select') || 'Select'} ${t('procedureCode')}`} />
                         </SelectTrigger>
                         <SelectContent>
                           {CDT_CODES.map((code) => (
@@ -352,7 +357,7 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="serviceDate">Service Date *</Label>
+                      <Label htmlFor="serviceDate">{t('serviceDate')} *</Label>
                       <Input
                         id="serviceDate"
                         type="date"
@@ -361,7 +366,7 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="amount">Amount ($) *</Label>
+                      <Label htmlFor="amount">{t('amount')} ($) *</Label>
                       <Input
                         id="amount"
                         type="number"
@@ -373,22 +378,22 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="notes">Notes</Label>
+                    <Label htmlFor="notes">{t('notes')}</Label>
                     <Textarea
                       id="notes"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Additional notes or comments"
+                      placeholder={t('notes')}
                       rows={3}
                     />
                   </div>
                   <div className="flex gap-2">
                     <Button onClick={handleSubmitClaim}>
                       <Send className="h-4 w-4 mr-2" />
-                      Create Claim
+                      {t('submit')}
                     </Button>
                     <Button variant="outline" onClick={resetForm}>
-                      Reset
+                      {tCommon('reset') || tCommon('cancel')}
                     </Button>
                   </div>
                 </CardContent>
@@ -403,68 +408,68 @@ export function RAMQIntegration({ userId, leadId }: RAMQIntegrationProps) {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Claim Details</CardTitle>
+              <CardTitle>{tCommon('details') || 'Claim Details'}</CardTitle>
               <Button variant="ghost" size="sm" onClick={() => setSelectedClaim(null)}>
-                Close
+                {tCommon('close')}
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Patient Name</Label>
+                <Label>{t('patientName')}</Label>
                 <p className="font-semibold">{selectedClaim.patientName}</p>
               </div>
               <div>
-                <Label>RAMQ Number</Label>
+                <Label>{t('ramqNumber')}</Label>
                 <p className="font-semibold">{selectedClaim.patientRAMQNumber}</p>
               </div>
               <div>
-                <Label>Procedure</Label>
+                <Label>{t('procedureCode')}</Label>
                 <p className="font-semibold">{selectedClaim.procedureCode} - {selectedClaim.procedureName}</p>
               </div>
               <div>
-                <Label>Amount</Label>
+                <Label>{t('amount')}</Label>
                 <p className="font-semibold">${selectedClaim.amount.toFixed(2)}</p>
               </div>
               <div>
-                <Label>Service Date</Label>
+                <Label>{t('serviceDate')}</Label>
                 <p className="font-semibold">{new Date(selectedClaim.serviceDate).toLocaleDateString()}</p>
               </div>
               <div>
-                <Label>Status</Label>
+                <Label>{t('status')}</Label>
                 <Badge className={getStatusColor(selectedClaim.status)}>
                   {selectedClaim.status}
                 </Badge>
               </div>
               {selectedClaim.claimNumber && (
                 <div>
-                  <Label>Claim Number</Label>
+                  <Label>{t('claimNumber')}</Label>
                   <p className="font-semibold">{selectedClaim.claimNumber}</p>
                 </div>
               )}
               {selectedClaim.submissionDate && (
                 <div>
-                  <Label>Submitted</Label>
+                  <Label>{t('submissionDate')}</Label>
                   <p className="font-semibold">{new Date(selectedClaim.submissionDate).toLocaleString()}</p>
                 </div>
               )}
               {selectedClaim.responseDate && (
                 <div>
-                  <Label>Response Date</Label>
+                  <Label>{t('responseDate')}</Label>
                   <p className="font-semibold">{new Date(selectedClaim.responseDate).toLocaleString()}</p>
                 </div>
               )}
             </div>
             {selectedClaim.notes && (
               <div>
-                <Label>Notes</Label>
+                <Label>{t('notes')}</Label>
                 <p className="text-sm text-muted-foreground">{selectedClaim.notes}</p>
               </div>
             )}
             {selectedClaim.rejectionReason && (
               <div className="p-4 bg-red-50 border border-red-200 rounded">
-                <Label className="text-red-800">Rejection Reason</Label>
+                <Label className="text-red-800">{t('rejectionReason')}</Label>
                 <p className="text-sm text-red-800">{selectedClaim.rejectionReason}</p>
               </div>
             )}

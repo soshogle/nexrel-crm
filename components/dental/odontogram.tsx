@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Save, RotateCcw, Box, Grid3x3 } from 'lucide-react';
 import { Odontogram3D } from './odontogram-3d';
 
@@ -78,18 +79,22 @@ const TOOTH_POSITIONS = [
   { number: '32', position: { row: 1, col: 0 }, label: '32' }, // Lower right third molar
 ];
 
-const TOOTH_CONDITIONS = [
-  { value: 'healthy', label: 'Healthy', color: 'bg-green-100 text-green-800' },
-  { value: 'caries', label: 'Caries', color: 'bg-red-100 text-red-800' },
-  { value: 'crown', label: 'Crown', color: 'bg-blue-100 text-blue-800' },
-  { value: 'filling', label: 'Filling', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'missing', label: 'Missing', color: 'bg-gray-100 text-gray-800' },
-  { value: 'extraction', label: 'Extraction', color: 'bg-purple-100 text-purple-800' },
-  { value: 'implant', label: 'Implant', color: 'bg-indigo-100 text-indigo-800' },
-  { value: 'root_canal', label: 'Root Canal', color: 'bg-orange-100 text-orange-800' },
-];
-
 export function Odontogram({ leadId, initialData, onSave, readOnly = false }: OdontogramProps) {
+  const t = useTranslations('dental.odontogram');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
+  const TOOTH_CONDITIONS = [
+    { value: 'healthy', label: t('healthy'), color: 'bg-green-100 text-green-800' },
+    { value: 'caries', label: t('caries'), color: 'bg-red-100 text-red-800' },
+    { value: 'crown', label: t('crown'), color: 'bg-blue-100 text-blue-800' },
+    { value: 'filling', label: t('filling'), color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'missing', label: t('missing'), color: 'bg-gray-100 text-gray-800' },
+    { value: 'extraction', label: t('extraction'), color: 'bg-purple-100 text-purple-800' },
+    { value: 'implant', label: t('implant'), color: 'bg-indigo-100 text-indigo-800' },
+    { value: 'root_canal', label: t('rootCanal'), color: 'bg-orange-100 text-orange-800' },
+  ];
+
   const [toothData, setToothData] = useState<OdontogramData>(initialData || {});
   const [selectedTooth, setSelectedTooth] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
@@ -132,7 +137,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
     }));
     setSelectedTooth(null);
     setNotes('');
-    toast.success('Notes saved');
+    toast.success(t('saved'));
   };
 
   const handleSave = async () => {
@@ -141,9 +146,9 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
     try {
       setSaving(true);
       await onSave(toothData);
-      toast.success('Odontogram saved successfully');
+      toast.success(tToasts('odontogramSaved'));
     } catch (error: any) {
-      toast.error('Failed to save odontogram: ' + error.message);
+      toast.error(tToasts('odontogramSaveFailed') + ': ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -154,7 +159,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
     setToothData({});
     setSelectedTooth(null);
     setNotes('');
-    toast.info('Odontogram reset');
+    toast.info(t('resetConfirm'));
   };
 
   const getToothCondition = (toothNumber: string) => {
@@ -180,9 +185,9 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Dental Odontogram - 3D View</CardTitle>
+                <CardTitle>{t('title')} - {t('view3D')}</CardTitle>
                 <CardDescription>
-                  Rotate, zoom, and interact with the 3D tooth chart
+                  {t('description')}
                 </CardDescription>
               </div>
               <div className="flex gap-2">
@@ -192,7 +197,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                   onClick={() => setViewMode('2d')}
                 >
                   <Grid3x3 className="h-4 w-4 mr-2" />
-                  2D View
+                  {t('view2D')}
                 </Button>
                 <Button
                   variant={getButtonVariant('3d')}
@@ -200,7 +205,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                   onClick={() => setViewMode('3d')}
                 >
                   <Box className="h-4 w-4 mr-2" />
-                  3D View
+                  {t('view3D')}
                 </Button>
                 {!readOnly && (
                   <Button
@@ -209,7 +214,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                     disabled={saving}
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {saving ? 'Saving...' : 'Save Chart'}
+                    {saving ? tCommon('loading') : tCommon('save')}
                   </Button>
                 )}
               </div>
@@ -232,9 +237,9 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Dental Odontogram</CardTitle>
+              <CardTitle>{t('title')}</CardTitle>
               <CardDescription>
-                Universal Numbering System (1-32) - Click on a tooth to edit
+                {t('description')}
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -244,7 +249,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                 onClick={() => setViewMode('2d')}
               >
                 <Grid3x3 className="h-4 w-4 mr-2" />
-                2D View
+                {t('view2D')}
               </Button>
               <Button
                 variant={getButtonVariant('3d')}
@@ -252,7 +257,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                 onClick={() => setViewMode('3d')}
               >
                 <Box className="h-4 w-4 mr-2" />
-                3D View
+                {t('view3D')}
               </Button>
               {!readOnly && (
                 <>
@@ -263,7 +268,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                     disabled={saving}
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
-                    Reset
+                    {t('reset')}
                   </Button>
                   <Button
                     size="sm"
@@ -271,7 +276,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                     disabled={saving}
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    {saving ? 'Saving...' : 'Save Chart'}
+                    {saving ? tCommon('loading') : tCommon('save')}
                   </Button>
                 </>
               )}
@@ -283,7 +288,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
           <div className="relative bg-white p-6 rounded-lg border-2 border-gray-200">
             {/* Upper Arch Label */}
             <div className="text-center mb-2 text-sm font-semibold text-gray-600">
-              Maxilla (Upper Arch)
+              {t('upperArch')}
             </div>
             
             {/* Upper Arch */}
@@ -321,7 +326,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
 
             {/* Lower Arch Label */}
             <div className="text-center mt-4 mb-2 text-sm font-semibold text-gray-600">
-              Mandible (Lower Arch)
+              {t('lowerArch')}
             </div>
 
             {/* Lower Arch */}
@@ -357,7 +362,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
 
           {/* Legend */}
           <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <h4 className="text-sm font-semibold mb-2">Condition Legend:</h4>
+            <h4 className="text-sm font-semibold mb-2">{t('condition')}:</h4>
             <div className="flex flex-wrap gap-2">
               {TOOTH_CONDITIONS.map(condition => (
                 <Badge key={condition.value} className={condition.color}>
@@ -371,11 +376,11 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
           {selectedTooth && !readOnly && (
             <Card className="mt-4">
               <CardHeader>
-                <CardTitle>Edit Tooth {selectedTooth}</CardTitle>
+                <CardTitle>{t('toothNumber')} {selectedTooth}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>Condition</Label>
+                  <Label>{t('condition')}</Label>
                   <Select
                     value={toothData[selectedTooth]?.condition || 'healthy'}
                     onValueChange={(value) => handleConditionChange(selectedTooth, value)}
@@ -394,7 +399,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                 </div>
 
                 <div>
-                  <Label>Date</Label>
+                  <Label>{t('date')}</Label>
                   <Input
                     type="date"
                     value={toothData[selectedTooth]?.date || new Date().toISOString().split('T')[0]}
@@ -411,7 +416,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                 </div>
 
                 <div>
-                  <Label>Procedure Code (CDT)</Label>
+                  <Label>{t('procedureCode')}</Label>
                   <Input
                     placeholder="e.g., D0120"
                     value={toothData[selectedTooth]?.procedureCode || ''}
@@ -428,18 +433,18 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                 </div>
 
                 <div>
-                  <Label>Notes</Label>
+                  <Label>{t('notes')}</Label>
                   <Textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Add notes about this tooth..."
+                    placeholder={t('selectTooth')}
                     rows={3}
                   />
                 </div>
 
                 <div className="flex gap-2">
                   <Button onClick={handleSaveNotes} size="sm">
-                    Save Notes
+                    {t('save')}
                   </Button>
                   <Button
                     variant="outline"
@@ -449,7 +454,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                       setNotes('');
                     }}
                   >
-                    Close
+                    {tCommon('close')}
                   </Button>
                 </div>
               </CardContent>

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { User, Clock, CheckCircle2, AlertCircle, Phone, Mail, Calendar } from 'lucide-react';
 
 interface Appointment {
@@ -31,13 +32,14 @@ interface TouchScreenWelcomeProps {
 }
 
 export function TouchScreenWelcome({ userId, onCheckIn }: TouchScreenWelcomeProps) {
+  const t = useTranslations('dental.touchScreen');
+  const tToasts = useTranslations('dental.toasts');
   const [searchQuery, setSearchQuery] = useState('');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [checkedIn, setCheckedIn] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [language, setLanguage] = useState<'en' | 'fr'>('en');
 
   useEffect(() => {
     fetchTodayAppointments();
@@ -82,7 +84,7 @@ export function TouchScreenWelcome({ userId, onCheckIn }: TouchScreenWelcomeProp
       }
     } catch (error) {
       console.error('Error fetching appointments:', error);
-      toast.error('Failed to load appointments');
+      toast.error(tToasts('appointmentsLoadFailed'));
     } finally {
       setLoading(false);
     }
@@ -99,16 +101,16 @@ export function TouchScreenWelcome({ userId, onCheckIn }: TouchScreenWelcomeProp
       });
 
       if (response.ok) {
-        toast.success('Checked in successfully');
+        toast.success(tToasts('checkInSuccess'));
         setCheckedIn(true);
         setSelectedAppointment(null);
         await fetchTodayAppointments();
         onCheckIn?.(appointmentId);
       } else {
-        toast.error('Failed to check in');
+        toast.error(tToasts('checkInFailed'));
       }
     } catch (error: any) {
-      toast.error('Failed to check in: ' + error.message);
+      toast.error(tToasts('checkInFailed') + ': ' + error.message);
     }
   };
 
@@ -117,7 +119,7 @@ export function TouchScreenWelcome({ userId, onCheckIn }: TouchScreenWelcomeProp
       const date = new Date(dateString);
       return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     } catch {
-      return 'Invalid time';
+      return t('invalidTime');
     }
   };
 
@@ -136,55 +138,17 @@ export function TouchScreenWelcome({ userId, onCheckIn }: TouchScreenWelcomeProp
     }
   };
 
-  const translations = {
-    en: {
-      title: 'Welcome',
-      subtitle: 'Please check in for your appointment',
-      searchPlaceholder: 'Search by name, email, or phone...',
-      noAppointments: 'No appointments found for today',
-      checkIn: 'Check In',
-      checkedIn: 'Checked In',
-      appointmentTime: 'Appointment Time',
-      status: 'Status',
-      selectAppointment: 'Select your appointment',
-      language: 'Language',
-    },
-    fr: {
-      title: 'Bienvenue',
-      subtitle: 'Veuillez vous enregistrer pour votre rendez-vous',
-      searchPlaceholder: 'Rechercher par nom, email ou téléphone...',
-      noAppointments: 'Aucun rendez-vous trouvé pour aujourd\'hui',
-      checkIn: 'Enregistrement',
-      checkedIn: 'Enregistré',
-      appointmentTime: 'Heure du rendez-vous',
-      status: 'Statut',
-      selectAppointment: 'Sélectionnez votre rendez-vous',
-      language: 'Langue',
-    },
-  };
-
-  const t = translations[language];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4 md:p-8">
       <Card className="max-w-6xl mx-auto shadow-2xl">
         <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-4xl font-bold mb-2">{t.title}</CardTitle>
+              <CardTitle className="text-4xl font-bold mb-2">{t('title')}</CardTitle>
               <CardDescription className="text-blue-100 text-lg">
-                {t.subtitle}
+                {t('subtitle')}
               </CardDescription>
             </div>
-            <Select value={language} onValueChange={(value: 'en' | 'fr') => setLanguage(value)}>
-              <SelectTrigger className="w-32 bg-white/20 border-white/30 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="fr">Français</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardHeader>
 
@@ -194,7 +158,7 @@ export function TouchScreenWelcome({ userId, onCheckIn }: TouchScreenWelcomeProp
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t.searchPlaceholder}
+              placeholder={t('searchPlaceholder')}
               className="text-2xl h-16 px-6"
             />
           </div>
@@ -202,12 +166,12 @@ export function TouchScreenWelcome({ userId, onCheckIn }: TouchScreenWelcomeProp
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-lg text-gray-600">Loading appointments...</p>
+              <p className="text-lg text-gray-600">{t('loadingAppointments')}</p>
             </div>
           ) : filteredAppointments.length === 0 ? (
             <div className="text-center py-12">
               <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-xl text-gray-600">{t.noAppointments}</p>
+              <p className="text-xl text-gray-600">{t('noAppointments')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -279,7 +243,7 @@ export function TouchScreenWelcome({ userId, onCheckIn }: TouchScreenWelcomeProp
                           size="lg"
                         >
                           <CheckCircle2 className="h-5 w-5 mr-2" />
-                          {t.checkIn}
+                          {t('checkIn')}
                         </Button>
                       </div>
                     )}
@@ -288,7 +252,7 @@ export function TouchScreenWelcome({ userId, onCheckIn }: TouchScreenWelcomeProp
                       <div className="mt-4 pt-4 border-t">
                         <div className="flex items-center justify-center gap-2 text-green-600">
                           <CheckCircle2 className="h-5 w-5" />
-                          <span className="font-semibold">{t.checkedIn}</span>
+                          <span className="font-semibold">{t('checkedIn')}</span>
                         </div>
                       </div>
                     )}

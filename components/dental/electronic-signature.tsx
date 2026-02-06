@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { PenTool, X, Check, Download, Upload } from 'lucide-react';
 
 interface ElectronicSignatureProps {
@@ -29,6 +30,10 @@ export function ElectronicSignature({
   onSignatureComplete,
   readOnly = false,
 }: ElectronicSignatureProps) {
+  const t = useTranslations('dental.signature');
+  const tToasts = useTranslations('dental.toasts');
+  const tCommon = useTranslations('common');
+  
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [signatureData, setSignatureData] = useState<string | null>(null);
@@ -119,12 +124,12 @@ export function ElectronicSignature({
 
   const handleSaveSignature = async () => {
     if (!signatureData) {
-      toast.error('Please provide a signature');
+      toast.error(t('provideSignature'));
       return;
     }
 
     if (!signerName.trim()) {
-      toast.error('Please enter signer name');
+      toast.error(t('enterName'));
       return;
     }
 
@@ -147,14 +152,14 @@ export function ElectronicSignature({
       });
 
       if (response.ok) {
-        toast.success('Signature saved successfully');
+        toast.success(tToasts('signatureSaved'));
         onSignatureComplete?.(signatureData);
       } else {
         const error = await response.json();
-        toast.error(error.error || 'Failed to save signature');
+        toast.error(error.error || tToasts('signatureSaveFailed'));
       }
     } catch (error: any) {
-      toast.error('Failed to save signature: ' + error.message);
+      toast.error(tToasts('signatureSaveFailed') + ': ' + error.message);
     }
   };
 
@@ -170,15 +175,15 @@ export function ElectronicSignature({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Electronic Signature</CardTitle>
+        <CardTitle>{t('title')}</CardTitle>
         <CardDescription>
-          Sign documents electronically. Signatures are stored securely and comply with Law 25 requirements.
+          {t('description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Signature Canvas */}
         <div className="space-y-2">
-          <Label>Signature</Label>
+          <Label>{t('signHere')}</Label>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white">
             <canvas
               ref={canvasRef}
@@ -197,12 +202,12 @@ export function ElectronicSignature({
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={clearSignature}>
                 <X className="h-4 w-4 mr-1" />
-                Clear
+                {t('clear')}
               </Button>
               {signatureData && (
                 <Button variant="outline" size="sm" onClick={downloadSignature}>
                   <Download className="h-4 w-4 mr-1" />
-                  Download
+                  {t('download')}
                 </Button>
               )}
             </div>
@@ -212,17 +217,17 @@ export function ElectronicSignature({
         {/* Signer Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="signerName">Signer Name *</Label>
+            <Label htmlFor="signerName">{t('signerName')} *</Label>
             <Input
               id="signerName"
               value={signerName}
               onChange={(e) => setSignerName(e.target.value)}
-              placeholder="Enter full name"
+              placeholder={t('signerName')}
               disabled={readOnly}
             />
           </div>
           <div>
-            <Label htmlFor="signerTitle">Title/Role</Label>
+            <Label htmlFor="signerTitle">{tCommon('title') || 'Title'}/{tCommon('role') || 'Role'}</Label>
             <Input
               id="signerTitle"
               value={signerTitle}
@@ -232,7 +237,7 @@ export function ElectronicSignature({
             />
           </div>
           <div>
-            <Label htmlFor="signatureDate">Signature Date *</Label>
+            <Label htmlFor="signatureDate">{t('signatureDate')} *</Label>
             <Input
               id="signatureDate"
               type="date"
@@ -245,12 +250,12 @@ export function ElectronicSignature({
 
         {/* Notes */}
         <div>
-          <Label htmlFor="notes">Notes</Label>
+          <Label htmlFor="notes">{t('notes') || tCommon('notes')}</Label>
           <Textarea
             id="notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Additional notes or context"
+            placeholder={t('notes') || 'Additional notes or context'}
             rows={3}
             disabled={readOnly}
           />
@@ -261,11 +266,11 @@ export function ElectronicSignature({
           <div className="flex gap-2">
             <Button onClick={handleSaveSignature} disabled={!signatureData || !signerName.trim()}>
               <Check className="h-4 w-4 mr-2" />
-              Save Signature
+              {t('save')}
             </Button>
             <Button variant="outline" onClick={clearSignature}>
               <X className="h-4 w-4 mr-2" />
-              Clear All
+              {t('clear')}
             </Button>
           </div>
         )}

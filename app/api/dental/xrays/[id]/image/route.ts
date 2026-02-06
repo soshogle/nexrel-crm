@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
+import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,7 +21,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     // Find X-ray
@@ -33,7 +34,7 @@ export async function GET(
 
     if (!xray) {
       return NextResponse.json(
-        { error: 'X-ray not found' },
+        { error: await t('api.xrayNotFound') },
         { status: 404 }
       );
     }
@@ -49,19 +50,19 @@ export async function GET(
       // Note: This would need encryption key - for now, return error
       // In production, you'd store the encryption key with the X-ray record
       return NextResponse.json(
-        { error: 'Image download not yet implemented. Please use imageUrl field.' },
+        { error: await t('api.imageDownloadNotImplemented') },
         { status: 501 }
       );
     }
 
     return NextResponse.json(
-      { error: 'No image available' },
+      { error: await t('api.noImageAvailable') },
       { status: 404 }
     );
   } catch (error) {
     console.error('Error fetching X-ray image:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch image' },
+      { error: await t('api.failedToFetchImage') },
       { status: 500 }
     );
   }

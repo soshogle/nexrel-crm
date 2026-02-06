@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
     const body = await request.json();
@@ -33,14 +34,14 @@ export async function POST(request: NextRequest) {
 
     if (!userId || !signatureData || !signerName || !signatureDate) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: await t('api.missingRequiredFields') },
         { status: 400 }
       );
     }
 
     // Verify user owns the userId
     if (userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
     }
 
     // Store signature in DentalFormResponse if documentId is a form response
@@ -143,13 +144,13 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'No valid document or lead found' },
+      { error: await t('api.notFound') },
       { status: 404 }
     );
   } catch (error) {
     console.error('Error saving signature:', error);
     return NextResponse.json(
-      { error: 'Failed to save signature' },
+      { error: await t('api.saveSignatureFailed') },
       { status: 500 }
     );
   }
