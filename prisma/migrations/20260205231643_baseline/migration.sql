@@ -1,0 +1,9404 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm.
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm.
+-- CreateEnum
+CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'AGENCY_ADMIN', 'USER', 'BUSINESS_OWNER', 'PARENT');
+
+-- CreateEnum
+CREATE TYPE "Industry" AS ENUM ('RESTAURANT', 'SPORTS_CLUB', 'CONSTRUCTION', 'MEDICAL', 'DENTIST', 'MEDICAL_SPA', 'OPTOMETRIST', 'HEALTH_CLINIC', 'REAL_ESTATE', 'HOSPITAL', 'TECHNOLOGY');
+
+-- CreateEnum
+CREATE TYPE "LeadStatus" AS ENUM ('NEW', 'CONTACTED', 'RESPONDED', 'QUALIFIED', 'CONVERTED', 'LOST');
+
+-- CreateEnum
+CREATE TYPE "CampaignType" AS ENUM ('REVIEW_REQUEST', 'REFERRAL_REQUEST', 'FOLLOW_UP', 'CUSTOM', 'EMAIL', 'SMS', 'MULTI_CHANNEL', 'VOICE_CALL');
+
+-- CreateEnum
+CREATE TYPE "CampaignStatus" AS ENUM ('DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'SCHEDULED', 'RUNNING');
+
+-- CreateEnum
+CREATE TYPE "CampaignFrequency" AS ENUM ('ONE_TIME', 'DAILY', 'WEEKLY', 'MONTHLY');
+
+-- CreateEnum
+CREATE TYPE "CampaignLeadStatus" AS ENUM ('PENDING', 'SENT', 'DELIVERED', 'RESPONDED', 'FAILED', 'COMPLETED', 'CONVERTED');
+
+-- CreateEnum
+CREATE TYPE "ReviewSource" AS ENUM ('GOOGLE', 'FACEBOOK', 'YELP', 'TRUSTPILOT', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "ReferralStatus" AS ENUM ('PENDING', 'CONTACTED', 'CONVERTED', 'EXPIRED', 'DECLINED');
+
+-- CreateEnum
+CREATE TYPE "VoiceAgentType" AS ENUM ('INBOUND', 'OUTBOUND', 'BOTH');
+
+-- CreateEnum
+CREATE TYPE "VoiceAgentStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'TESTING');
+
+-- CreateEnum
+CREATE TYPE "CallDirection" AS ENUM ('INBOUND', 'OUTBOUND', 'PREVIEW');
+
+-- CreateEnum
+CREATE TYPE "CallStatus" AS ENUM ('INITIATED', 'RINGING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'NO_ANSWER', 'BUSY');
+
+-- CreateEnum
+CREATE TYPE "CallOutcome" AS ENUM ('APPOINTMENT_BOOKED', 'INFORMATION_PROVIDED', 'TRANSFERRED_TO_HUMAN', 'VOICEMAIL', 'HUNG_UP', 'ERROR');
+
+-- CreateEnum
+CREATE TYPE "OutboundCallStatus" AS ENUM ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'CANCELLED', 'NO_ANSWER', 'BUSY');
+
+-- CreateEnum
+CREATE TYPE "CalendarProvider" AS ENUM ('GOOGLE', 'OUTLOOK', 'OFFICE365', 'APPLE', 'EXTERNAL_API');
+
+-- CreateEnum
+CREATE TYPE "SyncStatus" AS ENUM ('SYNCED', 'PENDING', 'FAILED', 'DISABLED');
+
+-- CreateEnum
+CREATE TYPE "ChannelType" AS ENUM ('SMS', 'EMAIL', 'WHATSAPP', 'INSTAGRAM', 'FACEBOOK_MESSENGER', 'GOOGLE_BUSINESS', 'WEBSITE_CHAT');
+
+-- CreateEnum
+CREATE TYPE "ChannelConnectionStatus" AS ENUM ('CONNECTED', 'DISCONNECTED', 'ERROR', 'PENDING_AUTH');
+
+-- CreateEnum
+CREATE TYPE "ConversationStatus" AS ENUM ('ACTIVE', 'ARCHIVED', 'UNREAD', 'SNOOZED');
+
+-- CreateEnum
+CREATE TYPE "MessageDirection" AS ENUM ('INBOUND', 'OUTBOUND');
+
+-- CreateEnum
+CREATE TYPE "MessageStatus" AS ENUM ('SENDING', 'SENT', 'DELIVERED', 'READ', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "DealPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
+
+-- CreateEnum
+CREATE TYPE "DealActivityType" AS ENUM ('NOTE', 'CALL', 'EMAIL', 'MEETING', 'TASK_COMPLETED', 'STAGE_CHANGED', 'VALUE_CHANGED', 'CREATED');
+
+-- CreateEnum
+CREATE TYPE "WorkflowStatus" AS ENUM ('DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED', 'SCHEDULED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "WorkflowTriggerType" AS ENUM ('LEAD_CREATED', 'LEAD_STATUS_CHANGED', 'DEAL_CREATED', 'DEAL_STAGE_CHANGED', 'DEAL_WON', 'DEAL_LOST', 'EMAIL_OPENED', 'EMAIL_CLICKED', 'SMS_REPLIED', 'FORM_SUBMITTED', 'TAG_ADDED', 'TAG_REMOVED', 'APPOINTMENT_BOOKED', 'CUSTOM_FIELD_CHANGED', 'TIME_BASED', 'MANUAL', 'MESSAGE_RECEIVED', 'MESSAGE_WITH_KEYWORDS', 'AFTER_HOURS_MESSAGE', 'CONVERSATION_STARTED', 'LEAD_NO_RESPONSE', 'DEAL_STALE', 'SCHEDULED');
+
+-- CreateEnum
+CREATE TYPE "WorkflowActionType" AS ENUM ('SEND_EMAIL', 'SEND_SMS', 'CREATE_TASK', 'UPDATE_LEAD', 'UPDATE_DEAL', 'ADD_TAG', 'REMOVE_TAG', 'MOVE_DEAL_STAGE', 'CHANGE_LEAD_STATUS', 'ASSIGN_TO_USER', 'CREATE_APPOINTMENT', 'WAIT_DELAY', 'CONDITIONAL_SPLIT', 'WEBHOOK', 'AI_GENERATE_MESSAGE', 'AI_SCORE_LEAD', 'SEND_MESSAGE', 'CREATE_LEAD_FROM_MESSAGE', 'ASSIGN_TO_DEAL', 'AUTO_REPLY', 'NOTIFY_USER', 'SCHEDULE_FOLLOW_UP', 'CREATE_DEAL_FROM_LEAD', 'MAKE_OUTBOUND_CALL');
+
+-- CreateEnum
+CREATE TYPE "WorkflowEnrollmentStatus" AS ENUM ('ACTIVE', 'COMPLETED', 'FAILED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "WorkflowActionExecutionStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'SKIPPED');
+
+-- CreateEnum
+CREATE TYPE "EmailCampaignStatus" AS ENUM ('DRAFT', 'SCHEDULED', 'SENDING', 'SENT', 'PAUSED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "EmailCampaignDealStatus" AS ENUM ('PENDING', 'SENDING', 'SENT', 'DELIVERED', 'OPENED', 'CLICKED', 'BOUNCED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "SmsCampaignStatus" AS ENUM ('DRAFT', 'SCHEDULED', 'SENDING', 'SENT', 'PAUSED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "SmsCampaignDealStatus" AS ENUM ('PENDING', 'SENDING', 'SENT', 'DELIVERED', 'CLICKED', 'REPLIED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "TeamMemberRole" AS ENUM ('OWNER', 'ADMIN', 'MANAGER', 'AGENT', 'VIEWER');
+
+-- CreateEnum
+CREATE TYPE "TeamMemberStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'INVITED');
+
+-- CreateEnum
+CREATE TYPE "AppointmentTypeCategory" AS ENUM ('CONSULTATION', 'SERVICE', 'MEETING', 'DEMO', 'SUPPORT', 'TRAINING', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "AppointmentStatus" AS ENUM ('SCHEDULED', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW');
+
+-- CreateEnum
+CREATE TYPE "MeetingType" AS ENUM ('PHONE_CALL', 'VIDEO_CALL', 'IN_PERSON');
+
+-- CreateEnum
+CREATE TYPE "PaymentProvider" AS ENUM ('STRIPE', 'SQUARE', 'PAYPAL', 'APPLE_PAY', 'GOOGLE_PAY');
+
+-- CreateEnum
+CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'PROCESSING', 'SUCCEEDED', 'FAILED', 'CANCELLED', 'REFUNDED', 'PARTIALLY_REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "PaymentType" AS ENUM ('APPOINTMENT', 'INVOICE', 'SUBSCRIPTION', 'DEAL', 'SERVICE', 'PRODUCT', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "InvoiceStatus" AS ENUM ('DRAFT', 'SENT', 'VIEWED', 'PAID', 'OVERDUE', 'CANCELLED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "AuditAction" AS ENUM ('CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'PASSWORD_CHANGE', 'PERMISSION_CHANGE', 'API_KEY_CREATED', 'API_KEY_DELETED', 'PAYMENT_PROCESSED', 'DATA_EXPORT', 'SETTINGS_MODIFIED', 'USER_INVITED', 'USER_REMOVED');
+
+-- CreateEnum
+CREATE TYPE "AuditSeverity" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+
+-- CreateEnum
+CREATE TYPE "SoshogleMerchantStatus" AS ENUM ('PENDING', 'ACTIVE', 'SUSPENDED', 'CLOSED');
+
+-- CreateEnum
+CREATE TYPE "SoshogleMethodType" AS ENUM ('CARD', 'BANK_ACCOUNT', 'WALLET', 'CRYPTO', 'BNPL');
+
+-- CreateEnum
+CREATE TYPE "SoshogleIntentStatus" AS ENUM ('PENDING', 'PROCESSING', 'REQUIRES_PAYMENT_METHOD', 'REQUIRES_CONFIRMATION', 'REQUIRES_ACTION', 'SUCCEEDED', 'CANCELED', 'FAILED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "SoshogleFinancingStatus" AS ENUM ('PENDING', 'ACTIVE', 'PAID_OFF', 'DEFAULTED', 'CANCELED');
+
+-- CreateEnum
+CREATE TYPE "SoshogleDisputeStatus" AS ENUM ('NEEDS_RESPONSE', 'UNDER_REVIEW', 'CHARGE_REFUNDED', 'WON', 'LOST');
+
+-- CreateEnum
+CREATE TYPE "SoshogleLoyaltyTier" AS ENUM ('BRONZE', 'SILVER', 'GOLD', 'PLATINUM');
+
+-- CreateEnum
+CREATE TYPE "OrderStatus" AS ENUM ('PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "RiskLevel" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+
+-- CreateEnum
+CREATE TYPE "ApplicationType" AS ENUM ('NEW_CREDIT', 'CREDIT_INCREASE', 'BNPL_ELIGIBILITY', 'MERCHANT_FINANCING');
+
+-- CreateEnum
+CREATE TYPE "ApplicationStatus" AS ENUM ('PENDING', 'UNDER_REVIEW', 'APPROVED', 'DENIED', 'EXPIRED');
+
+-- CreateEnum
+CREATE TYPE "AchSettlementStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "AchTransactionType" AS ENUM ('CREDIT', 'DEBIT', 'REFUND', 'REVERSAL');
+
+-- CreateEnum
+CREATE TYPE "BnplStatus" AS ENUM ('PENDING', 'APPROVED', 'ACTIVE', 'COMPLETED', 'DEFAULTED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "BnplInstallmentStatus" AS ENUM ('SCHEDULED', 'PENDING', 'PAID', 'OVERDUE', 'FAILED', 'WAIVED');
+
+-- CreateEnum
+CREATE TYPE "InsightType" AS ENUM ('TRANSACTION_VOLUME', 'PAYMENT_METHOD_PREFERENCE', 'CUSTOMER_BEHAVIOR', 'REVENUE_TREND', 'CREDIT_UTILIZATION', 'BNPL_PERFORMANCE', 'FRAUD_DETECTION', 'GEOGRAPHIC_DISTRIBUTION');
+
+-- CreateEnum
+CREATE TYPE "InsightPeriod" AS ENUM ('HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY');
+
+-- CreateEnum
+CREATE TYPE "DataExportFormat" AS ENUM ('CSV', 'JSON', 'XML', 'PDF');
+
+-- CreateEnum
+CREATE TYPE "DataExportStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "WidgetLayout" AS ENUM ('GRID', 'LIST', 'CAROUSEL', 'COMPACT', 'FEATURED');
+
+-- CreateEnum
+CREATE TYPE "WidgetTheme" AS ENUM ('LIGHT', 'DARK', 'AUTO', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "CashTransactionType" AS ENUM ('SALE', 'REFUND', 'EXPENSE', 'ADJUSTMENT');
+
+-- CreateEnum
+CREATE TYPE "DataConsentStatus" AS ENUM ('PENDING', 'GRANTED', 'REVOKED', 'EXPIRED');
+
+-- CreateEnum
+CREATE TYPE "DataSharingLevel" AS ENUM ('NONE', 'ANONYMOUS_ONLY', 'AGGREGATED', 'FULL_ANONYMOUS');
+
+-- CreateEnum
+CREATE TYPE "FraudRiskLevel" AS ENUM ('VERY_LOW', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+
+-- CreateEnum
+CREATE TYPE "FraudReviewStatus" AS ENUM ('PENDING', 'APPROVED', 'DECLINED', 'INVESTIGATING', 'RESOLVED');
+
+-- CreateEnum
+CREATE TYPE "ReservationStatus" AS ENUM ('PENDING', 'CONFIRMED', 'SEATED', 'COMPLETED', 'CANCELLED', 'NO_SHOW');
+
+-- CreateEnum
+CREATE TYPE "ReservationActivityType" AS ENUM ('CREATED', 'CONFIRMED', 'MODIFIED', 'CANCELLED', 'REMINDER_SENT', 'SEATED', 'COMPLETED', 'NO_SHOW', 'NOTE_ADDED');
+
+-- CreateEnum
+CREATE TYPE "ReminderStatus" AS ENUM ('PENDING', 'SENT', 'FAILED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "ReminderChannel" AS ENUM ('EMAIL', 'SMS', 'VOICE', 'PUSH');
+
+-- CreateEnum
+CREATE TYPE "DeliveryStatus" AS ENUM ('PENDING', 'ASSIGNED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "VehicleType" AS ENUM ('CAR', 'BIKE', 'SCOOTER', 'WALKING', 'VAN', 'TRUCK');
+
+-- CreateEnum
+CREATE TYPE "DriverStatus" AS ENUM ('OFFLINE', 'AVAILABLE', 'BUSY', 'ON_BREAK');
+
+-- CreateEnum
+CREATE TYPE "StaffRole" AS ENUM ('CASHIER', 'MANAGER', 'ADMIN');
+
+-- CreateEnum
+CREATE TYPE "ShiftStatus" AS ENUM ('ACTIVE', 'CLOSED', 'VOID');
+
+-- CreateEnum
+CREATE TYPE "POSOrderType" AS ENUM ('DINE_IN', 'TAKEOUT', 'DELIVERY', 'DRIVE_THRU');
+
+-- CreateEnum
+CREATE TYPE "POSOrderStatus" AS ENUM ('PENDING', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED', 'VOID');
+
+-- CreateEnum
+CREATE TYPE "POSPaymentMethod" AS ENUM ('CASH', 'CARD', 'WALLET', 'SPLIT');
+
+-- CreateEnum
+CREATE TYPE "POSPaymentStatus" AS ENUM ('UNPAID', 'PARTIALLY_PAID', 'PAID', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "ReceiptType" AS ENUM ('SALE', 'RETURN', 'VOID', 'REFUND');
+
+-- CreateEnum
+CREATE TYPE "KitchenItemStatus" AS ENUM ('PENDING', 'PREPARING', 'READY', 'BUMPED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "KitchenPriority" AS ENUM ('LOW', 'NORMAL', 'HIGH', 'URGENT');
+
+-- CreateEnum
+CREATE TYPE "PrepAction" AS ENUM ('RECEIVED', 'STARTED', 'PAUSED', 'RESUMED', 'READY', 'BUMPED', 'CANCELLED', 'MODIFIED');
+
+-- CreateEnum
+CREATE TYPE "InventoryCategory" AS ENUM ('INGREDIENT', 'BEVERAGE', 'SUPPLY', 'EQUIPMENT', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "InventoryUnit" AS ENUM ('PIECE', 'KG', 'LBS', 'GRAM', 'OZ', 'LITER', 'ML', 'GALLON', 'CUP', 'TBSP', 'TSP', 'BOX', 'CASE', 'BAG');
+
+-- CreateEnum
+CREATE TYPE "PurchaseOrderStatus" AS ENUM ('DRAFT', 'SENT', 'CONFIRMED', 'RECEIVED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "POPaymentStatus" AS ENUM ('UNPAID', 'PARTIALLY_PAID', 'PAID');
+
+-- CreateEnum
+CREATE TYPE "AdjustmentType" AS ENUM ('SALE', 'WASTE', 'MANUAL_ADD', 'MANUAL_SUBTRACT', 'TRANSFER', 'RETURN', 'PRODUCTION');
+
+-- CreateEnum
+CREATE TYPE "AlertType" AS ENUM ('LOW_STOCK', 'OUT_OF_STOCK', 'EXPIRING_SOON', 'EXPIRED', 'REORDER_NEEDED');
+
+-- CreateEnum
+CREATE TYPE "AlertSeverity" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+
+-- CreateEnum
+CREATE TYPE "AccountStatus" AS ENUM ('PENDING_APPROVAL', 'ACTIVE', 'TRIAL', 'SUSPENDED', 'CANCELLED', 'DISABLED');
+
+-- CreateEnum
+CREATE TYPE "SubscriptionTier" AS ENUM ('FREE', 'PRO', 'ENTERPRISE');
+
+-- CreateEnum
+CREATE TYPE "ClubOSHouseholdStatus" AS ENUM ('PENDING', 'ACTIVE', 'SUSPENDED', 'INACTIVE');
+
+-- CreateEnum
+CREATE TYPE "ClubOSMemberType" AS ENUM ('PLAYER', 'PARENT', 'COACH', 'VOLUNTEER', 'REFEREE', 'ADMIN');
+
+-- CreateEnum
+CREATE TYPE "ClubOSGender" AS ENUM ('MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY');
+
+-- CreateEnum
+CREATE TYPE "ClubOSProgramType" AS ENUM ('LEAGUE', 'CAMP', 'CLINIC', 'TOURNAMENT', 'TRAINING');
+
+-- CreateEnum
+CREATE TYPE "ClubOSProgramStatus" AS ENUM ('DRAFT', 'OPEN', 'CLOSED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "ClubOSTeamStatus" AS ENUM ('FORMING', 'ACTIVE', 'INACTIVE', 'DISBANDED');
+
+-- CreateEnum
+CREATE TYPE "ClubOSTeamRole" AS ENUM ('PLAYER', 'HEAD_COACH', 'ASSISTANT_COACH', 'TEAM_PARENT');
+
+-- CreateEnum
+CREATE TYPE "ClubOSRegistrationStatus" AS ENUM ('PENDING', 'APPROVED', 'WAITLIST', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "ClubOSVenueType" AS ENUM ('FIELD', 'COURT', 'GYM', 'POOL', 'TRACK', 'STADIUM', 'FACILITY', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "ClubOSEventType" AS ENUM ('GAME', 'PRACTICE', 'TOURNAMENT', 'TRYOUT', 'MEETING', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "ClubOSEventStatus" AS ENUM ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'POSTPONED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "ClubOSStaffRole" AS ENUM ('REFEREE', 'ASSISTANT_REFEREE', 'SCOREKEEPER', 'TIMEKEEPER', 'MEDIC', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "ClubOSPaymentStatus" AS ENUM ('PENDING', 'PROCESSING', 'PAID', 'FAILED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "ClubOSPaymentMethod" AS ENUM ('CREDIT_CARD', 'DEBIT_CARD', 'ACH', 'CASH', 'CHECK', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "ClubOSInvoiceStatus" AS ENUM ('DRAFT', 'PENDING', 'PAID', 'OVERDUE', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "ClubOSCommunicationType" AS ENUM ('EMAIL', 'SMS', 'PUSH', 'IN_APP');
+
+-- CreateEnum
+CREATE TYPE "ClubOSCommunicationStatus" AS ENUM ('DRAFT', 'SCHEDULED', 'SENDING', 'SENT', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "ClubOSCommunicationPriority" AS ENUM ('LOW', 'NORMAL', 'HIGH', 'URGENT');
+
+-- CreateEnum
+CREATE TYPE "ClubOSNotificationType" AS ENUM ('REGISTRATION_CONFIRMATION', 'PAYMENT_CONFIRMATION', 'SCHEDULE_UPDATE', 'SCHEDULE_REMINDER', 'BALANCE_REMINDER', 'REGISTRATION_APPROVED', 'REGISTRATION_WAITLIST', 'TEAM_ASSIGNMENT');
+
+-- CreateEnum
+CREATE TYPE "GeneralInventoryAdjustmentType" AS ENUM ('PURCHASE', 'SALE', 'RETURN', 'DAMAGE', 'TRANSFER', 'ADJUSTMENT', 'INITIAL');
+
+-- CreateEnum
+CREATE TYPE "TaskPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
+
+-- CreateEnum
+CREATE TYPE "TaskStatus" AS ENUM ('TODO', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'BLOCKED', 'REVIEW');
+
+-- CreateEnum
+CREATE TYPE "PageResource" AS ENUM ('DASHBOARD', 'LEADS', 'CONTACTS', 'DEALS', 'TASKS', 'CALENDAR', 'MESSAGES', 'VOICE_AGENTS', 'TEAM', 'ANALYTICS', 'REPORTS', 'SETTINGS', 'BILLING', 'GENERAL_INVENTORY', 'CLUBOS_ADMIN', 'CLUBOS_TEAMS', 'CLUBOS_SCHEDULES', 'CLUBOS_COMMUNICATIONS', 'CLUBOS_PARENT_PORTAL');
+
+-- CreateEnum
+CREATE TYPE "PermissionAction" AS ENUM ('READ', 'WRITE', 'DELETE');
+
+-- CreateEnum
+CREATE TYPE "EntityType" AS ENUM ('LEAD', 'DEAL', 'TASK', 'CONVERSATION', 'CONTACT', 'APPOINTMENT', 'CALL_LOG', 'EMAIL', 'SMS', 'NOTE', 'PAYMENT', 'INVOICE');
+
+-- CreateEnum
+CREATE TYPE "RelationshipType" AS ENUM ('CREATED_FROM', 'ASSIGNED_TO', 'RELATED_TO', 'MENTIONED_IN', 'FOLLOWS_UP_ON', 'CONVERTED_TO', 'SCHEDULED_FOR', 'PAYMENT_FOR', 'ORIGINATED_FROM', 'DEPENDS_ON');
+
+-- CreateEnum
+CREATE TYPE "ToolAuthType" AS ENUM ('API_KEY', 'OAUTH2', 'BASIC_AUTH', 'BEARER_TOKEN', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "ToolStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'TESTING', 'DEPRECATED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "ToolCategory" AS ENUM ('COMMUNICATION', 'INTEGRATION', 'AUTOMATION', 'ANALYTICS', 'AI_ML', 'STORAGE', 'PAYMENT', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "AIWorkflowTriggerType" AS ENUM ('MANUAL', 'SCHEDULED', 'EVENT', 'TOOL_RESPONSE', 'AI_SUGGESTION');
+
+-- CreateEnum
+CREATE TYPE "AIWorkflowStatus" AS ENUM ('DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "WorkflowNodeType" AS ENUM ('TRIGGER', 'CONDITION', 'TOOL_ACTION', 'AI_DECISION', 'WAIT', 'BRANCH', 'LOOP', 'END');
+
+-- CreateEnum
+CREATE TYPE "LeadGenerationSource" AS ENUM ('GOOGLE_MAPS', 'LINKEDIN', 'MANUAL_IMPORT', 'WEB_SCRAPING');
+
+-- CreateEnum
+CREATE TYPE "LeadGenerationStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'PAUSED');
+
+-- CreateEnum
+CREATE TYPE "EnrichmentStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'PARTIAL');
+
+-- CreateEnum
+CREATE TYPE "EnrichmentProvider" AS ENUM ('HUNTER_IO', 'CLEARBIT', 'APOLLO', 'BUILTWITH', 'LINKEDIN', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "EmailDripCampaignStatus" AS ENUM ('DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'ARCHIVED');
+
+-- CreateEnum
+CREATE TYPE "DripTriggerType" AS ENUM ('MANUAL', 'LEAD_CREATED', 'LEAD_STATUS', 'TAG_ADDED', 'FORM_SUBMITTED', 'LIST_ADDED', 'SCHEDULED');
+
+-- CreateEnum
+CREATE TYPE "DripEnrollmentStatus" AS ENUM ('ACTIVE', 'COMPLETED', 'PAUSED', 'UNSUBSCRIBED', 'BOUNCED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "EmailDripMessageStatus" AS ENUM ('PENDING', 'SENDING', 'SENT', 'DELIVERED', 'OPENED', 'CLICKED', 'REPLIED', 'BOUNCED', 'FAILED', 'UNSUBSCRIBED');
+
+-- CreateEnum
+CREATE TYPE "AIEmployeeType" AS ENUM ('LEAD_RESEARCHER', 'CUSTOMER_ONBOARDING', 'BOOKING_COORDINATOR', 'PROJECT_MANAGER', 'COMMUNICATION_SPECIALIST');
+
+-- CreateEnum
+CREATE TYPE "AIJobStatus" AS ENUM ('PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED', 'PAUSED');
+
+-- CreateEnum
+CREATE TYPE "AIJobPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
+
+-- CreateEnum
+CREATE TYPE "DocpenProfession" AS ENUM ('GENERAL_PRACTICE', 'DENTIST', 'OPTOMETRIST', 'DERMATOLOGIST', 'CARDIOLOGIST', 'PSYCHIATRIST', 'PEDIATRICIAN', 'ORTHOPEDIC', 'PHYSIOTHERAPIST', 'CHIROPRACTOR', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "DocpenSessionStatus" AS ENUM ('RECORDING', 'PROCESSING', 'REVIEW_PENDING', 'SIGNED', 'ARCHIVED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "DocpenSpeakerRole" AS ENUM ('PRACTITIONER', 'PATIENT', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "DocpenSOAPType" AS ENUM ('STANDARD_SOAP', 'FOCUSED_SOAP', 'PROGRESS_NOTE', 'CONSULTATION_NOTE', 'PROCEDURE_NOTE', 'FOLLOW_UP_NOTE');
+
+-- CreateEnum
+CREATE TYPE "REPropertyType" AS ENUM ('SINGLE_FAMILY', 'CONDO', 'TOWNHOUSE', 'MULTI_FAMILY', 'LAND', 'COMMERCIAL', 'MOBILE_HOME', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "REListingStatus" AS ENUM ('ACTIVE', 'PENDING', 'SOLD', 'WITHDRAWN', 'EXPIRED', 'COMING_SOON');
+
+-- CreateEnum
+CREATE TYPE "REFSBOSource" AS ENUM ('DUPROPRIO', 'PURPLEBRICKS', 'FSBO_COM', 'CRAIGSLIST', 'FACEBOOK_MARKETPLACE', 'KIJIJI', 'ZILLOW_FSBO', 'MANUAL_IMPORT', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "REFSBOStatus" AS ENUM ('NEW', 'CONTACTED', 'FOLLOW_UP', 'NOT_INTERESTED', 'CONVERTED', 'DO_NOT_CONTACT', 'INVALID');
+
+-- CreateEnum
+CREATE TYPE "REDNCSource" AS ENUM ('NATIONAL_REGISTRY', 'STATE_REGISTRY', 'MANUAL_ADD', 'OPT_OUT', 'COMPLAINT');
+
+-- CreateEnum
+CREATE TYPE "REPeriodType" AS ENUM ('DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY');
+
+-- CreateEnum
+CREATE TYPE "REReportType" AS ENUM ('WEEKLY_MARKET_UPDATE', 'MONTHLY_MARKET_REPORT', 'QUARTERLY_ANALYSIS', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "REDiagnosticStatus" AS ENUM ('PENDING', 'REVIEWED', 'ACTIONED', 'DISMISSED');
+
+-- CreateEnum
+CREATE TYPE "RETransactionType" AS ENUM ('PURCHASE', 'SALE', 'LEASE', 'DUAL_AGENCY');
+
+-- CreateEnum
+CREATE TYPE "RERepresentingSide" AS ENUM ('BUYER', 'SELLER', 'DUAL', 'LANDLORD', 'TENANT');
+
+-- CreateEnum
+CREATE TYPE "RETransactionStage" AS ENUM ('OFFER_SUBMITTED', 'OFFER_ACCEPTED', 'INSPECTION_PERIOD', 'FINANCING_CONTINGENCY', 'APPRAISAL', 'FINAL_WALKTHROUGH', 'CLOSING_SCHEDULED', 'CLOSED', 'TERMINATED');
+
+-- CreateEnum
+CREATE TYPE "REExpiredStatus" AS ENUM ('NEW', 'CONTACTED', 'FOLLOW_UP', 'NOT_INTERESTED', 'RELISTED', 'CONVERTED');
+
+-- CreateEnum
+CREATE TYPE "REAIEmployeeType" AS ENUM ('RE_SPEED_TO_LEAD', 'RE_FSBO_OUTREACH', 'RE_EXPIRED_OUTREACH', 'RE_COLD_REACTIVATION', 'RE_DOCUMENT_CHASER', 'RE_SHOWING_CONFIRM', 'RE_SPHERE_NURTURE', 'RE_BUYER_FOLLOWUP', 'RE_MARKET_UPDATE', 'RE_STALE_DIAGNOSTIC', 'RE_LISTING_BOOST', 'RE_CMA_GENERATOR');
+
+-- CreateEnum
+CREATE TYPE "VoiceAISubscriptionTier" AS ENUM ('STARTER', 'PROFESSIONAL', 'ENTERPRISE', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "VoiceAICallDirection" AS ENUM ('INBOUND', 'OUTBOUND');
+
+-- CreateEnum
+CREATE TYPE "VoiceAICallStatus" AS ENUM ('INITIATED', 'RINGING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'NO_ANSWER', 'BUSY', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "VoiceAIBillingStatus" AS ENUM ('PENDING', 'INVOICED', 'PAID', 'OVERDUE', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "REWorkflowType" AS ENUM ('BUYER', 'SELLER', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "RETaskType" AS ENUM ('QUALIFICATION', 'MLS_SEARCH', 'SHOWING_SCHEDULE', 'SHOWING_FEEDBACK', 'OFFER_PREP', 'OFFER_SUBMIT', 'CONDITION_TRACKING', 'CLOSING_COORDINATION', 'POST_CLOSE_FOLLOWUP', 'CMA_GENERATION', 'LISTING_PREP', 'PHOTO_SCHEDULING', 'MARKETING_DRAFT', 'LISTING_PUBLISH', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "REWorkflowInstanceStatus" AS ENUM ('ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "RETaskExecutionStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'AWAITING_HITL', 'APPROVED', 'REJECTED', 'COMPLETED', 'FAILED', 'SKIPPED');
+
+-- CreateEnum
+CREATE TYPE "WorkflowType" AS ENUM ('CUSTOM', 'TEMPLATE');
+
+-- CreateEnum
+CREATE TYPE "WorkflowInstanceStatus" AS ENUM ('ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "TaskExecutionStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'AWAITING_HITL', 'APPROVED', 'REJECTED', 'COMPLETED', 'FAILED', 'SKIPPED');
+
+-- CreateEnum
+CREATE TYPE "MedicalTaskType" AS ENUM ('LEAD_RESEARCH', 'PATIENT_RESEARCH', 'APPOINTMENT_BOOKING', 'APPOINTMENT_REMINDER', 'PRESCRIPTION_REMINDER', 'TEST_RESULTS_NOTIFICATION', 'REFERRAL_COORDINATION', 'FOLLOW_UP_CALL', 'PATIENT_ONBOARDING', 'POST_VISIT_FOLLOWUP', 'INSURANCE_VERIFICATION', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "MedicalAIEmployeeType" AS ENUM ('MEDICAL_APPOINTMENT_SCHEDULER', 'PATIENT_COORDINATOR', 'REFERRAL_SPECIALIST', 'PRESCRIPTION_MANAGER', 'INSURANCE_VERIFIER', 'FOLLOW_UP_COORDINATOR');
+
+-- CreateEnum
+CREATE TYPE "MedicalWorkflowType" AS ENUM ('PATIENT_ONBOARDING', 'APPOINTMENT_REMINDER_SEQUENCE', 'POST_VISIT_FOLLOWUP', 'PRESCRIPTION_REFILL_REMINDER', 'REFERRAL_PROCESS', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "RestaurantTaskType" AS ENUM ('LEAD_RESEARCH', 'CUSTOMER_RESEARCH', 'RESERVATION_CONFIRMATION', 'RESERVATION_REMINDER', 'ORDER_TRACKING', 'MENU_RECOMMENDATION', 'LOYALTY_POINTS_UPDATE', 'FEEDBACK_REQUEST', 'SPECIAL_OFFER_NOTIFICATION', 'BIRTHDAY_GREETING', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "RestaurantAIEmployeeType" AS ENUM ('RESERVATION_COORDINATOR', 'ORDER_TRACKER', 'LOYALTY_MANAGER', 'MENU_ADVISOR', 'CUSTOMER_SERVICE_SPECIALIST', 'MARKETING_COORDINATOR');
+
+-- CreateEnum
+CREATE TYPE "RestaurantWorkflowType" AS ENUM ('NEW_CUSTOMER_WELCOME', 'RESERVATION_CONFIRMATION', 'ORDER_FOLLOWUP', 'LOYALTY_PROGRAM_ENROLLMENT', 'FEEDBACK_COLLECTION', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "ConstructionTaskType" AS ENUM ('LEAD_RESEARCH', 'PROJECT_RESEARCH', 'QUOTE_GENERATION', 'QUOTE_FOLLOWUP', 'PERMIT_TRACKING', 'INSPECTION_SCHEDULING', 'MATERIAL_ORDERING', 'PROGRESS_UPDATE', 'PAYMENT_REMINDER', 'PROJECT_COMPLETION', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "ConstructionAIEmployeeType" AS ENUM ('QUOTE_SPECIALIST', 'PERMIT_COORDINATOR', 'INSPECTION_SCHEDULER', 'MATERIAL_MANAGER', 'PROJECT_COORDINATOR', 'CLIENT_COMMUNICATOR');
+
+-- CreateEnum
+CREATE TYPE "ConstructionWorkflowType" AS ENUM ('LEAD_QUALIFICATION', 'QUOTE_FOLLOWUP', 'PROJECT_KICKOFF', 'INSPECTION_REMINDER', 'MATERIAL_ORDERING', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "DentistTaskType" AS ENUM ('LEAD_RESEARCH', 'PATIENT_RESEARCH', 'APPOINTMENT_BOOKING', 'APPOINTMENT_REMINDER', 'CLEANING_REMINDER', 'TREATMENT_FOLLOWUP', 'PAYMENT_REMINDER', 'REFERRAL_COORDINATION', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "DentistAIEmployeeType" AS ENUM ('APPOINTMENT_SCHEDULER', 'PATIENT_COORDINATOR', 'TREATMENT_COORDINATOR', 'BILLING_SPECIALIST');
+
+-- CreateEnum
+CREATE TYPE "DentistWorkflowType" AS ENUM ('PATIENT_ONBOARDING', 'CLEANING_REMINDER', 'TREATMENT_FOLLOWUP', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "MedicalSpaTaskType" AS ENUM ('LEAD_RESEARCH', 'CLIENT_RESEARCH', 'APPOINTMENT_BOOKING', 'APPOINTMENT_REMINDER', 'TREATMENT_FOLLOWUP', 'PACKAGE_PROMOTION', 'MEMBERSHIP_RENEWAL', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "MedicalSpaAIEmployeeType" AS ENUM ('APPOINTMENT_COORDINATOR', 'CLIENT_ADVISOR', 'TREATMENT_SPECIALIST', 'MEMBERSHIP_MANAGER');
+
+-- CreateEnum
+CREATE TYPE "MedicalSpaWorkflowType" AS ENUM ('NEW_CLIENT_WELCOME', 'TREATMENT_FOLLOWUP', 'MEMBERSHIP_RENEWAL', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "OptometristTaskType" AS ENUM ('LEAD_RESEARCH', 'PATIENT_RESEARCH', 'APPOINTMENT_BOOKING', 'EXAM_REMINDER', 'PRESCRIPTION_REMINDER', 'FRAME_SELECTION_FOLLOWUP', 'CONTACT_LENS_REORDER', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "OptometristAIEmployeeType" AS ENUM ('APPOINTMENT_SCHEDULER', 'PATIENT_COORDINATOR', 'OPTICAL_ADVISOR', 'CONTACT_LENS_SPECIALIST');
+
+-- CreateEnum
+CREATE TYPE "OptometristWorkflowType" AS ENUM ('PATIENT_ONBOARDING', 'EXAM_REMINDER', 'PRESCRIPTION_FOLLOWUP', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "HealthClinicTaskType" AS ENUM ('LEAD_RESEARCH', 'PATIENT_RESEARCH', 'APPOINTMENT_BOOKING', 'APPOINTMENT_REMINDER', 'TEST_RESULTS_NOTIFICATION', 'TREATMENT_FOLLOWUP', 'REFERRAL_COORDINATION', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "HealthClinicAIEmployeeType" AS ENUM ('APPOINTMENT_COORDINATOR', 'PATIENT_NAVIGATOR', 'TEST_RESULTS_COORDINATOR', 'REFERRAL_SPECIALIST');
+
+-- CreateEnum
+CREATE TYPE "HealthClinicWorkflowType" AS ENUM ('PATIENT_ONBOARDING', 'APPOINTMENT_REMINDER', 'TEST_RESULTS_NOTIFICATION', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "HospitalTaskType" AS ENUM ('LEAD_RESEARCH', 'PATIENT_RESEARCH', 'ADMISSION_COORDINATION', 'DISCHARGE_FOLLOWUP', 'TEST_RESULTS_NOTIFICATION', 'APPOINTMENT_SCHEDULING', 'REFERRAL_COORDINATION', 'BILLING_FOLLOWUP', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "HospitalAIEmployeeType" AS ENUM ('ADMISSION_COORDINATOR', 'PATIENT_NAVIGATOR', 'DISCHARGE_PLANNER', 'TEST_RESULTS_COORDINATOR', 'REFERRAL_SPECIALIST');
+
+-- CreateEnum
+CREATE TYPE "HospitalWorkflowType" AS ENUM ('ADMISSION_PROCESS', 'DISCHARGE_FOLLOWUP', 'TEST_RESULTS_NOTIFICATION', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "TechnologyTaskType" AS ENUM ('LEAD_RESEARCH', 'ACCOUNT_RESEARCH', 'TRIAL_ONBOARDING', 'FEATURE_ANNOUNCEMENT', 'RENEWAL_REMINDER', 'SUPPORT_FOLLOWUP', 'UPSELL_OPPORTUNITY', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "TechnologyAIEmployeeType" AS ENUM ('ACCOUNT_MANAGER', 'ONBOARDING_SPECIALIST', 'SUPPORT_COORDINATOR', 'SALES_SPECIALIST');
+
+-- CreateEnum
+CREATE TYPE "TechnologyWorkflowType" AS ENUM ('TRIAL_USER_NURTURE', 'ONBOARDING_SEQUENCE', 'RENEWAL_REMINDER', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "SportsClubTaskType" AS ENUM ('LEAD_RESEARCH', 'MEMBER_RESEARCH', 'MEMBERSHIP_ENROLLMENT', 'CLASS_REMINDER', 'PAYMENT_REMINDER', 'EVENT_NOTIFICATION', 'ACHIEVEMENT_CONGratulations', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "SportsClubAIEmployeeType" AS ENUM ('MEMBERSHIP_COORDINATOR', 'CLASS_SCHEDULER', 'EVENT_COORDINATOR', 'MEMBER_SERVICES_SPECIALIST');
+
+-- CreateEnum
+CREATE TYPE "SportsClubWorkflowType" AS ENUM ('NEW_MEMBER_WELCOME', 'CLASS_REMINDER', 'MEMBERSHIP_RENEWAL', 'CUSTOM');
+
+-- CreateEnum
+CREATE TYPE "TreatmentPlanStatus" AS ENUM ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "ProcedureStatus" AS ENUM ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'POSTPONED');
+
+-- CreateEnum
+CREATE TYPE "DocumentType" AS ENUM ('XRAY', 'PHOTO', 'CONSENT_FORM', 'INSURANCE_FORM', 'TREATMENT_PLAN', 'INVOICE', 'MEDICAL_HISTORY', 'CORRESPONDENCE', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "DocumentAccessLevel" AS ENUM ('PUBLIC', 'RESTRICTED', 'CONFIDENTIAL');
+
+-- CreateEnum
+CREATE TYPE "ConsentType" AS ENUM ('TREATMENT', 'DATA_COLLECTION', 'DATA_SHARING', 'MARKETING', 'RESEARCH');
+
+-- CreateEnum
+CREATE TYPE "DocumentAccessAction" AS ENUM ('VIEW', 'DOWNLOAD', 'DELETE', 'SHARE', 'EXPORT');
+
+-- CreateEnum
+CREATE TYPE "DataRequestType" AS ENUM ('ACCESS', 'DELETION', 'PORTABILITY', 'CORRECTION');
+
+-- CreateEnum
+CREATE TYPE "DataRequestStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'REJECTED', 'EXPIRED');
+
+-- CreateEnum
+CREATE TYPE "BreachType" AS ENUM ('UNAUTHORIZED_ACCESS', 'DATA_LOSS', 'DATA_THEFT', 'SYSTEM_COMPROMISE', 'ACCIDENTAL_DISCLOSURE');
+
+-- CreateEnum
+CREATE TYPE "BreachSeverity" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+
+-- CreateTable
+CREATE TABLE "Account" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "providerAccountId" TEXT NOT NULL,
+    "refresh_token" TEXT,
+    "access_token" TEXT,
+    "expires_at" INTEGER,
+    "token_type" TEXT,
+    "scope" TEXT,
+    "id_token" TEXT,
+    "session_state" TEXT,
+
+    CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Session" (
+    "id" TEXT NOT NULL,
+    "sessionToken" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Agency" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "phone" TEXT,
+    "address" TEXT,
+    "website" TEXT,
+    "logo" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Agency_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL,
+    "name" TEXT,
+    "email" TEXT NOT NULL,
+    "emailVerified" TIMESTAMP(3),
+    "password" TEXT,
+    "image" TEXT,
+    "role" "UserRole" NOT NULL DEFAULT 'USER',
+    "agencyId" TEXT,
+    "onboardingProgress" JSONB,
+    "onboardingCompleted" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "address" TEXT,
+    "businessDescription" TEXT,
+    "phone" TEXT,
+    "timezone" TEXT DEFAULT 'America/New_York',
+    "website" TEXT,
+    "averageDealValue" DOUBLE PRECISION,
+    "businessCategory" TEXT,
+    "businessHours" TEXT,
+    "businessLanguage" TEXT DEFAULT 'English',
+    "campaignTone" TEXT,
+    "currency" TEXT DEFAULT 'USD',
+    "currentCRM" TEXT,
+    "demographics" TEXT,
+    "emailProvider" TEXT,
+    "emailProviderConfig" TEXT,
+    "emailProviderConfigured" BOOLEAN NOT NULL DEFAULT false,
+    "industryNiche" TEXT,
+    "leadSources" TEXT,
+    "monthlyMarketingBudget" TEXT,
+    "operatingLocation" TEXT,
+    "paymentProvider" TEXT,
+    "paymentProviderConfigured" BOOLEAN NOT NULL DEFAULT false,
+    "preferredContactMethod" TEXT,
+    "primaryMarketingChannel" TEXT,
+    "productsServices" TEXT,
+    "salesCycleLength" TEXT,
+    "smsProvider" TEXT,
+    "smsProviderConfig" TEXT,
+    "smsProviderConfigured" BOOLEAN NOT NULL DEFAULT false,
+    "socialMediaProfiles" TEXT,
+    "targetAudience" TEXT,
+    "teamSize" TEXT,
+    "websiteTraffic" TEXT,
+    "quickbooksConfig" TEXT,
+    "quickbooksConfigured" BOOLEAN NOT NULL DEFAULT false,
+    "whatsappConfig" TEXT,
+    "whatsappConfigured" BOOLEAN NOT NULL DEFAULT false,
+    "accountStatus" "AccountStatus" NOT NULL DEFAULT 'ACTIVE',
+    "lastLoginAt" TIMESTAMP(3),
+    "suspendedAt" TIMESTAMP(3),
+    "suspendedReason" TEXT,
+    "trialEndsAt" TIMESTAMP(3),
+    "industry" "Industry",
+    "clubCode" TEXT,
+    "parentRole" BOOLEAN NOT NULL DEFAULT false,
+    "subdomain" TEXT,
+    "language" TEXT DEFAULT 'en',
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Lead" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "businessName" TEXT NOT NULL,
+    "contactPerson" TEXT,
+    "email" TEXT,
+    "phone" TEXT,
+    "website" TEXT,
+    "address" TEXT,
+    "city" TEXT,
+    "state" TEXT,
+    "zipCode" TEXT,
+    "country" TEXT,
+    "businessCategory" TEXT,
+    "googlePlaceId" TEXT,
+    "rating" DOUBLE PRECISION,
+    "status" "LeadStatus" NOT NULL DEFAULT 'NEW',
+    "source" TEXT NOT NULL DEFAULT 'manual',
+    "tags" JSONB DEFAULT '[]',
+    "contactType" TEXT,
+    "lastContactedAt" TIMESTAMP(3),
+    "dateOfBirth" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "enrichedData" JSONB,
+    "lastEnrichedAt" TIMESTAMP(3),
+    "leadScore" INTEGER,
+    "engagementHistory" JSONB,
+    "nextAction" TEXT,
+    "nextActionDate" TIMESTAMP(3),
+    "validationScore" INTEGER,
+    "validationErrors" JSONB,
+    "qualityFlag" TEXT,
+    "mergeHistory" JSONB,
+    "familyGroupId" TEXT,
+    "dentalHistory" JSONB,
+    "insuranceInfo" JSONB,
+
+    CONSTRAINT "Lead_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Note" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Note_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Message" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "messageType" TEXT NOT NULL DEFAULT 'ai_generated',
+    "isUsed" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ApiKey" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "service" TEXT NOT NULL,
+    "keyName" TEXT NOT NULL,
+    "keyValue" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ApiKey_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Campaign" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "type" "CampaignType" NOT NULL,
+    "status" "CampaignStatus" NOT NULL DEFAULT 'DRAFT',
+    "smsTemplate" TEXT,
+    "reviewUrl" TEXT,
+    "referralReward" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "aiGenerated" BOOLEAN NOT NULL DEFAULT false,
+    "aiPrompt" TEXT,
+    "clickRate" DOUBLE PRECISION,
+    "clickedCount" INTEGER NOT NULL DEFAULT 0,
+    "deliveredCount" INTEGER NOT NULL DEFAULT 0,
+    "emailBody" TEXT,
+    "emailHtml" TEXT,
+    "emailSubject" TEXT,
+    "frequency" "CampaignFrequency" NOT NULL DEFAULT 'ONE_TIME',
+    "lastRunAt" TIMESTAMP(3),
+    "openRate" DOUBLE PRECISION,
+    "openedCount" INTEGER NOT NULL DEFAULT 0,
+    "recurringDays" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+    "scheduledFor" TIMESTAMP(3),
+    "sentCount" INTEGER NOT NULL DEFAULT 0,
+    "targetAudience" JSONB,
+    "totalRecipients" INTEGER NOT NULL DEFAULT 0,
+    "callScript" TEXT,
+    "voiceAgentId" TEXT,
+    "maxCallsPerDay" INTEGER DEFAULT 50,
+    "callWindowStart" TEXT DEFAULT '09:00',
+    "callWindowEnd" TEXT DEFAULT '17:00',
+    "retryFailedCalls" BOOLEAN NOT NULL DEFAULT true,
+    "maxRetries" INTEGER DEFAULT 2,
+    "minLeadScore" INTEGER DEFAULT 75,
+    "totalCalls" INTEGER NOT NULL DEFAULT 0,
+    "answeredCalls" INTEGER NOT NULL DEFAULT 0,
+    "voicemails" INTEGER NOT NULL DEFAULT 0,
+    "avgCallDuration" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "Campaign_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CampaignMessage" (
+    "id" TEXT NOT NULL,
+    "campaignId" TEXT NOT NULL,
+    "recipientType" TEXT NOT NULL,
+    "recipientId" TEXT NOT NULL,
+    "recipientEmail" TEXT,
+    "recipientPhone" TEXT,
+    "recipientName" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "sentAt" TIMESTAMP(3),
+    "deliveredAt" TIMESTAMP(3),
+    "openedAt" TIMESTAMP(3),
+    "clickedAt" TIMESTAMP(3),
+    "errorMessage" TEXT,
+    "twilioSid" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "callDuration" INTEGER,
+    "callLogId" TEXT,
+    "callStatus" TEXT,
+
+    CONSTRAINT "CampaignMessage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CampaignLead" (
+    "id" TEXT NOT NULL,
+    "campaignId" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "status" "CampaignLeadStatus" NOT NULL DEFAULT 'PENDING',
+    "sentAt" TIMESTAMP(3),
+    "deliveredAt" TIMESTAMP(3),
+    "respondedAt" TIMESTAMP(3),
+    "twilioSid" TEXT,
+    "errorMessage" TEXT,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CampaignLead_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Review" (
+    "id" TEXT NOT NULL,
+    "campaignId" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "source" "ReviewSource" NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "reviewText" TEXT,
+    "reviewUrl" TEXT,
+    "isPublic" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Review_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "FeedbackCollection" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "appointmentId" TEXT,
+    "method" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "sentiment" TEXT,
+    "rating" INTEGER,
+    "feedbackText" TEXT,
+    "triggeredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "FeedbackCollection_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Referral" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "referrerId" TEXT NOT NULL,
+    "referredName" TEXT NOT NULL,
+    "referredEmail" TEXT,
+    "referredPhone" TEXT,
+    "status" "ReferralStatus" NOT NULL DEFAULT 'PENDING',
+    "notes" TEXT,
+    "rewardGiven" BOOLEAN NOT NULL DEFAULT false,
+    "rewardDetails" TEXT,
+    "convertedLeadId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Referral_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "VoiceAgent" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "type" "VoiceAgentType" NOT NULL DEFAULT 'INBOUND',
+    "status" "VoiceAgentStatus" NOT NULL DEFAULT 'TESTING',
+    "twilioPhoneNumber" TEXT,
+    "businessName" TEXT NOT NULL,
+    "businessIndustry" TEXT,
+    "knowledgeBase" TEXT,
+    "knowledgeBaseSources" JSONB,
+    "greetingMessage" TEXT,
+    "voiceId" TEXT,
+    "elevenLabsAgentId" TEXT,
+    "stability" DOUBLE PRECISION DEFAULT 0.5,
+    "similarityBoost" DOUBLE PRECISION DEFAULT 0.75,
+    "style" DOUBLE PRECISION DEFAULT 0.0,
+    "useSpeakerBoost" BOOLEAN DEFAULT true,
+    "ttsModel" TEXT DEFAULT 'eleven_turbo_v2',
+    "outputFormat" TEXT DEFAULT 'pcm_16000',
+    "llmModel" TEXT DEFAULT 'gpt-4',
+    "temperature" DOUBLE PRECISION DEFAULT 0.7,
+    "maxTokens" INTEGER DEFAULT 500,
+    "firstMessage" TEXT,
+    "systemPrompt" TEXT,
+    "maxCallDuration" INTEGER DEFAULT 600,
+    "enableInterruptions" BOOLEAN DEFAULT true,
+    "responseDelay" INTEGER DEFAULT 100,
+    "pronunciationDict" TEXT,
+    "language" TEXT DEFAULT 'en',
+    "googleCalendarId" TEXT,
+    "availableHours" TEXT,
+    "appointmentDuration" INTEGER DEFAULT 30,
+    "transferPhone" TEXT,
+    "enableVoicemail" BOOLEAN DEFAULT false,
+    "voicemailMessage" TEXT,
+    "webhookUrl" TEXT,
+    "customData" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "enableCallRecording" BOOLEAN DEFAULT true,
+    "enableTranscription" BOOLEAN DEFAULT true,
+    "recordingEmailAddress" TEXT,
+    "sendRecordingEmail" BOOLEAN DEFAULT false,
+    "elevenLabsPhoneNumberId" TEXT,
+    "enableReservations" BOOLEAN DEFAULT false,
+    "inboundGreeting" TEXT,
+    "outboundGreeting" TEXT,
+
+    CONSTRAINT "VoiceAgent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PurchasedPhoneNumber" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "phoneNumber" TEXT NOT NULL,
+    "friendlyName" TEXT,
+    "country" TEXT NOT NULL,
+    "capabilities" JSONB,
+    "twilioSid" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "purchasedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastUsedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PurchasedPhoneNumber_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CallLog" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "voiceAgentId" TEXT,
+    "leadId" TEXT,
+    "direction" "CallDirection" NOT NULL,
+    "status" "CallStatus" NOT NULL DEFAULT 'INITIATED',
+    "outcome" "CallOutcome",
+    "fromNumber" TEXT NOT NULL,
+    "toNumber" TEXT NOT NULL,
+    "duration" INTEGER,
+    "recordingUrl" TEXT,
+    "transcription" TEXT,
+    "transcript" TEXT,
+    "conversationData" TEXT,
+    "twilioCallSid" TEXT,
+    "cost" DOUBLE PRECISION,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "elevenLabsConversationId" TEXT,
+    "endedAt" TIMESTAMP(3),
+    "emailSent" BOOLEAN NOT NULL DEFAULT false,
+    "emailSentAt" TIMESTAMP(3),
+    "conversationAnalysis" JSONB,
+    "sentiment" TEXT,
+    "callOutcome" TEXT,
+    "phoneNumber" TEXT,
+
+    CONSTRAINT "CallLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OutboundCall" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "voiceAgentId" TEXT NOT NULL,
+    "leadId" TEXT,
+    "name" TEXT NOT NULL,
+    "phoneNumber" TEXT NOT NULL,
+    "status" "OutboundCallStatus" NOT NULL DEFAULT 'SCHEDULED',
+    "scheduledFor" TIMESTAMP(3),
+    "attemptCount" INTEGER NOT NULL DEFAULT 0,
+    "maxAttempts" INTEGER NOT NULL DEFAULT 3,
+    "callLogId" TEXT,
+    "purpose" TEXT,
+    "notes" TEXT,
+    "customVariables" TEXT,
+    "lastAttemptAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "OutboundCall_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CalendarConnection" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "provider" "CalendarProvider" NOT NULL,
+    "providerAccountId" TEXT,
+    "accessToken" TEXT,
+    "refreshToken" TEXT,
+    "expiresAt" TIMESTAMP(3),
+    "calendarId" TEXT,
+    "calendarName" TEXT,
+    "syncEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "lastSyncAt" TIMESTAMP(3),
+    "syncStatus" "SyncStatus" NOT NULL DEFAULT 'PENDING',
+    "webhookUrl" TEXT,
+    "apiKey" TEXT,
+    "settings" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CalendarConnection_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ChannelConnection" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "channelType" "ChannelType" NOT NULL,
+    "channelIdentifier" TEXT,
+    "displayName" TEXT,
+    "status" "ChannelConnectionStatus" NOT NULL DEFAULT 'PENDING_AUTH',
+    "accessToken" TEXT,
+    "refreshToken" TEXT,
+    "expiresAt" TIMESTAMP(3),
+    "tokenExpiresAt" TIMESTAMP(3),
+    "providerType" TEXT NOT NULL DEFAULT 'internal',
+    "providerAccountId" TEXT,
+    "providerData" JSONB,
+    "metadata" JSONB,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "syncEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "lastSyncAt" TIMESTAMP(3),
+    "lastSyncedAt" TIMESTAMP(3),
+    "lastSyncCursor" TEXT,
+    "errorMessage" TEXT,
+    "webhookSecret" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ChannelConnection_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Conversation" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "channelConnectionId" TEXT NOT NULL,
+    "leadId" TEXT,
+    "contactName" TEXT NOT NULL,
+    "contactIdentifier" TEXT NOT NULL,
+    "contactAvatar" TEXT,
+    "status" "ConversationStatus" NOT NULL DEFAULT 'ACTIVE',
+    "unreadCount" INTEGER NOT NULL DEFAULT 0,
+    "lastMessageAt" TIMESTAMP(3),
+    "lastMessagePreview" TEXT,
+    "externalConversationId" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Conversation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ConversationMessage" (
+    "id" TEXT NOT NULL,
+    "conversationId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "direction" "MessageDirection" NOT NULL,
+    "status" "MessageStatus" NOT NULL DEFAULT 'SENT',
+    "content" TEXT NOT NULL,
+    "attachments" JSONB,
+    "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deliveredAt" TIMESTAMP(3),
+    "readAt" TIMESTAMP(3),
+    "externalMessageId" TEXT,
+    "providerData" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ConversationMessage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "KnowledgeBase" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "category" TEXT,
+    "tags" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "priority" INTEGER NOT NULL DEFAULT 0,
+    "fileUrl" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "KnowledgeBase_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AutoReplySettings" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "isEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "responseTone" TEXT NOT NULL DEFAULT 'professional',
+    "responseLanguage" TEXT NOT NULL DEFAULT 'en',
+    "businessHoursEnabled" BOOLEAN NOT NULL DEFAULT true,
+    "businessHoursStart" TEXT,
+    "businessHoursEnd" TEXT,
+    "businessDays" TEXT,
+    "timezone" TEXT NOT NULL DEFAULT 'America/New_York',
+    "afterHoursMessage" TEXT,
+    "channelSettings" JSONB,
+    "maxResponseLength" INTEGER NOT NULL DEFAULT 500,
+    "confidenceThreshold" DOUBLE PRECISION NOT NULL DEFAULT 0.7,
+    "useConversationHistory" BOOLEAN NOT NULL DEFAULT true,
+    "historyDepth" INTEGER NOT NULL DEFAULT 10,
+    "escalationKeywords" TEXT,
+    "escalationTopics" TEXT,
+    "notifyOnEscalation" BOOLEAN NOT NULL DEFAULT true,
+    "notificationEmail" TEXT,
+    "notificationPhone" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AutoReplySettings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Pipeline" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "color" TEXT,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "displayOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Pipeline_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PipelineStage" (
+    "id" TEXT NOT NULL,
+    "pipelineId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "displayOrder" INTEGER NOT NULL DEFAULT 0,
+    "probability" INTEGER NOT NULL DEFAULT 0,
+    "rottenAfterDays" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PipelineStage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Deal" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "pipelineId" TEXT NOT NULL,
+    "stageId" TEXT NOT NULL,
+    "leadId" TEXT,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "value" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "probability" INTEGER NOT NULL DEFAULT 0,
+    "priority" "DealPriority" NOT NULL DEFAULT 'MEDIUM',
+    "expectedCloseDate" TIMESTAMP(3),
+    "actualCloseDate" TIMESTAMP(3),
+    "lostReason" TEXT,
+    "assignedToId" TEXT,
+    "tags" TEXT,
+    "customFields" JSONB,
+    "rottenSince" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Deal_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DealActivity" (
+    "id" TEXT NOT NULL,
+    "dealId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" "DealActivityType" NOT NULL,
+    "description" TEXT NOT NULL,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DealActivity_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Workflow" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "status" "WorkflowStatus" NOT NULL DEFAULT 'DRAFT',
+    "triggerType" "WorkflowTriggerType" NOT NULL,
+    "triggerConfig" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "metadata" JSONB,
+    "scheduledDate" TIMESTAMP(3),
+
+    CONSTRAINT "Workflow_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WorkflowAction" (
+    "id" TEXT NOT NULL,
+    "workflowId" TEXT NOT NULL,
+    "type" "WorkflowActionType" NOT NULL,
+    "displayOrder" INTEGER NOT NULL DEFAULT 0,
+    "actionConfig" JSONB NOT NULL,
+    "delayMinutes" INTEGER,
+    "parentActionId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "WorkflowAction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WorkflowEnrollment" (
+    "id" TEXT NOT NULL,
+    "workflowId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "leadId" TEXT,
+    "dealId" TEXT,
+    "status" "WorkflowEnrollmentStatus" NOT NULL DEFAULT 'ACTIVE',
+    "enrolledAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "WorkflowEnrollment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WorkflowActionExecution" (
+    "id" TEXT NOT NULL,
+    "enrollmentId" TEXT NOT NULL,
+    "actionId" TEXT NOT NULL,
+    "status" "WorkflowActionExecutionStatus" NOT NULL DEFAULT 'PENDING',
+    "scheduledFor" TIMESTAMP(3),
+    "executedAt" TIMESTAMP(3),
+    "errorMessage" TEXT,
+    "result" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "WorkflowActionExecution_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmailCampaign" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "subject" TEXT NOT NULL,
+    "previewText" TEXT,
+    "htmlContent" TEXT NOT NULL,
+    "textContent" TEXT,
+    "status" "EmailCampaignStatus" NOT NULL DEFAULT 'DRAFT',
+    "fromName" TEXT,
+    "fromEmail" TEXT,
+    "replyTo" TEXT,
+    "scheduledFor" TIMESTAMP(3),
+    "sentAt" TIMESTAMP(3),
+    "tags" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmailCampaign_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmailCampaignDeal" (
+    "id" TEXT NOT NULL,
+    "campaignId" TEXT NOT NULL,
+    "dealId" TEXT,
+    "leadId" TEXT,
+    "recipientEmail" TEXT NOT NULL,
+    "recipientName" TEXT,
+    "status" "EmailCampaignDealStatus" NOT NULL DEFAULT 'PENDING',
+    "sentAt" TIMESTAMP(3),
+    "deliveredAt" TIMESTAMP(3),
+    "openedAt" TIMESTAMP(3),
+    "clickedAt" TIMESTAMP(3),
+    "errorMessage" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmailCampaignDeal_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SmsCampaign" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "status" "SmsCampaignStatus" NOT NULL DEFAULT 'DRAFT',
+    "fromNumber" TEXT,
+    "scheduledFor" TIMESTAMP(3),
+    "sentAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "tags" TEXT,
+    "minLeadScore" INTEGER DEFAULT 75,
+    "targetLeadIds" JSONB,
+    "dailyLimit" INTEGER,
+    "weeklyLimit" INTEGER,
+    "lastSentDate" TIMESTAMP(3),
+    "sentToday" INTEGER NOT NULL DEFAULT 0,
+    "sentThisWeek" INTEGER NOT NULL DEFAULT 0,
+    "totalRecipients" INTEGER NOT NULL DEFAULT 0,
+    "totalSent" INTEGER NOT NULL DEFAULT 0,
+    "totalDelivered" INTEGER NOT NULL DEFAULT 0,
+    "totalReplied" INTEGER NOT NULL DEFAULT 0,
+    "totalFailed" INTEGER NOT NULL DEFAULT 0,
+    "isSequence" BOOLEAN NOT NULL DEFAULT false,
+    "triggerType" TEXT,
+    "avgReplyRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "totalCompleted" INTEGER NOT NULL DEFAULT 0,
+    "totalEnrolled" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SmsCampaign_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SmsSequence" (
+    "id" TEXT NOT NULL,
+    "campaignId" TEXT NOT NULL,
+    "sequenceOrder" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "delayDays" INTEGER NOT NULL DEFAULT 0,
+    "delayHours" INTEGER NOT NULL DEFAULT 0,
+    "sendTime" TEXT,
+    "skipIfReplied" BOOLEAN NOT NULL DEFAULT false,
+    "totalSent" INTEGER NOT NULL DEFAULT 0,
+    "totalDelivered" INTEGER NOT NULL DEFAULT 0,
+    "totalReplied" INTEGER NOT NULL DEFAULT 0,
+    "totalFailed" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SmsSequence_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SmsEnrollment" (
+    "id" TEXT NOT NULL,
+    "campaignId" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "currentSequenceId" TEXT,
+    "currentStep" INTEGER NOT NULL DEFAULT 0,
+    "nextSendAt" TIMESTAMP(3),
+    "totalReplied" INTEGER NOT NULL DEFAULT 0,
+    "lastRepliedAt" TIMESTAMP(3),
+    "enrolledAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "pausedAt" TIMESTAMP(3),
+    "cancelledAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SmsEnrollment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SmsSequenceMessage" (
+    "id" TEXT NOT NULL,
+    "enrollmentId" TEXT NOT NULL,
+    "sequenceId" TEXT NOT NULL,
+    "recipientPhone" TEXT NOT NULL,
+    "recipientName" TEXT,
+    "message" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "scheduledFor" TIMESTAMP(3) NOT NULL,
+    "sentAt" TIMESTAMP(3),
+    "deliveredAt" TIMESTAMP(3),
+    "repliedAt" TIMESTAMP(3),
+    "twilioSid" TEXT,
+    "errorMessage" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SmsSequenceMessage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SmsCampaignDeal" (
+    "id" TEXT NOT NULL,
+    "campaignId" TEXT NOT NULL,
+    "dealId" TEXT,
+    "leadId" TEXT,
+    "recipientPhone" TEXT NOT NULL,
+    "recipientName" TEXT,
+    "status" "SmsCampaignDealStatus" NOT NULL DEFAULT 'PENDING',
+    "sentAt" TIMESTAMP(3),
+    "deliveredAt" TIMESTAMP(3),
+    "clickedAt" TIMESTAMP(3),
+    "repliedAt" TIMESTAMP(3),
+    "twilioSid" TEXT,
+    "errorMessage" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SmsCampaignDeal_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TeamMember" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "role" "TeamMemberRole" NOT NULL DEFAULT 'AGENT',
+    "status" "TeamMemberStatus" NOT NULL DEFAULT 'INVITED',
+    "avatar" TEXT,
+    "phone" TEXT,
+    "invitedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "joinedAt" TIMESTAMP(3),
+    "lastActiveAt" TIMESTAMP(3),
+    "permissions" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TeamMember_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AppointmentType" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "category" "AppointmentTypeCategory" NOT NULL DEFAULT 'CONSULTATION',
+    "duration" INTEGER NOT NULL DEFAULT 30,
+    "price" DOUBLE PRECISION,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "color" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "requiresPayment" BOOLEAN NOT NULL DEFAULT false,
+    "paymentRequired" TEXT DEFAULT 'none',
+    "depositPercentage" DOUBLE PRECISION,
+    "bufferTimeBefore" INTEGER DEFAULT 0,
+    "bufferTimeAfter" INTEGER DEFAULT 0,
+    "maxBookingsPerDay" INTEGER,
+    "bookingLeadTime" INTEGER DEFAULT 60,
+    "questions" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AppointmentType_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BookingAppointment" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "appointmentTypeId" TEXT,
+    "leadId" TEXT,
+    "calendarConnectionId" TEXT,
+    "callLogId" TEXT,
+    "customerName" TEXT NOT NULL,
+    "customerEmail" TEXT,
+    "customerPhone" TEXT NOT NULL,
+    "customerTimezone" TEXT,
+    "appointmentDate" TIMESTAMP(3) NOT NULL,
+    "duration" INTEGER NOT NULL DEFAULT 30,
+    "status" "AppointmentStatus" NOT NULL DEFAULT 'SCHEDULED',
+    "notes" TEXT,
+    "customerResponses" JSONB,
+    "internalNotes" TEXT,
+    "externalEventId" TEXT,
+    "externalEventLink" TEXT,
+    "syncStatus" "SyncStatus" NOT NULL DEFAULT 'PENDING',
+    "lastSyncAt" TIMESTAMP(3),
+    "reminderSent" BOOLEAN NOT NULL DEFAULT false,
+    "reminderSentAt" TIMESTAMP(3),
+    "confirmationSent" BOOLEAN NOT NULL DEFAULT false,
+    "cancellationReason" TEXT,
+    "cancelledAt" TIMESTAMP(3),
+    "cancelledBy" TEXT,
+    "requiresPayment" BOOLEAN NOT NULL DEFAULT false,
+    "paymentId" TEXT,
+    "meetingLocation" TEXT,
+    "meetingLink" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "contactId" TEXT,
+    "confirmationCode" TEXT,
+    "meetingType" "MeetingType" DEFAULT 'PHONE_CALL',
+
+    CONSTRAINT "BookingAppointment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PaymentProviderSettings" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "provider" "PaymentProvider" NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT false,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "publishableKey" TEXT,
+    "secretKey" TEXT,
+    "webhookSecret" TEXT,
+    "merchantId" TEXT,
+    "clientId" TEXT,
+    "accountId" TEXT,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "testMode" BOOLEAN NOT NULL DEFAULT true,
+    "settings" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PaymentProviderSettings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Payment" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "providerId" TEXT,
+    "provider" "PaymentProvider" NOT NULL DEFAULT 'STRIPE',
+    "providerPaymentId" TEXT,
+    "providerCustomerId" TEXT,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
+    "paymentType" "PaymentType" NOT NULL DEFAULT 'OTHER',
+    "customerName" TEXT NOT NULL,
+    "customerEmail" TEXT NOT NULL,
+    "customerPhone" TEXT,
+    "dealId" TEXT,
+    "leadId" TEXT,
+    "invoiceId" TEXT,
+    "paymentMethod" TEXT,
+    "last4" TEXT,
+    "cardBrand" TEXT,
+    "description" TEXT,
+    "metadata" JSONB,
+    "refundedAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "refundReason" TEXT,
+    "refundedAt" TIMESTAMP(3),
+    "receiptUrl" TEXT,
+    "receiptNumber" TEXT,
+    "errorMessage" TEXT,
+    "paidAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Invoice" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "invoiceNumber" TEXT NOT NULL,
+    "customerName" TEXT NOT NULL,
+    "customerEmail" TEXT NOT NULL,
+    "customerPhone" TEXT,
+    "billingAddress" JSONB,
+    "status" "InvoiceStatus" NOT NULL DEFAULT 'DRAFT',
+    "issueDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "dueDate" TIMESTAMP(3),
+    "items" JSONB NOT NULL,
+    "subtotal" DOUBLE PRECISION NOT NULL,
+    "taxRate" DOUBLE PRECISION DEFAULT 0,
+    "taxAmount" DOUBLE PRECISION DEFAULT 0,
+    "discountAmount" DOUBLE PRECISION DEFAULT 0,
+    "totalAmount" DOUBLE PRECISION NOT NULL,
+    "paidAmount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "paymentTerms" TEXT,
+    "notes" TEXT,
+    "dealId" TEXT,
+    "leadId" TEXT,
+    "pdfUrl" TEXT,
+    "publicUrl" TEXT,
+    "lastViewedAt" TIMESTAMP(3),
+    "sentAt" TIMESTAMP(3),
+    "paidAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BookingWidgetSettings" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "primaryColor" TEXT NOT NULL DEFAULT '#3b82f6',
+    "logo" TEXT,
+    "businessName" TEXT NOT NULL,
+    "businessDescription" TEXT,
+    "requireEmail" BOOLEAN NOT NULL DEFAULT true,
+    "requirePhone" BOOLEAN NOT NULL DEFAULT true,
+    "showAvailability" BOOLEAN NOT NULL DEFAULT true,
+    "timeSlotInterval" INTEGER NOT NULL DEFAULT 30,
+    "timezone" TEXT NOT NULL DEFAULT 'America/New_York',
+    "availabilityHours" JSONB,
+    "sendConfirmationEmail" BOOLEAN NOT NULL DEFAULT true,
+    "sendReminderEmail" BOOLEAN NOT NULL DEFAULT true,
+    "reminderHoursBefore" INTEGER DEFAULT 24,
+    "acceptPayments" BOOLEAN NOT NULL DEFAULT false,
+    "defaultPaymentProvider" TEXT,
+    "customCss" TEXT,
+    "customMessages" JSONB,
+    "embedCode" TEXT,
+    "publicUrl" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BookingWidgetSettings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AuditLog" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT,
+    "action" "AuditAction" NOT NULL,
+    "severity" "AuditSeverity" NOT NULL DEFAULT 'LOW',
+    "entityType" TEXT NOT NULL,
+    "entityId" TEXT,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "metadata" JSONB,
+    "success" BOOLEAN NOT NULL DEFAULT true,
+    "errorMessage" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "VoiceUsage" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "voiceAgentId" TEXT,
+    "callLogId" TEXT,
+    "durationSeconds" INTEGER NOT NULL,
+    "elevenLabsCallId" TEXT,
+    "costUSD" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "minutesUsed" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "billingStatus" TEXT NOT NULL DEFAULT 'PENDING',
+    "billedAt" TIMESTAMP(3),
+    "billingPeriod" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "VoiceUsage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserSubscription" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "monthlyMinutes" INTEGER NOT NULL DEFAULT 100,
+    "minutesUsed" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "overage" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "basePriceUSD" DOUBLE PRECISION NOT NULL DEFAULT 0.00,
+    "perMinutePriceUSD" DOUBLE PRECISION NOT NULL DEFAULT 0.15,
+    "stripeCustomerId" TEXT,
+    "stripeSubscriptionId" TEXT,
+    "currentPeriodStart" TIMESTAMP(3),
+    "currentPeriodEnd" TIMESTAMP(3),
+    "lastResetAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "cancelAt" TIMESTAMP(3),
+    "cancelAtPeriodEnd" BOOLEAN NOT NULL DEFAULT false,
+    "canceledAt" TIMESTAMP(3),
+    "lastPaymentError" TEXT,
+    "lastPaymentStatus" TEXT,
+    "nextPaymentAttempt" TIMESTAMP(3),
+    "stripePaymentMethodId" TEXT,
+    "stripePriceId" TEXT,
+    "tier" "SubscriptionTier" NOT NULL DEFAULT 'PRO',
+    "totalChargesUSD" DOUBLE PRECISION NOT NULL DEFAULT 0.00,
+    "trialEnd" TIMESTAMP(3),
+    "trialStart" TIMESTAMP(3),
+
+    CONSTRAINT "UserSubscription_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_payment_customers" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "soshogleCustomerId" TEXT,
+    "email" TEXT NOT NULL,
+    "phone" TEXT,
+    "defaultPaymentMethodId" TEXT,
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "soshogle_payment_customers_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_payment_merchants" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "soshogleMerchantId" TEXT,
+    "businessName" TEXT NOT NULL,
+    "businessType" TEXT,
+    "country" TEXT,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "accountStatus" "SoshogleMerchantStatus" NOT NULL DEFAULT 'PENDING',
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "soshogle_payment_merchants_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_payment_methods" (
+    "id" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "soshogleMethodId" TEXT,
+    "type" "SoshogleMethodType" NOT NULL,
+    "last4" TEXT,
+    "brand" TEXT,
+    "expiryMonth" INTEGER,
+    "expiryYear" INTEGER,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "soshogle_payment_methods_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_payment_intents" (
+    "id" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "soshogleIntentId" TEXT,
+    "amount" INTEGER NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "status" "SoshogleIntentStatus" NOT NULL DEFAULT 'PENDING',
+    "paymentMethodId" TEXT,
+    "description" TEXT,
+    "captureMethod" TEXT NOT NULL DEFAULT 'automatic',
+    "clientSecret" TEXT,
+    "errorMessage" TEXT,
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "processedAt" TIMESTAMP(3),
+    "canceledAt" TIMESTAMP(3),
+
+    CONSTRAINT "soshogle_payment_intents_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_transactions" (
+    "id" TEXT NOT NULL,
+    "paymentIntentId" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "status" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "processedAt" TIMESTAMP(3),
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "soshogle_transactions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_wallets" (
+    "id" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "balance" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "lastTransactionAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "soshogle_wallets_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_wallet_transactions" (
+    "id" TEXT NOT NULL,
+    "walletId" TEXT NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "type" TEXT NOT NULL,
+    "balanceBefore" DOUBLE PRECISION NOT NULL,
+    "balanceAfter" DOUBLE PRECISION NOT NULL,
+    "description" TEXT,
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "soshogle_wallet_transactions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_loyalty_programs" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "pointsRatio" DOUBLE PRECISION NOT NULL DEFAULT 1,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "benefits" TEXT,
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "soshogle_loyalty_programs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_loyalty_points" (
+    "id" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "programId" TEXT NOT NULL,
+    "points" INTEGER NOT NULL DEFAULT 0,
+    "tier" "SoshogleLoyaltyTier" NOT NULL DEFAULT 'BRONZE',
+    "lastEarnedAt" TIMESTAMP(3),
+    "lastRedeemedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "soshogle_loyalty_points_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_financing_plans" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "interestRate" DOUBLE PRECISION NOT NULL,
+    "termMonths" INTEGER NOT NULL,
+    "minAmount" INTEGER NOT NULL,
+    "maxAmount" INTEGER NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "soshogle_financing_plans_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_financing_payments" (
+    "id" TEXT NOT NULL,
+    "planId" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "principalAmount" INTEGER NOT NULL,
+    "interestAmount" INTEGER NOT NULL,
+    "installmentAmount" INTEGER NOT NULL,
+    "installmentsDue" INTEGER NOT NULL,
+    "installmentsPaid" INTEGER NOT NULL,
+    "status" "SoshogleFinancingStatus" NOT NULL DEFAULT 'ACTIVE',
+    "nextDueDate" TIMESTAMP(3),
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "soshogle_financing_payments_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_disputes" (
+    "id" TEXT NOT NULL,
+    "soshogleDisputeId" TEXT,
+    "paymentIntentId" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "reason" TEXT NOT NULL,
+    "status" "SoshogleDisputeStatus" NOT NULL DEFAULT 'NEEDS_RESPONSE',
+    "evidence" JSONB NOT NULL DEFAULT '{}',
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "resolvedAt" TIMESTAMP(3),
+
+    CONSTRAINT "soshogle_disputes_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_webhooks" (
+    "id" TEXT NOT NULL,
+    "eventId" TEXT NOT NULL,
+    "eventType" TEXT NOT NULL,
+    "payload" JSONB NOT NULL,
+    "status" TEXT NOT NULL,
+    "errorMessage" TEXT,
+    "processedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "soshogle_webhooks_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_trust_scores" (
+    "id" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "score" INTEGER NOT NULL DEFAULT 50,
+    "factors" JSONB NOT NULL DEFAULT '{}',
+    "lastUpdated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "soshogle_trust_scores_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "soshogle_fraud_detections" (
+    "id" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "riskScore" DOUBLE PRECISION NOT NULL,
+    "riskLevel" TEXT NOT NULL,
+    "isBlocked" BOOLEAN NOT NULL DEFAULT false,
+    "reason" TEXT,
+    "metadata" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "soshogle_fraud_detections_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Product" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "price" INTEGER NOT NULL,
+    "compareAtPrice" INTEGER,
+    "sku" TEXT NOT NULL,
+    "inventory" INTEGER NOT NULL DEFAULT 0,
+    "categoryId" TEXT,
+    "imageUrl" TEXT,
+    "images" TEXT[],
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "featured" BOOLEAN NOT NULL DEFAULT false,
+    "weight" DOUBLE PRECISION,
+    "dimensions" TEXT,
+    "tags" TEXT[],
+    "metaTitle" TEXT,
+    "metaDescription" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProductCategory" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "slug" TEXT NOT NULL,
+    "parentId" TEXT,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ProductCategory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Storefront" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "storeName" TEXT NOT NULL,
+    "domain" TEXT,
+    "subdomain" TEXT,
+    "logoUrl" TEXT,
+    "bannerUrl" TEXT,
+    "faviconUrl" TEXT,
+    "primaryColor" TEXT NOT NULL DEFAULT '#8b5cf6',
+    "secondaryColor" TEXT NOT NULL DEFAULT '#ffffff',
+    "accentColor" TEXT NOT NULL DEFAULT '#ec4899',
+    "description" TEXT,
+    "aboutPage" TEXT,
+    "shippingPolicy" TEXT,
+    "returnPolicy" TEXT,
+    "privacyPolicy" TEXT,
+    "termsOfService" TEXT,
+    "socialMedia" JSONB,
+    "contactEmail" TEXT,
+    "contactPhone" TEXT,
+    "active" BOOLEAN NOT NULL DEFAULT false,
+    "published" BOOLEAN NOT NULL DEFAULT false,
+    "publishedAt" TIMESTAMP(3),
+    "customCSS" TEXT,
+    "customJS" TEXT,
+    "metaTags" JSONB,
+    "analyticsId" TEXT,
+    "facebookPixel" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Storefront_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Order" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "orderNumber" TEXT NOT NULL,
+    "customerName" TEXT NOT NULL,
+    "customerEmail" TEXT NOT NULL,
+    "customerPhone" TEXT,
+    "shippingAddress" JSONB,
+    "billingAddress" JSONB,
+    "status" "OrderStatus" NOT NULL DEFAULT 'PENDING',
+    "paymentStatus" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
+    "paymentMethod" TEXT,
+    "subtotal" INTEGER NOT NULL,
+    "tax" INTEGER NOT NULL DEFAULT 0,
+    "shipping" INTEGER NOT NULL DEFAULT 0,
+    "discount" INTEGER NOT NULL DEFAULT 0,
+    "total" INTEGER NOT NULL,
+    "notes" TEXT,
+    "trackingNumber" TEXT,
+    "trackingUrl" TEXT,
+    "fulfilledAt" TIMESTAMP(3),
+    "canceledAt" TIMESTAMP(3),
+    "cancelReason" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OrderItem" (
+    "id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "productId" TEXT NOT NULL,
+    "productName" TEXT NOT NULL,
+    "productSku" TEXT NOT NULL,
+    "quantity" INTEGER NOT NULL,
+    "price" INTEGER NOT NULL,
+    "total" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "OrderItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CreditScore" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "score" INTEGER NOT NULL,
+    "scoreDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "trustScore" INTEGER,
+    "trustScoreDate" TIMESTAMP(3),
+    "riskLevel" "RiskLevel" NOT NULL DEFAULT 'MEDIUM',
+    "creditLimit" INTEGER NOT NULL DEFAULT 0,
+    "availableCredit" INTEGER NOT NULL DEFAULT 0,
+    "paymentHistory" INTEGER,
+    "creditUtilization" DOUBLE PRECISION,
+    "creditAge" INTEGER,
+    "accountMix" TEXT,
+    "recentInquiries" INTEGER,
+    "experianScore" INTEGER,
+    "equifaxScore" INTEGER,
+    "transUnionScore" INTEGER,
+    "insights" JSONB,
+    "recommendations" TEXT[],
+    "lastUpdated" TIMESTAMP(3) NOT NULL,
+    "nextReviewDate" TIMESTAMP(3),
+    "frozen" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CreditScore_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CreditApplication" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "creditScoreId" TEXT,
+    "applicationType" "ApplicationType" NOT NULL DEFAULT 'CREDIT_INCREASE',
+    "requestedAmount" INTEGER NOT NULL,
+    "purpose" TEXT,
+    "status" "ApplicationStatus" NOT NULL DEFAULT 'PENDING',
+    "decision" TEXT,
+    "decisionDate" TIMESTAMP(3),
+    "approvedAmount" INTEGER,
+    "denialReason" TEXT,
+    "annualIncome" INTEGER,
+    "employmentStatus" TEXT,
+    "employerName" TEXT,
+    "housingStatus" TEXT,
+    "monthlyRent" INTEGER,
+    "reviewedBy" TEXT,
+    "reviewNotes" TEXT,
+    "riskAssessment" JSONB,
+    "submittedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "expiresAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CreditApplication_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AchSettlement" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "batchId" TEXT NOT NULL,
+    "settlementDate" TIMESTAMP(3) NOT NULL,
+    "status" "AchSettlementStatus" NOT NULL DEFAULT 'PENDING',
+    "totalAmount" INTEGER NOT NULL,
+    "transactionCount" INTEGER NOT NULL,
+    "successCount" INTEGER NOT NULL DEFAULT 0,
+    "failedCount" INTEGER NOT NULL DEFAULT 0,
+    "processingFee" INTEGER NOT NULL DEFAULT 0,
+    "netAmount" INTEGER NOT NULL,
+    "bankName" TEXT,
+    "accountLast4" TEXT,
+    "routingNumber" TEXT,
+    "initiatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "processedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "failureReason" TEXT,
+    "notes" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AchSettlement_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AchSettlementTransaction" (
+    "id" TEXT NOT NULL,
+    "settlementId" TEXT NOT NULL,
+    "transactionType" "AchTransactionType" NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "status" "AchSettlementStatus" NOT NULL DEFAULT 'PENDING',
+    "recipientName" TEXT NOT NULL,
+    "recipientAccount" TEXT,
+    "recipientEmail" TEXT,
+    "description" TEXT,
+    "referenceNumber" TEXT,
+    "traceNumber" TEXT,
+    "processedAt" TIMESTAMP(3),
+    "failureReason" TEXT,
+    "retryCount" INTEGER NOT NULL DEFAULT 0,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AchSettlementTransaction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BnplApplication" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "purchaseAmount" INTEGER NOT NULL,
+    "downPayment" INTEGER NOT NULL DEFAULT 0,
+    "financedAmount" INTEGER NOT NULL,
+    "status" "BnplStatus" NOT NULL DEFAULT 'PENDING',
+    "installmentCount" INTEGER NOT NULL,
+    "installmentAmount" INTEGER NOT NULL,
+    "interestRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "totalInterest" INTEGER NOT NULL DEFAULT 0,
+    "totalRepayment" INTEGER NOT NULL,
+    "creditCheckScore" INTEGER,
+    "riskLevel" "RiskLevel" NOT NULL DEFAULT 'MEDIUM',
+    "creditCheckDate" TIMESTAMP(3),
+    "approvedAt" TIMESTAMP(3),
+    "approvedBy" TEXT,
+    "denialReason" TEXT,
+    "merchantName" TEXT,
+    "merchantId" TEXT,
+    "productDescription" TEXT,
+    "orderId" TEXT,
+    "firstPaymentDate" TIMESTAMP(3),
+    "lastPaymentDate" TIMESTAMP(3),
+    "nextPaymentDate" TIMESTAMP(3),
+    "paidInstallments" INTEGER NOT NULL DEFAULT 0,
+    "remainingBalance" INTEGER NOT NULL,
+    "totalPaid" INTEGER NOT NULL DEFAULT 0,
+    "missedPayments" INTEGER NOT NULL DEFAULT 0,
+    "lateFeeAmount" INTEGER NOT NULL DEFAULT 0,
+    "totalLateFees" INTEGER NOT NULL DEFAULT 0,
+    "notes" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "completedAt" TIMESTAMP(3),
+
+    CONSTRAINT "BnplApplication_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BnplInstallment" (
+    "id" TEXT NOT NULL,
+    "bnplApplicationId" TEXT NOT NULL,
+    "installmentNumber" INTEGER NOT NULL,
+    "dueDate" TIMESTAMP(3) NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "status" "BnplInstallmentStatus" NOT NULL DEFAULT 'SCHEDULED',
+    "paidAmount" INTEGER NOT NULL DEFAULT 0,
+    "paidDate" TIMESTAMP(3),
+    "paymentMethod" TEXT,
+    "transactionId" TEXT,
+    "lateFee" INTEGER NOT NULL DEFAULT 0,
+    "gracePeriodEnd" TIMESTAMP(3),
+    "overdueDate" TIMESTAMP(3),
+    "reminderSentAt" TIMESTAMP(3),
+    "reminderCount" INTEGER NOT NULL DEFAULT 0,
+    "notes" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BnplInstallment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DataInsight" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "insightType" "InsightType" NOT NULL,
+    "period" "InsightPeriod" NOT NULL,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
+    "totalTransactions" INTEGER NOT NULL DEFAULT 0,
+    "totalRevenue" INTEGER NOT NULL DEFAULT 0,
+    "averageOrderValue" INTEGER NOT NULL DEFAULT 0,
+    "uniqueCustomers" INTEGER NOT NULL DEFAULT 0,
+    "cardPayments" INTEGER NOT NULL DEFAULT 0,
+    "walletPayments" INTEGER NOT NULL DEFAULT 0,
+    "bnplPayments" INTEGER NOT NULL DEFAULT 0,
+    "achPayments" INTEGER NOT NULL DEFAULT 0,
+    "successRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "fraudRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "averageProcessingTime" INTEGER NOT NULL DEFAULT 0,
+    "growthRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "trendData" JSONB,
+    "dataPoints" INTEGER NOT NULL DEFAULT 0,
+    "confidenceScore" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "notes" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DataInsight_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DataExport" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "exportType" TEXT NOT NULL,
+    "format" "DataExportFormat" NOT NULL,
+    "status" "DataExportStatus" NOT NULL DEFAULT 'PENDING',
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
+    "includeFields" TEXT[],
+    "excludeFields" TEXT[],
+    "filters" JSONB,
+    "recordCount" INTEGER NOT NULL DEFAULT 0,
+    "fileSize" INTEGER NOT NULL DEFAULT 0,
+    "downloadUrl" TEXT,
+    "expiresAt" TIMESTAMP(3),
+    "processingStartedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "failureReason" TEXT,
+    "anonymized" BOOLEAN NOT NULL DEFAULT false,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "notes" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DataExport_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WidgetConfiguration" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "layout" "WidgetLayout" NOT NULL DEFAULT 'GRID',
+    "theme" "WidgetTheme" NOT NULL DEFAULT 'LIGHT',
+    "primaryColor" TEXT NOT NULL DEFAULT '#3b82f6',
+    "secondaryColor" TEXT NOT NULL DEFAULT '#6b7280',
+    "fontFamily" TEXT NOT NULL DEFAULT 'system-ui',
+    "showPrices" BOOLEAN NOT NULL DEFAULT true,
+    "showImages" BOOLEAN NOT NULL DEFAULT true,
+    "showDescription" BOOLEAN NOT NULL DEFAULT true,
+    "showAddToCart" BOOLEAN NOT NULL DEFAULT true,
+    "showQuickView" BOOLEAN NOT NULL DEFAULT false,
+    "featuredProducts" TEXT[],
+    "maxProducts" INTEGER NOT NULL DEFAULT 12,
+    "sortBy" TEXT NOT NULL DEFAULT 'createdAt',
+    "sortOrder" TEXT NOT NULL DEFAULT 'desc',
+    "categoryFilter" TEXT[],
+    "showCategories" BOOLEAN NOT NULL DEFAULT true,
+    "customCss" TEXT,
+    "customJs" TEXT,
+    "headerText" TEXT,
+    "footerText" TEXT,
+    "callToAction" TEXT NOT NULL DEFAULT 'Shop Now',
+    "embedCode" TEXT NOT NULL,
+    "apiKey" TEXT NOT NULL,
+    "impressions" INTEGER NOT NULL DEFAULT 0,
+    "clicks" INTEGER NOT NULL DEFAULT 0,
+    "conversions" INTEGER NOT NULL DEFAULT 0,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "WidgetConfiguration_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WidgetEmbed" (
+    "id" TEXT NOT NULL,
+    "widgetConfigId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "domain" TEXT NOT NULL,
+    "pageUrl" TEXT NOT NULL,
+    "pageTitle" TEXT,
+    "impressions" INTEGER NOT NULL DEFAULT 0,
+    "uniqueVisitors" INTEGER NOT NULL DEFAULT 0,
+    "clicks" INTEGER NOT NULL DEFAULT 0,
+    "addToCartClicks" INTEGER NOT NULL DEFAULT 0,
+    "purchases" INTEGER NOT NULL DEFAULT 0,
+    "revenue" INTEGER NOT NULL DEFAULT 0,
+    "lastActiveAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "averageSessionTime" INTEGER NOT NULL DEFAULT 0,
+    "bounceRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "userAgent" TEXT,
+    "referrer" TEXT,
+    "deviceType" TEXT,
+    "browserName" TEXT,
+    "loadTime" INTEGER NOT NULL DEFAULT 0,
+    "errorCount" INTEGER NOT NULL DEFAULT 0,
+    "lastError" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "WidgetEmbed_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CashTransaction" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "merchantId" TEXT,
+    "type" "CashTransactionType" NOT NULL DEFAULT 'SALE',
+    "amount" INTEGER NOT NULL,
+    "customerName" TEXT,
+    "customerPhone" TEXT,
+    "customerEmail" TEXT,
+    "transactionDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "notes" TEXT,
+    "receiptNumber" TEXT,
+    "reconciliationId" TEXT,
+    "isReconciled" BOOLEAN NOT NULL DEFAULT false,
+    "createdBy" TEXT NOT NULL,
+    "updatedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "metadata" JSONB,
+
+    CONSTRAINT "CashTransaction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CashReconciliation" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "merchantId" TEXT,
+    "reconciliationDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
+    "startingCash" INTEGER NOT NULL DEFAULT 0,
+    "expectedCash" INTEGER NOT NULL DEFAULT 0,
+    "actualCash" INTEGER NOT NULL DEFAULT 0,
+    "discrepancy" INTEGER NOT NULL DEFAULT 0,
+    "totalSales" INTEGER NOT NULL DEFAULT 0,
+    "totalRefunds" INTEGER NOT NULL DEFAULT 0,
+    "totalExpenses" INTEGER NOT NULL DEFAULT 0,
+    "totalAdjustments" INTEGER NOT NULL DEFAULT 0,
+    "transactionCount" INTEGER NOT NULL DEFAULT 0,
+    "notes" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "reviewedBy" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "createdBy" TEXT NOT NULL,
+    "updatedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "metadata" JSONB,
+
+    CONSTRAINT "CashReconciliation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DataMonetizationConsent" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "status" "DataConsentStatus" NOT NULL DEFAULT 'PENDING',
+    "sharingLevel" "DataSharingLevel" NOT NULL DEFAULT 'NONE',
+    "consentedAt" TIMESTAMP(3),
+    "revokedAt" TIMESTAMP(3),
+    "expiresAt" TIMESTAMP(3),
+    "allowTransactionData" BOOLEAN NOT NULL DEFAULT false,
+    "allowBehaviorData" BOOLEAN NOT NULL DEFAULT false,
+    "allowDemographicData" BOOLEAN NOT NULL DEFAULT false,
+    "allowLocationData" BOOLEAN NOT NULL DEFAULT false,
+    "revenueShareEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "revenueSharePercentage" INTEGER NOT NULL DEFAULT 0,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "consentVersion" TEXT NOT NULL DEFAULT '1.0',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DataMonetizationConsent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DataMonetizationInsight" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "insightType" TEXT NOT NULL,
+    "category" TEXT,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "dataPoints" JSONB NOT NULL,
+    "timeRange" TEXT NOT NULL,
+    "confidence" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "accessCount" INTEGER NOT NULL DEFAULT 0,
+    "revenueGenerated" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DataMonetizationInsight_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DataMonetizationRevenue" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "period" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL DEFAULT 0,
+    "dataAccessCount" INTEGER NOT NULL DEFAULT 0,
+    "transactionData" INTEGER NOT NULL DEFAULT 0,
+    "behaviorData" INTEGER NOT NULL DEFAULT 0,
+    "demographicData" INTEGER NOT NULL DEFAULT 0,
+    "locationData" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "paidAt" TIMESTAMP(3),
+    "paymentMethod" TEXT,
+    "transactionId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DataMonetizationRevenue_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EcommerceWidget" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "storefrontId" TEXT,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "theme" "WidgetTheme" NOT NULL DEFAULT 'LIGHT',
+    "layout" "WidgetLayout" NOT NULL DEFAULT 'GRID',
+    "primaryColor" TEXT NOT NULL DEFAULT '#3b82f6',
+    "accentColor" TEXT NOT NULL DEFAULT '#10b981',
+    "borderRadius" INTEGER NOT NULL DEFAULT 8,
+    "productIds" TEXT[],
+    "categoryFilter" TEXT,
+    "maxProducts" INTEGER NOT NULL DEFAULT 12,
+    "showOutOfStock" BOOLEAN NOT NULL DEFAULT false,
+    "showPrices" BOOLEAN NOT NULL DEFAULT true,
+    "showAddToCart" BOOLEAN NOT NULL DEFAULT true,
+    "showQuickView" BOOLEAN NOT NULL DEFAULT true,
+    "showSearch" BOOLEAN NOT NULL DEFAULT true,
+    "enableCheckout" BOOLEAN NOT NULL DEFAULT true,
+    "checkoutUrl" TEXT,
+    "impressions" INTEGER NOT NULL DEFAULT 0,
+    "clicks" INTEGER NOT NULL DEFAULT 0,
+    "conversions" INTEGER NOT NULL DEFAULT 0,
+    "allowedDomains" TEXT[],
+    "apiKey" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EcommerceWidget_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WidgetAnalytics" (
+    "id" TEXT NOT NULL,
+    "widgetId" TEXT NOT NULL,
+    "eventType" TEXT NOT NULL,
+    "productId" TEXT,
+    "sessionId" TEXT,
+    "domain" TEXT,
+    "referrer" TEXT,
+    "userAgent" TEXT,
+    "deviceType" TEXT,
+    "conversionValue" INTEGER,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "WidgetAnalytics_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "FraudAlert" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "transactionId" TEXT,
+    "alertType" TEXT NOT NULL,
+    "riskLevel" "FraudRiskLevel" NOT NULL,
+    "riskScore" DOUBLE PRECISION NOT NULL,
+    "detectedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "detectionRules" TEXT[],
+    "reason" TEXT NOT NULL,
+    "status" "FraudReviewStatus" NOT NULL DEFAULT 'PENDING',
+    "reviewedBy" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "reviewNotes" TEXT,
+    "actionTaken" TEXT,
+    "notificationSent" BOOLEAN NOT NULL DEFAULT false,
+    "isFalsePositive" BOOLEAN NOT NULL DEFAULT false,
+    "falsePositiveNotes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "FraudAlert_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "FraudPattern" (
+    "id" TEXT NOT NULL,
+    "patternType" TEXT NOT NULL,
+    "patternName" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "criteria" JSONB NOT NULL,
+    "threshold" DOUBLE PRECISION NOT NULL DEFAULT 0.7,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "detectionCount" INTEGER NOT NULL DEFAULT 0,
+    "falsePositiveRate" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    "severity" "FraudRiskLevel" NOT NULL,
+    "recommendedAction" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "FraudPattern_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RestaurantTable" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "tableName" TEXT NOT NULL,
+    "capacity" INTEGER NOT NULL,
+    "minCapacity" INTEGER,
+    "maxCapacity" INTEGER,
+    "section" TEXT,
+    "position" JSONB,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isPremium" BOOLEAN NOT NULL DEFAULT false,
+    "features" TEXT[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RestaurantTable_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TableLayout" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "layout" JSONB NOT NULL,
+    "sections" JSONB,
+    "availableFrom" TEXT,
+    "availableTo" TEXT,
+    "daysOfWeek" INTEGER[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TableLayout_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Reservation" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "customerId" TEXT,
+    "reservationDate" TIMESTAMP(3) NOT NULL,
+    "reservationTime" TEXT NOT NULL,
+    "partySize" INTEGER NOT NULL,
+    "duration" INTEGER NOT NULL DEFAULT 120,
+    "tableId" TEXT,
+    "section" TEXT,
+    "status" "ReservationStatus" NOT NULL DEFAULT 'PENDING',
+    "confirmationCode" TEXT NOT NULL,
+    "customerName" TEXT NOT NULL,
+    "customerEmail" TEXT,
+    "customerPhone" TEXT NOT NULL,
+    "specialRequests" TEXT,
+    "dietaryRestrictions" TEXT,
+    "occasion" TEXT,
+    "hasPreOrder" BOOLEAN NOT NULL DEFAULT false,
+    "preOrderId" TEXT,
+    "requiresDeposit" BOOLEAN NOT NULL DEFAULT false,
+    "depositAmount" DECIMAL(10,2),
+    "depositPaid" BOOLEAN NOT NULL DEFAULT false,
+    "paymentIntentId" TEXT,
+    "reminderSent" BOOLEAN NOT NULL DEFAULT false,
+    "reminderSentAt" TIMESTAMP(3),
+    "source" TEXT NOT NULL DEFAULT 'website',
+    "voiceCallId" TEXT,
+    "internalNotes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Reservation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ReservationActivity" (
+    "id" TEXT NOT NULL,
+    "reservationId" TEXT NOT NULL,
+    "type" "ReservationActivityType" NOT NULL,
+    "description" TEXT NOT NULL,
+    "performedBy" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ReservationActivity_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ReservationReminder" (
+    "id" TEXT NOT NULL,
+    "reservationId" TEXT NOT NULL,
+    "channel" "ReminderChannel" NOT NULL,
+    "scheduledFor" TIMESTAMP(3) NOT NULL,
+    "status" "ReminderStatus" NOT NULL DEFAULT 'PENDING',
+    "subject" TEXT,
+    "message" TEXT NOT NULL,
+    "sentAt" TIMESTAMP(3),
+    "failureReason" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ReservationReminder_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SeatingPreference" (
+    "id" TEXT NOT NULL,
+    "customerId" TEXT NOT NULL,
+    "preferredSection" TEXT,
+    "preferredFeatures" TEXT[],
+    "avoidances" TEXT[],
+    "notes" TEXT,
+    "reservationId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SeatingPreference_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ReservationSettings" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "acceptReservations" BOOLEAN NOT NULL DEFAULT true,
+    "minAdvanceHours" INTEGER NOT NULL DEFAULT 2,
+    "maxAdvanceDays" INTEGER NOT NULL DEFAULT 90,
+    "slotDuration" INTEGER NOT NULL DEFAULT 30,
+    "bufferBetweenSlots" INTEGER NOT NULL DEFAULT 15,
+    "operatingHours" JSONB NOT NULL,
+    "requireDeposit" BOOLEAN NOT NULL DEFAULT false,
+    "depositAmount" DECIMAL(10,2),
+    "depositMinPartySize" INTEGER,
+    "cancellationPolicy" TEXT,
+    "cancellationHours" INTEGER NOT NULL DEFAULT 24,
+    "sendReminders" BOOLEAN NOT NULL DEFAULT true,
+    "reminderHoursBefore" INTEGER NOT NULL DEFAULT 24,
+    "reminderChannels" TEXT[] DEFAULT ARRAY['email', 'sms']::TEXT[],
+    "maxPartySizeOnline" INTEGER NOT NULL DEFAULT 8,
+    "allowOverbooking" BOOLEAN NOT NULL DEFAULT false,
+    "overbookingPercentage" INTEGER,
+    "allowPreOrders" BOOLEAN NOT NULL DEFAULT false,
+    "preOrderDeadlineHours" INTEGER,
+    "enableVoiceBooking" BOOLEAN NOT NULL DEFAULT true,
+    "voiceAgentId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ReservationSettings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DeliveryOrder" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "driverId" TEXT,
+    "orderNumber" TEXT,
+    "orderValue" DECIMAL(10,2) NOT NULL,
+    "pickupAddress" TEXT NOT NULL,
+    "deliveryAddress" TEXT NOT NULL,
+    "pickupLat" DECIMAL(10,8),
+    "pickupLng" DECIMAL(11,8),
+    "deliveryLat" DECIMAL(10,8),
+    "deliveryLng" DECIMAL(11,8),
+    "distanceKm" DECIMAL(5,2),
+    "estimatedDurationMin" INTEGER,
+    "status" "DeliveryStatus" NOT NULL DEFAULT 'PENDING',
+    "scheduledPickupTime" TIMESTAMP(3),
+    "actualPickupTime" TIMESTAMP(3),
+    "estimatedDeliveryTime" TIMESTAMP(3),
+    "actualDeliveryTime" TIMESTAMP(3),
+    "deliveryInstructions" TEXT,
+    "customerName" TEXT NOT NULL,
+    "customerPhone" TEXT NOT NULL,
+    "customerEmail" TEXT,
+    "deliveryFee" DECIMAL(10,2) NOT NULL,
+    "commissionRate" DECIMAL(5,2) NOT NULL DEFAULT 27.5,
+    "commissionAmount" DECIMAL(10,2),
+    "driverEarnings" DECIMAL(10,2),
+    "trackingCode" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DeliveryOrder_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Driver" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT,
+    "name" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "email" TEXT,
+    "photoUrl" TEXT,
+    "vehicleType" "VehicleType" NOT NULL DEFAULT 'CAR',
+    "licensePlate" TEXT,
+    "vehicleColor" TEXT,
+    "vehicleModel" TEXT,
+    "status" "DriverStatus" NOT NULL DEFAULT 'OFFLINE',
+    "isAvailable" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "rating" DECIMAL(3,2) NOT NULL DEFAULT 5.0,
+    "totalDeliveries" INTEGER NOT NULL DEFAULT 0,
+    "totalEarnings" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "pendingEarnings" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "licenseUrl" TEXT,
+    "insuranceUrl" TEXT,
+    "vehicleRegUrl" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Driver_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DriverLocation" (
+    "id" TEXT NOT NULL,
+    "driverId" TEXT NOT NULL,
+    "deliveryOrderId" TEXT,
+    "lat" DECIMAL(10,8) NOT NULL,
+    "lng" DECIMAL(11,8) NOT NULL,
+    "heading" DECIMAL(5,2),
+    "speed" DECIMAL(5,2),
+    "accuracy" DECIMAL(5,2),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DriverLocation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DeliveryZone" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "polygon" JSONB NOT NULL,
+    "deliveryFee" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "minimumOrder" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "estimatedTimeMin" INTEGER NOT NULL DEFAULT 30,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DeliveryZone_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DriverZone" (
+    "id" TEXT NOT NULL,
+    "driverId" TEXT NOT NULL,
+    "zoneId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DriverZone_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DeliveryRating" (
+    "id" TEXT NOT NULL,
+    "deliveryOrderId" TEXT NOT NULL,
+    "driverId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "comment" TEXT,
+    "speedRating" INTEGER,
+    "qualityRating" INTEGER,
+    "serviceRating" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DeliveryRating_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DriverEarning" (
+    "id" TEXT NOT NULL,
+    "driverId" TEXT NOT NULL,
+    "amount" DECIMAL(10,2) NOT NULL,
+    "description" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "isPaid" BOOLEAN NOT NULL DEFAULT false,
+    "paidAt" TIMESTAMP(3),
+    "payoutId" TEXT,
+    "referenceId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DriverEarning_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Staff" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "employeeId" TEXT NOT NULL,
+    "pin" TEXT NOT NULL,
+    "role" "StaffRole" NOT NULL DEFAULT 'CASHIER',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "hireDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "terminationDate" TIMESTAMP(3),
+    "canVoidOrders" BOOLEAN NOT NULL DEFAULT false,
+    "canGiveDiscounts" BOOLEAN NOT NULL DEFAULT false,
+    "canAccessReports" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Staff_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Shift" (
+    "id" TEXT NOT NULL,
+    "staffId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "clockIn" TIMESTAMP(3) NOT NULL,
+    "clockOut" TIMESTAMP(3),
+    "status" "ShiftStatus" NOT NULL DEFAULT 'ACTIVE',
+    "startingCash" DECIMAL(10,2) NOT NULL,
+    "endingCash" DECIMAL(10,2),
+    "expectedCash" DECIMAL(10,2),
+    "cashDifference" DECIMAL(10,2),
+    "totalSales" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "orderCount" INTEGER NOT NULL DEFAULT 0,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Shift_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "POSOrder" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "staffId" TEXT,
+    "orderNumber" TEXT NOT NULL,
+    "orderType" "POSOrderType" NOT NULL DEFAULT 'DINE_IN',
+    "status" "POSOrderStatus" NOT NULL DEFAULT 'PENDING',
+    "customerName" TEXT,
+    "customerPhone" TEXT,
+    "customerEmail" TEXT,
+    "tableNumber" TEXT,
+    "subtotal" DECIMAL(10,2) NOT NULL,
+    "tax" DECIMAL(10,2) NOT NULL,
+    "discount" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "tip" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "total" DECIMAL(10,2) NOT NULL,
+    "paymentMethod" "POSPaymentMethod",
+    "paymentStatus" "POSPaymentStatus" NOT NULL DEFAULT 'UNPAID',
+    "paidAt" TIMESTAMP(3),
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "POSOrder_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "POSOrderItem" (
+    "id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "sku" TEXT,
+    "quantity" INTEGER NOT NULL,
+    "unitPrice" DECIMAL(10,2) NOT NULL,
+    "total" DECIMAL(10,2) NOT NULL,
+    "modifiers" TEXT,
+    "notes" TEXT,
+    "discount" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "tax" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "POSOrderItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Receipt" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "receiptNumber" TEXT NOT NULL,
+    "receiptType" "ReceiptType" NOT NULL DEFAULT 'SALE',
+    "content" TEXT NOT NULL,
+    "emailSentTo" TEXT,
+    "emailSentAt" TIMESTAMP(3),
+    "printed" BOOLEAN NOT NULL DEFAULT false,
+    "printedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Receipt_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "KitchenStation" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "displayName" TEXT NOT NULL,
+    "color" TEXT,
+    "icon" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "priority" INTEGER NOT NULL DEFAULT 0,
+    "maxCapacity" INTEGER,
+    "defaultPrepTime" INTEGER NOT NULL DEFAULT 15,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "KitchenStation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "KitchenOrderItem" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "posOrderId" TEXT NOT NULL,
+    "posOrderItemId" TEXT NOT NULL,
+    "stationId" TEXT NOT NULL,
+    "itemName" TEXT NOT NULL,
+    "quantity" INTEGER NOT NULL,
+    "modifiers" TEXT,
+    "specialNotes" TEXT,
+    "status" "KitchenItemStatus" NOT NULL DEFAULT 'PENDING',
+    "priority" "KitchenPriority" NOT NULL DEFAULT 'NORMAL',
+    "receivedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "startedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "expectedTime" INTEGER NOT NULL,
+    "alertAt" TIMESTAMP(3),
+    "assignedTo" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "KitchenOrderItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PrepLog" (
+    "id" TEXT NOT NULL,
+    "kitchenItemId" TEXT NOT NULL,
+    "action" "PrepAction" NOT NULL,
+    "previousStatus" "KitchenItemStatus",
+    "newStatus" "KitchenItemStatus" NOT NULL,
+    "staffId" TEXT,
+    "staffName" TEXT,
+    "notes" TEXT,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PrepLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "InventoryItem" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "sku" TEXT NOT NULL,
+    "description" TEXT,
+    "category" "InventoryCategory" NOT NULL,
+    "unit" "InventoryUnit" NOT NULL,
+    "currentStock" DECIMAL(10,2) NOT NULL,
+    "minimumStock" DECIMAL(10,2) NOT NULL,
+    "maximumStock" DECIMAL(10,2),
+    "reorderQuantity" DECIMAL(10,2) NOT NULL,
+    "costPerUnit" DECIMAL(10,2) NOT NULL,
+    "sellingPrice" DECIMAL(10,2),
+    "supplierId" TEXT,
+    "expirationDate" TIMESTAMP(3),
+    "location" TEXT,
+    "barcode" TEXT,
+    "trackExpiration" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "autoReorder" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "InventoryItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Supplier" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "contactPerson" TEXT,
+    "email" TEXT,
+    "phone" TEXT,
+    "address" TEXT,
+    "taxId" TEXT,
+    "paymentTerms" TEXT,
+    "notes" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "rating" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Supplier_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PurchaseOrder" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "orderNumber" TEXT NOT NULL,
+    "supplierId" TEXT NOT NULL,
+    "status" "PurchaseOrderStatus" NOT NULL DEFAULT 'DRAFT',
+    "orderDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expectedDate" TIMESTAMP(3),
+    "receivedDate" TIMESTAMP(3),
+    "subtotal" DECIMAL(10,2) NOT NULL,
+    "tax" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "shipping" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "total" DECIMAL(10,2) NOT NULL,
+    "paymentStatus" "POPaymentStatus" NOT NULL DEFAULT 'UNPAID',
+    "paidAt" TIMESTAMP(3),
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PurchaseOrder_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PurchaseOrderItem" (
+    "id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "inventoryItemId" TEXT NOT NULL,
+    "quantity" DECIMAL(10,2) NOT NULL,
+    "receivedQuantity" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "unitPrice" DECIMAL(10,2) NOT NULL,
+    "total" DECIMAL(10,2) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PurchaseOrderItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "InventoryAdjustment" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "inventoryItemId" TEXT NOT NULL,
+    "type" "AdjustmentType" NOT NULL,
+    "quantityChange" DECIMAL(10,2) NOT NULL,
+    "previousStock" DECIMAL(10,2) NOT NULL,
+    "newStock" DECIMAL(10,2) NOT NULL,
+    "reason" TEXT NOT NULL,
+    "notes" TEXT,
+    "staffId" TEXT,
+    "staffName" TEXT,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "InventoryAdjustment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "StockAlert" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "inventoryItemId" TEXT NOT NULL,
+    "alertType" "AlertType" NOT NULL,
+    "message" TEXT NOT NULL,
+    "severity" "AlertSeverity" NOT NULL DEFAULT 'MEDIUM',
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "isResolved" BOOLEAN NOT NULL DEFAULT false,
+    "resolvedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "StockAlert_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Recipe" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "category" TEXT,
+    "servingSize" INTEGER NOT NULL DEFAULT 1,
+    "prepTime" INTEGER,
+    "cookTime" INTEGER,
+    "totalCost" DECIMAL(10,2) NOT NULL,
+    "costPerServing" DECIMAL(10,2) NOT NULL,
+    "sellingPrice" DECIMAL(10,2),
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Recipe_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RecipeIngredient" (
+    "id" TEXT NOT NULL,
+    "recipeId" TEXT NOT NULL,
+    "inventoryItemId" TEXT NOT NULL,
+    "quantity" DECIMAL(10,2) NOT NULL,
+    "unit" "InventoryUnit" NOT NULL,
+    "cost" DECIMAL(10,2) NOT NULL,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RecipeIngredient_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserFeatureToggle" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "feature" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "UserFeatureToggle_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AdminAction" (
+    "id" TEXT NOT NULL,
+    "adminId" TEXT NOT NULL,
+    "adminEmail" TEXT NOT NULL,
+    "targetUserId" TEXT,
+    "targetUserEmail" TEXT,
+    "action" TEXT NOT NULL,
+    "details" JSONB,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AdminAction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSHousehold" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "primaryContactName" TEXT NOT NULL,
+    "primaryContactEmail" TEXT NOT NULL,
+    "primaryContactPhone" TEXT NOT NULL,
+    "address" TEXT,
+    "city" TEXT,
+    "state" TEXT,
+    "zipCode" TEXT,
+    "emergencyContact" TEXT,
+    "emergencyPhone" TEXT,
+    "notes" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "clubCode" TEXT,
+    "clubOwnerId" TEXT,
+    "status" "ClubOSHouseholdStatus" NOT NULL DEFAULT 'PENDING',
+    "verifiedAt" TIMESTAMP(3),
+
+    CONSTRAINT "ClubOSHousehold_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSMember" (
+    "id" TEXT NOT NULL,
+    "householdId" TEXT NOT NULL,
+    "memberType" "ClubOSMemberType" NOT NULL,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "email" TEXT,
+    "phone" TEXT,
+    "dateOfBirth" TIMESTAMP(3),
+    "gender" "ClubOSGender",
+    "photoUrl" TEXT,
+    "medicalNotes" TEXT,
+    "allergies" TEXT,
+    "medications" TEXT,
+    "shirtSize" TEXT,
+    "waiverSigned" BOOLEAN NOT NULL DEFAULT false,
+    "waiverSignedDate" TIMESTAMP(3),
+    "backgroundCheckStatus" TEXT,
+    "backgroundCheckDate" TIMESTAMP(3),
+    "backgroundCheckExpiry" TIMESTAMP(3),
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubOSMember_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSProgram" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "programType" "ClubOSProgramType" NOT NULL,
+    "status" "ClubOSProgramStatus" NOT NULL DEFAULT 'DRAFT',
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
+    "registrationOpenDate" TIMESTAMP(3),
+    "registrationCloseDate" TIMESTAMP(3),
+    "maxParticipants" INTEGER,
+    "currentParticipants" INTEGER NOT NULL DEFAULT 0,
+    "baseFee" INTEGER NOT NULL,
+    "familyDiscount" INTEGER,
+    "earlyBirdDiscount" INTEGER,
+    "earlyBirdDeadline" TIMESTAMP(3),
+    "ageMin" INTEGER,
+    "ageMax" INTEGER,
+    "imageUrl" TEXT,
+    "tags" TEXT[],
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubOSProgram_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSDivision" (
+    "id" TEXT NOT NULL,
+    "programId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "ageMin" INTEGER NOT NULL,
+    "ageMax" INTEGER NOT NULL,
+    "gender" "ClubOSGender",
+    "skillLevel" TEXT,
+    "maxTeams" INTEGER,
+    "maxPlayersPerTeam" INTEGER,
+    "practiceDay" TEXT,
+    "practiceTime" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubOSDivision_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSTeam" (
+    "id" TEXT NOT NULL,
+    "divisionId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "colorPrimary" TEXT,
+    "colorSecondary" TEXT,
+    "maxPlayers" INTEGER,
+    "status" "ClubOSTeamStatus" NOT NULL DEFAULT 'FORMING',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubOSTeam_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSTeamMember" (
+    "id" TEXT NOT NULL,
+    "teamId" TEXT NOT NULL,
+    "memberId" TEXT NOT NULL,
+    "role" "ClubOSTeamRole" NOT NULL DEFAULT 'PLAYER',
+    "jerseyNumber" TEXT,
+    "joinedDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ClubOSTeamMember_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSRegistration" (
+    "id" TEXT NOT NULL,
+    "householdId" TEXT NOT NULL,
+    "memberId" TEXT NOT NULL,
+    "programId" TEXT NOT NULL,
+    "divisionId" TEXT,
+    "status" "ClubOSRegistrationStatus" NOT NULL DEFAULT 'PENDING',
+    "registrationDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "customFields" JSONB,
+    "specialRequests" TEXT,
+    "totalAmount" INTEGER NOT NULL,
+    "amountPaid" INTEGER NOT NULL DEFAULT 0,
+    "balanceDue" INTEGER NOT NULL DEFAULT 0,
+    "waiverSignedDate" TIMESTAMP(3),
+    "documentsUploaded" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubOSRegistration_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSWaitlist" (
+    "id" TEXT NOT NULL,
+    "registrationId" TEXT NOT NULL,
+    "position" INTEGER NOT NULL,
+    "notifiedDate" TIMESTAMP(3),
+    "responseDeadline" TIMESTAMP(3),
+    "promotedDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ClubOSWaitlist_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSWaiver" (
+    "id" TEXT NOT NULL,
+    "programId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "version" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ClubOSWaiver_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSVenue" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "venueType" "ClubOSVenueType" NOT NULL,
+    "address" TEXT,
+    "city" TEXT,
+    "state" TEXT,
+    "zipCode" TEXT,
+    "capacity" INTEGER,
+    "hasLighting" BOOLEAN NOT NULL DEFAULT false,
+    "hasParking" BOOLEAN NOT NULL DEFAULT false,
+    "hasRestrooms" BOOLEAN NOT NULL DEFAULT false,
+    "availability" JSONB,
+    "notes" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubOSVenue_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSSchedule" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "eventType" "ClubOSEventType" NOT NULL,
+    "status" "ClubOSEventStatus" NOT NULL DEFAULT 'SCHEDULED',
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "startTime" TIMESTAMP(3) NOT NULL,
+    "endTime" TIMESTAMP(3) NOT NULL,
+    "venueId" TEXT,
+    "homeTeamId" TEXT,
+    "awayTeamId" TEXT,
+    "practiceTeamId" TEXT,
+    "homeScore" INTEGER,
+    "awayScore" INTEGER,
+    "notes" TEXT,
+    "notificationsent" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubOSSchedule_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSStaffAssignment" (
+    "id" TEXT NOT NULL,
+    "scheduleId" TEXT NOT NULL,
+    "memberId" TEXT NOT NULL,
+    "role" "ClubOSStaffRole" NOT NULL,
+    "fee" INTEGER,
+    "confirmed" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ClubOSStaffAssignment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSPayment" (
+    "id" TEXT NOT NULL,
+    "householdId" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "paymentMethod" "ClubOSPaymentMethod" NOT NULL,
+    "status" "ClubOSPaymentStatus" NOT NULL DEFAULT 'PENDING',
+    "stripePaymentId" TEXT,
+    "stripeCustomerId" TEXT,
+    "description" TEXT,
+    "notes" TEXT,
+    "paidAt" TIMESTAMP(3),
+    "refundedAt" TIMESTAMP(3),
+    "refundAmount" INTEGER,
+    "refundReason" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "metadata" JSONB,
+    "registrationId" TEXT,
+    "stripeReceiptUrl" TEXT,
+
+    CONSTRAINT "ClubOSPayment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSInvoice" (
+    "id" TEXT NOT NULL,
+    "householdId" TEXT NOT NULL,
+    "invoiceNumber" TEXT NOT NULL,
+    "status" "ClubOSInvoiceStatus" NOT NULL DEFAULT 'PENDING',
+    "subtotal" INTEGER NOT NULL,
+    "discounts" INTEGER NOT NULL DEFAULT 0,
+    "tax" INTEGER NOT NULL DEFAULT 0,
+    "total" INTEGER NOT NULL,
+    "amountPaid" INTEGER NOT NULL DEFAULT 0,
+    "balanceDue" INTEGER NOT NULL,
+    "dueDate" TIMESTAMP(3),
+    "paidAt" TIMESTAMP(3),
+    "lineItems" JSONB NOT NULL,
+    "notes" TEXT,
+    "paymentPlanEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "installmentCount" INTEGER,
+    "installmentAmount" INTEGER,
+    "nextInstallmentDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubOSInvoice_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSInvoicePayment" (
+    "id" TEXT NOT NULL,
+    "invoiceId" TEXT NOT NULL,
+    "paymentId" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ClubOSInvoicePayment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSCommunication" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "householdId" TEXT,
+    "type" "ClubOSCommunicationType" NOT NULL,
+    "status" "ClubOSCommunicationStatus" NOT NULL DEFAULT 'DRAFT',
+    "priority" "ClubOSCommunicationPriority" NOT NULL DEFAULT 'NORMAL',
+    "subject" TEXT,
+    "message" TEXT NOT NULL,
+    "recipientType" TEXT NOT NULL,
+    "recipientIds" TEXT[],
+    "recipientCount" INTEGER NOT NULL DEFAULT 0,
+    "deliveredCount" INTEGER NOT NULL DEFAULT 0,
+    "failedCount" INTEGER NOT NULL DEFAULT 0,
+    "scheduledFor" TIMESTAMP(3),
+    "sentAt" TIMESTAMP(3),
+    "twilioMessageSid" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubOSCommunication_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSUserRelation" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "seasonStartMonth" INTEGER NOT NULL DEFAULT 8,
+    "timezone" TEXT NOT NULL DEFAULT 'America/New_York',
+    "allowOnlineRegistration" BOOLEAN NOT NULL DEFAULT true,
+    "requireWaivers" BOOLEAN NOT NULL DEFAULT true,
+    "requireBackgroundChecks" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubOSUserRelation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ClubOSNotificationSetting" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "notificationType" "ClubOSNotificationType" NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "sendEmail" BOOLEAN NOT NULL DEFAULT true,
+    "sendSMS" BOOLEAN NOT NULL DEFAULT false,
+    "reminderHoursBefore" INTEGER,
+    "reminderDaysInterval" INTEGER,
+    "emailSubject" TEXT,
+    "emailBody" TEXT,
+    "smsTemplate" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ClubOSNotificationSetting_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ElevenLabsApiKey" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "apiKey" TEXT NOT NULL,
+    "label" TEXT NOT NULL,
+    "priority" INTEGER NOT NULL DEFAULT 0,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "characterLimit" INTEGER NOT NULL DEFAULT 0,
+    "characterUsed" INTEGER NOT NULL DEFAULT 0,
+    "lastCheckedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ElevenLabsApiKey_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "GeneralInventoryCategory" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "parentId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "GeneralInventoryCategory_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "GeneralInventorySupplier" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "contactName" TEXT,
+    "email" TEXT,
+    "phone" TEXT,
+    "address" TEXT,
+    "website" TEXT,
+    "notes" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "GeneralInventorySupplier_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "GeneralInventoryLocation" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "address" TEXT,
+    "type" TEXT,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "GeneralInventoryLocation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "GeneralInventoryItem" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "sku" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "categoryId" TEXT,
+    "supplierId" TEXT,
+    "locationId" TEXT,
+    "quantity" INTEGER NOT NULL DEFAULT 0,
+    "reorderLevel" INTEGER NOT NULL DEFAULT 0,
+    "reorderQuantity" INTEGER NOT NULL DEFAULT 0,
+    "unit" TEXT,
+    "costPrice" DOUBLE PRECISION,
+    "sellingPrice" DOUBLE PRECISION,
+    "barcode" TEXT,
+    "imageUrl" TEXT,
+    "notes" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "GeneralInventoryItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "GeneralInventoryAdjustment" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "itemId" TEXT NOT NULL,
+    "type" "GeneralInventoryAdjustmentType" NOT NULL,
+    "quantity" INTEGER NOT NULL,
+    "quantityBefore" INTEGER NOT NULL,
+    "quantityAfter" INTEGER NOT NULL,
+    "fromLocationId" TEXT,
+    "toLocationId" TEXT,
+    "unitCost" DOUBLE PRECISION,
+    "totalCost" DOUBLE PRECISION,
+    "reason" TEXT,
+    "reference" TEXT,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdBy" TEXT,
+
+    CONSTRAINT "GeneralInventoryAdjustment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EcommerceSyncSettings" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "platform" TEXT NOT NULL,
+    "autoSync" BOOLEAN NOT NULL DEFAULT false,
+    "syncInventory" BOOLEAN NOT NULL DEFAULT false,
+    "syncPrices" BOOLEAN NOT NULL DEFAULT false,
+    "syncProducts" BOOLEAN NOT NULL DEFAULT false,
+    "shopifyDomain" TEXT,
+    "shopifyAccessToken" TEXT,
+    "woocommerceUrl" TEXT,
+    "woocommerceConsumerKey" TEXT,
+    "woocommerceConsumerSecret" TEXT,
+    "lastSyncAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EcommerceSyncSettings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LowStockAlertSettings" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "checkDaily" BOOLEAN NOT NULL DEFAULT true,
+    "alertTime" TEXT NOT NULL DEFAULT '09:00',
+    "sendEmail" BOOLEAN NOT NULL DEFAULT true,
+    "emailAddresses" TEXT,
+    "sendSMS" BOOLEAN NOT NULL DEFAULT false,
+    "smsNumbers" TEXT,
+    "alertOnLowStock" BOOLEAN NOT NULL DEFAULT true,
+    "alertOnOutOfStock" BOOLEAN NOT NULL DEFAULT true,
+    "alertOnCritical" BOOLEAN NOT NULL DEFAULT true,
+    "lastAlertSent" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LowStockAlertSettings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Task" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "status" "TaskStatus" NOT NULL DEFAULT 'TODO',
+    "priority" "TaskPriority" NOT NULL DEFAULT 'MEDIUM',
+    "dueDate" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "assignedToId" TEXT,
+    "dealId" TEXT,
+    "leadId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "actualHours" DOUBLE PRECISION,
+    "aiContext" JSONB,
+    "aiSuggested" BOOLEAN NOT NULL DEFAULT false,
+    "autoCreated" BOOLEAN NOT NULL DEFAULT false,
+    "automationRule" TEXT,
+    "category" TEXT,
+    "dependsOnId" TEXT,
+    "estimatedHours" DOUBLE PRECISION,
+    "parentTaskId" TEXT,
+    "progressPercent" INTEGER NOT NULL DEFAULT 0,
+    "startDate" TIMESTAMP(3),
+    "tags" TEXT[],
+
+    CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TaskComment" (
+    "id" TEXT NOT NULL,
+    "taskId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TaskComment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TaskAttachment" (
+    "id" TEXT NOT NULL,
+    "taskId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileUrl" TEXT NOT NULL,
+    "fileSize" INTEGER,
+    "mimeType" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TaskAttachment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TaskActivity" (
+    "id" TEXT NOT NULL,
+    "taskId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "oldValue" TEXT,
+    "newValue" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TaskActivity_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TaskTemplate" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "category" TEXT,
+    "defaultPriority" "TaskPriority" NOT NULL DEFAULT 'MEDIUM',
+    "estimatedHours" DOUBLE PRECISION,
+    "checklistItems" JSONB,
+    "tags" TEXT[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TaskTemplate_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TaskAutomation" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "triggerType" TEXT NOT NULL,
+    "triggerConditions" JSONB NOT NULL,
+    "actionType" TEXT NOT NULL,
+    "actionConfig" JSONB NOT NULL,
+    "lastRun" TIMESTAMP(3),
+    "runCount" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TaskAutomation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "UserPermission" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "resource" "PageResource" NOT NULL,
+    "canRead" BOOLEAN NOT NULL DEFAULT false,
+    "canWrite" BOOLEAN NOT NULL DEFAULT false,
+    "canDelete" BOOLEAN NOT NULL DEFAULT false,
+    "grantedBy" TEXT,
+    "grantedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "UserPermission_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AdminSession" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "sessionToken" TEXT NOT NULL,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "lastActivity" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AdminSession_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "BookingSettings" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "businessName" TEXT NOT NULL,
+    "businessDescription" TEXT,
+    "bookingUrl" TEXT NOT NULL,
+    "availabilitySchedule" JSONB NOT NULL,
+    "slotDuration" INTEGER NOT NULL DEFAULT 30,
+    "bufferTime" INTEGER NOT NULL DEFAULT 0,
+    "advanceBookingDays" INTEGER NOT NULL DEFAULT 30,
+    "minNoticeHours" INTEGER NOT NULL DEFAULT 24,
+    "allowedMeetingTypes" TEXT[] DEFAULT ARRAY['PHONE', 'VIDEO', 'IN_PERSON']::TEXT[],
+    "requireApproval" BOOLEAN NOT NULL DEFAULT false,
+    "customMessage" TEXT,
+    "brandColor" TEXT NOT NULL DEFAULT '#9333ea',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BookingSettings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SuperAdminSession" (
+    "id" TEXT NOT NULL,
+    "superAdminId" TEXT NOT NULL,
+    "impersonatedUserId" TEXT NOT NULL,
+    "sessionToken" TEXT NOT NULL,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastActivity" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "endedAt" TIMESTAMP(3),
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "SuperAdminSession_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "KnowledgeBaseFile" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileType" TEXT NOT NULL,
+    "fileSize" INTEGER NOT NULL,
+    "extractedText" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "KnowledgeBaseFile_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "VoiceAgentKnowledgeBaseFile" (
+    "id" TEXT NOT NULL,
+    "voiceAgentId" TEXT NOT NULL,
+    "knowledgeBaseFileId" TEXT NOT NULL,
+    "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "VoiceAgentKnowledgeBaseFile_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RelationshipGraph" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "sourceType" "EntityType" NOT NULL,
+    "sourceId" TEXT NOT NULL,
+    "targetType" "EntityType" NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "relationshipType" "RelationshipType" NOT NULL,
+    "strength" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+    "interactionCount" INTEGER NOT NULL DEFAULT 1,
+    "lastInteractionAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "firstCreatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "context" JSONB,
+    "isAutomatic" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RelationshipGraph_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RelationshipMetrics" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "entityType" "EntityType" NOT NULL,
+    "entityId" TEXT NOT NULL,
+    "totalRelations" INTEGER NOT NULL DEFAULT 0,
+    "avgStrength" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "strongestType" TEXT,
+    "lastUpdated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RelationshipMetrics_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ToolDefinition" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "category" "ToolCategory" NOT NULL,
+    "baseUrl" TEXT,
+    "authType" "ToolAuthType" NOT NULL,
+    "authConfig" JSONB,
+    "openApiSpec" JSONB,
+    "apiVersion" TEXT,
+    "capabilities" JSONB NOT NULL,
+    "requiredScopes" TEXT[],
+    "webhookSupport" BOOLEAN NOT NULL DEFAULT false,
+    "rateLimits" JSONB,
+    "isPublic" BOOLEAN NOT NULL DEFAULT false,
+    "isOfficial" BOOLEAN NOT NULL DEFAULT false,
+    "logoUrl" TEXT,
+    "documentationUrl" TEXT,
+    "installCount" INTEGER NOT NULL DEFAULT 0,
+    "rating" DOUBLE PRECISION,
+    "createdById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ToolDefinition_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ToolInstance" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "definitionId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "status" "ToolStatus" NOT NULL DEFAULT 'TESTING',
+    "credentials" JSONB NOT NULL,
+    "config" JSONB,
+    "lastUsed" TIMESTAMP(3),
+    "totalCalls" INTEGER NOT NULL DEFAULT 0,
+    "successfulCalls" INTEGER NOT NULL DEFAULT 0,
+    "failedCalls" INTEGER NOT NULL DEFAULT 0,
+    "avgResponseTime" DOUBLE PRECISION,
+    "uptime" DOUBLE PRECISION,
+    "lastError" TEXT,
+    "lastErrorAt" TIMESTAMP(3),
+    "consecutiveErrors" INTEGER NOT NULL DEFAULT 0,
+    "installedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ToolInstance_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ToolAction" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "instanceId" TEXT NOT NULL,
+    "actionType" TEXT NOT NULL,
+    "method" TEXT NOT NULL,
+    "endpoint" TEXT NOT NULL,
+    "requestPayload" JSONB,
+    "responsePayload" JSONB,
+    "statusCode" INTEGER,
+    "duration" INTEGER,
+    "success" BOOLEAN NOT NULL,
+    "errorMessage" TEXT,
+    "errorCode" TEXT,
+    "retryCount" INTEGER NOT NULL DEFAULT 0,
+    "triggeredBy" TEXT,
+    "context" JSONB,
+    "executedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ToolAction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AIWorkflowTemplate" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "pattern" JSONB NOT NULL,
+    "confidence" DOUBLE PRECISION NOT NULL,
+    "detectedFromUserId" TEXT,
+    "workflowDefinition" JSONB NOT NULL,
+    "nodes" JSONB NOT NULL,
+    "edges" JSONB NOT NULL,
+    "avgExecutionTime" DOUBLE PRECISION,
+    "avgSuccessRate" DOUBLE PRECISION,
+    "totalExecutions" INTEGER NOT NULL DEFAULT 0,
+    "successfulRuns" INTEGER NOT NULL DEFAULT 0,
+    "failedRuns" INTEGER NOT NULL DEFAULT 0,
+    "isVariant" BOOLEAN NOT NULL DEFAULT false,
+    "variantOf" TEXT,
+    "conversionRate" DOUBLE PRECISION,
+    "isPublic" BOOLEAN NOT NULL DEFAULT false,
+    "category" TEXT,
+    "tags" TEXT[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AIWorkflowTemplate_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AIWorkflowInstance" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "templateId" TEXT,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "status" "AIWorkflowStatus" NOT NULL DEFAULT 'DRAFT',
+    "definition" JSONB NOT NULL,
+    "version" INTEGER NOT NULL DEFAULT 1,
+    "triggerType" "AIWorkflowTriggerType" NOT NULL,
+    "triggerConfig" JSONB NOT NULL,
+    "totalExecutions" INTEGER NOT NULL DEFAULT 0,
+    "successfulRuns" INTEGER NOT NULL DEFAULT 0,
+    "failedRuns" INTEGER NOT NULL DEFAULT 0,
+    "avgExecutionTime" DOUBLE PRECISION,
+    "lastExecutedAt" TIMESTAMP(3),
+    "outcomeMetric" TEXT,
+    "outcomeValue" DOUBLE PRECISION,
+    "previousVersions" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AIWorkflowInstance_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AIWorkflowExecution" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "instanceId" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "currentStep" TEXT,
+    "inputData" JSONB NOT NULL,
+    "outputData" JSONB,
+    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "duration" INTEGER,
+    "errorMessage" TEXT,
+    "errorStep" TEXT,
+    "retryCount" INTEGER NOT NULL DEFAULT 0,
+    "stepLogs" JSONB,
+    "triggeredBy" TEXT,
+    "context" JSONB,
+
+    CONSTRAINT "AIWorkflowExecution_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WorkflowOptimization" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "originalInstanceId" TEXT NOT NULL,
+    "variantInstanceId" TEXT NOT NULL,
+    "testStartedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "testEndedAt" TIMESTAMP(3),
+    "trafficSplit" DOUBLE PRECISION NOT NULL DEFAULT 0.5,
+    "originalConversions" INTEGER NOT NULL DEFAULT 0,
+    "originalExecutions" INTEGER NOT NULL DEFAULT 0,
+    "variantConversions" INTEGER NOT NULL DEFAULT 0,
+    "variantExecutions" INTEGER NOT NULL DEFAULT 0,
+    "winnerId" TEXT,
+    "winnerConfidence" DOUBLE PRECISION,
+    "improvementPercent" DOUBLE PRECISION,
+    "insights" JSONB,
+
+    CONSTRAINT "WorkflowOptimization_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ToolRelationship" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "sourceInstanceId" TEXT NOT NULL,
+    "targetType" TEXT NOT NULL,
+    "targetId" TEXT NOT NULL,
+    "relationshipType" TEXT NOT NULL,
+    "strength" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+    "interactionCount" INTEGER NOT NULL DEFAULT 1,
+    "successfulUses" INTEGER NOT NULL DEFAULT 0,
+    "failedUses" INTEGER NOT NULL DEFAULT 0,
+    "lastUsedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "aiConfidence" DOUBLE PRECISION,
+    "suggestedByAI" BOOLEAN NOT NULL DEFAULT false,
+    "context" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ToolRelationship_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ToolUsagePattern" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "patternName" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "toolInstanceIds" TEXT[],
+    "executionOrder" JSONB NOT NULL,
+    "detectedCount" INTEGER NOT NULL DEFAULT 1,
+    "successRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "avgTimeSaved" DOUBLE PRECISION,
+    "confidence" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "recommendation" TEXT,
+    "isAutomated" BOOLEAN NOT NULL DEFAULT false,
+    "automationId" TEXT,
+    "firstDetectedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastDetectedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ToolUsagePattern_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ToolHealthMetric" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "instanceId" TEXT NOT NULL,
+    "healthScore" DOUBLE PRECISION NOT NULL,
+    "availabilityScore" DOUBLE PRECISION NOT NULL,
+    "performanceScore" DOUBLE PRECISION NOT NULL,
+    "errorRateScore" DOUBLE PRECISION NOT NULL,
+    "usageScore" DOUBLE PRECISION NOT NULL,
+    "hasIssues" BOOLEAN NOT NULL DEFAULT false,
+    "issuesSummary" TEXT,
+    "alertsSent" INTEGER NOT NULL DEFAULT 0,
+    "recordedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ToolHealthMetric_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ToolRecommendation" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "toolDefinitionId" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "confidence" DOUBLE PRECISION NOT NULL,
+    "detectedGap" TEXT,
+    "estimatedValue" DOUBLE PRECISION,
+    "viewed" BOOLEAN NOT NULL DEFAULT false,
+    "viewedAt" TIMESTAMP(3),
+    "installed" BOOLEAN NOT NULL DEFAULT false,
+    "installedAt" TIMESTAMP(3),
+    "dismissed" BOOLEAN NOT NULL DEFAULT false,
+    "dismissedAt" TIMESTAMP(3),
+    "dismissReason" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ToolRecommendation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ToolRetirement" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "instanceId" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "usageStats" JSONB NOT NULL,
+    "suggestedAlternative" TEXT,
+    "alternativeReason" TEXT,
+    "viewed" BOOLEAN NOT NULL DEFAULT false,
+    "viewedAt" TIMESTAMP(3),
+    "retired" BOOLEAN NOT NULL DEFAULT false,
+    "retiredAt" TIMESTAMP(3),
+    "dismissed" BOOLEAN NOT NULL DEFAULT false,
+    "dismissedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ToolRetirement_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LeadGenerationCampaign" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "source" "LeadGenerationSource" NOT NULL,
+    "status" "LeadGenerationStatus" NOT NULL DEFAULT 'PENDING',
+    "searchQuery" TEXT NOT NULL,
+    "location" TEXT,
+    "radius" DOUBLE PRECISION,
+    "maxResults" INTEGER DEFAULT 100,
+    "minRating" DOUBLE PRECISION,
+    "categories" JSONB,
+    "excludeKeywords" JSONB,
+    "totalFound" INTEGER NOT NULL DEFAULT 0,
+    "totalScraped" INTEGER NOT NULL DEFAULT 0,
+    "totalEnriched" INTEGER NOT NULL DEFAULT 0,
+    "totalImported" INTEGER NOT NULL DEFAULT 0,
+    "startedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "errorMessage" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LeadGenerationCampaign_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ScrapedLead" (
+    "id" TEXT NOT NULL,
+    "campaignId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "businessName" TEXT NOT NULL,
+    "address" TEXT,
+    "city" TEXT,
+    "state" TEXT,
+    "zipCode" TEXT,
+    "country" TEXT,
+    "phone" TEXT,
+    "website" TEXT,
+    "email" TEXT,
+    "category" TEXT,
+    "googlePlaceId" TEXT,
+    "googleRating" DOUBLE PRECISION,
+    "googleReviewCount" INTEGER,
+    "googleMapUrl" TEXT,
+    "latitude" DOUBLE PRECISION,
+    "longitude" DOUBLE PRECISION,
+    "businessHours" JSONB,
+    "linkedinUrl" TEXT,
+    "linkedinCompanySize" TEXT,
+    "linkedinIndustry" TEXT,
+    "facebookUrl" TEXT,
+    "instagramUrl" TEXT,
+    "twitterUrl" TEXT,
+    "enrichmentStatus" "EnrichmentStatus" NOT NULL DEFAULT 'PENDING',
+    "isImportedToCRM" BOOLEAN NOT NULL DEFAULT false,
+    "importedLeadId" TEXT,
+    "aiScore" DOUBLE PRECISION,
+    "aiScoreReasons" JSONB,
+    "rawData" JSONB,
+    "scrapedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastEnrichedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ScrapedLead_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LeadEnrichment" (
+    "id" TEXT NOT NULL,
+    "scrapedLeadId" TEXT NOT NULL,
+    "provider" "EnrichmentProvider" NOT NULL,
+    "status" "EnrichmentStatus" NOT NULL DEFAULT 'PENDING',
+    "emails" JSONB,
+    "phoneNumbers" JSONB,
+    "socialProfiles" JSONB,
+    "companyInfo" JSONB,
+    "contactInfo" JSONB,
+    "technologies" JSONB,
+    "emailVerified" BOOLEAN,
+    "phoneVerified" BOOLEAN,
+    "confidence" DOUBLE PRECISION,
+    "cost" DOUBLE PRECISION,
+    "creditsUsed" INTEGER,
+    "apiResponse" JSONB,
+    "errorMessage" TEXT,
+    "enrichedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LeadEnrichment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EnrichmentCache" (
+    "id" TEXT NOT NULL,
+    "companyId" TEXT NOT NULL,
+    "companyName" TEXT NOT NULL,
+    "domain" TEXT,
+    "enrichedData" JSONB NOT NULL,
+    "lastUpdated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EnrichmentCache_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LeadScore" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "score" INTEGER NOT NULL,
+    "scoreBreakdown" JSONB NOT NULL,
+    "calculatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "LeadScore_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OutreachLog" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "channel" TEXT NOT NULL,
+    "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "openedAt" TIMESTAMP(3),
+    "clickedAt" TIMESTAMP(3),
+    "repliedAt" TIMESTAMP(3),
+    "responseText" TEXT,
+    "responseSentiment" TEXT,
+    "messageId" TEXT,
+    "errorMessage" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "OutreachLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LeadEnrichmentCache" (
+    "id" TEXT NOT NULL,
+    "email" TEXT,
+    "domain" TEXT,
+    "enrichedData" JSONB NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LeadEnrichmentCache_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmailDripCampaign" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "status" "EmailDripCampaignStatus" NOT NULL DEFAULT 'DRAFT',
+    "triggerType" "DripTriggerType" NOT NULL DEFAULT 'MANUAL',
+    "triggerConfig" JSONB,
+    "fromName" TEXT,
+    "fromEmail" TEXT,
+    "replyTo" TEXT,
+    "totalEnrolled" INTEGER NOT NULL DEFAULT 0,
+    "totalCompleted" INTEGER NOT NULL DEFAULT 0,
+    "totalUnsubscribed" INTEGER NOT NULL DEFAULT 0,
+    "totalBounced" INTEGER NOT NULL DEFAULT 0,
+    "avgOpenRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "avgClickRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "avgReplyRate" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "enableAbTesting" BOOLEAN NOT NULL DEFAULT false,
+    "abTestConfig" JSONB,
+    "tags" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmailDripCampaign_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmailDripSequence" (
+    "id" TEXT NOT NULL,
+    "campaignId" TEXT NOT NULL,
+    "sequenceOrder" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "subject" TEXT NOT NULL,
+    "previewText" TEXT,
+    "htmlContent" TEXT NOT NULL,
+    "textContent" TEXT,
+    "delayDays" INTEGER NOT NULL DEFAULT 0,
+    "delayHours" INTEGER NOT NULL DEFAULT 0,
+    "sendTime" TEXT,
+    "sendConditions" JSONB,
+    "skipIfEngaged" BOOLEAN NOT NULL DEFAULT false,
+    "isAbTestVariant" BOOLEAN NOT NULL DEFAULT false,
+    "abTestGroup" TEXT,
+    "variantOf" TEXT,
+    "totalSent" INTEGER NOT NULL DEFAULT 0,
+    "totalDelivered" INTEGER NOT NULL DEFAULT 0,
+    "totalOpened" INTEGER NOT NULL DEFAULT 0,
+    "totalClicked" INTEGER NOT NULL DEFAULT 0,
+    "totalReplied" INTEGER NOT NULL DEFAULT 0,
+    "totalBounced" INTEGER NOT NULL DEFAULT 0,
+    "totalUnsubscribed" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmailDripSequence_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmailDripEnrollment" (
+    "id" TEXT NOT NULL,
+    "campaignId" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "status" "DripEnrollmentStatus" NOT NULL DEFAULT 'ACTIVE',
+    "currentSequenceId" TEXT,
+    "currentStep" INTEGER NOT NULL DEFAULT 0,
+    "nextSendAt" TIMESTAMP(3),
+    "totalOpened" INTEGER NOT NULL DEFAULT 0,
+    "totalClicked" INTEGER NOT NULL DEFAULT 0,
+    "totalReplied" INTEGER NOT NULL DEFAULT 0,
+    "lastEngagedAt" TIMESTAMP(3),
+    "abTestGroup" TEXT,
+    "enrolledAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "unsubscribedAt" TIMESTAMP(3),
+    "bouncedAt" TIMESTAMP(3),
+    "pausedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmailDripEnrollment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EmailDripMessage" (
+    "id" TEXT NOT NULL,
+    "enrollmentId" TEXT NOT NULL,
+    "sequenceId" TEXT NOT NULL,
+    "recipientEmail" TEXT NOT NULL,
+    "recipientName" TEXT,
+    "subject" TEXT NOT NULL,
+    "htmlContent" TEXT NOT NULL,
+    "textContent" TEXT,
+    "status" "EmailDripMessageStatus" NOT NULL DEFAULT 'PENDING',
+    "scheduledFor" TIMESTAMP(3) NOT NULL,
+    "sentAt" TIMESTAMP(3),
+    "deliveredAt" TIMESTAMP(3),
+    "openedAt" TIMESTAMP(3),
+    "firstOpenedAt" TIMESTAMP(3),
+    "clickedAt" TIMESTAMP(3),
+    "firstClickedAt" TIMESTAMP(3),
+    "repliedAt" TIMESTAMP(3),
+    "bouncedAt" TIMESTAMP(3),
+    "unsubscribedAt" TIMESTAMP(3),
+    "openCount" INTEGER NOT NULL DEFAULT 0,
+    "clickCount" INTEGER NOT NULL DEFAULT 0,
+    "clickedLinks" JSONB,
+    "emailProvider" TEXT,
+    "providerMessageId" TEXT,
+    "errorMessage" TEXT,
+    "trackingId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "EmailDripMessage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LeadBlacklist" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "email" TEXT,
+    "phone" TEXT,
+    "reason" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LeadBlacklist_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ABTest" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "testType" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "winnerId" TEXT,
+    "completedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ABTest_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ABTestVariant" (
+    "id" TEXT NOT NULL,
+    "testId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "variantIndex" INTEGER NOT NULL,
+    "sendCount" INTEGER NOT NULL DEFAULT 0,
+    "successCount" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ABTestVariant_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SocialMediaSettings" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "platform" TEXT NOT NULL,
+    "appId" TEXT NOT NULL,
+    "appSecret" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SocialMediaSettings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AIEmployee" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" "AIEmployeeType" NOT NULL,
+    "description" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "capabilities" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AIEmployee_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AIJob" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "employeeId" TEXT NOT NULL,
+    "workflowId" TEXT,
+    "jobType" TEXT NOT NULL,
+    "priority" "AIJobPriority" NOT NULL DEFAULT 'MEDIUM',
+    "status" "AIJobStatus" NOT NULL DEFAULT 'PENDING',
+    "input" JSONB NOT NULL,
+    "output" JSONB,
+    "error" TEXT,
+    "progress" INTEGER NOT NULL DEFAULT 0,
+    "startedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "estimatedTime" INTEGER,
+    "actualTime" INTEGER,
+    "retryCount" INTEGER NOT NULL DEFAULT 0,
+    "maxRetries" INTEGER NOT NULL DEFAULT 3,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AIJob_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AIJobLog" (
+    "id" TEXT NOT NULL,
+    "jobId" TEXT NOT NULL,
+    "level" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "data" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AIJobLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DocpenSession" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "leadId" TEXT,
+    "patientName" TEXT,
+    "profession" "DocpenProfession" NOT NULL DEFAULT 'GENERAL_PRACTICE',
+    "customProfession" TEXT,
+    "status" "DocpenSessionStatus" NOT NULL DEFAULT 'RECORDING',
+    "sessionDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "sessionDuration" INTEGER,
+    "chiefComplaint" TEXT,
+    "consultantName" TEXT,
+    "audioStoragePath" TEXT,
+    "audioRetained" BOOLEAN NOT NULL DEFAULT false,
+    "retentionExpiry" TIMESTAMP(3),
+    "transcriptionComplete" BOOLEAN NOT NULL DEFAULT false,
+    "soapNoteGenerated" BOOLEAN NOT NULL DEFAULT false,
+    "reviewedAt" TIMESTAMP(3),
+    "signedAt" TIMESTAMP(3),
+    "signedBy" TEXT,
+    "signatureHash" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DocpenSession_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DocpenTranscription" (
+    "id" TEXT NOT NULL,
+    "sessionId" TEXT NOT NULL,
+    "speakerRole" "DocpenSpeakerRole" NOT NULL,
+    "speakerLabel" TEXT,
+    "content" TEXT NOT NULL,
+    "startTime" DOUBLE PRECISION NOT NULL,
+    "endTime" DOUBLE PRECISION NOT NULL,
+    "confidence" DOUBLE PRECISION,
+    "isEdited" BOOLEAN NOT NULL DEFAULT false,
+    "originalContent" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DocpenTranscription_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DocpenSOAPNote" (
+    "id" TEXT NOT NULL,
+    "sessionId" TEXT NOT NULL,
+    "version" INTEGER NOT NULL DEFAULT 1,
+    "soapType" "DocpenSOAPType" NOT NULL DEFAULT 'STANDARD_SOAP',
+    "subjective" TEXT,
+    "objective" TEXT,
+    "assessment" TEXT,
+    "plan" TEXT,
+    "additionalNotes" TEXT,
+    "aiModel" TEXT,
+    "processingTime" INTEGER,
+    "promptVersion" TEXT,
+    "isCurrentVersion" BOOLEAN NOT NULL DEFAULT true,
+    "editedByUser" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DocpenSOAPNote_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DocpenAssistantQuery" (
+    "id" TEXT NOT NULL,
+    "sessionId" TEXT NOT NULL,
+    "queryType" TEXT NOT NULL,
+    "queryText" TEXT NOT NULL,
+    "responseText" TEXT,
+    "triggerMethod" TEXT,
+    "timestamp" DOUBLE PRECISION,
+    "sourcesCited" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DocpenAssistantQuery_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DocpenVoiceAgent" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "profession" "DocpenProfession" NOT NULL,
+    "customProfession" TEXT,
+    "elevenLabsAgentId" TEXT NOT NULL,
+    "voiceId" TEXT,
+    "voiceName" TEXT,
+    "systemPrompt" TEXT,
+    "language" TEXT NOT NULL DEFAULT 'en',
+    "languageName" TEXT DEFAULT 'English',
+    "voiceGender" TEXT DEFAULT 'neutral',
+    "stability" DOUBLE PRECISION DEFAULT 0.6,
+    "similarityBoost" DOUBLE PRECISION DEFAULT 0.8,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "lastUsedAt" TIMESTAMP(3),
+    "conversationCount" INTEGER NOT NULL DEFAULT 0,
+    "totalDurationSec" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DocpenVoiceAgent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DocpenConversation" (
+    "id" TEXT NOT NULL,
+    "agentId" TEXT NOT NULL,
+    "elevenLabsConvId" TEXT NOT NULL,
+    "sessionId" TEXT,
+    "patientName" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'completed',
+    "startedAt" TIMESTAMP(3) NOT NULL,
+    "endedAt" TIMESTAMP(3),
+    "durationSec" INTEGER,
+    "audioUrl" TEXT,
+    "transcript" TEXT,
+    "summary" TEXT,
+    "messageCount" INTEGER NOT NULL DEFAULT 0,
+    "turnCount" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DocpenConversation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DocpenKnowledgeBaseFile" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileType" TEXT NOT NULL,
+    "fileSize" INTEGER NOT NULL,
+    "cloudStoragePath" TEXT,
+    "extractedText" TEXT,
+    "specialty" "DocpenProfession",
+    "customSpecialty" TEXT,
+    "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "elevenLabsDocId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DocpenKnowledgeBaseFile_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DocpenAgentKnowledgeBaseFile" (
+    "id" TEXT NOT NULL,
+    "agentId" TEXT NOT NULL,
+    "fileId" TEXT NOT NULL,
+    "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DocpenAgentKnowledgeBaseFile_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REProperty" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
+    "unit" TEXT,
+    "city" TEXT NOT NULL,
+    "state" TEXT NOT NULL,
+    "zip" TEXT NOT NULL,
+    "country" TEXT NOT NULL DEFAULT 'US',
+    "beds" INTEGER,
+    "baths" DOUBLE PRECISION,
+    "sqft" INTEGER,
+    "lotSize" INTEGER,
+    "yearBuilt" INTEGER,
+    "propertyType" "REPropertyType" NOT NULL DEFAULT 'SINGLE_FAMILY',
+    "listingStatus" "REListingStatus" NOT NULL DEFAULT 'ACTIVE',
+    "listPrice" DOUBLE PRECISION,
+    "soldPrice" DOUBLE PRECISION,
+    "mlsNumber" TEXT,
+    "daysOnMarket" INTEGER NOT NULL DEFAULT 0,
+    "photos" JSONB,
+    "virtualTourUrl" TEXT,
+    "description" TEXT,
+    "features" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "sellerLeadId" TEXT,
+    "listingDate" TIMESTAMP(3),
+    "soldDate" TIMESTAMP(3),
+    "expirationDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REProperty_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REFSBOListing" (
+    "id" TEXT NOT NULL,
+    "source" "REFSBOSource" NOT NULL,
+    "sourceUrl" TEXT NOT NULL,
+    "sourceListingId" TEXT,
+    "address" TEXT NOT NULL,
+    "city" TEXT NOT NULL,
+    "state" TEXT NOT NULL,
+    "zip" TEXT,
+    "country" TEXT NOT NULL DEFAULT 'CA',
+    "listPrice" DOUBLE PRECISION,
+    "beds" INTEGER,
+    "baths" DOUBLE PRECISION,
+    "sqft" INTEGER,
+    "lotSize" INTEGER,
+    "yearBuilt" INTEGER,
+    "propertyType" TEXT,
+    "daysOnMarket" INTEGER NOT NULL DEFAULT 0,
+    "firstSeenAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastSeenAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "priceHistory" JSONB,
+    "sellerName" TEXT,
+    "sellerPhone" TEXT,
+    "sellerEmail" TEXT,
+    "photos" JSONB,
+    "description" TEXT,
+    "status" "REFSBOStatus" NOT NULL DEFAULT 'NEW',
+    "assignedUserId" TEXT,
+    "lastContactedAt" TIMESTAMP(3),
+    "contactAttempts" INTEGER NOT NULL DEFAULT 0,
+    "notes" TEXT,
+    "convertedLeadId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REFSBOListing_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REDNCEntry" (
+    "id" TEXT NOT NULL,
+    "phoneNumber" TEXT NOT NULL,
+    "source" "REDNCSource" NOT NULL,
+    "reason" TEXT,
+    "country" TEXT NOT NULL DEFAULT 'US',
+    "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3),
+
+    CONSTRAINT "REDNCEntry_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REScrapingJob" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL DEFAULT 'FSBO Scraping Job',
+    "source" "REFSBOSource",
+    "sources" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "targetCity" TEXT,
+    "targetRegion" TEXT,
+    "targetCities" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "targetStates" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "targetZips" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "targetZipCodes" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "country" TEXT NOT NULL DEFAULT 'CA',
+    "propertyTypes" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "minPrice" INTEGER,
+    "maxPrice" INTEGER,
+    "maxListingsPerRun" INTEGER NOT NULL DEFAULT 100,
+    "frequency" TEXT NOT NULL DEFAULT 'weekly',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "status" TEXT NOT NULL DEFAULT 'IDLE',
+    "mlsCredentials" JSONB,
+    "lastRunAt" TIMESTAMP(3),
+    "nextRunAt" TIMESTAMP(3),
+    "lastRunStatus" TEXT,
+    "totalScraped" INTEGER NOT NULL DEFAULT 0,
+    "totalListingsFound" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REScrapingJob_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REMarketStats" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "periodStart" TIMESTAMP(3) NOT NULL,
+    "periodEnd" TIMESTAMP(3) NOT NULL,
+    "periodType" "REPeriodType" NOT NULL DEFAULT 'WEEKLY',
+    "region" TEXT NOT NULL,
+    "city" TEXT,
+    "state" TEXT,
+    "country" TEXT NOT NULL DEFAULT 'US',
+    "medianSalePrice" DOUBLE PRECISION,
+    "avgSalePrice" DOUBLE PRECISION,
+    "domMedian" INTEGER,
+    "domAvg" DOUBLE PRECISION,
+    "newListings" INTEGER,
+    "closedSales" INTEGER,
+    "activeInventory" INTEGER,
+    "monthsOfSupply" DOUBLE PRECISION,
+    "listToSaleRatio" DOUBLE PRECISION,
+    "priceReductions" INTEGER,
+    "source" TEXT,
+    "rawData" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "REMarketStats_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REMarketReport" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" "REReportType" NOT NULL,
+    "title" TEXT NOT NULL,
+    "region" TEXT NOT NULL,
+    "periodStart" TIMESTAMP(3) NOT NULL,
+    "periodEnd" TIMESTAMP(3) NOT NULL,
+    "executiveSummary" TEXT,
+    "keyHighlights" JSONB,
+    "buyerInsights" TEXT,
+    "sellerInsights" TEXT,
+    "predictions" JSONB,
+    "socialCaption" TEXT,
+    "pdfUrl" TEXT,
+    "slidesUrl" TEXT,
+    "sentTo" JSONB,
+    "sentAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "REMarketReport_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REStaleDiagnostic" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "propertyId" TEXT,
+    "fsboListingId" TEXT,
+    "address" TEXT NOT NULL,
+    "listPrice" DOUBLE PRECISION,
+    "daysOnMarket" INTEGER NOT NULL,
+    "analysisJson" JSONB NOT NULL,
+    "topReasons" JSONB NOT NULL,
+    "actionPlan" JSONB NOT NULL,
+    "clientSummary" TEXT,
+    "agentNotes" TEXT,
+    "sellerEmailDraft" TEXT,
+    "callScript" TEXT,
+    "pdfUrl" TEXT,
+    "status" "REDiagnosticStatus" NOT NULL DEFAULT 'PENDING',
+    "reviewedAt" TIMESTAMP(3),
+    "actionedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REStaleDiagnostic_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REListingPresentation" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "propertyId" TEXT,
+    "address" TEXT NOT NULL,
+    "sellerName" TEXT,
+    "sellerGoals" TEXT,
+    "timeline" TEXT,
+    "concerns" TEXT,
+    "pricingStrategy" JSONB,
+    "marketingPlan" JSONB,
+    "compsAnalysis" JSONB,
+    "objectionsFAQ" JSONB,
+    "timelinePhases" JSONB,
+    "pdfUrl" TEXT,
+    "slidesUrl" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'draft',
+    "presentedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REListingPresentation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RESellerNetSheet" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "propertyId" TEXT,
+    "address" TEXT NOT NULL,
+    "salePrice" DOUBLE PRECISION NOT NULL,
+    "mortgagePayoff" DOUBLE PRECISION,
+    "commissionRate" DOUBLE PRECISION NOT NULL DEFAULT 5.0,
+    "commissionAmount" DOUBLE PRECISION,
+    "listingAgentComm" DOUBLE PRECISION,
+    "buyerAgentComm" DOUBLE PRECISION,
+    "closingCosts" DOUBLE PRECISION,
+    "titleInsurance" DOUBLE PRECISION,
+    "transferTax" DOUBLE PRECISION,
+    "repairs" DOUBLE PRECISION,
+    "stagingCosts" DOUBLE PRECISION,
+    "otherCosts" DOUBLE PRECISION,
+    "estimatedNet" DOUBLE PRECISION,
+    "pdfUrl" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RESellerNetSheet_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RECMAReport" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "propertyId" TEXT,
+    "address" TEXT NOT NULL,
+    "beds" INTEGER,
+    "baths" DOUBLE PRECISION,
+    "sqft" INTEGER,
+    "yearBuilt" INTEGER,
+    "comparables" JSONB NOT NULL,
+    "adjustments" JSONB NOT NULL,
+    "suggestedPriceMin" DOUBLE PRECISION,
+    "suggestedPriceMax" DOUBLE PRECISION,
+    "suggestedPrice" DOUBLE PRECISION,
+    "pricePerSqft" DOUBLE PRECISION,
+    "pdfUrl" TEXT,
+    "fullPdfUrl" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RECMAReport_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REComparable" (
+    "id" TEXT NOT NULL,
+    "propertyId" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "address" TEXT,
+    "distance" DOUBLE PRECISION,
+    "salePrice" DOUBLE PRECISION,
+    "listPrice" DOUBLE PRECISION,
+    "closeDate" TIMESTAMP(3),
+    "daysOnMarket" INTEGER,
+    "beds" INTEGER,
+    "baths" DOUBLE PRECISION,
+    "sqft" INTEGER,
+    "yearBuilt" INTEGER,
+    "lotSize" INTEGER,
+    "adjustedPrice" DOUBLE PRECISION,
+    "adjustments" JSONB,
+    "features" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "conditionScore" INTEGER,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "REComparable_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RETransaction" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "propertyId" TEXT,
+    "leadId" TEXT,
+    "transactionType" "RETransactionType" NOT NULL,
+    "representingSide" "RERepresentingSide" NOT NULL,
+    "address" TEXT NOT NULL,
+    "offerPrice" DOUBLE PRECISION,
+    "salePrice" DOUBLE PRECISION,
+    "listPrice" DOUBLE PRECISION,
+    "commissionRate" DOUBLE PRECISION,
+    "commissionAmount" DOUBLE PRECISION,
+    "commissionSplit" JSONB,
+    "contractDate" TIMESTAMP(3),
+    "closingDate" TIMESTAMP(3),
+    "possessionDate" TIMESTAMP(3),
+    "stage" "RETransactionStage" NOT NULL DEFAULT 'OFFER_SUBMITTED',
+    "vendorContacts" JSONB,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RETransaction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RETransactionActivity" (
+    "id" TEXT NOT NULL,
+    "transactionId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RETransactionActivity_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RETransactionTask" (
+    "id" TEXT NOT NULL,
+    "transactionId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "dueDate" TIMESTAMP(3),
+    "stage" "RETransactionStage",
+    "isCompleted" BOOLEAN NOT NULL DEFAULT false,
+    "completedAt" TIMESTAMP(3),
+    "assignedTo" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RETransactionTask_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REBuyerCriteria" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "minPrice" DOUBLE PRECISION,
+    "maxPrice" DOUBLE PRECISION,
+    "minBeds" INTEGER,
+    "maxBeds" INTEGER,
+    "minBaths" DOUBLE PRECISION,
+    "minSqft" INTEGER,
+    "maxSqft" INTEGER,
+    "targetCities" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "targetZips" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "targetNeighborhoods" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "propertyTypes" "REPropertyType"[],
+    "mustHaves" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "dealBreakers" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "notes" TEXT,
+    "isPreApproved" BOOLEAN NOT NULL DEFAULT false,
+    "preApprovalAmount" DOUBLE PRECISION,
+    "lenderName" TEXT,
+    "timeline" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REBuyerCriteria_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REExpiredListing" (
+    "id" TEXT NOT NULL,
+    "source" TEXT NOT NULL,
+    "sourceId" TEXT,
+    "address" TEXT NOT NULL,
+    "city" TEXT NOT NULL,
+    "state" TEXT NOT NULL,
+    "zip" TEXT,
+    "originalListPrice" DOUBLE PRECISION,
+    "finalListPrice" DOUBLE PRECISION,
+    "daysOnMarket" INTEGER,
+    "expiredDate" TIMESTAMP(3),
+    "previousAgentName" TEXT,
+    "previousBrokerage" TEXT,
+    "ownerName" TEXT,
+    "ownerPhone" TEXT,
+    "ownerEmail" TEXT,
+    "status" "REExpiredStatus" NOT NULL DEFAULT 'NEW',
+    "assignedUserId" TEXT,
+    "lastContactedAt" TIMESTAMP(3),
+    "contactAttempts" INTEGER NOT NULL DEFAULT 0,
+    "notes" TEXT,
+    "convertedLeadId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REExpiredListing_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REAIEmployeeExecution" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "employeeType" "REAIEmployeeType" NOT NULL,
+    "employeeName" TEXT,
+    "targetType" TEXT,
+    "targetId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "startedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "result" JSONB,
+    "error" TEXT,
+    "callMade" BOOLEAN NOT NULL DEFAULT false,
+    "smsSent" BOOLEAN NOT NULL DEFAULT false,
+    "emailSent" BOOLEAN NOT NULL DEFAULT false,
+    "taskCreated" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "REAIEmployeeExecution_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REAIEmployeeAgent" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "employeeType" "REAIEmployeeType" NOT NULL,
+    "name" TEXT NOT NULL,
+    "elevenLabsAgentId" TEXT NOT NULL,
+    "twilioPhoneNumber" TEXT,
+    "voiceId" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "lastUsedAt" TIMESTAMP(3),
+    "callCount" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REAIEmployeeAgent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PlatformVoiceAIConfig" (
+    "id" TEXT NOT NULL,
+    "masterElevenLabsKey" TEXT NOT NULL,
+    "masterTwilioSid" TEXT,
+    "masterTwilioToken" TEXT,
+    "defaultPricePerMin" DECIMAL(10,4) NOT NULL DEFAULT 0.50,
+    "defaultOverageRate" DECIMAL(10,4) NOT NULL DEFAULT 0.75,
+    "totalMonthlyQuota" INTEGER NOT NULL DEFAULT 2000,
+    "usedThisMonth" INTEGER NOT NULL DEFAULT 0,
+    "billingCycleStart" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PlatformVoiceAIConfig_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "VoiceAISubscription" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "tier" "VoiceAISubscriptionTier" NOT NULL DEFAULT 'STARTER',
+    "monthlyMinutesQuota" INTEGER NOT NULL DEFAULT 100,
+    "pricePerMinute" DECIMAL(10,4) NOT NULL DEFAULT 0.50,
+    "minutesUsedThisMonth" INTEGER NOT NULL DEFAULT 0,
+    "overageAllowed" BOOLEAN NOT NULL DEFAULT false,
+    "overageRate" DECIMAL(10,4) NOT NULL DEFAULT 0.75,
+    "billingCycleStart" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "agentPrefix" TEXT,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "VoiceAISubscription_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "VoiceAIUsageLog" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "subscriptionId" TEXT,
+    "agentId" TEXT,
+    "elevenLabsAgentId" TEXT,
+    "elevenLabsCallId" TEXT,
+    "direction" "VoiceAICallDirection" NOT NULL DEFAULT 'OUTBOUND',
+    "durationSeconds" INTEGER NOT NULL DEFAULT 0,
+    "durationMinutes" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "cost" DECIMAL(10,4) NOT NULL DEFAULT 0,
+    "callerNumber" TEXT,
+    "recipientNumber" TEXT,
+    "status" "VoiceAICallStatus" NOT NULL DEFAULT 'INITIATED',
+    "recordingUrl" TEXT,
+    "transcriptUrl" TEXT,
+    "metadata" JSONB,
+    "errorMessage" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "VoiceAIUsageLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "VoiceAIBillingRecord" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "subscriptionId" TEXT,
+    "billingPeriodStart" TIMESTAMP(3) NOT NULL,
+    "billingPeriodEnd" TIMESTAMP(3) NOT NULL,
+    "totalMinutesUsed" INTEGER NOT NULL DEFAULT 0,
+    "quotaMinutes" INTEGER NOT NULL DEFAULT 0,
+    "overageMinutes" INTEGER NOT NULL DEFAULT 0,
+    "baseCost" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "overageCost" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "totalCost" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "status" "VoiceAIBillingStatus" NOT NULL DEFAULT 'PENDING',
+    "invoiceNumber" TEXT,
+    "paidAt" TIMESTAMP(3),
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "VoiceAIBillingRecord_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REWorkflowTemplate" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" "REWorkflowType" NOT NULL,
+    "description" TEXT,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REWorkflowTemplate_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REWorkflowTask" (
+    "id" TEXT NOT NULL,
+    "templateId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "taskType" "RETaskType" NOT NULL,
+    "assignedAgentType" "REAIEmployeeType",
+    "delayValue" INTEGER NOT NULL DEFAULT 0,
+    "delayUnit" TEXT NOT NULL DEFAULT 'MINUTES',
+    "isHITL" BOOLEAN NOT NULL DEFAULT false,
+    "isOptional" BOOLEAN NOT NULL DEFAULT false,
+    "position" JSONB NOT NULL,
+    "displayOrder" INTEGER NOT NULL,
+    "parentTaskId" TEXT,
+    "branchCondition" JSONB,
+    "actionConfig" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REWorkflowTask_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REWorkflowInstance" (
+    "id" TEXT NOT NULL,
+    "templateId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "leadId" TEXT,
+    "dealId" TEXT,
+    "status" "REWorkflowInstanceStatus" NOT NULL DEFAULT 'ACTIVE',
+    "currentTaskId" TEXT,
+    "metadata" JSONB,
+    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REWorkflowInstance_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RETaskExecution" (
+    "id" TEXT NOT NULL,
+    "instanceId" TEXT NOT NULL,
+    "taskId" TEXT NOT NULL,
+    "status" "RETaskExecutionStatus" NOT NULL DEFAULT 'PENDING',
+    "scheduledFor" TIMESTAMP(3),
+    "startedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "agentUsed" "REAIEmployeeType",
+    "callLogId" TEXT,
+    "result" JSONB,
+    "hitlApprovedBy" TEXT,
+    "hitlApprovedAt" TIMESTAMP(3),
+    "hitlNotes" TEXT,
+    "errorMessage" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RETaskExecution_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "REHITLNotification" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "executionId" TEXT NOT NULL,
+    "taskName" TEXT NOT NULL,
+    "contactName" TEXT,
+    "dealAddress" TEXT,
+    "message" TEXT NOT NULL,
+    "urgency" TEXT NOT NULL DEFAULT 'NORMAL',
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "isActioned" BOOLEAN NOT NULL DEFAULT false,
+    "smsSent" BOOLEAN NOT NULL DEFAULT false,
+    "emailSent" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "REHITLNotification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WorkflowTemplate" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "industry" "Industry" NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" "WorkflowType" NOT NULL DEFAULT 'CUSTOM',
+    "description" TEXT,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "WorkflowTemplate_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WorkflowTask" (
+    "id" TEXT NOT NULL,
+    "templateId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "taskType" TEXT NOT NULL,
+    "assignedAgentType" TEXT,
+    "delayValue" INTEGER NOT NULL DEFAULT 0,
+    "delayUnit" TEXT NOT NULL DEFAULT 'MINUTES',
+    "isHITL" BOOLEAN NOT NULL DEFAULT false,
+    "isOptional" BOOLEAN NOT NULL DEFAULT false,
+    "position" JSONB NOT NULL,
+    "displayOrder" INTEGER NOT NULL,
+    "parentTaskId" TEXT,
+    "branchCondition" JSONB,
+    "actionConfig" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "WorkflowTask_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "WorkflowInstance" (
+    "id" TEXT NOT NULL,
+    "templateId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "industry" "Industry" NOT NULL,
+    "leadId" TEXT,
+    "dealId" TEXT,
+    "contactId" TEXT,
+    "status" "WorkflowInstanceStatus" NOT NULL DEFAULT 'ACTIVE',
+    "currentTaskId" TEXT,
+    "metadata" JSONB,
+    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "WorkflowInstance_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TaskExecution" (
+    "id" TEXT NOT NULL,
+    "instanceId" TEXT NOT NULL,
+    "taskId" TEXT NOT NULL,
+    "status" "TaskExecutionStatus" NOT NULL DEFAULT 'PENDING',
+    "scheduledFor" TIMESTAMP(3),
+    "startedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "agentUsed" TEXT,
+    "callLogId" TEXT,
+    "result" JSONB,
+    "hitlApprovedBy" TEXT,
+    "hitlApprovedAt" TIMESTAMP(3),
+    "hitlNotes" TEXT,
+    "errorMessage" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TaskExecution_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "HITLNotification" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "executionId" TEXT NOT NULL,
+    "taskName" TEXT NOT NULL,
+    "contactName" TEXT,
+    "metadata" JSONB,
+    "message" TEXT NOT NULL,
+    "urgency" TEXT NOT NULL DEFAULT 'NORMAL',
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "isActioned" BOOLEAN NOT NULL DEFAULT false,
+    "smsSent" BOOLEAN NOT NULL DEFAULT false,
+    "emailSent" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "HITLNotification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DentalOdontogram" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "toothData" JSONB NOT NULL,
+    "chartDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "chartedBy" TEXT NOT NULL,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DentalOdontogram_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DentalPeriodontalChart" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "measurements" JSONB NOT NULL,
+    "chartDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "chartedBy" TEXT NOT NULL,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DentalPeriodontalChart_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DentalTreatmentPlan" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "planName" TEXT NOT NULL,
+    "description" TEXT,
+    "status" "TreatmentPlanStatus" NOT NULL DEFAULT 'DRAFT',
+    "procedures" JSONB NOT NULL,
+    "totalCost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "insuranceCoverage" DOUBLE PRECISION DEFAULT 0,
+    "patientResponsibility" DOUBLE PRECISION DEFAULT 0,
+    "createdDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "startDate" TIMESTAMP(3),
+    "completionDate" TIMESTAMP(3),
+    "approvedBy" TEXT,
+    "approvedAt" TIMESTAMP(3),
+    "patientConsent" BOOLEAN NOT NULL DEFAULT false,
+    "patientConsentDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DentalTreatmentPlan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DentalProcedure" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "treatmentPlanId" TEXT,
+    "procedureCode" TEXT NOT NULL,
+    "procedureName" TEXT NOT NULL,
+    "description" TEXT,
+    "teethInvolved" TEXT[],
+    "status" "ProcedureStatus" NOT NULL DEFAULT 'SCHEDULED',
+    "scheduledDate" TIMESTAMP(3),
+    "performedDate" TIMESTAMP(3),
+    "cost" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "insuranceCoverage" DOUBLE PRECISION DEFAULT 0,
+    "performedBy" TEXT,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DentalProcedure_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DentalForm" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "formName" TEXT NOT NULL,
+    "description" TEXT,
+    "category" TEXT,
+    "formSchema" JSONB NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DentalForm_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DentalFormResponse" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "formId" TEXT NOT NULL,
+    "responseData" JSONB NOT NULL,
+    "submittedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "submittedBy" TEXT,
+    "signatureData" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DentalFormResponse_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PatientDocument" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "leadId" TEXT,
+    "documentType" "DocumentType" NOT NULL,
+    "category" TEXT,
+    "fileName" TEXT NOT NULL,
+    "fileType" TEXT NOT NULL,
+    "fileSize" INTEGER NOT NULL,
+    "encryptedStoragePath" TEXT NOT NULL,
+    "encryptionKeyId" TEXT NOT NULL,
+    "consentId" TEXT,
+    "dataResidency" TEXT NOT NULL DEFAULT 'CA-QC',
+    "retentionPolicy" TEXT NOT NULL DEFAULT 'MEDICAL_7_YEARS',
+    "retentionExpiry" TIMESTAMP(3) NOT NULL,
+    "accessLevel" "DocumentAccessLevel" NOT NULL DEFAULT 'RESTRICTED',
+    "createdBy" TEXT NOT NULL,
+    "lastAccessedBy" TEXT,
+    "lastAccessedAt" TIMESTAMP(3),
+    "deletionRequested" BOOLEAN NOT NULL DEFAULT false,
+    "deletionRequestDate" TIMESTAMP(3),
+    "deletionReason" TEXT,
+    "deletionBlocked" BOOLEAN NOT NULL DEFAULT false,
+    "tags" TEXT[],
+    "description" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+
+    CONSTRAINT "PatientDocument_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DocumentVersion" (
+    "id" TEXT NOT NULL,
+    "documentId" TEXT NOT NULL,
+    "versionNumber" INTEGER NOT NULL,
+    "encryptedStoragePath" TEXT NOT NULL,
+    "changeReason" TEXT,
+    "changedBy" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DocumentVersion_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DocumentConsent" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "consentType" "ConsentType" NOT NULL,
+    "purpose" TEXT NOT NULL,
+    "granted" BOOLEAN NOT NULL DEFAULT false,
+    "grantedAt" TIMESTAMP(3),
+    "grantedBy" TEXT,
+    "withdrawn" BOOLEAN NOT NULL DEFAULT false,
+    "withdrawnAt" TIMESTAMP(3),
+    "withdrawalReason" TEXT,
+    "legalBasis" TEXT NOT NULL,
+    "consentMethod" TEXT NOT NULL,
+    "consentExpiry" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DocumentConsent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DocumentAccessLog" (
+    "id" TEXT NOT NULL,
+    "documentId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "action" "DocumentAccessAction" NOT NULL,
+    "ipAddress" TEXT,
+    "userAgent" TEXT,
+    "reason" TEXT,
+    "success" BOOLEAN NOT NULL DEFAULT true,
+    "errorMessage" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DocumentAccessLog_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DataAccessRequest" (
+    "id" TEXT NOT NULL,
+    "leadId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "requestType" "DataRequestType" NOT NULL,
+    "status" "DataRequestStatus" NOT NULL DEFAULT 'PENDING',
+    "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "requestedBy" TEXT NOT NULL,
+    "requestReason" TEXT,
+    "respondedAt" TIMESTAMP(3),
+    "responseMethod" TEXT,
+    "responseData" JSONB,
+    "completedAt" TIMESTAMP(3),
+    "notes" TEXT,
+
+    CONSTRAINT "DataAccessRequest_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DataBreach" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "breachType" "BreachType" NOT NULL,
+    "severity" "BreachSeverity" NOT NULL,
+    "description" TEXT NOT NULL,
+    "affectedRecords" INTEGER NOT NULL DEFAULT 0,
+    "affectedPatients" INTEGER NOT NULL DEFAULT 0,
+    "discoveredAt" TIMESTAMP(3) NOT NULL,
+    "reportedAt" TIMESTAMP(3),
+    "patientsNotified" BOOLEAN NOT NULL DEFAULT false,
+    "notificationDate" TIMESTAMP(3),
+    "notificationMethod" TEXT,
+    "resolved" BOOLEAN NOT NULL DEFAULT false,
+    "resolvedAt" TIMESTAMP(3),
+    "resolutionNotes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DataBreach_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Agency_email_key" ON "Agency"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_clubCode_key" ON "User"("clubCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_subdomain_key" ON "User"("subdomain");
+
+-- CreateIndex
+CREATE INDEX "Lead_userId_idx" ON "Lead"("userId");
+
+-- CreateIndex
+CREATE INDEX "Lead_status_idx" ON "Lead"("status");
+
+-- CreateIndex
+CREATE INDEX "Lead_contactType_idx" ON "Lead"("contactType");
+
+-- CreateIndex
+CREATE INDEX "Lead_dateOfBirth_idx" ON "Lead"("dateOfBirth");
+
+-- CreateIndex
+CREATE INDEX "Note_leadId_idx" ON "Note"("leadId");
+
+-- CreateIndex
+CREATE INDEX "Message_leadId_idx" ON "Message"("leadId");
+
+-- CreateIndex
+CREATE INDEX "ApiKey_userId_idx" ON "ApiKey"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ApiKey_userId_service_keyName_key" ON "ApiKey"("userId", "service", "keyName");
+
+-- CreateIndex
+CREATE INDEX "Campaign_userId_idx" ON "Campaign"("userId");
+
+-- CreateIndex
+CREATE INDEX "Campaign_status_idx" ON "Campaign"("status");
+
+-- CreateIndex
+CREATE INDEX "Campaign_scheduledFor_idx" ON "Campaign"("scheduledFor");
+
+-- CreateIndex
+CREATE INDEX "Campaign_minLeadScore_idx" ON "Campaign"("minLeadScore");
+
+-- CreateIndex
+CREATE INDEX "CampaignMessage_campaignId_idx" ON "CampaignMessage"("campaignId");
+
+-- CreateIndex
+CREATE INDEX "CampaignMessage_status_idx" ON "CampaignMessage"("status");
+
+-- CreateIndex
+CREATE INDEX "CampaignMessage_recipientId_idx" ON "CampaignMessage"("recipientId");
+
+-- CreateIndex
+CREATE INDEX "CampaignLead_campaignId_idx" ON "CampaignLead"("campaignId");
+
+-- CreateIndex
+CREATE INDEX "CampaignLead_leadId_idx" ON "CampaignLead"("leadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CampaignLead_campaignId_leadId_key" ON "CampaignLead"("campaignId", "leadId");
+
+-- CreateIndex
+CREATE INDEX "Review_campaignId_idx" ON "Review"("campaignId");
+
+-- CreateIndex
+CREATE INDEX "Review_leadId_idx" ON "Review"("leadId");
+
+-- CreateIndex
+CREATE INDEX "FeedbackCollection_userId_idx" ON "FeedbackCollection"("userId");
+
+-- CreateIndex
+CREATE INDEX "FeedbackCollection_leadId_idx" ON "FeedbackCollection"("leadId");
+
+-- CreateIndex
+CREATE INDEX "FeedbackCollection_appointmentId_idx" ON "FeedbackCollection"("appointmentId");
+
+-- CreateIndex
+CREATE INDEX "FeedbackCollection_status_idx" ON "FeedbackCollection"("status");
+
+-- CreateIndex
+CREATE INDEX "Referral_userId_idx" ON "Referral"("userId");
+
+-- CreateIndex
+CREATE INDEX "Referral_referrerId_idx" ON "Referral"("referrerId");
+
+-- CreateIndex
+CREATE INDEX "Referral_status_idx" ON "Referral"("status");
+
+-- CreateIndex
+CREATE INDEX "VoiceAgent_userId_idx" ON "VoiceAgent"("userId");
+
+-- CreateIndex
+CREATE INDEX "VoiceAgent_status_idx" ON "VoiceAgent"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PurchasedPhoneNumber_twilioSid_key" ON "PurchasedPhoneNumber"("twilioSid");
+
+-- CreateIndex
+CREATE INDEX "PurchasedPhoneNumber_userId_idx" ON "PurchasedPhoneNumber"("userId");
+
+-- CreateIndex
+CREATE INDEX "PurchasedPhoneNumber_phoneNumber_idx" ON "PurchasedPhoneNumber"("phoneNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PurchasedPhoneNumber_userId_phoneNumber_key" ON "PurchasedPhoneNumber"("userId", "phoneNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CallLog_twilioCallSid_key" ON "CallLog"("twilioCallSid");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CallLog_elevenLabsConversationId_key" ON "CallLog"("elevenLabsConversationId");
+
+-- CreateIndex
+CREATE INDEX "CallLog_userId_idx" ON "CallLog"("userId");
+
+-- CreateIndex
+CREATE INDEX "CallLog_voiceAgentId_idx" ON "CallLog"("voiceAgentId");
+
+-- CreateIndex
+CREATE INDEX "CallLog_leadId_idx" ON "CallLog"("leadId");
+
+-- CreateIndex
+CREATE INDEX "CallLog_status_idx" ON "CallLog"("status");
+
+-- CreateIndex
+CREATE INDEX "CallLog_elevenLabsConversationId_idx" ON "CallLog"("elevenLabsConversationId");
+
+-- CreateIndex
+CREATE INDEX "CallLog_emailSent_idx" ON "CallLog"("emailSent");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "OutboundCall_callLogId_key" ON "OutboundCall"("callLogId");
+
+-- CreateIndex
+CREATE INDEX "OutboundCall_userId_idx" ON "OutboundCall"("userId");
+
+-- CreateIndex
+CREATE INDEX "OutboundCall_voiceAgentId_idx" ON "OutboundCall"("voiceAgentId");
+
+-- CreateIndex
+CREATE INDEX "OutboundCall_status_idx" ON "OutboundCall"("status");
+
+-- CreateIndex
+CREATE INDEX "CalendarConnection_userId_idx" ON "CalendarConnection"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CalendarConnection_userId_provider_key" ON "CalendarConnection"("userId", "provider");
+
+-- CreateIndex
+CREATE INDEX "ChannelConnection_userId_idx" ON "ChannelConnection"("userId");
+
+-- CreateIndex
+CREATE INDEX "ChannelConnection_channelType_idx" ON "ChannelConnection"("channelType");
+
+-- CreateIndex
+CREATE INDEX "ChannelConnection_userId_providerType_channelType_idx" ON "ChannelConnection"("userId", "providerType", "channelType");
+
+-- CreateIndex
+CREATE INDEX "Conversation_userId_idx" ON "Conversation"("userId");
+
+-- CreateIndex
+CREATE INDEX "Conversation_channelConnectionId_idx" ON "Conversation"("channelConnectionId");
+
+-- CreateIndex
+CREATE INDEX "Conversation_leadId_idx" ON "Conversation"("leadId");
+
+-- CreateIndex
+CREATE INDEX "Conversation_status_idx" ON "Conversation"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Conversation_channelConnectionId_contactIdentifier_key" ON "Conversation"("channelConnectionId", "contactIdentifier");
+
+-- CreateIndex
+CREATE INDEX "ConversationMessage_conversationId_idx" ON "ConversationMessage"("conversationId");
+
+-- CreateIndex
+CREATE INDEX "ConversationMessage_userId_idx" ON "ConversationMessage"("userId");
+
+-- CreateIndex
+CREATE INDEX "ConversationMessage_sentAt_idx" ON "ConversationMessage"("sentAt");
+
+-- CreateIndex
+CREATE INDEX "KnowledgeBase_userId_idx" ON "KnowledgeBase"("userId");
+
+-- CreateIndex
+CREATE INDEX "KnowledgeBase_isActive_idx" ON "KnowledgeBase"("isActive");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AutoReplySettings_userId_key" ON "AutoReplySettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "AutoReplySettings_userId_idx" ON "AutoReplySettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "Pipeline_userId_idx" ON "Pipeline"("userId");
+
+-- CreateIndex
+CREATE INDEX "Pipeline_isDefault_idx" ON "Pipeline"("isDefault");
+
+-- CreateIndex
+CREATE INDEX "PipelineStage_pipelineId_idx" ON "PipelineStage"("pipelineId");
+
+-- CreateIndex
+CREATE INDEX "PipelineStage_displayOrder_idx" ON "PipelineStage"("displayOrder");
+
+-- CreateIndex
+CREATE INDEX "Deal_userId_idx" ON "Deal"("userId");
+
+-- CreateIndex
+CREATE INDEX "Deal_pipelineId_idx" ON "Deal"("pipelineId");
+
+-- CreateIndex
+CREATE INDEX "Deal_stageId_idx" ON "Deal"("stageId");
+
+-- CreateIndex
+CREATE INDEX "Deal_leadId_idx" ON "Deal"("leadId");
+
+-- CreateIndex
+CREATE INDEX "DealActivity_dealId_idx" ON "DealActivity"("dealId");
+
+-- CreateIndex
+CREATE INDEX "DealActivity_createdAt_idx" ON "DealActivity"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "Workflow_userId_idx" ON "Workflow"("userId");
+
+-- CreateIndex
+CREATE INDEX "Workflow_status_idx" ON "Workflow"("status");
+
+-- CreateIndex
+CREATE INDEX "Workflow_scheduledDate_idx" ON "Workflow"("scheduledDate");
+
+-- CreateIndex
+CREATE INDEX "WorkflowAction_workflowId_idx" ON "WorkflowAction"("workflowId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowAction_displayOrder_idx" ON "WorkflowAction"("displayOrder");
+
+-- CreateIndex
+CREATE INDEX "WorkflowEnrollment_workflowId_idx" ON "WorkflowEnrollment"("workflowId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowEnrollment_userId_idx" ON "WorkflowEnrollment"("userId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowEnrollment_status_idx" ON "WorkflowEnrollment"("status");
+
+-- CreateIndex
+CREATE INDEX "WorkflowActionExecution_enrollmentId_idx" ON "WorkflowActionExecution"("enrollmentId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowActionExecution_actionId_idx" ON "WorkflowActionExecution"("actionId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowActionExecution_status_idx" ON "WorkflowActionExecution"("status");
+
+-- CreateIndex
+CREATE INDEX "EmailCampaign_userId_idx" ON "EmailCampaign"("userId");
+
+-- CreateIndex
+CREATE INDEX "EmailCampaign_status_idx" ON "EmailCampaign"("status");
+
+-- CreateIndex
+CREATE INDEX "EmailCampaignDeal_campaignId_idx" ON "EmailCampaignDeal"("campaignId");
+
+-- CreateIndex
+CREATE INDEX "EmailCampaignDeal_status_idx" ON "EmailCampaignDeal"("status");
+
+-- CreateIndex
+CREATE INDEX "SmsCampaign_userId_idx" ON "SmsCampaign"("userId");
+
+-- CreateIndex
+CREATE INDEX "SmsCampaign_status_idx" ON "SmsCampaign"("status");
+
+-- CreateIndex
+CREATE INDEX "SmsCampaign_minLeadScore_idx" ON "SmsCampaign"("minLeadScore");
+
+-- CreateIndex
+CREATE INDEX "SmsSequence_campaignId_idx" ON "SmsSequence"("campaignId");
+
+-- CreateIndex
+CREATE INDEX "SmsSequence_sequenceOrder_idx" ON "SmsSequence"("sequenceOrder");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SmsSequence_campaignId_sequenceOrder_key" ON "SmsSequence"("campaignId", "sequenceOrder");
+
+-- CreateIndex
+CREATE INDEX "SmsEnrollment_campaignId_idx" ON "SmsEnrollment"("campaignId");
+
+-- CreateIndex
+CREATE INDEX "SmsEnrollment_leadId_idx" ON "SmsEnrollment"("leadId");
+
+-- CreateIndex
+CREATE INDEX "SmsEnrollment_status_idx" ON "SmsEnrollment"("status");
+
+-- CreateIndex
+CREATE INDEX "SmsEnrollment_nextSendAt_idx" ON "SmsEnrollment"("nextSendAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SmsEnrollment_campaignId_leadId_key" ON "SmsEnrollment"("campaignId", "leadId");
+
+-- CreateIndex
+CREATE INDEX "SmsSequenceMessage_enrollmentId_idx" ON "SmsSequenceMessage"("enrollmentId");
+
+-- CreateIndex
+CREATE INDEX "SmsSequenceMessage_sequenceId_idx" ON "SmsSequenceMessage"("sequenceId");
+
+-- CreateIndex
+CREATE INDEX "SmsSequenceMessage_status_idx" ON "SmsSequenceMessage"("status");
+
+-- CreateIndex
+CREATE INDEX "SmsSequenceMessage_scheduledFor_idx" ON "SmsSequenceMessage"("scheduledFor");
+
+-- CreateIndex
+CREATE INDEX "SmsSequenceMessage_recipientPhone_idx" ON "SmsSequenceMessage"("recipientPhone");
+
+-- CreateIndex
+CREATE INDEX "SmsCampaignDeal_campaignId_idx" ON "SmsCampaignDeal"("campaignId");
+
+-- CreateIndex
+CREATE INDEX "SmsCampaignDeal_status_idx" ON "SmsCampaignDeal"("status");
+
+-- CreateIndex
+CREATE INDEX "TeamMember_userId_idx" ON "TeamMember"("userId");
+
+-- CreateIndex
+CREATE INDEX "TeamMember_status_idx" ON "TeamMember"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TeamMember_userId_email_key" ON "TeamMember"("userId", "email");
+
+-- CreateIndex
+CREATE INDEX "AppointmentType_userId_idx" ON "AppointmentType"("userId");
+
+-- CreateIndex
+CREATE INDEX "AppointmentType_isActive_idx" ON "AppointmentType"("isActive");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BookingAppointment_callLogId_key" ON "BookingAppointment"("callLogId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BookingAppointment_paymentId_key" ON "BookingAppointment"("paymentId");
+
+-- CreateIndex
+CREATE INDEX "BookingAppointment_userId_idx" ON "BookingAppointment"("userId");
+
+-- CreateIndex
+CREATE INDEX "BookingAppointment_appointmentTypeId_idx" ON "BookingAppointment"("appointmentTypeId");
+
+-- CreateIndex
+CREATE INDEX "BookingAppointment_leadId_idx" ON "BookingAppointment"("leadId");
+
+-- CreateIndex
+CREATE INDEX "BookingAppointment_contactId_idx" ON "BookingAppointment"("contactId");
+
+-- CreateIndex
+CREATE INDEX "BookingAppointment_appointmentDate_idx" ON "BookingAppointment"("appointmentDate");
+
+-- CreateIndex
+CREATE INDEX "BookingAppointment_status_idx" ON "BookingAppointment"("status");
+
+-- CreateIndex
+CREATE INDEX "PaymentProviderSettings_userId_idx" ON "PaymentProviderSettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "PaymentProviderSettings_isActive_idx" ON "PaymentProviderSettings"("isActive");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PaymentProviderSettings_userId_provider_key" ON "PaymentProviderSettings"("userId", "provider");
+
+-- CreateIndex
+CREATE INDEX "Payment_userId_idx" ON "Payment"("userId");
+
+-- CreateIndex
+CREATE INDEX "Payment_providerId_idx" ON "Payment"("providerId");
+
+-- CreateIndex
+CREATE INDEX "Payment_status_idx" ON "Payment"("status");
+
+-- CreateIndex
+CREATE INDEX "Payment_paymentType_idx" ON "Payment"("paymentType");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Invoice_invoiceNumber_key" ON "Invoice"("invoiceNumber");
+
+-- CreateIndex
+CREATE INDEX "Invoice_userId_idx" ON "Invoice"("userId");
+
+-- CreateIndex
+CREATE INDEX "Invoice_status_idx" ON "Invoice"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BookingWidgetSettings_userId_key" ON "BookingWidgetSettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "BookingWidgetSettings_userId_idx" ON "BookingWidgetSettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "AuditLog_userId_idx" ON "AuditLog"("userId");
+
+-- CreateIndex
+CREATE INDEX "AuditLog_action_idx" ON "AuditLog"("action");
+
+-- CreateIndex
+CREATE INDEX "AuditLog_severity_idx" ON "AuditLog"("severity");
+
+-- CreateIndex
+CREATE INDEX "AuditLog_entityType_idx" ON "AuditLog"("entityType");
+
+-- CreateIndex
+CREATE INDEX "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VoiceUsage_callLogId_key" ON "VoiceUsage"("callLogId");
+
+-- CreateIndex
+CREATE INDEX "VoiceUsage_userId_idx" ON "VoiceUsage"("userId");
+
+-- CreateIndex
+CREATE INDEX "VoiceUsage_voiceAgentId_idx" ON "VoiceUsage"("voiceAgentId");
+
+-- CreateIndex
+CREATE INDEX "VoiceUsage_billingStatus_idx" ON "VoiceUsage"("billingStatus");
+
+-- CreateIndex
+CREATE INDEX "VoiceUsage_billingPeriod_idx" ON "VoiceUsage"("billingPeriod");
+
+-- CreateIndex
+CREATE INDEX "VoiceUsage_createdAt_idx" ON "VoiceUsage"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserSubscription_userId_key" ON "UserSubscription"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserSubscription_stripeCustomerId_key" ON "UserSubscription"("stripeCustomerId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserSubscription_stripeSubscriptionId_key" ON "UserSubscription"("stripeSubscriptionId");
+
+-- CreateIndex
+CREATE INDEX "UserSubscription_userId_idx" ON "UserSubscription"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserSubscription_status_idx" ON "UserSubscription"("status");
+
+-- CreateIndex
+CREATE INDEX "UserSubscription_tier_idx" ON "UserSubscription"("tier");
+
+-- CreateIndex
+CREATE INDEX "UserSubscription_stripeCustomerId_idx" ON "UserSubscription"("stripeCustomerId");
+
+-- CreateIndex
+CREATE INDEX "UserSubscription_stripeSubscriptionId_idx" ON "UserSubscription"("stripeSubscriptionId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "soshogle_payment_customers_userId_key" ON "soshogle_payment_customers"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "soshogle_payment_customers_soshogleCustomerId_key" ON "soshogle_payment_customers"("soshogleCustomerId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_payment_customers_soshogleCustomerId_idx" ON "soshogle_payment_customers"("soshogleCustomerId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_payment_customers_email_idx" ON "soshogle_payment_customers"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "soshogle_payment_merchants_userId_key" ON "soshogle_payment_merchants"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "soshogle_payment_merchants_soshogleMerchantId_key" ON "soshogle_payment_merchants"("soshogleMerchantId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_payment_merchants_soshogleMerchantId_idx" ON "soshogle_payment_merchants"("soshogleMerchantId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "soshogle_payment_methods_soshogleMethodId_key" ON "soshogle_payment_methods"("soshogleMethodId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_payment_methods_customerId_idx" ON "soshogle_payment_methods"("customerId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_payment_methods_soshogleMethodId_idx" ON "soshogle_payment_methods"("soshogleMethodId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "soshogle_payment_intents_soshogleIntentId_key" ON "soshogle_payment_intents"("soshogleIntentId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_payment_intents_customerId_idx" ON "soshogle_payment_intents"("customerId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_payment_intents_soshogleIntentId_idx" ON "soshogle_payment_intents"("soshogleIntentId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_payment_intents_status_idx" ON "soshogle_payment_intents"("status");
+
+-- CreateIndex
+CREATE INDEX "soshogle_transactions_paymentIntentId_idx" ON "soshogle_transactions"("paymentIntentId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_transactions_customerId_idx" ON "soshogle_transactions"("customerId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_transactions_status_idx" ON "soshogle_transactions"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "soshogle_wallets_customerId_key" ON "soshogle_wallets"("customerId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_wallets_customerId_idx" ON "soshogle_wallets"("customerId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_wallet_transactions_walletId_idx" ON "soshogle_wallet_transactions"("walletId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_wallet_transactions_type_idx" ON "soshogle_wallet_transactions"("type");
+
+-- CreateIndex
+CREATE INDEX "soshogle_loyalty_points_customerId_idx" ON "soshogle_loyalty_points"("customerId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_loyalty_points_programId_idx" ON "soshogle_loyalty_points"("programId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "soshogle_loyalty_points_customerId_programId_key" ON "soshogle_loyalty_points"("customerId", "programId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_financing_payments_planId_idx" ON "soshogle_financing_payments"("planId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_financing_payments_customerId_idx" ON "soshogle_financing_payments"("customerId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_financing_payments_status_idx" ON "soshogle_financing_payments"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "soshogle_disputes_soshogleDisputeId_key" ON "soshogle_disputes"("soshogleDisputeId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_disputes_paymentIntentId_idx" ON "soshogle_disputes"("paymentIntentId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_disputes_status_idx" ON "soshogle_disputes"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "soshogle_webhooks_eventId_key" ON "soshogle_webhooks"("eventId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_webhooks_eventType_idx" ON "soshogle_webhooks"("eventType");
+
+-- CreateIndex
+CREATE INDEX "soshogle_webhooks_status_idx" ON "soshogle_webhooks"("status");
+
+-- CreateIndex
+CREATE INDEX "soshogle_trust_scores_customerId_idx" ON "soshogle_trust_scores"("customerId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_fraud_detections_customerId_idx" ON "soshogle_fraud_detections"("customerId");
+
+-- CreateIndex
+CREATE INDEX "soshogle_fraud_detections_riskLevel_idx" ON "soshogle_fraud_detections"("riskLevel");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Product_sku_key" ON "Product"("sku");
+
+-- CreateIndex
+CREATE INDEX "Product_userId_idx" ON "Product"("userId");
+
+-- CreateIndex
+CREATE INDEX "Product_categoryId_idx" ON "Product"("categoryId");
+
+-- CreateIndex
+CREATE INDEX "Product_active_idx" ON "Product"("active");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProductCategory_slug_key" ON "ProductCategory"("slug");
+
+-- CreateIndex
+CREATE INDEX "ProductCategory_userId_idx" ON "ProductCategory"("userId");
+
+-- CreateIndex
+CREATE INDEX "ProductCategory_parentId_idx" ON "ProductCategory"("parentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Storefront_userId_key" ON "Storefront"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Storefront_domain_key" ON "Storefront"("domain");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Storefront_subdomain_key" ON "Storefront"("subdomain");
+
+-- CreateIndex
+CREATE INDEX "Storefront_userId_idx" ON "Storefront"("userId");
+
+-- CreateIndex
+CREATE INDEX "Storefront_domain_idx" ON "Storefront"("domain");
+
+-- CreateIndex
+CREATE INDEX "Storefront_subdomain_idx" ON "Storefront"("subdomain");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Order_orderNumber_key" ON "Order"("orderNumber");
+
+-- CreateIndex
+CREATE INDEX "Order_userId_idx" ON "Order"("userId");
+
+-- CreateIndex
+CREATE INDEX "Order_orderNumber_idx" ON "Order"("orderNumber");
+
+-- CreateIndex
+CREATE INDEX "Order_status_idx" ON "Order"("status");
+
+-- CreateIndex
+CREATE INDEX "Order_customerEmail_idx" ON "Order"("customerEmail");
+
+-- CreateIndex
+CREATE INDEX "OrderItem_orderId_idx" ON "OrderItem"("orderId");
+
+-- CreateIndex
+CREATE INDEX "OrderItem_productId_idx" ON "OrderItem"("productId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CreditScore_userId_key" ON "CreditScore"("userId");
+
+-- CreateIndex
+CREATE INDEX "CreditScore_userId_idx" ON "CreditScore"("userId");
+
+-- CreateIndex
+CREATE INDEX "CreditScore_riskLevel_idx" ON "CreditScore"("riskLevel");
+
+-- CreateIndex
+CREATE INDEX "CreditScore_score_idx" ON "CreditScore"("score");
+
+-- CreateIndex
+CREATE INDEX "CreditApplication_userId_idx" ON "CreditApplication"("userId");
+
+-- CreateIndex
+CREATE INDEX "CreditApplication_creditScoreId_idx" ON "CreditApplication"("creditScoreId");
+
+-- CreateIndex
+CREATE INDEX "CreditApplication_status_idx" ON "CreditApplication"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AchSettlement_batchId_key" ON "AchSettlement"("batchId");
+
+-- CreateIndex
+CREATE INDEX "AchSettlement_userId_idx" ON "AchSettlement"("userId");
+
+-- CreateIndex
+CREATE INDEX "AchSettlement_status_idx" ON "AchSettlement"("status");
+
+-- CreateIndex
+CREATE INDEX "AchSettlement_settlementDate_idx" ON "AchSettlement"("settlementDate");
+
+-- CreateIndex
+CREATE INDEX "AchSettlement_batchId_idx" ON "AchSettlement"("batchId");
+
+-- CreateIndex
+CREATE INDEX "AchSettlementTransaction_settlementId_idx" ON "AchSettlementTransaction"("settlementId");
+
+-- CreateIndex
+CREATE INDEX "AchSettlementTransaction_status_idx" ON "AchSettlementTransaction"("status");
+
+-- CreateIndex
+CREATE INDEX "AchSettlementTransaction_transactionType_idx" ON "AchSettlementTransaction"("transactionType");
+
+-- CreateIndex
+CREATE INDEX "BnplApplication_userId_idx" ON "BnplApplication"("userId");
+
+-- CreateIndex
+CREATE INDEX "BnplApplication_status_idx" ON "BnplApplication"("status");
+
+-- CreateIndex
+CREATE INDEX "BnplApplication_nextPaymentDate_idx" ON "BnplApplication"("nextPaymentDate");
+
+-- CreateIndex
+CREATE INDEX "BnplApplication_riskLevel_idx" ON "BnplApplication"("riskLevel");
+
+-- CreateIndex
+CREATE INDEX "BnplInstallment_bnplApplicationId_idx" ON "BnplInstallment"("bnplApplicationId");
+
+-- CreateIndex
+CREATE INDEX "BnplInstallment_status_idx" ON "BnplInstallment"("status");
+
+-- CreateIndex
+CREATE INDEX "BnplInstallment_dueDate_idx" ON "BnplInstallment"("dueDate");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BnplInstallment_bnplApplicationId_installmentNumber_key" ON "BnplInstallment"("bnplApplicationId", "installmentNumber");
+
+-- CreateIndex
+CREATE INDEX "DataInsight_userId_idx" ON "DataInsight"("userId");
+
+-- CreateIndex
+CREATE INDEX "DataInsight_insightType_idx" ON "DataInsight"("insightType");
+
+-- CreateIndex
+CREATE INDEX "DataInsight_period_idx" ON "DataInsight"("period");
+
+-- CreateIndex
+CREATE INDEX "DataInsight_startDate_endDate_idx" ON "DataInsight"("startDate", "endDate");
+
+-- CreateIndex
+CREATE INDEX "DataExport_userId_idx" ON "DataExport"("userId");
+
+-- CreateIndex
+CREATE INDEX "DataExport_status_idx" ON "DataExport"("status");
+
+-- CreateIndex
+CREATE INDEX "DataExport_exportType_idx" ON "DataExport"("exportType");
+
+-- CreateIndex
+CREATE INDEX "DataExport_createdAt_idx" ON "DataExport"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "WidgetConfiguration_apiKey_key" ON "WidgetConfiguration"("apiKey");
+
+-- CreateIndex
+CREATE INDEX "WidgetConfiguration_userId_idx" ON "WidgetConfiguration"("userId");
+
+-- CreateIndex
+CREATE INDEX "WidgetConfiguration_isActive_idx" ON "WidgetConfiguration"("isActive");
+
+-- CreateIndex
+CREATE INDEX "WidgetConfiguration_apiKey_idx" ON "WidgetConfiguration"("apiKey");
+
+-- CreateIndex
+CREATE INDEX "WidgetEmbed_widgetConfigId_idx" ON "WidgetEmbed"("widgetConfigId");
+
+-- CreateIndex
+CREATE INDEX "WidgetEmbed_userId_idx" ON "WidgetEmbed"("userId");
+
+-- CreateIndex
+CREATE INDEX "WidgetEmbed_domain_idx" ON "WidgetEmbed"("domain");
+
+-- CreateIndex
+CREATE INDEX "WidgetEmbed_lastActiveAt_idx" ON "WidgetEmbed"("lastActiveAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CashTransaction_receiptNumber_key" ON "CashTransaction"("receiptNumber");
+
+-- CreateIndex
+CREATE INDEX "CashTransaction_userId_idx" ON "CashTransaction"("userId");
+
+-- CreateIndex
+CREATE INDEX "CashTransaction_merchantId_idx" ON "CashTransaction"("merchantId");
+
+-- CreateIndex
+CREATE INDEX "CashTransaction_reconciliationId_idx" ON "CashTransaction"("reconciliationId");
+
+-- CreateIndex
+CREATE INDEX "CashTransaction_transactionDate_idx" ON "CashTransaction"("transactionDate");
+
+-- CreateIndex
+CREATE INDEX "CashTransaction_receiptNumber_idx" ON "CashTransaction"("receiptNumber");
+
+-- CreateIndex
+CREATE INDEX "CashReconciliation_userId_idx" ON "CashReconciliation"("userId");
+
+-- CreateIndex
+CREATE INDEX "CashReconciliation_merchantId_idx" ON "CashReconciliation"("merchantId");
+
+-- CreateIndex
+CREATE INDEX "CashReconciliation_reconciliationDate_idx" ON "CashReconciliation"("reconciliationDate");
+
+-- CreateIndex
+CREATE INDEX "CashReconciliation_status_idx" ON "CashReconciliation"("status");
+
+-- CreateIndex
+CREATE INDEX "DataMonetizationConsent_userId_idx" ON "DataMonetizationConsent"("userId");
+
+-- CreateIndex
+CREATE INDEX "DataMonetizationConsent_status_idx" ON "DataMonetizationConsent"("status");
+
+-- CreateIndex
+CREATE INDEX "DataMonetizationInsight_userId_idx" ON "DataMonetizationInsight"("userId");
+
+-- CreateIndex
+CREATE INDEX "DataMonetizationInsight_insightType_idx" ON "DataMonetizationInsight"("insightType");
+
+-- CreateIndex
+CREATE INDEX "DataMonetizationInsight_createdAt_idx" ON "DataMonetizationInsight"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "DataMonetizationRevenue_userId_idx" ON "DataMonetizationRevenue"("userId");
+
+-- CreateIndex
+CREATE INDEX "DataMonetizationRevenue_period_idx" ON "DataMonetizationRevenue"("period");
+
+-- CreateIndex
+CREATE INDEX "DataMonetizationRevenue_status_idx" ON "DataMonetizationRevenue"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EcommerceWidget_apiKey_key" ON "EcommerceWidget"("apiKey");
+
+-- CreateIndex
+CREATE INDEX "EcommerceWidget_userId_idx" ON "EcommerceWidget"("userId");
+
+-- CreateIndex
+CREATE INDEX "EcommerceWidget_storefrontId_idx" ON "EcommerceWidget"("storefrontId");
+
+-- CreateIndex
+CREATE INDEX "EcommerceWidget_isActive_idx" ON "EcommerceWidget"("isActive");
+
+-- CreateIndex
+CREATE INDEX "WidgetAnalytics_widgetId_idx" ON "WidgetAnalytics"("widgetId");
+
+-- CreateIndex
+CREATE INDEX "WidgetAnalytics_eventType_idx" ON "WidgetAnalytics"("eventType");
+
+-- CreateIndex
+CREATE INDEX "WidgetAnalytics_timestamp_idx" ON "WidgetAnalytics"("timestamp");
+
+-- CreateIndex
+CREATE INDEX "FraudAlert_userId_idx" ON "FraudAlert"("userId");
+
+-- CreateIndex
+CREATE INDEX "FraudAlert_transactionId_idx" ON "FraudAlert"("transactionId");
+
+-- CreateIndex
+CREATE INDEX "FraudAlert_riskLevel_idx" ON "FraudAlert"("riskLevel");
+
+-- CreateIndex
+CREATE INDEX "FraudAlert_status_idx" ON "FraudAlert"("status");
+
+-- CreateIndex
+CREATE INDEX "FraudAlert_detectedAt_idx" ON "FraudAlert"("detectedAt");
+
+-- CreateIndex
+CREATE INDEX "FraudPattern_patternType_idx" ON "FraudPattern"("patternType");
+
+-- CreateIndex
+CREATE INDEX "FraudPattern_isActive_idx" ON "FraudPattern"("isActive");
+
+-- CreateIndex
+CREATE INDEX "RestaurantTable_userId_idx" ON "RestaurantTable"("userId");
+
+-- CreateIndex
+CREATE INDEX "RestaurantTable_userId_isActive_idx" ON "RestaurantTable"("userId", "isActive");
+
+-- CreateIndex
+CREATE INDEX "TableLayout_userId_idx" ON "TableLayout"("userId");
+
+-- CreateIndex
+CREATE INDEX "TableLayout_userId_isActive_idx" ON "TableLayout"("userId", "isActive");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Reservation_confirmationCode_key" ON "Reservation"("confirmationCode");
+
+-- CreateIndex
+CREATE INDEX "Reservation_userId_idx" ON "Reservation"("userId");
+
+-- CreateIndex
+CREATE INDEX "Reservation_customerId_idx" ON "Reservation"("customerId");
+
+-- CreateIndex
+CREATE INDEX "Reservation_userId_reservationDate_idx" ON "Reservation"("userId", "reservationDate");
+
+-- CreateIndex
+CREATE INDEX "Reservation_userId_status_idx" ON "Reservation"("userId", "status");
+
+-- CreateIndex
+CREATE INDEX "Reservation_confirmationCode_idx" ON "Reservation"("confirmationCode");
+
+-- CreateIndex
+CREATE INDEX "ReservationActivity_reservationId_idx" ON "ReservationActivity"("reservationId");
+
+-- CreateIndex
+CREATE INDEX "ReservationActivity_reservationId_createdAt_idx" ON "ReservationActivity"("reservationId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "ReservationReminder_reservationId_idx" ON "ReservationReminder"("reservationId");
+
+-- CreateIndex
+CREATE INDEX "ReservationReminder_status_scheduledFor_idx" ON "ReservationReminder"("status", "scheduledFor");
+
+-- CreateIndex
+CREATE INDEX "SeatingPreference_customerId_idx" ON "SeatingPreference"("customerId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ReservationSettings_userId_key" ON "ReservationSettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "ReservationSettings_userId_idx" ON "ReservationSettings"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DeliveryOrder_trackingCode_key" ON "DeliveryOrder"("trackingCode");
+
+-- CreateIndex
+CREATE INDEX "DeliveryOrder_userId_idx" ON "DeliveryOrder"("userId");
+
+-- CreateIndex
+CREATE INDEX "DeliveryOrder_driverId_idx" ON "DeliveryOrder"("driverId");
+
+-- CreateIndex
+CREATE INDEX "DeliveryOrder_status_idx" ON "DeliveryOrder"("status");
+
+-- CreateIndex
+CREATE INDEX "DeliveryOrder_trackingCode_idx" ON "DeliveryOrder"("trackingCode");
+
+-- CreateIndex
+CREATE INDEX "DeliveryOrder_createdAt_idx" ON "DeliveryOrder"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Driver_userId_key" ON "Driver"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Driver_phone_key" ON "Driver"("phone");
+
+-- CreateIndex
+CREATE INDEX "Driver_userId_idx" ON "Driver"("userId");
+
+-- CreateIndex
+CREATE INDEX "Driver_phone_idx" ON "Driver"("phone");
+
+-- CreateIndex
+CREATE INDEX "Driver_status_idx" ON "Driver"("status");
+
+-- CreateIndex
+CREATE INDEX "Driver_isAvailable_idx" ON "Driver"("isAvailable");
+
+-- CreateIndex
+CREATE INDEX "DriverLocation_driverId_idx" ON "DriverLocation"("driverId");
+
+-- CreateIndex
+CREATE INDEX "DriverLocation_deliveryOrderId_idx" ON "DriverLocation"("deliveryOrderId");
+
+-- CreateIndex
+CREATE INDEX "DriverLocation_createdAt_idx" ON "DriverLocation"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "DeliveryZone_userId_idx" ON "DeliveryZone"("userId");
+
+-- CreateIndex
+CREATE INDEX "DeliveryZone_isActive_idx" ON "DeliveryZone"("isActive");
+
+-- CreateIndex
+CREATE INDEX "DriverZone_driverId_idx" ON "DriverZone"("driverId");
+
+-- CreateIndex
+CREATE INDEX "DriverZone_zoneId_idx" ON "DriverZone"("zoneId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DriverZone_driverId_zoneId_key" ON "DriverZone"("driverId", "zoneId");
+
+-- CreateIndex
+CREATE INDEX "DeliveryRating_deliveryOrderId_idx" ON "DeliveryRating"("deliveryOrderId");
+
+-- CreateIndex
+CREATE INDEX "DeliveryRating_driverId_idx" ON "DeliveryRating"("driverId");
+
+-- CreateIndex
+CREATE INDEX "DeliveryRating_userId_idx" ON "DeliveryRating"("userId");
+
+-- CreateIndex
+CREATE INDEX "DriverEarning_driverId_idx" ON "DriverEarning"("driverId");
+
+-- CreateIndex
+CREATE INDEX "DriverEarning_isPaid_idx" ON "DriverEarning"("isPaid");
+
+-- CreateIndex
+CREATE INDEX "DriverEarning_createdAt_idx" ON "DriverEarning"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Staff_employeeId_key" ON "Staff"("employeeId");
+
+-- CreateIndex
+CREATE INDEX "Staff_userId_idx" ON "Staff"("userId");
+
+-- CreateIndex
+CREATE INDEX "Staff_employeeId_idx" ON "Staff"("employeeId");
+
+-- CreateIndex
+CREATE INDEX "Shift_staffId_idx" ON "Shift"("staffId");
+
+-- CreateIndex
+CREATE INDEX "Shift_userId_idx" ON "Shift"("userId");
+
+-- CreateIndex
+CREATE INDEX "Shift_status_idx" ON "Shift"("status");
+
+-- CreateIndex
+CREATE INDEX "Shift_clockIn_idx" ON "Shift"("clockIn");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "POSOrder_orderNumber_key" ON "POSOrder"("orderNumber");
+
+-- CreateIndex
+CREATE INDEX "POSOrder_userId_idx" ON "POSOrder"("userId");
+
+-- CreateIndex
+CREATE INDEX "POSOrder_staffId_idx" ON "POSOrder"("staffId");
+
+-- CreateIndex
+CREATE INDEX "POSOrder_orderNumber_idx" ON "POSOrder"("orderNumber");
+
+-- CreateIndex
+CREATE INDEX "POSOrder_status_idx" ON "POSOrder"("status");
+
+-- CreateIndex
+CREATE INDEX "POSOrder_paymentStatus_idx" ON "POSOrder"("paymentStatus");
+
+-- CreateIndex
+CREATE INDEX "POSOrder_createdAt_idx" ON "POSOrder"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "POSOrderItem_orderId_idx" ON "POSOrderItem"("orderId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Receipt_receiptNumber_key" ON "Receipt"("receiptNumber");
+
+-- CreateIndex
+CREATE INDEX "Receipt_userId_idx" ON "Receipt"("userId");
+
+-- CreateIndex
+CREATE INDEX "Receipt_orderId_idx" ON "Receipt"("orderId");
+
+-- CreateIndex
+CREATE INDEX "Receipt_receiptNumber_idx" ON "Receipt"("receiptNumber");
+
+-- CreateIndex
+CREATE INDEX "KitchenStation_userId_idx" ON "KitchenStation"("userId");
+
+-- CreateIndex
+CREATE INDEX "KitchenStation_isActive_idx" ON "KitchenStation"("isActive");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "KitchenOrderItem_posOrderItemId_key" ON "KitchenOrderItem"("posOrderItemId");
+
+-- CreateIndex
+CREATE INDEX "KitchenOrderItem_userId_idx" ON "KitchenOrderItem"("userId");
+
+-- CreateIndex
+CREATE INDEX "KitchenOrderItem_posOrderId_idx" ON "KitchenOrderItem"("posOrderId");
+
+-- CreateIndex
+CREATE INDEX "KitchenOrderItem_stationId_idx" ON "KitchenOrderItem"("stationId");
+
+-- CreateIndex
+CREATE INDEX "KitchenOrderItem_status_idx" ON "KitchenOrderItem"("status");
+
+-- CreateIndex
+CREATE INDEX "KitchenOrderItem_priority_idx" ON "KitchenOrderItem"("priority");
+
+-- CreateIndex
+CREATE INDEX "KitchenOrderItem_receivedAt_idx" ON "KitchenOrderItem"("receivedAt");
+
+-- CreateIndex
+CREATE INDEX "PrepLog_kitchenItemId_idx" ON "PrepLog"("kitchenItemId");
+
+-- CreateIndex
+CREATE INDEX "PrepLog_timestamp_idx" ON "PrepLog"("timestamp");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "InventoryItem_sku_key" ON "InventoryItem"("sku");
+
+-- CreateIndex
+CREATE INDEX "InventoryItem_userId_idx" ON "InventoryItem"("userId");
+
+-- CreateIndex
+CREATE INDEX "InventoryItem_category_idx" ON "InventoryItem"("category");
+
+-- CreateIndex
+CREATE INDEX "InventoryItem_currentStock_idx" ON "InventoryItem"("currentStock");
+
+-- CreateIndex
+CREATE INDEX "InventoryItem_supplierId_idx" ON "InventoryItem"("supplierId");
+
+-- CreateIndex
+CREATE INDEX "Supplier_userId_idx" ON "Supplier"("userId");
+
+-- CreateIndex
+CREATE INDEX "Supplier_isActive_idx" ON "Supplier"("isActive");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PurchaseOrder_orderNumber_key" ON "PurchaseOrder"("orderNumber");
+
+-- CreateIndex
+CREATE INDEX "PurchaseOrder_userId_idx" ON "PurchaseOrder"("userId");
+
+-- CreateIndex
+CREATE INDEX "PurchaseOrder_supplierId_idx" ON "PurchaseOrder"("supplierId");
+
+-- CreateIndex
+CREATE INDEX "PurchaseOrder_status_idx" ON "PurchaseOrder"("status");
+
+-- CreateIndex
+CREATE INDEX "PurchaseOrder_orderDate_idx" ON "PurchaseOrder"("orderDate");
+
+-- CreateIndex
+CREATE INDEX "PurchaseOrderItem_orderId_idx" ON "PurchaseOrderItem"("orderId");
+
+-- CreateIndex
+CREATE INDEX "PurchaseOrderItem_inventoryItemId_idx" ON "PurchaseOrderItem"("inventoryItemId");
+
+-- CreateIndex
+CREATE INDEX "InventoryAdjustment_userId_idx" ON "InventoryAdjustment"("userId");
+
+-- CreateIndex
+CREATE INDEX "InventoryAdjustment_inventoryItemId_idx" ON "InventoryAdjustment"("inventoryItemId");
+
+-- CreateIndex
+CREATE INDEX "InventoryAdjustment_type_idx" ON "InventoryAdjustment"("type");
+
+-- CreateIndex
+CREATE INDEX "InventoryAdjustment_timestamp_idx" ON "InventoryAdjustment"("timestamp");
+
+-- CreateIndex
+CREATE INDEX "StockAlert_userId_idx" ON "StockAlert"("userId");
+
+-- CreateIndex
+CREATE INDEX "StockAlert_inventoryItemId_idx" ON "StockAlert"("inventoryItemId");
+
+-- CreateIndex
+CREATE INDEX "StockAlert_isRead_idx" ON "StockAlert"("isRead");
+
+-- CreateIndex
+CREATE INDEX "StockAlert_isResolved_idx" ON "StockAlert"("isResolved");
+
+-- CreateIndex
+CREATE INDEX "StockAlert_createdAt_idx" ON "StockAlert"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "Recipe_userId_idx" ON "Recipe"("userId");
+
+-- CreateIndex
+CREATE INDEX "Recipe_isActive_idx" ON "Recipe"("isActive");
+
+-- CreateIndex
+CREATE INDEX "RecipeIngredient_recipeId_idx" ON "RecipeIngredient"("recipeId");
+
+-- CreateIndex
+CREATE INDEX "RecipeIngredient_inventoryItemId_idx" ON "RecipeIngredient"("inventoryItemId");
+
+-- CreateIndex
+CREATE INDEX "UserFeatureToggle_userId_idx" ON "UserFeatureToggle"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserFeatureToggle_feature_idx" ON "UserFeatureToggle"("feature");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserFeatureToggle_userId_feature_key" ON "UserFeatureToggle"("userId", "feature");
+
+-- CreateIndex
+CREATE INDEX "AdminAction_adminId_idx" ON "AdminAction"("adminId");
+
+-- CreateIndex
+CREATE INDEX "AdminAction_targetUserId_idx" ON "AdminAction"("targetUserId");
+
+-- CreateIndex
+CREATE INDEX "AdminAction_createdAt_idx" ON "AdminAction"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ClubOSHousehold_userId_key" ON "ClubOSHousehold"("userId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSHousehold_userId_idx" ON "ClubOSHousehold"("userId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSHousehold_primaryContactEmail_idx" ON "ClubOSHousehold"("primaryContactEmail");
+
+-- CreateIndex
+CREATE INDEX "ClubOSHousehold_primaryContactPhone_idx" ON "ClubOSHousehold"("primaryContactPhone");
+
+-- CreateIndex
+CREATE INDEX "ClubOSHousehold_clubOwnerId_idx" ON "ClubOSHousehold"("clubOwnerId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSHousehold_status_idx" ON "ClubOSHousehold"("status");
+
+-- CreateIndex
+CREATE INDEX "ClubOSHousehold_clubCode_idx" ON "ClubOSHousehold"("clubCode");
+
+-- CreateIndex
+CREATE INDEX "ClubOSMember_householdId_idx" ON "ClubOSMember"("householdId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSMember_memberType_idx" ON "ClubOSMember"("memberType");
+
+-- CreateIndex
+CREATE INDEX "ClubOSMember_email_idx" ON "ClubOSMember"("email");
+
+-- CreateIndex
+CREATE INDEX "ClubOSMember_dateOfBirth_idx" ON "ClubOSMember"("dateOfBirth");
+
+-- CreateIndex
+CREATE INDEX "ClubOSProgram_userId_idx" ON "ClubOSProgram"("userId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSProgram_programType_idx" ON "ClubOSProgram"("programType");
+
+-- CreateIndex
+CREATE INDEX "ClubOSProgram_status_idx" ON "ClubOSProgram"("status");
+
+-- CreateIndex
+CREATE INDEX "ClubOSProgram_startDate_idx" ON "ClubOSProgram"("startDate");
+
+-- CreateIndex
+CREATE INDEX "ClubOSDivision_programId_idx" ON "ClubOSDivision"("programId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSDivision_ageMin_ageMax_idx" ON "ClubOSDivision"("ageMin", "ageMax");
+
+-- CreateIndex
+CREATE INDEX "ClubOSTeam_divisionId_idx" ON "ClubOSTeam"("divisionId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSTeam_status_idx" ON "ClubOSTeam"("status");
+
+-- CreateIndex
+CREATE INDEX "ClubOSTeamMember_teamId_idx" ON "ClubOSTeamMember"("teamId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSTeamMember_memberId_idx" ON "ClubOSTeamMember"("memberId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ClubOSTeamMember_teamId_memberId_key" ON "ClubOSTeamMember"("teamId", "memberId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSRegistration_householdId_idx" ON "ClubOSRegistration"("householdId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSRegistration_memberId_idx" ON "ClubOSRegistration"("memberId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSRegistration_programId_idx" ON "ClubOSRegistration"("programId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSRegistration_divisionId_idx" ON "ClubOSRegistration"("divisionId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSRegistration_status_idx" ON "ClubOSRegistration"("status");
+
+-- CreateIndex
+CREATE INDEX "ClubOSRegistration_registrationDate_idx" ON "ClubOSRegistration"("registrationDate");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ClubOSWaitlist_registrationId_key" ON "ClubOSWaitlist"("registrationId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSWaitlist_position_idx" ON "ClubOSWaitlist"("position");
+
+-- CreateIndex
+CREATE INDEX "ClubOSWaitlist_responseDeadline_idx" ON "ClubOSWaitlist"("responseDeadline");
+
+-- CreateIndex
+CREATE INDEX "ClubOSWaiver_programId_idx" ON "ClubOSWaiver"("programId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSVenue_userId_idx" ON "ClubOSVenue"("userId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSVenue_venueType_idx" ON "ClubOSVenue"("venueType");
+
+-- CreateIndex
+CREATE INDEX "ClubOSSchedule_userId_idx" ON "ClubOSSchedule"("userId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSSchedule_eventType_idx" ON "ClubOSSchedule"("eventType");
+
+-- CreateIndex
+CREATE INDEX "ClubOSSchedule_status_idx" ON "ClubOSSchedule"("status");
+
+-- CreateIndex
+CREATE INDEX "ClubOSSchedule_startTime_idx" ON "ClubOSSchedule"("startTime");
+
+-- CreateIndex
+CREATE INDEX "ClubOSSchedule_venueId_idx" ON "ClubOSSchedule"("venueId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSSchedule_homeTeamId_idx" ON "ClubOSSchedule"("homeTeamId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSSchedule_awayTeamId_idx" ON "ClubOSSchedule"("awayTeamId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSStaffAssignment_scheduleId_idx" ON "ClubOSStaffAssignment"("scheduleId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSStaffAssignment_memberId_idx" ON "ClubOSStaffAssignment"("memberId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSPayment_householdId_idx" ON "ClubOSPayment"("householdId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSPayment_registrationId_idx" ON "ClubOSPayment"("registrationId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSPayment_status_idx" ON "ClubOSPayment"("status");
+
+-- CreateIndex
+CREATE INDEX "ClubOSPayment_paidAt_idx" ON "ClubOSPayment"("paidAt");
+
+-- CreateIndex
+CREATE INDEX "ClubOSPayment_stripeCustomerId_idx" ON "ClubOSPayment"("stripeCustomerId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ClubOSInvoice_invoiceNumber_key" ON "ClubOSInvoice"("invoiceNumber");
+
+-- CreateIndex
+CREATE INDEX "ClubOSInvoice_householdId_idx" ON "ClubOSInvoice"("householdId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSInvoice_invoiceNumber_idx" ON "ClubOSInvoice"("invoiceNumber");
+
+-- CreateIndex
+CREATE INDEX "ClubOSInvoice_status_idx" ON "ClubOSInvoice"("status");
+
+-- CreateIndex
+CREATE INDEX "ClubOSInvoice_dueDate_idx" ON "ClubOSInvoice"("dueDate");
+
+-- CreateIndex
+CREATE INDEX "ClubOSInvoicePayment_invoiceId_idx" ON "ClubOSInvoicePayment"("invoiceId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSInvoicePayment_paymentId_idx" ON "ClubOSInvoicePayment"("paymentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ClubOSInvoicePayment_invoiceId_paymentId_key" ON "ClubOSInvoicePayment"("invoiceId", "paymentId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSCommunication_userId_idx" ON "ClubOSCommunication"("userId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSCommunication_householdId_idx" ON "ClubOSCommunication"("householdId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSCommunication_type_idx" ON "ClubOSCommunication"("type");
+
+-- CreateIndex
+CREATE INDEX "ClubOSCommunication_status_idx" ON "ClubOSCommunication"("status");
+
+-- CreateIndex
+CREATE INDEX "ClubOSCommunication_scheduledFor_idx" ON "ClubOSCommunication"("scheduledFor");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ClubOSUserRelation_userId_key" ON "ClubOSUserRelation"("userId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSNotificationSetting_userId_idx" ON "ClubOSNotificationSetting"("userId");
+
+-- CreateIndex
+CREATE INDEX "ClubOSNotificationSetting_notificationType_idx" ON "ClubOSNotificationSetting"("notificationType");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ClubOSNotificationSetting_userId_notificationType_key" ON "ClubOSNotificationSetting"("userId", "notificationType");
+
+-- CreateIndex
+CREATE INDEX "ElevenLabsApiKey_userId_isActive_idx" ON "ElevenLabsApiKey"("userId", "isActive");
+
+-- CreateIndex
+CREATE INDEX "ElevenLabsApiKey_priority_idx" ON "ElevenLabsApiKey"("priority");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ElevenLabsApiKey_userId_priority_key" ON "ElevenLabsApiKey"("userId", "priority");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryCategory_userId_idx" ON "GeneralInventoryCategory"("userId");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryCategory_parentId_idx" ON "GeneralInventoryCategory"("parentId");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventorySupplier_userId_idx" ON "GeneralInventorySupplier"("userId");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryLocation_userId_idx" ON "GeneralInventoryLocation"("userId");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryItem_userId_idx" ON "GeneralInventoryItem"("userId");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryItem_categoryId_idx" ON "GeneralInventoryItem"("categoryId");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryItem_supplierId_idx" ON "GeneralInventoryItem"("supplierId");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryItem_locationId_idx" ON "GeneralInventoryItem"("locationId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "GeneralInventoryItem_userId_sku_key" ON "GeneralInventoryItem"("userId", "sku");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryAdjustment_userId_idx" ON "GeneralInventoryAdjustment"("userId");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryAdjustment_itemId_idx" ON "GeneralInventoryAdjustment"("itemId");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryAdjustment_fromLocationId_idx" ON "GeneralInventoryAdjustment"("fromLocationId");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryAdjustment_toLocationId_idx" ON "GeneralInventoryAdjustment"("toLocationId");
+
+-- CreateIndex
+CREATE INDEX "GeneralInventoryAdjustment_createdAt_idx" ON "GeneralInventoryAdjustment"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EcommerceSyncSettings_userId_key" ON "EcommerceSyncSettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "EcommerceSyncSettings_userId_idx" ON "EcommerceSyncSettings"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LowStockAlertSettings_userId_key" ON "LowStockAlertSettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "LowStockAlertSettings_userId_idx" ON "LowStockAlertSettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "Task_userId_idx" ON "Task"("userId");
+
+-- CreateIndex
+CREATE INDEX "Task_assignedToId_idx" ON "Task"("assignedToId");
+
+-- CreateIndex
+CREATE INDEX "Task_status_idx" ON "Task"("status");
+
+-- CreateIndex
+CREATE INDEX "Task_priority_idx" ON "Task"("priority");
+
+-- CreateIndex
+CREATE INDEX "Task_dueDate_idx" ON "Task"("dueDate");
+
+-- CreateIndex
+CREATE INDEX "Task_leadId_idx" ON "Task"("leadId");
+
+-- CreateIndex
+CREATE INDEX "Task_dealId_idx" ON "Task"("dealId");
+
+-- CreateIndex
+CREATE INDEX "Task_parentTaskId_idx" ON "Task"("parentTaskId");
+
+-- CreateIndex
+CREATE INDEX "Task_dependsOnId_idx" ON "Task"("dependsOnId");
+
+-- CreateIndex
+CREATE INDEX "TaskComment_taskId_idx" ON "TaskComment"("taskId");
+
+-- CreateIndex
+CREATE INDEX "TaskComment_userId_idx" ON "TaskComment"("userId");
+
+-- CreateIndex
+CREATE INDEX "TaskAttachment_taskId_idx" ON "TaskAttachment"("taskId");
+
+-- CreateIndex
+CREATE INDEX "TaskAttachment_userId_idx" ON "TaskAttachment"("userId");
+
+-- CreateIndex
+CREATE INDEX "TaskActivity_taskId_idx" ON "TaskActivity"("taskId");
+
+-- CreateIndex
+CREATE INDEX "TaskActivity_userId_idx" ON "TaskActivity"("userId");
+
+-- CreateIndex
+CREATE INDEX "TaskActivity_createdAt_idx" ON "TaskActivity"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "TaskTemplate_userId_idx" ON "TaskTemplate"("userId");
+
+-- CreateIndex
+CREATE INDEX "TaskAutomation_userId_idx" ON "TaskAutomation"("userId");
+
+-- CreateIndex
+CREATE INDEX "TaskAutomation_isActive_idx" ON "TaskAutomation"("isActive");
+
+-- CreateIndex
+CREATE INDEX "UserPermission_userId_idx" ON "UserPermission"("userId");
+
+-- CreateIndex
+CREATE INDEX "UserPermission_resource_idx" ON "UserPermission"("resource");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserPermission_userId_resource_key" ON "UserPermission"("userId", "resource");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AdminSession_sessionToken_key" ON "AdminSession"("sessionToken");
+
+-- CreateIndex
+CREATE INDEX "AdminSession_userId_idx" ON "AdminSession"("userId");
+
+-- CreateIndex
+CREATE INDEX "AdminSession_sessionToken_idx" ON "AdminSession"("sessionToken");
+
+-- CreateIndex
+CREATE INDEX "AdminSession_expiresAt_idx" ON "AdminSession"("expiresAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "BookingSettings_userId_key" ON "BookingSettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "BookingSettings_userId_idx" ON "BookingSettings"("userId");
+
+-- CreateIndex
+CREATE INDEX "BookingSettings_bookingUrl_idx" ON "BookingSettings"("bookingUrl");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SuperAdminSession_sessionToken_key" ON "SuperAdminSession"("sessionToken");
+
+-- CreateIndex
+CREATE INDEX "SuperAdminSession_superAdminId_idx" ON "SuperAdminSession"("superAdminId");
+
+-- CreateIndex
+CREATE INDEX "SuperAdminSession_impersonatedUserId_idx" ON "SuperAdminSession"("impersonatedUserId");
+
+-- CreateIndex
+CREATE INDEX "SuperAdminSession_sessionToken_idx" ON "SuperAdminSession"("sessionToken");
+
+-- CreateIndex
+CREATE INDEX "KnowledgeBaseFile_userId_idx" ON "KnowledgeBaseFile"("userId");
+
+-- CreateIndex
+CREATE INDEX "KnowledgeBaseFile_createdAt_idx" ON "KnowledgeBaseFile"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "VoiceAgentKnowledgeBaseFile_voiceAgentId_idx" ON "VoiceAgentKnowledgeBaseFile"("voiceAgentId");
+
+-- CreateIndex
+CREATE INDEX "VoiceAgentKnowledgeBaseFile_knowledgeBaseFileId_idx" ON "VoiceAgentKnowledgeBaseFile"("knowledgeBaseFileId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VoiceAgentKnowledgeBaseFile_voiceAgentId_knowledgeBaseFileI_key" ON "VoiceAgentKnowledgeBaseFile"("voiceAgentId", "knowledgeBaseFileId");
+
+-- CreateIndex
+CREATE INDEX "RelationshipGraph_userId_idx" ON "RelationshipGraph"("userId");
+
+-- CreateIndex
+CREATE INDEX "RelationshipGraph_sourceType_sourceId_idx" ON "RelationshipGraph"("sourceType", "sourceId");
+
+-- CreateIndex
+CREATE INDEX "RelationshipGraph_targetType_targetId_idx" ON "RelationshipGraph"("targetType", "targetId");
+
+-- CreateIndex
+CREATE INDEX "RelationshipGraph_strength_idx" ON "RelationshipGraph"("strength");
+
+-- CreateIndex
+CREATE INDEX "RelationshipGraph_lastInteractionAt_idx" ON "RelationshipGraph"("lastInteractionAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RelationshipGraph_userId_sourceType_sourceId_targetType_tar_key" ON "RelationshipGraph"("userId", "sourceType", "sourceId", "targetType", "targetId", "relationshipType");
+
+-- CreateIndex
+CREATE INDEX "RelationshipMetrics_userId_idx" ON "RelationshipMetrics"("userId");
+
+-- CreateIndex
+CREATE INDEX "RelationshipMetrics_entityType_entityId_idx" ON "RelationshipMetrics"("entityType", "entityId");
+
+-- CreateIndex
+CREATE INDEX "RelationshipMetrics_avgStrength_idx" ON "RelationshipMetrics"("avgStrength");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RelationshipMetrics_userId_entityType_entityId_key" ON "RelationshipMetrics"("userId", "entityType", "entityId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ToolDefinition_slug_key" ON "ToolDefinition"("slug");
+
+-- CreateIndex
+CREATE INDEX "ToolDefinition_category_idx" ON "ToolDefinition"("category");
+
+-- CreateIndex
+CREATE INDEX "ToolDefinition_slug_idx" ON "ToolDefinition"("slug");
+
+-- CreateIndex
+CREATE INDEX "ToolDefinition_isPublic_idx" ON "ToolDefinition"("isPublic");
+
+-- CreateIndex
+CREATE INDEX "ToolInstance_userId_idx" ON "ToolInstance"("userId");
+
+-- CreateIndex
+CREATE INDEX "ToolInstance_status_idx" ON "ToolInstance"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ToolInstance_userId_definitionId_key" ON "ToolInstance"("userId", "definitionId");
+
+-- CreateIndex
+CREATE INDEX "ToolAction_userId_idx" ON "ToolAction"("userId");
+
+-- CreateIndex
+CREATE INDEX "ToolAction_instanceId_idx" ON "ToolAction"("instanceId");
+
+-- CreateIndex
+CREATE INDEX "ToolAction_success_idx" ON "ToolAction"("success");
+
+-- CreateIndex
+CREATE INDEX "ToolAction_executedAt_idx" ON "ToolAction"("executedAt");
+
+-- CreateIndex
+CREATE INDEX "AIWorkflowTemplate_detectedFromUserId_idx" ON "AIWorkflowTemplate"("detectedFromUserId");
+
+-- CreateIndex
+CREATE INDEX "AIWorkflowTemplate_category_idx" ON "AIWorkflowTemplate"("category");
+
+-- CreateIndex
+CREATE INDEX "AIWorkflowInstance_userId_idx" ON "AIWorkflowInstance"("userId");
+
+-- CreateIndex
+CREATE INDEX "AIWorkflowInstance_status_idx" ON "AIWorkflowInstance"("status");
+
+-- CreateIndex
+CREATE INDEX "AIWorkflowInstance_triggerType_idx" ON "AIWorkflowInstance"("triggerType");
+
+-- CreateIndex
+CREATE INDEX "AIWorkflowExecution_userId_idx" ON "AIWorkflowExecution"("userId");
+
+-- CreateIndex
+CREATE INDEX "AIWorkflowExecution_instanceId_idx" ON "AIWorkflowExecution"("instanceId");
+
+-- CreateIndex
+CREATE INDEX "AIWorkflowExecution_status_idx" ON "AIWorkflowExecution"("status");
+
+-- CreateIndex
+CREATE INDEX "AIWorkflowExecution_startedAt_idx" ON "AIWorkflowExecution"("startedAt");
+
+-- CreateIndex
+CREATE INDEX "WorkflowOptimization_userId_idx" ON "WorkflowOptimization"("userId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowOptimization_originalInstanceId_idx" ON "WorkflowOptimization"("originalInstanceId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowOptimization_variantInstanceId_idx" ON "WorkflowOptimization"("variantInstanceId");
+
+-- CreateIndex
+CREATE INDEX "ToolRelationship_userId_idx" ON "ToolRelationship"("userId");
+
+-- CreateIndex
+CREATE INDEX "ToolRelationship_sourceInstanceId_idx" ON "ToolRelationship"("sourceInstanceId");
+
+-- CreateIndex
+CREATE INDEX "ToolRelationship_targetType_targetId_idx" ON "ToolRelationship"("targetType", "targetId");
+
+-- CreateIndex
+CREATE INDEX "ToolRelationship_relationshipType_idx" ON "ToolRelationship"("relationshipType");
+
+-- CreateIndex
+CREATE INDEX "ToolRelationship_strength_idx" ON "ToolRelationship"("strength");
+
+-- CreateIndex
+CREATE INDEX "ToolUsagePattern_userId_idx" ON "ToolUsagePattern"("userId");
+
+-- CreateIndex
+CREATE INDEX "ToolUsagePattern_confidence_idx" ON "ToolUsagePattern"("confidence");
+
+-- CreateIndex
+CREATE INDEX "ToolHealthMetric_userId_idx" ON "ToolHealthMetric"("userId");
+
+-- CreateIndex
+CREATE INDEX "ToolHealthMetric_instanceId_idx" ON "ToolHealthMetric"("instanceId");
+
+-- CreateIndex
+CREATE INDEX "ToolHealthMetric_healthScore_idx" ON "ToolHealthMetric"("healthScore");
+
+-- CreateIndex
+CREATE INDEX "ToolHealthMetric_recordedAt_idx" ON "ToolHealthMetric"("recordedAt");
+
+-- CreateIndex
+CREATE INDEX "ToolRecommendation_userId_idx" ON "ToolRecommendation"("userId");
+
+-- CreateIndex
+CREATE INDEX "ToolRecommendation_toolDefinitionId_idx" ON "ToolRecommendation"("toolDefinitionId");
+
+-- CreateIndex
+CREATE INDEX "ToolRecommendation_confidence_idx" ON "ToolRecommendation"("confidence");
+
+-- CreateIndex
+CREATE INDEX "ToolRetirement_userId_idx" ON "ToolRetirement"("userId");
+
+-- CreateIndex
+CREATE INDEX "ToolRetirement_instanceId_idx" ON "ToolRetirement"("instanceId");
+
+-- CreateIndex
+CREATE INDEX "LeadGenerationCampaign_userId_idx" ON "LeadGenerationCampaign"("userId");
+
+-- CreateIndex
+CREATE INDEX "LeadGenerationCampaign_status_idx" ON "LeadGenerationCampaign"("status");
+
+-- CreateIndex
+CREATE INDEX "LeadGenerationCampaign_source_idx" ON "LeadGenerationCampaign"("source");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ScrapedLead_googlePlaceId_key" ON "ScrapedLead"("googlePlaceId");
+
+-- CreateIndex
+CREATE INDEX "ScrapedLead_campaignId_idx" ON "ScrapedLead"("campaignId");
+
+-- CreateIndex
+CREATE INDEX "ScrapedLead_userId_idx" ON "ScrapedLead"("userId");
+
+-- CreateIndex
+CREATE INDEX "ScrapedLead_enrichmentStatus_idx" ON "ScrapedLead"("enrichmentStatus");
+
+-- CreateIndex
+CREATE INDEX "ScrapedLead_aiScore_idx" ON "ScrapedLead"("aiScore");
+
+-- CreateIndex
+CREATE INDEX "ScrapedLead_googlePlaceId_idx" ON "ScrapedLead"("googlePlaceId");
+
+-- CreateIndex
+CREATE INDEX "LeadEnrichment_scrapedLeadId_idx" ON "LeadEnrichment"("scrapedLeadId");
+
+-- CreateIndex
+CREATE INDEX "LeadEnrichment_provider_idx" ON "LeadEnrichment"("provider");
+
+-- CreateIndex
+CREATE INDEX "LeadEnrichment_status_idx" ON "LeadEnrichment"("status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EnrichmentCache_companyId_key" ON "EnrichmentCache"("companyId");
+
+-- CreateIndex
+CREATE INDEX "EnrichmentCache_companyId_idx" ON "EnrichmentCache"("companyId");
+
+-- CreateIndex
+CREATE INDEX "EnrichmentCache_domain_idx" ON "EnrichmentCache"("domain");
+
+-- CreateIndex
+CREATE INDEX "EnrichmentCache_expiresAt_idx" ON "EnrichmentCache"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "LeadScore_leadId_idx" ON "LeadScore"("leadId");
+
+-- CreateIndex
+CREATE INDEX "LeadScore_score_idx" ON "LeadScore"("score");
+
+-- CreateIndex
+CREATE INDEX "LeadScore_calculatedAt_idx" ON "LeadScore"("calculatedAt");
+
+-- CreateIndex
+CREATE INDEX "OutreachLog_leadId_idx" ON "OutreachLog"("leadId");
+
+-- CreateIndex
+CREATE INDEX "OutreachLog_channel_idx" ON "OutreachLog"("channel");
+
+-- CreateIndex
+CREATE INDEX "OutreachLog_sentAt_idx" ON "OutreachLog"("sentAt");
+
+-- CreateIndex
+CREATE INDEX "OutreachLog_openedAt_idx" ON "OutreachLog"("openedAt");
+
+-- CreateIndex
+CREATE INDEX "LeadEnrichmentCache_email_idx" ON "LeadEnrichmentCache"("email");
+
+-- CreateIndex
+CREATE INDEX "LeadEnrichmentCache_domain_idx" ON "LeadEnrichmentCache"("domain");
+
+-- CreateIndex
+CREATE INDEX "LeadEnrichmentCache_expiresAt_idx" ON "LeadEnrichmentCache"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "EmailDripCampaign_userId_idx" ON "EmailDripCampaign"("userId");
+
+-- CreateIndex
+CREATE INDEX "EmailDripCampaign_status_idx" ON "EmailDripCampaign"("status");
+
+-- CreateIndex
+CREATE INDEX "EmailDripCampaign_triggerType_idx" ON "EmailDripCampaign"("triggerType");
+
+-- CreateIndex
+CREATE INDEX "EmailDripSequence_campaignId_idx" ON "EmailDripSequence"("campaignId");
+
+-- CreateIndex
+CREATE INDEX "EmailDripSequence_sequenceOrder_idx" ON "EmailDripSequence"("sequenceOrder");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EmailDripSequence_campaignId_sequenceOrder_key" ON "EmailDripSequence"("campaignId", "sequenceOrder");
+
+-- CreateIndex
+CREATE INDEX "EmailDripEnrollment_campaignId_idx" ON "EmailDripEnrollment"("campaignId");
+
+-- CreateIndex
+CREATE INDEX "EmailDripEnrollment_leadId_idx" ON "EmailDripEnrollment"("leadId");
+
+-- CreateIndex
+CREATE INDEX "EmailDripEnrollment_status_idx" ON "EmailDripEnrollment"("status");
+
+-- CreateIndex
+CREATE INDEX "EmailDripEnrollment_nextSendAt_idx" ON "EmailDripEnrollment"("nextSendAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EmailDripEnrollment_campaignId_leadId_key" ON "EmailDripEnrollment"("campaignId", "leadId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EmailDripMessage_trackingId_key" ON "EmailDripMessage"("trackingId");
+
+-- CreateIndex
+CREATE INDEX "EmailDripMessage_enrollmentId_idx" ON "EmailDripMessage"("enrollmentId");
+
+-- CreateIndex
+CREATE INDEX "EmailDripMessage_sequenceId_idx" ON "EmailDripMessage"("sequenceId");
+
+-- CreateIndex
+CREATE INDEX "EmailDripMessage_status_idx" ON "EmailDripMessage"("status");
+
+-- CreateIndex
+CREATE INDEX "EmailDripMessage_scheduledFor_idx" ON "EmailDripMessage"("scheduledFor");
+
+-- CreateIndex
+CREATE INDEX "EmailDripMessage_recipientEmail_idx" ON "EmailDripMessage"("recipientEmail");
+
+-- CreateIndex
+CREATE INDEX "EmailDripMessage_trackingId_idx" ON "EmailDripMessage"("trackingId");
+
+-- CreateIndex
+CREATE INDEX "LeadBlacklist_userId_idx" ON "LeadBlacklist"("userId");
+
+-- CreateIndex
+CREATE INDEX "LeadBlacklist_email_idx" ON "LeadBlacklist"("email");
+
+-- CreateIndex
+CREATE INDEX "LeadBlacklist_phone_idx" ON "LeadBlacklist"("phone");
+
+-- CreateIndex
+CREATE INDEX "LeadBlacklist_isActive_idx" ON "LeadBlacklist"("isActive");
+
+-- CreateIndex
+CREATE INDEX "ABTest_userId_idx" ON "ABTest"("userId");
+
+-- CreateIndex
+CREATE INDEX "ABTest_status_idx" ON "ABTest"("status");
+
+-- CreateIndex
+CREATE INDEX "ABTestVariant_testId_idx" ON "ABTestVariant"("testId");
+
+-- CreateIndex
+CREATE INDEX "SocialMediaSettings_userId_idx" ON "SocialMediaSettings"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "SocialMediaSettings_userId_platform_key" ON "SocialMediaSettings"("userId", "platform");
+
+-- CreateIndex
+CREATE INDEX "AIEmployee_userId_idx" ON "AIEmployee"("userId");
+
+-- CreateIndex
+CREATE INDEX "AIEmployee_type_idx" ON "AIEmployee"("type");
+
+-- CreateIndex
+CREATE INDEX "AIEmployee_isActive_idx" ON "AIEmployee"("isActive");
+
+-- CreateIndex
+CREATE INDEX "AIJob_userId_idx" ON "AIJob"("userId");
+
+-- CreateIndex
+CREATE INDEX "AIJob_employeeId_idx" ON "AIJob"("employeeId");
+
+-- CreateIndex
+CREATE INDEX "AIJob_workflowId_idx" ON "AIJob"("workflowId");
+
+-- CreateIndex
+CREATE INDEX "AIJob_status_idx" ON "AIJob"("status");
+
+-- CreateIndex
+CREATE INDEX "AIJob_priority_idx" ON "AIJob"("priority");
+
+-- CreateIndex
+CREATE INDEX "AIJob_createdAt_idx" ON "AIJob"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "AIJobLog_jobId_idx" ON "AIJobLog"("jobId");
+
+-- CreateIndex
+CREATE INDEX "AIJobLog_createdAt_idx" ON "AIJobLog"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "DocpenSession_userId_idx" ON "DocpenSession"("userId");
+
+-- CreateIndex
+CREATE INDEX "DocpenSession_leadId_idx" ON "DocpenSession"("leadId");
+
+-- CreateIndex
+CREATE INDEX "DocpenSession_status_idx" ON "DocpenSession"("status");
+
+-- CreateIndex
+CREATE INDEX "DocpenSession_sessionDate_idx" ON "DocpenSession"("sessionDate");
+
+-- CreateIndex
+CREATE INDEX "DocpenTranscription_sessionId_idx" ON "DocpenTranscription"("sessionId");
+
+-- CreateIndex
+CREATE INDEX "DocpenTranscription_speakerRole_idx" ON "DocpenTranscription"("speakerRole");
+
+-- CreateIndex
+CREATE INDEX "DocpenSOAPNote_sessionId_idx" ON "DocpenSOAPNote"("sessionId");
+
+-- CreateIndex
+CREATE INDEX "DocpenSOAPNote_isCurrentVersion_idx" ON "DocpenSOAPNote"("isCurrentVersion");
+
+-- CreateIndex
+CREATE INDEX "DocpenSOAPNote_soapType_idx" ON "DocpenSOAPNote"("soapType");
+
+-- CreateIndex
+CREATE INDEX "DocpenAssistantQuery_sessionId_idx" ON "DocpenAssistantQuery"("sessionId");
+
+-- CreateIndex
+CREATE INDEX "DocpenAssistantQuery_queryType_idx" ON "DocpenAssistantQuery"("queryType");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DocpenVoiceAgent_elevenLabsAgentId_key" ON "DocpenVoiceAgent"("elevenLabsAgentId");
+
+-- CreateIndex
+CREATE INDEX "DocpenVoiceAgent_userId_idx" ON "DocpenVoiceAgent"("userId");
+
+-- CreateIndex
+CREATE INDEX "DocpenVoiceAgent_profession_idx" ON "DocpenVoiceAgent"("profession");
+
+-- CreateIndex
+CREATE INDEX "DocpenVoiceAgent_elevenLabsAgentId_idx" ON "DocpenVoiceAgent"("elevenLabsAgentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DocpenVoiceAgent_userId_profession_customProfession_key" ON "DocpenVoiceAgent"("userId", "profession", "customProfession");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DocpenConversation_elevenLabsConvId_key" ON "DocpenConversation"("elevenLabsConvId");
+
+-- CreateIndex
+CREATE INDEX "DocpenConversation_agentId_idx" ON "DocpenConversation"("agentId");
+
+-- CreateIndex
+CREATE INDEX "DocpenConversation_sessionId_idx" ON "DocpenConversation"("sessionId");
+
+-- CreateIndex
+CREATE INDEX "DocpenConversation_startedAt_idx" ON "DocpenConversation"("startedAt");
+
+-- CreateIndex
+CREATE INDEX "DocpenKnowledgeBaseFile_userId_idx" ON "DocpenKnowledgeBaseFile"("userId");
+
+-- CreateIndex
+CREATE INDEX "DocpenKnowledgeBaseFile_specialty_idx" ON "DocpenKnowledgeBaseFile"("specialty");
+
+-- CreateIndex
+CREATE INDEX "DocpenAgentKnowledgeBaseFile_agentId_idx" ON "DocpenAgentKnowledgeBaseFile"("agentId");
+
+-- CreateIndex
+CREATE INDEX "DocpenAgentKnowledgeBaseFile_fileId_idx" ON "DocpenAgentKnowledgeBaseFile"("fileId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DocpenAgentKnowledgeBaseFile_agentId_fileId_key" ON "DocpenAgentKnowledgeBaseFile"("agentId", "fileId");
+
+-- CreateIndex
+CREATE INDEX "REProperty_userId_idx" ON "REProperty"("userId");
+
+-- CreateIndex
+CREATE INDEX "REProperty_city_state_idx" ON "REProperty"("city", "state");
+
+-- CreateIndex
+CREATE INDEX "REProperty_listingStatus_idx" ON "REProperty"("listingStatus");
+
+-- CreateIndex
+CREATE INDEX "REProperty_mlsNumber_idx" ON "REProperty"("mlsNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "REFSBOListing_sourceUrl_key" ON "REFSBOListing"("sourceUrl");
+
+-- CreateIndex
+CREATE INDEX "REFSBOListing_source_idx" ON "REFSBOListing"("source");
+
+-- CreateIndex
+CREATE INDEX "REFSBOListing_city_state_idx" ON "REFSBOListing"("city", "state");
+
+-- CreateIndex
+CREATE INDEX "REFSBOListing_status_idx" ON "REFSBOListing"("status");
+
+-- CreateIndex
+CREATE INDEX "REFSBOListing_assignedUserId_idx" ON "REFSBOListing"("assignedUserId");
+
+-- CreateIndex
+CREATE INDEX "REFSBOListing_daysOnMarket_idx" ON "REFSBOListing"("daysOnMarket");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "REDNCEntry_phoneNumber_key" ON "REDNCEntry"("phoneNumber");
+
+-- CreateIndex
+CREATE INDEX "REDNCEntry_phoneNumber_idx" ON "REDNCEntry"("phoneNumber");
+
+-- CreateIndex
+CREATE INDEX "REDNCEntry_country_idx" ON "REDNCEntry"("country");
+
+-- CreateIndex
+CREATE INDEX "REScrapingJob_userId_idx" ON "REScrapingJob"("userId");
+
+-- CreateIndex
+CREATE INDEX "REScrapingJob_isActive_idx" ON "REScrapingJob"("isActive");
+
+-- CreateIndex
+CREATE INDEX "REMarketStats_userId_idx" ON "REMarketStats"("userId");
+
+-- CreateIndex
+CREATE INDEX "REMarketStats_region_idx" ON "REMarketStats"("region");
+
+-- CreateIndex
+CREATE INDEX "REMarketStats_periodStart_periodEnd_idx" ON "REMarketStats"("periodStart", "periodEnd");
+
+-- CreateIndex
+CREATE INDEX "REMarketReport_userId_idx" ON "REMarketReport"("userId");
+
+-- CreateIndex
+CREATE INDEX "REMarketReport_type_idx" ON "REMarketReport"("type");
+
+-- CreateIndex
+CREATE INDEX "REMarketReport_periodStart_idx" ON "REMarketReport"("periodStart");
+
+-- CreateIndex
+CREATE INDEX "REStaleDiagnostic_userId_idx" ON "REStaleDiagnostic"("userId");
+
+-- CreateIndex
+CREATE INDEX "REStaleDiagnostic_status_idx" ON "REStaleDiagnostic"("status");
+
+-- CreateIndex
+CREATE INDEX "REStaleDiagnostic_daysOnMarket_idx" ON "REStaleDiagnostic"("daysOnMarket");
+
+-- CreateIndex
+CREATE INDEX "REListingPresentation_userId_idx" ON "REListingPresentation"("userId");
+
+-- CreateIndex
+CREATE INDEX "RESellerNetSheet_userId_idx" ON "RESellerNetSheet"("userId");
+
+-- CreateIndex
+CREATE INDEX "RECMAReport_userId_idx" ON "RECMAReport"("userId");
+
+-- CreateIndex
+CREATE INDEX "REComparable_propertyId_idx" ON "REComparable"("propertyId");
+
+-- CreateIndex
+CREATE INDEX "RETransaction_userId_idx" ON "RETransaction"("userId");
+
+-- CreateIndex
+CREATE INDEX "RETransaction_stage_idx" ON "RETransaction"("stage");
+
+-- CreateIndex
+CREATE INDEX "RETransaction_closingDate_idx" ON "RETransaction"("closingDate");
+
+-- CreateIndex
+CREATE INDEX "RETransactionActivity_transactionId_idx" ON "RETransactionActivity"("transactionId");
+
+-- CreateIndex
+CREATE INDEX "RETransactionTask_transactionId_idx" ON "RETransactionTask"("transactionId");
+
+-- CreateIndex
+CREATE INDEX "RETransactionTask_dueDate_idx" ON "RETransactionTask"("dueDate");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "REBuyerCriteria_leadId_key" ON "REBuyerCriteria"("leadId");
+
+-- CreateIndex
+CREATE INDEX "REBuyerCriteria_userId_idx" ON "REBuyerCriteria"("userId");
+
+-- CreateIndex
+CREATE INDEX "REExpiredListing_status_idx" ON "REExpiredListing"("status");
+
+-- CreateIndex
+CREATE INDEX "REExpiredListing_assignedUserId_idx" ON "REExpiredListing"("assignedUserId");
+
+-- CreateIndex
+CREATE INDEX "REExpiredListing_expiredDate_idx" ON "REExpiredListing"("expiredDate");
+
+-- CreateIndex
+CREATE INDEX "REAIEmployeeExecution_userId_idx" ON "REAIEmployeeExecution"("userId");
+
+-- CreateIndex
+CREATE INDEX "REAIEmployeeExecution_employeeType_idx" ON "REAIEmployeeExecution"("employeeType");
+
+-- CreateIndex
+CREATE INDEX "REAIEmployeeExecution_status_idx" ON "REAIEmployeeExecution"("status");
+
+-- CreateIndex
+CREATE INDEX "REAIEmployeeExecution_createdAt_idx" ON "REAIEmployeeExecution"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "REAIEmployeeAgent_userId_idx" ON "REAIEmployeeAgent"("userId");
+
+-- CreateIndex
+CREATE INDEX "REAIEmployeeAgent_employeeType_idx" ON "REAIEmployeeAgent"("employeeType");
+
+-- CreateIndex
+CREATE INDEX "REAIEmployeeAgent_elevenLabsAgentId_idx" ON "REAIEmployeeAgent"("elevenLabsAgentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "REAIEmployeeAgent_userId_employeeType_key" ON "REAIEmployeeAgent"("userId", "employeeType");
+
+-- CreateIndex
+CREATE INDEX "PlatformVoiceAIConfig_isActive_idx" ON "PlatformVoiceAIConfig"("isActive");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VoiceAISubscription_userId_key" ON "VoiceAISubscription"("userId");
+
+-- CreateIndex
+CREATE INDEX "VoiceAISubscription_userId_idx" ON "VoiceAISubscription"("userId");
+
+-- CreateIndex
+CREATE INDEX "VoiceAISubscription_tier_idx" ON "VoiceAISubscription"("tier");
+
+-- CreateIndex
+CREATE INDEX "VoiceAISubscription_isActive_idx" ON "VoiceAISubscription"("isActive");
+
+-- CreateIndex
+CREATE INDEX "VoiceAIUsageLog_userId_idx" ON "VoiceAIUsageLog"("userId");
+
+-- CreateIndex
+CREATE INDEX "VoiceAIUsageLog_subscriptionId_idx" ON "VoiceAIUsageLog"("subscriptionId");
+
+-- CreateIndex
+CREATE INDEX "VoiceAIUsageLog_agentId_idx" ON "VoiceAIUsageLog"("agentId");
+
+-- CreateIndex
+CREATE INDEX "VoiceAIUsageLog_elevenLabsCallId_idx" ON "VoiceAIUsageLog"("elevenLabsCallId");
+
+-- CreateIndex
+CREATE INDEX "VoiceAIUsageLog_status_idx" ON "VoiceAIUsageLog"("status");
+
+-- CreateIndex
+CREATE INDEX "VoiceAIUsageLog_createdAt_idx" ON "VoiceAIUsageLog"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VoiceAIBillingRecord_invoiceNumber_key" ON "VoiceAIBillingRecord"("invoiceNumber");
+
+-- CreateIndex
+CREATE INDEX "VoiceAIBillingRecord_userId_idx" ON "VoiceAIBillingRecord"("userId");
+
+-- CreateIndex
+CREATE INDEX "VoiceAIBillingRecord_subscriptionId_idx" ON "VoiceAIBillingRecord"("subscriptionId");
+
+-- CreateIndex
+CREATE INDEX "VoiceAIBillingRecord_status_idx" ON "VoiceAIBillingRecord"("status");
+
+-- CreateIndex
+CREATE INDEX "VoiceAIBillingRecord_billingPeriodStart_idx" ON "VoiceAIBillingRecord"("billingPeriodStart");
+
+-- CreateIndex
+CREATE INDEX "VoiceAIBillingRecord_createdAt_idx" ON "VoiceAIBillingRecord"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "REWorkflowTemplate_userId_idx" ON "REWorkflowTemplate"("userId");
+
+-- CreateIndex
+CREATE INDEX "REWorkflowTemplate_type_idx" ON "REWorkflowTemplate"("type");
+
+-- CreateIndex
+CREATE INDEX "REWorkflowTemplate_isDefault_idx" ON "REWorkflowTemplate"("isDefault");
+
+-- CreateIndex
+CREATE INDEX "REWorkflowTask_templateId_idx" ON "REWorkflowTask"("templateId");
+
+-- CreateIndex
+CREATE INDEX "REWorkflowTask_parentTaskId_idx" ON "REWorkflowTask"("parentTaskId");
+
+-- CreateIndex
+CREATE INDEX "REWorkflowTask_displayOrder_idx" ON "REWorkflowTask"("displayOrder");
+
+-- CreateIndex
+CREATE INDEX "REWorkflowInstance_templateId_idx" ON "REWorkflowInstance"("templateId");
+
+-- CreateIndex
+CREATE INDEX "REWorkflowInstance_userId_idx" ON "REWorkflowInstance"("userId");
+
+-- CreateIndex
+CREATE INDEX "REWorkflowInstance_leadId_idx" ON "REWorkflowInstance"("leadId");
+
+-- CreateIndex
+CREATE INDEX "REWorkflowInstance_dealId_idx" ON "REWorkflowInstance"("dealId");
+
+-- CreateIndex
+CREATE INDEX "REWorkflowInstance_status_idx" ON "REWorkflowInstance"("status");
+
+-- CreateIndex
+CREATE INDEX "RETaskExecution_instanceId_idx" ON "RETaskExecution"("instanceId");
+
+-- CreateIndex
+CREATE INDEX "RETaskExecution_taskId_idx" ON "RETaskExecution"("taskId");
+
+-- CreateIndex
+CREATE INDEX "RETaskExecution_status_idx" ON "RETaskExecution"("status");
+
+-- CreateIndex
+CREATE INDEX "RETaskExecution_scheduledFor_idx" ON "RETaskExecution"("scheduledFor");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "REHITLNotification_executionId_key" ON "REHITLNotification"("executionId");
+
+-- CreateIndex
+CREATE INDEX "REHITLNotification_userId_idx" ON "REHITLNotification"("userId");
+
+-- CreateIndex
+CREATE INDEX "REHITLNotification_isActioned_idx" ON "REHITLNotification"("isActioned");
+
+-- CreateIndex
+CREATE INDEX "REHITLNotification_createdAt_idx" ON "REHITLNotification"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "WorkflowTemplate_userId_idx" ON "WorkflowTemplate"("userId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowTemplate_industry_idx" ON "WorkflowTemplate"("industry");
+
+-- CreateIndex
+CREATE INDEX "WorkflowTemplate_type_idx" ON "WorkflowTemplate"("type");
+
+-- CreateIndex
+CREATE INDEX "WorkflowTemplate_isDefault_idx" ON "WorkflowTemplate"("isDefault");
+
+-- CreateIndex
+CREATE INDEX "WorkflowTask_templateId_idx" ON "WorkflowTask"("templateId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowTask_parentTaskId_idx" ON "WorkflowTask"("parentTaskId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowTask_displayOrder_idx" ON "WorkflowTask"("displayOrder");
+
+-- CreateIndex
+CREATE INDEX "WorkflowInstance_templateId_idx" ON "WorkflowInstance"("templateId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowInstance_userId_idx" ON "WorkflowInstance"("userId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowInstance_industry_idx" ON "WorkflowInstance"("industry");
+
+-- CreateIndex
+CREATE INDEX "WorkflowInstance_leadId_idx" ON "WorkflowInstance"("leadId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowInstance_dealId_idx" ON "WorkflowInstance"("dealId");
+
+-- CreateIndex
+CREATE INDEX "WorkflowInstance_status_idx" ON "WorkflowInstance"("status");
+
+-- CreateIndex
+CREATE INDEX "TaskExecution_instanceId_idx" ON "TaskExecution"("instanceId");
+
+-- CreateIndex
+CREATE INDEX "TaskExecution_taskId_idx" ON "TaskExecution"("taskId");
+
+-- CreateIndex
+CREATE INDEX "TaskExecution_status_idx" ON "TaskExecution"("status");
+
+-- CreateIndex
+CREATE INDEX "TaskExecution_scheduledFor_idx" ON "TaskExecution"("scheduledFor");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "HITLNotification_executionId_key" ON "HITLNotification"("executionId");
+
+-- CreateIndex
+CREATE INDEX "HITLNotification_userId_idx" ON "HITLNotification"("userId");
+
+-- CreateIndex
+CREATE INDEX "HITLNotification_isActioned_idx" ON "HITLNotification"("isActioned");
+
+-- CreateIndex
+CREATE INDEX "HITLNotification_createdAt_idx" ON "HITLNotification"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "DentalOdontogram_leadId_idx" ON "DentalOdontogram"("leadId");
+
+-- CreateIndex
+CREATE INDEX "DentalOdontogram_userId_idx" ON "DentalOdontogram"("userId");
+
+-- CreateIndex
+CREATE INDEX "DentalOdontogram_chartDate_idx" ON "DentalOdontogram"("chartDate");
+
+-- CreateIndex
+CREATE INDEX "DentalPeriodontalChart_leadId_idx" ON "DentalPeriodontalChart"("leadId");
+
+-- CreateIndex
+CREATE INDEX "DentalPeriodontalChart_userId_idx" ON "DentalPeriodontalChart"("userId");
+
+-- CreateIndex
+CREATE INDEX "DentalPeriodontalChart_chartDate_idx" ON "DentalPeriodontalChart"("chartDate");
+
+-- CreateIndex
+CREATE INDEX "DentalTreatmentPlan_leadId_idx" ON "DentalTreatmentPlan"("leadId");
+
+-- CreateIndex
+CREATE INDEX "DentalTreatmentPlan_userId_idx" ON "DentalTreatmentPlan"("userId");
+
+-- CreateIndex
+CREATE INDEX "DentalTreatmentPlan_status_idx" ON "DentalTreatmentPlan"("status");
+
+-- CreateIndex
+CREATE INDEX "DentalProcedure_leadId_idx" ON "DentalProcedure"("leadId");
+
+-- CreateIndex
+CREATE INDEX "DentalProcedure_userId_idx" ON "DentalProcedure"("userId");
+
+-- CreateIndex
+CREATE INDEX "DentalProcedure_treatmentPlanId_idx" ON "DentalProcedure"("treatmentPlanId");
+
+-- CreateIndex
+CREATE INDEX "DentalProcedure_procedureCode_idx" ON "DentalProcedure"("procedureCode");
+
+-- CreateIndex
+CREATE INDEX "DentalProcedure_status_idx" ON "DentalProcedure"("status");
+
+-- CreateIndex
+CREATE INDEX "DentalProcedure_performedDate_idx" ON "DentalProcedure"("performedDate");
+
+-- CreateIndex
+CREATE INDEX "DentalForm_userId_idx" ON "DentalForm"("userId");
+
+-- CreateIndex
+CREATE INDEX "DentalForm_isActive_idx" ON "DentalForm"("isActive");
+
+-- CreateIndex
+CREATE INDEX "DentalForm_category_idx" ON "DentalForm"("category");
+
+-- CreateIndex
+CREATE INDEX "DentalFormResponse_leadId_idx" ON "DentalFormResponse"("leadId");
+
+-- CreateIndex
+CREATE INDEX "DentalFormResponse_userId_idx" ON "DentalFormResponse"("userId");
+
+-- CreateIndex
+CREATE INDEX "DentalFormResponse_formId_idx" ON "DentalFormResponse"("formId");
+
+-- CreateIndex
+CREATE INDEX "DentalFormResponse_submittedAt_idx" ON "DentalFormResponse"("submittedAt");
+
+-- CreateIndex
+CREATE INDEX "PatientDocument_userId_idx" ON "PatientDocument"("userId");
+
+-- CreateIndex
+CREATE INDEX "PatientDocument_leadId_idx" ON "PatientDocument"("leadId");
+
+-- CreateIndex
+CREATE INDEX "PatientDocument_documentType_idx" ON "PatientDocument"("documentType");
+
+-- CreateIndex
+CREATE INDEX "PatientDocument_retentionExpiry_idx" ON "PatientDocument"("retentionExpiry");
+
+-- CreateIndex
+CREATE INDEX "PatientDocument_deletionRequested_idx" ON "PatientDocument"("deletionRequested");
+
+-- CreateIndex
+CREATE INDEX "PatientDocument_dataResidency_idx" ON "PatientDocument"("dataResidency");
+
+-- CreateIndex
+CREATE INDEX "DocumentVersion_documentId_idx" ON "DocumentVersion"("documentId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DocumentVersion_documentId_versionNumber_key" ON "DocumentVersion"("documentId", "versionNumber");
+
+-- CreateIndex
+CREATE INDEX "DocumentConsent_leadId_idx" ON "DocumentConsent"("leadId");
+
+-- CreateIndex
+CREATE INDEX "DocumentConsent_userId_idx" ON "DocumentConsent"("userId");
+
+-- CreateIndex
+CREATE INDEX "DocumentConsent_granted_idx" ON "DocumentConsent"("granted");
+
+-- CreateIndex
+CREATE INDEX "DocumentConsent_consentType_idx" ON "DocumentConsent"("consentType");
+
+-- CreateIndex
+CREATE INDEX "DocumentAccessLog_documentId_idx" ON "DocumentAccessLog"("documentId");
+
+-- CreateIndex
+CREATE INDEX "DocumentAccessLog_userId_idx" ON "DocumentAccessLog"("userId");
+
+-- CreateIndex
+CREATE INDEX "DocumentAccessLog_action_idx" ON "DocumentAccessLog"("action");
+
+-- CreateIndex
+CREATE INDEX "DocumentAccessLog_createdAt_idx" ON "DocumentAccessLog"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "DataAccessRequest_leadId_idx" ON "DataAccessRequest"("leadId");
+
+-- CreateIndex
+CREATE INDEX "DataAccessRequest_userId_idx" ON "DataAccessRequest"("userId");
+
+-- CreateIndex
+CREATE INDEX "DataAccessRequest_status_idx" ON "DataAccessRequest"("status");
+
+-- CreateIndex
+CREATE INDEX "DataAccessRequest_requestType_idx" ON "DataAccessRequest"("requestType");
+
+-- CreateIndex
+CREATE INDEX "DataBreach_userId_idx" ON "DataBreach"("userId");
+
+-- CreateIndex
+CREATE INDEX "DataBreach_severity_idx" ON "DataBreach"("severity");
+
+-- CreateIndex
+CREATE INDEX "DataBreach_resolved_idx" ON "DataBreach"("resolved");
+
+-- CreateIndex
+CREATE INDEX "DataBreach_discoveredAt_idx" ON "DataBreach"("discoveredAt");
+
+-- AddForeignKey
+ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "User" ADD CONSTRAINT "User_agencyId_fkey" FOREIGN KEY ("agencyId") REFERENCES "Agency"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Lead" ADD CONSTRAINT "Lead_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Note" ADD CONSTRAINT "Note_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Note" ADD CONSTRAINT "Note_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Message" ADD CONSTRAINT "Message_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Message" ADD CONSTRAINT "Message_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ApiKey" ADD CONSTRAINT "ApiKey_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Campaign" ADD CONSTRAINT "Campaign_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Campaign" ADD CONSTRAINT "Campaign_voiceAgentId_fkey" FOREIGN KEY ("voiceAgentId") REFERENCES "VoiceAgent"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CampaignMessage" ADD CONSTRAINT "CampaignMessage_callLogId_fkey" FOREIGN KEY ("callLogId") REFERENCES "CallLog"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CampaignMessage" ADD CONSTRAINT "CampaignMessage_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "Campaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CampaignLead" ADD CONSTRAINT "CampaignLead_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "Campaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CampaignLead" ADD CONSTRAINT "CampaignLead_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Review" ADD CONSTRAINT "Review_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "Campaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Review" ADD CONSTRAINT "Review_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FeedbackCollection" ADD CONSTRAINT "FeedbackCollection_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FeedbackCollection" ADD CONSTRAINT "FeedbackCollection_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Referral" ADD CONSTRAINT "Referral_convertedLeadId_fkey" FOREIGN KEY ("convertedLeadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Referral" ADD CONSTRAINT "Referral_referrerId_fkey" FOREIGN KEY ("referrerId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Referral" ADD CONSTRAINT "Referral_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VoiceAgent" ADD CONSTRAINT "VoiceAgent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchasedPhoneNumber" ADD CONSTRAINT "PurchasedPhoneNumber_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CallLog" ADD CONSTRAINT "CallLog_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CallLog" ADD CONSTRAINT "CallLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CallLog" ADD CONSTRAINT "CallLog_voiceAgentId_fkey" FOREIGN KEY ("voiceAgentId") REFERENCES "VoiceAgent"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OutboundCall" ADD CONSTRAINT "OutboundCall_callLogId_fkey" FOREIGN KEY ("callLogId") REFERENCES "CallLog"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OutboundCall" ADD CONSTRAINT "OutboundCall_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OutboundCall" ADD CONSTRAINT "OutboundCall_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OutboundCall" ADD CONSTRAINT "OutboundCall_voiceAgentId_fkey" FOREIGN KEY ("voiceAgentId") REFERENCES "VoiceAgent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CalendarConnection" ADD CONSTRAINT "CalendarConnection_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ChannelConnection" ADD CONSTRAINT "ChannelConnection_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_channelConnectionId_fkey" FOREIGN KEY ("channelConnectionId") REFERENCES "ChannelConnection"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ConversationMessage" ADD CONSTRAINT "ConversationMessage_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ConversationMessage" ADD CONSTRAINT "ConversationMessage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "KnowledgeBase" ADD CONSTRAINT "KnowledgeBase_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AutoReplySettings" ADD CONSTRAINT "AutoReplySettings_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Pipeline" ADD CONSTRAINT "Pipeline_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PipelineStage" ADD CONSTRAINT "PipelineStage_pipelineId_fkey" FOREIGN KEY ("pipelineId") REFERENCES "Pipeline"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Deal" ADD CONSTRAINT "Deal_assignedToId_fkey" FOREIGN KEY ("assignedToId") REFERENCES "TeamMember"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Deal" ADD CONSTRAINT "Deal_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Deal" ADD CONSTRAINT "Deal_pipelineId_fkey" FOREIGN KEY ("pipelineId") REFERENCES "Pipeline"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Deal" ADD CONSTRAINT "Deal_stageId_fkey" FOREIGN KEY ("stageId") REFERENCES "PipelineStage"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Deal" ADD CONSTRAINT "Deal_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DealActivity" ADD CONSTRAINT "DealActivity_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DealActivity" ADD CONSTRAINT "DealActivity_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Workflow" ADD CONSTRAINT "Workflow_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowAction" ADD CONSTRAINT "WorkflowAction_parentActionId_fkey" FOREIGN KEY ("parentActionId") REFERENCES "WorkflowAction"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowAction" ADD CONSTRAINT "WorkflowAction_workflowId_fkey" FOREIGN KEY ("workflowId") REFERENCES "Workflow"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowEnrollment" ADD CONSTRAINT "WorkflowEnrollment_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowEnrollment" ADD CONSTRAINT "WorkflowEnrollment_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowEnrollment" ADD CONSTRAINT "WorkflowEnrollment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowEnrollment" ADD CONSTRAINT "WorkflowEnrollment_workflowId_fkey" FOREIGN KEY ("workflowId") REFERENCES "Workflow"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowActionExecution" ADD CONSTRAINT "WorkflowActionExecution_actionId_fkey" FOREIGN KEY ("actionId") REFERENCES "WorkflowAction"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowActionExecution" ADD CONSTRAINT "WorkflowActionExecution_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "WorkflowEnrollment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailCampaign" ADD CONSTRAINT "EmailCampaign_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailCampaignDeal" ADD CONSTRAINT "EmailCampaignDeal_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "EmailCampaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailCampaignDeal" ADD CONSTRAINT "EmailCampaignDeal_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailCampaignDeal" ADD CONSTRAINT "EmailCampaignDeal_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SmsCampaign" ADD CONSTRAINT "SmsCampaign_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SmsSequence" ADD CONSTRAINT "SmsSequence_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "SmsCampaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SmsEnrollment" ADD CONSTRAINT "SmsEnrollment_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "SmsCampaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SmsEnrollment" ADD CONSTRAINT "SmsEnrollment_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SmsSequenceMessage" ADD CONSTRAINT "SmsSequenceMessage_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "SmsEnrollment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SmsSequenceMessage" ADD CONSTRAINT "SmsSequenceMessage_sequenceId_fkey" FOREIGN KEY ("sequenceId") REFERENCES "SmsSequence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SmsCampaignDeal" ADD CONSTRAINT "SmsCampaignDeal_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "SmsCampaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SmsCampaignDeal" ADD CONSTRAINT "SmsCampaignDeal_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SmsCampaignDeal" ADD CONSTRAINT "SmsCampaignDeal_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TeamMember" ADD CONSTRAINT "TeamMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AppointmentType" ADD CONSTRAINT "AppointmentType_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookingAppointment" ADD CONSTRAINT "BookingAppointment_appointmentTypeId_fkey" FOREIGN KEY ("appointmentTypeId") REFERENCES "AppointmentType"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookingAppointment" ADD CONSTRAINT "BookingAppointment_calendarConnectionId_fkey" FOREIGN KEY ("calendarConnectionId") REFERENCES "CalendarConnection"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookingAppointment" ADD CONSTRAINT "BookingAppointment_callLogId_fkey" FOREIGN KEY ("callLogId") REFERENCES "CallLog"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookingAppointment" ADD CONSTRAINT "BookingAppointment_contactId_fkey" FOREIGN KEY ("contactId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookingAppointment" ADD CONSTRAINT "BookingAppointment_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookingAppointment" ADD CONSTRAINT "BookingAppointment_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "Payment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookingAppointment" ADD CONSTRAINT "BookingAppointment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PaymentProviderSettings" ADD CONSTRAINT "PaymentProviderSettings_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_providerId_fkey" FOREIGN KEY ("providerId") REFERENCES "PaymentProviderSettings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookingWidgetSettings" ADD CONSTRAINT "BookingWidgetSettings_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VoiceUsage" ADD CONSTRAINT "VoiceUsage_callLogId_fkey" FOREIGN KEY ("callLogId") REFERENCES "CallLog"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VoiceUsage" ADD CONSTRAINT "VoiceUsage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VoiceUsage" ADD CONSTRAINT "VoiceUsage_voiceAgentId_fkey" FOREIGN KEY ("voiceAgentId") REFERENCES "VoiceAgent"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserSubscription" ADD CONSTRAINT "UserSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_payment_customers" ADD CONSTRAINT "soshogle_payment_customers_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_payment_merchants" ADD CONSTRAINT "soshogle_payment_merchants_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_payment_methods" ADD CONSTRAINT "soshogle_payment_methods_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "soshogle_payment_customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_payment_intents" ADD CONSTRAINT "soshogle_payment_intents_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "soshogle_payment_customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_transactions" ADD CONSTRAINT "soshogle_transactions_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "soshogle_payment_customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_transactions" ADD CONSTRAINT "soshogle_transactions_paymentIntentId_fkey" FOREIGN KEY ("paymentIntentId") REFERENCES "soshogle_payment_intents"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_wallets" ADD CONSTRAINT "soshogle_wallets_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "soshogle_payment_customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_wallet_transactions" ADD CONSTRAINT "soshogle_wallet_transactions_walletId_fkey" FOREIGN KEY ("walletId") REFERENCES "soshogle_wallets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_loyalty_points" ADD CONSTRAINT "soshogle_loyalty_points_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "soshogle_payment_customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_loyalty_points" ADD CONSTRAINT "soshogle_loyalty_points_programId_fkey" FOREIGN KEY ("programId") REFERENCES "soshogle_loyalty_programs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_financing_payments" ADD CONSTRAINT "soshogle_financing_payments_planId_fkey" FOREIGN KEY ("planId") REFERENCES "soshogle_financing_plans"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_disputes" ADD CONSTRAINT "soshogle_disputes_paymentIntentId_fkey" FOREIGN KEY ("paymentIntentId") REFERENCES "soshogle_payment_intents"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_trust_scores" ADD CONSTRAINT "soshogle_trust_scores_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "soshogle_payment_customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "soshogle_fraud_detections" ADD CONSTRAINT "soshogle_fraud_detections_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "soshogle_payment_customers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Product" ADD CONSTRAINT "Product_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "ProductCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Product" ADD CONSTRAINT "Product_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProductCategory" ADD CONSTRAINT "ProductCategory_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "ProductCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProductCategory" ADD CONSTRAINT "ProductCategory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Storefront" ADD CONSTRAINT "Storefront_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Order" ADD CONSTRAINT "Order_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CreditScore" ADD CONSTRAINT "CreditScore_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CreditApplication" ADD CONSTRAINT "CreditApplication_creditScoreId_fkey" FOREIGN KEY ("creditScoreId") REFERENCES "CreditScore"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CreditApplication" ADD CONSTRAINT "CreditApplication_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AchSettlement" ADD CONSTRAINT "AchSettlement_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AchSettlementTransaction" ADD CONSTRAINT "AchSettlementTransaction_settlementId_fkey" FOREIGN KEY ("settlementId") REFERENCES "AchSettlement"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BnplApplication" ADD CONSTRAINT "BnplApplication_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BnplInstallment" ADD CONSTRAINT "BnplInstallment_bnplApplicationId_fkey" FOREIGN KEY ("bnplApplicationId") REFERENCES "BnplApplication"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DataInsight" ADD CONSTRAINT "DataInsight_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DataExport" ADD CONSTRAINT "DataExport_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WidgetConfiguration" ADD CONSTRAINT "WidgetConfiguration_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WidgetEmbed" ADD CONSTRAINT "WidgetEmbed_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WidgetEmbed" ADD CONSTRAINT "WidgetEmbed_widgetConfigId_fkey" FOREIGN KEY ("widgetConfigId") REFERENCES "WidgetConfiguration"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CashTransaction" ADD CONSTRAINT "CashTransaction_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "soshogle_payment_merchants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CashTransaction" ADD CONSTRAINT "CashTransaction_reconciliationId_fkey" FOREIGN KEY ("reconciliationId") REFERENCES "CashReconciliation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CashTransaction" ADD CONSTRAINT "CashTransaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CashReconciliation" ADD CONSTRAINT "CashReconciliation_merchantId_fkey" FOREIGN KEY ("merchantId") REFERENCES "soshogle_payment_merchants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CashReconciliation" ADD CONSTRAINT "CashReconciliation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DataMonetizationConsent" ADD CONSTRAINT "DataMonetizationConsent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DataMonetizationInsight" ADD CONSTRAINT "DataMonetizationInsight_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DataMonetizationRevenue" ADD CONSTRAINT "DataMonetizationRevenue_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EcommerceWidget" ADD CONSTRAINT "EcommerceWidget_storefrontId_fkey" FOREIGN KEY ("storefrontId") REFERENCES "Storefront"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EcommerceWidget" ADD CONSTRAINT "EcommerceWidget_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WidgetAnalytics" ADD CONSTRAINT "WidgetAnalytics_widgetId_fkey" FOREIGN KEY ("widgetId") REFERENCES "EcommerceWidget"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FraudAlert" ADD CONSTRAINT "FraudAlert_transactionId_fkey" FOREIGN KEY ("transactionId") REFERENCES "soshogle_transactions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "FraudAlert" ADD CONSTRAINT "FraudAlert_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RestaurantTable" ADD CONSTRAINT "RestaurantTable_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TableLayout" ADD CONSTRAINT "TableLayout_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Reservation" ADD CONSTRAINT "Reservation_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Reservation" ADD CONSTRAINT "Reservation_preOrderId_fkey" FOREIGN KEY ("preOrderId") REFERENCES "Order"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Reservation" ADD CONSTRAINT "Reservation_tableId_fkey" FOREIGN KEY ("tableId") REFERENCES "RestaurantTable"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Reservation" ADD CONSTRAINT "Reservation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReservationActivity" ADD CONSTRAINT "ReservationActivity_reservationId_fkey" FOREIGN KEY ("reservationId") REFERENCES "Reservation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReservationReminder" ADD CONSTRAINT "ReservationReminder_reservationId_fkey" FOREIGN KEY ("reservationId") REFERENCES "Reservation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SeatingPreference" ADD CONSTRAINT "SeatingPreference_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SeatingPreference" ADD CONSTRAINT "SeatingPreference_reservationId_fkey" FOREIGN KEY ("reservationId") REFERENCES "Reservation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReservationSettings" ADD CONSTRAINT "ReservationSettings_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DeliveryOrder" ADD CONSTRAINT "DeliveryOrder_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "Driver"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DeliveryOrder" ADD CONSTRAINT "DeliveryOrder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Driver" ADD CONSTRAINT "Driver_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DriverLocation" ADD CONSTRAINT "DriverLocation_deliveryOrderId_fkey" FOREIGN KEY ("deliveryOrderId") REFERENCES "DeliveryOrder"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DriverLocation" ADD CONSTRAINT "DriverLocation_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "Driver"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DeliveryZone" ADD CONSTRAINT "DeliveryZone_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DriverZone" ADD CONSTRAINT "DriverZone_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "Driver"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DriverZone" ADD CONSTRAINT "DriverZone_zoneId_fkey" FOREIGN KEY ("zoneId") REFERENCES "DeliveryZone"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DeliveryRating" ADD CONSTRAINT "DeliveryRating_deliveryOrderId_fkey" FOREIGN KEY ("deliveryOrderId") REFERENCES "DeliveryOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DeliveryRating" ADD CONSTRAINT "DeliveryRating_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "Driver"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DeliveryRating" ADD CONSTRAINT "DeliveryRating_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DriverEarning" ADD CONSTRAINT "DriverEarning_driverId_fkey" FOREIGN KEY ("driverId") REFERENCES "Driver"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Staff" ADD CONSTRAINT "Staff_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Shift" ADD CONSTRAINT "Shift_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "Staff"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Shift" ADD CONSTRAINT "Shift_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "POSOrder" ADD CONSTRAINT "POSOrder_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "Staff"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "POSOrder" ADD CONSTRAINT "POSOrder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "POSOrderItem" ADD CONSTRAINT "POSOrderItem_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "POSOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Receipt" ADD CONSTRAINT "Receipt_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "POSOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Receipt" ADD CONSTRAINT "Receipt_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "KitchenStation" ADD CONSTRAINT "KitchenStation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "KitchenOrderItem" ADD CONSTRAINT "KitchenOrderItem_posOrderId_fkey" FOREIGN KEY ("posOrderId") REFERENCES "POSOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "KitchenOrderItem" ADD CONSTRAINT "KitchenOrderItem_posOrderItemId_fkey" FOREIGN KEY ("posOrderItemId") REFERENCES "POSOrderItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "KitchenOrderItem" ADD CONSTRAINT "KitchenOrderItem_stationId_fkey" FOREIGN KEY ("stationId") REFERENCES "KitchenStation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "KitchenOrderItem" ADD CONSTRAINT "KitchenOrderItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PrepLog" ADD CONSTRAINT "PrepLog_kitchenItemId_fkey" FOREIGN KEY ("kitchenItemId") REFERENCES "KitchenOrderItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Supplier" ADD CONSTRAINT "Supplier_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseOrderItem" ADD CONSTRAINT "PurchaseOrderItem_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseOrderItem" ADD CONSTRAINT "PurchaseOrderItem_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "PurchaseOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InventoryAdjustment" ADD CONSTRAINT "InventoryAdjustment_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InventoryAdjustment" ADD CONSTRAINT "InventoryAdjustment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StockAlert" ADD CONSTRAINT "StockAlert_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StockAlert" ADD CONSTRAINT "StockAlert_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Recipe" ADD CONSTRAINT "Recipe_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RecipeIngredient" ADD CONSTRAINT "RecipeIngredient_inventoryItemId_fkey" FOREIGN KEY ("inventoryItemId") REFERENCES "InventoryItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RecipeIngredient" ADD CONSTRAINT "RecipeIngredient_recipeId_fkey" FOREIGN KEY ("recipeId") REFERENCES "Recipe"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserFeatureToggle" ADD CONSTRAINT "UserFeatureToggle_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSHousehold" ADD CONSTRAINT "ClubOSHousehold_clubOwnerId_fkey" FOREIGN KEY ("clubOwnerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSHousehold" ADD CONSTRAINT "ClubOSHousehold_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSMember" ADD CONSTRAINT "ClubOSMember_householdId_fkey" FOREIGN KEY ("householdId") REFERENCES "ClubOSHousehold"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSProgram" ADD CONSTRAINT "ClubOSProgram_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSDivision" ADD CONSTRAINT "ClubOSDivision_programId_fkey" FOREIGN KEY ("programId") REFERENCES "ClubOSProgram"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSTeam" ADD CONSTRAINT "ClubOSTeam_divisionId_fkey" FOREIGN KEY ("divisionId") REFERENCES "ClubOSDivision"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSTeamMember" ADD CONSTRAINT "ClubOSTeamMember_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "ClubOSMember"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSTeamMember" ADD CONSTRAINT "ClubOSTeamMember_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "ClubOSTeam"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSRegistration" ADD CONSTRAINT "ClubOSRegistration_divisionId_fkey" FOREIGN KEY ("divisionId") REFERENCES "ClubOSDivision"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSRegistration" ADD CONSTRAINT "ClubOSRegistration_householdId_fkey" FOREIGN KEY ("householdId") REFERENCES "ClubOSHousehold"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSRegistration" ADD CONSTRAINT "ClubOSRegistration_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "ClubOSMember"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSRegistration" ADD CONSTRAINT "ClubOSRegistration_programId_fkey" FOREIGN KEY ("programId") REFERENCES "ClubOSProgram"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSWaitlist" ADD CONSTRAINT "ClubOSWaitlist_registrationId_fkey" FOREIGN KEY ("registrationId") REFERENCES "ClubOSRegistration"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSWaiver" ADD CONSTRAINT "ClubOSWaiver_programId_fkey" FOREIGN KEY ("programId") REFERENCES "ClubOSProgram"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSVenue" ADD CONSTRAINT "ClubOSVenue_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSSchedule" ADD CONSTRAINT "ClubOSSchedule_awayTeamId_fkey" FOREIGN KEY ("awayTeamId") REFERENCES "ClubOSTeam"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSSchedule" ADD CONSTRAINT "ClubOSSchedule_homeTeamId_fkey" FOREIGN KEY ("homeTeamId") REFERENCES "ClubOSTeam"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSSchedule" ADD CONSTRAINT "ClubOSSchedule_practiceTeamId_fkey" FOREIGN KEY ("practiceTeamId") REFERENCES "ClubOSTeam"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSSchedule" ADD CONSTRAINT "ClubOSSchedule_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSSchedule" ADD CONSTRAINT "ClubOSSchedule_venueId_fkey" FOREIGN KEY ("venueId") REFERENCES "ClubOSVenue"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSStaffAssignment" ADD CONSTRAINT "ClubOSStaffAssignment_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "ClubOSMember"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSStaffAssignment" ADD CONSTRAINT "ClubOSStaffAssignment_scheduleId_fkey" FOREIGN KEY ("scheduleId") REFERENCES "ClubOSSchedule"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSPayment" ADD CONSTRAINT "ClubOSPayment_householdId_fkey" FOREIGN KEY ("householdId") REFERENCES "ClubOSHousehold"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSPayment" ADD CONSTRAINT "ClubOSPayment_registrationId_fkey" FOREIGN KEY ("registrationId") REFERENCES "ClubOSRegistration"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSInvoice" ADD CONSTRAINT "ClubOSInvoice_householdId_fkey" FOREIGN KEY ("householdId") REFERENCES "ClubOSHousehold"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSInvoicePayment" ADD CONSTRAINT "ClubOSInvoicePayment_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "ClubOSInvoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSInvoicePayment" ADD CONSTRAINT "ClubOSInvoicePayment_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "ClubOSPayment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSCommunication" ADD CONSTRAINT "ClubOSCommunication_householdId_fkey" FOREIGN KEY ("householdId") REFERENCES "ClubOSHousehold"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSCommunication" ADD CONSTRAINT "ClubOSCommunication_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSUserRelation" ADD CONSTRAINT "ClubOSUserRelation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClubOSNotificationSetting" ADD CONSTRAINT "ClubOSNotificationSetting_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ElevenLabsApiKey" ADD CONSTRAINT "ElevenLabsApiKey_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventoryCategory" ADD CONSTRAINT "GeneralInventoryCategory_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "GeneralInventoryCategory"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventoryCategory" ADD CONSTRAINT "GeneralInventoryCategory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventorySupplier" ADD CONSTRAINT "GeneralInventorySupplier_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventoryLocation" ADD CONSTRAINT "GeneralInventoryLocation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventoryItem" ADD CONSTRAINT "GeneralInventoryItem_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "GeneralInventoryCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventoryItem" ADD CONSTRAINT "GeneralInventoryItem_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "GeneralInventoryLocation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventoryItem" ADD CONSTRAINT "GeneralInventoryItem_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "GeneralInventorySupplier"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventoryItem" ADD CONSTRAINT "GeneralInventoryItem_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventoryAdjustment" ADD CONSTRAINT "GeneralInventoryAdjustment_fromLocationId_fkey" FOREIGN KEY ("fromLocationId") REFERENCES "GeneralInventoryLocation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventoryAdjustment" ADD CONSTRAINT "GeneralInventoryAdjustment_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "GeneralInventoryItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventoryAdjustment" ADD CONSTRAINT "GeneralInventoryAdjustment_toLocationId_fkey" FOREIGN KEY ("toLocationId") REFERENCES "GeneralInventoryLocation"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "GeneralInventoryAdjustment" ADD CONSTRAINT "GeneralInventoryAdjustment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EcommerceSyncSettings" ADD CONSTRAINT "EcommerceSyncSettings_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LowStockAlertSettings" ADD CONSTRAINT "LowStockAlertSettings_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_assignedToId_fkey" FOREIGN KEY ("assignedToId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_dependsOnId_fkey" FOREIGN KEY ("dependsOnId") REFERENCES "Task"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_parentTaskId_fkey" FOREIGN KEY ("parentTaskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskComment" ADD CONSTRAINT "TaskComment_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskComment" ADD CONSTRAINT "TaskComment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskAttachment" ADD CONSTRAINT "TaskAttachment_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskAttachment" ADD CONSTRAINT "TaskAttachment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskActivity" ADD CONSTRAINT "TaskActivity_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskActivity" ADD CONSTRAINT "TaskActivity_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskTemplate" ADD CONSTRAINT "TaskTemplate_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskAutomation" ADD CONSTRAINT "TaskAutomation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "UserPermission" ADD CONSTRAINT "UserPermission_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AdminSession" ADD CONSTRAINT "AdminSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BookingSettings" ADD CONSTRAINT "BookingSettings_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SuperAdminSession" ADD CONSTRAINT "SuperAdminSession_impersonatedUserId_fkey" FOREIGN KEY ("impersonatedUserId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SuperAdminSession" ADD CONSTRAINT "SuperAdminSession_superAdminId_fkey" FOREIGN KEY ("superAdminId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "KnowledgeBaseFile" ADD CONSTRAINT "KnowledgeBaseFile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VoiceAgentKnowledgeBaseFile" ADD CONSTRAINT "VoiceAgentKnowledgeBaseFile_knowledgeBaseFileId_fkey" FOREIGN KEY ("knowledgeBaseFileId") REFERENCES "KnowledgeBaseFile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VoiceAgentKnowledgeBaseFile" ADD CONSTRAINT "VoiceAgentKnowledgeBaseFile_voiceAgentId_fkey" FOREIGN KEY ("voiceAgentId") REFERENCES "VoiceAgent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RelationshipGraph" ADD CONSTRAINT "RelationshipGraph_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RelationshipMetrics" ADD CONSTRAINT "RelationshipMetrics_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolDefinition" ADD CONSTRAINT "ToolDefinition_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolInstance" ADD CONSTRAINT "ToolInstance_definitionId_fkey" FOREIGN KEY ("definitionId") REFERENCES "ToolDefinition"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolInstance" ADD CONSTRAINT "ToolInstance_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolAction" ADD CONSTRAINT "ToolAction_instanceId_fkey" FOREIGN KEY ("instanceId") REFERENCES "ToolInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolAction" ADD CONSTRAINT "ToolAction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIWorkflowInstance" ADD CONSTRAINT "AIWorkflowInstance_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "AIWorkflowTemplate"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIWorkflowInstance" ADD CONSTRAINT "AIWorkflowInstance_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIWorkflowExecution" ADD CONSTRAINT "AIWorkflowExecution_instanceId_fkey" FOREIGN KEY ("instanceId") REFERENCES "AIWorkflowInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIWorkflowExecution" ADD CONSTRAINT "AIWorkflowExecution_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowOptimization" ADD CONSTRAINT "WorkflowOptimization_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolRelationship" ADD CONSTRAINT "ToolRelationship_sourceInstanceId_fkey" FOREIGN KEY ("sourceInstanceId") REFERENCES "ToolInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolRelationship" ADD CONSTRAINT "ToolRelationship_targetId_fkey" FOREIGN KEY ("targetId") REFERENCES "ToolInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolRelationship" ADD CONSTRAINT "ToolRelationship_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolUsagePattern" ADD CONSTRAINT "ToolUsagePattern_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolHealthMetric" ADD CONSTRAINT "ToolHealthMetric_instanceId_fkey" FOREIGN KEY ("instanceId") REFERENCES "ToolInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolHealthMetric" ADD CONSTRAINT "ToolHealthMetric_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolRecommendation" ADD CONSTRAINT "ToolRecommendation_toolDefinitionId_fkey" FOREIGN KEY ("toolDefinitionId") REFERENCES "ToolDefinition"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolRecommendation" ADD CONSTRAINT "ToolRecommendation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolRetirement" ADD CONSTRAINT "ToolRetirement_instanceId_fkey" FOREIGN KEY ("instanceId") REFERENCES "ToolInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ToolRetirement" ADD CONSTRAINT "ToolRetirement_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LeadGenerationCampaign" ADD CONSTRAINT "LeadGenerationCampaign_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ScrapedLead" ADD CONSTRAINT "ScrapedLead_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "LeadGenerationCampaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ScrapedLead" ADD CONSTRAINT "ScrapedLead_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LeadEnrichment" ADD CONSTRAINT "LeadEnrichment_scrapedLeadId_fkey" FOREIGN KEY ("scrapedLeadId") REFERENCES "ScrapedLead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailDripSequence" ADD CONSTRAINT "EmailDripSequence_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "EmailDripCampaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailDripEnrollment" ADD CONSTRAINT "EmailDripEnrollment_campaignId_fkey" FOREIGN KEY ("campaignId") REFERENCES "EmailDripCampaign"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailDripMessage" ADD CONSTRAINT "EmailDripMessage_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "EmailDripEnrollment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EmailDripMessage" ADD CONSTRAINT "EmailDripMessage_sequenceId_fkey" FOREIGN KEY ("sequenceId") REFERENCES "EmailDripSequence"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LeadBlacklist" ADD CONSTRAINT "LeadBlacklist_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ABTest" ADD CONSTRAINT "ABTest_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ABTest" ADD CONSTRAINT "ABTest_winnerId_fkey" FOREIGN KEY ("winnerId") REFERENCES "ABTestVariant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ABTestVariant" ADD CONSTRAINT "ABTestVariant_testId_fkey" FOREIGN KEY ("testId") REFERENCES "ABTest"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "SocialMediaSettings" ADD CONSTRAINT "SocialMediaSettings_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIEmployee" ADD CONSTRAINT "AIEmployee_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIJob" ADD CONSTRAINT "AIJob_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIJob" ADD CONSTRAINT "AIJob_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "AIEmployee"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AIJobLog" ADD CONSTRAINT "AIJobLog_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "AIJob"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocpenSession" ADD CONSTRAINT "DocpenSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocpenSession" ADD CONSTRAINT "DocpenSession_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocpenTranscription" ADD CONSTRAINT "DocpenTranscription_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "DocpenSession"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocpenSOAPNote" ADD CONSTRAINT "DocpenSOAPNote_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "DocpenSession"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocpenAssistantQuery" ADD CONSTRAINT "DocpenAssistantQuery_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "DocpenSession"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocpenVoiceAgent" ADD CONSTRAINT "DocpenVoiceAgent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocpenConversation" ADD CONSTRAINT "DocpenConversation_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "DocpenVoiceAgent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocpenKnowledgeBaseFile" ADD CONSTRAINT "DocpenKnowledgeBaseFile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocpenAgentKnowledgeBaseFile" ADD CONSTRAINT "DocpenAgentKnowledgeBaseFile_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "DocpenVoiceAgent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocpenAgentKnowledgeBaseFile" ADD CONSTRAINT "DocpenAgentKnowledgeBaseFile_fileId_fkey" FOREIGN KEY ("fileId") REFERENCES "DocpenKnowledgeBaseFile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REProperty" ADD CONSTRAINT "REProperty_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REProperty" ADD CONSTRAINT "REProperty_sellerLeadId_fkey" FOREIGN KEY ("sellerLeadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REFSBOListing" ADD CONSTRAINT "REFSBOListing_assignedUserId_fkey" FOREIGN KEY ("assignedUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REFSBOListing" ADD CONSTRAINT "REFSBOListing_convertedLeadId_fkey" FOREIGN KEY ("convertedLeadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REScrapingJob" ADD CONSTRAINT "REScrapingJob_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REMarketStats" ADD CONSTRAINT "REMarketStats_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REMarketReport" ADD CONSTRAINT "REMarketReport_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REStaleDiagnostic" ADD CONSTRAINT "REStaleDiagnostic_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REStaleDiagnostic" ADD CONSTRAINT "REStaleDiagnostic_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "REProperty"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REListingPresentation" ADD CONSTRAINT "REListingPresentation_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REListingPresentation" ADD CONSTRAINT "REListingPresentation_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "REProperty"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RESellerNetSheet" ADD CONSTRAINT "RESellerNetSheet_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RESellerNetSheet" ADD CONSTRAINT "RESellerNetSheet_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "REProperty"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RECMAReport" ADD CONSTRAINT "RECMAReport_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RECMAReport" ADD CONSTRAINT "RECMAReport_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "REProperty"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REComparable" ADD CONSTRAINT "REComparable_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "REProperty"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RETransaction" ADD CONSTRAINT "RETransaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RETransaction" ADD CONSTRAINT "RETransaction_propertyId_fkey" FOREIGN KEY ("propertyId") REFERENCES "REProperty"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RETransaction" ADD CONSTRAINT "RETransaction_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RETransactionActivity" ADD CONSTRAINT "RETransactionActivity_transactionId_fkey" FOREIGN KEY ("transactionId") REFERENCES "RETransaction"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RETransactionTask" ADD CONSTRAINT "RETransactionTask_transactionId_fkey" FOREIGN KEY ("transactionId") REFERENCES "RETransaction"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REBuyerCriteria" ADD CONSTRAINT "REBuyerCriteria_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REBuyerCriteria" ADD CONSTRAINT "REBuyerCriteria_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REExpiredListing" ADD CONSTRAINT "REExpiredListing_assignedUserId_fkey" FOREIGN KEY ("assignedUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REExpiredListing" ADD CONSTRAINT "REExpiredListing_convertedLeadId_fkey" FOREIGN KEY ("convertedLeadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REAIEmployeeExecution" ADD CONSTRAINT "REAIEmployeeExecution_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REAIEmployeeAgent" ADD CONSTRAINT "REAIEmployeeAgent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VoiceAISubscription" ADD CONSTRAINT "VoiceAISubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VoiceAIUsageLog" ADD CONSTRAINT "VoiceAIUsageLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VoiceAIUsageLog" ADD CONSTRAINT "VoiceAIUsageLog_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "VoiceAISubscription"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VoiceAIBillingRecord" ADD CONSTRAINT "VoiceAIBillingRecord_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "VoiceAIBillingRecord" ADD CONSTRAINT "VoiceAIBillingRecord_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "VoiceAISubscription"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REWorkflowTemplate" ADD CONSTRAINT "REWorkflowTemplate_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REWorkflowTask" ADD CONSTRAINT "REWorkflowTask_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "REWorkflowTemplate"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REWorkflowTask" ADD CONSTRAINT "REWorkflowTask_parentTaskId_fkey" FOREIGN KEY ("parentTaskId") REFERENCES "REWorkflowTask"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REWorkflowInstance" ADD CONSTRAINT "REWorkflowInstance_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "REWorkflowTemplate"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REWorkflowInstance" ADD CONSTRAINT "REWorkflowInstance_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REWorkflowInstance" ADD CONSTRAINT "REWorkflowInstance_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REWorkflowInstance" ADD CONSTRAINT "REWorkflowInstance_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RETaskExecution" ADD CONSTRAINT "RETaskExecution_instanceId_fkey" FOREIGN KEY ("instanceId") REFERENCES "REWorkflowInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RETaskExecution" ADD CONSTRAINT "RETaskExecution_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "REWorkflowTask"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "REHITLNotification" ADD CONSTRAINT "REHITLNotification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowTemplate" ADD CONSTRAINT "WorkflowTemplate_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowTask" ADD CONSTRAINT "WorkflowTask_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "WorkflowTemplate"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowTask" ADD CONSTRAINT "WorkflowTask_parentTaskId_fkey" FOREIGN KEY ("parentTaskId") REFERENCES "WorkflowTask"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowInstance" ADD CONSTRAINT "WorkflowInstance_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "WorkflowTemplate"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowInstance" ADD CONSTRAINT "WorkflowInstance_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowInstance" ADD CONSTRAINT "WorkflowInstance_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "WorkflowInstance" ADD CONSTRAINT "WorkflowInstance_dealId_fkey" FOREIGN KEY ("dealId") REFERENCES "Deal"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskExecution" ADD CONSTRAINT "TaskExecution_instanceId_fkey" FOREIGN KEY ("instanceId") REFERENCES "WorkflowInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskExecution" ADD CONSTRAINT "TaskExecution_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "WorkflowTask"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "HITLNotification" ADD CONSTRAINT "HITLNotification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalOdontogram" ADD CONSTRAINT "DentalOdontogram_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalOdontogram" ADD CONSTRAINT "DentalOdontogram_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalPeriodontalChart" ADD CONSTRAINT "DentalPeriodontalChart_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalPeriodontalChart" ADD CONSTRAINT "DentalPeriodontalChart_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalTreatmentPlan" ADD CONSTRAINT "DentalTreatmentPlan_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalTreatmentPlan" ADD CONSTRAINT "DentalTreatmentPlan_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalProcedure" ADD CONSTRAINT "DentalProcedure_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalProcedure" ADD CONSTRAINT "DentalProcedure_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalProcedure" ADD CONSTRAINT "DentalProcedure_treatmentPlanId_fkey" FOREIGN KEY ("treatmentPlanId") REFERENCES "DentalTreatmentPlan"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalForm" ADD CONSTRAINT "DentalForm_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalFormResponse" ADD CONSTRAINT "DentalFormResponse_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalFormResponse" ADD CONSTRAINT "DentalFormResponse_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DentalFormResponse" ADD CONSTRAINT "DentalFormResponse_formId_fkey" FOREIGN KEY ("formId") REFERENCES "DentalForm"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PatientDocument" ADD CONSTRAINT "PatientDocument_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PatientDocument" ADD CONSTRAINT "PatientDocument_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PatientDocument" ADD CONSTRAINT "PatientDocument_consentId_fkey" FOREIGN KEY ("consentId") REFERENCES "DocumentConsent"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocumentVersion" ADD CONSTRAINT "DocumentVersion_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "PatientDocument"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocumentConsent" ADD CONSTRAINT "DocumentConsent_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocumentConsent" ADD CONSTRAINT "DocumentConsent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocumentAccessLog" ADD CONSTRAINT "DocumentAccessLog_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "PatientDocument"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DocumentAccessLog" ADD CONSTRAINT "DocumentAccessLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DataAccessRequest" ADD CONSTRAINT "DataAccessRequest_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DataAccessRequest" ADD CONSTRAINT "DataAccessRequest_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DataBreach" ADD CONSTRAINT "DataBreach_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
