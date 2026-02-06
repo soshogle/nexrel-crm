@@ -4,8 +4,11 @@
  * 
  * This script:
  * 1. Creates a backup of the database
- * 2. Creates a migration for missing columns/tables (dateOfBirth, FeedbackCollection)
- * 3. Runs the migration
+ * 2. Applies pending migrations using prisma migrate deploy
+ * 3. Regenerates Prisma client
+ * 
+ * Note: For new schema changes, use `npx prisma migrate dev --name migration_name`
+ * This script is for applying existing migrations in production-like environments.
  */
 
 import { execSync } from 'child_process';
@@ -50,23 +53,22 @@ async function main() {
     throw error;
   }
 
-  // Step 4: Push schema changes to database (adds missing columns/tables)
-  console.log('📝 Pushing schema changes to database...');
-  console.log('   This will add:');
-  console.log('   - dateOfBirth column to Lead table');
-  console.log('   - FeedbackCollection table (if missing)');
+  // Step 4: Apply pending migrations to database
+  console.log('📝 Applying pending migrations to database...');
+  console.log('   Using prisma migrate deploy (production-safe)');
+  console.log('   This will apply any pending migrations from prisma/migrations/');
   console.log('');
   
   try {
-    execSync('npx prisma db push', {
+    execSync('npx prisma migrate deploy', {
       stdio: 'inherit',
       cwd: process.cwd(),
     });
-    console.log('✓ Schema changes applied successfully\n');
+    console.log('✓ Migrations applied successfully\n');
   } catch (error: any) {
-    console.error('✗ Failed to push schema changes:', error);
+    console.error('✗ Failed to apply migrations:', error);
     console.log('\n⚠️  You may need to run manually:');
-    console.log('   npx prisma db push');
+    console.log('   npx prisma migrate deploy');
     throw error;
   }
 

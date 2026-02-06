@@ -12,9 +12,11 @@ export const runtime = 'nodejs';
  * Secure endpoint to run database migrations.
  * Only accessible to authenticated users.
  * 
- * This will:
- * - Add dateOfBirth column to Lead table
- * - Create FeedbackCollection table if missing
+ * This will apply pending migrations using prisma migrate deploy.
+ * Migrations are now tracked and version controlled.
+ * 
+ * Note: In production, migrations run automatically during build.
+ * This endpoint is for manual migration triggers if needed.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -27,12 +29,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[Migration API] Running migration for user:', session.user.id);
+    console.log('[Migration API] Running migrations for user:', session.user.id);
 
-    // Run prisma db push to sync schema
-    // This is safe because we're only adding columns/tables, not removing
+    // Run prisma migrate deploy to apply pending migrations
+    // This is the proper way to run migrations in production
     try {
-      const output = execSync('npx prisma db push --skip-generate', {
+      const output = execSync('npx prisma migrate deploy', {
         encoding: 'utf-8',
         cwd: process.cwd(),
         env: {
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
 
       console.log('[Migration API] Migration output:', output);
 
-      // Regenerate Prisma client
+      // Regenerate Prisma client after migrations
       execSync('npx prisma generate', {
         encoding: 'utf-8',
         cwd: process.cwd(),
@@ -55,7 +57,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: 'Migration completed successfully',
+        message: 'Migrations applied successfully',
         details: output,
       });
     } catch (error: any) {
