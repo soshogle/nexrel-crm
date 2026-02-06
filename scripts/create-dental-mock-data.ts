@@ -19,6 +19,11 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config({ path: '.env.local' });
+dotenv.config();
 
 const prisma = new PrismaClient();
 
@@ -356,12 +361,19 @@ async function main() {
         const cost = cdt.cost;
         totalCost += cost;
         
+        // Generate 1-3 teeth for this procedure
+        const numTeeth = Math.floor(Math.random() * 3) + 1;
+        const teethInvolved: string[] = [];
+        for (let t = 0; t < numTeeth; t++) {
+          teethInvolved.push((Math.floor(Math.random() * 32) + 1).toString());
+        }
+        
         procedures.push({
           procedureCode: cdt.code,
           description: cdt.name,
           cost,
           sequence: k + 1,
-          teethInvolved: [Math.floor(Math.random() * 32) + 1].toString(),
+          teethInvolved,
           scheduledDate: new Date(Date.now() + (k + 1) * 7 * 24 * 60 * 60 * 1000).toISOString(),
           status: j === 0 && k === 0 ? 'APPROVED' : 'DRAFT',
         });
@@ -401,6 +413,13 @@ async function main() {
       const statuses = ['COMPLETED', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED'];
       const status = statuses[Math.floor(Math.random() * statuses.length)] as any;
       
+      // Generate 1-3 teeth for this procedure
+      const numTeeth = Math.floor(Math.random() * 3) + 1;
+      const teethInvolved: string[] = [];
+      for (let t = 0; t < numTeeth; t++) {
+        teethInvolved.push((Math.floor(Math.random() * 32) + 1).toString());
+      }
+      
       await prisma.dentalProcedure.create({
         data: {
           leadId,
@@ -408,7 +427,7 @@ async function main() {
           procedureCode: cdt.code,
           procedureName: cdt.name,
           description: `Mock procedure - ${MOCK_DATA_TAG}`,
-          teethInvolved: [Math.floor(Math.random() * 32) + 1].toString()],
+          teethInvolved,
           status,
           scheduledDate: status === 'SCHEDULED' ? new Date(Date.now() + i * 7 * 24 * 60 * 60 * 1000) : null,
           performedDate: status === 'COMPLETED' ? new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000) : null,
@@ -452,39 +471,44 @@ async function main() {
     console.log(`   ✅ Created form: ${form.formName}`);
   }
 
-  // Create form responses
+  // Create form responses (multiple responses per patient for better testing)
   console.log('\n✍️  Creating form responses...');
   for (let i = 0; i < createdLeads.length; i++) {
     const leadId = createdLeads[i];
-    const formId = createdForms[Math.floor(Math.random() * createdForms.length)];
+    // Create 2-3 form responses per patient
+    const numResponses = Math.floor(Math.random() * 2) + 2;
     
-    const responseData = {
-      name: mockPatients[i].contactPerson,
-      dob: mockPatients[i].dateOfBirth.toISOString().split('T')[0],
-      history: 'No significant medical history',
-      consent: true,
-    };
+    for (let r = 0; r < numResponses; r++) {
+      const formId = createdForms[Math.floor(Math.random() * createdForms.length)];
+      
+      const responseData = {
+        name: mockPatients[i].contactPerson,
+        dob: mockPatients[i].dateOfBirth.toISOString().split('T')[0],
+        history: r === 0 ? 'No significant medical history' : 'Previous orthodontic treatment in childhood',
+        consent: true,
+      };
 
-    await prisma.dentalFormResponse.create({
-      data: {
-        leadId,
-        userId,
-        formId,
-        responseData,
-        submittedAt: new Date(),
-        submittedBy: mockPatients[i].contactPerson,
-        signatureData: {
-          signature: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-          signedBy: mockPatients[i].contactPerson,
-          signedAt: new Date().toISOString(),
-          notes: `Mock signature - ${MOCK_DATA_TAG}`,
+      await prisma.dentalFormResponse.create({
+        data: {
+          leadId,
+          userId,
+          formId,
+          responseData,
+          submittedAt: new Date(Date.now() - r * 7 * 24 * 60 * 60 * 1000),
+          submittedBy: mockPatients[i].contactPerson,
+          signatureData: {
+            signature: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+            signedBy: mockPatients[i].contactPerson,
+            signedAt: new Date(Date.now() - r * 7 * 24 * 60 * 60 * 1000).toISOString(),
+            notes: `Mock signature - ${MOCK_DATA_TAG}`,
+          },
         },
-      },
-    });
-    console.log(`   ✅ Created form response for lead ${leadId}`);
+      });
+    }
+    console.log(`   ✅ Created ${numResponses} form responses for lead ${leadId}`);
   }
 
-  // Create X-rays
+  // Create X-rays (ensure every patient has at least 2 X-rays)
   console.log('\n📷 Creating X-ray records...');
   for (const leadId of createdLeads) {
     const numXrays = Math.floor(Math.random() * 3) + 2; // 2-4 X-rays per patient
@@ -497,7 +521,38 @@ async function main() {
         teethIncluded.push((Math.floor(Math.random() * 32) + 1).toString());
       }
 
-      const hasAI = Math.random() > 0.3; // 70% have AI analysis
+      const hasAI = Math.random() > 0.2; // 80% have AI analysis for better testing
+      
+      // Create more varied AI analysis
+      const analysisTemplates = [
+        {
+          findings: 'No significant abnormalities detected. Normal bone structure and tooth alignment.',
+          confidence: 0.92,
+          recommendations: 'Continue regular monitoring. No immediate treatment required.',
+        },
+        {
+          findings: 'Mild crowding observed in anterior region. Consider orthodontic evaluation.',
+          confidence: 0.88,
+          recommendations: 'Schedule consultation for orthodontic treatment options.',
+        },
+        {
+          findings: 'Early signs of periodontal bone loss detected in posterior region.',
+          confidence: 0.85,
+          recommendations: 'Recommend periodontal treatment and regular monitoring.',
+        },
+        {
+          findings: 'Impacted third molar detected. No immediate intervention required.',
+          confidence: 0.90,
+          recommendations: 'Monitor for symptoms. Consider extraction if symptomatic.',
+        },
+        {
+          findings: 'Excellent bone density and root structure. No concerns identified.',
+          confidence: 0.95,
+          recommendations: 'Continue excellent oral hygiene practices.',
+        },
+      ];
+      
+      const selectedAnalysis = analysisTemplates[Math.floor(Math.random() * analysisTemplates.length)];
       
       await prisma.dentalXRay.create({
         data: {
@@ -510,9 +565,7 @@ async function main() {
           teethIncluded,
           dateTaken: new Date(Date.now() - i * 30 * 24 * 60 * 60 * 1000),
           aiAnalysis: hasAI ? {
-            findings: 'No significant abnormalities detected. Normal bone structure and tooth alignment.',
-            confidence: 0.92,
-            recommendations: 'Continue regular monitoring. No immediate treatment required.',
+            ...selectedAnalysis,
             model: 'gpt-4-vision',
             tags: [MOCK_DATA_TAG],
           } : null,
@@ -528,7 +581,8 @@ async function main() {
   // Create documents
   console.log('\n📄 Creating documents...');
   for (const leadId of createdLeads) {
-    const documentTypes = ['CONSENT_FORM', 'INSURANCE_FORM', 'TREATMENT_PLAN', 'XRAY_REPORT'];
+    // Use valid DocumentType enum values from schema
+    const documentTypes = ['CONSENT_FORM', 'INSURANCE_FORM', 'TREATMENT_PLAN', 'XRAY', 'MEDICAL_HISTORY', 'INVOICE'] as const;
     const numDocs = Math.floor(Math.random() * 3) + 2; // 2-4 documents
     
     for (let i = 0; i < numDocs; i++) {
@@ -536,13 +590,22 @@ async function main() {
       const retentionExpiry = new Date();
       retentionExpiry.setFullYear(retentionExpiry.getFullYear() + 7); // 7 years retention
       
+      const categoryMap: Record<string, string> = {
+        'CONSENT_FORM': 'Consent Form',
+        'INSURANCE_FORM': 'Insurance',
+        'TREATMENT_PLAN': 'Treatment Plan',
+        'XRAY': 'X-Ray Report',
+        'MEDICAL_HISTORY': 'Medical History',
+        'INVOICE': 'Invoice',
+      };
+      
       await prisma.patientDocument.create({
         data: {
           userId,
           leadId,
-          documentType: docType as any,
-          category: docType === 'XRAY_REPORT' ? 'X-Ray' : docType === 'CONSENT_FORM' ? 'Consent Form' : 'Insurance',
-          fileName: `mock-${docType.toLowerCase()}-${i + 1}.pdf`,
+          documentType: docType,
+          category: categoryMap[docType] || 'Other',
+          fileName: `mock-${docType.toLowerCase().replace('_', '-')}-${i + 1}.pdf`,
           fileType: 'application/pdf',
           fileSize: Math.floor(Math.random() * 5000000) + 100000, // 100KB - 5MB
           encryptedStoragePath: `mock/storage/${leadId}/${docType}-${i + 1}.enc`,
@@ -553,7 +616,7 @@ async function main() {
           accessLevel: 'RESTRICTED',
           createdBy: orthodontistUser.id,
           tags: [MOCK_DATA_TAG],
-          description: `Mock ${docType} document - ${MOCK_DATA_TAG}`,
+          description: `Mock ${categoryMap[docType]} document - ${MOCK_DATA_TAG}`,
           metadata: {
             tags: [MOCK_DATA_TAG],
             mockData: true,
