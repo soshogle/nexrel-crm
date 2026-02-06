@@ -45,6 +45,9 @@ export function WorkflowCanvas({
   
   const industryConfig = getIndustryConfig(industry);
   
+  // Ensure tasks array exists
+  const tasks = workflow.tasks || [];
+  
   // Grid layout configuration
   const tasksPerRow = 3;
   const taskSpacingX = 250;
@@ -54,7 +57,7 @@ export function WorkflowCanvas({
   
   // Calculate required dimensions based on number of tasks
   const calculateDimensions = useCallback(() => {
-    const numRows = Math.ceil(workflow.tasks.length / tasksPerRow);
+    const numRows = Math.ceil(tasks.length / tasksPerRow);
     const requiredWidth = startX + tasksPerRow * taskSpacingX + 100;
     const requiredHeight = startY + numRows * taskSpacingY + 100;
     
@@ -67,7 +70,7 @@ export function WorkflowCanvas({
     } else {
       setDimensions({ width: requiredWidth, height: requiredHeight });
     }
-  }, [workflow.tasks.length]);
+  }, [tasks.length]);
   
   // Update dimensions on resize and when tasks change
   useEffect(() => {
@@ -107,7 +110,7 @@ export function WorkflowCanvas({
   const handleDragStart = useCallback((taskId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const task = workflow.tasks.find(t => t.id === taskId);
+    const task = tasks.find(t => t.id === taskId);
     if (!task) return;
     
     const pos = getGridPosition(task.displayOrder);
@@ -117,7 +120,7 @@ export function WorkflowCanvas({
       startPosition: pos,
     });
     setDraggedPosition(pos);
-  }, [workflow.tasks, getGridPosition]);
+  }, [tasks, getGridPosition]);
   
   // Handle mouse move during drag
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -139,11 +142,11 @@ export function WorkflowCanvas({
     }
     
     const { displayOrder: newDisplayOrder } = getGridFromPosition(draggedPosition.x, draggedPosition.y);
-    const task = workflow.tasks.find(t => t.id === dragState.taskId);
+    const task = tasks.find(t => t.id === dragState.taskId);
     
     if (task) {
       // Find the closest task to swap with, or insert at new position
-      const otherTasks = workflow.tasks.filter(t => t.id !== task.id);
+      const otherTasks = tasks.filter(t => t.id !== task.id);
       let closestTask: WorkflowTask | null = null;
       let minDistance = Infinity;
       
@@ -162,7 +165,7 @@ export function WorkflowCanvas({
       
       // If dropped close to another task, swap positions
       if (closestTask && minDistance < 100) {
-        const updatedTasks = workflow.tasks.map(t => {
+        const updatedTasks = tasks.map(t => {
           if (t.id === task.id) {
             return { ...t, displayOrder: closestTask!.displayOrder };
           }
@@ -177,11 +180,11 @@ export function WorkflowCanvas({
         onReorderTasks(finalTasks);
       } else {
         // Update to new position, reordering other tasks if needed
-        const clampedOrder = Math.max(1, Math.min(newDisplayOrder, workflow.tasks.length));
+        const clampedOrder = Math.max(1, Math.min(newDisplayOrder, tasks.length));
         const oldOrder = task.displayOrder;
         
         // Create updated tasks array
-        const updatedTasks = workflow.tasks.map(t => {
+        const updatedTasks = tasks.map(t => {
           if (t.id === task.id) {
             return { ...t, displayOrder: clampedOrder };
           }
@@ -213,7 +216,7 @@ export function WorkflowCanvas({
     
     setDragState({ isDragging: false, taskId: null, startPosition: null });
     setDraggedPosition(null);
-  }, [dragState, draggedPosition, workflow.tasks, getGridFromPosition, getGridPosition, onUpdateTask, onReorderTasks]);
+  }, [dragState, draggedPosition, tasks, getGridFromPosition, getGridPosition, onUpdateTask, onReorderTasks]);
   
   // Helper to get actual position of a task (including dragged position)
   const getActualPosition = useCallback((task: WorkflowTask) => {
@@ -225,7 +228,7 @@ export function WorkflowCanvas({
   
   // Draw connection lines between tasks (horizontal within rows, vertical between rows)
   const renderConnections = () => {
-    const sortedTasks = [...workflow.tasks].sort((a, b) => a.displayOrder - b.displayOrder);
+    const sortedTasks = [...tasks].sort((a, b) => a.displayOrder - b.displayOrder);
     const lines: React.ReactNode[] = [];
     
     // Draw sequential connections - connect ALL tasks in sequential order
@@ -339,7 +342,7 @@ export function WorkflowCanvas({
     // Draw branch connections (from parent to child tasks)
     sortedTasks.forEach((task) => {
       if (task.parentTaskId) {
-        const parentTask = workflow.tasks.find(t => t.id === task.parentTaskId);
+        const parentTask = tasks.find(t => t.id === task.parentTaskId);
         if (!parentTask) return;
         
         const parentPos = getActualPosition(parentTask);
@@ -400,7 +403,7 @@ export function WorkflowCanvas({
       
       {/* Task Nodes */}
       <AnimatePresence>
-        {workflow.tasks.map((task) => {
+        {tasks.map((task) => {
           const isDragging = dragState.isDragging && dragState.taskId === task.id;
           const position = isDragging && draggedPosition
             ? draggedPosition
@@ -448,18 +451,18 @@ export function WorkflowCanvas({
       <div className="absolute bottom-4 right-4 flex gap-3 text-xs z-10">
         <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
           <div className="text-gray-500">Tasks</div>
-          <div className="text-gray-900 font-bold">{workflow.tasks.length}</div>
+          <div className="text-gray-900 font-bold">{tasks.length}</div>
         </div>
         <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
           <div className="text-gray-500">HITL Gates</div>
           <div className="text-purple-600 font-bold">
-            {workflow.tasks.filter(t => t.isHITL).length}
+            {tasks.filter(t => t.isHITL).length}
           </div>
         </div>
         <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
           <div className="text-gray-500">Agents</div>
           <div className="text-gray-900 font-bold">
-            {new Set(workflow.tasks.map(t => t.assignedAgentId).filter(Boolean)).size}
+            {new Set(tasks.map(t => t.assignedAgentId).filter(Boolean)).size}
           </div>
         </div>
       </div>

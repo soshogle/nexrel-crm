@@ -202,9 +202,10 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   const handleUpdateTask = (updatedTask: WorkflowTask) => {
     if (!workflow) return;
     
+    const currentTasks = workflow.tasks || [];
     setWorkflow({
       ...workflow,
-      tasks: workflow.tasks.map(t =>
+      tasks: currentTasks.map(t =>
         t.id === updatedTask.id ? updatedTask : t
       ),
     });
@@ -218,9 +219,10 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   const handleDeleteTask = (taskId: string) => {
     if (!workflow) return;
     
+    const currentTasks = workflow.tasks || [];
     setWorkflow({
       ...workflow,
-      tasks: workflow.tasks
+      tasks: currentTasks
         .filter(t => t.id !== taskId)
         .map((t, i) => ({ ...t, displayOrder: i + 1 })),
     });
@@ -231,7 +233,8 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   const handleAddTask = () => {
     if (!workflow || !newTaskName.trim()) return;
     
-    const newOrder = workflow.tasks.length + 1;
+    const currentTasks = workflow.tasks || [];
+    const newOrder = currentTasks.length + 1;
     
     const newTask: WorkflowTask = {
       id: `task-${Date.now()}`,
@@ -246,7 +249,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
       delayMinutes: 0,
     };
     
-    setWorkflow({ ...workflow, tasks: [...workflow.tasks, newTask] });
+    setWorkflow({ ...workflow, tasks: [...currentTasks, newTask] });
     setNewTaskName('');
     setShowNewTaskDialog(false);
     setSelectedTaskId(newTask.id);
@@ -255,15 +258,16 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   
   const handleReset = () => {
     if (!workflow) return;
+    const currentTasks = workflow.tasks || [];
     setWorkflow({
       ...workflow,
-      tasks: workflow.tasks.map((t, i) => ({ ...t, displayOrder: i + 1 })),
+      tasks: currentTasks.map((t, i) => ({ ...t, displayOrder: i + 1 })),
     });
     setSelectedTaskId(null);
     toast.success('Workflow reset');
   };
   
-  const selectedTask = workflow?.tasks.find(t => t.id === selectedTaskId) || null;
+  const selectedTask = workflow?.tasks?.find(t => t.id === selectedTaskId) || null;
   
   if (isLoading && !workflow) {
     return (
