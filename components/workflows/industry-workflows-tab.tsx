@@ -133,10 +133,11 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
           {templates.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {templates.map((template) => {
-                const taskCount = template.tasks.length;
-                const hitlGates = template.tasks.filter(t => t.isHITL).length;
+                const tasks = template.tasks || [];
+                const taskCount = tasks.length;
+                const hitlGates = tasks.filter(t => t.isHITL).length;
                 const agentsAssigned = new Set(
-                  template.tasks
+                  tasks
                     .map(t => t.agentName)
                     .filter(Boolean)
                 ).size;
@@ -175,8 +176,8 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
                         </div>
                         <div className="pt-3 border-t border-purple-200">
                           <p className="text-xs text-gray-600">
-                            {template.tasks.slice(0, 5).map(t => t.name).join(' → ')}
-                            {template.tasks.length > 5 && ' → ...'}
+                            {tasks.slice(0, 5).map(t => t.name).join(' → ')}
+                            {tasks.length > 5 && ' → ...'}
                           </p>
                         </div>
                       </div>
