@@ -291,9 +291,9 @@ export default function DentalTestPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dental Components Test</h1>
+          <h1 className="text-3xl font-bold">Dental Management</h1>
           <p className="text-muted-foreground mt-1">
-            Test odontogram and document upload components
+            Complete dental practice management system
           </p>
         </div>
       </div>
@@ -303,7 +303,7 @@ export default function DentalTestPage() {
         <CardHeader>
           <CardTitle>Select Patient</CardTitle>
           <CardDescription>
-            Choose a patient to test dental components
+            Choose a patient to access their dental records and management tools
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -325,92 +325,123 @@ export default function DentalTestPage() {
         </CardContent>
       </Card>
 
-      {selectedLeadId ? (
-        <Tabs defaultValue="odontogram" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-14">
-            <TabsTrigger value="odontogram" className="gap-2">
+      <Tabs defaultValue="odontogram" className="space-y-4">
+          <TabsList className="flex w-full overflow-x-auto pb-2">
+            <TabsTrigger value="odontogram" className="gap-2 whitespace-nowrap">
               <Activity className="h-4 w-4" />
               Odontogram
             </TabsTrigger>
-            <TabsTrigger value="periodontal" className="gap-2">
+            <TabsTrigger value="periodontal" className="gap-2 whitespace-nowrap">
               <Stethoscope className="h-4 w-4" />
               Periodontal
             </TabsTrigger>
-            <TabsTrigger value="treatment-plan" className="gap-2">
+            <TabsTrigger value="treatment-plan" className="gap-2 whitespace-nowrap">
               <ClipboardList className="h-4 w-4" />
               Treatment Plan
             </TabsTrigger>
-            <TabsTrigger value="procedures" className="gap-2">
+            <TabsTrigger value="procedures" className="gap-2 whitespace-nowrap">
               <Calendar className="h-4 w-4" />
               Procedures
             </TabsTrigger>
-            <TabsTrigger value="forms-builder" className="gap-2">
+            <TabsTrigger value="forms-builder" className="gap-2 whitespace-nowrap">
               <FormInput className="h-4 w-4" />
               Forms Builder
             </TabsTrigger>
-            <TabsTrigger value="forms-fill" className="gap-2">
+            <TabsTrigger value="forms-fill" className="gap-2 whitespace-nowrap">
               <FileCheck className="h-4 w-4" />
               Fill Form
             </TabsTrigger>
-            <TabsTrigger value="form-responses" className="gap-2">
+            <TabsTrigger value="form-responses" className="gap-2 whitespace-nowrap">
               <FileCheck className="h-4 w-4" />
               Responses
             </TabsTrigger>
-            <TabsTrigger value="doc-generator" className="gap-2">
+            <TabsTrigger value="doc-generator" className="gap-2 whitespace-nowrap">
               <FilePlus className="h-4 w-4" />
               Generate Doc
             </TabsTrigger>
-            <TabsTrigger value="documents" className="gap-2">
+            <TabsTrigger value="documents" className="gap-2 whitespace-nowrap">
               <FileText className="h-4 w-4" />
               Documents
             </TabsTrigger>
-            <TabsTrigger value="touch-screen" className="gap-2">
+            <TabsTrigger value="touch-screen" className="gap-2 whitespace-nowrap">
               <Monitor className="h-4 w-4" />
               Check-In
             </TabsTrigger>
-            <TabsTrigger value="multi-chair" className="gap-2">
+            <TabsTrigger value="multi-chair" className="gap-2 whitespace-nowrap">
               <Grid3x3 className="h-4 w-4" />
               Multi-Chair
             </TabsTrigger>
-            <TabsTrigger value="ramq" className="gap-2">
+            <TabsTrigger value="ramq" className="gap-2 whitespace-nowrap">
               <Building2 className="h-4 w-4" />
               RAMQ
             </TabsTrigger>
-            <TabsTrigger value="signature" className="gap-2">
+            <TabsTrigger value="signature" className="gap-2 whitespace-nowrap">
               <PenTool className="h-4 w-4" />
               Signature
             </TabsTrigger>
-            <TabsTrigger value="xray" className="gap-2">
+            <TabsTrigger value="xray" className="gap-2 whitespace-nowrap">
               <Scan className="h-4 w-4" />
               X-Ray
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="odontogram">
-            <OdontogramComponent
-              leadId={selectedLeadId}
-              initialData={odontogramData}
-              onSave={handleSaveOdontogram}
-            />
+            {selectedLeadId ? (
+              <OdontogramComponent
+                leadId={selectedLeadId}
+                initialData={odontogramData}
+                onSave={handleSaveOdontogram}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please select a patient to view their odontogram</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="periodontal">
-            <PeriodontalChart
-              leadId={selectedLeadId}
-              initialData={periodontalData}
-              onSave={handleSavePeriodontalChart}
-            />
+            {selectedLeadId ? (
+              <PeriodontalChart
+                leadId={selectedLeadId}
+                initialData={periodontalData}
+                onSave={handleSavePeriodontalChart}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please select a patient to view their periodontal chart</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="treatment-plan">
-            <TreatmentPlanBuilder
-              leadId={selectedLeadId}
-              onSave={handleSaveTreatmentPlan}
-            />
+            {selectedLeadId ? (
+              <TreatmentPlanBuilder
+                leadId={selectedLeadId}
+                onSave={handleSaveTreatmentPlan}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please select a patient to create or view treatment plans</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="procedures">
-            <ProcedureLog leadId={selectedLeadId} />
+            {selectedLeadId ? (
+              <ProcedureLog leadId={selectedLeadId} />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please select a patient to view their procedure log</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="forms-builder">
@@ -429,68 +460,100 @@ export default function DentalTestPage() {
           </TabsContent>
 
           <TabsContent value="forms-fill">
-            <Card>
-              <CardHeader>
-                <CardTitle>Select Form to Fill</CardTitle>
-                <CardDescription>
-                  Choose a form template to fill out for this patient
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {forms.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    No forms available. Create a form template first.
-                  </div>
-                ) : (
-                  <>
-                    <Select
-                      value={selectedFormId || ''}
-                      onValueChange={handleFormSelect}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a form..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {forms.map((form) => (
-                          <SelectItem key={form.id} value={form.id}>
-                            {form.formName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+            {selectedLeadId ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Select Form to Fill</CardTitle>
+                  <CardDescription>
+                    Choose a form template to fill out for this patient
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {forms.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No forms available. Create a form template first.
+                    </div>
+                  ) : (
+                    <>
+                      <Select
+                        value={selectedFormId || ''}
+                        onValueChange={handleFormSelect}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a form..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {forms.map((form) => (
+                            <SelectItem key={form.id} value={form.id}>
+                              {form.formName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                    {selectedForm && (
-                      <FormRenderer
-                        formId={selectedForm.id}
-                        leadId={selectedLeadId!}
-                        formSchema={selectedForm.formSchema}
-                        formName={selectedForm.formName}
-                        description={selectedForm.description}
-                        onSave={handleFormSubmit}
-                      />
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                      {selectedForm && (
+                        <FormRenderer
+                          formId={selectedForm.id}
+                          leadId={selectedLeadId!}
+                          formSchema={selectedForm.formSchema}
+                          formName={selectedForm.formName}
+                          description={selectedForm.description}
+                          onSave={handleFormSubmit}
+                        />
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please select a patient to fill out forms</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="form-responses">
-            <FormResponsesViewer leadId={selectedLeadId!} />
+            {selectedLeadId ? (
+              <FormResponsesViewer leadId={selectedLeadId!} />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please select a patient to view form responses</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="doc-generator">
-            <DocumentGenerator
-              leadId={selectedLeadId!}
-              onDocumentGenerated={handleDocumentGenerated}
-            />
+            {selectedLeadId ? (
+              <DocumentGenerator
+                leadId={selectedLeadId!}
+                onDocumentGenerated={handleDocumentGenerated}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please select a patient to generate documents</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="documents">
-            <DocumentUpload
-              leadId={selectedLeadId}
-              onUploadComplete={handleDocumentUploadComplete}
-            />
+            {selectedLeadId ? (
+              <DocumentUpload
+                leadId={selectedLeadId}
+                onUploadComplete={handleDocumentUploadComplete}
+              />
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Please select a patient to upload documents</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="touch-screen">
@@ -579,15 +642,6 @@ export default function DentalTestPage() {
             )}
           </TabsContent>
         </Tabs>
-      ) : (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">
-              Please select a patient to test the components
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
