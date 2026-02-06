@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
         profession: profession as any,
         customProfession: customProfession || null,
         chiefComplaint: chiefComplaint || null,
-        consultantName: consultantName,
+        consultantName: consultantName || null,
         status: 'RECORDING',
       },
       include: {

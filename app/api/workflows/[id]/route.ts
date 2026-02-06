@@ -1,188 +1,271 @@
+/**
+ * Generic Multi-Industry Workflow Single Template API
+ * Get, update, or delete a specific workflow template
+ */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
-
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+// GET - Get a specific workflow template with tasks
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const workflow = await prisma.workflow.findFirst({
+    const workflow = await prisma.workflowTemplate.findFirst({
       where: {
         id: params.id,
-        userId: user.id,
+        userId: session.user.id
       },
       include: {
-        actions: {
-          orderBy: { displayOrder: 'asc' },
+        tasks: {
+          orderBy: { displayOrder: 'asc' }
         },
-        enrollments: {
+        instances: {
           take: 10,
           orderBy: { createdAt: 'desc' },
           include: {
-            lead: true,
-            deal: true,
-            executions: {
-              include: {
-                action: true,
-              },
+            lead: {
+              select: { id: true, businessName: true, contactPerson: true }
             },
-          },
+            deal: {
+              select: { id: true, title: true }
+            }
+          }
         },
-      },
+        _count: {
+          select: { instances: true }
+        }
+      }
     });
 
     if (!workflow) {
-      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Workflow not found' },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json({ workflow });
-  } catch (error: any) {
+    // Transform to match WorkflowTemplate interface
+    const transformedWorkflow = {
+      id: workflow.id,
+      name: workflow.name,
+      description: workflow.description || '',
+      workflowType: workflow.type,
+      industry: workflow.industry,
+      tasks: workflow.tasks.map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description || '',
+        taskType: t.taskType,
+        assignedAgentId: null,
+        assignedAgentName: null,
+        agentColor: '#6B7280',
+        displayOrder: t.displayOrder,
+        isHITL: t.isHITL,
+        delayMinutes: t.delayValue,
+        delayUnit: t.delayUnit as 'MINUTES' | 'HOURS' | 'DAYS',
+        parentTaskId: t.parentTaskId || null,
+        branchCondition: t.branchCondition as any || null,
+      })),
+      isDefault: workflow.isDefault,
+      createdAt: workflow.createdAt.toISOString(),
+      updatedAt: workflow.updatedAt.toISOString(),
+    };
+
+    return NextResponse.json({
+      success: true,
+      workflow: transformedWorkflow
+    });
+  } catch (error) {
     console.error('Error fetching workflow:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch workflow', details: error.message },
+      { error: 'Failed to fetch workflow' },
       { status: 500 }
     );
   }
 }
 
-export async function PATCH(
+// PUT - Update a workflow template
+export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const body = await request.json();
-    const { name, description, status, triggerType, triggerConfig, actions } = body;
-
-    // Check workflow exists and user owns it
-    const existing = await prisma.workflow.findFirst({
+    // Verify ownership
+    const existing = await prisma.workflowTemplate.findFirst({
       where: {
         id: params.id,
-        userId: user.id,
-      },
+        userId: session.user.id
+      }
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Workflow not found' },
+        { status: 404 }
+      );
     }
+
+    const body = await request.json();
+    const { name, description, isActive, tasks } = body;
 
     // Update workflow
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
-    if (status !== undefined) updateData.status = status;
-    if (triggerType !== undefined) updateData.triggerType = triggerType;
-    if (triggerConfig !== undefined) updateData.triggerConfig = triggerConfig;
+    if (isActive !== undefined) updateData.isActive = isActive;
 
-    // If actions are provided, delete old ones and create new ones
-    if (actions) {
-      await prisma.workflowAction.deleteMany({
-        where: { workflowId: params.id },
+    // If tasks are provided, update them
+    if (tasks && Array.isArray(tasks)) {
+      // Delete existing tasks
+      await prisma.workflowTask.deleteMany({
+        where: { templateId: params.id }
       });
 
-      updateData.actions = {
-        create: actions.map((action: any, index: number) => ({
-          type: action.type,
-          displayOrder: action.displayOrder ?? index,
-          actionConfig: action.actionConfig || {},
-          delayMinutes: action.delayMinutes,
-          parentActionId: action.parentActionId,
-        })),
+      // Create new tasks
+      updateData.tasks = {
+        create: tasks.map((task: any, index: number) => ({
+          name: task.name as string,
+          description: task.description as string || '',
+          taskType: task.taskType as string || 'CUSTOM',
+          assignedAgentType: null,
+          delayValue: task.delayMinutes || task.delayValue || 0,
+          delayUnit: (task.delayUnit || 'MINUTES') as string,
+          isHITL: task.isHITL as boolean || false,
+          isOptional: false,
+          position: task.position || { row: Math.floor(index / 3), col: index % 3 },
+          displayOrder: task.displayOrder || index + 1,
+          branchCondition: (task.branchCondition as object | undefined) ?? undefined,
+          actionConfig: (task.actionConfig as object) || { actions: [] }
+        }))
       };
     }
 
-    const workflow = await prisma.workflow.update({
+    const workflow = await prisma.workflowTemplate.update({
       where: { id: params.id },
       data: updateData,
       include: {
-        actions: {
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
+        tasks: {
+          orderBy: { displayOrder: 'asc' }
+        }
+      }
     });
 
-    return NextResponse.json({ workflow });
-  } catch (error: any) {
+    // Transform response
+    const transformedWorkflow = {
+      id: workflow.id,
+      name: workflow.name,
+      description: workflow.description || '',
+      workflowType: workflow.type,
+      industry: workflow.industry,
+      tasks: workflow.tasks.map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description || '',
+        taskType: t.taskType,
+        assignedAgentId: null,
+        assignedAgentName: null,
+        agentColor: '#6B7280',
+        displayOrder: t.displayOrder,
+        isHITL: t.isHITL,
+        delayMinutes: t.delayValue,
+        delayUnit: t.delayUnit as 'MINUTES' | 'HOURS' | 'DAYS',
+        parentTaskId: t.parentTaskId || null,
+        branchCondition: t.branchCondition as any || null,
+      })),
+      isDefault: workflow.isDefault,
+      createdAt: workflow.createdAt.toISOString(),
+      updatedAt: workflow.updatedAt.toISOString(),
+    };
+
+    return NextResponse.json({
+      success: true,
+      workflow: transformedWorkflow
+    });
+  } catch (error) {
     console.error('Error updating workflow:', error);
     return NextResponse.json(
-      { error: 'Failed to update workflow', details: error.message },
+      { error: 'Failed to update workflow' },
       { status: 500 }
     );
   }
 }
 
+// DELETE - Delete a workflow template
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Check workflow exists and user owns it
-    const existing = await prisma.workflow.findFirst({
+    // Verify ownership
+    const existing = await prisma.workflowTemplate.findFirst({
       where: {
         id: params.id,
-        userId: user.id,
+        userId: session.user.id
       },
+      include: {
+        _count: {
+          select: { instances: true }
+        }
+      }
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Workflow not found' },
+        { status: 404 }
+      );
     }
 
-    // Delete workflow (cascades to actions and enrollments)
-    await prisma.workflow.delete({
-      where: { id: params.id },
+    // Check for active instances
+    const activeInstances = await prisma.workflowInstance.count({
+      where: {
+        templateId: params.id,
+        status: 'ACTIVE'
+      }
     });
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
+    if (activeInstances > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete workflow with ${activeInstances} active instances` },
+        { status: 400 }
+      );
+    }
+
+    // Delete workflow (cascade will delete tasks)
+    await prisma.workflowTemplate.delete({
+      where: { id: params.id }
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Workflow deleted successfully'
+    });
+  } catch (error) {
     console.error('Error deleting workflow:', error);
     return NextResponse.json(
-      { error: 'Failed to delete workflow', details: error.message },
+      { error: 'Failed to delete workflow' },
       { status: 500 }
     );
   }
