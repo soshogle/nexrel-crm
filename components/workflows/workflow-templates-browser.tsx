@@ -109,7 +109,7 @@ export function WorkflowTemplatesBrowser() {
       filtered = filtered.filter(t =>
         t.name.toLowerCase().includes(query) ||
         t.description.toLowerCase().includes(query) ||
-        t.tags.some(tag => tag.toLowerCase().includes(query))
+        (t.tags || []).some(tag => tag.toLowerCase().includes(query))
       );
     }
 
@@ -300,21 +300,21 @@ export function WorkflowTemplatesBrowser() {
                 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Target className="h-4 w-4" />
-                  <span>{template.actions.length} actions</span>
+                  <span>{(template.actions || []).length} actions</span>
                 </div>
 
                 <div className="flex flex-wrap gap-1">
                   <Badge variant="outline" className={getCategoryColor(template.category)}>
                     {template.category}
                   </Badge>
-                  {template.tags.slice(0, 2).map((tag) => (
+                  {(template.tags || []).slice(0, 2).map((tag) => (
                     <Badge key={tag} variant="secondary" className="text-xs">
                       {tag}
                     </Badge>
                   ))}
-                  {template.tags.length > 2 && (
+                  {(template.tags || []).length > 2 && (
                     <Badge variant="secondary" className="text-xs">
-                      +{template.tags.length - 2}
+                      +{(template.tags || []).length - 2}
                     </Badge>
                   )}
                 </div>
