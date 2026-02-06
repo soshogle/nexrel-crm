@@ -14,7 +14,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Save, RotateCcw } from 'lucide-react';
+import { Save, RotateCcw, Box, Grid3x3 } from 'lucide-react';
+import { Odontogram3D } from './odontogram-3d';
 
 interface ToothData {
   condition?: string;
@@ -93,6 +94,7 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
   const [selectedTooth, setSelectedTooth] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
 
   useEffect(() => {
     if (initialData) {
@@ -165,6 +167,65 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
     return conditionConfig?.color || 'bg-white border-2 border-gray-300';
   };
 
+  // Helper function to get button variant
+  const getButtonVariant = (mode: '2d' | '3d') => {
+    return viewMode === mode ? 'default' : 'outline';
+  };
+
+  // Render 3D view if selected
+  if (viewMode === '3d') {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Dental Odontogram - 3D View</CardTitle>
+                <CardDescription>
+                  Rotate, zoom, and interact with the 3D tooth chart
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={getButtonVariant('2d')}
+                  size="sm"
+                  onClick={() => setViewMode('2d')}
+                >
+                  <Grid3x3 className="h-4 w-4 mr-2" />
+                  2D View
+                </Button>
+                <Button
+                  variant={getButtonVariant('3d')}
+                  size="sm"
+                  onClick={() => setViewMode('3d')}
+                >
+                  <Box className="h-4 w-4 mr-2" />
+                  3D View
+                </Button>
+                {!readOnly && (
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? 'Saving...' : 'Save Chart'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+        <Odontogram3D
+          leadId={leadId}
+          toothData={toothData}
+          onToothClick={(toothNumber) => handleToothClick(toothNumber)}
+          readOnly={readOnly}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Card>
@@ -176,27 +237,45 @@ export function Odontogram({ leadId, initialData, onSave, readOnly = false }: Od
                 Universal Numbering System (1-32) - Click on a tooth to edit
               </CardDescription>
             </div>
-            {!readOnly && (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleReset}
-                  disabled={saving}
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Reset
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={saving}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save Chart'}
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-2">
+              <Button
+                variant={getButtonVariant('2d')}
+                size="sm"
+                onClick={() => setViewMode('2d')}
+              >
+                <Grid3x3 className="h-4 w-4 mr-2" />
+                2D View
+              </Button>
+              <Button
+                variant={getButtonVariant('3d')}
+                size="sm"
+                onClick={() => setViewMode('3d')}
+              >
+                <Box className="h-4 w-4 mr-2" />
+                3D View
+              </Button>
+              {!readOnly && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleReset}
+                    disabled={saving}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Reset
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={saving}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? 'Saving...' : 'Save Chart'}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
