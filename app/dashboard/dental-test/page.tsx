@@ -1,29 +1,27 @@
 /**
  * Dental Management Page
- * Complete dental practice management system with professional design
+ * Complete dental practice management system - Command Center Layout
+ * Matches the design mockup exactly with all panels visible simultaneously
  */
 
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Odontogram as OdontogramComponent } from '@/components/dental/odontogram';
-import { Odontogram3D } from '@/components/dental/odontogram-3d';
 import { DocumentUpload } from '@/components/dental/document-upload';
 import { PeriodontalChart } from '@/components/dental/periodontal-chart';
 import { TreatmentPlanBuilder } from '@/components/dental/treatment-plan-builder';
 import { ProcedureLog } from '@/components/dental/procedure-log';
 import { FormsBuilder } from '@/components/dental/forms-builder';
-import { FormRenderer } from '@/components/dental/form-renderer';
 import { FormResponsesViewer } from '@/components/dental/form-responses-viewer';
-import { DocumentGenerator } from '@/components/dental/document-generator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import {
   FileText,
@@ -33,7 +31,6 @@ import {
   Stethoscope,
   FormInput,
   FileCheck,
-  FilePlus,
   Monitor,
   Grid3x3,
   Building2,
@@ -41,15 +38,17 @@ import {
   Scan,
   User,
   Users,
-  TrendingUp,
-  Clock,
   DollarSign,
-  Sparkles,
-  RefreshCw,
-  Settings,
-  Boxes,
-  Eye,
-  EyeOff,
+  Search,
+  Filter,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Upload,
+  Image as ImageIcon,
+  File,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { TouchScreenWelcome } from '@/components/dental/touch-screen-welcome';
 import { MultiChairAgenda } from '@/components/dental/multi-chair-agenda';
@@ -103,49 +102,26 @@ function MultiChairAgendaWithProfessionalSelector({ userId }: { userId: string }
     }
   };
 
-  const selectedProfessional = professionals.find(p => p.id === selectedProfessionalId);
-
   return (
-    <div className="space-y-4">
-      <Card className="bg-white border-purple-200 shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-purple-600" />
-              <Label className="text-sm font-semibold text-gray-700">Viewing Schedule For:</Label>
-            </div>
-            <Select
-              value={selectedProfessionalId}
-              onValueChange={setSelectedProfessionalId}
-              disabled={loadingProfessionals}
-            >
-              <SelectTrigger className="w-64 border-purple-200">
-                <SelectValue placeholder="Select professional..." />
-              </SelectTrigger>
-              <SelectContent>
-                {professionals.map((professional) => (
-                  <SelectItem key={professional.id} value={professional.id}>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-purple-600" />
-                      <span>{professional.name}</span>
-                      {professional.email && (
-                        <span className="text-xs text-gray-500">({professional.email})</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedProfessional && (
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">{selectedProfessional.name}</span>
-                {' '}schedule
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-2">
+        <Select
+          value={selectedProfessionalId}
+          onValueChange={setSelectedProfessionalId}
+          disabled={loadingProfessionals}
+        >
+          <SelectTrigger className="w-48 h-8 text-xs border-purple-200">
+            <SelectValue placeholder="Select professional..." />
+          </SelectTrigger>
+          <SelectContent>
+            {professionals.map((professional) => (
+              <SelectItem key={professional.id} value={professional.id}>
+                {professional.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <MultiChairAgenda
         userId={selectedProfessionalId}
         selectedDate={new Date()}
@@ -165,11 +141,12 @@ export default function DentalTestPage() {
   const [odontogramData, setOdontogramData] = useState<any>(null);
   const [periodontalData, setPeriodontalData] = useState<any>(null);
   const [treatmentPlans, setTreatmentPlans] = useState<any[]>([]);
+  const [procedures, setProcedures] = useState<any[]>([]);
   const [forms, setForms] = useState<any[]>([]);
-  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
-  const [selectedForm, setSelectedForm] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('odontogram');
-  const [show3D, setShow3D] = useState(false);
+  const [formResponses, setFormResponses] = useState<any[]>([]);
+  const [ramqClaims, setRamqClaims] = useState<any[]>([]);
+  const [xrays, setXrays] = useState<any[]>([]);
+  const [selectedXray, setSelectedXray] = useState<any | null>(null);
   const [mounted, setMounted] = useState(false);
   const [stats, setStats] = useState({
     totalPatients: 0,
@@ -197,19 +174,16 @@ export default function DentalTestPage() {
       fetchOdontogram();
       fetchPeriodontalChart();
       fetchTreatmentPlans();
+      fetchProcedures();
       fetchForms();
+      fetchFormResponses();
+      fetchRAMQClaims();
+      fetchXrays();
     }
   }, [selectedLeadId]);
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchForms();
-    }
-  }, [session]);
-
   const fetchStats = async () => {
     try {
-      // Fetch appointments for today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
@@ -220,7 +194,6 @@ export default function DentalTestPage() {
       );
       const appointments = appointmentsRes.ok ? await appointmentsRes.json() : [];
 
-      // Fetch RAMQ claims
       let pendingClaims = 0;
       if (session?.user?.id) {
         try {
@@ -232,14 +205,12 @@ export default function DentalTestPage() {
         }
       }
 
-      // Calculate monthly revenue from treatment plans
       let monthlyRevenue = 0;
       try {
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
         
-        // Fetch all treatment plans for this month
         const plansRes = await Promise.all(
           leads.map(async (lead) => {
             try {
@@ -294,7 +265,6 @@ export default function DentalTestPage() {
 
   const fetchOdontogram = async () => {
     if (!selectedLeadId) return;
-    
     try {
       const response = await fetch(`/api/dental/odontogram?leadId=${selectedLeadId}`);
       if (response.ok) {
@@ -307,39 +277,8 @@ export default function DentalTestPage() {
     }
   };
 
-  const handleSaveOdontogram = async (toothData: any) => {
-    if (!selectedLeadId) {
-      toast.error('Please select a patient first');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/dental/odontogram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: selectedLeadId,
-          toothData,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save odontogram');
-      }
-
-      toast.success('Odontogram saved successfully');
-      setOdontogramData(toothData);
-    } catch (error: any) {
-      toast.error('Failed to save odontogram: ' + error.message);
-      throw error;
-    }
-  };
-
   const fetchPeriodontalChart = async () => {
     if (!selectedLeadId) return;
-    
     try {
       const response = await fetch(`/api/dental/periodontal?leadId=${selectedLeadId}`);
       if (response.ok) {
@@ -355,7 +294,6 @@ export default function DentalTestPage() {
 
   const fetchTreatmentPlans = async () => {
     if (!selectedLeadId) return;
-    
     try {
       const response = await fetch(`/api/dental/treatment-plans?leadId=${selectedLeadId}`);
       if (response.ok) {
@@ -368,64 +306,17 @@ export default function DentalTestPage() {
     }
   };
 
-  const handleSavePeriodontalChart = async (measurements: any) => {
-    if (!selectedLeadId) {
-      toast.error('Please select a patient first');
-      return;
-    }
-
+  const fetchProcedures = async () => {
+    if (!selectedLeadId) return;
     try {
-      const response = await fetch('/api/dental/periodontal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: selectedLeadId,
-          measurements,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save periodontal chart');
+      const response = await fetch(`/api/dental/procedures?leadId=${selectedLeadId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setProcedures(data.procedures || []);
       }
-
-      toast.success('Periodontal chart saved successfully');
-      setPeriodontalData(measurements);
-      await fetchPeriodontalChart();
-    } catch (error: any) {
-      toast.error('Failed to save periodontal chart: ' + error.message);
-      throw error;
-    }
-  };
-
-  const handleSaveTreatmentPlan = async (planData: any) => {
-    if (!selectedLeadId) {
-      toast.error('Please select a patient first');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/dental/treatment-plans', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...planData,
-          leadId: selectedLeadId,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save treatment plan');
-      }
-
-      toast.success('Treatment plan saved successfully');
-      await fetchTreatmentPlans();
-    } catch (error: any) {
-      toast.error('Failed to save treatment plan: ' + error.message);
-      throw error;
+    } catch (error) {
+      console.error('Error fetching procedures:', error);
+      setProcedures([]);
     }
   };
 
@@ -441,60 +332,105 @@ export default function DentalTestPage() {
     }
   };
 
-  const handleFormCreated = () => {
-    fetchForms();
-    toast.success('Form template created successfully');
-  };
-
-  const handleFormSelect = async (formId: string) => {
-    const form = forms.find(f => f.id === formId);
-    if (form) {
-      setSelectedForm(form);
-      setSelectedFormId(formId);
+  const fetchFormResponses = async () => {
+    if (!selectedLeadId) return;
+    try {
+      const response = await fetch(`/api/dental/forms?type=responses&leadId=${selectedLeadId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setFormResponses(data.responses || []);
+      }
+    } catch (error) {
+      console.error('Error fetching form responses:', error);
+      setFormResponses([]);
     }
   };
 
-  const handleFormSubmit = async (responseData: Record<string, any>) => {
-    if (!selectedLeadId || !selectedFormId) {
-      toast.error('Please select a patient and form');
+  const fetchRAMQClaims = async () => {
+    if (!session?.user?.id) return;
+    try {
+      const response = await fetch(`/api/dental/ramq/claims?userId=${session.user.id}${selectedLeadId ? `&leadId=${selectedLeadId}` : ''}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRamqClaims(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching RAMQ claims:', error);
+      setRamqClaims([]);
+    }
+  };
+
+  const fetchXrays = async () => {
+    if (!selectedLeadId) return;
+    try {
+      const response = await fetch(`/api/dental/xrays?leadId=${selectedLeadId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setXrays(Array.isArray(data) ? data : []);
+        if (data.length > 0 && !selectedXray) {
+          setSelectedXray(data[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching X-rays:', error);
+      setXrays([]);
+    }
+  };
+
+  const handleSaveOdontogram = async (toothData: any) => {
+    if (!selectedLeadId) {
+      toast.error('Please select a patient first');
       return;
     }
-
     try {
-      const response = await fetch('/api/dental/forms', {
+      const response = await fetch('/api/dental/odontogram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          formId: selectedFormId,
           leadId: selectedLeadId,
-          formData: responseData,
+          toothData,
         }),
       });
-
       const data = await response.json();
-      if (data.success) {
-        toast.success('Form submitted successfully');
-        setSelectedFormId(null);
-        setSelectedForm(null);
-      } else {
-        toast.error(data.error || 'Failed to submit form');
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save odontogram');
       }
+      toast.success('Odontogram saved successfully');
+      setOdontogramData(toothData);
     } catch (error: any) {
-      toast.error('Failed to submit form: ' + error.message);
+      toast.error('Failed to save odontogram: ' + error.message);
     }
   };
 
-  const handleDocumentUploadComplete = () => {
-    toast.success('Document uploaded successfully');
-  };
-
-  const handleDocumentGenerated = (documentId: string) => {
-    toast.success('Document generated and saved');
+  const handleSavePeriodontalChart = async (measurements: any) => {
+    if (!selectedLeadId) {
+      toast.error('Please select a patient first');
+      return;
+    }
+    try {
+      const response = await fetch('/api/dental/periodontal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId: selectedLeadId,
+          measurements,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save periodontal chart');
+      }
+      toast.success('Periodontal chart saved successfully');
+      setPeriodontalData(measurements);
+      await fetchPeriodontalChart();
+    } catch (error: any) {
+      toast.error('Failed to save periodontal chart: ' + error.message);
+    }
   };
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-white via-violet-50/20 to-white flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
       </div>
     );
@@ -502,7 +438,7 @@ export default function DentalTestPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-white via-violet-50/20 to-white flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -514,581 +450,439 @@ export default function DentalTestPage() {
   const selectedPatient = leads.find(l => l.id === selectedLeadId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-violet-50/20 to-white">
-      {/* Animated Background Effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-20 w-72 h-72 bg-violet-200/30 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 left-20 w-72 h-72 bg-purple-200/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-fuchsia-100/20 rounded-full blur-3xl" />
+    <div className="min-h-screen bg-white p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Dental Management</h1>
+        <div className="flex items-center gap-4">
+          <Select
+            value={selectedLeadId || ''}
+            onValueChange={(value) => setSelectedLeadId(value)}
+          >
+            <SelectTrigger className="w-64 border-purple-200">
+              <SelectValue placeholder="Select a patient..." />
+            </SelectTrigger>
+            <SelectContent>
+              {leads.map((lead) => (
+                <SelectItem key={lead.id} value={lead.id}>
+                  {lead.contactPerson || lead.businessName || lead.email || lead.id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedPatient && (
+            <Badge className="bg-purple-100 text-purple-700 border-purple-200">
+              {selectedPatient.contactPerson || selectedPatient.businessName}
+            </Badge>
+          )}
+        </div>
       </div>
 
-      <div className="relative z-10 p-6 space-y-6">
-        {/* Professional Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-4"
-        >
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 shadow-lg shadow-violet-500/25">
-                <Stethoscope className="w-8 h-8 text-white" />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <Card className="bg-white border-purple-200 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600">Total Patients</p>
+                <p className="text-xl font-bold text-gray-900">{stats.totalPatients}</p>
               </div>
-              Dental Management
-            </h1>
-            <p className="text-gray-600 mt-1">Complete dental practice management system</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" className="border-purple-200 bg-white hover:bg-purple-50">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
-            <Button variant="outline" className="border-purple-200 bg-white hover:bg-purple-50">
-              <Settings className="w-4 h-4" />
-            </Button>
-          </div>
-        </motion.div>
-
-        {/* Stats Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-        >
-          <Card className="bg-white border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Patients</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalPatients}</p>
-                </div>
-                <div className="p-3 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-200">
-                  <Users className="w-6 h-6 text-violet-600" />
-                </div>
+              <Users className="w-6 h-6 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-purple-200 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600">Today&apos;s Appointments</p>
+                <p className="text-xl font-bold text-gray-900">{stats.todayAppointments}</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Today&apos;s Appointments</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stats.todayAppointments}</p>
-                </div>
-                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-200">
-                  <Calendar className="w-6 h-6 text-blue-600" />
-                </div>
+              <Calendar className="w-6 h-6 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-purple-200 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600">Pending Claims</p>
+                <p className="text-xl font-bold text-gray-900">{stats.pendingClaims}</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Pending Claims</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stats.pendingClaims}</p>
-                </div>
-                <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-200">
-                  <FileText className="w-6 h-6 text-amber-600" />
-                </div>
+              <FileText className="w-6 h-6 text-amber-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-purple-200 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600">Monthly Revenue</p>
+                <p className="text-xl font-bold text-gray-900">${stats.monthlyRevenue.toLocaleString()}</p>
               </div>
-            </CardContent>
-          </Card>
+              <DollarSign className="w-6 h-6 text-emerald-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-          <Card className="bg-white border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Monthly Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">${stats.monthlyRevenue.toLocaleString()}</p>
+      {/* Main Grid Layout - Top Row */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        {/* Arch Odontogram - Top Left */}
+        <Card className="bg-white border-purple-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-gray-900">Arch Odontogram</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            {selectedLeadId ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Select defaultValue="treatment">
+                    <SelectTrigger className="h-7 text-xs w-40 border-purple-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="treatment">Hover affected by: Treatment</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-200">
-                  <DollarSign className="w-6 h-6 text-emerald-600" />
-                </div>
+                <OdontogramComponent
+                  leadId={selectedLeadId}
+                  initialData={odontogramData}
+                  onSave={handleSaveOdontogram}
+                />
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-sm">Select a patient</div>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Patient Selector */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+        {/* Procedures Activity Log - Top Center */}
+        <Card className="bg-white border-purple-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-gray-900">Procedures Activity Log</CardTitle>
+              <div className="flex items-center gap-2">
+                <Input placeholder="Search..." className="h-7 w-32 text-xs border-purple-200" />
+                <Select defaultValue="today">
+                  <SelectTrigger className="h-7 text-xs w-24 border-purple-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="week">This Week</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4">
+            {selectedLeadId ? (
+              <div className="space-y-2">
+                {procedures.slice(0, 5).map((proc: any, idx: number) => (
+                  <div key={proc.id || idx} className="flex items-center gap-3 text-xs border-b border-gray-100 pb-2">
+                    <div className="w-16 text-gray-600">{new Date(proc.performedDate || proc.scheduledDate || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{selectedPatient?.contactPerson || 'Patient'}</div>
+                      <div className="text-gray-600">{proc.procedureName || proc.procedureCode}</div>
+                    </div>
+                    <Badge 
+                      className={`text-xs ${
+                        proc.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                        proc.status === 'SCHEDULED' ? 'bg-purple-100 text-purple-700' :
+                        proc.status === 'IN_PROGRESS' ? 'bg-orange-100 text-orange-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {proc.status || 'Scheduled'}
+                    </Badge>
+                  </div>
+                ))}
+                {procedures.length === 0 && (
+                  <div className="text-center py-4 text-gray-400 text-sm">No procedures</div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-sm">Select a patient</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Treatment Plan Builder - Top Right */}
+        <Card className="bg-white border-purple-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-gray-900">Treatment Plan Builder</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            {selectedLeadId ? (
+              <div className="space-y-3">
+                {treatmentPlans.slice(0, 1).flatMap((plan: any) => 
+                  (plan.procedures || []).slice(0, 3).map((proc: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-3 p-2 border border-purple-100 rounded">
+                      <div className="flex-1">
+                        <div className="text-xs font-medium text-gray-900">{proc.procedureCode || 'D0150'}</div>
+                        <div className="text-xs text-gray-600">{proc.description || 'Comprehensive Oral Eval'}</div>
+                      </div>
+                      <Badge className="bg-purple-600 text-white text-xs px-2 py-1">
+                        ${proc.cost || 120}
+                      </Badge>
+                      <div className="text-xs text-gray-500 w-20">
+                        {idx === 0 ? 'Week 1' : idx === 1 ? 'Week 2' : 'Weeks 3-4'}
+                      </div>
+                    </div>
+                  ))
+                )}
+                {treatmentPlans.length === 0 && (
+                  <div className="text-center py-4 text-gray-400 text-sm">No treatment plans</div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-sm">Select a patient</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Middle Row */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        {/* Periodontal Charting - Middle Left */}
+        <Card className="bg-white border-purple-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-gray-900">Periodontal Charting</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            {selectedLeadId ? (
+              <PeriodontalChart
+                leadId={selectedLeadId}
+                initialData={periodontalData}
+                onSave={handleSavePeriodontalChart}
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-sm">Select a patient</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Forms Builder - Middle Center */}
+        <Card className="bg-white border-purple-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-gray-900">Forms Builder</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            {session?.user?.id ? (
+              <FormsBuilder
+                userId={session.user.id}
+                onFormCreated={() => {
+                  fetchForms();
+                  toast.success('Form created');
+                }}
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-sm">Please sign in</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Form Responses - Middle Right */}
+        <Card className="bg-white border-purple-200 shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-gray-900">Form Responses</CardTitle>
+              <div className="flex items-center gap-2">
+                <Input placeholder="Search..." className="h-7 w-32 text-xs border-purple-200" />
+                <Select defaultValue="all">
+                  <SelectTrigger className="h-7 text-xs w-28 border-purple-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Forms</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4">
+            {selectedLeadId ? (
+              <div className="space-y-2">
+                {formResponses.slice(0, 5).map((response: any, idx: number) => (
+                  <div key={response.id || idx} className="flex items-center gap-3 text-xs border-b border-gray-100 pb-2">
+                    <div className="w-20 text-gray-600">{new Date(response.submittedAt || Date.now()).toLocaleDateString()}</div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{selectedPatient?.contactPerson || 'Patient'}</div>
+                      <div className="text-gray-600">{response.form?.formName || 'Form'}</div>
+                    </div>
+                    <Badge className="bg-green-100 text-green-700 text-xs">Submitted</Badge>
+                  </div>
+                ))}
+                {formResponses.length === 0 && (
+                  <div className="text-center py-4 text-gray-400 text-sm">No responses</div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400 text-sm">Select a patient</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bottom Row */}
+      <div className="grid grid-cols-12 gap-4">
+        {/* Document Upload - Bottom Left */}
+        <div className="col-span-3">
           <Card className="bg-white border-purple-200 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Select Patient</CardTitle>
-              <CardDescription>
-                Choose a patient to access their dental records and management tools
-              </CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-900">Document Upload</CardTitle>
             </CardHeader>
-            <CardContent>
-              <Select
-                value={selectedLeadId || ''}
-                onValueChange={(value) => setSelectedLeadId(value)}
-              >
-                <SelectTrigger className="w-full max-w-md border-purple-200">
-                  <SelectValue placeholder="Select a patient..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {leads.map((lead) => (
-                    <SelectItem key={lead.id} value={lead.id}>
-                      {lead.contactPerson || lead.businessName || lead.email || lead.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedPatient && (
-                <div className="mt-4 flex items-center gap-2">
-                  <Badge className="bg-purple-100 text-purple-700 border-purple-200">
-                    {selectedPatient.contactPerson || selectedPatient.businessName}
-                  </Badge>
-                  {selectedPatient.email && (
-                    <span className="text-sm text-gray-600">{selectedPatient.email}</span>
-                  )}
-                </div>
+            <CardContent className="p-4">
+              {selectedLeadId ? (
+                <DocumentUpload
+                  leadId={selectedLeadId}
+                  onUploadComplete={() => {
+                    toast.success('Document uploaded');
+                  }}
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Select a patient</div>
               )}
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
 
-        {/* Main Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <TabsList className="bg-white border border-purple-200 shadow-sm p-1 flex-wrap h-auto">
-              <TabsTrigger
-                value="odontogram"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <Activity className="h-4 w-4" />
-                Odontogram
-              </TabsTrigger>
-              <TabsTrigger
-                value="periodontal"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <Stethoscope className="h-4 w-4" />
-                Periodontal
-              </TabsTrigger>
-              <TabsTrigger
-                value="treatment-plan"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <ClipboardList className="h-4 w-4" />
-                Treatment Plan
-              </TabsTrigger>
-              <TabsTrigger
-                value="procedures"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <Calendar className="h-4 w-4" />
-                Procedures
-              </TabsTrigger>
-              <TabsTrigger
-                value="forms-builder"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <FormInput className="h-4 w-4" />
-                Forms Builder
-              </TabsTrigger>
-              <TabsTrigger
-                value="forms-fill"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <FileCheck className="h-4 w-4" />
-                Fill Form
-              </TabsTrigger>
-              <TabsTrigger
-                value="form-responses"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <Boxes className="h-4 w-4" />
-                Responses
-              </TabsTrigger>
-              <TabsTrigger
-                value="doc-generator"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <FilePlus className="h-4 w-4" />
-                Generate Doc
-              </TabsTrigger>
-              <TabsTrigger
-                value="documents"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <FileText className="h-4 w-4" />
-                Documents
-              </TabsTrigger>
-              <TabsTrigger
-                value="touch-screen"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <Monitor className="h-4 w-4" />
-                Check-In
-              </TabsTrigger>
-              <TabsTrigger
-                value="multi-chair"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <Grid3x3 className="h-4 w-4" />
-                Multi-Chair
-              </TabsTrigger>
-              <TabsTrigger
-                value="ramq"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <Building2 className="h-4 w-4" />
-                RAMQ
-              </TabsTrigger>
-              <TabsTrigger
-                value="signature"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <PenTool className="h-4 w-4" />
-                Signature
-              </TabsTrigger>
-              <TabsTrigger
-                value="xray"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-sm gap-2"
-              >
-                <Scan className="h-4 w-4" />
-                X-Ray
-              </TabsTrigger>
-            </TabsList>
-          </motion.div>
+        {/* Check-In Touch-screen - Bottom Center-Left */}
+        <div className="col-span-3">
+          <Card className="bg-white border-purple-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-900">Check-In Touch-screen</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {session?.user?.id ? (
+                <TouchScreenWelcome
+                  userId={session.user.id}
+                  onCheckIn={() => {
+                    toast.success('Patient checked in');
+                  }}
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Please sign in</div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Tab Contents */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              <TabsContent value="odontogram" className="mt-0">
-                {selectedLeadId ? (
-                  <div className="space-y-4">
-                    {/* 3D Toggle */}
-                    <Card className="bg-white border-purple-200 shadow-sm">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-purple-600" />
-                            <Label className="text-sm font-semibold text-gray-700">3D View</Label>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShow3D(!show3D)}
-                            className="border-purple-200"
-                          >
-                            {show3D ? (
-                              <>
-                                <EyeOff className="h-4 w-4 mr-2" />
-                                Switch to 2D
-                              </>
-                            ) : (
-                              <>
-                                <Eye className="h-4 w-4 mr-2" />
-                                Switch to 3D
-                              </>
-                            )}
-                          </Button>
+        {/* Multi-Chair Agenda - Bottom Center-Right */}
+        <div className="col-span-3">
+          <Card className="bg-white border-purple-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-900">Multi-Chair Agenda</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {session?.user?.id ? (
+                <MultiChairAgendaWithProfessionalSelector userId={session.user.id} />
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Please sign in</div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Split into 3 sections */}
+        <div className="col-span-3 space-y-4">
+          {/* Insurance Claims Integration - Top */}
+          <Card className="bg-white border-purple-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-900">Insurance Claims Integration</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {session?.user?.id ? (
+                <div className="space-y-2">
+                  {ramqClaims.slice(0, 3).map((claim: any, idx: number) => (
+                    <div key={claim.id || idx} className="flex items-center justify-between p-2 border border-purple-100 rounded">
+                      <div className="flex-1">
+                        <div className="text-xs font-medium text-gray-900">Claim #{claim.claimNumber || claim.id?.slice(-5)}</div>
+                        <div className="text-xs text-gray-600">{claim.procedureName || 'Procedure'}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-bold text-gray-900">${claim.amount || 0}</div>
+                        {claim.status === 'APPROVED' ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
+                        ) : (
+                          <Clock className="w-4 h-4 text-orange-600 mt-1" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {ramqClaims.length === 0 && (
+                    <div className="text-center py-4 text-gray-400 text-sm">No claims</div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Please sign in</div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* X-Ray Analysis - Middle */}
+          <Card className="bg-white border-purple-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-900">X-Ray Analysis</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {selectedLeadId && session?.user?.id ? (
+                <div className="space-y-3">
+                  {selectedXray && selectedXray.aiAnalysis ? (
+                    <div className="space-y-2 text-xs">
+                      <div className="p-2 bg-purple-50 border border-purple-200 rounded">
+                        <div className="font-medium text-gray-900">Diagnostic: {selectedXray.aiAnalysis.findings || 'Cavities Detected'}</div>
+                        <div className="text-gray-600">Severity: {selectedXray.aiAnalysis.severity || 'Moderate'}</div>
+                      </div>
+                      {selectedXray.aiAnalysis.details && (
+                        <div className="text-xs text-gray-600">
+                          {selectedXray.aiAnalysis.details}
                         </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Odontogram Component */}
-                    {show3D && odontogramData ? (
-                      <Card className="bg-white border-purple-200 shadow-sm">
-                        <CardHeader>
-                          <CardTitle className="text-gray-900">3D Odontogram</CardTitle>
-                          <CardDescription>Interactive 3D tooth chart - rotate and zoom</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <Odontogram3D
-                            leadId={selectedLeadId}
-                            toothData={odontogramData}
-                          />
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <OdontogramComponent
-                        leadId={selectedLeadId}
-                        initialData={odontogramData}
-                        onSave={handleSaveOdontogram}
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please select a patient to view their odontogram</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="periodontal" className="mt-0">
-                {selectedLeadId ? (
-                  <PeriodontalChart
-                    leadId={selectedLeadId}
-                    initialData={periodontalData}
-                    onSave={handleSavePeriodontalChart}
-                  />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <Stethoscope className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please select a patient to view their periodontal chart</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="treatment-plan" className="mt-0">
-                {selectedLeadId ? (
-                  <TreatmentPlanBuilder
-                    leadId={selectedLeadId}
-                    onSave={handleSaveTreatmentPlan}
-                  />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <ClipboardList className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please select a patient to create or view treatment plans</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="procedures" className="mt-0">
-                {selectedLeadId ? (
-                  <ProcedureLog leadId={selectedLeadId} />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please select a patient to view their procedure log</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="forms-builder" className="mt-0">
-                {session?.user?.id ? (
-                  <FormsBuilder
-                    userId={session.user.id}
-                    onFormCreated={handleFormCreated}
-                  />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <FormInput className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please sign in to create forms</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="forms-fill" className="mt-0">
-                {selectedLeadId ? (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardHeader>
-                      <CardTitle className="text-gray-900">Select Form to Fill</CardTitle>
-                      <CardDescription>
-                        Choose a form template to fill out for this patient
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {forms.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                          No forms available. Create a form template first.
-                        </div>
-                      ) : (
-                        <>
-                          <Select
-                            value={selectedFormId || ''}
-                            onValueChange={handleFormSelect}
-                          >
-                            <SelectTrigger className="border-purple-200">
-                              <SelectValue placeholder="Select a form..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {forms.map((form) => (
-                                <SelectItem key={form.id} value={form.id}>
-                                  {form.formName}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-
-                          {selectedForm && (
-                            <FormRenderer
-                              formId={selectedForm.id}
-                              leadId={selectedLeadId!}
-                              formSchema={selectedForm.formSchema}
-                              formName={selectedForm.formName}
-                              description={selectedForm.description}
-                              onSave={handleFormSubmit}
-                            />
-                          )}
-                        </>
                       )}
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <FileCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please select a patient to fill out forms</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-400 text-sm">No AI analysis available</div>
+                  )}
+                  {xrays.length === 0 && (
+                    <div className="text-center py-4 text-gray-400 text-sm">No X-rays uploaded</div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Select a patient</div>
+              )}
+            </CardContent>
+          </Card>
 
-              <TabsContent value="form-responses" className="mt-0">
-                {selectedLeadId ? (
-                  <FormResponsesViewer leadId={selectedLeadId!} />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <Boxes className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please select a patient to view form responses</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="doc-generator" className="mt-0">
-                {selectedLeadId ? (
-                  <DocumentGenerator
-                    leadId={selectedLeadId!}
-                    onDocumentGenerated={handleDocumentGenerated}
-                  />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <FilePlus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please select a patient to generate documents</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="documents" className="mt-0">
-                {selectedLeadId ? (
-                  <DocumentUpload
-                    leadId={selectedLeadId}
-                    onUploadComplete={handleDocumentUploadComplete}
-                  />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please select a patient to upload documents</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="touch-screen" className="mt-0">
-                {session?.user?.id ? (
-                  <TouchScreenWelcome
-                    userId={session.user.id}
-                    onCheckIn={() => {
-                      toast.success('Patient checked in');
-                    }}
-                  />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <Monitor className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please sign in to use check-in system</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="multi-chair" className="mt-0">
-                {session?.user?.id ? (
-                  <MultiChairAgendaWithProfessionalSelector userId={session.user.id} />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <Grid3x3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please sign in to view multi-chair agenda</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="ramq" className="mt-0">
-                {session?.user?.id ? (
-                  <RAMQIntegration
-                    userId={session.user.id}
-                    leadId={selectedLeadId || undefined}
-                  />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please sign in to manage RAMQ claims</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="signature" className="mt-0">
-                {session?.user?.id ? (
-                  <ElectronicSignature
-                    userId={session.user.id}
-                    leadId={selectedLeadId || undefined}
-                    onSignatureComplete={(signatureData) => {
-                      toast.success('Signature completed');
-                    }}
-                  />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <PenTool className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please sign in to use electronic signature</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="xray" className="mt-0">
-                {session?.user?.id && selectedLeadId ? (
-                  <XRayUpload
-                    userId={session.user.id}
-                    leadId={selectedLeadId}
-                    onUploadComplete={() => {
-                      toast.success('X-ray uploaded successfully');
-                    }}
-                  />
-                ) : (
-                  <Card className="bg-white border-purple-200 shadow-sm">
-                    <CardContent className="py-12 text-center">
-                      <Scan className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">Please sign in and select a patient to upload X-rays</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-            </motion.div>
-          </AnimatePresence>
-        </Tabs>
+          {/* Electronic Signature Capture - Bottom */}
+          <Card className="bg-white border-purple-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-gray-900">Electronic signature capture</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {session?.user?.id ? (
+                <ElectronicSignature
+                  userId={session.user.id}
+                  leadId={selectedLeadId || undefined}
+                  onSignatureComplete={(signatureData) => {
+                    toast.success('Signature completed');
+                  }}
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-400 text-sm">Please sign in</div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
