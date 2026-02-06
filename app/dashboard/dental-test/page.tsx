@@ -529,31 +529,33 @@ export default function DentalTestPage() {
       {/* Main Grid Layout - Top Row */}
       <div className="grid grid-cols-3 gap-4 mb-4">
         {/* Arch Odontogram - Top Left */}
-        <Card className="bg-white border-purple-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-gray-900">Arch Odontogram</CardTitle>
+        <Card className="bg-white border-purple-200 shadow-sm h-full flex flex-col">
+          <CardHeader className="pb-3 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold text-gray-900">Arch Odontogram</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="mt-2">
+              <Select defaultValue="treatment">
+                <SelectTrigger className="h-7 text-xs w-full border-purple-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="treatment">Hover affected by: Treatment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
-          <CardContent className="p-4">
+          <CardContent className="p-2 flex-1 overflow-auto min-h-[400px]">
             {selectedLeadId ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Select defaultValue="treatment">
-                    <SelectTrigger className="h-7 text-xs w-40 border-purple-200">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="treatment">Hover affected by: Treatment</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="h-full [&>div]:border-0 [&>div]:shadow-none">
                 <OdontogramComponent
                   leadId={selectedLeadId}
                   initialData={odontogramData}
@@ -655,17 +657,19 @@ export default function DentalTestPage() {
       {/* Middle Row */}
       <div className="grid grid-cols-3 gap-4 mb-4">
         {/* Periodontal Charting - Middle Left */}
-        <Card className="bg-white border-purple-200 shadow-sm">
-          <CardHeader className="pb-3">
+        <Card className="bg-white border-purple-200 shadow-sm h-full flex flex-col">
+          <CardHeader className="pb-3 flex-shrink-0">
             <CardTitle className="text-sm font-semibold text-gray-900">Periodontal Charting</CardTitle>
           </CardHeader>
-          <CardContent className="p-4">
+          <CardContent className="p-2 flex-1 overflow-auto min-h-[400px]">
             {selectedLeadId ? (
-              <PeriodontalChart
-                leadId={selectedLeadId}
-                initialData={periodontalData}
-                onSave={handleSavePeriodontalChart}
-              />
+              <div className="h-full [&>div]:border-0 [&>div]:shadow-none">
+                <PeriodontalChart
+                  leadId={selectedLeadId}
+                  initialData={periodontalData}
+                  onSave={handleSavePeriodontalChart}
+                />
+              </div>
             ) : (
               <div className="text-center py-8 text-gray-400 text-sm">Select a patient</div>
             )}
