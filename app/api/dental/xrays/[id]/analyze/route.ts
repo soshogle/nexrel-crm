@@ -8,6 +8,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
+import { DicomParser } from '@/lib/dental/dicom-parser';
+import { DicomToImageConverter } from '@/lib/dental/dicom-to-image';
 import OpenAI from 'openai';
 import { t } from '@/lib/i18n-server';
 
@@ -76,18 +78,60 @@ export async function POST(
     // Get image URL for analysis
     // For now, use the stored imageUrl or generate download URL
     let imageUrl: string | null = null;
+    let isBase64 = false;
+    
     if (xray.imageUrl) {
       imageUrl = xray.imageUrl;
     } else if (xray.imageFile) {
       // Generate download URL from API endpoint
       imageUrl = `/api/dental/xrays/${xray.id}/image`;
     } else if (xray.dicomFile) {
-      // TODO: Convert DICOM to image for analysis
-      // For now, return error if only DICOM is available
-      return NextResponse.json(
-        { error: await t('api.dicomConversionNotImplemented') },
-        { status: 400 }
-      );
+      // Convert DICOM to image for analysis
+      try {
+        const storageService = new CanadianStorageService();
+        // Note: Encryption key retrieval would need to be implemented
+        // For now, we'll try to download without decryption if possible
+        // In production, store encryption key ID with X-ray record
+        
+        // TODO: Retrieve encryption key from database
+        // For now, we'll need to handle this differently
+        // This is a placeholder - actual implementation would retrieve the key
+        const encryptionKey = ''; // Would come from database
+        
+        // Download DICOM file from storage
+        const dicomBuffer = await storageService.downloadDocument(
+          xray.dicomFile,
+          encryptionKey
+        );
+        
+        // Parse DICOM and extract pixel data
+        const { pixelData } = DicomParser.parseDicom(dicomBuffer);
+        
+        // Get optimal window/level for this X-ray type
+        const optimalWindow = DicomToImageConverter.getOptimalWindowLevel(xray.xrayType);
+        
+        // Convert to image
+        const imageBuffer = await DicomToImageConverter.convertToImage(pixelData, {
+          windowCenter: optimalWindow.windowCenter,
+          windowWidth: optimalWindow.windowWidth,
+          outputFormat: 'png',
+          maxDimension: 2048,
+        });
+        
+        // Convert to base64 for GPT-4 Vision
+        const base64Image = imageBuffer.toString('base64');
+        const mimeType = 'image/png';
+        
+        // Use base64 image directly
+        imageUrl = `data:${mimeType};base64,${base64Image}`;
+        isBase64 = true;
+      } catch (dicomError) {
+        console.error('Error converting DICOM for analysis:', dicomError);
+        return NextResponse.json(
+          { error: await t('api.dicomConversionFailed') + ': ' + (dicomError as Error).message },
+          { status: 400 }
+        );
+      }
     }
 
     if (!imageUrl) {
@@ -97,11 +141,22 @@ export async function POST(
       );
     }
 
-    // Fetch image for GPT-4 Vision
-    const imageResponse = await fetch(imageUrl);
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const base64Image = Buffer.from(imageBuffer).toString('base64');
-    const mimeType = imageResponse.headers.get('content-type') || 'image/png';
+    // Fetch image for GPT-4 Vision (if not already base64)
+    let base64Image: string;
+    let mimeType: string;
+    
+    if (isBase64 || imageUrl.startsWith('data:')) {
+      // Already base64 (from DICOM conversion)
+      const parts = imageUrl.split(',');
+      mimeType = parts[0].split(':')[1].split(';')[0];
+      base64Image = parts[1];
+    } else {
+      // Fetch from URL
+      const imageResponse = await fetch(imageUrl);
+      const imageBuffer = await imageResponse.arrayBuffer();
+      base64Image = Buffer.from(imageBuffer).toString('base64');
+      mimeType = imageResponse.headers.get('content-type') || 'image/png';
+    }
 
     // Analyze with GPT-4 Vision
     const completion = await getOpenAIClient().chat.completions.create({
@@ -116,6 +171,8 @@ You are a dental radiologist AI assistant. Analyze dental X-ray images and provi
 2. Tooth-by-tooth analysis if applicable
 3. Recommendations for treatment
 4. Confidence level in your analysis
+
+IMPORTANT DISCLAIMER: Your analysis is for information purposes only. It is NOT for diagnostic use. It requires professional interpretation and is NOT a substitute for professional judgment. Always emphasize that a licensed dental professional must review and interpret all findings.
 
 Be specific about tooth numbers using Universal Numbering System (1-32).
 
@@ -157,6 +214,7 @@ Provide a comprehensive analysis including findings, recommendations, and confid
       recommendations: extractRecommendations(analysisText),
       model: 'gpt-4-vision-preview',
       analyzedAt: new Date().toISOString(),
+      disclaimer: 'AI analysis is for information purposes only. Not for diagnostic use. Requires professional interpretation. Not a substitute for professional judgment.',
     };
 
     // Update X-ray with analysis

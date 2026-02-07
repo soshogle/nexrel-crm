@@ -9,6 +9,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
+import { DicomParser } from '@/lib/dental/dicom-parser';
+import { DicomToImageConverter } from '@/lib/dental/dicom-to-image';
+import { DicomValidator } from '@/lib/dental/dicom-validator';
+import { DicomErrorHandler } from '@/lib/dental/dicom-error-handler';
+import { DicomRetry } from '@/lib/dental/dicom-retry';
+import { DicomPerformanceMonitor } from '@/lib/dental/dicom-performance';
 import crypto from 'crypto';
 import { t } from '@/lib/i18n-server';
 
@@ -119,18 +125,123 @@ export async function POST(request: NextRequest) {
     let imageUrl: string | null = null;
 
     if (isDicom) {
-      // Store DICOM file using uploadDocument method
-      const uploadResult = await storageService.uploadDocument(
-        buffer,
-        file.name,
-        file.type || 'application/dicom',
-        encryptionKey
-      );
-      dicomFile = uploadResult.storagePath;
+      // Validate DICOM file first
+      const validation = DicomValidator.validateFile(buffer, file.name, file.type);
+      if (!validation.valid) {
+        const validationError = DicomValidator.getValidationError(validation);
+        if (validationError) {
+          DicomErrorHandler.logError(validationError, { leadId, userId, xrayType });
+          return NextResponse.json(
+            { error: DicomErrorHandler.getUserFriendlyMessage(validationError) },
+            { status: 400 }
+          );
+        }
+      }
 
-      // TODO: Convert DICOM to image format for preview
-      // For now, we'll store the DICOM and handle conversion later
-      // This would require dicom-parser library
+      // Log warnings if any
+      if (validation.warnings.length > 0) {
+        console.warn('DICOM validation warnings:', validation.warnings);
+      }
+
+      // Store DICOM file using uploadDocument method
+      let uploadResult;
+      try {
+        uploadResult = await storageService.uploadDocument(
+          buffer,
+          file.name,
+          file.type || 'application/dicom',
+          encryptionKey
+        );
+        dicomFile = uploadResult.storagePath;
+      } catch (storageError) {
+        const error = DicomErrorHandler.handleStorageError(storageError as Error);
+        DicomErrorHandler.logError(error, { leadId, userId, fileSize: buffer.length });
+        return NextResponse.json(
+          { error: DicomErrorHandler.getUserFriendlyMessage(error) },
+          { status: 500 }
+        );
+      }
+
+      // Process DICOM and generate preview with retry and performance tracking
+      try {
+        await DicomPerformanceMonitor.measure('dicom_processing', async () => {
+          // Parse DICOM and extract pixel data with retry
+          const parseResult = await DicomRetry.retry(
+            () => Promise.resolve(DicomParser.parseDicom(buffer)),
+            {
+              maxRetries: 2,
+              retryDelay: 500,
+            }
+          );
+
+          if (!parseResult.success || !parseResult.result) {
+            throw parseResult.error || new Error('Failed to parse DICOM');
+          }
+
+          const { metadata, pixelData } = parseResult.result;
+          
+          // Get optimal window/level for this X-ray type
+          const optimalWindow = DicomToImageConverter.getOptimalWindowLevel(xrayType);
+          
+          // Convert DICOM to PNG image for preview with retry
+          const convertResult = await DicomRetry.retry(
+            () => DicomToImageConverter.convertToImage(pixelData, {
+              windowCenter: optimalWindow.windowCenter,
+              windowWidth: optimalWindow.windowWidth,
+              outputFormat: 'png',
+              maxDimension: 2048,
+            }),
+            {
+              maxRetries: 2,
+              retryDelay: 500,
+            }
+          );
+
+          if (!convertResult.success || !convertResult.result) {
+            throw convertResult.error || new Error('Failed to convert DICOM to image');
+          }
+
+          const imageBuffer = convertResult.result;
+
+          // Upload converted image with retry
+          const uploadResult = await DicomRetry.retry(
+            () => storageService.uploadDocument(
+              imageBuffer,
+              `${file.name.replace(/\.(dcm|dicom)$/i, '')}.png`,
+              'image/png',
+              encryptionKey
+            ),
+            {
+              maxRetries: 3,
+              retryDelay: 1000,
+              exponentialBackoff: true,
+            }
+          );
+
+          if (uploadResult.success && uploadResult.result) {
+            imageFile = uploadResult.result.storagePath;
+            imageUrl = `/api/dental/xrays/${Date.now()}/image`;
+          } else {
+            // Log but don't fail - DICOM file is stored, preview can be regenerated
+            console.error('Error storing preview image:', uploadResult.error);
+          }
+        }, { xrayType, fileSize: buffer.length });
+      } catch (dicomError) {
+        // Log error but don't fail upload - DICOM file is stored
+        const error = DicomErrorHandler.handleParseError(dicomError as Error, buffer);
+        DicomErrorHandler.logError(error, { leadId, userId, xrayType, dicomFile });
+        
+        // If not recoverable, return error
+        if (!error.recoverable) {
+          return NextResponse.json(
+            { error: DicomErrorHandler.getUserFriendlyMessage(error) },
+            { status: 400 }
+          );
+        }
+        
+        // If recoverable, continue but warn user
+        console.warn('DICOM processing error (recoverable):', error.message);
+      }
     } else {
       // Store as regular image
       const uploadResult = await storageService.uploadDocument(

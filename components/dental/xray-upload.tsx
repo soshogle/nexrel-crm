@@ -384,33 +384,49 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
             </div>
 
             {selectedXray.aiAnalysis && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <Brain className="h-4 w-4" />
-                  {t('findings')}
-                </h4>
-                {selectedXray.aiAnalysis.findings && (
-                  <div className="text-sm space-y-2">
-                    <div>
-                      <strong>{t('findings')}:</strong>
-                      <p className="mt-1">{selectedXray.aiAnalysis.findings}</p>
+              <div className="space-y-3">
+                {/* Medical Device Disclaimer */}
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-yellow-800 space-y-1">
+                      <p className="font-semibold">IMPORTANT DISCLAIMER:</p>
+                      <p>• AI analysis is for information purposes only</p>
+                      <p>• Not for diagnostic use</p>
+                      <p>• Requires professional interpretation</p>
+                      <p>• Not a substitute for professional judgment</p>
                     </div>
-                    {selectedXray.aiAnalysis.confidence && (
-                      <div>
-                        <strong>{tCommon('confidence') || 'Confidence'}:</strong> {(selectedXray.aiAnalysis.confidence * 100).toFixed(1)}%
-                      </div>
-                    )}
-                    {selectedXray.aiAnalysis.recommendations && (
-                      <div>
-                        <strong>{t('recommendations')}:</strong>
-                        <p className="mt-1">{selectedXray.aiAnalysis.recommendations}</p>
-                      </div>
-                    )}
                   </div>
-                )}
-                {!selectedXray.aiAnalysis.findings && (
-                  <p className="text-sm text-muted-foreground">{t('noAnalysis')}</p>
-                )}
+                </div>
+
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <Brain className="h-4 w-4" />
+                    {t('findings')}
+                  </h4>
+                  {selectedXray.aiAnalysis.findings && (
+                    <div className="text-sm space-y-2">
+                      <div>
+                        <strong>{t('findings')}:</strong>
+                        <p className="mt-1">{selectedXray.aiAnalysis.findings}</p>
+                      </div>
+                      {selectedXray.aiAnalysis.confidence && (
+                        <div>
+                          <strong>{tCommon('confidence') || 'Confidence'}:</strong> {(selectedXray.aiAnalysis.confidence * 100).toFixed(1)}%
+                        </div>
+                      )}
+                      {selectedXray.aiAnalysis.recommendations && (
+                        <div>
+                          <strong>{t('recommendations')}:</strong>
+                          <p className="mt-1">{selectedXray.aiAnalysis.recommendations}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {!selectedXray.aiAnalysis.findings && (
+                    <p className="text-sm text-muted-foreground">{t('noAnalysis')}</p>
+                  )}
+                </div>
               </div>
             )}
 
