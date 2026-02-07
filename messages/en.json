@@ -628,6 +628,12 @@
       "codeRequired": "Procedure code and name are required",
       "noProcedures": "No procedures logged yet"
     },
+    "disclaimer": {
+      "aiInfoOnly": "AI analysis is for information purposes only",
+      "notDiagnostic": "Not for diagnostic use",
+      "requiresInterpretation": "Requires professional interpretation",
+      "notSubstitute": "Not a substitute for professional judgment"
+    },
     "forms": {
       "builder": {
         "title": "Forms Builder",
