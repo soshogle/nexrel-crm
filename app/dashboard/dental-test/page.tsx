@@ -346,6 +346,28 @@ export default function DentalTestPage() {
     }
   }, [selectedLeadId, fetchOdontogram, fetchPeriodontalChart, fetchTreatmentPlans, fetchProcedures, fetchForms, fetchFormResponses, fetchRAMQClaims, fetchXrays]);
 
+  // Fetch appointments for multi-chair agenda
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const response = await fetch(`/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`);
+        if (response.ok) {
+          const data = await response.json();
+          setAppointments(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error('Error fetching appointments:', error);
+      }
+    };
+    if (session?.user?.id) {
+      fetchAppointments();
+    }
+  }, [session?.user?.id]);
+
   const handleSaveOdontogram = async (toothData: any) => {
     if (!selectedLeadId) {
       toast.error('Please select a patient first');
@@ -474,28 +496,6 @@ export default function DentalTestPage() {
         { id: 'PI2345', provider: 'BlueCross BlueShield', amount: 850, status: 'Approved' },
         { id: 'M78910', provider: 'Delta Dental', amount: 1300, status: 'Pending' },
       ];
-
-  // Fetch appointments for multi-chair agenda
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const response = await fetch(`/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`);
-        if (response.ok) {
-          const data = await response.json();
-          setAppointments(Array.isArray(data) ? data : []);
-        }
-      } catch (error) {
-        console.error('Error fetching appointments:', error);
-      }
-    };
-    if (session?.user?.id) {
-      fetchAppointments();
-    }
-  }, [session?.user?.id]);
 
   const displayMultiChairAppointments = appointments.length > 0
     ? appointments.slice(0, 4).map((apt: any, idx: number) => {
