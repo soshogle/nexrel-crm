@@ -16,26 +16,41 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
+  // Support both INSTAGRAM_VERIFY_TOKEN and FACEBOOK_VERIFY_TOKEN (fallback)
+  const verifyToken = process.env.INSTAGRAM_VERIFY_TOKEN || process.env.FACEBOOK_VERIFY_TOKEN || 'soshogle_messenger_verify_token';
+
   console.log('Instagram webhook verification attempt:', {
     mode,
     receivedToken: token ? `${token.substring(0, 10)}...` : 'none',
-    expectedToken: process.env.INSTAGRAM_VERIFY_TOKEN ? `${process.env.INSTAGRAM_VERIFY_TOKEN.substring(0, 10)}...` : 'none',
+    expectedToken: verifyToken ? `${verifyToken.substring(0, 10)}...` : 'none',
     challenge: challenge ? `${challenge.substring(0, 20)}...` : 'none',
+    hasInstagramToken: !!process.env.INSTAGRAM_VERIFY_TOKEN,
+    hasFacebookToken: !!process.env.FACEBOOK_VERIFY_TOKEN,
   });
 
   // Verify the webhook
-  if (mode === 'subscribe' && token === process.env.INSTAGRAM_VERIFY_TOKEN) {
+  if (mode === 'subscribe' && token === verifyToken) {
     console.log('✅ Instagram webhook verified successfully');
     return new NextResponse(challenge, { status: 200 });
   }
 
-  console.error('❌ Instagram webhook verification failed - token mismatch');
+  console.error('❌ Instagram webhook verification failed - token mismatch', {
+    receivedToken: token,
+    expectedToken: verifyToken,
+    tokenMatch: token === verifyToken,
+    mode,
+  });
+  
   return NextResponse.json({ 
     error: 'Forbidden',
+    message: 'Webhook verification failed. Please check that INSTAGRAM_VERIFY_TOKEN or FACEBOOK_VERIFY_TOKEN matches the verify token in Facebook settings.',
     debug: process.env.NODE_ENV === 'development' ? {
       receivedMode: mode,
-      tokenMatch: token === process.env.INSTAGRAM_VERIFY_TOKEN,
-      hasExpectedToken: !!process.env.INSTAGRAM_VERIFY_TOKEN,
+      receivedToken: token,
+      expectedToken: verifyToken,
+      tokenMatch: token === verifyToken,
+      hasInstagramToken: !!process.env.INSTAGRAM_VERIFY_TOKEN,
+      hasFacebookToken: !!process.env.FACEBOOK_VERIFY_TOKEN,
     } : undefined
   }, { status: 403 });
 }

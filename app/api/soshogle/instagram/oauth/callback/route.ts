@@ -23,40 +23,72 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const clientId = process.env.INSTAGRAM_CLIENT_ID;
-    const clientSecret = process.env.INSTAGRAM_CLIENT_SECRET;
+    // Instagram uses Facebook's OAuth (Instagram Business accounts are linked to Facebook Pages)
+    const facebookAppId = process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_CLIENT_ID;
+    const facebookAppSecret = process.env.FACEBOOK_APP_SECRET || process.env.FACEBOOK_CLIENT_SECRET;
 
-    if (!clientId || !clientSecret) {
-      throw new Error('Instagram OAuth credentials not configured');
+    if (!facebookAppId || !facebookAppSecret) {
+      throw new Error('Facebook OAuth credentials not configured');
     }
 
     const redirectUri = `${baseUrl}/api/soshogle/instagram/oauth/callback`;
 
-    // Exchange code for access token
-    const tokenResponse = await fetch('https://api.instagram.com/oauth/access_token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
-        code,
-      }),
-    });
+    // Exchange code for access token using Facebook OAuth
+    const tokenUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
+    tokenUrl.searchParams.set('client_id', facebookAppId);
+    tokenUrl.searchParams.set('client_secret', facebookAppSecret);
+    tokenUrl.searchParams.set('redirect_uri', redirectUri);
+    tokenUrl.searchParams.set('code', code);
+
+    const tokenResponse = await fetch(tokenUrl.toString());
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json();
-      console.error('Instagram token error:', errorData);
+      console.error('Facebook token error:', errorData);
       throw new Error('Failed to exchange code for token');
     }
 
     const tokenData = await tokenResponse.json();
-    const { access_token, user_id } = tokenData;
+    const { access_token } = tokenData;
+
+    // Get user's Facebook Pages (Instagram Business accounts are linked to Pages)
+    const pagesResponse = await fetch(
+      `https://graph.facebook.com/v18.0/me/accounts?access_token=${access_token}`
+    );
+
+    if (!pagesResponse.ok) {
+      throw new Error('Failed to fetch Facebook pages');
+    }
+
+    const pagesData = await pagesResponse.json();
+    const pages = pagesData.data || [];
+
+    if (pages.length === 0) {
+      throw new Error('No Facebook Pages found. Please create a Page and link your Instagram Business account.');
+    }
+
+    // Get Instagram Business Account for the first page
+    const page = pages[0];
+    const igResponse = await fetch(
+      `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+    );
+
+    if (!igResponse.ok) {
+      throw new Error('Failed to fetch Instagram Business account');
+    }
+
+    const igData = await igResponse.json();
+
+    if (!igData.instagram_business_account) {
+      throw new Error('No Instagram Business account found linked to your Facebook Page.');
+    }
+
+    const igAccountId = igData.instagram_business_account.id;
+    const pageAccessToken = page.access_token; // Long-lived page token
 
     // Get Instagram account info
     const profileResponse = await fetch(
-      `https://graph.instagram.com/${user_id}?fields=id,username,account_type&access_token=${access_token}`
+      `https://graph.instagram.com/${igAccountId}?fields=id,username,account_type&access_token=${pageAccessToken}`
     );
 
     if (!profileResponse.ok) {
@@ -65,16 +97,8 @@ export async function GET(request: NextRequest) {
 
     const profileData = await profileResponse.json();
     const username = profileData.username || 'Instagram Account';
-
-    // Exchange for long-lived token (60 days)
-    const longLivedResponse = await fetch(
-      `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${clientSecret}&access_token=${access_token}`
-    );
-
-    const longLivedData = await longLivedResponse.json();
-    const longLivedToken = longLivedData.access_token || access_token;
-    const expiresIn = longLivedData.expires_in || 5184000; // 60 days default
-
+    const longLivedToken = pageAccessToken; // Page token is already long-lived
+    const expiresIn = 5184000; // 60 days (typical for page tokens)
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
     // Store connection in database
@@ -82,7 +106,7 @@ export async function GET(request: NextRequest) {
       where: {
         userId: state,
         channelType: 'INSTAGRAM',
-        channelIdentifier: user_id,
+        channelIdentifier: igAccountId,
       },
     });
     
@@ -94,9 +118,15 @@ export async function GET(request: NextRequest) {
           expiresAt,
           displayName: `@${username}`,
           status: 'CONNECTED',
-          providerType: 'instagram',
-          providerAccountId: user_id,
-          providerData: profileData,
+          providerType: 'FACEBOOK',
+          providerAccountId: page.id,
+          providerData: {
+            pageId: page.id,
+            pageName: page.name,
+            igAccountId,
+            username,
+            ...profileData,
+          },
           lastSyncAt: new Date(),
           errorMessage: null,
         },
@@ -106,14 +136,20 @@ export async function GET(request: NextRequest) {
         data: {
           userId: state,
           channelType: 'INSTAGRAM',
-          channelIdentifier: user_id,
+          channelIdentifier: igAccountId,
           accessToken: longLivedToken,
           expiresAt,
           displayName: `@${username}`,
           status: 'CONNECTED',
-          providerType: 'instagram',
-          providerAccountId: user_id,
-          providerData: profileData,
+          providerType: 'FACEBOOK',
+          providerAccountId: page.id,
+          providerData: {
+            pageId: page.id,
+            pageName: page.name,
+            igAccountId,
+            username,
+            ...profileData,
+          },
           syncEnabled: true,
         },
       });
