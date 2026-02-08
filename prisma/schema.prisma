@@ -8141,47 +8141,47 @@ model HITLNotification {
 
 // Clinic Model - Multi-clinic support
 model Clinic {
-  id          String   @id @default(cuid())
-  name        String
-  address     String?
-  city        String?
-  state       String?
-  zipCode     String?
-  country     String?  @default("Canada")
-  phone       String?
-  email       String?
-  website     String?
-  
+  id      String  @id @default(cuid())
+  name    String
+  address String?
+  city    String?
+  state   String?
+  zipCode String?
+  country String? @default("Canada")
+  phone   String?
+  email   String?
+  website String?
+
   // Settings
-  timezone    String?  @default("America/Toronto")
-  currency    String?  @default("CAD")
-  language    String?  @default("en")
-  
+  timezone String? @default("America/Toronto")
+  currency String? @default("CAD")
+  language String? @default("en")
+
   // Branding
-  logo        String?
+  logo         String?
   primaryColor String? @default("#9333ea") // Purple
-  
+
   // Status
-  isActive    Boolean  @default(true)
-  
+  isActive Boolean @default(true)
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  userMemberships UserClinic[]              @relation("ClinicUsers")
-  odontograms DentalOdontogram[]
+  userMemberships   UserClinic[]             @relation("ClinicUsers")
+  odontograms       DentalOdontogram[]
   periodontalCharts DentalPeriodontalChart[]
-  treatmentPlans DentalTreatmentPlan[]
-  procedures DentalProcedure[]
-  forms DentalForm[]
-  formResponses DentalFormResponse[]
-  xrays DentalXRay[]
-  labOrders DentalLabOrder[]
-  insuranceClaims DentalInsuranceClaim[]
+  treatmentPlans    DentalTreatmentPlan[]
+  procedures        DentalProcedure[]
+  forms             DentalForm[]
+  formResponses     DentalFormResponse[]
+  xrays             DentalXRay[]
+  labOrders         DentalLabOrder[]
+  insuranceClaims   DentalInsuranceClaim[]
   vnaConfigurations VnaConfiguration[]
-  documents PatientDocument[]              @relation("ClinicDocuments")
-  
+  documents         PatientDocument[]        @relation("ClinicDocuments")
+
   @@index([isActive])
 }
 
@@ -8193,11 +8193,11 @@ model UserClinic {
   role      String   @default("MEMBER") // OWNER, ADMIN, MEMBER
   isPrimary Boolean  @default(false) // User's primary clinic
   createdAt DateTime @default(now())
-  
+
   // Relations
-  user  User  @relation("UserClinicMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation("UserClinicMemberships", fields: [userId], references: [id], onDelete: Cascade)
   clinic Clinic @relation("ClinicUsers", fields: [clinicId], references: [id], onDelete: Cascade)
-  
+
   @@unique([userId, clinicId])
   @@index([userId])
   @@index([clinicId])
@@ -8230,11 +8230,13 @@ model DentalOdontogram {
   updatedAt DateTime @updatedAt
 
   // Relations
-  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([userId])
+  @@index([clinicId])
   @@index([chartDate])
 }
 
@@ -8258,8 +8260,8 @@ model DentalPeriodontalChart {
   updatedAt DateTime @updatedAt
 
   // Relations
-  lead  Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
@@ -8304,11 +8306,11 @@ model DentalTreatmentPlan {
   updatedAt DateTime @updatedAt
 
   // Relations
-  lead          Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clinic        Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  proceduresLog DentalProcedure[]
-  labOrders     DentalLabOrder[]
+  lead            Lead                   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic          Clinic                 @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  proceduresLog   DentalProcedure[]
+  labOrders       DentalLabOrder[]
   insuranceClaims DentalInsuranceClaim[]
 
   @@index([leadId])
@@ -8355,11 +8357,11 @@ model DentalProcedure {
   updatedAt DateTime @updatedAt
 
   // Relations
-  lead          Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clinic        Clinic               @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  treatmentPlan DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
-  labOrders     DentalLabOrder[]
+  lead            Lead                   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic          Clinic                 @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  treatmentPlan   DentalTreatmentPlan?   @relation(fields: [treatmentPlanId], references: [id])
+  labOrders       DentalLabOrder[]
   insuranceClaims DentalInsuranceClaim[]
 
   @@index([leadId])
@@ -8427,10 +8429,10 @@ model DentalFormResponse {
   updatedAt DateTime @updatedAt
 
   // Relations
-  lead  Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clinic Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  form  DentalForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  lead   Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic Clinic     @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  form   DentalForm @relation(fields: [formId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([userId])
@@ -8485,8 +8487,8 @@ model DentalXRay {
   updatedAt DateTime @updatedAt
 
   // Relations
-  lead  Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
@@ -8498,7 +8500,7 @@ model DentalXRay {
 
 // Phase 6: Lab Order Management
 model DentalLabOrder {
-  id              String            @id @default(cuid())
+  id              String  @id @default(cuid())
   leadId          String // Patient
   userId          String // Practice
   clinicId        String // Clinic
@@ -8506,53 +8508,53 @@ model DentalLabOrder {
   procedureId     String? // Link to specific procedure
 
   // Lab order details
-  orderNumber     String            @unique // Auto-generated: LAB-YYYYMMDD-XXXX
-  labName         String // Lab company name
-  labContact      Json? // { name, phone, email, address }
-  orderType       LabOrderType // CROWN, BRIDGE, DENTURE, IMPLANT, ORTHODONTIC, OTHER
-  description     String?           @db.Text
-  instructions    String?           @db.Text // Special instructions for lab
+  orderNumber  String       @unique // Auto-generated: LAB-YYYYMMDD-XXXX
+  labName      String // Lab company name
+  labContact   Json? // { name, phone, email, address }
+  orderType    LabOrderType // CROWN, BRIDGE, DENTURE, IMPLANT, ORTHODONTIC, OTHER
+  description  String?      @db.Text
+  instructions String?      @db.Text // Special instructions for lab
 
   // Patient information sent to lab
-  patientInfo     Json // { name, dob, gender, etc. }
-  impressionDate  DateTime?
-  deliveryDate    DateTime? // Expected delivery date
+  patientInfo    Json // { name, dob, gender, etc. }
+  impressionDate DateTime?
+  deliveryDate   DateTime? // Expected delivery date
 
   // Status tracking
-  status          LabOrderStatus    @default(PENDING)
-  submittedAt     DateTime?
-  receivedAt      DateTime? // When lab received order
-  inProgressAt    DateTime?
-  completedAt     DateTime?
-  deliveredAt     DateTime? // When delivered back to practice
+  status       LabOrderStatus @default(PENDING)
+  submittedAt  DateTime?
+  receivedAt   DateTime? // When lab received order
+  inProgressAt DateTime?
+  completedAt  DateTime?
+  deliveredAt  DateTime? // When delivered back to practice
 
   // Financial
-  cost            Float?            @default(0)
-  paid            Boolean           @default(false)
-  paymentDate     DateTime?
+  cost        Float?    @default(0)
+  paid        Boolean   @default(false)
+  paymentDate DateTime?
 
   // Tracking
-  trackingNumber  String?
-  shippingMethod  String?
+  trackingNumber String?
+  shippingMethod String?
 
   // Files/Attachments
   attachments     Json? // Array of file references
   prescriptionUrl String? // Link to prescription/instructions
 
   // Notes
-  notes           String?           @db.Text
-  internalNotes   String?           @db.Text // Staff-only notes
+  notes         String? @db.Text
+  internalNotes String? @db.Text // Staff-only notes
 
   // Timestamps
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  lead          Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clinic        Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  lead          Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic        Clinic               @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   treatmentPlan DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
-  procedure     DentalProcedure?  @relation(fields: [procedureId], references: [id])
+  procedure     DentalProcedure?     @relation(fields: [procedureId], references: [id])
 
   @@index([leadId])
   @@index([userId])
@@ -8587,7 +8589,7 @@ enum LabOrderStatus {
 
 // Phase 6: Insurance Integration
 model DentalInsuranceClaim {
-  id              String                @id @default(cuid())
+  id              String  @id @default(cuid())
   leadId          String // Patient
   userId          String // Practice
   clinicId        String // Clinic
@@ -8595,61 +8597,61 @@ model DentalInsuranceClaim {
   procedureId     String? // Link to specific procedure
 
   // Claim details
-  claimNumber     String                @unique // Auto-generated or provider claim #
-  insuranceType   InsuranceProviderType // RAMQ, PRIVATE, BOTH
-  providerName     String // Insurance company name
-  policyNumber     String // Patient's policy number
-  groupNumber      String? // Group/plan number
-  subscriberId     String? // Subscriber ID
+  claimNumber   String                @unique // Auto-generated or provider claim #
+  insuranceType InsuranceProviderType // RAMQ, PRIVATE, BOTH
+  providerName  String // Insurance company name
+  policyNumber  String // Patient's policy number
+  groupNumber   String? // Group/plan number
+  subscriberId  String? // Subscriber ID
 
   // Patient information
-  patientInfo     Json // { name, dob, relationshipToSubscriber, etc. }
-  subscriberInfo  Json? // Subscriber information if different from patient
+  patientInfo    Json // { name, dob, relationshipToSubscriber, etc. }
+  subscriberInfo Json? // Subscriber information if different from patient
 
   // Procedure/Service details
-  procedures      Json // Array of { procedureCode, description, cost, dateOfService }
-  totalAmount     Float
-  submittedAmount Float // Amount submitted to insurance
-  estimatedCoverage Float? // Expected coverage amount
+  procedures            Json // Array of { procedureCode, description, cost, dateOfService }
+  totalAmount           Float
+  submittedAmount       Float // Amount submitted to insurance
+  estimatedCoverage     Float? // Expected coverage amount
   patientResponsibility Float? // Patient's portion
 
   // Status tracking
-  status          InsuranceClaimStatus  @default(DRAFT)
-  submittedAt     DateTime?
+  status         InsuranceClaimStatus @default(DRAFT)
+  submittedAt    DateTime?
   acknowledgedAt DateTime? // Insurance acknowledged receipt
-  processedAt     DateTime?
-  paidAt          DateTime?
-  deniedAt        DateTime?
-  appealDeadline  DateTime?
+  processedAt    DateTime?
+  paidAt         DateTime?
+  deniedAt       DateTime?
+  appealDeadline DateTime?
 
   // Response from insurance
-  responseData    Json? // { approvedAmount, deniedAmount, reason, etc. }
-  eobUrl          String? // Explanation of Benefits document URL
-  paymentAmount   Float? // Actual payment received
-  paymentDate     DateTime?
+  responseData  Json? // { approvedAmount, deniedAmount, reason, etc. }
+  eobUrl        String? // Explanation of Benefits document URL
+  paymentAmount Float? // Actual payment received
+  paymentDate   DateTime?
 
   // RAMQ-specific fields
-  ramqClaimId     String? // RAMQ claim reference number
-  ramqStatus      String? // RAMQ processing status
+  ramqClaimId String? // RAMQ claim reference number
+  ramqStatus  String? // RAMQ processing status
 
   // Private insurance-specific fields
-  claimFormUrl    String? // Link to claim form PDF
-  preAuthNumber   String? // Pre-authorization number if applicable
+  claimFormUrl  String? // Link to claim form PDF
+  preAuthNumber String? // Pre-authorization number if applicable
 
   // Notes
-  notes           String?               @db.Text
-  denialReason    String?               @db.Text
+  notes        String? @db.Text
+  denialReason String? @db.Text
 
   // Timestamps
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  lead          Lead                  @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clinic        Clinic                @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  treatmentPlan DentalTreatmentPlan?  @relation(fields: [treatmentPlanId], references: [id])
-  procedure     DentalProcedure?      @relation(fields: [procedureId], references: [id])
+  lead          Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic        Clinic               @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  treatmentPlan DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
+  procedure     DentalProcedure?     @relation(fields: [procedureId], references: [id])
 
   @@index([leadId])
   @@index([userId])
@@ -8718,7 +8720,7 @@ model VnaConfiguration {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@index([userId])
