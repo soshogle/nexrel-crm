@@ -237,6 +237,8 @@ model User {
   documentConsents            DocumentConsent[]
   documentAccessLogs          DocumentAccessLog[]          @relation("DocumentAccessLogUser")
   dataAccessRequests          DataAccessRequest[]          @relation("DataAccessRequestUser")
+  // Multi-Clinic Support
+  clinicMemberships           UserClinic[]                 @relation("UserClinicMemberships")
   dataBreaches                DataBreach[]                 @relation("DataBreachUser")
   voiceUsage                  VoiceUsage[]
   widgetConfigurations        WidgetConfiguration[]
@@ -8134,14 +8136,86 @@ model HITLNotification {
 }
 
 // ==========================================
+// MULTI-CLINIC SUPPORT
+// ==========================================
+
+// Clinic Model - Multi-clinic support
+model Clinic {
+  id          String   @id @default(cuid())
+  name        String
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  country     String?  @default("Canada")
+  phone       String?
+  email       String?
+  website     String?
+  
+  // Settings
+  timezone    String?  @default("America/Toronto")
+  currency    String?  @default("CAD")
+  language    String?  @default("en")
+  
+  // Branding
+  logo        String?
+  primaryColor String? @default("#9333ea") // Purple
+  
+  // Status
+  isActive    Boolean  @default(true)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userMemberships UserClinic[]              @relation("ClinicUsers")
+  odontograms DentalOdontogram[]
+  periodontalCharts DentalPeriodontalChart[]
+  treatmentPlans DentalTreatmentPlan[]
+  procedures DentalProcedure[]
+  forms DentalForm[]
+  formResponses DentalFormResponse[]
+  xrays DentalXRay[]
+  labOrders DentalLabOrder[]
+  insuranceClaims DentalInsuranceClaim[]
+  vnaConfigurations VnaConfiguration[]
+  documents PatientDocument[]              @relation("ClinicDocuments")
+  
+  @@index([isActive])
+}
+
+// User-Clinic Junction Table (Many-to-Many)
+model UserClinic {
+  id        String   @id @default(cuid())
+  userId    String
+  clinicId  String
+  role      String   @default("MEMBER") // OWNER, ADMIN, MEMBER
+  isPrimary Boolean  @default(false) // User's primary clinic
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user  User  @relation("UserClinicMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  clinic Clinic @relation("ClinicUsers", fields: [clinicId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, clinicId])
+  @@index([userId])
+  @@index([clinicId])
+  @@index([isPrimary])
+}
+
+// Phase 1: Core Dental Practice Management Models
+
+// ==========================================
 // DENTAL PRACTICE MANAGEMENT MODELS
 // ==========================================
 
 // Dental Odontogram - Interactive tooth chart
 model DentalOdontogram {
-  id     String @id @default(cuid())
-  leadId String // Patient
-  userId String // Practice
+  id       String @id @default(cuid())
+  leadId   String // Patient
+  userId   String // Practice
+  clinicId String // Clinic
 
   // Tooth data (Universal Numbering System: 1-32)
   toothData Json // { "1": { condition: "crown", date: "2024-01-15", ... }, "2": {...} }
@@ -8166,9 +8240,10 @@ model DentalOdontogram {
 
 // Dental Periodontal Chart - Periodontal measurements
 model DentalPeriodontalChart {
-  id     String @id @default(cuid())
-  leadId String // Patient
-  userId String // Practice
+  id       String @id @default(cuid())
+  leadId   String // Patient
+  userId   String // Practice
+  clinicId String // Clinic
 
   // Periodontal measurements (pocket depths, BOP, recession, mobility)
   measurements Json // { "tooth": "1", "mesial": {pd: 3, bop: false}, "buccal": {...}, ... }
@@ -8183,19 +8258,22 @@ model DentalPeriodontalChart {
   updatedAt DateTime @updatedAt
 
   // Relations
-  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead  Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([userId])
+  @@index([clinicId])
   @@index([chartDate])
 }
 
 // Dental Treatment Plan - Treatment plans with procedures
 model DentalTreatmentPlan {
-  id     String @id @default(cuid())
-  leadId String // Patient
-  userId String // Practice
+  id       String @id @default(cuid())
+  leadId   String // Patient
+  userId   String // Practice
+  clinicId String // Clinic
 
   // Treatment plan details
   planName    String
@@ -8228,12 +8306,14 @@ model DentalTreatmentPlan {
   // Relations
   lead          Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
   user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic        Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   proceduresLog DentalProcedure[]
   labOrders     DentalLabOrder[]
   insuranceClaims DentalInsuranceClaim[]
 
   @@index([leadId])
   @@index([userId])
+  @@index([clinicId])
   @@index([status])
 }
 
@@ -8242,6 +8322,7 @@ model DentalProcedure {
   id              String  @id @default(cuid())
   leadId          String // Patient
   userId          String // Practice
+  clinicId        String // Clinic
   treatmentPlanId String? // Link to treatment plan
 
   // Procedure details
@@ -8276,12 +8357,14 @@ model DentalProcedure {
   // Relations
   lead          Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
   user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic        Clinic               @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   treatmentPlan DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
   labOrders     DentalLabOrder[]
   insuranceClaims DentalInsuranceClaim[]
 
   @@index([leadId])
   @@index([userId])
+  @@index([clinicId])
   @@index([treatmentPlanId])
   @@index([procedureCode])
   @@index([status])
@@ -8290,8 +8373,9 @@ model DentalProcedure {
 
 // Dental Form - Dynamic form templates
 model DentalForm {
-  id     String @id @default(cuid())
-  userId String // Practice
+  id       String @id @default(cuid())
+  userId   String // Practice
+  clinicId String // Clinic
 
   // Form details
   formName    String
@@ -8311,19 +8395,22 @@ model DentalForm {
 
   // Relations
   user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic    Clinic               @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   responses DentalFormResponse[]
 
   @@index([userId])
+  @@index([clinicId])
   @@index([isActive])
   @@index([category])
 }
 
 // Dental Form Response - Form submissions
 model DentalFormResponse {
-  id     String @id @default(cuid())
-  leadId String // Patient
-  userId String // Practice
-  formId String // Form template
+  id       String @id @default(cuid())
+  leadId   String // Patient
+  userId   String // Practice
+  clinicId String // Clinic
+  formId   String // Form template
 
   // Response data
   responseData Json // { fieldId: "value", ... }
@@ -8340,21 +8427,24 @@ model DentalFormResponse {
   updatedAt DateTime @updatedAt
 
   // Relations
-  lead Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  form DentalForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  lead  Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  form  DentalForm @relation(fields: [formId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([userId])
+  @@index([clinicId])
   @@index([formId])
   @@index([submittedAt])
 }
 
 // Dental X-Ray - X-ray images with AI analysis
 model DentalXRay {
-  id     String @id @default(cuid())
-  leadId String // Patient
-  userId String // Practice
+  id       String @id @default(cuid())
+  leadId   String // Patient
+  userId   String // Practice
+  clinicId String // Clinic
 
   // File info - Multi-resolution support
   dicomFile String? // Path to DICOM file in Canadian storage (original)
@@ -8395,11 +8485,13 @@ model DentalXRay {
   updatedAt DateTime @updatedAt
 
   // Relations
-  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead  Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([userId])
+  @@index([clinicId])
   @@index([dateTaken])
   @@index([xrayType])
 }
@@ -8409,6 +8501,7 @@ model DentalLabOrder {
   id              String            @id @default(cuid())
   leadId          String // Patient
   userId          String // Practice
+  clinicId        String // Clinic
   treatmentPlanId String? // Link to treatment plan
   procedureId     String? // Link to specific procedure
 
@@ -8455,13 +8548,15 @@ model DentalLabOrder {
   updatedAt       DateTime          @updatedAt
 
   // Relations
-  lead            Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  treatmentPlan  DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
-  procedure       DentalProcedure? @relation(fields: [procedureId], references: [id])
+  lead          Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic        Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  treatmentPlan DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
+  procedure     DentalProcedure?  @relation(fields: [procedureId], references: [id])
 
   @@index([leadId])
   @@index([userId])
+  @@index([clinicId])
   @@index([treatmentPlanId])
   @@index([procedureId])
   @@index([status])
@@ -8495,6 +8590,7 @@ model DentalInsuranceClaim {
   id              String                @id @default(cuid())
   leadId          String // Patient
   userId          String // Practice
+  clinicId        String // Clinic
   treatmentPlanId String? // Link to treatment plan
   procedureId     String? // Link to specific procedure
 
@@ -8549,13 +8645,15 @@ model DentalInsuranceClaim {
   updatedAt       DateTime              @updatedAt
 
   // Relations
-  lead            Lead                  @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  treatmentPlan  DentalTreatmentPlan?   @relation(fields: [treatmentPlanId], references: [id])
-  procedure       DentalProcedure?      @relation(fields: [procedureId], references: [id])
+  lead          Lead                  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic        Clinic                @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  treatmentPlan DentalTreatmentPlan?  @relation(fields: [treatmentPlanId], references: [id])
+  procedure     DentalProcedure?      @relation(fields: [procedureId], references: [id])
 
   @@index([leadId])
   @@index([userId])
+  @@index([clinicId])
   @@index([treatmentPlanId])
   @@index([procedureId])
   @@index([status])
@@ -8587,6 +8685,7 @@ enum InsuranceClaimStatus {
 model VnaConfiguration {
   id       String  @id @default(cuid())
   userId   String // Practice owner
+  clinicId String // Clinic
   name     String // Display name (e.g., "Main Clinic VNA", "Cloud Storage")
   type     VnaType // ORTHANC, AWS_S3, AZURE_BLOB, CLOUD_VNA, OTHER
   isActive Boolean @default(true)
@@ -8619,9 +8718,11 @@ model VnaConfiguration {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([clinicId])
   @@index([isActive])
   @@index([type])
 }
@@ -8660,6 +8761,7 @@ enum ProcedureStatus {
 model PatientDocument {
   id           String       @id @default(cuid())
   userId       String // Practice owner
+  clinicId     String // Clinic
   leadId       String? // Patient/Lead reference
   documentType DocumentType
   category     String? // "X-Ray", "Consent Form", "Insurance", etc.
@@ -8701,12 +8803,14 @@ model PatientDocument {
 
   // Relations
   user       User                @relation("PracticeDocuments", fields: [userId], references: [id], onDelete: Cascade)
+  clinic     Clinic              @relation("ClinicDocuments", fields: [clinicId], references: [id], onDelete: Cascade)
   lead       Lead?               @relation("PatientDocuments", fields: [leadId], references: [id], onDelete: SetNull)
   consent    DocumentConsent?    @relation(fields: [consentId], references: [id])
   accessLogs DocumentAccessLog[]
   versions   DocumentVersion[]
 
   @@index([userId])
+  @@index([clinicId])
   @@index([leadId])
   @@index([documentType])
   @@index([retentionExpiry])
