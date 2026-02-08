@@ -77,7 +77,7 @@ export function DentalWorkflowTemplatesBrowser() {
           name: template.name,
           description: template.description,
           type: 'CUSTOM',
-          industry: 'DENTAL',
+          industry: 'DENTIST',
           tasks,
         }),
       });
@@ -229,7 +229,7 @@ export function DentalWorkflowTemplatesBrowser() {
           </DialogHeader>
           <div className="flex-1 overflow-hidden p-6">
             <WorkflowBuilder
-              industry="DENTAL"
+              industry="DENTIST"
               initialWorkflowId={createdWorkflowId}
             />
           </div>
