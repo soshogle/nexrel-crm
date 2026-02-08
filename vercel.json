@@ -1,14 +1,5 @@
 {
   "version": 2,
-  "env": {
-    "ORTHANC_BASE_URL": "@orthanc_base_url",
-    "ORTHANC_USERNAME": "@orthanc_username",
-    "ORTHANC_PASSWORD": "@orthanc_password",
-    "DICOM_WEBHOOK_SECRET": "@dicom_webhook_secret",
-    "DICOM_AE_TITLE": "@dicom_ae_title",
-    "ORTHANC_HOST": "@orthanc_host",
-    "ORTHANC_PORT": "@orthanc_port"
-  },
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30
