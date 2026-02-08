@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { elevenLabsService } from '@/lib/elevenlabs';
+import { enhancedCallHandler } from '@/lib/integrations/enhanced-call-handler';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -50,18 +51,53 @@ export async function POST(request: NextRequest) {
       return new NextResponse(twiml, { headers: { 'Content-Type': 'text/xml' } });
     }
 
-    // Create call log
-    await prisma.callLog.create({
-      data: {
-        voiceAgentId: voiceAgent.id,
-        userId: voiceAgent.userId,
-        twilioCallSid: callSid,
-        direction: voiceAgent.type === 'INBOUND' ? 'INBOUND' : 'OUTBOUND',
-        fromNumber: from,
-        toNumber: to,
-        status: 'IN_PROGRESS',
-      },
-    });
+    // Enhanced call handling with screen pop
+    let callLog;
+    if (voiceAgent.type === 'INBOUND') {
+      // Match patient and create enhanced call log
+      const result = await enhancedCallHandler.handleIncomingCall(
+        {
+          callSid,
+          fromNumber: from,
+          toNumber: to,
+          direction: 'inbound',
+          status: 'ringing',
+          timestamp: new Date(),
+        },
+        undefined // clinicId would come from voiceAgent if available
+      );
+      callLog = result.callLog;
+
+      // Send screen pop notification if patient matched
+      if (result.patientMatch) {
+        await enhancedCallHandler.sendScreenPopNotification(
+          voiceAgent.userId,
+          result.patientMatch,
+          {
+            callSid,
+            fromNumber: from,
+            toNumber: to,
+            direction: 'inbound',
+            status: 'ringing',
+            timestamp: new Date(),
+          }
+        );
+        console.log('✅ Screen pop sent for patient:', result.patientMatch.patientName);
+      }
+    } else {
+      // Outbound call - simpler logging
+      callLog = await prisma.callLog.create({
+        data: {
+          voiceAgentId: voiceAgent.id,
+          userId: voiceAgent.userId,
+          twilioCallSid: callSid,
+          direction: 'OUTBOUND',
+          fromNumber: from,
+          toNumber: to,
+          status: 'IN_PROGRESS',
+        },
+      });
+    }
 
     console.log('✅ Call logged for agent:', voiceAgent.name);
 
