@@ -42,6 +42,95 @@ import {
   PenTool,
 } from 'lucide-react';
 
+// Clinical Notes Editor Component
+function ClinicalNotesEditor({ leadId }: { leadId: string }) {
+  const [noteContent, setNoteContent] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [notes, setNotes] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchNotes();
+  }, [leadId]);
+
+  const fetchNotes = async () => {
+    try {
+      const response = await fetch(`/api/leads/${leadId}/notes`);
+      if (response.ok) {
+        const data = await response.json();
+        setNotes(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (!noteContent.trim()) {
+      toast.error('Please enter a note');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/leads/${leadId}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: noteContent }),
+      });
+
+      if (response.ok) {
+        toast.success('Clinical note saved successfully');
+        setNoteContent('');
+        await fetchNotes();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to save note');
+      }
+    } catch (error: any) {
+      toast.error('Failed to save note: ' + error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-sm font-medium text-gray-700 mb-2 block">New Clinical Note</label>
+        <textarea
+          value={noteContent}
+          onChange={(e) => setNoteContent(e.target.value)}
+          className="w-full h-48 p-3 border border-gray-300 rounded-lg resize-none"
+          placeholder="Enter clinical notes..."
+        />
+        <Button 
+          onClick={handleSaveNote} 
+          disabled={saving || !noteContent.trim()}
+          className="mt-2"
+        >
+          {saving ? 'Saving...' : 'Save Note'}
+        </Button>
+      </div>
+      
+      {notes.length > 0 && (
+        <div className="border-t pt-4">
+          <h3 className="text-sm font-semibold mb-2">Previous Notes</h3>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {notes.map((note) => (
+              <div key={note.id} className="p-3 bg-gray-50 rounded border border-gray-200">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.content}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {new Date(note.createdAt).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ClinicalDashboardPage() {
   const { data: session } = useSession();
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -60,6 +149,8 @@ export default function ClinicalDashboardPage() {
     monthlyRevenue: 0,
   });
   const [openModal, setOpenModal] = useState<string | null>(null);
+  const [procedureSearch, setProcedureSearch] = useState('');
+  const [procedureFilter, setProcedureFilter] = useState('today');
 
   // Fetch leads (patients)
   const fetchLeads = useCallback(async () => {
@@ -199,12 +290,29 @@ export default function ClinicalDashboardPage() {
     fetchStats();
   }, [fetchStats]);
 
-  // Display procedures for today
+  // Display procedures with search and filter
   const displayProcedures = procedures
     .filter((proc: any) => {
-      const procDate = new Date(proc.datePerformed);
-      const today = new Date();
-      return procDate.toDateString() === today.toDateString();
+      // Search filter
+      const patientName = leads.find((l) => l.id === proc.leadId)?.contactPerson || 'Unknown';
+      const procedureCode = proc.procedureCode || 'Procedure';
+      const searchLower = procedureSearch.toLowerCase();
+      if (procedureSearch && !patientName.toLowerCase().includes(searchLower) && !procedureCode.toLowerCase().includes(searchLower)) {
+        return false;
+      }
+      
+      // Date filter
+      if (procedureFilter === 'today') {
+        const procDate = new Date(proc.datePerformed);
+        const today = new Date();
+        return procDate.toDateString() === today.toDateString();
+      } else if (procedureFilter === 'week') {
+        const procDate = new Date(proc.datePerformed);
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return procDate >= weekAgo;
+      }
+      return true;
     })
     .slice(0, 5)
     .map((proc: any) => ({
@@ -262,10 +370,38 @@ export default function ClinicalDashboardPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold text-gray-900">Arch Odontogram</CardTitle>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-gray-100" onClick={(e) => e.stopPropagation()}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0 hover:bg-gray-100" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (selectedLeadId && leads.length > 0) {
+                      const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
+                      if (currentIndex > 0) {
+                        setSelectedLeadId(leads[currentIndex - 1].id);
+                      }
+                    }
+                  }}
+                  disabled={!selectedLeadId || (selectedLeadId && leads.findIndex(l => l.id === selectedLeadId) === 0)}
+                >
                   <ChevronLeft className="h-3 w-3 text-gray-600" />
                 </Button>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-gray-100" onClick={(e) => e.stopPropagation()}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0 hover:bg-gray-100" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (selectedLeadId && leads.length > 0) {
+                      const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
+                      if (currentIndex < leads.length - 1) {
+                        setSelectedLeadId(leads[currentIndex + 1].id);
+                      }
+                    }
+                  }}
+                  disabled={!selectedLeadId || (selectedLeadId && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1)}
+                >
                   <ChevronRight className="h-3 w-3 text-gray-600" />
                 </Button>
               </div>
@@ -343,14 +479,21 @@ export default function ClinicalDashboardPage() {
           <CardHeader className="pb-2 px-4 pt-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold text-gray-900">Procedures Activity Log</CardTitle>
-              <div className="flex items-center gap-2">
-                <Input placeholder="Search..." className="h-7 w-28 text-xs border border-gray-300" />
-                <Select defaultValue="today">
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <Input 
+                  placeholder="Search..." 
+                  className="h-7 w-28 text-xs border border-gray-300" 
+                  value={procedureSearch}
+                  onChange={(e) => setProcedureSearch(e.target.value)}
+                />
+                <Select value={procedureFilter} onValueChange={setProcedureFilter}>
                   <SelectTrigger className="h-7 text-xs w-20 border border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="week">This Week</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -380,7 +523,15 @@ export default function ClinicalDashboardPage() {
             {selectedLeadId ? (
               <div className="space-y-2">
                 <div className="text-xs text-gray-600">Quick note entry</div>
-                <Button size="sm" variant="outline" className="w-full">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenModal('clinical-notes');
+                  }}
+                >
                   <PenTool className="w-3 h-3 mr-1" />
                   Add Note
                 </Button>
@@ -440,10 +591,36 @@ export default function ClinicalDashboardPage() {
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                  onClick={() => {
+                    if (selectedLeadId && leads.length > 0) {
+                      const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
+                      if (currentIndex > 0) {
+                        setSelectedLeadId(leads[currentIndex - 1].id);
+                      }
+                    }
+                  }}
+                  disabled={!selectedLeadId || (selectedLeadId && leads.findIndex(l => l.id === selectedLeadId) === 0)}
+                >
                   <ChevronLeft className="h-4 w-4 text-gray-600" />
                 </Button>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                  onClick={() => {
+                    if (selectedLeadId && leads.length > 0) {
+                      const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
+                      if (currentIndex < leads.length - 1) {
+                        setSelectedLeadId(leads[currentIndex + 1].id);
+                      }
+                    }
+                  }}
+                  disabled={!selectedLeadId || (selectedLeadId && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1)}
+                >
                   <ChevronRight className="h-4 w-4 text-gray-600" />
                 </Button>
               </div>
@@ -525,13 +702,7 @@ export default function ClinicalDashboardPage() {
         title="Clinical Notes"
       >
         {selectedLeadId ? (
-          <div className="space-y-4">
-            <textarea
-              className="w-full h-64 p-3 border border-gray-300 rounded-lg"
-              placeholder="Enter clinical notes..."
-            />
-            <Button>Save Note</Button>
-          </div>
+          <ClinicalNotesEditor leadId={selectedLeadId} />
         ) : (
           <div className="text-center py-16 text-gray-400">Select a patient</div>
         )}

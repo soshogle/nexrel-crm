@@ -10,26 +10,46 @@ interface RedesignedPeriodontalChartProps {
 }
 
 export function RedesignedPeriodontalChart({ measurements }: RedesignedPeriodontalChartProps) {
-  // Mock data matching image - teeth 1-32 with pocket depths
-  const mockData = Array.from({ length: 32 }, (_, i) => {
+  // Process actual measurements data or show empty state
+  const getToothData = (toothNum: number) => {
+    const toothData = measurements?.[String(toothNum)];
+    if (!toothData) {
+      return { pd: null, worked: false };
+    }
+    
+    // Get average pocket depth across all sites, or use first available
+    const sites = ['mesial', 'buccal', 'distal', 'lingual'];
+    const depths = sites
+      .map(site => toothData[site]?.pd)
+      .filter(pd => pd !== undefined && pd > 0);
+    
+    if (depths.length === 0) {
+      return { pd: null, worked: false };
+    }
+    
+    const avgPd = depths.reduce((sum, pd) => sum + pd, 0) / depths.length;
+    return { pd: Math.round(avgPd * 10) / 10, worked: true };
+  };
+
+  const chartData = Array.from({ length: 32 }, (_, i) => {
     const toothNum = i + 1;
-    // Random pocket depths (1-5mm) matching image pattern
-    const pd = Math.floor(Math.random() * 5) + 1;
     return {
       tooth: toothNum,
-      pd,
+      ...getToothData(toothNum),
     };
   });
 
-  const getBarColor = (pd: number) => {
-    if (pd <= 3) return 'bg-green-500';
-    if (pd <= 5) return 'bg-green-400';
-    return 'bg-red-500';
+  const getBarColor = (pd: number | null, worked: boolean) => {
+    if (!worked || pd === null) return 'bg-gray-300'; // Not worked on
+    if (pd <= 3) return 'bg-green-500'; // Healthy (1-3mm)
+    if (pd <= 5) return 'bg-yellow-500'; // Moderate (4-5mm)
+    return 'bg-red-500'; // Problematic (>5mm)
   };
 
-  const getBarHeight = (pd: number) => {
+  const getBarHeight = (pd: number | null) => {
+    if (pd === null) return '6px'; // Minimum height for unworked teeth
     // Max height 40px for 5mm+
-    return `${(pd / 5) * 40}px`;
+    return `${Math.max((pd / 5) * 40, 6)}px`;
   };
 
   return (
@@ -47,25 +67,31 @@ export function RedesignedPeriodontalChart({ measurements }: RedesignedPeriodont
 
         {/* Upper arch bars */}
         <div className="flex justify-between items-end mb-2 px-1">
-          {mockData.slice(0, 16).map((tooth) => (
+          {chartData.slice(0, 16).map((tooth) => (
             <div key={tooth.tooth} className="flex flex-col items-center w-4">
               <div
-                className={`w-3 ${getBarColor(tooth.pd)} rounded-t`}
+                className={`w-3 ${getBarColor(tooth.pd, tooth.worked)} rounded-t transition-colors`}
                 style={{ height: getBarHeight(tooth.pd), minHeight: '6px' }}
+                title={tooth.worked ? `Tooth ${tooth.tooth}: ${tooth.pd}mm` : `Tooth ${tooth.tooth}: Not measured`}
               />
-              <div className="text-[8px] text-gray-600 mt-0.5">{tooth.pd}mm</div>
+              <div className={`text-[8px] mt-0.5 ${tooth.worked ? 'text-gray-600' : 'text-gray-400'}`}>
+                {tooth.worked ? `${tooth.pd}mm` : '-'}
+              </div>
             </div>
           ))}
         </div>
 
         {/* Lower arch bars */}
         <div className="flex justify-between items-start mb-1 px-1">
-          {mockData.slice(16, 32).map((tooth) => (
+          {chartData.slice(16, 32).map((tooth) => (
             <div key={tooth.tooth} className="flex flex-col items-center w-4">
-              <div className="text-[8px] text-gray-600 mb-0.5">{tooth.pd}mm</div>
+              <div className={`text-[8px] mb-0.5 ${tooth.worked ? 'text-gray-600' : 'text-gray-400'}`}>
+                {tooth.worked ? `${tooth.pd}mm` : '-'}
+              </div>
               <div
-                className={`w-3 ${getBarColor(tooth.pd)} rounded-b`}
+                className={`w-3 ${getBarColor(tooth.pd, tooth.worked)} rounded-b transition-colors`}
                 style={{ height: getBarHeight(tooth.pd), minHeight: '6px' }}
+                title={tooth.worked ? `Tooth ${tooth.tooth}: ${tooth.pd}mm` : `Tooth ${tooth.tooth}: Not measured`}
               />
             </div>
           ))}
@@ -82,18 +108,22 @@ export function RedesignedPeriodontalChart({ measurements }: RedesignedPeriodont
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-3 justify-center pt-2 border-t border-gray-200">
+      <div className="flex items-center gap-3 justify-center pt-2 border-t border-gray-200 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-          <span className="text-[10px] text-gray-600">1-3mm</span>
+          <div className="w-2.5 h-2.5 rounded-full bg-gray-300"></div>
+          <span className="text-[10px] text-gray-600">Not Measured</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
-          <span className="text-[10px] text-gray-600">4-5mm</span>
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+          <span className="text-[10px] text-gray-600">1-3mm (Healthy)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+          <span className="text-[10px] text-gray-600">4-5mm (Moderate)</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-          <span className="text-[10px] text-gray-600">&gt;5mm</span>
+          <span className="text-[10px] text-gray-600">&gt;5mm (Problem)</span>
         </div>
       </div>
     </div>

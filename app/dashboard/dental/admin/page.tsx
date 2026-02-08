@@ -78,6 +78,8 @@ export default function AdministrativeDashboardPage() {
   });
   const [openModal, setOpenModal] = useState<string | null>(null);
   const [activeMultiChairTab, setActiveMultiChairTab] = useState<'ortho' | 'hygiene' | 'restorative'>('ortho');
+  const [formResponseSearch, setFormResponseSearch] = useState('');
+  const [formResponseFilter, setFormResponseFilter] = useState('date');
   const [productionChartData, setProductionChartData] = useState({
     dailyData: [] as any[],
     weeklyData: [] as any[],
@@ -306,12 +308,21 @@ export default function AdministrativeDashboardPage() {
     status: claim.status === 'APPROVED' ? 'Approved' : 'Pending',
   }));
 
-  // Display form responses
-  const displayFormResponses = formResponses.slice(0, 5).map((response: any) => ({
-    date: new Date(response.submittedAt).toLocaleDateString(),
-    patient: leads.find((l) => l.id === response.leadId)?.contactPerson || 'Unknown',
-    form: response.formName || 'Form',
-  }));
+  // Display form responses with search
+  const displayFormResponses = formResponses
+    .filter((response: any) => {
+      if (!formResponseSearch) return true;
+      const patientName = leads.find((l) => l.id === response.leadId)?.contactPerson || 'Unknown';
+      const formName = response.formName || 'Form';
+      const searchLower = formResponseSearch.toLowerCase();
+      return patientName.toLowerCase().includes(searchLower) || formName.toLowerCase().includes(searchLower);
+    })
+    .slice(0, 5)
+    .map((response: any) => ({
+      date: new Date(response.submittedAt).toLocaleDateString(),
+      patient: leads.find((l) => l.id === response.leadId)?.contactPerson || 'Unknown',
+      form: response.formName || 'Form',
+    }));
 
   if (loading) {
     return (
@@ -425,7 +436,16 @@ export default function AdministrativeDashboardPage() {
                 <span className="text-xs text-gray-700">Outstanding</span>
                 <span className="text-xs font-bold text-gray-900">$12,450</span>
               </div>
-              <Button size="sm" variant="outline" className="w-full">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="w-full"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  toast.info('Payment processing feature - coming soon');
+                  // TODO: Implement payment processing
+                }}
+              >
                 <DollarSign className="w-3 h-3 mr-1" />
                 Process Payment
               </Button>
@@ -495,7 +515,20 @@ export default function AdministrativeDashboardPage() {
                 <span className="text-xs text-gray-700">In Progress</span>
                 <Badge variant="outline" className="text-xs">5</Badge>
               </div>
-              <Button size="sm" variant="outline" className="w-full">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="w-full"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!selectedLeadId) {
+                    toast.error('Please select a patient first');
+                    return;
+                  }
+                  toast.info('Lab order creation - coming soon');
+                  // TODO: Implement lab order creation
+                }}
+              >
                 <Building2 className="w-3 h-3 mr-1" />
                 New Lab Order
               </Button>
@@ -620,7 +653,13 @@ export default function AdministrativeDashboardPage() {
               </CardContent>
             </Card>
           </div>
-          <Button className="w-full">
+          <Button 
+            className="w-full"
+            onClick={async () => {
+              toast.info('Payment processing feature - coming soon');
+              // TODO: Implement payment processing
+            }}
+          >
             <DollarSign className="w-4 h-4 mr-2" />
             Process Payment
           </Button>
@@ -670,7 +709,17 @@ export default function AdministrativeDashboardPage() {
         title="Lab Orders"
       >
         <div className="space-y-4">
-          <Button className="w-full">
+          <Button 
+            className="w-full"
+            onClick={async () => {
+              if (!selectedLeadId) {
+                toast.error('Please select a patient first');
+                return;
+              }
+              toast.info('Lab order creation - coming soon');
+              // TODO: Implement lab order creation
+            }}
+          >
             <Building2 className="w-4 h-4 mr-2" />
             Create New Lab Order
           </Button>

@@ -9,9 +9,12 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useSession } from 'next-auth/react';
-import { Workflow, Play, Stethoscope, ClipboardList } from 'lucide-react';
+import { Workflow, Play, Stethoscope, ClipboardList, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { WorkflowBuilder } from '@/components/workflows/workflow-builder';
+import { Industry } from '@prisma/client';
 
 interface WorkflowTemplate {
   id: string;
@@ -27,6 +30,9 @@ export function DentalWorkflowTemplatesBrowser() {
   const [templates, setTemplates] = useState<WorkflowTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'clinical' | 'admin'>('all');
+  const [selectedTemplate, setSelectedTemplate] = useState<WorkflowTemplate | null>(null);
+  const [createdWorkflowId, setCreatedWorkflowId] = useState<string | undefined>(undefined);
+  const [showWorkflowBuilder, setShowWorkflowBuilder] = useState(false);
 
   useEffect(() => {
     fetchTemplates();
@@ -48,9 +54,58 @@ export function DentalWorkflowTemplatesBrowser() {
   };
 
   const handleUseTemplate = async (template: WorkflowTemplate) => {
-    toast.info(`Creating workflow from template: ${template.name}`);
-    // Navigate to workflow builder with template pre-filled
-    // This would integrate with the existing workflow builder
+    try {
+      // Convert dental template to workflow format
+      const tasks = template.actions.map((action, index) => ({
+        name: action.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        description: `Action: ${action.type}`,
+        taskType: action.type,
+        delayValue: action.delayMinutes || 0,
+        delayUnit: 'MINUTES' as const,
+        isHITL: false,
+        isOptional: false,
+        displayOrder: index + 1,
+        position: { row: Math.floor(index / 3), col: index % 3 },
+        actionConfig: { actions: [] },
+      }));
+
+      // Create workflow from template via API
+      const response = await fetch('/api/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: template.name,
+          description: template.description,
+          type: 'CUSTOM',
+          industry: 'DENTAL',
+          tasks,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const workflowId = data.workflow?.id;
+        
+        if (workflowId) {
+          setSelectedTemplate(template);
+          setCreatedWorkflowId(workflowId);
+          
+          // Small delay to ensure workflow is available in database
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          setShowWorkflowBuilder(true);
+          toast.success(`Workflow created from template: ${template.name}`);
+        } else {
+          throw new Error('Workflow ID not returned');
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create workflow');
+      }
+    } catch (error: any) {
+      console.error('Error creating workflow from template:', error);
+      toast.error(`Failed to create workflow: ${error.message}`);
+    }
   };
 
   const filteredTemplates = selectedCategory === 'all' 
@@ -139,6 +194,47 @@ export function DentalWorkflowTemplatesBrowser() {
           No templates available for this category
         </div>
       )}
+
+      {/* Workflow Builder Dialog */}
+      <Dialog open={showWorkflowBuilder} onOpenChange={(open) => {
+        setShowWorkflowBuilder(open);
+        if (!open) {
+          // Reset when dialog closes
+          setCreatedWorkflowId(undefined);
+          setSelectedTemplate(null);
+          // Refresh templates when dialog closes
+          fetchTemplates();
+        }
+      }}>
+        <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-xl font-semibold">
+                  {selectedTemplate ? `Workflow Builder: ${selectedTemplate.name}` : 'Workflow Builder'}
+                </DialogTitle>
+                <DialogDescription className="mt-1">
+                  {selectedTemplate?.description || 'Build and customize your workflow'}
+                </DialogDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowWorkflowBuilder(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden p-6">
+            <WorkflowBuilder
+              industry="DENTAL"
+              initialWorkflowId={createdWorkflowId}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

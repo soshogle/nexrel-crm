@@ -5,6 +5,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,6 +23,9 @@ interface RedesignedFormResponsesProps {
 }
 
 export function RedesignedFormResponses({ responses }: RedesignedFormResponsesProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('date');
+  
   // Mock data matching image
   const defaultResponses: FormResponse[] = [
     {
@@ -47,14 +51,30 @@ export function RedesignedFormResponses({ responses }: RedesignedFormResponsesPr
     },
   ];
 
-  const displayResponses = responses && responses.length > 0 ? responses : defaultResponses;
+  const allResponses = responses && responses.length > 0 ? responses : defaultResponses;
+  
+  // Filter responses based on search
+  const displayResponses = allResponses.filter((response) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      response.patientName.toLowerCase().includes(query) ||
+      response.formTitle.toLowerCase().includes(query) ||
+      response.date.includes(query)
+    );
+  });
 
   return (
     <div className="space-y-3">
       {/* Search and Filters */}
       <div className="flex items-center gap-2">
-        <Input placeholder="Search..." className="h-7 text-xs border border-gray-300 flex-1" />
-        <Select defaultValue="date">
+        <Input 
+          placeholder="Search..." 
+          className="h-7 text-xs border border-gray-300 flex-1" 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="h-7 text-xs w-24 border border-gray-300">
             <SelectValue />
           </SelectTrigger>
