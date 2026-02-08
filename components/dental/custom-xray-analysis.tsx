@@ -12,6 +12,9 @@ interface XRayAnalysisProps {
 }
 
 export function CustomXRayAnalysis({ xrayData }: XRayAnalysisProps) {
+  // Show preview even if no X-ray data - use default mock visualization
+  const hasData = !!xrayData;
+  
   return (
     <div className="relative">
       {/* 3D Tooth Visualization */}
