@@ -24,12 +24,14 @@ export default async function DashboardLayout({
   }
 
   // Check account approval status first (for all users except super admins and during impersonation)
+  let user: { accountStatus: string | null; industry: string | null } | null = null
+  
   if (
     session.user?.id && 
     session.user?.role !== 'SUPER_ADMIN' && 
     !session.user?.isImpersonating
   ) {
-    const user = await prisma.user.findUnique({
+    user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { accountStatus: true, industry: true },
     });
