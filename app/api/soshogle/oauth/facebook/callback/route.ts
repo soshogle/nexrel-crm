@@ -32,10 +32,12 @@ export async function GET(request: NextRequest) {
     const tokenUrl = 'https://graph.facebook.com/v18.0/oauth/access_token';
     const redirectUri = `${baseUrl}/api/soshogle/oauth/facebook/callback`;
 
-    const clientId = process.env.FACEBOOK_CLIENT_ID;
-    const clientSecret = process.env.FACEBOOK_CLIENT_SECRET;
+    // Support both FACEBOOK_CLIENT_ID and FACEBOOK_APP_ID for compatibility
+    const clientId = process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID;
+    const clientSecret = process.env.FACEBOOK_CLIENT_SECRET || process.env.FACEBOOK_APP_SECRET;
 
     if (!clientId || !clientSecret) {
+      console.error('Facebook OAuth credentials missing. Required env vars: FACEBOOK_CLIENT_ID/FACEBOOK_APP_ID and FACEBOOK_CLIENT_SECRET/FACEBOOK_APP_SECRET');
       return NextResponse.redirect(
         `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=oauth_not_configured`
       );
