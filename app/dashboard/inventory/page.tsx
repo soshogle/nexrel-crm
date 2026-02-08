@@ -4,7 +4,12 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
+import { isMenuItemVisible } from '@/lib/industry-menu-config';
+import type { Industry } from '@/lib/industry-menu-config';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +27,8 @@ import {
 import { toast } from 'sonner';
 
 export default function InventoryPage() {
+  const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
   const [activeTab, setActiveTab] = useState('items');
   const [stats, setStats] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
@@ -30,9 +37,42 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Check if user's industry has access to inventory (restaurant-specific inventory page)
+  const userIndustry = (session?.user?.industry as Industry) || null;
+  const hasInventoryAccess = isMenuItemVisible('inventory', userIndustry);
+
+  // Redirect real estate users away from inventory
   useEffect(() => {
-    loadInventoryData();
-  }, []);
+    if (sessionStatus === 'authenticated' && !hasInventoryAccess) {
+      router.push('/dashboard');
+    }
+  }, [sessionStatus, hasInventoryAccess, router]);
+
+  // Show loading while checking access
+  if (sessionStatus === 'loading' || (sessionStatus === 'authenticated' && !hasInventoryAccess)) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Guard against unauthenticated state
+  if (sessionStatus === 'unauthenticated' || !session) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <p className="text-muted-foreground">Please sign in to access inventory</p>
+        </div>
+      </div>
+    );
+  }
+
+  useEffect(() => {
+    if (hasInventoryAccess) {
+      loadInventoryData();
+    }
+  }, [hasInventoryAccess]);
 
   const loadInventoryData = async () => {
     try {
