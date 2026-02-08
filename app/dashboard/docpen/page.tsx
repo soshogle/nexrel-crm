@@ -241,17 +241,6 @@ export default function DocpenPage() {
     );
   }
 
-  // Check if user's industry has access to Docpen
-  const userIndustry = (session?.user?.industry as Industry) || null;
-  const hasDocpenAccess = isMenuItemVisible('docpen', userIndustry);
-
-  // Redirect non-medical industries away from Docpen
-  useEffect(() => {
-    if (hasDocpenAccess === false) {
-      router.push('/dashboard');
-    }
-  }, [hasDocpenAccess, router]);
-
   // Show loading while redirecting non-medical industries
   if (!hasDocpenAccess) {
     return (
