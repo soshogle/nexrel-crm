@@ -36,14 +36,37 @@ export function DentalWorkflowTemplatesBrowser() {
 
   useEffect(() => {
     fetchTemplates();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]);
 
   const fetchTemplates = async () => {
     try {
-      const response = await fetch('/api/dental/workflows/templates');
+      // Determine role based on current context - if admin category is selected or default to all
+      const roleParam = selectedCategory === 'admin' ? 'admin_assistant' : selectedCategory === 'clinical' ? 'practitioner' : null;
+      const url = roleParam ? `/api/dental/workflows/templates?role=${roleParam}` : '/api/dental/workflows/templates';
+      
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setTemplates(data.templates || []);
+        // If no role specified, get all templates
+        if (!roleParam && data.templates) {
+          // Fetch both admin and clinical templates
+          const [adminRes, clinicalRes] = await Promise.all([
+            fetch('/api/dental/workflows/templates?role=admin_assistant'),
+            fetch('/api/dental/workflows/templates?role=practitioner'),
+          ]);
+          
+          const adminData = adminRes.ok ? await adminRes.json() : { templates: [] };
+          const clinicalData = clinicalRes.ok ? await clinicalRes.json() : { templates: [] };
+          
+          const allTemplates = [
+            ...(adminData.templates || []).map((t: any) => ({ ...t, category: 'admin' })),
+            ...(clinicalData.templates || []).map((t: any) => ({ ...t, category: 'clinical' })),
+          ];
+          setTemplates(allTemplates);
+        } else {
+          setTemplates(data.templates || []);
+        }
       }
     } catch (error) {
       console.error('Error fetching workflow templates:', error);
