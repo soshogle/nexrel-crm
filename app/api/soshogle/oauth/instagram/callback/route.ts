@@ -28,57 +28,92 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Exchange code for access token
-    const tokenUrl = 'https://api.instagram.com/oauth/access_token';
+    // Instagram uses Facebook's OAuth (Instagram Business accounts are linked to Facebook Pages)
+    const facebookAppId = process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_CLIENT_ID;
+    const facebookAppSecret = process.env.FACEBOOK_APP_SECRET || process.env.FACEBOOK_CLIENT_SECRET;
     const redirectUri = `${baseUrl}/api/soshogle/oauth/instagram/callback`;
 
-    const clientId = process.env.INSTAGRAM_CLIENT_ID;
-    const clientSecret = process.env.INSTAGRAM_CLIENT_SECRET;
-
-    if (!clientId || !clientSecret) {
+    if (!facebookAppId || !facebookAppSecret) {
       return NextResponse.redirect(
         `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=oauth_not_configured`
       );
     }
 
-    const formData = new URLSearchParams();
-    formData.append('client_id', clientId);
-    formData.append('client_secret', clientSecret);
-    formData.append('grant_type', 'authorization_code');
-    formData.append('redirect_uri', redirectUri);
-    formData.append('code', code);
+    // Exchange code for access token using Facebook OAuth
+    const tokenUrl = new URL('https://graph.facebook.com/v18.0/oauth/access_token');
+    tokenUrl.searchParams.set('client_id', facebookAppId);
+    tokenUrl.searchParams.set('client_secret', facebookAppSecret);
+    tokenUrl.searchParams.set('redirect_uri', redirectUri);
+    tokenUrl.searchParams.set('code', code);
 
-    const tokenResponse = await fetch(tokenUrl, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
-
+    const tokenResponse = await fetch(tokenUrl.toString());
     const tokenData = await tokenResponse.json();
 
     if (!tokenData.access_token) {
-      console.error('Instagram OAuth error:', tokenData);
+      console.error('Facebook OAuth error:', tokenData);
       return NextResponse.redirect(
         `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=token_exchange_failed`
       );
     }
 
-    // Get user info
+    // Get user's Facebook Pages (Instagram Business accounts are linked to Pages)
+    const pagesResponse = await fetch(
+      `https://graph.facebook.com/v18.0/me/accounts?access_token=${tokenData.access_token}`
+    );
+
+    if (!pagesResponse.ok) {
+      const errorData = await pagesResponse.json().catch(() => ({}));
+      console.error('Failed to fetch pages:', errorData);
+      return NextResponse.redirect(
+        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=no_pages_found`
+      );
+    }
+
+    const pagesData = await pagesResponse.json();
+    const pages = pagesData.data || [];
+
+    if (pages.length === 0) {
+      return NextResponse.redirect(
+        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=no_pages_found`
+      );
+    }
+
+    // Get Instagram Business Account for the first page
+    const page = pages[0];
+    const igResponse = await fetch(
+      `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+    );
+
+    if (!igResponse.ok) {
+      return NextResponse.redirect(
+        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=no_instagram_account`
+      );
+    }
+
+    const igData = await igResponse.json();
+
+    if (!igData.instagram_business_account) {
+      return NextResponse.redirect(
+        `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=no_instagram_account`
+      );
+    }
+
+    const igAccountId = igData.instagram_business_account.id;
+
+    // Get Instagram account info
     const userResponse = await fetch(
-      `https://graph.instagram.com/me?fields=id,username&access_token=${tokenData.access_token}`
+      `https://graph.instagram.com/${igAccountId}?fields=id,username&access_token=${page.access_token}`
     );
     const userData = await userResponse.json();
 
     // Store connection in database
     // Check if connection already exists
     const existingConnection = await prisma.channelConnection.findFirst({
-      where: {
-        userId: state,
-        providerType: 'INSTAGRAM',
-        channelType: 'INSTAGRAM',
-      },
+        where: {
+          userId: state,
+          channelType: 'INSTAGRAM',
+          channelIdentifier: igAccountId,
+        },
     });
 
     if (existingConnection) {
@@ -86,16 +121,23 @@ export async function GET(request: NextRequest) {
       await prisma.channelConnection.update({
         where: { id: existingConnection.id },
         data: {
-          accessToken: tokenData.access_token,
-          refreshToken: tokenData.refresh_token || null,
+          accessToken: page.access_token, // Use page token (long-lived)
+          refreshToken: tokenData.access_token, // User token for refresh
           tokenExpiresAt: tokenData.expires_in
             ? new Date(Date.now() + tokenData.expires_in * 1000)
-            : null,
+            : new Date(Date.now() + 5184000 * 1000), // 60 days default
           displayName: userData.username || 'Instagram Account',
-          channelIdentifier: userData.id || null,
+          channelIdentifier: igAccountId,
           status: 'CONNECTED',
           isActive: true,
           lastSyncedAt: new Date(),
+          providerAccountId: page.id,
+          providerData: {
+            pageId: page.id,
+            pageName: page.name,
+            igAccountId,
+            username: userData.username,
+          },
         },
       });
     } else {
@@ -104,17 +146,24 @@ export async function GET(request: NextRequest) {
         data: {
           userId: state,
           channelType: 'INSTAGRAM',
-          providerType: 'INSTAGRAM',
-          accessToken: tokenData.access_token,
-          refreshToken: tokenData.refresh_token || null,
+          providerType: 'FACEBOOK',
+          accessToken: page.access_token, // Use page token (long-lived)
+          refreshToken: tokenData.access_token, // User token for refresh
           tokenExpiresAt: tokenData.expires_in
             ? new Date(Date.now() + tokenData.expires_in * 1000)
-            : null,
+            : new Date(Date.now() + 5184000 * 1000), // 60 days default
           displayName: userData.username || 'Instagram Account',
-          channelIdentifier: userData.id || null,
+          channelIdentifier: igAccountId,
           status: 'CONNECTED',
           isActive: true,
           lastSyncedAt: new Date(),
+          providerAccountId: page.id,
+          providerData: {
+            pageId: page.id,
+            pageName: page.name,
+            igAccountId,
+            username: userData.username,
+          },
         },
       });
     }

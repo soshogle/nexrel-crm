@@ -16,22 +16,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const instagramAppId = process.env.INSTAGRAM_APP_ID;
-    const instagramAppSecret = process.env.INSTAGRAM_APP_SECRET;
+    // Instagram uses Facebook's OAuth (Instagram Business accounts are linked to Facebook Pages)
+    const facebookAppId = process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_CLIENT_ID;
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/instagram/oauth/callback`;
 
-    if (!instagramAppId || !instagramAppSecret) {
+    if (!facebookAppId) {
       return NextResponse.json(
-        { error: 'Instagram credentials not configured' },
+        { error: 'Facebook OAuth not configured. Please set FACEBOOK_APP_ID in environment variables.' },
         { status: 500 }
       );
     }
 
-    // Instagram OAuth authorization URL
-    const authUrl = new URL('https://api.instagram.com/oauth/authorize');
-    authUrl.searchParams.set('client_id', instagramAppId);
+    // Use Facebook OAuth with Instagram scopes
+    const authUrl = new URL('https://www.facebook.com/v18.0/dialog/oauth');
+    authUrl.searchParams.set('client_id', facebookAppId);
     authUrl.searchParams.set('redirect_uri', redirectUri);
-    authUrl.searchParams.set('scope', 'instagram_basic,instagram_manage_messages');
+    authUrl.searchParams.set('scope', 'instagram_basic,instagram_manage_messages,pages_show_list,pages_read_engagement');
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('state', session.user.id); // Pass user ID for validation
 

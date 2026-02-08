@@ -16,27 +16,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const clientId = process.env.INSTAGRAM_CLIENT_ID;
-    if (!clientId) {
+    // Instagram uses Facebook's OAuth (Instagram Business accounts are linked to Facebook Pages)
+    const facebookAppId = process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_CLIENT_ID;
+    if (!facebookAppId) {
       return NextResponse.json(
-        { error: 'Instagram OAuth not configured' },
+        { error: 'Facebook OAuth not configured. Please set FACEBOOK_APP_ID in environment variables.' },
         { status: 500 }
       );
     }
 
     const redirectUri = `${process.env.NEXTAUTH_URL || 'https://nexrel.soshogleagents.com'}/api/soshogle/instagram/oauth/callback`;
     
-    // Instagram OAuth scopes for messaging
+    // Instagram OAuth scopes for messaging (via Facebook)
     const scopes = [
       'instagram_basic',
       'instagram_manage_messages',
       'instagram_manage_comments',
-      'pages_manage_metadata',
-      'pages_read_engagement'
+      'pages_show_list',
+      'pages_read_engagement',
+      'pages_manage_metadata'
     ].join(',');
 
-    const authUrl = new URL('https://api.instagram.com/oauth/authorize');
-    authUrl.searchParams.set('client_id', clientId);
+    // Use Facebook OAuth endpoint with Instagram scopes
+    const authUrl = new URL('https://www.facebook.com/v18.0/dialog/oauth');
+    authUrl.searchParams.set('client_id', facebookAppId);
     authUrl.searchParams.set('redirect_uri', redirectUri);
     authUrl.searchParams.set('scope', scopes);
     authUrl.searchParams.set('response_type', 'code');

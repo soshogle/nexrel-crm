@@ -19,14 +19,30 @@ export async function GET(req: NextRequest) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  const verifyToken = process.env.INSTAGRAM_VERIFY_TOKEN || 'soshogle_verify_token';
+  // Support both INSTAGRAM_VERIFY_TOKEN and FACEBOOK_VERIFY_TOKEN (fallback)
+  const verifyToken = process.env.INSTAGRAM_VERIFY_TOKEN || process.env.FACEBOOK_VERIFY_TOKEN || 'soshogle_verify_token';
+
+  console.log('Instagram webhook verification:', {
+    mode,
+    tokenMatch: token === verifyToken,
+    hasInstagramToken: !!process.env.INSTAGRAM_VERIFY_TOKEN,
+    hasFacebookToken: !!process.env.FACEBOOK_VERIFY_TOKEN,
+  });
 
   if (mode === 'subscribe' && token === verifyToken) {
-    console.log('Instagram webhook verified');
+    console.log('✅ Instagram webhook verified');
     return new NextResponse(challenge, { status: 200 });
   }
 
-  return NextResponse.json({ error: 'Invalid verification token' }, { status: 403 });
+  console.error('❌ Instagram webhook verification failed', {
+    receivedToken: token,
+    expectedToken: verifyToken,
+  });
+
+  return NextResponse.json({ 
+    error: 'Invalid verification token',
+    message: 'Please check that INSTAGRAM_VERIFY_TOKEN or FACEBOOK_VERIFY_TOKEN matches the verify token in Facebook settings.'
+  }, { status: 403 });
 }
 
 export async function POST(req: NextRequest) {
