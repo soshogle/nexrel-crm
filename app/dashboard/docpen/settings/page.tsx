@@ -1,17 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   Bot,
   MessageSquare,
   BookOpen,
   ArrowLeft,
   Brain,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import dynamic from 'next/dynamic';
+import { isMenuItemVisible } from '@/lib/industry-menu-config';
+import type { Industry } from '@/lib/industry-menu-config';
 
 // Lazy load components to prevent them from loading until their tab is active
 // This prevents translation hook errors if IntlProvider isn't ready
@@ -32,7 +36,39 @@ const DocpenKnowledgeBaseTraining = dynamic(() => import('@/components/docpen/kn
 
 export default function DocpenSettingsPage() {
   const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
   const [activeTab, setActiveTab] = useState('agents');
+
+  // Check if user's industry has access to Docpen
+  const userIndustry = (session?.user?.industry as Industry) || null;
+  const hasDocpenAccess = isMenuItemVisible('docpen', userIndustry);
+
+  // Redirect non-medical industries away from Docpen settings
+  useEffect(() => {
+    if (sessionStatus === 'authenticated' && !hasDocpenAccess) {
+      router.push('/dashboard');
+    }
+  }, [sessionStatus, hasDocpenAccess, router]);
+
+  // Show loading while checking access
+  if (sessionStatus === 'loading' || (sessionStatus === 'authenticated' && !hasDocpenAccess)) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Guard against unauthenticated state
+  if (sessionStatus === 'unauthenticated' || !session) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <p className="text-muted-foreground">Please sign in to access Docpen settings</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6 space-y-6">

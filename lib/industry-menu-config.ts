@@ -92,7 +92,7 @@ const CORE_MENU_ITEMS: MenuItemId[] = [
   'dashboard',
   'ai-brain', // AI Brain insights - available to ALL industries
   'ai-employees', // AI Employees - automated assistants available to ALL industries
-  'docpen', // AI Docpen - Ambient medical scribe available to ALL industries (especially healthcare)
+  // 'docpen' removed - only available to medical industries (MEDICAL, DENTIST, MEDICAL_SPA, OPTOMETRIST, HEALTH_CLINIC, HOSPITAL)
   'onboarding',
   'leads',
   'widgets', // Embeddable lead capture widget - available to ALL industries
@@ -160,6 +160,7 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
 
   MEDICAL: [
     ...CORE_MENU_ITEMS,
+    'docpen', // AI Docpen - Ambient medical scribe for medical practices
     'general-inventory', // For medical supplies
     'payments',
     'credit-scoring', // For payment plans
@@ -169,6 +170,7 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
 
   DENTIST: [
     ...CORE_MENU_ITEMS,
+    'docpen', // AI Docpen - Ambient medical scribe for dental practices
     'dental-management', // Dental practice management (legacy - redirects to clinical)
     'dental-clinical', // Clinical Dashboard (practitioner view)
     'dental-admin', // Administrative Dashboard (admin assistant view)
@@ -181,6 +183,7 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
 
   MEDICAL_SPA: [
     ...CORE_MENU_ITEMS,
+    'docpen', // AI Docpen - Ambient medical scribe for medical spas
     'general-inventory', // For spa products and equipment
     'payments',
     'ecommerce', // For products
@@ -189,6 +192,7 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
 
   OPTOMETRIST: [
     ...CORE_MENU_ITEMS,
+    'docpen', // AI Docpen - Ambient medical scribe for optometry practices
     'general-inventory', // For frames, lenses, equipment
     'payments',
     'ecommerce', // For glasses/lenses
@@ -198,6 +202,7 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
 
   HEALTH_CLINIC: [
     ...CORE_MENU_ITEMS,
+    'docpen', // AI Docpen - Ambient medical scribe for health clinics
     'general-inventory', // For medical supplies
     'payments',
     'credit-scoring',
@@ -223,6 +228,7 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
 
   HOSPITAL: [
     ...CORE_MENU_ITEMS,
+    'docpen', // AI Docpen - Ambient medical scribe for hospitals
     'general-inventory', // For medical equipment and supplies
     'payments',
     'credit-scoring',
