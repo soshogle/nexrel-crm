@@ -32,6 +32,8 @@ import { VoiceAssistant } from '@/components/docpen/voice-assistant';
 import { ReviewSignDialog } from '@/components/docpen/review-sign-dialog';
 import { DocpenErrorBoundary } from '@/components/docpen/docpen-error-boundary';
 import type { DocpenProfessionType } from '@/lib/docpen/prompts';
+import { isMenuItemVisible } from '@/lib/industry-menu-config';
+import type { Industry } from '@/lib/industry-menu-config';
 
 interface Session {
   id: string;
@@ -93,6 +95,28 @@ export default function DocpenPage() {
     signedComplete: 0,
   });
 
+  // Check if user's industry has access to Docpen
+  const userIndustry = (session?.user?.industry as Industry) || null;
+  const hasDocpenAccess = isMenuItemVisible('docpen', userIndustry);
+
+  // Redirect non-medical industries away from Docpen
+  useEffect(() => {
+    if (sessionStatus === 'loading') {
+      return; // Still loading session
+    }
+    
+    if (sessionStatus === 'unauthenticated') {
+      // Session check will redirect via layout, but guard here too
+      return;
+    }
+
+    // If user is authenticated but doesn't have access to Docpen, redirect to dashboard
+    if (sessionStatus === 'authenticated' && !hasDocpenAccess) {
+      router.push('/dashboard');
+      return;
+    }
+  }, [sessionStatus, hasDocpenAccess, router]);
+
   // Wait for session to be ready before making API calls
   useEffect(() => {
     // Don't make API calls until session is authenticated
@@ -102,6 +126,11 @@ export default function DocpenPage() {
     
     if (sessionStatus === 'unauthenticated') {
       // Session check will redirect via layout, but guard here too
+      return;
+    }
+
+    // Don't load data if user doesn't have access
+    if (!hasDocpenAccess) {
       return;
     }
 
@@ -208,6 +237,26 @@ export default function DocpenPage() {
         <div className="text-center">
           <p className="text-muted-foreground">Please sign in to access Docpen</p>
         </div>
+      </div>
+    );
+  }
+
+  // Check if user's industry has access to Docpen
+  const userIndustry = (session?.user?.industry as Industry) || null;
+  const hasDocpenAccess = isMenuItemVisible('docpen', userIndustry);
+
+  // Redirect non-medical industries away from Docpen
+  useEffect(() => {
+    if (hasDocpenAccess === false) {
+      router.push('/dashboard');
+    }
+  }, [hasDocpenAccess, router]);
+
+  // Show loading while redirecting non-medical industries
+  if (!hasDocpenAccess) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
