@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { verifyClinicPermission } from '@/lib/dental/clinic-permissions';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -70,18 +71,16 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    // Verify user has admin/owner access
-    const userClinic = await prisma.userClinic.findFirst({
-      where: {
-        userId: session.user.id,
-        clinicId: id,
-        role: { in: ['OWNER', 'ADMIN'] },
-      },
-    });
+    // Verify user has permission to edit clinic settings
+    const canEdit = await verifyClinicPermission(
+      session.user.id,
+      id,
+      'canManageSettings'
+    );
 
-    if (!userClinic) {
+    if (!canEdit) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
+        { error: 'Unauthorized - Admin or Owner access required' },
         { status: 403 }
       );
     }
