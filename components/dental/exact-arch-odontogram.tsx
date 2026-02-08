@@ -17,14 +17,10 @@ interface ToothInfo {
   notes?: string;
 }
 
-interface ExactArchOdontogramProps {
-  toothData?: Record<string, ToothInfo>;
-}
-
 type ViewMode = 'treatments' | 'conditions' | 'completed' | 'all';
 
 interface ExactArchOdontogramProps {
-  toothData?: Record<string, any>;
+  toothData?: Record<string, ToothInfo | any>;
   initialViewMode?: ViewMode;
 }
 
