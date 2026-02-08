@@ -13,6 +13,7 @@ import { PeriodontalChart } from '@/components/dental/periodontal-chart';
 import { CustomOdontogramDisplay } from '@/components/dental/custom-odontogram-display';
 import { EnhancedOdontogramDisplay } from '@/components/dental/enhanced-odontogram-display';
 import { RedesignedArchOdontogram } from '@/components/dental/redesigned-arch-odontogram';
+import { ExactArchOdontogram } from '@/components/dental/exact-arch-odontogram';
 import { RedesignedProceduresLog } from '@/components/dental/redesigned-procedures-log';
 import { RedesignedTreatmentPlan } from '@/components/dental/redesigned-treatment-plan';
 import { RedesignedPeriodontalChart } from '@/components/dental/redesigned-periodontal-chart';
@@ -614,7 +615,7 @@ export default function DentalTestPage() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <RedesignedArchOdontogram toothData={odontogramData} />
+              <ExactArchOdontogram toothData={odontogramData} />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}

@@ -12,6 +12,7 @@ import { PeriodontalBarChart } from '@/components/dental/periodontal-bar-chart';
 import { EnhancedOdontogramDisplay } from '@/components/dental/enhanced-odontogram-display';
 import { CustomXRayAnalysis } from '@/components/dental/custom-xray-analysis';
 import { RedesignedArchOdontogram } from '@/components/dental/redesigned-arch-odontogram';
+import { ExactArchOdontogram } from '@/components/dental/exact-arch-odontogram';
 import { RedesignedProceduresLog } from '@/components/dental/redesigned-procedures-log';
 import { RedesignedTreatmentPlan } from '@/components/dental/redesigned-treatment-plan';
 import { RedesignedPeriodontalChart } from '@/components/dental/redesigned-periodontal-chart';
@@ -269,20 +270,10 @@ export default function ClinicalDashboardPage() {
                 </Button>
               </div>
             </div>
-            <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-              <Select defaultValue="treatment">
-                <SelectTrigger className="h-7 text-xs w-full border border-gray-300">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="treatment">Hover affected by: Treatment</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <RedesignedArchOdontogram toothData={odontogramData} />
+              <ExactArchOdontogram toothData={odontogramData} />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}
@@ -462,7 +453,7 @@ export default function ClinicalDashboardPage() {
                 </Button>
               </div>
             </div>
-            <RedesignedArchOdontogram toothData={odontogramData} />
+            <ExactArchOdontogram toothData={odontogramData} />
           </div>
         ) : (
           <div className="text-center py-16 text-gray-400">Select a patient</div>
