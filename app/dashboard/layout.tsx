@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { DashboardWrapper } from '@/components/dashboard/dashboard-wrapper'
+import { ClinicProvider } from '@/lib/dental/clinic-context'
 import { prisma } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -51,9 +52,19 @@ export default async function DashboardLayout({
     }
   }
 
-  return (
+  // Check if user is in dental industry - if so, wrap with ClinicProvider
+  const isDentalUser = user?.industry === 'DENTIST'
+  
+  const content = (
     <DashboardWrapper>
       {children}
     </DashboardWrapper>
   )
+
+  // Wrap with ClinicProvider for dental users
+  if (isDentalUser) {
+    return <ClinicProvider>{content}</ClinicProvider>
+  }
+
+  return content
 }
