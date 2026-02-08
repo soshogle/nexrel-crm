@@ -1,11 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
   "env": {
     "ORTHANC_BASE_URL": "@orthanc_base_url",
     "ORTHANC_USERNAME": "@orthanc_username",
