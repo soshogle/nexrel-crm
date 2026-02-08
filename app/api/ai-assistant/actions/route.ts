@@ -1178,9 +1178,28 @@ async function createWorkflow(userId: string, params: any) {
       }),
     ]);
 
+    // Get user's industry and role for dental context
+    const userRecord = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { industry: true, role: true },
+    });
+
+    const isDental = userRecord?.industry === 'DENTIST';
+    const userRole = userRecord?.role || 'USER';
+
+    // Import dental role helper if dental context
+    let dentalRole = 'practitioner';
+    if (isDental) {
+      const { getUserDentalRole } = await import('@/lib/dental/role-types');
+      dentalRole = getUserDentalRole(userRole, userRecord);
+    }
+
     const context = {
       existingPipelines: pipelines,
       existingLeadStatuses: leadStatuses.map(l => l.status).filter(Boolean) as string[],
+      industry: userRecord?.industry,
+      isDental,
+      role: isDental ? dentalRole : undefined,
     };
 
     // Get user's language preference
@@ -1203,6 +1222,11 @@ async function createWorkflow(userId: string, params: any) {
         triggerType: generatedWorkflow.triggerType as any,
         triggerConfig: generatedWorkflow.triggerConfig,
         status: 'ACTIVE',
+        metadata: isDental ? {
+          role: dentalRole,
+          industry: 'DENTIST',
+          targetRole: isDental ? (dentalRole === 'practitioner' ? 'practitioner' : dentalRole === 'admin_assistant' ? 'admin_assistant' : 'both') : undefined,
+        } : undefined,
         actions: {
           create: generatedWorkflow.actions.map((action) => ({
             type: action.type as any,

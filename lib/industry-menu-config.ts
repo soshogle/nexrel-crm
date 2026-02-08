@@ -83,7 +83,9 @@ export type MenuItemId =
   | 'seller-net-sheet'
   | 'real-estate-analytics'
   // Dental/Orthodontist specific
-  | 'dental-management';
+  | 'dental-management'
+  | 'dental-clinical'
+  | 'dental-admin';
 
 // Core menu items visible to ALL industries
 const CORE_MENU_ITEMS: MenuItemId[] = [
@@ -167,7 +169,9 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
 
   DENTIST: [
     ...CORE_MENU_ITEMS,
-    'dental-management', // Dental practice management (odontogram, periodontal chart, treatment plans, etc.)
+    'dental-management', // Dental practice management (legacy - redirects to clinical)
+    'dental-clinical', // Clinical Dashboard (practitioner view)
+    'dental-admin', // Administrative Dashboard (admin assistant view)
     'general-inventory', // For dental supplies
     'payments',
     'credit-scoring',
@@ -389,5 +393,7 @@ export function getAllFeatures(): {
 
     // Dental/Orthodontist Features
     { id: 'dental-management', label: 'Dental Management', category: 'Dental/Orthodontist' },
+    { id: 'dental-clinical', label: 'Clinical Dashboard', category: 'Dental/Orthodontist' },
+    { id: 'dental-admin', label: 'Administrative Dashboard', category: 'Dental/Orthodontist' },
   ];
 }

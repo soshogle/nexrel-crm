@@ -48,6 +48,7 @@ import {
   Brain,
   Bot,
   Stethoscope,
+  ClipboardList,
 } from 'lucide-react';
 
 // Parent Portal items - what parents see when they log in
@@ -313,6 +314,18 @@ const merchantItems = [
     href: '/dashboard/dental-test',
     icon: Stethoscope,
   },
+  {
+    id: 'dental-clinical' as MenuItemId,
+    title: 'Clinical Dashboard',
+    href: '/dashboard/dental/clinical',
+    icon: Stethoscope,
+  },
+  {
+    id: 'dental-admin' as MenuItemId,
+    title: 'Administrative Dashboard',
+    href: '/dashboard/dental/admin',
+    icon: ClipboardList,
+  },
 ];
 
 // Admin items - Secure section requiring re-authentication
@@ -465,6 +478,8 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       'seller-net-sheet': 'sellerNetSheet',
       'real-estate-analytics': 'realEstateAnalytics',
       'dental-management': 'dentalManagement',
+      'dental-clinical': 'clinicalDashboard',
+      'dental-admin': 'administrativeDashboard',
       'voice-agents': 'voiceAgents',
       'voice-agent-preview': 'testVoiceAgent',
       'voice-ai-notifications': 'callNotifications',

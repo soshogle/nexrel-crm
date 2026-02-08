@@ -9,6 +9,7 @@
 import { prisma } from './db';
 import { workflowJobQueue } from './workflow-job-queue';
 import { conditionEvaluator, type ConditionalBranch } from './workflow-conditions';
+import { executeDentalAction } from './dental/workflow-actions';
 import { multiChannelOrchestrator } from './workflow-multi-channel';
 import type {
   Workflow,
@@ -276,6 +277,40 @@ export class WorkflowEngine {
       
       case 'MOVE_DEAL_STAGE':
         return this.moveDealStage(context, config);
+      
+      // Dental-specific actions (Clinical)
+      case 'CREATE_TREATMENT_PLAN':
+      case 'UPDATE_ODONTOGRAM':
+      case 'SCHEDULE_FOLLOWUP_APPOINTMENT':
+      case 'SEND_TREATMENT_UPDATE_TO_PATIENT':
+      case 'CREATE_CLINICAL_NOTE':
+      case 'REQUEST_XRAY_REVIEW':
+      case 'GENERATE_TREATMENT_REPORT':
+      case 'UPDATE_TREATMENT_PLAN':
+      case 'LOG_PROCEDURE':
+      // Dental-specific actions (Admin)
+      case 'SEND_APPOINTMENT_REMINDER':
+      case 'PROCESS_PAYMENT':
+      case 'SUBMIT_INSURANCE_CLAIM':
+      case 'GENERATE_INVOICE':
+      case 'UPDATE_PATIENT_INFO':
+      case 'CREATE_LAB_ORDER':
+      case 'GENERATE_PRODUCTION_REPORT':
+      case 'NOTIFY_TEAM_MEMBER':
+      case 'RESCHEDULE_APPOINTMENT':
+      case 'SEND_BILLING_REMINDER':
+      case 'UPDATE_APPOINTMENT_STATUS':
+      // Legacy dental actions (for backward compatibility)
+      case 'DENTAL_SEND_APPOINTMENT_REMINDER':
+      case 'DENTAL_SEND_TREATMENT_PLAN_NOTIFICATION':
+      case 'DENTAL_SEND_XRAY_NOTIFICATION':
+      case 'DENTAL_CREATE_FOLLOWUP_APPOINTMENT':
+      case 'DENTAL_SEND_INSURANCE_VERIFICATION_REQUEST':
+      case 'DENTAL_SEND_PAYMENT_REMINDER':
+      case 'DENTAL_CREATE_TREATMENT_TASK':
+      case 'DENTAL_SEND_POST_VISIT_FOLLOWUP':
+      case 'DENTAL_UPDATE_PATIENT_STATUS':
+        return this.executeDentalAction(action, context, enrollment);
       
       case 'CREATE_TASK':
         return this.createTask(context, config);
@@ -905,6 +940,20 @@ export class WorkflowEngine {
       const fieldName = mapping[key] || key;
       return data[fieldName] || match;
     });
+  }
+
+  /**
+   * Execute dental-specific workflow action
+   */
+  private async executeDentalAction(
+    action: WorkflowAction,
+    context: ExecutionContext,
+    enrollment?: WorkflowEnrollment
+  ): Promise<any> {
+    if (!enrollment) {
+      throw new Error('Enrollment is required for dental actions');
+    }
+    return executeDentalAction(action, enrollment, context);
   }
 }
 
