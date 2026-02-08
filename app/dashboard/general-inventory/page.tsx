@@ -7,7 +7,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
 import { isMenuItemVisible } from '@/lib/industry-menu-config';
 import type { Industry } from '@/lib/industry-menu-config';
 import { Button } from '@/components/ui/button';

@@ -11,6 +11,12 @@ import { workflowJobQueue } from './workflow-job-queue';
 import { conditionEvaluator, type ConditionalBranch } from './workflow-conditions';
 import { executeDentalAction } from './dental/workflow-actions';
 import { multiChannelOrchestrator } from './workflow-multi-channel';
+import { GmailService } from './messaging-sync/gmail-service';
+import { TwilioService } from './messaging-sync/twilio-service';
+import { FacebookService } from './messaging-sync/facebook-service';
+import { InstagramService } from './messaging-sync/instagram-service';
+import { WhatsAppService } from './messaging-sync/whatsapp-service';
+import { facebookMessengerService } from './facebook-messenger-service';
 import type {
   Workflow,
   WorkflowAction,
@@ -469,30 +475,173 @@ export class WorkflowEngine {
 
     const conversation = await prisma.conversation.findUnique({
       where: { id: context.conversationId },
-      include: { lead: true },
+      include: { 
+        lead: true,
+        channelConnection: true,
+      },
     });
 
     if (!conversation) {
       throw new Error('Conversation not found');
     }
 
-    const message = this.replaceVariables(config.message, conversation.lead || {});
+    if (!conversation.channelConnection) {
+      throw new Error('No channel connection found for conversation');
+    }
 
-    // Create message record
+    const message = this.replaceVariables(config.message, conversation.lead || {});
+    const connection = conversation.channelConnection;
+    let externalMessageId: string | undefined;
+
+    // Create message record first (will be updated after sending)
     const conversationMessage = await prisma.conversationMessage.create({
       data: {
         conversationId: context.conversationId,
         userId: context.userId,
         direction: 'OUTBOUND',
-        status: 'SENT',
+        status: 'PENDING',
         content: message,
       },
     });
 
-    // TODO: Actually send via channel (Twilio, etc.)
-    // This would integrate with the messaging service
+    // Route to appropriate service based on channel type
+    try {
+      switch (connection.channelType) {
+        case 'EMAIL':
+          if (!connection.accessToken) {
+            throw new Error('No access token for email');
+          }
+          const gmailService = new GmailService(
+            connection.accessToken,
+            connection.refreshToken || undefined
+          );
+          const threadId = conversation.metadata as any;
+          externalMessageId = await gmailService.sendEmail({
+            to: conversation.contactIdentifier,
+            subject: config.subject || 'Re: Previous conversation',
+            body: message,
+            threadId: threadId?.threadId,
+          });
+          break;
 
-    return { messageId: conversationMessage.id, action: 'sent' };
+        case 'SMS':
+          const providerData = connection.providerData as any;
+          if (!providerData?.accountSid || !providerData?.authToken) {
+            throw new Error('Missing Twilio credentials');
+          }
+          if (!connection.channelIdentifier) {
+            throw new Error('Missing channel identifier for SMS');
+          }
+          const twilioService = new TwilioService(
+            providerData.accountSid,
+            providerData.authToken,
+            connection.channelIdentifier
+          );
+          externalMessageId = await twilioService.sendSMS({
+            to: conversation.contactIdentifier,
+            body: message,
+          });
+          break;
+
+        case 'FACEBOOK_MESSENGER':
+          if (!connection.accessToken) {
+            throw new Error('No access token for Facebook');
+          }
+          // Use the new messenger service for direct messenger integration
+          if (connection.channelIdentifier && conversation.contactIdentifier) {
+            const result = await facebookMessengerService.sendMessage({
+              pageId: connection.channelIdentifier,
+              recipientId: conversation.contactIdentifier,
+              message,
+              accessToken: connection.accessToken,
+            });
+            if (!result.success) {
+              throw new Error(result.error || 'Failed to send Messenger message');
+            }
+            externalMessageId = result.messageId;
+          } else {
+            // Fallback to old Facebook service if needed
+            const facebookService = new FacebookService(
+              connection.accessToken,
+              connection.providerAccountId!
+            );
+            externalMessageId = await facebookService.sendMessage({
+              recipientId: conversation.contactIdentifier,
+              message,
+            });
+          }
+          break;
+
+        case 'INSTAGRAM':
+          if (!connection.accessToken) {
+            throw new Error('No access token for Instagram');
+          }
+          const instagramService = new InstagramService(
+            connection.accessToken,
+            connection.providerAccountId!
+          );
+          externalMessageId = await instagramService.sendMessage({
+            recipientId: conversation.contactIdentifier,
+            message,
+          });
+          break;
+
+        case 'WHATSAPP':
+          if (!connection.accessToken) {
+            throw new Error('No access token for WhatsApp');
+          }
+          const whatsappProviderData = connection.providerData as any;
+          const whatsappService = new WhatsAppService(
+            connection.accessToken,
+            connection.providerAccountId!,
+            whatsappProviderData?.businessAccountId
+          );
+          externalMessageId = await whatsappService.sendMessage({
+            to: conversation.contactIdentifier,
+            message,
+          });
+          break;
+
+        default:
+          throw new Error(`Unsupported channel type: ${connection.channelType}`);
+      }
+
+      // Update message record with external message ID and mark as sent
+      await prisma.conversationMessage.update({
+        where: { id: conversationMessage.id },
+        data: {
+          externalMessageId,
+          status: 'SENT',
+          sentAt: new Date(),
+        },
+      });
+
+      // Update conversation
+      await prisma.conversation.update({
+        where: { id: context.conversationId },
+        data: {
+          lastMessageAt: new Date(),
+          lastMessagePreview: message.substring(0, 100),
+        },
+      });
+
+      return { messageId: conversationMessage.id, externalMessageId, action: 'sent' };
+    } catch (error: any) {
+      console.error(`Error sending message via ${connection.channelType}:`, error);
+      
+      // Update message record with error status
+      await prisma.conversationMessage.update({
+        where: { id: conversationMessage.id },
+        data: {
+          status: 'FAILED',
+          providerData: {
+            error: error.message,
+          },
+        },
+      });
+
+      throw new Error(`Failed to send message via ${connection.channelType}: ${error.message}`);
+    }
   }
 
   /**
