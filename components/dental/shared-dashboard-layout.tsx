@@ -101,14 +101,14 @@ export function SharedDashboardLayout({
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1">
             <Select
-              value={selectedLeadId || ''}
-              onValueChange={(value) => onPatientSelect(value || null)}
+              value={selectedLeadId || '__none__'}
+              onValueChange={(value) => onPatientSelect(value === '__none__' ? null : value)}
             >
               <SelectTrigger className="w-full border border-gray-300">
                 <SelectValue placeholder="Select a patient..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No patient selected</SelectItem>
+                <SelectItem value="__none__">No patient selected</SelectItem>
                 {leads.map((lead) => (
                   <SelectItem key={lead.id} value={lead.id}>
                     {lead.contactPerson || lead.businessName || lead.email}

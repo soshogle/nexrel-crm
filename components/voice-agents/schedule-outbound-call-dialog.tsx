@@ -203,15 +203,15 @@ export function ScheduleOutboundCallDialog({
           <div>
             <Label htmlFor="leadId">Link to Lead (Optional)</Label>
             <Select
-              value={formData.leadId}
-              onValueChange={(value) => setFormData({ ...formData, leadId: value })}
+              value={formData.leadId || '__none__'}
+              onValueChange={(value) => setFormData({ ...formData, leadId: value === '__none__' ? '' : value })}
               disabled={loadingData}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select lead or enter manually..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None (Manual Entry)</SelectItem>
+                <SelectItem value="__none__">None (Manual Entry)</SelectItem>
                 {leads.map((lead) => (
                   <SelectItem key={lead.id} value={lead.id}>
                     {lead.contactPerson || lead.businessName} - {lead.phone}
