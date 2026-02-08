@@ -233,19 +233,27 @@ export default function ClinicalDashboardPage() {
 
   // Fetch X-rays
   const fetchXrays = useCallback(async () => {
-    if (!selectedLeadId) return;
+    if (!selectedLeadId) {
+      setXrays([]);
+      setSelectedXray(null);
+      return;
+    }
     try {
       const response = await fetch(`/api/dental/xrays?leadId=${selectedLeadId}`);
       if (response.ok) {
         const data = await response.json();
-        setXrays(data || []);
-        if (data && data.length > 0) {
-          setSelectedXray(data[0]);
+        const xraysArray = data || [];
+        setXrays(xraysArray);
+        if (xraysArray.length > 0) {
+          setSelectedXray(xraysArray[0]);
+        } else {
+          setSelectedXray(null);
         }
       }
     } catch (error) {
       console.error('Error fetching X-rays:', error);
       setXrays([]);
+      setSelectedXray(null);
     }
   }, [selectedLeadId]);
 
@@ -742,8 +750,59 @@ export default function ClinicalDashboardPage() {
         onClose={() => setOpenModal(null)}
         title="X-Ray Analysis"
       >
-        {selectedLeadId && session?.user?.id && selectedXray ? (
+        {!selectedLeadId ? (
+          <div className="text-center py-16 text-gray-400">Select a patient first</div>
+        ) : !session?.user?.id ? (
+          <div className="text-center py-16 text-gray-400">Please sign in</div>
+        ) : xrays.length === 0 ? (
+          <div className="text-center py-16 space-y-4">
+            <p className="text-gray-400">No X-rays found for this patient</p>
+            <p className="text-sm text-gray-500">Upload an X-ray to begin analysis</p>
+          </div>
+        ) : !selectedXray ? (
+          <div className="text-center py-16 space-y-4">
+            <p className="text-gray-400">Select an X-ray to analyze</p>
+            {xrays.length > 0 && (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {xrays.map((xray: any) => (
+                  <button
+                    key={xray.id}
+                    onClick={() => setSelectedXray(xray)}
+                    className="w-full p-3 border border-gray-200 rounded-lg hover:bg-gray-50 text-left"
+                  >
+                    <div className="font-medium text-sm">{xray.xrayType || 'X-Ray'}</div>
+                    <div className="text-xs text-gray-500">
+                      {xray.dateTaken ? new Date(xray.dateTaken).toLocaleDateString() : 'No date'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
           <div className="h-[calc(100vh-200px)]">
+            {xrays.length > 1 && (
+              <div className="mb-4 flex items-center gap-2">
+                <Select
+                  value={selectedXray.id}
+                  onValueChange={(value) => {
+                    const xray = xrays.find((x: any) => x.id === value);
+                    if (xray) setSelectedXray(xray);
+                  }}
+                >
+                  <SelectTrigger className="w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {xrays.map((xray: any) => (
+                      <SelectItem key={xray.id} value={xray.id}>
+                        {xray.xrayType || 'X-Ray'} - {xray.dateTaken ? new Date(xray.dateTaken).toLocaleDateString() : 'No date'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <DicomViewer
               xrayId={selectedXray.id}
               imageUrl={selectedXray.fullUrl || selectedXray.previewUrl || selectedXray.imageUrl || `/api/dental/xrays/${selectedXray.id}/image`}
@@ -755,8 +814,6 @@ export default function ClinicalDashboardPage() {
               }}
             />
           </div>
-        ) : (
-          <div className="text-center py-16 text-gray-400">Select a patient and X-ray</div>
         )}
       </CardModal>
 
