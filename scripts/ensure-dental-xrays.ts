@@ -48,9 +48,10 @@ async function main() {
     console.log(`   Found ${leads.length} patients`);
 
     for (const lead of leads) {
-      // Check if lead already has X-rays
+      // Check if lead already has X-rays (only select id to avoid column issues)
       const existingXrays = await prisma.dentalXRay.findMany({
         where: { leadId: lead.id },
+        select: { id: true },
       });
 
       if (existingXrays.length > 0) {
@@ -91,14 +92,16 @@ async function main() {
 
         const selectedAnalysis = analysisTemplates[Math.floor(Math.random() * analysisTemplates.length)];
 
+        const imageUrl = MOCK_XRAY_IMAGE_URLS[Math.floor(Math.random() * MOCK_XRAY_IMAGE_URLS.length)];
+        
+        // Use only fields that exist in the database (match create-dental-mock-data.ts)
         await prisma.dentalXRay.create({
           data: {
             leadId: lead.id,
             userId: user.id,
             dicomFile: `mock/dicom/${lead.id}-${i}.dcm`,
-            imageUrl: MOCK_XRAY_IMAGE_URLS[Math.floor(Math.random() * MOCK_XRAY_IMAGE_URLS.length)],
-            previewUrl: MOCK_XRAY_IMAGE_URLS[Math.floor(Math.random() * MOCK_XRAY_IMAGE_URLS.length)],
-            thumbnailUrl: MOCK_XRAY_IMAGE_URLS[Math.floor(Math.random() * MOCK_XRAY_IMAGE_URLS.length)],
+            imageFile: `mock/images/${lead.id}-${i}.jpg`,
+            imageUrl: imageUrl,
             xrayType,
             teethIncluded,
             dateTaken: new Date(Date.now() - i * 30 * 24 * 60 * 60 * 1000), // Stagger dates
