@@ -132,7 +132,7 @@ export class EnhancedCallHandler {
       data: {
         twilioCallSid: callEvent.callSid,
         fromNumber: callEvent.fromNumber,
-        toNumber: callEvent.callEvent.toNumber,
+        toNumber: callEvent.toNumber,
         direction: 'INBOUND',
         status: callEvent.status === 'answered' ? 'IN_PROGRESS' : 'RINGING',
         leadId: patientMatch?.leadId,
