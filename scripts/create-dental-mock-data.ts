@@ -249,7 +249,7 @@ async function main() {
   const userId = orthodontistUser.id;
   
   // Get or create a clinic for this user
-  let clinic = await prisma.clinicMembership.findFirst({
+  let clinic = await prisma.userClinic.findFirst({
     where: { userId },
     include: { clinic: true },
   });
@@ -272,7 +272,7 @@ async function main() {
       },
     });
     
-    await prisma.clinicMembership.create({
+    await prisma.userClinic.create({
       data: {
         userId,
         clinicId: newClinic.id,
@@ -281,7 +281,7 @@ async function main() {
       },
     });
     
-    clinic = await prisma.clinicMembership.findFirst({
+    clinic = await prisma.userClinic.findFirst({
       where: { userId, clinicId: newClinic.id },
       include: { clinic: true },
     });

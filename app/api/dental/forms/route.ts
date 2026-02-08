@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     // Get clinicId from request or user's primary clinic
     let finalClinicId = clinicId;
     if (!finalClinicId) {
-      const primaryClinic = await prisma.clinicMembership.findFirst({
+      const primaryClinic = await prisma.userClinic.findFirst({
         where: {
           userId: session.user.id,
           isPrimary: true,
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         finalClinicId = primaryClinic.clinicId;
       } else {
         // If no primary clinic, get first clinic
-        const firstClinic = await prisma.clinicMembership.findFirst({
+        const firstClinic = await prisma.userClinic.findFirst({
           where: {
             userId: session.user.id,
           },
