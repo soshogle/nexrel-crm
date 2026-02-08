@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Users, Calendar, DollarSign, FileText, Search, User } from 'lucide-react';
 import { RoleSwitcher } from './role-switcher';
+import { ClinicSelector } from './clinic-selector';
 
 interface SharedDashboardLayoutProps {
   role: 'clinical' | 'admin';
@@ -94,7 +95,10 @@ export function SharedDashboardLayout({
                 : 'Scheduling, billing, and operations management'}
             </p>
           </div>
-          <RoleSwitcher currentRole={role} />
+          <div className="flex items-center gap-3">
+            <ClinicSelector />
+            <RoleSwitcher currentRole={role} />
+          </div>
         </div>
 
         {/* Patient Selector */}
