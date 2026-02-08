@@ -5,7 +5,7 @@
 
 'use client';
 
-import { ClipboardList, Toothbrush, Tooth } from 'lucide-react';
+import { ClipboardList, Sparkles, Circle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface TreatmentItem {
@@ -40,7 +40,7 @@ export function RedesignedTreatmentPlan({ treatments }: RedesignedTreatmentPlanP
       cost: 150,
       timeline: 'Week 2',
       costColor: 'bg-orange-100 text-orange-700 border-orange-200',
-      icon: Toothbrush,
+      icon: Sparkles,
       progress: 50,
     },
     {
@@ -49,7 +49,7 @@ export function RedesignedTreatmentPlan({ treatments }: RedesignedTreatmentPlanP
       cost: 1200,
       timeline: 'Weeks 3-4',
       costColor: 'bg-gray-100 text-gray-700 border-gray-200',
-      icon: Tooth,
+      icon: Circle,
       progress: 25,
     },
   ];
