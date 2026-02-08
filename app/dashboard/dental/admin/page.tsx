@@ -490,7 +490,7 @@ export default function AdministrativeDashboardPage() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <CustomDocumentUpload />
+              <CustomDocumentUpload leadId={selectedLeadId} />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}
