@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { emailService } from '@/lib/email-service';
+import {
+  triggerCallCompletedWorkflow,
+  triggerMissedCallWorkflow,
+} from '@/lib/dental/workflow-triggers';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -99,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update call log
-    await prisma.callLog.update({
+    const updatedCallLog = await prisma.callLog.update({
       where: { id: callLog.id },
       data: {
         status,
@@ -107,6 +111,31 @@ export async function POST(request: NextRequest) {
         ...(callStatus === 'completed' && { endedAt: new Date() }),
       },
     });
+
+    // Trigger workflows based on call status
+    try {
+      if (callStatus === 'completed' && callDuration) {
+        // Trigger call completed workflow
+        await triggerCallCompletedWorkflow(
+          callLog.id,
+          callLog.leadId || null,
+          callLog.userId,
+          parseInt(callDuration, 10),
+          'completed'
+        );
+      } else if (callStatus === 'no-answer' || callStatus === 'busy' || callStatus === 'failed') {
+        // Trigger missed call workflow
+        await triggerMissedCallWorkflow(
+          callLog.id,
+          callLog.leadId || null,
+          callLog.userId,
+          from || ''
+        );
+      }
+    } catch (error) {
+      console.error('Error triggering call workflows:', error);
+      // Don't fail the webhook if workflow trigger fails
+    }
 
     // Update related outbound call
     if (callLog.id) {

@@ -34,8 +34,16 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const treatmentPlanId = searchParams.get('treatmentPlanId');
 
+    // Get user's clinics for filtering
+    const userClinics = await prisma.userClinic.findMany({
+      where: { userId: session.user.id },
+      select: { clinicId: true },
+    });
+    const clinicIds = userClinics.map(uc => uc.clinicId);
+
     const where: any = {
       userId: session.user.id,
+      clinicId: { in: clinicIds },
     };
 
     if (leadId) {
@@ -120,9 +128,28 @@ export async function POST(request: NextRequest) {
       ? undefined // Keep existing order number
       : generateOrderNumber();
 
+    // Get user's primary clinic for clinicId
+    const userClinic = await prisma.userClinic.findFirst({
+      where: {
+        userId: session.user.id,
+        isPrimary: true,
+      },
+      include: {
+        clinic: true,
+      },
+    });
+
+    if (!userClinic) {
+      return NextResponse.json(
+        { error: 'No clinic found. Please create a clinic first.' },
+        { status: 400 }
+      );
+    }
+
     const data: any = {
       leadId,
       userId: session.user.id,
+      clinicId: userClinic.clinicId,
       labName,
       orderType,
       description: description || null,

@@ -250,3 +250,106 @@ export async function triggerInsuranceClaimSubmittedWorkflow(
     console.error('Error triggering insurance claim submitted workflow:', error);
   }
 }
+
+/**
+ * Trigger workflow when incoming call is received
+ */
+export async function triggerIncomingCallWorkflow(
+  callLogId: string,
+  leadId: string | null,
+  userId: string,
+  fromNumber: string,
+  toNumber: string
+) {
+  try {
+    await workflowEngine.triggerWorkflow(
+      'INCOMING_CALL',
+      {
+        userId,
+        leadId: leadId || undefined,
+        dealId: undefined,
+        variables: {
+          callLogId,
+          fromNumber,
+          toNumber,
+          callType: 'incoming',
+        },
+      },
+      {
+        callLogId,
+        leadId,
+        fromNumber,
+        toNumber,
+      }
+    );
+  } catch (error) {
+    console.error('Error triggering incoming call workflow:', error);
+  }
+}
+
+/**
+ * Trigger workflow when call is completed
+ */
+export async function triggerCallCompletedWorkflow(
+  callLogId: string,
+  leadId: string | null,
+  userId: string,
+  duration: number,
+  status: string
+) {
+  try {
+    await workflowEngine.triggerWorkflow(
+      'CALL_COMPLETED',
+      {
+        userId,
+        leadId: leadId || undefined,
+        dealId: undefined,
+        variables: {
+          callLogId,
+          duration,
+          status,
+        },
+      },
+      {
+        callLogId,
+        leadId,
+        duration,
+        status,
+      }
+    );
+  } catch (error) {
+    console.error('Error triggering call completed workflow:', error);
+  }
+}
+
+/**
+ * Trigger workflow when call is missed
+ */
+export async function triggerMissedCallWorkflow(
+  callLogId: string,
+  leadId: string | null,
+  userId: string,
+  fromNumber: string
+) {
+  try {
+    await workflowEngine.triggerWorkflow(
+      'MISSED_CALL',
+      {
+        userId,
+        leadId: leadId || undefined,
+        dealId: undefined,
+        variables: {
+          callLogId,
+          fromNumber,
+        },
+      },
+      {
+        callLogId,
+        leadId,
+        fromNumber,
+      }
+    );
+  } catch (error) {
+    console.error('Error triggering missed call workflow:', error);
+  }
+}

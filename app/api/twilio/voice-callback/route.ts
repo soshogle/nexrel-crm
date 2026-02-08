@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
           status: 'ringing',
           timestamp: new Date(),
         },
+        voiceAgent.userId, // Pass userId for workflow triggering
         undefined // clinicId would come from voiceAgent if available
       );
       callLog = result.callLog;
