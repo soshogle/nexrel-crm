@@ -29,9 +29,10 @@ export async function executeDentalAction(
   context: ExecutionContext
 ): Promise<any> {
   const config = action.actionConfig as any;
+  const actionType = action.type as string;
 
   // Clinical Actions
-  switch (action.type) {
+  switch (actionType) {
     case 'CREATE_TREATMENT_PLAN':
       return await createTreatmentPlan(config, context);
 
@@ -122,7 +123,7 @@ export async function executeDentalAction(
       return await updatePatientStatus(config, context);
 
     default:
-      throw new Error(`Unknown dental action type: ${action.type}`);
+      throw new Error(`Unknown dental action type: ${actionType}`);
   }
 }
 
@@ -147,7 +148,8 @@ async function sendAppointmentReminder(config: any, context: ExecutionContext) {
     throw new Error('Appointment not found');
   }
 
-  const message = config.message || `Reminder: You have an appointment on ${new Date(appointment.startTime).toLocaleDateString()} at ${new Date(appointment.startTime).toLocaleTimeString()}`;
+  const appointmentDate = (appointment as any).startTime || appointment.appointmentDate;
+  const message = config.message || `Reminder: You have an appointment on ${new Date(appointmentDate).toLocaleDateString()} at ${new Date(appointmentDate).toLocaleTimeString()}`;
 
   // Send email
   if (lead.email && config.sendEmail !== false) {
@@ -251,10 +253,12 @@ async function createFollowupAppointment(config: any, context: ExecutionContext)
     data: {
       userId: context.userId,
       leadId: context.leadId!,
-      startTime: appointmentDate,
-      endTime: new Date(appointmentDate.getTime() + 30 * 60 * 1000), // 30 minutes
+      appointmentDate: appointmentDate,
+      duration: 30, // 30 minutes
       status: 'SCHEDULED',
-      type: 'FOLLOWUP',
+      customerName: lead.businessName || lead.contactPerson || 'Patient',
+      customerEmail: lead.email || '',
+      customerPhone: lead.phone || '',
       notes: config.notes || 'Follow-up appointment created automatically',
     },
   });
@@ -330,7 +334,7 @@ async function createTreatmentTask(config: any, context: ExecutionContext) {
       userId: context.userId,
       title: config.title || 'Treatment Task',
       description: config.description || '',
-      status: 'PENDING',
+      status: 'TODO',
       priority: config.priority || 'MEDIUM',
       dueDate: config.dueDate ? new Date(config.dueDate) : null,
       leadId: context.leadId,
@@ -488,12 +492,14 @@ async function sendTreatmentUpdateToPatient(config: any, context: ExecutionConte
  * Create clinical note
  */
 async function createClinicalNote(config: any, context: ExecutionContext) {
+  if (!context.leadId) {
+    throw new Error('Lead ID is required to create a clinical note');
+  }
   const note = await prisma.note.create({
     data: {
       userId: context.userId,
       leadId: context.leadId,
       content: config.content || config.note || 'Clinical note created automatically',
-      type: 'CLINICAL',
     },
   });
 
@@ -513,7 +519,7 @@ async function requestXrayReview(config: any, context: ExecutionContext) {
       leadId: context.leadId,
       title: `Review X-ray: ${config.xrayType || 'X-ray'}`,
       description: `X-ray ID: ${xrayId}. Please review and provide analysis.`,
-      status: 'PENDING',
+      status: 'TODO',
       priority: config.priority || 'HIGH',
     },
   });
@@ -748,8 +754,8 @@ async function rescheduleAppointment(config: any, context: ExecutionContext) {
   const appointment = await prisma.bookingAppointment.update({
     where: { id: appointmentId },
     data: {
-      startTime: newDate,
-      endTime: new Date(newDate.getTime() + 30 * 60 * 1000), // 30 minutes
+      appointmentDate: newDate,
+      duration: 30, // 30 minutes
     },
   });
 

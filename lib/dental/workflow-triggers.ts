@@ -30,7 +30,7 @@ export async function triggerXrayUploadedWorkflow(
       {
         userId,
         leadId,
-        dealId: null,
+        dealId: undefined,
         variables: {
           xrayId,
           xrayType,
@@ -70,7 +70,7 @@ export async function triggerAppointmentScheduledWorkflow(
       {
         userId,
         leadId,
-        dealId: null,
+        dealId: undefined,
         variables: {
           appointmentId,
           appointmentDate: appointmentDate.toISOString(),
@@ -109,7 +109,7 @@ export async function triggerTreatmentPlanCreatedWorkflow(
       {
         userId,
         leadId,
-        dealId: null,
+        dealId: undefined,
         variables: {
           treatmentPlanId,
           status: treatmentPlan.status,
@@ -140,7 +140,7 @@ export async function triggerTreatmentPlanApprovedWorkflow(
       {
         userId,
         leadId,
-        dealId: null,
+        dealId: undefined,
         variables: {
           treatmentPlanId,
         },
@@ -176,7 +176,7 @@ export async function triggerProcedureCompletedWorkflow(
       {
         userId,
         leadId,
-        dealId: null,
+        dealId: undefined,
         variables: {
           procedureId,
           procedureType: procedure.procedureType,
@@ -207,7 +207,7 @@ export async function triggerPatientCheckedInWorkflow(
       {
         userId,
         leadId,
-        dealId: null,
+        dealId: undefined,
         variables: {
           appointmentId,
         },
@@ -236,7 +236,7 @@ export async function triggerInsuranceClaimSubmittedWorkflow(
       {
         userId,
         leadId,
-        dealId: null,
+        dealId: undefined,
         variables: {
           claimId,
         },

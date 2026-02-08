@@ -288,12 +288,11 @@ export default function AdministrativeDashboardPage() {
 
   // Display multi-chair appointments
   const displayMultiChairAppointments = appointments.map((apt: any) => ({
-    id: apt.id,
-    time: new Date(apt.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-    patient: leads.find((l) => l.id === apt.leadId)?.contactPerson || 'Unknown',
-    procedure: apt.title || 'Appointment',
     chair: apt.chair || '1',
-    status: apt.status || 'scheduled',
+    time: new Date(apt.startTime || apt.appointmentDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+    patient: leads.find((l) => l.id === apt.leadId)?.contactPerson || apt.customerName || 'Unknown',
+    procedure: apt.title || apt.procedure || 'Appointment',
+    color: 'bg-blue-100 border-blue-300', // Default color
   }));
 
   // Display claims
@@ -743,7 +742,6 @@ export default function AdministrativeDashboardPage() {
         isOpen={openModal === 'production-charts'}
         onClose={() => setOpenModal(null)}
         title="Production Analytics"
-        className="max-w-6xl"
       >
         <ProductionCharts
           dailyData={productionChartData.dailyData}
@@ -764,7 +762,6 @@ export default function AdministrativeDashboardPage() {
         isOpen={openModal === 'vna-config'}
         onClose={() => setOpenModal(null)}
         title="VNA Configuration & Routing Rules"
-        className="max-w-5xl"
       >
         <VnaConfigurationWithRouting />
       </CardModal>

@@ -230,6 +230,8 @@ model User {
   dentalForms                 DentalForm[]
   dentalFormResponses         DentalFormResponse[]
   dentalXRays                 DentalXRay[]
+  dentalLabOrders             DentalLabOrder[]
+  dentalInsuranceClaims       DentalInsuranceClaim[]
   vnaConfigurations           VnaConfiguration[]
   practiceDocuments           PatientDocument[]            @relation("PracticeDocuments")
   documentConsents            DocumentConsent[]
@@ -354,6 +356,8 @@ model Lead {
   dentalProcedures        DentalProcedure[]
   dentalFormResponses     DentalFormResponse[]
   dentalXRays             DentalXRay[]
+  dentalLabOrders         DentalLabOrder[]
+  dentalInsuranceClaims   DentalInsuranceClaim[]
   patientDocuments        PatientDocument[]        @relation("PatientDocuments")
   documentConsents        DocumentConsent[]
   dataAccessRequests      DataAccessRequest[]
@@ -8225,6 +8229,8 @@ model DentalTreatmentPlan {
   lead          Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
   user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   proceduresLog DentalProcedure[]
+  labOrders     DentalLabOrder[]
+  insuranceClaims DentalInsuranceClaim[]
 
   @@index([leadId])
   @@index([userId])
@@ -8271,6 +8277,8 @@ model DentalProcedure {
   lead          Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
   user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   treatmentPlan DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
+  labOrders     DentalLabOrder[]
+  insuranceClaims DentalInsuranceClaim[]
 
   @@index([leadId])
   @@index([userId])
@@ -8394,6 +8402,185 @@ model DentalXRay {
   @@index([userId])
   @@index([dateTaken])
   @@index([xrayType])
+}
+
+// Phase 6: Lab Order Management
+model DentalLabOrder {
+  id              String            @id @default(cuid())
+  leadId          String // Patient
+  userId          String // Practice
+  treatmentPlanId String? // Link to treatment plan
+  procedureId     String? // Link to specific procedure
+
+  // Lab order details
+  orderNumber     String            @unique // Auto-generated: LAB-YYYYMMDD-XXXX
+  labName         String // Lab company name
+  labContact      Json? // { name, phone, email, address }
+  orderType       LabOrderType // CROWN, BRIDGE, DENTURE, IMPLANT, ORTHODONTIC, OTHER
+  description     String?           @db.Text
+  instructions    String?           @db.Text // Special instructions for lab
+
+  // Patient information sent to lab
+  patientInfo     Json // { name, dob, gender, etc. }
+  impressionDate  DateTime?
+  deliveryDate    DateTime? // Expected delivery date
+
+  // Status tracking
+  status          LabOrderStatus    @default(PENDING)
+  submittedAt     DateTime?
+  receivedAt      DateTime? // When lab received order
+  inProgressAt    DateTime?
+  completedAt     DateTime?
+  deliveredAt     DateTime? // When delivered back to practice
+
+  // Financial
+  cost            Float?            @default(0)
+  paid            Boolean           @default(false)
+  paymentDate     DateTime?
+
+  // Tracking
+  trackingNumber  String?
+  shippingMethod  String?
+
+  // Files/Attachments
+  attachments     Json? // Array of file references
+  prescriptionUrl String? // Link to prescription/instructions
+
+  // Notes
+  notes           String?           @db.Text
+  internalNotes   String?           @db.Text // Staff-only notes
+
+  // Timestamps
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  lead            Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  treatmentPlan  DentalTreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
+  procedure       DentalProcedure? @relation(fields: [procedureId], references: [id])
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([treatmentPlanId])
+  @@index([procedureId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([orderType])
+}
+
+enum LabOrderType {
+  CROWN
+  BRIDGE
+  DENTURE
+  IMPLANT
+  ORTHODONTIC
+  RETAINER
+  NIGHT_GUARD
+  OTHER
+}
+
+enum LabOrderStatus {
+  PENDING // Order created, not yet submitted
+  SUBMITTED // Sent to lab
+  RECEIVED // Lab confirmed receipt
+  IN_PROGRESS // Lab is working on it
+  COMPLETED // Lab finished, ready for pickup/delivery
+  DELIVERED // Received back at practice
+  CANCELLED
+}
+
+// Phase 6: Insurance Integration
+model DentalInsuranceClaim {
+  id              String                @id @default(cuid())
+  leadId          String // Patient
+  userId          String // Practice
+  treatmentPlanId String? // Link to treatment plan
+  procedureId     String? // Link to specific procedure
+
+  // Claim details
+  claimNumber     String                @unique // Auto-generated or provider claim #
+  insuranceType   InsuranceProviderType // RAMQ, PRIVATE, BOTH
+  providerName     String // Insurance company name
+  policyNumber     String // Patient's policy number
+  groupNumber      String? // Group/plan number
+  subscriberId     String? // Subscriber ID
+
+  // Patient information
+  patientInfo     Json // { name, dob, relationshipToSubscriber, etc. }
+  subscriberInfo  Json? // Subscriber information if different from patient
+
+  // Procedure/Service details
+  procedures      Json // Array of { procedureCode, description, cost, dateOfService }
+  totalAmount     Float
+  submittedAmount Float // Amount submitted to insurance
+  estimatedCoverage Float? // Expected coverage amount
+  patientResponsibility Float? // Patient's portion
+
+  // Status tracking
+  status          InsuranceClaimStatus  @default(DRAFT)
+  submittedAt     DateTime?
+  acknowledgedAt DateTime? // Insurance acknowledged receipt
+  processedAt     DateTime?
+  paidAt          DateTime?
+  deniedAt        DateTime?
+  appealDeadline  DateTime?
+
+  // Response from insurance
+  responseData    Json? // { approvedAmount, deniedAmount, reason, etc. }
+  eobUrl          String? // Explanation of Benefits document URL
+  paymentAmount   Float? // Actual payment received
+  paymentDate     DateTime?
+
+  // RAMQ-specific fields
+  ramqClaimId     String? // RAMQ claim reference number
+  ramqStatus      String? // RAMQ processing status
+
+  // Private insurance-specific fields
+  claimFormUrl    String? // Link to claim form PDF
+  preAuthNumber   String? // Pre-authorization number if applicable
+
+  // Notes
+  notes           String?               @db.Text
+  denialReason    String?               @db.Text
+
+  // Timestamps
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  // Relations
+  lead            Lead                  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  treatmentPlan  DentalTreatmentPlan?   @relation(fields: [treatmentPlanId], references: [id])
+  procedure       DentalProcedure?      @relation(fields: [procedureId], references: [id])
+
+  @@index([leadId])
+  @@index([userId])
+  @@index([treatmentPlanId])
+  @@index([procedureId])
+  @@index([status])
+  @@index([claimNumber])
+  @@index([insuranceType])
+  @@index([providerName])
+}
+
+enum InsuranceProviderType {
+  RAMQ // Régie de l'assurance maladie du Québec
+  PRIVATE // Private insurance (Sun Life, Manulife, etc.)
+  BOTH // Both RAMQ and private
+}
+
+enum InsuranceClaimStatus {
+  DRAFT // Being prepared
+  SUBMITTED // Sent to insurance
+  ACKNOWLEDGED // Insurance confirmed receipt
+  PROCESSING // Under review
+  APPROVED // Approved for payment
+  PARTIALLY_APPROVED // Partially approved
+  DENIED // Denied
+  PAID // Payment received
+  APPEALED // Under appeal
+  CANCELLED
 }
 
 // Phase 2: Multi-VNA Support

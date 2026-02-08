@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
                 imageType: xrayType,
                 patientId: metadata.patientId,
                 leadId,
-                location: lead.location || undefined,
+                location: (lead as any).location || lead.address || undefined,
               };
 
               await VnaManager.routeDicom(

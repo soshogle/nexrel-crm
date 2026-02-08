@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get('role') as 'practitioner' | 'admin_assistant' | 'practice_owner' | 'hybrid' | null;
     
     // Get user's dental role
-    const userRole = role || getUserDentalRole(session.user.role, session.user);
+    const userRole = role || getUserDentalRole(session.user.role || undefined, session.user);
     
     // Determine which templates to return
     let templates: any[] = [];

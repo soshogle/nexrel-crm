@@ -46,10 +46,10 @@ export function ProductionCharts({
   // Simple line chart component
   const LineChart = ({ data }: { data: ProductionDataPoint[] }) => {
     const width = 600;
-    const height = chartHeight;
     const padding = 40;
+    const chartHeight = 300;
+    const height = chartHeight + padding * 2;
     const chartWidth = width - padding * 2;
-    const chartHeight = height - padding * 2;
 
     const xScale = (index: number) => (index / (data.length - 1 || 1)) * chartWidth + padding;
     const yScale = (value: number) => height - padding - (value / maxValue) * chartHeight;
@@ -121,8 +121,8 @@ export function ProductionCharts({
   // Bar chart component
   const BarChart = ({ data, maxBarValue }: { data: { label: string; value: number }[]; maxBarValue: number }) => {
     const width = 600;
-    const height = chartHeight;
     const padding = 40;
+    const height = 300;
     const chartWidth = width - padding * 2;
     const chartHeight = height - padding * 2;
     const barWidth = chartWidth / data.length - 10;
@@ -324,7 +324,7 @@ export function ProductionCharts({
               <CardTitle className="text-sm font-semibold">Production by Treatment Type</CardTitle>
             </CardHeader>
             <CardContent>
-              <PieChart data={byTreatmentType} />
+              <PieChart data={byTreatmentType.map(item => ({ label: item.type || 'Unknown', value: item.value }))} />
             </CardContent>
           </Card>
         )}
