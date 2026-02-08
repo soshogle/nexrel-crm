@@ -43,9 +43,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Note: Model name will be available after running: npx prisma generate
-    // For now, using type assertion to allow build to pass
-    const xrays = await (prisma as any).dentalXRay.findMany({
+    // Use correct Prisma model name (capitalized)
+    const xrays = await prisma.dentalXRay.findMany({
       where: {
         leadId,
         userId: session.user.id,
@@ -239,7 +238,7 @@ export async function POST(request: NextRequest) {
 
           // Phase 2: Route DICOM to VNA based on routing rules
           try {
-            const vnaConfigs = await (prisma as any).vnaConfiguration.findMany({
+            const vnaConfigs = await prisma.vnaConfiguration.findMany({
               where: {
                 userId,
                 isActive: true,

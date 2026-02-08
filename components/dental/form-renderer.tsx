@@ -207,11 +207,13 @@ export function FormRenderer({
                   <SelectValue placeholder={field.placeholder || 'Select...'} />
                 </SelectTrigger>
                 <SelectContent>
-                  {field.options.map((option, idx) => (
-                    <SelectItem key={idx} value={option} className="text-lg">
-                      {option}
-                    </SelectItem>
-                  ))}
+                  {field.options
+                    .filter((option) => option !== '') // Filter out empty strings
+                    .map((option, idx) => (
+                      <SelectItem key={idx} value={option} className="text-lg">
+                        {option}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             )}
