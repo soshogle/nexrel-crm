@@ -14,12 +14,30 @@ export async function GET(request: NextRequest) {
     }
 
     // Facebook App credentials (should be in environment variables)
-    const clientId = process.env.FACEBOOK_CLIENT_ID;
-    const redirectUri = `${process.env.NEXTAUTH_URL}/api/soshogle/oauth/facebook/callback`;
+    // Support both FACEBOOK_CLIENT_ID and FACEBOOK_APP_ID for compatibility
+    const clientId = process.env.FACEBOOK_CLIENT_ID || process.env.FACEBOOK_APP_ID;
+    const baseUrl = process.env.NEXTAUTH_URL;
+    
+    if (!baseUrl) {
+      console.error('NEXTAUTH_URL environment variable is not set');
+      return NextResponse.json(
+        { 
+          error: 'Server configuration error',
+          details: 'NEXTAUTH_URL environment variable is required'
+        },
+        { status: 500 }
+      );
+    }
+    
+    const redirectUri = `${baseUrl}/api/soshogle/oauth/facebook/callback`;
     
     if (!clientId) {
+      console.error('Facebook OAuth configuration missing. Required env vars: FACEBOOK_CLIENT_ID or FACEBOOK_APP_ID');
       return NextResponse.json(
-        { error: 'Facebook OAuth not configured' },
+        { 
+          error: 'Facebook OAuth not configured',
+          details: 'Please set FACEBOOK_CLIENT_ID or FACEBOOK_APP_ID in your environment variables'
+        },
         { status: 500 }
       );
     }

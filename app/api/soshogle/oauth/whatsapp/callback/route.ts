@@ -32,10 +32,12 @@ export async function GET(request: NextRequest) {
     const tokenUrl = 'https://graph.facebook.com/v18.0/oauth/access_token';
     const redirectUri = `${baseUrl}/api/soshogle/oauth/whatsapp/callback`;
 
-    const clientId = process.env.WHATSAPP_CLIENT_ID;
-    const clientSecret = process.env.WHATSAPP_CLIENT_SECRET;
+    // WhatsApp uses Facebook App credentials, so check both
+    const clientId = process.env.WHATSAPP_CLIENT_ID || process.env.FACEBOOK_APP_ID || process.env.FACEBOOK_CLIENT_ID;
+    const clientSecret = process.env.WHATSAPP_CLIENT_SECRET || process.env.FACEBOOK_APP_SECRET || process.env.FACEBOOK_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
+      console.error('WhatsApp OAuth credentials missing. Required env vars: WHATSAPP_CLIENT_ID/FACEBOOK_APP_ID and WHATSAPP_CLIENT_SECRET/FACEBOOK_APP_SECRET');
       return NextResponse.redirect(
         `${baseUrl}/dashboard/soshogle?soshogle_connected=error&error=oauth_not_configured`
       );
