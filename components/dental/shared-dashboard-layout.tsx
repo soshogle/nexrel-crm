@@ -85,10 +85,10 @@ export function SharedDashboardLayout({
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-white">
               {role === 'clinical' ? 'Clinical Dashboard' : 'Administrative Dashboard'}
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-purple-100 mt-1">
               {role === 'clinical'
                 ? 'Patient care and clinical documentation'
                 : 'Scheduling, billing, and operations management'}
@@ -104,7 +104,7 @@ export function SharedDashboardLayout({
               value={selectedLeadId || '__none__'}
               onValueChange={(value) => onPatientSelect(value === '__none__' ? null : value)}
             >
-              <SelectTrigger className="w-full border border-gray-300">
+              <SelectTrigger className="w-full border border-white/20 bg-white/10 backdrop-blur-sm text-white">
                 <SelectValue placeholder="Select a patient..." />
               </SelectTrigger>
               <SelectContent>
@@ -118,7 +118,7 @@ export function SharedDashboardLayout({
             </Select>
           </div>
           {selectedPatient && (
-            <Badge variant="outline" className="px-3 py-1">
+            <Badge variant="outline" className="px-3 py-1 border-white/30 bg-white/10 backdrop-blur-sm text-white">
               <User className="w-3 h-3 mr-1" />
               {selectedPatient.contactPerson || selectedPatient.businessName}
             </Badge>
@@ -133,7 +133,7 @@ export function SharedDashboardLayout({
             { label: 'Pending Claims', value: stats.pendingClaims, icon: FileText, color: 'text-amber-600' },
             { label: 'Monthly Revenue', value: `$${stats.monthlyRevenue.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-600' },
           ].map((stat, idx) => (
-            <Card key={idx} className="bg-white border border-gray-200 shadow-sm">
+            <Card key={idx} className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg">
               <CardContent className="p-3">
                 <div className="flex items-center justify-between">
                   <div>

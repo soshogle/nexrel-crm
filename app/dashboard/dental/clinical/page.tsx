@@ -372,7 +372,7 @@ export default function ClinicalDashboardPage() {
       <div className="grid grid-cols-3 gap-4 mb-4">
         {/* 1. Arch Odontogram */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('odontogram')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -478,7 +478,7 @@ export default function ClinicalDashboardPage() {
 
         {/* 2. X-Ray Analysis */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('xray-analysis')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -516,7 +516,7 @@ export default function ClinicalDashboardPage() {
       <div className="grid grid-cols-3 gap-4 mb-4">
         {/* 4. Periodontal Charting */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('periodontal')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -533,7 +533,7 @@ export default function ClinicalDashboardPage() {
 
         {/* 5. Procedures Activity Log */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('procedures')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -573,7 +573,7 @@ export default function ClinicalDashboardPage() {
 
         {/* 6. Clinical Notes */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('clinical-notes')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -606,7 +606,7 @@ export default function ClinicalDashboardPage() {
       {/* BOTTOM ROW - Document Upload */}
       <div className="grid grid-cols-3 gap-4">
         {/* 7. Document Upload */}
-        <Card className="bg-white border border-gray-200 shadow-sm">
+        <Card className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg">
           <CardHeader className="pb-2 px-4 pt-3">
             <CardTitle className="text-sm font-semibold text-gray-900">Document Upload</CardTitle>
           </CardHeader>

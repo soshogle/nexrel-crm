@@ -22,6 +22,9 @@ import { RedesignedFormResponses } from '@/components/dental/redesigned-form-res
 import { RedesignedInsuranceClaims } from '@/components/dental/redesigned-insurance-claims';
 import { VnaConfigurationWithRouting } from '@/components/dental/vna-configuration-with-routing';
 import { CardModal } from '@/components/dental/card-modal';
+import { PatientInfoUpdateForm } from '@/components/dental/patient-info-update-form';
+import { LabOrderForm } from '@/components/dental/lab-order-form';
+import { Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -78,6 +81,8 @@ export default function AdministrativeDashboardPage() {
   });
   const [openModal, setOpenModal] = useState<string | null>(null);
   const [activeMultiChairTab, setActiveMultiChairTab] = useState<'ortho' | 'hygiene' | 'restorative'>('ortho');
+  const [showUpdateInfo, setShowUpdateInfo] = useState(false);
+  const [showLabOrderForm, setShowLabOrderForm] = useState(false);
   const [formResponseSearch, setFormResponseSearch] = useState('');
   const [formResponseFilter, setFormResponseFilter] = useState('date');
   const [productionChartData, setProductionChartData] = useState({
@@ -335,6 +340,9 @@ export default function AdministrativeDashboardPage() {
     );
   }
 
+  // Check if user is admin (you can customize this logic)
+  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.email?.includes('admin');
+
   return (
     <SharedDashboardLayout
       role="admin"
@@ -343,6 +351,20 @@ export default function AdministrativeDashboardPage() {
       stats={stats}
       onPatientSelect={setSelectedLeadId}
     >
+      {/* Settings Button - Admin Only */}
+      {isAdmin && (
+        <div className="fixed top-4 right-4 z-50">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-full shadow-lg bg-white hover:bg-gray-50 border-gray-300"
+            onClick={() => setOpenModal('settings')}
+            title="Settings"
+          >
+            <Settings className="h-5 w-5 text-gray-700" />
+          </Button>
+        </div>
+      )}
       {/* PHASE 4: PRODUCTION DASHBOARD - New Row Above Existing Cards */}
       <div className="mb-6">
         <ProductionDashboard 
@@ -359,7 +381,7 @@ export default function AdministrativeDashboardPage() {
       <div className="grid grid-cols-3 gap-4 mb-4">
         {/* 1. Multi-Chair Agenda */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('multi-chair')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -376,7 +398,7 @@ export default function AdministrativeDashboardPage() {
 
         {/* 2. Check-In Touch-screen */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('check-in')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -397,7 +419,7 @@ export default function AdministrativeDashboardPage() {
 
         {/* 3. Insurance Claims Integration */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('insurance-claims')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -420,7 +442,7 @@ export default function AdministrativeDashboardPage() {
       <div className="grid grid-cols-3 gap-4 mb-4">
         {/* 4. Billing & Payments */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('billing')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -455,7 +477,7 @@ export default function AdministrativeDashboardPage() {
 
         {/* 5. Form Responses */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('form-responses')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -484,7 +506,7 @@ export default function AdministrativeDashboardPage() {
       {/* BOTTOM ROW - Document Management & Lab Orders */}
       <div className="grid grid-cols-3 gap-4">
         {/* 7. Document Management */}
-        <Card className="bg-white border border-gray-200 shadow-sm">
+        <Card className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg">
           <CardHeader className="pb-2 px-4 pt-3">
             <CardTitle className="text-sm font-semibold text-gray-900">Document Management</CardTitle>
           </CardHeader>
@@ -499,7 +521,7 @@ export default function AdministrativeDashboardPage() {
 
         {/* 8. Lab Orders */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('lab-orders')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -525,8 +547,8 @@ export default function AdministrativeDashboardPage() {
                     toast.error('Please select a patient first');
                     return;
                   }
-                  toast.info('Lab order creation - coming soon');
-                  // TODO: Implement lab order creation
+                  setOpenModal('lab-orders');
+                  setShowLabOrderForm(true);
                 }}
               >
                 <Building2 className="w-3 h-3 mr-1" />
@@ -538,7 +560,7 @@ export default function AdministrativeDashboardPage() {
 
         {/* 9. Electronic Signature Capture */}
         <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
           onClick={() => setOpenModal('signature')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
@@ -567,23 +589,6 @@ export default function AdministrativeDashboardPage() {
         </Card>
       </div>
 
-      {/* VNA Configuration Section - Phase 2 */}
-      <div className="mt-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg font-semibold">VNA Configuration</CardTitle>
-                <p className="text-sm text-gray-600">Manage Vendor Neutral Archive connections and routing rules</p>
-              </div>
-              <Button onClick={() => setOpenModal('vna-config')} variant="outline">
-                <Server className="w-4 h-4 mr-2" />
-                Configure VNAs
-              </Button>
-            </div>
-          </CardHeader>
-        </Card>
-      </div>
 
       {/* Modals */}
       <CardModal
@@ -598,20 +603,39 @@ export default function AdministrativeDashboardPage() {
 
       <CardModal
         isOpen={openModal === 'check-in'}
-        onClose={() => setOpenModal(null)}
-        title="Patient Check-In"
+        onClose={() => {
+          setOpenModal(null);
+          setShowUpdateInfo(false);
+        }}
+        title={showUpdateInfo ? "Update Patient Information" : "Patient Check-In"}
       >
-        <RedesignedCheckIn
-          patientName={selectedLeadId ? leads.find(l => l.id === selectedLeadId)?.contactPerson || 'Patient' : 'John Smith'}
-          onCheckIn={() => {
-            toast.success('Patient checked in successfully');
-            setOpenModal(null);
-          }}
-          onUpdateInfo={() => {
-            toast.info('Update patient information');
-            setOpenModal(null);
-          }}
-        />
+        {showUpdateInfo && selectedLeadId ? (
+          <PatientInfoUpdateForm
+            leadId={selectedLeadId}
+            onSuccess={() => {
+              toast.success('Patient information updated successfully');
+              setShowUpdateInfo(false);
+              setOpenModal(null);
+              fetchLeads(); // Refresh leads list
+            }}
+            onCancel={() => setShowUpdateInfo(false)}
+          />
+        ) : (
+          <RedesignedCheckIn
+            patientName={selectedLeadId ? leads.find(l => l.id === selectedLeadId)?.contactPerson || 'Patient' : 'John Smith'}
+            onCheckIn={() => {
+              toast.success('Patient checked in successfully');
+              setOpenModal(null);
+            }}
+            onUpdateInfo={() => {
+              if (!selectedLeadId) {
+                toast.error('Please select a patient first');
+                return;
+              }
+              setShowUpdateInfo(true);
+            }}
+          />
+        )}
       </CardModal>
 
       <CardModal
@@ -705,31 +729,44 @@ export default function AdministrativeDashboardPage() {
 
       <CardModal
         isOpen={openModal === 'lab-orders'}
-        onClose={() => setOpenModal(null)}
-        title="Lab Orders"
+        onClose={() => {
+          setOpenModal(null);
+          setShowLabOrderForm(false);
+        }}
+        title={showLabOrderForm ? "Create New Lab Order" : "Lab Orders"}
       >
-        <div className="space-y-4">
-          <Button 
-            className="w-full"
-            onClick={async () => {
-              if (!selectedLeadId) {
-                toast.error('Please select a patient first');
-                return;
-              }
-              toast.info('Lab order creation - coming soon');
-              // TODO: Implement lab order creation
+        {showLabOrderForm && selectedLeadId ? (
+          <LabOrderForm
+            leadId={selectedLeadId}
+            onSuccess={() => {
+              setShowLabOrderForm(false);
+              setOpenModal(null);
             }}
-          >
-            <Building2 className="w-4 h-4 mr-2" />
-            Create New Lab Order
-          </Button>
-          <div className="space-y-2">
-            <div className="p-3 border border-gray-200 rounded">
-              <p className="font-semibold">Order #12345</p>
-              <p className="text-sm text-gray-600">Status: In Progress</p>
+            onCancel={() => setShowLabOrderForm(false)}
+          />
+        ) : (
+          <div className="space-y-4">
+            <Button 
+              className="w-full"
+              onClick={() => {
+                if (!selectedLeadId) {
+                  toast.error('Please select a patient first');
+                  return;
+                }
+                setShowLabOrderForm(true);
+              }}
+            >
+              <Building2 className="w-4 h-4 mr-2" />
+              Create New Lab Order
+            </Button>
+            <div className="space-y-2">
+              <div className="p-3 border border-gray-200 rounded">
+                <p className="font-semibold">Order #12345</p>
+                <p className="text-sm text-gray-600">Status: In Progress</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </CardModal>
 
       <CardModal
@@ -759,7 +796,22 @@ export default function AdministrativeDashboardPage() {
         />
       </CardModal>
 
-      {/* VNA Configuration Modal - Phase 2 */}
+      {/* Settings Modal - Admin Only */}
+      <CardModal
+        isOpen={openModal === 'settings'}
+        onClose={() => setOpenModal(null)}
+        title="Settings"
+      >
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-4">VNA Configuration</h3>
+            <p className="text-sm text-gray-600 mb-4">Manage Vendor Neutral Archive connections and routing rules</p>
+            <VnaConfigurationWithRouting />
+          </div>
+        </div>
+      </CardModal>
+
+      {/* VNA Configuration Modal - Phase 2 (kept for backward compatibility) */}
       <CardModal
         isOpen={openModal === 'vna-config'}
         onClose={() => setOpenModal(null)}
