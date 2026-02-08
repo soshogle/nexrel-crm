@@ -5,8 +5,8 @@
  */
 
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { BlobServiceClient } from "@azure/storage-blob";
 import crypto from 'crypto';
+import { getAzureBlobClient } from './azure-storage-helper';
 
 export interface ImageStorageUrls {
   thumbnailUrl: string;
@@ -29,7 +29,7 @@ export interface StorageConfig {
 
 export class CloudImageStorageService {
   private s3Client: S3Client | null = null;
-  private azureClient: BlobServiceClient | null = null;
+  private azureClient: any = null; // BlobServiceClient | null, but optional
   private config: StorageConfig;
   private bucket: string = '';
   private container: string = '';
@@ -51,11 +51,11 @@ export class CloudImageStorageService {
   /**
    * Initialize storage client based on provider
    */
-  private initialize() {
+  private async initialize() {
     if (this.config.provider === 'aws') {
       this.initializeAWS();
     } else if (this.config.provider === 'azure') {
-      this.initializeAzure();
+      await this.initializeAzure();
     } else if (this.config.provider === 'gcp') {
       // GCP implementation can be added later
       throw new Error('GCP storage not yet implemented');
@@ -82,7 +82,7 @@ export class CloudImageStorageService {
     });
   }
 
-  private initializeAzure() {
+  private async initializeAzure() {
     if (this.azureClient) return;
 
     const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
@@ -94,11 +94,23 @@ export class CloudImageStorageService {
       throw new Error('Azure storage connection string not configured');
     }
 
-    this.azureClient = BlobServiceClient.fromConnectionString(connectionString);
+    try {
+      this.azureClient = await getAzureBlobClient(connectionString);
+    } catch (error: any) {
+      // If Azure package is not installed, throw a helpful error
+      if (error?.code === 'MODULE_NOT_FOUND' || error?.message?.includes('Cannot find module') || error?.message?.includes('not installed')) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('Azure Storage Blob package not installed - Azure storage unavailable');
+          return;
+        }
+        throw error;
+      }
+      throw error;
+    }
   }
 
-  private ensureInitialized() {
-    this.initialize();
+  private async ensureInitialized() {
+    await this.initialize();
     if (this.config.provider === 'aws' && !this.s3Client) {
       throw new Error('AWS S3 client not initialized');
     }
@@ -117,7 +129,7 @@ export class CloudImageStorageService {
     full: Buffer,
     contentType: string = 'image/jpeg'
   ): Promise<ImageStorageUrls> {
-    this.ensureInitialized();
+    await this.ensureInitialized();
 
     const timestamp = Date.now();
     const basePath = `dental/xrays/${xrayId}/${timestamp}`;
@@ -212,7 +224,13 @@ export class CloudImageStorageService {
     full: Buffer,
     contentType: string
   ): Promise<ImageStorageUrls> {
-    if (!this.azureClient) throw new Error('Azure client not initialized');
+    if (!this.azureClient) {
+      // Try to initialize if not already done
+      await this.initializeAzure();
+      if (!this.azureClient) {
+        throw new Error('Azure client not initialized. Azure Storage Blob package may not be installed.');
+      }
+    }
 
     const containerClient = this.azureClient.getContainerClient(this.container);
     await containerClient.createIfNotExists({ access: 'blob' });
@@ -271,7 +289,7 @@ export class CloudImageStorageService {
    * Delete images from cloud storage
    */
   async deleteImages(storagePaths: { thumbnail: string; preview: string; full: string }): Promise<void> {
-    this.ensureInitialized();
+    await this.ensureInitialized();
 
     if (this.config.provider === 'aws') {
       if (!this.s3Client) throw new Error('S3 client not initialized');

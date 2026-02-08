@@ -235,8 +235,9 @@ export class WorkflowEngine {
     enrollment?: WorkflowEnrollment
   ): Promise<any> {
     const config = action.actionConfig as any;
+    const actionType = action.type as string;
 
-    switch (action.type) {
+    switch (actionType) {
       case 'CONDITIONAL_SPLIT':
         // This is handled in executeAction
         return { action: 'conditional_evaluated' };
@@ -953,7 +954,14 @@ export class WorkflowEngine {
     if (!enrollment) {
       throw new Error('Enrollment is required for dental actions');
     }
-    return executeDentalAction(action, enrollment, context);
+    // Convert context to match dental workflow actions ExecutionContext type
+    const dentalContext = {
+      userId: context.userId,
+      leadId: context.leadId ?? null,
+      dealId: context.dealId ?? null,
+      variables: context.variables || {},
+    };
+    return executeDentalAction(action, enrollment, dentalContext);
   }
 }
 
