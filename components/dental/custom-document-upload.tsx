@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, File, Image as ImageIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
+import { useClinic } from '@/lib/dental/clinic-context';
 
 interface CustomDocumentUploadProps {
   leadId?: string;
@@ -17,6 +18,7 @@ interface CustomDocumentUploadProps {
 
 export function CustomDocumentUpload({ leadId }: CustomDocumentUploadProps) {
   const { data: session } = useSession();
+  const { activeClinic } = useClinic();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Array<{ name: string; progress: number; id: string }>>([]);
@@ -85,6 +87,9 @@ export function CustomDocumentUpload({ leadId }: CustomDocumentUploadProps) {
       formData.append('leadId', leadId);
       formData.append('documentType', 'OTHER');
       formData.append('accessLevel', 'RESTRICTED');
+      if (activeClinic?.id) {
+        formData.append('clinicId', activeClinic.id);
+      }
 
       // Simulate progress
       const progressInterval = setInterval(() => {

@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const leadId = formData.get('leadId') as string | null;
+    const clinicId = formData.get('clinicId') as string | null;
     const documentType = formData.get('documentType') as DocumentType | null;
     const category = formData.get('category') as string | null;
     const description = formData.get('description') as string | null;
@@ -87,29 +88,33 @@ export async function POST(request: NextRequest) {
     const tagsArray = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
 
     // Create document record
-    const document = await prisma.patientDocument.create({
-      data: {
-        userId: session.user.id,
-        leadId,
-        documentType: documentType || 'OTHER',
-        category: category || null,
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        encryptedStoragePath: uploadResult.storagePath,
-        encryptionKeyId: uploadResult.keyId,
-        consentId: consentId || null,
-        accessLevel,
-        createdBy: session.user.id,
-        retentionExpiry,
-        description: description || null,
-        tags: tagsArray,
-        metadata: {
-          originalFileName: file.name,
-          uploadedBy: session.user.id,
-          uploadDate: new Date().toISOString(),
-        },
+    const createData: any = {
+      userId: session.user.id,
+      leadId,
+      documentType: documentType || 'OTHER',
+      category: category || null,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      encryptedStoragePath: uploadResult.storagePath,
+      encryptionKeyId: uploadResult.keyId,
+      consentId: consentId || null,
+      accessLevel,
+      createdBy: session.user.id,
+      retentionExpiry,
+      description: description || null,
+      tags: tagsArray,
+      metadata: {
+        originalFileName: file.name,
+        uploadedBy: session.user.id,
+        uploadDate: new Date().toISOString(),
       },
+    };
+    if (clinicId) {
+      createData.clinicId = clinicId;
+    }
+    const document = await prisma.patientDocument.create({
+      data: createData,
     });
 
     // Log access
@@ -150,17 +155,23 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
+    const clinicId = searchParams.get('clinicId');
 
     if (!leadId) {
       return NextResponse.json({ error: await t('api.leadIdRequired') }, { status: 400 });
     }
 
+    const where: any = {
+      leadId,
+      userId: session.user.id,
+      deletedAt: null,
+    };
+    if (clinicId) {
+      where.clinicId = clinicId;
+    }
+
     const documents = await prisma.patientDocument.findMany({
-      where: {
-        leadId,
-        userId: session.user.id,
-        deletedAt: null,
-      },
+      where,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,

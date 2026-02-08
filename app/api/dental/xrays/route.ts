@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
+    const clinicId = searchParams.get('clinicId');
 
     if (!leadId) {
       return NextResponse.json(
@@ -43,12 +44,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Build where clause with clinic filtering
+    const where: any = {
+      leadId,
+      userId: session.user.id,
+    };
+    if (clinicId) {
+      where.clinicId = clinicId;
+    }
+
     // Use correct Prisma model name (capitalized)
     const xrays = await prisma.dentalXRay.findMany({
-      where: {
-        leadId,
-        userId: session.user.id,
-      },
+      where,
       orderBy: {
         dateTaken: 'desc',
       },
@@ -80,6 +87,7 @@ export async function POST(request: NextRequest) {
     const dateTaken = formData.get('dateTaken') as string;
     const teethIncludedStr = formData.get('teethIncluded') as string;
     const notes = formData.get('notes') as string;
+    const clinicId = formData.get('clinicId') as string | null;
 
     if (!file || !leadId || !xrayType || !dateTaken) {
       return NextResponse.json(
@@ -344,27 +352,31 @@ export async function POST(request: NextRequest) {
 
     // Create X-ray record with multi-resolution URLs
     // Note: Model name will be available after running: npx prisma generate
+    const createData: any = {
+      leadId,
+      userId,
+      dicomFile,
+      // Legacy fields for backward compatibility
+      imageFile: fullUrl || null,
+      imageUrl: fullUrl || previewUrl || thumbnailUrl || null,
+      // New multi-resolution fields
+      thumbnailUrl,
+      previewUrl,
+      fullUrl,
+      storagePaths: storagePaths ? JSON.stringify(storagePaths) : null,
+      compressionRatio,
+      originalSize,
+      compressedSize,
+      xrayType,
+      teethIncluded,
+      dateTaken: new Date(dateTaken),
+      notes: notes || null,
+    };
+    if (clinicId) {
+      createData.clinicId = clinicId;
+    }
     const xray = await (prisma as any).dentalXRay.create({
-      data: {
-        leadId,
-        userId,
-        dicomFile,
-        // Legacy fields for backward compatibility
-        imageFile: fullUrl || null,
-        imageUrl: fullUrl || previewUrl || thumbnailUrl || null,
-        // New multi-resolution fields
-        thumbnailUrl,
-        previewUrl,
-        fullUrl,
-        storagePaths: storagePaths ? JSON.stringify(storagePaths) : null,
-        compressionRatio,
-        originalSize,
-        compressedSize,
-        xrayType,
-        teethIncluded,
-        dateTaken: new Date(dateTaken),
-        notes: notes || null,
-      },
+      data: createData,
     });
 
     // Update storage paths with actual X-ray ID (if we used temp ID)

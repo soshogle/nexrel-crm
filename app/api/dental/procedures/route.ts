@@ -22,17 +22,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
     const treatmentPlanId = searchParams.get('treatmentPlanId');
+    const clinicId = searchParams.get('clinicId');
 
     if (!leadId) {
       return NextResponse.json({ error: 'Lead ID required' }, { status: 400 });
     }
 
+    const where: any = {
+      leadId,
+      userId: session.user.id,
+    };
+    if (treatmentPlanId) {
+      where.treatmentPlanId = treatmentPlanId;
+    }
+    if (clinicId) {
+      where.clinicId = clinicId;
+    }
+
     const procedures = await (prisma as any).dentalProcedure.findMany({
-      where: {
-        leadId,
-        userId: session.user.id,
-        ...(treatmentPlanId && { treatmentPlanId }),
-      },
+      where,
       orderBy: {
         scheduledDate: 'asc',
       },
