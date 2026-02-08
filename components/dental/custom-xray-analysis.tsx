@@ -33,29 +33,28 @@ export function CustomXRayAnalysis({ xrayData }: XRayAnalysisProps) {
 
         {/* Diagnostic Overlays */}
         {/* Top Left */}
-        <div className="absolute top-2 left-2 bg-white/90 border border-purple-300 rounded px-2 py-1 shadow-sm">
-          <div className="text-[10px] font-medium text-gray-900">Cavities Detected</div>
+        <div className="absolute top-2 left-2 bg-white/95 border border-purple-300 rounded px-2 py-1 shadow-sm">
+          <div className="text-[10px] font-medium text-gray-900">Caries Detected: Stage 2</div>
           <div className="text-[10px] text-gray-600">Severity: Moderate</div>
         </div>
 
         {/* Top Right */}
-        <div className="absolute top-2 right-2 bg-white/90 border border-purple-300 rounded px-2 py-1 shadow-sm">
+        <div className="absolute top-2 right-2 bg-white/95 border border-purple-300 rounded px-2 py-1 shadow-sm">
           <div className="text-[10px] font-medium text-gray-900">Diagnostic</div>
-          <div className="text-[10px] text-gray-600">Size: 4.23 mm</div>
-          <div className="text-[10px] text-gray-600">Depth: 4.23 mm</div>
+          <div className="text-[10px] text-gray-600">4.23 mm</div>
         </div>
 
         {/* Bottom Left */}
-        <div className="absolute bottom-2 left-2 bg-white/90 border border-purple-300 rounded px-2 py-1 shadow-sm">
-          <div className="text-[10px] font-medium text-gray-900">Periodontal Pockets</div>
-          <div className="text-[10px] text-gray-600">Loss: 3mm</div>
-          <div className="text-[10px] text-gray-600">Severity: Moderate</div>
+        <div className="absolute bottom-2 left-2 bg-white/95 border border-purple-300 rounded px-2 py-1 shadow-sm">
+          <div className="text-[10px] font-medium text-gray-900">Periodontal Mucositis</div>
+          <div className="text-[10px] text-gray-600">Tooth #3</div>
+          <div className="text-[10px] text-gray-600">Referral: Endodontic Evaluation</div>
         </div>
 
         {/* Bottom Right */}
-        <div className="absolute bottom-2 right-2 bg-white/90 border border-purple-300 rounded px-2 py-1 shadow-sm">
+        <div className="absolute bottom-2 right-2 bg-white/95 border border-purple-300 rounded px-2 py-1 shadow-sm">
           <div className="text-[10px] font-medium text-gray-900">Bone Density</div>
-          <div className="text-[10px] text-green-600 font-semibold">95% (Healthy)</div>
+          <div className="text-[10px] text-green-600 font-semibold">80% (healthy)</div>
         </div>
 
         {/* Connecting lines (simplified) */}
@@ -68,11 +67,11 @@ export function CustomXRayAnalysis({ xrayData }: XRayAnalysisProps) {
       </div>
 
       {/* Text Details */}
-      <div className="space-y-1 text-xs text-gray-600">
-        <div>Diagnostic: Caries: 5.9mm</div>
-        <div>Diagnostic: Abscess: 4.23mm</div>
-        <div>Bone Density: 90% (Healthy)</div>
-        <div>Periodontal Mucositis: Tooth #30, Re-eval: Orthodontic Evaluation</div>
+      <div className="space-y-1 text-xs text-gray-600 mt-2">
+        <div>Caries Detected: Stage 2: Severity: Moderate</div>
+        <div>Periodontal Mucositis: Tooth #3: Referral: Endodontic Evaluation</div>
+        <div>Diagnostic: ... 4.23 mm</div>
+        <div>Bone Density: 80% (healthy)</div>
       </div>
     </div>
   );
