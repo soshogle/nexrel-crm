@@ -22,17 +22,24 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
+    const clinicId = searchParams.get('clinicId');
 
     if (!leadId) {
       return NextResponse.json({ error: await t('api.leadIdRequired') }, { status: 400 });
     }
 
+    // Build where clause with clinic filtering
+    const where: any = {
+      leadId,
+      userId: session.user.id,
+    };
+    if (clinicId) {
+      where.clinicId = clinicId;
+    }
+
     // Get all periodontal charts for this patient, ordered by date
     const charts = await prisma.dentalPeriodontalChart.findMany({
-      where: {
-        leadId,
-        userId: session.user.id,
-      },
+      where,
       orderBy: { chartDate: 'desc' },
     });
 
@@ -58,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { leadId, measurements, notes, chartDate } = body;
+    const { leadId, measurements, notes, chartDate, clinicId } = body;
 
     if (!leadId || !measurements) {
       return NextResponse.json(
@@ -67,15 +74,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const createData: any = {
+      leadId,
+      userId: session.user.id,
+      measurements,
+      notes: notes || null,
+      chartDate: chartDate ? new Date(chartDate) : new Date(),
+      chartedBy: session.user.id,
+    };
+    if (clinicId) {
+      createData.clinicId = clinicId;
+    }
+
     const chart = await prisma.dentalPeriodontalChart.create({
-      data: {
-        leadId,
-        userId: session.user.id,
-        measurements,
-        notes: notes || null,
-        chartDate: chartDate ? new Date(chartDate) : new Date(),
-        chartedBy: session.user.id,
-      },
+      data: createData,
     });
 
     return NextResponse.json({

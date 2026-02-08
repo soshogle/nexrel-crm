@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
     const status = searchParams.get('status') as TreatmentPlanStatus | null;
+    const clinicId = searchParams.get('clinicId');
 
     const where: any = {
       userId: session.user.id,
@@ -35,6 +36,10 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       where.status = status;
+    }
+
+    if (clinicId) {
+      where.clinicId = clinicId;
     }
 
     const plans = await prisma.dentalTreatmentPlan.findMany({
@@ -81,6 +86,7 @@ export async function POST(request: NextRequest) {
       patientResponsibility,
       status,
       startDate,
+      clinicId,
     } = body;
 
     if (!leadId || !planName) {
@@ -104,6 +110,10 @@ export async function POST(request: NextRequest) {
 
     if (startDate) {
       data.startDate = new Date(startDate);
+    }
+
+    if (clinicId) {
+      data.clinicId = clinicId;
     }
 
     let plan;

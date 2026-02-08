@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { useClinic, ClinicProvider } from '@/lib/dental/clinic-context';
 import { SharedDashboardLayout } from '@/components/dental/shared-dashboard-layout';
 import { PeriodontalBarChart } from '@/components/dental/periodontal-bar-chart';
 import { EnhancedOdontogramDisplay } from '@/components/dental/enhanced-odontogram-display';
@@ -131,8 +132,9 @@ function ClinicalNotesEditor({ leadId }: { leadId: string }) {
   );
 }
 
-export default function ClinicalDashboardPage() {
+function ClinicalDashboardPageContent() {
   const { data: session } = useSession();
+  const { activeClinic } = useClinic();
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,7 +176,8 @@ export default function ClinicalDashboardPage() {
   const fetchOdontogram = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
-      const response = await fetch(`/api/dental/odontogram?leadId=${selectedLeadId}`);
+      const clinicIdParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
+      const response = await fetch(`/api/dental/odontogram?leadId=${selectedLeadId}${clinicIdParam}`);
       if (response.ok) {
         const data = await response.json();
         setOdontogramData(data.odontogram?.toothData || null);
@@ -183,13 +186,14 @@ export default function ClinicalDashboardPage() {
       console.error('Error fetching odontogram:', error);
       setOdontogramData(null);
     }
-  }, [selectedLeadId]);
+  }, [selectedLeadId, activeClinic?.id]);
 
   // Fetch periodontal chart
   const fetchPeriodontalChart = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
-      const response = await fetch(`/api/dental/periodontal?leadId=${selectedLeadId}`);
+      const clinicIdParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
+      const response = await fetch(`/api/dental/periodontal?leadId=${selectedLeadId}${clinicIdParam}`);
       if (response.ok) {
         const data = await response.json();
         const latestChart = data.charts?.[0];
@@ -199,13 +203,14 @@ export default function ClinicalDashboardPage() {
       console.error('Error fetching periodontal chart:', error);
       setPeriodontalData(null);
     }
-  }, [selectedLeadId]);
+  }, [selectedLeadId, activeClinic?.id]);
 
   // Fetch treatment plans
   const fetchTreatmentPlans = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
-      const response = await fetch(`/api/dental/treatment-plans?leadId=${selectedLeadId}`);
+      const clinicIdParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
+      const response = await fetch(`/api/dental/treatment-plans?leadId=${selectedLeadId}${clinicIdParam}`);
       if (response.ok) {
         const data = await response.json();
         setTreatmentPlans(data.plans || []);
@@ -214,13 +219,14 @@ export default function ClinicalDashboardPage() {
       console.error('Error fetching treatment plans:', error);
       setTreatmentPlans([]);
     }
-  }, [selectedLeadId]);
+  }, [selectedLeadId, activeClinic?.id]);
 
   // Fetch procedures
   const fetchProcedures = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
-      const response = await fetch(`/api/dental/procedures?leadId=${selectedLeadId}`);
+      const clinicIdParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
+      const response = await fetch(`/api/dental/procedures?leadId=${selectedLeadId}${clinicIdParam}`);
       if (response.ok) {
         const data = await response.json();
         setProcedures(data.procedures || []);
@@ -229,7 +235,7 @@ export default function ClinicalDashboardPage() {
       console.error('Error fetching procedures:', error);
       setProcedures([]);
     }
-  }, [selectedLeadId]);
+  }, [selectedLeadId, activeClinic?.id]);
 
   // Fetch X-rays
   const fetchXrays = useCallback(async () => {
@@ -239,7 +245,8 @@ export default function ClinicalDashboardPage() {
       return;
     }
     try {
-      const response = await fetch(`/api/dental/xrays?leadId=${selectedLeadId}`);
+      const clinicIdParam = activeClinic?.id ? `&clinicId=${activeClinic.id}` : '';
+      const response = await fetch(`/api/dental/xrays?leadId=${selectedLeadId}${clinicIdParam}`);
       if (response.ok) {
         const data = await response.json();
         const xraysArray = data || [];
@@ -255,7 +262,7 @@ export default function ClinicalDashboardPage() {
       setXrays([]);
       setSelectedXray(null);
     }
-  }, [selectedLeadId]);
+  }, [selectedLeadId, activeClinic?.id]);
 
   // Fetch stats
   const fetchStats = useCallback(async () => {
@@ -858,5 +865,13 @@ export default function ClinicalDashboardPage() {
         )}
       </CardModal>
     </SharedDashboardLayout>
+  );
+}
+
+export default function ClinicalDashboardPage() {
+  return (
+    <ClinicProvider>
+      <ClinicalDashboardPageContent />
+    </ClinicProvider>
   );
 }

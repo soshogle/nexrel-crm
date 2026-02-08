@@ -1,108 +1,77 @@
-# Multi-Clinic Support Implementation Plan
+# Multi-Clinic Support Implementation
 
 ## Overview
-Add multi-clinic support to enable dental practices to manage multiple clinic locations from a single account.
+Multi-clinic support allows dental practices to manage multiple clinic locations from a single account, with centralized administration and clinic-specific data isolation.
 
-## Phase 1: Database Schema ✅ (In Progress)
+## Database Schema
 
-### Models Added:
-1. **Clinic** - Main clinic entity
-   - Basic info (name, address, contact)
-   - Settings (timezone, currency, language)
-   - Branding (logo, primaryColor)
-   - Status (isActive)
+### Clinic Model
+- Basic info: name, address, contact details
+- Settings: timezone, currency, language
+- Branding: logo, primary color
+- Status: isActive flag
 
-2. **UserClinic** - Junction table for many-to-many relationship
-   - Links users to clinics
-   - Role-based access (OWNER, ADMIN, MEMBER)
-   - Primary clinic flag
+### UserClinic Junction Table
+- Many-to-many relationship between Users and Clinics
+- Roles: OWNER, ADMIN, MEMBER
+- isPrimary flag for user's default clinic
 
-### Models Updated (clinicId added):
-- DentalOdontogram ✅
-- DentalPeriodontalChart ✅
-- DentalTreatmentPlan ✅
-- DentalProcedure (pending)
-- DentalForm (pending)
-- DentalFormResponse (pending)
-- DentalXRay (pending)
-- DentalLabOrder (pending)
-- DentalInsuranceClaim (pending)
-- VnaConfiguration (pending)
-- PatientDocument (pending)
+### Clinic ID Added To:
+- DentalOdontogram
+- DentalPeriodontalChart
+- DentalTreatmentPlan
+- DentalProcedure
+- DentalForm
+- DentalFormResponse
+- DentalXRay
+- DentalLabOrder
+- DentalInsuranceClaim
+- VnaConfiguration
+- PatientDocument
 
-## Phase 2: API Updates (Next)
+## API Endpoints
 
-### Endpoints to Create:
-- `GET /api/clinics` - List user's clinics
-- `POST /api/clinics` - Create new clinic
-- `GET /api/clinics/[id]` - Get clinic details
-- `PUT /api/clinics/[id]` - Update clinic
-- `DELETE /api/clinics/[id]` - Delete clinic
-- `POST /api/clinics/[id]/members` - Add user to clinic
-- `DELETE /api/clinics/[id]/members/[userId]` - Remove user
-- `PUT /api/clinics/[id]/members/[userId]` - Update user role
-- `GET /api/clinics/[id]/switch` - Switch active clinic
+### GET /api/clinics
+- List all clinics for current user
+- Returns clinics with role and isPrimary flag
 
-### Middleware:
-- Add `clinicId` to session/context
-- Filter queries by `clinicId`
-- Validate clinic access permissions
+### POST /api/clinics
+- Create new clinic
+- Automatically adds creator as OWNER with isPrimary=true
 
-## Phase 3: UI Components (Next)
+### GET /api/clinics/[id]
+- Get clinic details
+- Verifies user access
 
-### Components to Create:
-1. **ClinicSelector** - Dropdown/switcher in header
-2. **ClinicManagement** - Admin page for managing clinics
-3. **ClinicSettings** - Settings page per clinic
-4. **ClinicMembers** - Manage team members per clinic
+### PATCH /api/clinics/[id]
+- Update clinic (OWNER/ADMIN only)
 
-### Pages to Update:
-- All dental dashboard pages (add clinic context)
-- All API routes (add clinic filtering)
+### POST /api/clinics/switch
+- Switch active clinic context
 
-## Phase 4: Advanced Reporting (After Multi-Clinic)
+## UI Components
 
-### Reports to Build:
-1. **Financial Reports**
-   - P&L by clinic
-   - Collections by clinic
-   - Procedure profitability
-   - Insurance aging
+### ClinicSelector
+- Dropdown to switch between clinics
+- Shows clinic name and "Primary" badge
+- Located in dashboard header
 
-2. **Production Reports**
-   - Production by provider
-   - Production by clinic
-   - Procedure volume
-   - Revenue trends
+### ClinicProvider (Context)
+- Provides active clinic context
+- Persists selection in localStorage
+- Auto-selects primary clinic on load
 
-3. **Custom Report Builder**
-   - Drag-and-drop fields
-   - Date ranges
-   - Filters
-   - Export (PDF, Excel, CSV)
+## Migration Notes
 
-## Phase 5: Patient Portal (Last)
+The migration automatically:
+1. Creates default clinic for each existing DENTIST user
+2. Migrates all existing dental data to user's clinic
+3. Creates UserClinic relationships
 
-### Features:
-- Appointment history
-- Treatment plan viewing
-- Bill pay
-- Secure messaging
-- Document access
-- Online appointment booking
+## Next Steps
 
-## Migration Strategy
-
-1. **Backward Compatibility**: Keep `userId` for existing data
-2. **Default Clinic**: Auto-create clinic for existing users
-3. **Gradual Migration**: Allow clinicId to be nullable initially
-4. **Data Migration**: Script to assign clinicId based on userId
-
-## Testing Checklist
-
-- [ ] Create multiple clinics
-- [ ] Switch between clinics
-- [ ] Verify data isolation
-- [ ] Test permissions (OWNER, ADMIN, MEMBER)
-- [ ] Test cross-clinic reporting
-- [ ] Verify existing data still works
+1. Add clinic filtering to all dental queries
+2. Implement cross-clinic permissions
+3. Create centralized admin dashboard
+4. Add clinic creation/edit UI
+5. Add clinic settings page
