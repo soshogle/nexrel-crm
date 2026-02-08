@@ -1,184 +1,48 @@
 /**
- * Dental Procedure API
- * Handles procedure log/activity log CRUD operations
+ * Dental Procedures API
+ * Phase 5: Get procedures for treatment progress tracking
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { ProcedureStatus } from '@prisma/client';
-import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// GET - Get procedures for a patient
+// GET /api/dental/procedures - List procedures
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('leadId');
     const treatmentPlanId = searchParams.get('treatmentPlanId');
-    const status = searchParams.get('status') as ProcedureStatus | null;
 
-    const where: any = {
-      userId: session.user.id,
-    };
-
-    if (leadId) {
-      where.leadId = leadId;
+    if (!leadId) {
+      return NextResponse.json({ error: 'Lead ID required' }, { status: 400 });
     }
 
-    if (treatmentPlanId) {
-      where.treatmentPlanId = treatmentPlanId;
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    const procedures = await prisma.dentalProcedure.findMany({
-      where,
-      orderBy: { scheduledDate: 'desc' },
-      include: {
-        treatmentPlan: {
-          select: {
-            planName: true,
-            status: true,
-          },
-        },
+    const procedures = await (prisma as any).dentalProcedure.findMany({
+      where: {
+        leadId,
+        userId: session.user.id,
+        ...(treatmentPlanId && { treatmentPlanId }),
+      },
+      orderBy: {
+        scheduledDate: 'asc',
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      procedures,
-    });
+    return NextResponse.json({ success: true, procedures });
   } catch (error: any) {
     console.error('Error fetching procedures:', error);
     return NextResponse.json(
-      { error: await t('api.fetchProceduresFailed') },
-      { status: 500 }
-    );
-  }
-}
-
-// POST - Create new procedure
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const {
-      leadId,
-      treatmentPlanId,
-      procedureCode,
-      procedureName,
-      description,
-      teethInvolved,
-      cost,
-      insuranceCoverage,
-      scheduledDate,
-      performedDate,
-      performedBy,
-      notes,
-      status,
-    } = body;
-
-    if (!leadId || !procedureCode || !procedureName) {
-      return NextResponse.json(
-        { error: await t('api.missingRequiredFields') },
-        { status: 400 }
-      );
-    }
-
-    const procedure = await prisma.dentalProcedure.create({
-      data: {
-        leadId,
-        userId: session.user.id,
-        treatmentPlanId: treatmentPlanId || null,
-        procedureCode,
-        procedureName,
-        description: description || null,
-        teethInvolved: teethInvolved || [],
-        cost: cost || 0,
-        insuranceCoverage: insuranceCoverage || 0,
-        scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
-        performedDate: performedDate ? new Date(performedDate) : null,
-        performedBy: performedBy || null,
-        notes: notes || null,
-        status: status || ProcedureStatus.SCHEDULED,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      procedure,
-    });
-  } catch (error: any) {
-    console.error('Error creating procedure:', error);
-    return NextResponse.json(
-      { error: await t('api.saveProcedureFailed'), details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-// PATCH - Update procedure status
-export async function PATCH(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { id, status, performedDate, performedBy, notes } = body;
-
-    if (!id || !status) {
-      return NextResponse.json(
-        { error: await t('api.missingRequiredFields') },
-        { status: 400 }
-      );
-    }
-
-    const updateData: any = {
-      status,
-    };
-
-    if (status === ProcedureStatus.COMPLETED && performedDate) {
-      updateData.performedDate = new Date(performedDate);
-    }
-
-    if (performedBy) {
-      updateData.performedBy = performedBy;
-    }
-
-    if (notes !== undefined) {
-      updateData.notes = notes;
-    }
-
-    const procedure = await prisma.dentalProcedure.update({
-      where: { id },
-      data: updateData,
-    });
-
-    return NextResponse.json({
-      success: true,
-      procedure,
-    });
-  } catch (error: any) {
-    console.error('Error updating procedure:', error);
-    return NextResponse.json(
-      { error: await t('api.saveProcedureFailed'), details: error.message },
+      { error: error.message || 'Failed to fetch procedures' },
       { status: 500 }
     );
   }

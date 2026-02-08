@@ -1,0 +1,82 @@
+#!/usr/bin/env node
+
+/**
+ * Run Prisma Migration with proper environment variable loading
+ */
+
+const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+// Load .env.local file
+const envPath = path.join(__dirname, '..', '.env.local');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  const lines = envContent.split('\n');
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const [key, ...valueParts] = trimmed.split('=');
+      if (key && valueParts.length > 0) {
+        const value = valueParts.join('=').replace(/^["']|["']$/g, '');
+        process.env[key.trim()] = value.trim();
+      }
+    }
+  }
+  
+  console.log('✅ Loaded environment variables from .env.local');
+} else {
+  console.log('⚠️  .env.local not found, using system environment variables');
+}
+
+// Check DATABASE_URL
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL not found in environment!');
+  console.error('Please set DATABASE_URL in .env.local or .env');
+  process.exit(1);
+}
+
+console.log(`✅ DATABASE_URL found: ${process.env.DATABASE_URL.substring(0, 20)}...`);
+console.log('');
+
+// Run migration
+console.log('🚀 Running Prisma migration...');
+console.log('');
+
+try {
+  execSync('npx prisma migrate dev --name add_vna_configuration', {
+    stdio: 'inherit',
+    env: process.env,
+    cwd: path.join(__dirname, '..'),
+  });
+  
+  console.log('');
+  console.log('✅ Migration completed successfully!');
+  console.log('');
+  
+  // Generate Prisma Client
+  console.log('🔧 Generating Prisma Client...');
+  execSync('npx prisma generate', {
+    stdio: 'inherit',
+    env: process.env,
+    cwd: path.join(__dirname, '..'),
+  });
+  
+  console.log('');
+  console.log('✅ Prisma Client generated!');
+  console.log('');
+  console.log('🎉 Migration and setup complete!');
+  console.log('');
+  console.log('Next steps:');
+  console.log('1. Restart your development server');
+  console.log('2. Test VNA configurations via Admin Dashboard');
+  console.log('3. Create routing rules');
+  console.log('4. Test workflow actions');
+  
+} catch (error) {
+  console.error('');
+  console.error('❌ Migration failed!');
+  console.error(error.message);
+  process.exit(1);
+}

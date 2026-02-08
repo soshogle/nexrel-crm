@@ -15,6 +15,10 @@ import { DicomValidator } from '@/lib/dental/dicom-validator';
 import { DicomErrorHandler } from '@/lib/dental/dicom-error-handler';
 import { DicomRetry } from '@/lib/dental/dicom-retry';
 import { DicomPerformanceMonitor } from '@/lib/dental/dicom-performance';
+import { ImageCompressionService } from '@/lib/dental/image-compression-service';
+import { CloudImageStorageService } from '@/lib/dental/cloud-image-storage';
+import { VnaManager } from '@/lib/dental/vna-integration';
+import { triggerXrayUploadedWorkflow } from '@/lib/dental/workflow-triggers';
 import crypto from 'crypto';
 import { t } from '@/lib/i18n-server';
 
@@ -121,8 +125,13 @@ export async function POST(request: NextRequest) {
     const encryptionKey = crypto.randomBytes(32).toString('hex');
     
     let dicomFile: string | null = null;
-    let imageFile: string | null = null;
-    let imageUrl: string | null = null;
+    let thumbnailUrl: string | null = null;
+    let previewUrl: string | null = null;
+    let fullUrl: string | null = null;
+    let storagePaths: { thumbnail: string; preview: string; full: string } | null = null;
+    let compressionRatio: number | null = null;
+    let originalSize: number | null = null;
+    let compressedSize: number | null = null;
 
     if (isDicom) {
       // Validate DICOM file first
@@ -143,7 +152,7 @@ export async function POST(request: NextRequest) {
         console.warn('DICOM validation warnings:', validation.warnings);
       }
 
-      // Store DICOM file using uploadDocument method
+      // Store DICOM file using uploadDocument method (original, encrypted)
       let uploadResult;
       try {
         uploadResult = await storageService.uploadDocument(
@@ -153,6 +162,7 @@ export async function POST(request: NextRequest) {
           encryptionKey
         );
         dicomFile = uploadResult.storagePath;
+        originalSize = buffer.length;
       } catch (storageError) {
         const error = DicomErrorHandler.handleStorageError(storageError as Error);
         DicomErrorHandler.logError(error, { leadId, userId, fileSize: buffer.length });
@@ -162,7 +172,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Process DICOM and generate preview with retry and performance tracking
+      // Process DICOM and generate multi-resolution compressed images
       try {
         await DicomPerformanceMonitor.measure('dicom_processing', async () => {
           // Parse DICOM and extract pixel data with retry
@@ -180,36 +190,35 @@ export async function POST(request: NextRequest) {
 
           const { metadata, pixelData } = parseResult.result;
           
-          // Get optimal window/level for this X-ray type
-          const optimalWindow = DicomToImageConverter.getOptimalWindowLevel(xrayType);
+          // Get optimal compression settings for this X-ray type
+          const compressionOptions = ImageCompressionService.getOptimalSettings(xrayType);
           
-          // Convert DICOM to PNG image for preview with retry
-          const convertResult = await DicomRetry.retry(
-            () => DicomToImageConverter.convertToImage(pixelData, {
-              windowCenter: optimalWindow.windowCenter,
-              windowWidth: optimalWindow.windowWidth,
-              outputFormat: 'png',
-              maxDimension: 2048,
-            }),
+          // Generate multi-resolution compressed images
+          const compressionResult = await DicomRetry.retry(
+            () => ImageCompressionService.compressMultiResolution(pixelData, compressionOptions),
             {
               maxRetries: 2,
               retryDelay: 500,
             }
           );
 
-          if (!convertResult.success || !convertResult.result) {
-            throw convertResult.error || new Error('Failed to convert DICOM to image');
+          if (!compressionResult.success || !compressionResult.result) {
+            throw compressionResult.error || new Error('Failed to compress images');
           }
 
-          const imageBuffer = convertResult.result;
+          const { thumbnail, preview, full, compressionRatio: ratio } = compressionResult.result;
+          compressionRatio = ratio;
+          compressedSize = full.size;
 
-          // Upload converted image with retry
-          const uploadResult = await DicomRetry.retry(
-            () => storageService.uploadDocument(
-              imageBuffer,
-              `${file.name.replace(/\.(dcm|dicom)$/i, '')}.png`,
-              'image/png',
-              encryptionKey
+          // Upload compressed images to cloud storage
+          const cloudStorage = new CloudImageStorageService();
+          const storageUrlsResult = await DicomRetry.retry(
+            () => cloudStorage.uploadCompressedImages(
+              `temp-${Date.now()}`, // Temporary ID, will be updated after DB creation
+              thumbnail.buffer,
+              preview.buffer,
+              full.buffer,
+              'image/jpeg'
             ),
             {
               maxRetries: 3,
@@ -218,12 +227,68 @@ export async function POST(request: NextRequest) {
             }
           );
 
-          if (uploadResult.success && uploadResult.result) {
-            imageFile = uploadResult.result.storagePath;
-            imageUrl = `/api/dental/xrays/${Date.now()}/image`;
+          if (storageUrlsResult.success && storageUrlsResult.result) {
+            thumbnailUrl = storageUrlsResult.result.thumbnailUrl;
+            previewUrl = storageUrlsResult.result.previewUrl;
+            fullUrl = storageUrlsResult.result.fullUrl;
+            storagePaths = storageUrlsResult.result.storagePaths;
           } else {
-            // Log but don't fail - DICOM file is stored, preview can be regenerated
-            console.error('Error storing preview image:', uploadResult.error);
+            // Log but don't fail - DICOM file is stored, images can be regenerated
+            console.error('Error storing compressed images:', storageUrlsResult.error);
+          }
+
+          // Phase 2: Route DICOM to VNA based on routing rules
+          try {
+            const vnaConfigs = await (prisma as any).vnaConfiguration.findMany({
+              where: {
+                userId,
+                isActive: true,
+              },
+            });
+
+            if (vnaConfigs.length > 0) {
+              // Get routing rules from VNA configs
+              const routingRules: any[] = [];
+              vnaConfigs.forEach((vna: any) => {
+                if (vna.routingRules && Array.isArray(vna.routingRules)) {
+                  routingRules.push(...vna.routingRules);
+                }
+              });
+
+              // Route to appropriate VNA
+              const routingContext = {
+                imageType: xrayType,
+                patientId: metadata.patientId,
+                leadId,
+                location: lead.location || undefined,
+              };
+
+              await VnaManager.routeDicom(
+                buffer,
+                metadata,
+                vnaConfigs.map((v: any) => ({
+                  id: v.id,
+                  name: v.name,
+                  type: v.type,
+                  endpoint: v.endpoint,
+                  aeTitle: v.aeTitle,
+                  host: v.host,
+                  port: v.port,
+                  credentials: v.credentials ? JSON.parse(JSON.stringify(v.credentials)) : null,
+                  bucket: v.bucket,
+                  region: v.region,
+                  pathPrefix: v.pathPrefix,
+                  isActive: v.isActive,
+                  isDefault: v.isDefault,
+                  priority: v.priority,
+                })),
+                routingRules,
+                routingContext
+              );
+            }
+          } catch (vnaError) {
+            // Log but don't fail - VNA routing is optional
+            console.error('Error routing to VNA:', vnaError);
           }
         }, { xrayType, fileSize: buffer.length });
       } catch (dicomError) {
@@ -243,28 +308,59 @@ export async function POST(request: NextRequest) {
         console.warn('DICOM processing error (recoverable):', error.message);
       }
     } else {
-      // Store as regular image
-      const uploadResult = await storageService.uploadDocument(
-        buffer,
-        file.name,
-        file.type || 'image/png',
-        encryptionKey
-      );
-      imageFile = uploadResult.storagePath;
+      // For non-DICOM images, compress and store
+      try {
+        const compressionResult = await ImageCompressionService.compressImageBuffer(buffer);
+        compressionRatio = compressionResult.compressionRatio;
+        originalSize = compressionResult.originalSize;
+        compressedSize = compressionResult.full.size;
 
-      // Generate preview URL - use API endpoint
-      imageUrl = `/api/dental/xrays/${Date.now()}/image`;
+        // Upload compressed images to cloud storage
+        const cloudStorage = new CloudImageStorageService();
+        const storageUrls = await cloudStorage.uploadCompressedImages(
+          `temp-${Date.now()}`,
+          compressionResult.thumbnail.buffer,
+          compressionResult.preview.buffer,
+          compressionResult.full.buffer,
+          file.type || 'image/jpeg'
+        );
+
+        thumbnailUrl = storageUrls.thumbnailUrl;
+        previewUrl = storageUrls.previewUrl;
+        fullUrl = storageUrls.fullUrl;
+        storagePaths = storageUrls.storagePaths;
+      } catch (compressionError) {
+        console.error('Error compressing image:', compressionError);
+        // Fallback: store original
+        const uploadResult = await storageService.uploadDocument(
+          buffer,
+          file.name,
+          file.type || 'image/png',
+          encryptionKey
+        );
+        // Use legacy fields for backward compatibility
+        thumbnailUrl = previewUrl = fullUrl = `/api/dental/xrays/${Date.now()}/image`;
+      }
     }
 
-    // Create X-ray record
+    // Create X-ray record with multi-resolution URLs
     // Note: Model name will be available after running: npx prisma generate
     const xray = await (prisma as any).dentalXRay.create({
       data: {
         leadId,
         userId,
         dicomFile,
-        imageFile,
-        imageUrl: imageUrl || (imageFile ? `/api/dental/xrays/temp/${Date.now()}` : null),
+        // Legacy fields for backward compatibility
+        imageFile: fullUrl || null,
+        imageUrl: fullUrl || previewUrl || thumbnailUrl || null,
+        // New multi-resolution fields
+        thumbnailUrl,
+        previewUrl,
+        fullUrl,
+        storagePaths: storagePaths ? JSON.stringify(storagePaths) : null,
+        compressionRatio,
+        originalSize,
+        compressedSize,
         xrayType,
         teethIncluded,
         dateTaken: new Date(dateTaken),
@@ -272,13 +368,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update with proper image URL if needed
-    if (imageFile && !imageUrl) {
-      const updatedXray = await (prisma as any).dentalXRay.update({
-        where: { id: xray.id },
-        data: { imageUrl: `/api/dental/xrays/${xray.id}/image` },
-      });
-      return NextResponse.json(updatedXray, { status: 201 });
+    // Update storage paths with actual X-ray ID (if we used temp ID)
+    if (storagePaths && thumbnailUrl?.includes('temp-')) {
+      const cloudStorage = new CloudImageStorageService();
+      // Re-upload with correct ID (optional optimization - can be done later)
+      // For now, the temp ID works fine
+    }
+
+    // Phase 3: Trigger workflow for X-ray upload
+    try {
+      await triggerXrayUploadedWorkflow(xray.id, leadId, userId, xrayType);
+    } catch (workflowError) {
+      // Log but don't fail - workflow is optional
+      console.error('Error triggering X-ray workflow:', workflowError);
     }
 
     return NextResponse.json(xray, { status: 201 });

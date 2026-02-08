@@ -105,6 +105,9 @@ export class AIWorkflowGenerator {
    * Build system prompt with CRM context
    */
   private buildSystemPrompt(context?: any): string {
+    const isDentalContext = context?.industry === 'DENTIST' || context?.isDental;
+    const userRole = context?.role || 'practitioner';
+
     const availableTriggers = [
       'MESSAGE_RECEIVED - Any new message received',
       'MESSAGE_WITH_KEYWORDS - Message contains specific keywords',
@@ -119,6 +122,42 @@ export class AIWorkflowGenerator {
       'TIME_BASED - Schedule at specific time (use for birthdays, recurring events, scheduled workflows)',
       'CUSTOM_FIELD_CHANGED - Trigger when a custom field changes (can be used for birthday field)',
     ];
+
+    // Add dental triggers if in dental context
+    if (isDentalContext) {
+      if (userRole === 'practitioner' || userRole === 'practice_owner' || userRole === 'hybrid') {
+        availableTriggers.push(
+          'TREATMENT_PLAN_CREATED - Treatment plan created by practitioner',
+          'TREATMENT_PLAN_APPROVED - Treatment plan approved by patient',
+          'PROCEDURE_COMPLETED - Procedure completed and logged',
+          'XRAY_UPLOADED - X-ray image uploaded',
+          'ODONTOGRAM_UPDATED - Tooth chart updated',
+          'PERIODONTAL_CHART_COMPLETED - Periodontal charting completed',
+          'PATIENT_CHECKED_IN - Patient checked in for appointment',
+          'TREATMENT_MILESTONE_REACHED - Treatment milestone achieved',
+          'CLINICAL_NOTE_CREATED - Clinical note created'
+        );
+      }
+      if (userRole === 'admin_assistant' || userRole === 'practice_owner' || userRole === 'hybrid') {
+        availableTriggers.push(
+          'APPOINTMENT_SCHEDULED - Appointment scheduled by admin',
+          'APPOINTMENT_COMPLETED - Appointment completed',
+          'APPOINTMENT_CANCELLED - Appointment cancelled',
+          'APPOINTMENT_NO_SHOW - Patient did not show up',
+          'PAYMENT_RECEIVED - Payment received',
+          'PAYMENT_FAILED - Payment processing failed',
+          'INSURANCE_CLAIM_SUBMITTED - Insurance claim submitted',
+          'INSURANCE_CLAIM_APPROVED - Insurance claim approved',
+          'INSURANCE_CLAIM_REJECTED - Insurance claim rejected',
+          'FORM_SUBMITTED - Patient form submitted',
+          'LAB_ORDER_CREATED - Lab order created',
+          'LAB_ORDER_RECEIVED - Lab order received',
+          'DAILY_PRODUCTION_TARGET_MET - Daily production target met',
+          'DAILY_PRODUCTION_TARGET_MISSED - Daily production target missed',
+          'PATIENT_REGISTERED - New patient registered'
+        );
+      }
+    }
 
     const availableActions = [
       'CREATE_LEAD_FROM_MESSAGE - Create a lead from message sender',
@@ -142,6 +181,38 @@ export class AIWorkflowGenerator {
       'MAKE_OUTBOUND_CALL - Make a voice call to contact using voice AI agent (actionConfig: {"purpose": "Call purpose", "notes": "What to discuss", "immediate": true/false, "scheduledFor": "ISO date"})',
       'WEBHOOK - Call external API',
     ];
+
+    // Add dental actions if in dental context
+    if (isDentalContext) {
+      if (userRole === 'practitioner' || userRole === 'practice_owner' || userRole === 'hybrid') {
+        availableActions.push(
+          'CREATE_TREATMENT_PLAN - Create treatment plan (actionConfig: {"leadId": "{{leadId}}", "planName": "Plan name", "procedures": [...]})',
+          'UPDATE_ODONTOGRAM - Update tooth chart (actionConfig: {"leadId": "{{leadId}}", "toothData": {...}})',
+          'SCHEDULE_FOLLOWUP_APPOINTMENT - Schedule follow-up appointment (actionConfig: {"leadId": "{{leadId}}", "daysFromNow": 7})',
+          'SEND_TREATMENT_UPDATE_TO_PATIENT - Send treatment progress update (actionConfig: {"leadId": "{{leadId}}", "message": "Update message"})',
+          'CREATE_CLINICAL_NOTE - Create clinical note (actionConfig: {"leadId": "{{leadId}}", "note": "Note content"})',
+          'REQUEST_XRAY_REVIEW - Request X-ray review from another practitioner (actionConfig: {"xrayId": "{{xrayId}}", "practitionerId": "..."})',
+          'GENERATE_TREATMENT_REPORT - Generate treatment report (actionConfig: {"leadId": "{{leadId}}"})',
+          'UPDATE_TREATMENT_PLAN - Update existing treatment plan (actionConfig: {"planId": "{{planId}}", "updates": {...}})',
+          'LOG_PROCEDURE - Log completed procedure (actionConfig: {"leadId": "{{leadId}}", "procedureCode": "...", "description": "..."})'
+        );
+      }
+      if (userRole === 'admin_assistant' || userRole === 'practice_owner' || userRole === 'hybrid') {
+        availableActions.push(
+          'SEND_APPOINTMENT_REMINDER - Send appointment reminder (actionConfig: {"appointmentId": "{{appointmentId}}", "hoursBefore": 24})',
+          'PROCESS_PAYMENT - Process payment (actionConfig: {"leadId": "{{leadId}}", "amount": 100, "method": "credit_card"})',
+          'SUBMIT_INSURANCE_CLAIM - Submit insurance claim (actionConfig: {"leadId": "{{leadId}}", "procedureId": "{{procedureId}}", "provider": "RAMQ"})',
+          'GENERATE_INVOICE - Generate invoice (actionConfig: {"leadId": "{{leadId}}", "treatmentPlanId": "{{treatmentPlanId}}"})',
+          'UPDATE_PATIENT_INFO - Update patient information (actionConfig: {"leadId": "{{leadId}}", "updates": {...}})',
+          'CREATE_LAB_ORDER - Create lab order (actionConfig: {"leadId": "{{leadId}}", "orderType": "...", "labName": "..."})',
+          'GENERATE_PRODUCTION_REPORT - Generate production report (actionConfig: {"dateRange": "daily" | "weekly" | "monthly", "recipientEmail": "..."})',
+          'NOTIFY_TEAM_MEMBER - Notify team member (actionConfig: {"userId": "...", "message": "..."})',
+          'RESCHEDULE_APPOINTMENT - Reschedule appointment (actionConfig: {"appointmentId": "{{appointmentId}}", "newDate": "...", "newTime": "..."})',
+          'SEND_BILLING_REMINDER - Send billing reminder (actionConfig: {"leadId": "{{leadId}}", "amount": 100})',
+          'UPDATE_APPOINTMENT_STATUS - Update appointment status (actionConfig: {"appointmentId": "{{appointmentId}}", "status": "completed" | "cancelled" | "no_show"})'
+        );
+      }
+    }
 
     return `You are a CRM workflow automation expert. Your job is to parse natural language descriptions of automation workflows and convert them into structured JSON configurations.
 
