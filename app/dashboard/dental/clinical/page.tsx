@@ -486,7 +486,7 @@ export default function ClinicalDashboardPage() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId && session?.user?.id ? (
-              <CustomXRayAnalysis xrayData={selectedXray} />
+              <CustomXRayAnalysis xrayData={selectedXray || (xrays.length > 0 ? xrays[0] : null)} />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}
