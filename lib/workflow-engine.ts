@@ -82,6 +82,26 @@ export class WorkflowEngine {
   ): boolean {
     const config = workflow.triggerConfig as any;
 
+    // Check channel type filter (if specified)
+    // If channelTypes is specified, workflow only runs for those channels
+    // If not specified, workflow runs for all channels (default behavior)
+    if (config?.channelTypes && Array.isArray(config.channelTypes) && config.channelTypes.length > 0) {
+      const messageChannelType = context.variables?.channelType;
+      if (!messageChannelType) {
+        // If no channel type in context, skip channel filtering (for non-message triggers)
+        // But for message triggers, we need channel type
+        if (workflow.triggerType === 'MESSAGE_RECEIVED' || workflow.triggerType === 'MESSAGE_WITH_KEYWORDS') {
+          return false; // Message triggers require channel type
+        }
+      } else {
+        // Check if message channel matches allowed channels
+        const allowedChannels = config.channelTypes.map((ch: string) => ch.toUpperCase());
+        if (!allowedChannels.includes(messageChannelType.toUpperCase())) {
+          return false; // Channel doesn't match filter
+        }
+      }
+    }
+
     switch (workflow.triggerType) {
       case 'MESSAGE_WITH_KEYWORDS':
         return this.checkKeywords(triggerData?.messageContent, config?.keywords);

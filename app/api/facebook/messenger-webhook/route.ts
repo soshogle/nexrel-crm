@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { workflowEngine } from '@/lib/workflow-engine';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -116,7 +117,7 @@ async function processMessagingEvent(event: any, pageId: string) {
     const messageText = messageData.text || '[Attachment]';
     const messageId = messageData.mid;
 
-    await prisma.conversationMessage.create({
+    const incomingMessage = await prisma.conversationMessage.create({
       data: {
         conversationId: conversation.id,
         userId: channelConnection.userId,
@@ -130,6 +131,47 @@ async function processMessagingEvent(event: any, pageId: string) {
         },
       },
     });
+
+    // Update conversation
+    await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: {
+        lastMessageAt: new Date(),
+        lastMessagePreview: messageText.substring(0, 100),
+        unreadCount: { increment: 1 },
+        status: 'UNREAD',
+      },
+    });
+
+    // Trigger workflows for MESSAGE_RECEIVED (with channel type filtering)
+    workflowEngine.triggerWorkflow('MESSAGE_RECEIVED', {
+      userId: channelConnection.userId,
+      conversationId: conversation.id,
+      messageId: incomingMessage.id,
+      leadId: conversation.leadId || undefined,
+      variables: {
+        contactName: senderName,
+        messageContent: messageText,
+        channelType: 'FACEBOOK_MESSENGER', // Explicitly set channel type for filtering
+      },
+    }, {
+      messageContent: messageText,
+    }).catch(err => console.error('Messenger workflow trigger failed:', err));
+
+    // Trigger workflows for MESSAGE_WITH_KEYWORDS
+    workflowEngine.triggerWorkflow('MESSAGE_WITH_KEYWORDS', {
+      userId: channelConnection.userId,
+      conversationId: conversation.id,
+      messageId: incomingMessage.id,
+      leadId: conversation.leadId || undefined,
+      variables: {
+        contactName: senderName,
+        messageContent: messageText,
+        channelType: 'FACEBOOK_MESSENGER', // Explicitly set channel type for filtering
+      },
+    }, {
+      messageContent: messageText,
+    }).catch(err => console.error('Messenger keyword workflow trigger failed:', err));
 
     console.log(`✅ Saved Messenger message from ${senderName}`);
   } catch (error: any) {

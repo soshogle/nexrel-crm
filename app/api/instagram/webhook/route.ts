@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { workflowEngine } from '@/lib/workflow-engine';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -172,7 +173,7 @@ async function handleMessagingEvent(event: any) {
     // Store the message
     const messageContent = messageData.text || messageData.attachments?.[0]?.payload?.url || '';
     
-    await prisma.conversationMessage.create({
+    const incomingMessage = await prisma.conversationMessage.create({
       data: {
         conversationId: conversation.id,
         userId: connection.userId,
@@ -182,6 +183,47 @@ async function handleMessagingEvent(event: any) {
         status: 'DELIVERED',
       },
     });
+
+    // Update conversation
+    await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: {
+        lastMessageAt: new Date(),
+        lastMessagePreview: messageContent.substring(0, 100),
+        unreadCount: { increment: 1 },
+        status: 'UNREAD',
+      },
+    });
+
+    // Trigger workflows for MESSAGE_RECEIVED (with channel type filtering)
+    workflowEngine.triggerWorkflow('MESSAGE_RECEIVED', {
+      userId: connection.userId,
+      conversationId: conversation.id,
+      messageId: incomingMessage.id,
+      leadId: conversation.leadId || undefined,
+      variables: {
+        contactName: senderName,
+        messageContent,
+        channelType: 'INSTAGRAM', // Explicitly set channel type for filtering
+      },
+    }, {
+      messageContent,
+    }).catch(err => console.error('Instagram workflow trigger failed:', err));
+
+    // Trigger workflows for MESSAGE_WITH_KEYWORDS
+    workflowEngine.triggerWorkflow('MESSAGE_WITH_KEYWORDS', {
+      userId: connection.userId,
+      conversationId: conversation.id,
+      messageId: incomingMessage.id,
+      leadId: conversation.leadId || undefined,
+      variables: {
+        contactName: senderName,
+        messageContent,
+        channelType: 'INSTAGRAM', // Explicitly set channel type for filtering
+      },
+    }, {
+      messageContent,
+    }).catch(err => console.error('Instagram keyword workflow trigger failed:', err));
 
     // Create or update lead
     const existingLead = await prisma.lead.findFirst({
