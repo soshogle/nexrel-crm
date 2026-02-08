@@ -62,7 +62,7 @@ function PanableCanvas({ children }: { children: React.ReactNode }) {
         }
       }}
     >
-      <div className="min-w-[1600px] min-h-[1400px] p-6 bg-white">
+      <div className="min-w-[1600px] min-h-[1400px] p-6 bg-gradient-to-r from-purple-900 via-purple-700 to-purple-500">
         {children}
       </div>
     </div>

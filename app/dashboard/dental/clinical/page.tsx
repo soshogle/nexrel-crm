@@ -11,6 +11,10 @@ import { SharedDashboardLayout } from '@/components/dental/shared-dashboard-layo
 import { PeriodontalBarChart } from '@/components/dental/periodontal-bar-chart';
 import { EnhancedOdontogramDisplay } from '@/components/dental/enhanced-odontogram-display';
 import { CustomXRayAnalysis } from '@/components/dental/custom-xray-analysis';
+import { RedesignedArchOdontogram } from '@/components/dental/redesigned-arch-odontogram';
+import { RedesignedProceduresLog } from '@/components/dental/redesigned-procedures-log';
+import { RedesignedTreatmentPlan } from '@/components/dental/redesigned-treatment-plan';
+import { RedesignedPeriodontalChart } from '@/components/dental/redesigned-periodontal-chart';
 import { DicomViewer } from '@/components/dental/dicom-viewer';
 import { CustomDocumentUpload } from '@/components/dental/custom-document-upload';
 import { CardModal } from '@/components/dental/card-modal';
@@ -278,9 +282,7 @@ export default function ClinicalDashboardPage() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <div>
-                <EnhancedOdontogramDisplay toothData={odontogramData} />
-              </div>
+              <RedesignedArchOdontogram toothData={odontogramData} />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}
@@ -313,30 +315,17 @@ export default function ClinicalDashboardPage() {
             <CardTitle className="text-sm font-semibold text-gray-900">Treatment Plan Builder</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="space-y-2">
-              {displayTreatmentPlans.length > 0 ? (
-                displayTreatmentPlans.map((plan, idx) => {
-                  const IconComponent = plan.icon;
-                  return (
-                    <div key={idx} className="flex items-center gap-2 p-2 border border-gray-200 rounded">
-                      <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
-                        <IconComponent className="w-4 h-4 text-gray-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-gray-900">{plan.code}</div>
-                        <div className="text-xs text-gray-600 truncate">{plan.name}</div>
-                      </div>
-                      <Badge className={`text-xs px-2 py-1 ${plan.costColor} border-0 font-semibold`}>
-                        ${plan.cost}
-                      </Badge>
-                      <div className="text-xs text-gray-500 w-16 text-right">{plan.timeline}</div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-center py-8 text-gray-400 text-xs">No treatment plans</div>
-              )}
-            </div>
+            <RedesignedTreatmentPlan
+              treatments={displayTreatmentPlans.map((plan: any) => ({
+                code: plan.code,
+                name: plan.name,
+                cost: plan.cost,
+                timeline: plan.timeline,
+                costColor: plan.costColor,
+                icon: plan.icon,
+                progress: 50, // Default progress
+              }))}
+            />
           </CardContent>
         </Card>
       </div>
@@ -353,7 +342,7 @@ export default function ClinicalDashboardPage() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <PeriodontalBarChart measurements={periodontalData} />
+              <RedesignedPeriodontalChart measurements={periodontalData} />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}
@@ -382,29 +371,14 @@ export default function ClinicalDashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="space-y-2">
-              {displayProcedures.length > 0 ? (
-                displayProcedures.map((proc, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-xs border-b border-gray-100 pb-2">
-                    <div className="w-16 text-gray-600 font-medium">{proc.time}</div>
-                    <div className="flex items-center gap-2 flex-1">
-                      <div className="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center flex-shrink-0">
-                        <User className="w-3 h-3 text-purple-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">{proc.patient}</div>
-                        <div className="text-gray-600 truncate">{proc.procedure}</div>
-                      </div>
-                    </div>
-                    <Badge className={`text-xs px-2 py-0.5 ${proc.color} border-0`}>
-                      {proc.status}
-                    </Badge>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-400 text-xs">No procedures today</div>
-              )}
-            </div>
+            <RedesignedProceduresLog
+              procedures={displayProcedures.map((proc: any) => ({
+                time: proc.time,
+                patient: proc.patient,
+                procedure: proc.procedure,
+                status: proc.status,
+              }))}
+            />
           </CardContent>
         </Card>
 
@@ -488,11 +462,7 @@ export default function ClinicalDashboardPage() {
                 </Button>
               </div>
             </div>
-            <Odontogram
-              leadId={selectedLeadId}
-              initialData={odontogramData}
-              onSave={handleSaveOdontogram}
-            />
+            <RedesignedArchOdontogram toothData={odontogramData} />
           </div>
         ) : (
           <div className="text-center py-16 text-gray-400">Select a patient</div>
@@ -541,7 +511,7 @@ export default function ClinicalDashboardPage() {
       >
         {selectedLeadId ? (
           <div className="space-y-4">
-            <PeriodontalBarChart measurements={periodontalData} />
+            <RedesignedPeriodontalChart measurements={periodontalData} />
           </div>
         ) : (
           <div className="text-center py-16 text-gray-400">Select a patient</div>
@@ -553,24 +523,14 @@ export default function ClinicalDashboardPage() {
         onClose={() => setOpenModal(null)}
         title="Procedures Activity Log"
       >
-        <div className="space-y-2">
-          {procedures.length > 0 ? (
-            procedures.map((proc: any, idx: number) => (
-              <div key={idx} className="flex items-center gap-2 p-3 border border-gray-200 rounded">
-                <div className="w-20 text-gray-600">
-                  {new Date(proc.datePerformed).toLocaleDateString()}
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">{proc.procedureCode}</div>
-                  <div className="text-sm text-gray-600">{proc.description}</div>
-                </div>
-                <Badge>{proc.status}</Badge>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-16 text-gray-400">No procedures found</div>
-          )}
-        </div>
+        <RedesignedProceduresLog
+          procedures={procedures.map((proc: any) => ({
+            time: new Date(proc.datePerformed).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+            patient: leads.find((l) => l.id === proc.leadId)?.contactPerson || 'Unknown',
+            procedure: proc.procedureCode || 'Procedure',
+            status: proc.status || 'Completed',
+          }))}
+        />
       </CardModal>
 
       <CardModal

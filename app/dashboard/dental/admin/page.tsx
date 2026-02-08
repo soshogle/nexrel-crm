@@ -17,6 +17,9 @@ import { CustomMultiChairAgenda } from '@/components/dental/custom-multi-chair-a
 import { CustomFormsBuilder } from '@/components/dental/custom-forms-builder';
 import { CustomDocumentUpload } from '@/components/dental/custom-document-upload';
 import { CustomSignature } from '@/components/dental/custom-signature';
+import { RedesignedCheckIn } from '@/components/dental/redesigned-check-in';
+import { RedesignedFormResponses } from '@/components/dental/redesigned-form-responses';
+import { RedesignedInsuranceClaims } from '@/components/dental/redesigned-insurance-claims';
 import { VnaConfigurationWithRouting } from '@/components/dental/vna-configuration-with-routing';
 import { CardModal } from '@/components/dental/card-modal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -370,16 +373,11 @@ export default function AdministrativeDashboardPage() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {session?.user?.id ? (
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-                  <User className="w-8 h-8 text-gray-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900 mb-2">Patient Check-In</p>
-                  <p className="text-xs text-gray-600 mb-4">Tap to check in</p>
-                </div>
-                <Button className="bg-purple-600 hover:bg-purple-700 text-white w-full">Check-In</Button>
-              </div>
+              <RedesignedCheckIn
+                patientName={selectedLeadId ? leads.find(l => l.id === selectedLeadId)?.contactPerson || 'Patient' : 'John Smith'}
+                onCheckIn={() => setOpenModal('check-in')}
+                onUpdateInfo={() => setOpenModal('check-in')}
+              />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Please sign in</div>
             )}
@@ -395,29 +393,14 @@ export default function AdministrativeDashboardPage() {
             <CardTitle className="text-sm font-semibold text-gray-900">Insurance Claims</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="space-y-2">
-              {displayClaims.length > 0 ? (
-                displayClaims.map((claim, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2 border border-gray-200 rounded">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-gray-900 truncate">
-                        Claim {claim.id} - {claim.provider}
-                      </div>
-                    </div>
-                    <div className="text-right ml-2">
-                      <div className="text-xs font-bold text-gray-900">${claim.amount}</div>
-                      {claim.status === 'Approved' ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
-                      ) : (
-                        <Clock className="w-4 h-4 text-orange-600 mt-1" />
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-400 text-xs">No claims</div>
-              )}
-            </div>
+            <RedesignedInsuranceClaims
+              claims={displayClaims.map((claim: any) => ({
+                id: claim.id,
+                provider: claim.provider,
+                amount: claim.amount,
+                status: claim.status === 'Approved' ? 'Approved' : 'Funding',
+              }))}
+            />
           </CardContent>
         </Card>
       </div>
@@ -456,38 +439,18 @@ export default function AdministrativeDashboardPage() {
           onClick={() => setOpenModal('form-responses')}
         >
           <CardHeader className="pb-2 px-4 pt-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-gray-900">Form Responses</CardTitle>
-              <div className="flex items-center gap-2">
-                <Input placeholder="Search..." className="h-7 w-28 text-xs border border-gray-300" />
-                <Select defaultValue="all">
-                  <SelectTrigger className="h-7 text-xs w-24 border border-gray-300">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Forms</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <CardTitle className="text-sm font-semibold text-gray-900">Form Responses</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="space-y-2">
-              {displayFormResponses.length > 0 ? (
-                displayFormResponses.map((response, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-xs border-b border-gray-100 pb-2">
-                    <div className="w-20 text-gray-600">{response.date}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 truncate">{response.patient}</div>
-                      <div className="text-gray-600 truncate">{response.form}</div>
-                    </div>
-                    <Badge className="bg-green-100 text-green-700 text-xs border-0">Submitted</Badge>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-400 text-xs">No responses</div>
-              )}
-            </div>
+            <RedesignedFormResponses
+              responses={displayFormResponses.map((r: any) => ({
+                date: r.date,
+                patientName: r.patient,
+                formTitle: r.form,
+                submissionDate: r.date,
+                time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              }))}
+            />
           </CardContent>
         </Card>
 
@@ -605,13 +568,17 @@ export default function AdministrativeDashboardPage() {
         onClose={() => setOpenModal(null)}
         title="Patient Check-In"
       >
-        <div className="space-y-4">
-          <Input placeholder="Patient name" className="mb-3" />
-          <div className="flex gap-2">
-            <Button className="bg-purple-600 hover:bg-purple-700 text-white flex-1">Check-In</Button>
-            <Button variant="outline" className="flex-1">Update Info</Button>
-          </div>
-        </div>
+        <RedesignedCheckIn
+          patientName={selectedLeadId ? leads.find(l => l.id === selectedLeadId)?.contactPerson || 'Patient' : 'John Smith'}
+          onCheckIn={() => {
+            toast.success('Patient checked in successfully');
+            setOpenModal(null);
+          }}
+          onUpdateInfo={() => {
+            toast.info('Update patient information');
+            setOpenModal(null);
+          }}
+        />
       </CardModal>
 
       <CardModal
@@ -619,25 +586,14 @@ export default function AdministrativeDashboardPage() {
         onClose={() => setOpenModal(null)}
         title="Insurance Claims"
       >
-        <div className="space-y-3">
-          {claims.map((claim: any, idx: number) => (
-            <div key={idx} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900">
-                  Claim {claim.id?.substring(0, 8)} - {claim.provider || 'RAMQ'}
-                </div>
-              </div>
-              <div className="text-right ml-4">
-                <div className="text-lg font-bold text-gray-900">${claim.amount || 0}</div>
-                {claim.status === 'APPROVED' ? (
-                  <CheckCircle2 className="w-5 h-5 text-green-600 mt-1 mx-auto" />
-                ) : (
-                  <Clock className="w-5 h-5 text-orange-600 mt-1 mx-auto" />
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <RedesignedInsuranceClaims
+          claims={claims.map((claim: any) => ({
+            id: claim.id?.substring(0, 8) || 'N/A',
+            provider: claim.provider || 'RAMQ',
+            amount: claim.amount || 0,
+            status: claim.status === 'APPROVED' ? 'Approved' : 'Funding',
+          }))}
+        />
       </CardModal>
 
       <CardModal
@@ -676,18 +632,15 @@ export default function AdministrativeDashboardPage() {
         onClose={() => setOpenModal(null)}
         title="Form Responses"
       >
-        <div className="space-y-2">
-          {formResponses.map((response: any, idx: number) => (
-            <div key={idx} className="flex items-center gap-2 p-3 border border-gray-200 rounded">
-              <div className="w-20 text-gray-600">{new Date(response.submittedAt).toLocaleDateString()}</div>
-              <div className="flex-1">
-                <div className="font-medium text-gray-900">{response.formName}</div>
-                <div className="text-sm text-gray-600">{leads.find((l) => l.id === response.leadId)?.contactPerson || 'Unknown'}</div>
-              </div>
-              <Badge className="bg-green-100 text-green-700">Submitted</Badge>
-            </div>
-          ))}
-        </div>
+        <RedesignedFormResponses
+          responses={formResponses.map((response: any) => ({
+            date: new Date(response.submittedAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+            patientName: leads.find((l) => l.id === response.leadId)?.contactPerson || 'Unknown',
+            formTitle: response.formName || 'Form',
+            submissionDate: new Date(response.submittedAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+            time: new Date(response.submittedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          }))}
+        />
       </CardModal>
 
       <CardModal

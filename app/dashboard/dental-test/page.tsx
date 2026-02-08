@@ -12,6 +12,13 @@ import { PeriodontalBarChart } from '@/components/dental/periodontal-bar-chart';
 import { PeriodontalChart } from '@/components/dental/periodontal-chart';
 import { CustomOdontogramDisplay } from '@/components/dental/custom-odontogram-display';
 import { EnhancedOdontogramDisplay } from '@/components/dental/enhanced-odontogram-display';
+import { RedesignedArchOdontogram } from '@/components/dental/redesigned-arch-odontogram';
+import { RedesignedProceduresLog } from '@/components/dental/redesigned-procedures-log';
+import { RedesignedTreatmentPlan } from '@/components/dental/redesigned-treatment-plan';
+import { RedesignedPeriodontalChart } from '@/components/dental/redesigned-periodontal-chart';
+import { RedesignedFormResponses } from '@/components/dental/redesigned-form-responses';
+import { RedesignedCheckIn } from '@/components/dental/redesigned-check-in';
+import { RedesignedInsuranceClaims } from '@/components/dental/redesigned-insurance-claims';
 import { CustomFormsBuilder } from '@/components/dental/custom-forms-builder';
 import { CustomMultiChairAgenda } from '@/components/dental/custom-multi-chair-agenda';
 import { CustomXRayAnalysis } from '@/components/dental/custom-xray-analysis';
@@ -92,7 +99,7 @@ function PanableCanvas({ children }: { children: React.ReactNode }) {
         }
       }}
     >
-      <div className="min-w-[1600px] min-h-[1400px] p-6 bg-white">
+      <div className="min-w-[1600px] min-h-[1400px] p-6 bg-gradient-to-r from-purple-900 via-purple-700 to-purple-500">
         {children}
       </div>
     </div>
@@ -607,9 +614,7 @@ export default function DentalTestPage() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <div>
-                <EnhancedOdontogramDisplay toothData={odontogramData} />
-              </div>
+              <RedesignedArchOdontogram toothData={odontogramData} />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}
@@ -638,25 +643,14 @@ export default function DentalTestPage() {
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="space-y-2">
-              {displayProcedures.map((proc, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs border-b border-gray-100 pb-2">
-                  <div className="w-16 text-gray-600 font-medium">{proc.time}</div>
-                  <div className="flex items-center gap-2 flex-1">
-                    <div className="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center flex-shrink-0">
-                      <User className="w-3 h-3 text-purple-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 truncate">{proc.patient}</div>
-                      <div className="text-gray-600 truncate">{proc.procedure}</div>
-                    </div>
-                  </div>
-                  <Badge className={`text-xs px-2 py-0.5 ${proc.color} border-0`}>
-                    {proc.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+            <RedesignedProceduresLog
+              procedures={displayProcedures.map((proc: any) => ({
+                time: proc.time,
+                patient: proc.patient,
+                procedure: proc.procedure,
+                status: proc.status,
+              }))}
+            />
           </CardContent>
         </Card>
 
@@ -669,26 +663,17 @@ export default function DentalTestPage() {
             <CardTitle className="text-sm font-semibold text-gray-900">Treatment Plan Builder</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="space-y-2">
-              {displayTreatmentPlans.map((plan, idx) => {
-                const IconComponent = plan.icon;
-                return (
-                  <div key={idx} className="flex items-center gap-2 p-2 border border-gray-200 rounded">
-                    <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
-                      <IconComponent className="w-4 h-4 text-gray-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-gray-900">{plan.code}</div>
-                      <div className="text-xs text-gray-600 truncate">{plan.name}</div>
-                    </div>
-                    <Badge className={`text-xs px-2 py-1 ${plan.costColor} border-0 font-semibold`}>
-                      ${plan.cost}
-                    </Badge>
-                    <div className="text-xs text-gray-500 w-16 text-right">{plan.timeline}</div>
-                  </div>
-                );
-              })}
-            </div>
+            <RedesignedTreatmentPlan
+              treatments={displayTreatmentPlans.map((plan: any) => ({
+                code: plan.code,
+                name: plan.name,
+                cost: plan.cost,
+                timeline: plan.timeline,
+                costColor: plan.costColor,
+                icon: plan.icon,
+                progress: 50,
+              }))}
+            />
           </CardContent>
         </Card>
       </div>
@@ -705,7 +690,7 @@ export default function DentalTestPage() {
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <PeriodontalBarChart measurements={periodontalData} />
+              <RedesignedPeriodontalChart measurements={periodontalData} />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}
@@ -751,18 +736,15 @@ export default function DentalTestPage() {
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="space-y-2">
-              {displayFormResponses.map((response, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs border-b border-gray-100 pb-2">
-                  <div className="w-20 text-gray-600">{response.date}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 truncate">{response.patient}</div>
-                    <div className="text-gray-600 truncate">{response.form}</div>
-                  </div>
-                  <Badge className="bg-green-100 text-green-700 text-xs border-0">Submitted</Badge>
-                </div>
-              ))}
-            </div>
+            <RedesignedFormResponses
+              responses={displayFormResponses.map((r: any) => ({
+                date: r.date,
+                patientName: r.patient,
+                formTitle: r.form,
+                submissionDate: r.date,
+                time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              }))}
+            />
           </CardContent>
         </Card>
       </div>
@@ -847,25 +829,14 @@ export default function DentalTestPage() {
               <CardTitle className="text-sm font-semibold text-gray-900">Insurance Claims Integration</CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">
-              <div className="space-y-2">
-                {displayClaims.map((claim, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2 border border-gray-200 rounded">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-gray-900 truncate">
-                        Claim {claim.id} - {claim.provider}
-                      </div>
-                    </div>
-                    <div className="text-right ml-2">
-                      <div className="text-xs font-bold text-gray-900">${claim.amount}</div>
-                      {claim.status === 'Approved' ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-600 mt-1" />
-                      ) : (
-                        <Clock className="w-4 h-4 text-orange-600 mt-1" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <RedesignedInsuranceClaims
+                claims={displayClaims.map((claim: any) => ({
+                  id: claim.id,
+                  provider: claim.provider,
+                  amount: claim.amount,
+                  status: claim.status === 'Approved' ? 'Approved' : 'Funding',
+                }))}
+              />
             </CardContent>
           </Card>
 
