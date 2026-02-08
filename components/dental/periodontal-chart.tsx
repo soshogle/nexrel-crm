@@ -100,6 +100,13 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
     return 'bg-red-100 text-red-800';
   };
 
+  const getPocketDepthTextColor = (pd: number) => {
+    if (pd <= 3) return 'text-green-700';
+    if (pd <= 5) return 'text-yellow-700';
+    if (pd <= 7) return 'text-orange-700';
+    return 'text-red-700';
+  };
+
   const handleSave = async () => {
     if (readOnly || !onSave) return;
     
@@ -190,13 +197,19 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
 
           <TabsContent value="chart" className="space-y-4">
             {/* Tooth Selection Grid */}
-            <div className="grid grid-cols-8 gap-2 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-8 gap-2 p-4 bg-gray-50 rounded-lg auto-rows-fr">
               {TOOTH_NUMBERS.map(toothNumber => {
                 const toothData = chartData[toothNumber];
                 const hasData = !!toothData;
                 const hasBOP = Object.values(toothData || {}).some(
                   (site: any) => site?.bop
                 );
+                
+                // Get measurements for each site
+                const mesial = toothData?.mesial;
+                const buccal = toothData?.buccal;
+                const distal = toothData?.distal;
+                const lingual = toothData?.lingual;
                 
                 return (
                   <button
@@ -207,7 +220,7 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
                     }}
                     disabled={readOnly}
                     className={`
-                      p-2 rounded border-2 transition-all
+                      p-2 rounded border-2 transition-all min-h-[100px] flex flex-col
                       ${selectedTooth === toothNumber 
                         ? 'border-purple-500 bg-purple-50' 
                         : hasData 
@@ -218,12 +231,107 @@ export function PeriodontalChart({ leadId, initialData, onSave, readOnly = false
                       ${!readOnly ? 'hover:shadow-md cursor-pointer' : 'cursor-default'}
                     `}
                   >
-                    <div className="text-sm font-semibold">{toothNumber}</div>
-                    {hasData && (
-                      <div className="text-xs text-gray-600 mt-1">
-                        {Object.keys(toothData).length} {t('sites') || 'sites'}
+                    {/* Tooth Number */}
+                    <div className="text-xs font-bold text-center mb-1.5 leading-tight">{toothNumber}</div>
+                    
+                    {/* Measurement Sites Grid */}
+                    <div className="flex-1 grid grid-cols-2 gap-0.5 text-[9px] min-h-[60px]">
+                      {/* Mesial */}
+                      <div className="flex flex-col items-center justify-start p-0.5 bg-white/60 rounded border border-gray-200">
+                        <div className="font-semibold text-[7px] text-gray-600 mb-0.5 leading-none">M</div>
+                        {mesial?.pd !== undefined && mesial.pd > 0 ? (
+                          <>
+                            <div className={`text-[8px] font-bold leading-tight ${getPocketDepthTextColor(mesial.pd)}`}>
+                              {mesial.pd}
+                            </div>
+                            <div className="text-[6px] text-gray-400 leading-none">mm</div>
+                          </>
+                        ) : (
+                          <div className="text-[7px] text-gray-300 leading-tight">-</div>
+                        )}
+                        {mesial?.bop && (
+                          <div className="w-1 h-1 rounded-full bg-red-500 mt-0.5"></div>
+                        )}
+                        {mesial?.recession && mesial.recession > 0 && (
+                          <div className="text-[6px] text-orange-600 leading-none">R{mesial.recession}</div>
+                        )}
+                        {mesial?.mobility && mesial.mobility > 0 && (
+                          <div className="text-[6px] text-blue-600 leading-none">M{mesial.mobility}</div>
+                        )}
                       </div>
-                    )}
+                      
+                      {/* Buccal */}
+                      <div className="flex flex-col items-center justify-start p-0.5 bg-white/60 rounded border border-gray-200">
+                        <div className="font-semibold text-[7px] text-gray-600 mb-0.5 leading-none">B</div>
+                        {buccal?.pd !== undefined && buccal.pd > 0 ? (
+                          <>
+                            <div className={`text-[8px] font-bold leading-tight ${getPocketDepthTextColor(buccal.pd)}`}>
+                              {buccal.pd}
+                            </div>
+                            <div className="text-[6px] text-gray-400 leading-none">mm</div>
+                          </>
+                        ) : (
+                          <div className="text-[7px] text-gray-300 leading-tight">-</div>
+                        )}
+                        {buccal?.bop && (
+                          <div className="w-1 h-1 rounded-full bg-red-500 mt-0.5"></div>
+                        )}
+                        {buccal?.recession && buccal.recession > 0 && (
+                          <div className="text-[6px] text-orange-600 leading-none">R{buccal.recession}</div>
+                        )}
+                        {buccal?.mobility && buccal.mobility > 0 && (
+                          <div className="text-[6px] text-blue-600 leading-none">M{buccal.mobility}</div>
+                        )}
+                      </div>
+                      
+                      {/* Distal */}
+                      <div className="flex flex-col items-center justify-start p-0.5 bg-white/60 rounded border border-gray-200">
+                        <div className="font-semibold text-[7px] text-gray-600 mb-0.5 leading-none">D</div>
+                        {distal?.pd !== undefined && distal.pd > 0 ? (
+                          <>
+                            <div className={`text-[8px] font-bold leading-tight ${getPocketDepthTextColor(distal.pd)}`}>
+                              {distal.pd}
+                            </div>
+                            <div className="text-[6px] text-gray-400 leading-none">mm</div>
+                          </>
+                        ) : (
+                          <div className="text-[7px] text-gray-300 leading-tight">-</div>
+                        )}
+                        {distal?.bop && (
+                          <div className="w-1 h-1 rounded-full bg-red-500 mt-0.5"></div>
+                        )}
+                        {distal?.recession && distal.recession > 0 && (
+                          <div className="text-[6px] text-orange-600 leading-none">R{distal.recession}</div>
+                        )}
+                        {distal?.mobility && distal.mobility > 0 && (
+                          <div className="text-[6px] text-blue-600 leading-none">M{distal.mobility}</div>
+                        )}
+                      </div>
+                      
+                      {/* Lingual */}
+                      <div className="flex flex-col items-center justify-start p-0.5 bg-white/60 rounded border border-gray-200">
+                        <div className="font-semibold text-[7px] text-gray-600 mb-0.5 leading-none">L</div>
+                        {lingual?.pd !== undefined && lingual.pd > 0 ? (
+                          <>
+                            <div className={`text-[8px] font-bold leading-tight ${getPocketDepthTextColor(lingual.pd)}`}>
+                              {lingual.pd}
+                            </div>
+                            <div className="text-[6px] text-gray-400 leading-none">mm</div>
+                          </>
+                        ) : (
+                          <div className="text-[7px] text-gray-300 leading-tight">-</div>
+                        )}
+                        {lingual?.bop && (
+                          <div className="w-1 h-1 rounded-full bg-red-500 mt-0.5"></div>
+                        )}
+                        {lingual?.recession && lingual.recession > 0 && (
+                          <div className="text-[6px] text-orange-600 leading-none">R{lingual.recession}</div>
+                        )}
+                        {lingual?.mobility && lingual.mobility > 0 && (
+                          <div className="text-[6px] text-blue-600 leading-none">M{lingual.mobility}</div>
+                        )}
+                      </div>
+                    </div>
                   </button>
                 );
               })}
