@@ -29,7 +29,9 @@
   "HttpRequestTimeout": 60,
   "HttpsVerifyPeers": true,
   "HttpsRequestTimeout": 60,
-  "LuaScripts": [],
+  "LuaScripts": [
+    "/etc/orthanc/webhook.lua"
+  ],
   "Plugins": [],
   "PythonScript": "",
   "PythonVerbose": false,

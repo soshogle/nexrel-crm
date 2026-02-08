@@ -20,9 +20,9 @@ RUN mkdir -p /var/lib/orthanc/db && \
 # 8042: HTTP REST API port
 EXPOSE 4242 8042
 
-# Health check
+# Health check (with authentication)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8042/system || exit 1
+    CMD curl -f -u orthanc:orthanc http://localhost:8042/system || exit 1
 
 # Run Orthanc with custom config
 ENTRYPOINT ["Orthanc"]

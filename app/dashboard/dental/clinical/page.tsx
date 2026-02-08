@@ -298,27 +298,22 @@ export default function ClinicalDashboardPage() {
         </Card>
 
         {/* 3. Treatment Plan Builder */}
-        <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+        <div 
+          className="cursor-pointer hover:opacity-90 transition-opacity"
           onClick={() => setOpenModal('treatment-plan')}
         >
-          <CardHeader className="pb-2 px-4 pt-3">
-            <CardTitle className="text-sm font-semibold text-gray-900">Treatment Plan Builder</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <RedesignedTreatmentPlan
-              treatments={displayTreatmentPlans.map((plan: any) => ({
-                code: plan.code,
-                name: plan.name,
-                cost: plan.cost,
-                timeline: plan.timeline,
-                costColor: plan.costColor,
-                icon: plan.icon,
-                progress: 50, // Default progress
-              }))}
-            />
-          </CardContent>
-        </Card>
+          <RedesignedTreatmentPlan
+            treatments={displayTreatmentPlans.map((plan: any) => ({
+              code: plan.code,
+              name: plan.name,
+              cost: plan.cost,
+              timeline: plan.timeline,
+              costColor: plan.costColor,
+              icon: plan.icon,
+              progress: 50, // Default progress
+            }))}
+          />
+        </div>
       </div>
 
       {/* MIDDLE ROW - 3 Equal Columns */}
