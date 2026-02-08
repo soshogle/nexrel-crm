@@ -69,7 +69,45 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type, formId, leadId, formData, formName, formSchema, isTemplate } = body;
+    const { type, formId, leadId, formData, formName, formSchema, isTemplate, clinicId } = body;
+
+    // Get clinicId from request or user's primary clinic
+    let finalClinicId = clinicId;
+    if (!finalClinicId) {
+      const primaryClinic = await prisma.clinicMembership.findFirst({
+        where: {
+          userId: session.user.id,
+          isPrimary: true,
+        },
+        select: {
+          clinicId: true,
+        },
+      });
+      if (primaryClinic) {
+        finalClinicId = primaryClinic.clinicId;
+      } else {
+        // If no primary clinic, get first clinic
+        const firstClinic = await prisma.clinicMembership.findFirst({
+          where: {
+            userId: session.user.id,
+          },
+          select: {
+            clinicId: true,
+          },
+        });
+        if (firstClinic) {
+          finalClinicId = firstClinic.clinicId;
+        }
+      }
+    }
+
+    // If still no clinicId, return error
+    if (!finalClinicId) {
+      return NextResponse.json(
+        { error: 'Clinic ID is required. Please create or select a clinic first.' },
+        { status: 400 }
+      );
+    }
 
     if (isTemplate || type === 'template') {
       // Create form template
@@ -83,6 +121,7 @@ export async function POST(request: NextRequest) {
       const form = await prisma.dentalForm.create({
         data: {
           userId: session.user.id,
+          clinicId: finalClinicId,
           formName,
           formSchema,
           isActive: true,
@@ -99,11 +138,27 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Get clinicId from the form if not provided
+      let responseClinicId = clinicId;
+      if (!responseClinicId) {
+        const form = await prisma.dentalForm.findUnique({
+          where: { id: formId },
+          select: { clinicId: true },
+        });
+        if (form) {
+          responseClinicId = form.clinicId;
+        } else {
+          // Fallback to user's primary clinic
+          responseClinicId = finalClinicId;
+        }
+      }
+
       const response = await prisma.dentalFormResponse.create({
         data: {
           formId,
           leadId,
           userId: session.user.id,
+          clinicId: responseClinicId,
           responseData: formData,
           submittedAt: new Date(),
         },

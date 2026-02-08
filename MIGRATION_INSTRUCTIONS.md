@@ -1,65 +1,91 @@
 # Database Migration Instructions
 
-## What This Migration Does
+## Backup Status
 
-This migration adds the missing database schema elements:
-- ✅ `dateOfBirth` column to the `Lead` table (nullable DateTime)
-- ✅ `FeedbackCollection` table (if it doesn't exist)
+✅ **Backup completed successfully!**
+- **Backup Location:** `backups/pre-migration-2026-02-08-090038/`
+- **Schema Backup:** `backups/pre-migration-2026-02-08-090038/schema.prisma.backup`
+- **Manifest:** `backups/pre-migration-2026-02-08-090038/BACKUP_MANIFEST.md`
 
-## How It Works
+## TLS Certificate Issue
 
-The migration will run automatically when you deploy to Vercel. The build process will:
-1. Run `prisma db push` to sync the schema
-2. Generate the Prisma client
-3. Build your application
+The migration is encountering a TLS certificate error. This is likely due to the `channel_binding=require` parameter in your DATABASE_URL.
 
-## Option 1: Automatic (Recommended)
+## Solution Options
 
-**Just push your code to GitHub and Vercel will handle it!**
+### Option 1: Fix DATABASE_URL (Recommended)
 
-The migration will run automatically on the next deployment because we updated `vercel.json` to include `prisma db push` in the build command.
+Edit your `.env.local` file and modify the DATABASE_URL:
 
-## Option 2: Manual Trigger (If Needed)
+**Current (problematic):**
+```
+DATABASE_URL="postgresql://...?sslmode=require&channel_binding=require"
+```
 
-If you want to run the migration manually before deploying, you can:
+**Change to:**
+```
+DATABASE_URL="postgresql://...?sslmode=require"
+```
 
-1. **Visit this URL** (while logged into your app):
-   ```
-   https://your-app.vercel.app/api/admin/run-migration
-   ```
-   
-   Or use curl:
+Remove the `channel_binding=require` parameter.
+
+### Option 2: Use Neon Console
+
+1. Go to your Neon dashboard
+2. Navigate to your database
+3. Use the SQL Editor to run migrations manually
+4. Or use Neon's migration tool if available
+
+### Option 3: Run Migration Manually
+
+If you have direct database access:
+
+```bash
+# Export the migration SQL
+cat prisma/migrations/20260208000000_add_multi_clinic_support/migration.sql
+
+# Then run it via psql or your database client
+psql $DATABASE_URL < prisma/migrations/20260208000000_add_multi_clinic_support/migration.sql
+```
+
+## Pending Migrations
+
+The following migrations are pending:
+
+1. `20260208000000_add_multi_clinic_support` - Adds multi-clinic support with clinicId fields
+
+## After Fixing DATABASE_URL
+
+Once you've fixed the DATABASE_URL, run:
+
+```bash
+npx prisma migrate deploy
+```
+
+This will apply all pending migrations.
+
+## Rollback Instructions
+
+If you need to rollback:
+
+1. **Restore Schema:**
    ```bash
-   curl -X POST https://your-app.vercel.app/api/admin/run-migration \
-     -H "Cookie: your-session-cookie"
+   cp backups/pre-migration-2026-02-08-090038/schema.prisma.backup prisma/schema.prisma
+   npx prisma generate
    ```
 
-2. The endpoint will:
-   - Check that you're logged in
-   - Run the migration
-   - Return success/error status
+2. **Restore Database:**
+   - Use Neon's point-in-time restore feature in the dashboard
+   - Or restore from the SQL dump if pg_dump was successful
 
-## What Happens After Migration
+## Verification
 
-Once the migration completes:
-- ✅ All queries will work without schema errors
-- ✅ AI Brain will show real numbers
-- ✅ Contacts page will work correctly
-- ✅ No more "column doesn't exist" errors
+After migration, verify:
 
-## Safety
+```bash
+# Check migration status
+npx prisma migrate status
 
-- ✅ The migration only **adds** columns/tables - it won't delete anything
-- ✅ Your existing data is safe
-- ✅ The migration is idempotent (safe to run multiple times)
-
-## Troubleshooting
-
-If the migration fails:
-1. Check Vercel build logs for errors
-2. Ensure `DATABASE_URL` is set in Vercel environment variables
-3. Check that your Neon database is accessible from Vercel
-
-## Need Help?
-
-The migration will run automatically on your next deployment. Just push the code and Vercel will handle it!
+# Generate Prisma client
+npx prisma generate
+```

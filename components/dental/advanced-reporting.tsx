@@ -17,6 +17,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FileDown, TrendingUp, TrendingDown, DollarSign, Users, Calendar as CalendarIcon, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface ReportData {
   period: string;
@@ -37,6 +38,21 @@ export function AdvancedReporting() {
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [summary, setSummary] = useState<{
+    totalRevenue: number;
+    totalPatients: number;
+    totalAppointments: number;
+    totalProcedures: number;
+    averageTicket: number;
+    avgGrowthRate: number;
+  }>({
+    totalRevenue: 0,
+    totalPatients: 0,
+    totalAppointments: 0,
+    totalProcedures: 0,
+    averageTicket: 0,
+    avgGrowthRate: 0,
+  });
 
   useEffect(() => {
     generateReport();
@@ -45,26 +61,42 @@ export function AdvancedReporting() {
   const generateReport = async () => {
     setLoading(true);
     try {
-      // In a real implementation, this would fetch from API
-      // For now, we'll generate mock data
-      const data: ReportData[] = [];
-      const periods = getPeriods(dateRange, startDate, endDate);
-
-      periods.forEach((period) => {
-        data.push({
-          period,
-          revenue: Math.random() * 50000 + 10000,
-          patients: Math.floor(Math.random() * 100 + 20),
-          appointments: Math.floor(Math.random() * 150 + 30),
-          procedures: Math.floor(Math.random() * 200 + 50),
-          averageTicket: Math.random() * 500 + 200,
-          growthRate: (Math.random() - 0.5) * 20,
-        });
+      // Build query parameters
+      const params = new URLSearchParams({
+        reportType,
+        dateRange,
       });
+      
+      if (dateRange === 'custom' && startDate && endDate) {
+        params.append('startDate', startDate.toISOString());
+        params.append('endDate', endDate.toISOString());
+      }
+      
+      if (activeClinic?.id) {
+        params.append('clinicId', activeClinic.id);
+      }
 
-      setReportData(data);
+      const response = await fetch(`/api/dental/reports?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch report data');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setReportData(result.data);
+        if (result.summary) {
+          setSummary(result.summary);
+        }
+      } else {
+        throw new Error(result.error || 'Invalid response format');
+      }
     } catch (error) {
       console.error('Error generating report:', error);
+      toast.error('Failed to generate report. Please try again.');
+      // Fallback to empty data
+      setReportData([]);
     } finally {
       setLoading(false);
     }
@@ -145,12 +177,13 @@ export function AdvancedReporting() {
     a.click();
   };
 
-  const totalRevenue = reportData.reduce((sum, d) => sum + d.revenue, 0);
-  const totalPatients = reportData.reduce((sum, d) => sum + d.patients, 0);
-  const totalAppointments = reportData.reduce((sum, d) => sum + d.appointments, 0);
-  const avgGrowthRate = reportData.length > 0
+  // Use summary from API if available, otherwise calculate from reportData
+  const totalRevenue = summary.totalRevenue || reportData.reduce((sum, d) => sum + d.revenue, 0);
+  const totalPatients = summary.totalPatients || reportData.reduce((sum, d) => sum + d.patients, 0);
+  const totalAppointments = summary.totalAppointments || reportData.reduce((sum, d) => sum + d.appointments, 0);
+  const avgGrowthRate = summary.avgGrowthRate || (reportData.length > 0
     ? reportData.reduce((sum, d) => sum + d.growthRate, 0) / reportData.length
-    : 0;
+    : 0);
 
   return (
     <div className="space-y-6">
@@ -277,7 +310,9 @@ export function AdvancedReporting() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${reportData.length > 0
+              ${summary.averageTicket > 0
+                ? summary.averageTicket.toFixed(2)
+                : reportData.length > 0
                 ? (totalRevenue / totalAppointments || 0).toFixed(2)
                 : '0.00'}
             </div>

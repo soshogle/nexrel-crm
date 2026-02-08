@@ -74,7 +74,7 @@ export function QuickBooksSettings() {
             QuickBooks Online
           </CardTitle>
           <CardDescription>
-            Connect your QuickBooks account to automate invoicing and sync customers
+            Connect your QuickBooks account to automate invoicing and sync customers across all industries
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -88,7 +88,7 @@ export function QuickBooksSettings() {
           ) : (
             <Alert>
               <AlertDescription>
-                Connect QuickBooks to automatically create invoices from deals and sync customer data
+                Connect QuickBooks to automatically create invoices from your contacts/leads and sync customer data
               </AlertDescription>
             </Alert>
           )}
@@ -103,7 +103,7 @@ export function QuickBooksSettings() {
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" />
-                  <span>Create invoices directly from deals in your pipeline</span>
+                  <span>Create invoices directly from contacts, leads, or transactions</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" />
@@ -146,6 +146,27 @@ export function QuickBooksSettings() {
                   <CheckCircle2 className="w-4 h-4" />
                   Refresh Status
                 </Button>
+                <Button
+                  variant="destructive"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/integrations/quickbooks/disconnect', {
+                        method: 'POST',
+                      });
+                      if (response.ok) {
+                        setIsConnected(false);
+                        toast.success('QuickBooks disconnected successfully');
+                      } else {
+                        toast.error('Failed to disconnect QuickBooks');
+                      }
+                    } catch (error) {
+                      toast.error('Failed to disconnect QuickBooks');
+                    }
+                  }}
+                  className="gap-2"
+                >
+                  Disconnect
+                </Button>
               </div>
             )}
           </div>
@@ -165,9 +186,9 @@ export function QuickBooksSettings() {
           </div>
           
           <div>
-            <h4 className="font-medium mb-2">2. In the Pipeline:</h4>
+            <h4 className="font-medium mb-2">2. From Contacts/Leads:</h4>
             <p className="text-gray-600 dark:text-gray-400">
-              Click the invoice button on any deal to automatically create a QuickBooks invoice
+              Create invoices directly from any contact or lead to automatically sync with QuickBooks
             </p>
           </div>
 

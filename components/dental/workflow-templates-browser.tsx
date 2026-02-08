@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useSession } from 'next-auth/react';
-import { Workflow, Play, Stethoscope, ClipboardList, X } from 'lucide-react';
+import { Workflow, Play, Stethoscope, ClipboardList, Phone, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { WorkflowBuilder } from '@/components/workflows/workflow-builder';
 import { Industry } from '@prisma/client';
@@ -22,14 +22,14 @@ interface WorkflowTemplate {
   description: string;
   trigger: string;
   actions: Array<{ type: string; delayMinutes: number }>;
-  category: 'clinical' | 'admin' | 'all';
+  category: 'clinical' | 'admin' | 'calls' | 'all';
 }
 
 export function DentalWorkflowTemplatesBrowser() {
   const { data: session } = useSession();
   const [templates, setTemplates] = useState<WorkflowTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'clinical' | 'admin'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'clinical' | 'admin' | 'calls'>('all');
   const [selectedTemplate, setSelectedTemplate] = useState<WorkflowTemplate | null>(null);
   const [createdWorkflowId, setCreatedWorkflowId] = useState<string | undefined>(undefined);
   const [showWorkflowBuilder, setShowWorkflowBuilder] = useState(false);
@@ -41,8 +41,12 @@ export function DentalWorkflowTemplatesBrowser() {
 
   const fetchTemplates = async () => {
     try {
-      // Determine role based on current context - if admin category is selected or default to all
-      const roleParam = selectedCategory === 'admin' ? 'admin_assistant' : selectedCategory === 'clinical' ? 'practitioner' : null;
+      // Determine role based on current context - if admin/calls category is selected or default to all
+      const roleParam = selectedCategory === 'admin' || selectedCategory === 'calls' 
+        ? 'admin_assistant' 
+        : selectedCategory === 'clinical' 
+        ? 'practitioner' 
+        : null;
       const url = roleParam ? `/api/dental/workflows/templates?role=${roleParam}` : '/api/dental/workflows/templates';
       
       const response = await fetch(url);
@@ -60,12 +64,21 @@ export function DentalWorkflowTemplatesBrowser() {
           const clinicalData = clinicalRes.ok ? await clinicalRes.json() : { templates: [] };
           
           const allTemplates = [
-            ...(adminData.templates || []).map((t: any) => ({ ...t, category: 'admin' })),
-            ...(clinicalData.templates || []).map((t: any) => ({ ...t, category: 'clinical' })),
+            ...(adminData.templates || []),
+            ...(clinicalData.templates || []),
           ];
           setTemplates(allTemplates);
         } else {
-          setTemplates(data.templates || []);
+          let templates = data.templates || [];
+          // Filter by category if specific category selected
+          if (selectedCategory === 'calls') {
+            templates = templates.filter((t: any) => t.category === 'calls');
+          } else if (selectedCategory === 'clinical') {
+            templates = templates.filter((t: any) => t.category === 'clinical');
+          } else if (selectedCategory === 'admin') {
+            templates = templates.filter((t: any) => t.category === 'admin');
+          }
+          setTemplates(templates);
         }
       }
     } catch (error) {
@@ -166,6 +179,14 @@ export function DentalWorkflowTemplatesBrowser() {
           <ClipboardList className="w-4 h-4 mr-1" />
           Administrative
         </Button>
+        <Button
+          variant={selectedCategory === 'calls' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setSelectedCategory('calls')}
+        >
+          <Phone className="w-4 h-4 mr-1" />
+          Call Workflows
+        </Button>
       </div>
 
       {/* Templates Grid */}
@@ -183,6 +204,8 @@ export function DentalWorkflowTemplatesBrowser() {
                     <Stethoscope className="w-3 h-3 mr-1" />
                   ) : template.category === 'admin' ? (
                     <ClipboardList className="w-3 h-3 mr-1" />
+                  ) : template.category === 'calls' ? (
+                    <Phone className="w-3 h-3 mr-1" />
                   ) : (
                     <Workflow className="w-3 h-3 mr-1" />
                   )}

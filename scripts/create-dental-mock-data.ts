@@ -247,6 +247,50 @@ async function main() {
   console.log(`✅ Using user: ${orthodontistUser.email} (${orthodontistUser.id})\n`);
 
   const userId = orthodontistUser.id;
+  
+  // Get or create a clinic for this user
+  let clinic = await prisma.clinicMembership.findFirst({
+    where: { userId },
+    include: { clinic: true },
+  });
+  
+  if (!clinic) {
+    console.log('📋 Creating default clinic for mock data...');
+    const newClinic = await prisma.clinic.create({
+      data: {
+        name: 'Mock Dental Clinic',
+        address: '123 Mock Street',
+        city: 'Montreal',
+        province: 'QC',
+        postalCode: 'H1A 1A1',
+        country: 'Canada',
+        phone: '514-555-0100',
+        email: 'mock@clinic.com',
+        timezone: 'America/Montreal',
+        currency: 'CAD',
+        language: 'en',
+      },
+    });
+    
+    await prisma.clinicMembership.create({
+      data: {
+        userId,
+        clinicId: newClinic.id,
+        role: 'OWNER',
+        isPrimary: true,
+      },
+    });
+    
+    clinic = await prisma.clinicMembership.findFirst({
+      where: { userId, clinicId: newClinic.id },
+      include: { clinic: true },
+    });
+    console.log(`   ✅ Created clinic: ${newClinic.name} (${newClinic.id})`);
+  }
+  
+  const clinicId = clinic!.clinicId;
+  console.log(`✅ Using clinic: ${clinic!.clinic.name} (${clinicId})\n`);
+  
   const createdLeads: string[] = [];
 
   // Create mock patients
@@ -304,6 +348,7 @@ async function main() {
       data: {
         leadId,
         userId,
+        clinicId,
         toothData,
         chartDate: new Date(),
         chartedBy: orthodontistUser.name || 'Mock Data',
@@ -336,6 +381,7 @@ async function main() {
       data: {
         leadId,
         userId,
+        clinicId,
         measurements,
         chartDate: new Date(),
         chartedBy: orthodontistUser.name || 'Mock Data',
@@ -386,6 +432,7 @@ async function main() {
         data: {
           leadId,
           userId,
+          clinicId,
           planName: `Treatment Plan ${j + 1} - ${new Date().toLocaleDateString()}`,
           description: `Mock treatment plan - ${MOCK_DATA_TAG}`,
           status: j === 0 ? 'APPROVED' : 'DRAFT',
@@ -424,6 +471,7 @@ async function main() {
         data: {
           leadId,
           userId,
+          clinicId,
           procedureCode: cdt.code,
           procedureName: cdt.name,
           description: `Mock procedure - ${MOCK_DATA_TAG}`,
@@ -459,6 +507,7 @@ async function main() {
     const form = await prisma.dentalForm.create({
       data: {
         userId,
+        clinicId,
         formName: `Mock Form ${i + 1} - ${formCategories[i]}`,
         description: `Mock form template - ${MOCK_DATA_TAG}`,
         category: formCategories[i],
@@ -492,6 +541,7 @@ async function main() {
         data: {
           leadId,
           userId,
+          clinicId,
           formId,
           responseData,
           submittedAt: new Date(Date.now() - r * 7 * 24 * 60 * 60 * 1000),

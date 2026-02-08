@@ -6,6 +6,11 @@
 
 import { prisma } from '@/lib/db';
 import { elevenLabsService } from '@/lib/elevenlabs';
+import {
+  triggerIncomingCallWorkflow,
+  triggerCallCompletedWorkflow,
+  triggerMissedCallWorkflow,
+} from '@/lib/dental/workflow-triggers';
 
 export interface CallEvent {
   callSid: string;
@@ -123,13 +128,14 @@ export class EnhancedCallHandler {
   /**
    * Handle incoming call with screen pop
    */
-  async handleIncomingCall(callEvent: CallEvent, clinicId?: string) {
+  async handleIncomingCall(callEvent: CallEvent, userId: string, clinicId?: string) {
     // Match patient
     const patientMatch = await this.matchPatientToCall(callEvent.fromNumber);
 
     // Create call log with patient match
     const callLog = await prisma.callLog.create({
       data: {
+        userId,
         twilioCallSid: callEvent.callSid,
         fromNumber: callEvent.fromNumber,
         toNumber: callEvent.toNumber,
@@ -148,28 +154,17 @@ export class EnhancedCallHandler {
       },
     });
 
-    // Trigger workflow if patient matched
-    if (patientMatch && patientMatch.leadId) {
-      try {
-        // Find workflows triggered by incoming calls
-        const workflows = await prisma.workflowTemplate.findMany({
-          where: {
-            userId: callLog.userId || undefined,
-            triggers: {
-              array_contains: ['INCOMING_CALL'],
-            },
-            isActive: true,
-          },
-        });
-
-        // Execute workflows
-        for (const workflow of workflows) {
-          // This would trigger your workflow engine
-          console.log(`Triggering workflow ${workflow.id} for incoming call`);
-        }
-      } catch (error) {
-        console.error('Error triggering workflows:', error);
-      }
+    // Trigger workflow for incoming call (always trigger, not just when patient matched)
+    try {
+      await triggerIncomingCallWorkflow(
+        callLog.id,
+        patientMatch?.leadId || null,
+        userId,
+        callEvent.fromNumber,
+        callEvent.toNumber
+      );
+    } catch (error) {
+      console.error('Error triggering incoming call workflow:', error);
     }
 
     return {

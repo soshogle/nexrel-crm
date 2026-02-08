@@ -32,26 +32,40 @@ export async function GET(request: NextRequest) {
     if (userRole === 'practitioner') {
       templates = DENTAL_WORKFLOW_TEMPLATES.clinical;
     } else if (userRole === 'admin_assistant') {
-      templates = DENTAL_WORKFLOW_TEMPLATES.admin;
+      templates = [
+        ...DENTAL_WORKFLOW_TEMPLATES.admin,
+        ...DENTAL_WORKFLOW_TEMPLATES.calls, // Admin handles calls
+      ];
     } else if (userRole === 'practice_owner' || userRole === 'hybrid') {
       // Return all templates
       templates = [
         ...DENTAL_WORKFLOW_TEMPLATES.clinical,
         ...DENTAL_WORKFLOW_TEMPLATES.admin,
+        ...DENTAL_WORKFLOW_TEMPLATES.calls,
       ];
     }
 
     return NextResponse.json({
       success: true,
       role: userRole,
-      templates: templates.map((template, index) => ({
-        id: `dental-template-${index}`,
-        name: template.name,
-        description: template.description,
-        trigger: template.trigger,
-        actions: template.actions,
-        category: userRole === 'practitioner' ? 'clinical' : userRole === 'admin_assistant' ? 'admin' : 'all',
-      })),
+      templates: templates.map((template, index) => {
+        // Determine category based on which array it came from
+        let category: 'clinical' | 'admin' | 'calls' = 'admin';
+        if (DENTAL_WORKFLOW_TEMPLATES.clinical.includes(template as any)) {
+          category = 'clinical';
+        } else if (DENTAL_WORKFLOW_TEMPLATES.calls.includes(template as any)) {
+          category = 'calls';
+        }
+        
+        return {
+          id: `dental-template-${index}`,
+          name: template.name,
+          description: template.description,
+          trigger: template.trigger,
+          actions: template.actions,
+          category,
+        };
+      }),
     });
   } catch (error: any) {
     console.error('Error fetching dental workflow templates:', error);

@@ -31,6 +31,9 @@ export const DENTAL_ADMIN_TRIGGERS = [
   'DAILY_PRODUCTION_TARGET_MET',
   'DAILY_PRODUCTION_TARGET_MISSED',
   'PATIENT_REGISTERED',
+  'INCOMING_CALL',
+  'CALL_COMPLETED',
+  'MISSED_CALL',
 ] as const;
 
 export const DENTAL_CLINICAL_ACTIONS = [
@@ -57,6 +60,10 @@ export const DENTAL_ADMIN_ACTIONS = [
   'RESCHEDULE_APPOINTMENT',
   'SEND_BILLING_REMINDER',
   'UPDATE_APPOINTMENT_STATUS',
+  'MAKE_PHONE_CALL',
+  'SEND_SMS',
+  'CREATE_CALL_NOTE',
+  'SCHEDULE_CALLBACK',
 ] as const;
 
 export type DentalClinicalTrigger = typeof DENTAL_CLINICAL_TRIGGERS[number];
@@ -138,6 +145,88 @@ export const DENTAL_WORKFLOW_TEMPLATES = {
       actions: [
         { type: 'GENERATE_PRODUCTION_REPORT', delayMinutes: 0 },
         { type: 'NOTIFY_TEAM_MEMBER', delayMinutes: 0 },
+      ],
+    },
+  ],
+  calls: [
+    {
+      name: 'Incoming Call - Patient Follow-up',
+      description: 'Automatically follow up after patient calls',
+      trigger: 'INCOMING_CALL',
+      actions: [
+        { type: 'CREATE_CALL_NOTE', delayMinutes: 0 },
+        { type: 'SEND_SMS', delayMinutes: 5 }, // Thank you message
+        { type: 'SCHEDULE_CALLBACK', delayMinutes: 1440 }, // Schedule callback if needed (1 day)
+      ],
+    },
+    {
+      name: 'Appointment Reminder Call',
+      description: 'Call patients to remind them of upcoming appointments',
+      trigger: 'APPOINTMENT_SCHEDULED',
+      actions: [
+        { type: 'MAKE_PHONE_CALL', delayMinutes: 10080 }, // 1 week before
+        { type: 'SEND_SMS', delayMinutes: 10085 }, // SMS backup if call fails
+        { type: 'MAKE_PHONE_CALL', delayMinutes: 1440 }, // 1 day before
+      ],
+    },
+    {
+      name: 'Post-Appointment Follow-up Call',
+      description: 'Call patients after appointment to check on recovery',
+      trigger: 'APPOINTMENT_COMPLETED',
+      actions: [
+        { type: 'MAKE_PHONE_CALL', delayMinutes: 1440 }, // 1 day after
+        { type: 'CREATE_CALL_NOTE', delayMinutes: 1445 },
+        { type: 'SEND_SMS', delayMinutes: 1440 }, // Alternative if call not answered
+      ],
+    },
+    {
+      name: 'Missed Appointment Follow-up',
+      description: 'Call patients who missed their appointment',
+      trigger: 'APPOINTMENT_NO_SHOW',
+      actions: [
+        { type: 'MAKE_PHONE_CALL', delayMinutes: 60 }, // 1 hour after missed appointment
+        { type: 'SEND_SMS', delayMinutes: 65 }, // SMS follow-up
+        { type: 'RESCHEDULE_APPOINTMENT', delayMinutes: 1440 }, // Try to reschedule next day
+      ],
+    },
+    {
+      name: 'Treatment Plan Discussion Call',
+      description: 'Call patients to discuss treatment plans',
+      trigger: 'TREATMENT_PLAN_CREATED',
+      actions: [
+        { type: 'MAKE_PHONE_CALL', delayMinutes: 0 }, // Immediate call
+        { type: 'SEND_SMS', delayMinutes: 5 }, // SMS with treatment plan link
+        { type: 'SCHEDULE_CALLBACK', delayMinutes: 1440 }, // Follow-up if needed
+      ],
+    },
+    {
+      name: 'Emergency Call Handling',
+      description: 'Handle emergency calls with immediate response',
+      trigger: 'INCOMING_CALL',
+      actions: [
+        { type: 'CREATE_CALL_NOTE', delayMinutes: 0 },
+        { type: 'NOTIFY_TEAM_MEMBER', delayMinutes: 0 }, // Alert staff
+        { type: 'SCHEDULE_APPOINTMENT', delayMinutes: 0 }, // Schedule urgent appointment
+      ],
+    },
+    {
+      name: 'Post-Procedure Check-in Call',
+      description: 'Call patients after procedures to check recovery',
+      trigger: 'PROCEDURE_COMPLETED',
+      actions: [
+        { type: 'MAKE_PHONE_CALL', delayMinutes: 1440 }, // 1 day after
+        { type: 'CREATE_CALL_NOTE', delayMinutes: 1445 },
+        { type: 'MAKE_PHONE_CALL', delayMinutes: 4320 }, // 3 days follow-up
+      ],
+    },
+    {
+      name: 'Payment Reminder Call',
+      description: 'Call patients with outstanding balances',
+      trigger: 'PAYMENT_FAILED',
+      actions: [
+        { type: 'MAKE_PHONE_CALL', delayMinutes: 0 },
+        { type: 'SEND_SMS', delayMinutes: 5 }, // SMS with payment link
+        { type: 'MAKE_PHONE_CALL', delayMinutes: 1440 }, // Follow-up call
       ],
     },
   ],

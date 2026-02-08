@@ -37,7 +37,24 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-console.log(`✅ DATABASE_URL found: ${process.env.DATABASE_URL.substring(0, 20)}...`);
+// Convert pooler URL to direct connection for migrations (Neon requirement)
+let databaseUrl = process.env.DATABASE_URL;
+if (databaseUrl.includes('-pooler.')) {
+  console.log('🔄 Converting pooler connection to direct connection for migrations...');
+  databaseUrl = databaseUrl.replace('-pooler.', '.');
+}
+
+// Use sslmode=prefer for migrations (more lenient SSL handling)
+if (databaseUrl.includes('sslmode=require')) {
+  console.log('🔄 Changing sslmode from require to prefer for migration compatibility...');
+  databaseUrl = databaseUrl.replace('sslmode=require', 'sslmode=prefer');
+} else if (!databaseUrl.includes('sslmode=')) {
+  databaseUrl += (databaseUrl.includes('?') ? '&' : '?') + 'sslmode=prefer';
+}
+
+process.env.DATABASE_URL = databaseUrl;
+
+console.log(`✅ DATABASE_URL found: ${databaseUrl.substring(0, 30)}...`);
 console.log('');
 
 // Run migration
@@ -45,7 +62,7 @@ console.log('🚀 Running Prisma migration...');
 console.log('');
 
 try {
-  execSync('npx prisma migrate dev --name add_vna_configuration', {
+  execSync('npx prisma migrate deploy', {
     stdio: 'inherit',
     env: process.env,
     cwd: path.join(__dirname, '..'),
