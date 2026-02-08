@@ -1350,6 +1350,7 @@ model AppointmentType {
 model BookingAppointment {
   id                   String              @id @default(cuid())
   userId               String
+  clinicId             String?
   appointmentTypeId    String?
   leadId               String?
   calendarConnectionId String?
@@ -1390,8 +1391,10 @@ model BookingAppointment {
   lead                 Lead?               @relation("lead_appointments", fields: [leadId], references: [id])
   payment              Payment?            @relation(fields: [paymentId], references: [id])
   user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic               Clinic?             @relation(fields: [clinicId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([clinicId])
   @@index([appointmentTypeId])
   @@index([leadId])
   @@index([contactId])
@@ -8170,6 +8173,7 @@ model Clinic {
 
   // Relations
   userMemberships   UserClinic[]             @relation("ClinicUsers")
+  appointments      BookingAppointment[]
   odontograms       DentalOdontogram[]
   periodontalCharts DentalPeriodontalChart[]
   treatmentPlans    DentalTreatmentPlan[]
