@@ -23,9 +23,14 @@ interface ExactArchOdontogramProps {
 
 type ViewMode = 'treatments' | 'conditions' | 'completed' | 'all';
 
-export function ExactArchOdontogram({ toothData }: ExactArchOdontogramProps) {
+interface ExactArchOdontogramProps {
+  toothData?: Record<string, any>;
+  initialViewMode?: ViewMode;
+}
+
+export function ExactArchOdontogram({ toothData, initialViewMode = 'conditions' }: ExactArchOdontogramProps) {
   const [hoveredTooth, setHoveredTooth] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('conditions'); // Default to 'conditions' to match image
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode); // Default to 'conditions' to match image
 
   // Tooth positions - Universal Numbering System (1-32)
   const upperTeeth = Array.from({ length: 16 }, (_, i) => i + 1);

@@ -151,6 +151,7 @@ export default function ClinicalDashboardPage() {
   const [openModal, setOpenModal] = useState<string | null>(null);
   const [procedureSearch, setProcedureSearch] = useState('');
   const [procedureFilter, setProcedureFilter] = useState('today');
+  const [odontogramViewMode, setOdontogramViewMode] = useState<'wisely' | 'treatment' | 'caries' | 'completed'>('treatment');
 
   // Fetch leads (patients)
   const fetchLeads = useCallback(async () => {
@@ -383,7 +384,7 @@ export default function ClinicalDashboardPage() {
                       }
                     }
                   }}
-                  disabled={!selectedLeadId || (selectedLeadId && leads.findIndex(l => l.id === selectedLeadId) === 0)}
+                  disabled={!selectedLeadId || (selectedLeadId ? leads.findIndex(l => l.id === selectedLeadId) === 0 : false)}
                 >
                   <ChevronLeft className="h-3 w-3 text-gray-600" />
                 </Button>
@@ -400,16 +401,35 @@ export default function ClinicalDashboardPage() {
                       }
                     }
                   }}
-                  disabled={!selectedLeadId || (selectedLeadId && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1)}
+                  disabled={!selectedLeadId || (selectedLeadId ? leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1 : false)}
                 >
                   <ChevronRight className="h-3 w-3 text-gray-600" />
                 </Button>
               </div>
             </div>
+            <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+              <Select 
+                value={odontogramViewMode} 
+                onValueChange={(value: 'wisely' | 'treatment' | 'caries' | 'completed') => setOdontogramViewMode(value)}
+              >
+                <SelectTrigger className="h-7 text-xs w-full border border-gray-300">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="wisely">Hover affected by: Wisely</SelectItem>
+                  <SelectItem value="treatment">Hover affected by: Treatment</SelectItem>
+                  <SelectItem value="caries">Hover affected by: Caries</SelectItem>
+                  <SelectItem value="completed">Hover affected by: Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent className="px-4 pb-4">
             {selectedLeadId ? (
-              <ExactArchOdontogram toothData={odontogramData} />
+              <ExactArchOdontogram 
+                toothData={odontogramData} 
+                initialViewMode={odontogramViewMode === 'treatment' ? 'treatments' : odontogramViewMode === 'caries' ? 'conditions' : odontogramViewMode === 'completed' ? 'completed' : 'all'}
+              />
             ) : (
               <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
             )}
@@ -603,7 +623,7 @@ export default function ClinicalDashboardPage() {
                       }
                     }
                   }}
-                  disabled={!selectedLeadId || (selectedLeadId && leads.findIndex(l => l.id === selectedLeadId) === 0)}
+                  disabled={!selectedLeadId || (selectedLeadId ? leads.findIndex(l => l.id === selectedLeadId) === 0 : false)}
                 >
                   <ChevronLeft className="h-4 w-4 text-gray-600" />
                 </Button>
@@ -619,7 +639,7 @@ export default function ClinicalDashboardPage() {
                       }
                     }
                   }}
-                  disabled={!selectedLeadId || (selectedLeadId && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1)}
+                  disabled={!selectedLeadId || (selectedLeadId ? leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1 : false)}
                 >
                   <ChevronRight className="h-4 w-4 text-gray-600" />
                 </Button>
