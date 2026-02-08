@@ -113,7 +113,7 @@ const CORE_MENU_ITEMS: MenuItemId[] = [
   'workflows',
   'team',
   'reports',
-  'general-inventory', // Inventory management for ALL industries
+  // 'general-inventory' removed from core - only available to industries that need it (not REAL_ESTATE)
   'ecommerce', // E-commerce management for ALL industries
   'payments', // Payment processing for ALL industries
   'referrals', // Referral program for ALL industries
@@ -130,6 +130,7 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
     'pos',
     'delivery',
     'inventory',
+    'general-inventory', // For restaurant inventory management
     'payments',
     'ecommerce',
     'widgets',
@@ -212,7 +213,7 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
 
   REAL_ESTATE: [
     ...CORE_MENU_ITEMS,
-    'general-inventory', // For marketing materials, signage
+    // 'general-inventory' removed - not needed for real estate industry
     'payments',
     'ecommerce', // For property listings
     'credit-scoring', // For buyer qualification
