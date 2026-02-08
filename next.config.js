@@ -10,6 +10,14 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
+  webpack: (config) => {
+    // Make @azure/storage-blob optional - it's dynamically imported
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      '@azure/storage-blob': false,
+    };
+    return config;
+  },
 };
 
 module.exports = nextConfig;
