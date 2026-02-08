@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Building2, Plus, Settings } from 'lucide-react';
 import { toast } from 'sonner';
+import { ClinicManagementDialog } from './clinic-management-dialog';
 
 interface Clinic {
   id: string;
@@ -29,6 +30,7 @@ export function ClinicSelector({ onClinicChange }: ClinicSelectorProps) {
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [selectedClinicId, setSelectedClinicId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showManageDialog, setShowManageDialog] = useState(false);
 
   useEffect(() => {
     fetchClinics();
@@ -88,47 +90,77 @@ export function ClinicSelector({ onClinicChange }: ClinicSelectorProps) {
     );
   }
 
+  const handleManageSuccess = () => {
+    fetchClinics();
+    setShowManageDialog(false);
+  };
+
   if (clinics.length === 0) {
     return (
-      <Button
-        variant="outline"
-        size="sm"
-        className="bg-white/10 backdrop-blur-sm border-white/20 text-white"
-        onClick={() => toast.info('Create clinic feature coming soon')}
-      >
-        <Plus className="w-4 h-4 mr-1" />
-        Create Clinic
-      </Button>
+      <>
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-white/10 backdrop-blur-sm border-white/20 text-white"
+          onClick={() => setShowManageDialog(true)}
+        >
+          <Plus className="w-4 h-4 mr-1" />
+          Create Clinic
+        </Button>
+        <ClinicManagementDialog
+          open={showManageDialog}
+          onOpenChange={setShowManageDialog}
+          clinics={clinics}
+          onSuccess={handleManageSuccess}
+        />
+      </>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Building2 className="w-4 h-4 text-white" />
-      <Select
-        value={selectedClinicId || '__none__'}
-        onValueChange={(value) => {
-          if (value !== '__none__') {
-            handleClinicChange(value);
-          }
-        }}
-      >
-        <SelectTrigger className="w-48 bg-white/10 backdrop-blur-sm border-white/20 text-white">
-          <SelectValue placeholder="Select clinic" />
-        </SelectTrigger>
-        <SelectContent>
-          {clinics.map((clinic) => (
-            <SelectItem key={clinic.id} value={clinic.id}>
-              <div className="flex items-center justify-between w-full">
-                <span>{clinic.name}</span>
-                {clinic.isPrimary && (
-                  <span className="ml-2 text-xs text-purple-400">Primary</span>
-                )}
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <>
+      <div className="flex items-center gap-2">
+        <Building2 className="w-4 h-4 text-white" />
+        <Select
+          value={selectedClinicId || '__none__'}
+          onValueChange={(value) => {
+            if (value !== '__none__') {
+              handleClinicChange(value);
+            }
+          }}
+        >
+          <SelectTrigger className="w-48 bg-white/10 backdrop-blur-sm border-white/20 text-white">
+            <SelectValue placeholder="Select clinic" />
+          </SelectTrigger>
+          <SelectContent>
+            {clinics.map((clinic) => (
+              <SelectItem key={clinic.id} value={clinic.id}>
+                <div className="flex items-center justify-between w-full">
+                  <span>{clinic.name}</span>
+                  {clinic.isPrimary && (
+                    <span className="ml-2 text-xs text-purple-400">Primary</span>
+                  )}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-white hover:bg-white/10"
+          onClick={() => setShowManageDialog(true)}
+          title="Manage Clinics"
+        >
+          <Settings className="w-4 h-4" />
+        </Button>
+      </div>
+      <ClinicManagementDialog
+        open={showManageDialog}
+        onOpenChange={setShowManageDialog}
+        clinics={clinics}
+        onSuccess={handleManageSuccess}
+      />
+    </>
   );
 }
