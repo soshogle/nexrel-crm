@@ -374,36 +374,48 @@ export default function ClinicalDashboardPage() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-6 w-6 p-0 hover:bg-gray-100" 
+                  className="h-6 w-6 p-0 hover:bg-gray-100 active:bg-gray-200 transition-colors" 
                   onClick={(e) => {
                     e.stopPropagation();
                     if (selectedLeadId && leads.length > 0) {
                       const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
                       if (currentIndex > 0) {
-                        setSelectedLeadId(leads[currentIndex - 1].id);
+                        const prevLead = leads[currentIndex - 1];
+                        setSelectedLeadId(prevLead.id);
+                        toast.success(`Switched to ${prevLead.contactPerson || 'patient'}`);
+                      } else {
+                        toast.info('Already at first patient');
                       }
+                    } else {
+                      toast.error('Please select a patient first');
                     }
                   }}
-                  disabled={!selectedLeadId || (selectedLeadId ? leads.findIndex(l => l.id === selectedLeadId) === 0 : false)}
+                  disabled={!selectedLeadId || (selectedLeadId ? (leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === 0) : true)}
                 >
-                  <ChevronLeft className="h-3 w-3 text-gray-600" />
+                  <ChevronLeft className={`h-3 w-3 ${!selectedLeadId || (selectedLeadId && leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === 0) ? 'text-gray-300' : 'text-gray-600'}`} />
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-6 w-6 p-0 hover:bg-gray-100" 
+                  className="h-6 w-6 p-0 hover:bg-gray-100 active:bg-gray-200 transition-colors" 
                   onClick={(e) => {
                     e.stopPropagation();
                     if (selectedLeadId && leads.length > 0) {
                       const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
                       if (currentIndex < leads.length - 1) {
-                        setSelectedLeadId(leads[currentIndex + 1].id);
+                        const nextLead = leads[currentIndex + 1];
+                        setSelectedLeadId(nextLead.id);
+                        toast.success(`Switched to ${nextLead.contactPerson || 'patient'}`);
+                      } else {
+                        toast.info('Already at last patient');
                       }
+                    } else {
+                      toast.error('Please select a patient first');
                     }
                   }}
-                  disabled={!selectedLeadId || (selectedLeadId ? leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1 : false)}
+                  disabled={!selectedLeadId || (selectedLeadId ? (leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1) : true)}
                 >
-                  <ChevronRight className="h-3 w-3 text-gray-600" />
+                  <ChevronRight className={`h-3 w-3 ${!selectedLeadId || (selectedLeadId && leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1) ? 'text-gray-300' : 'text-gray-600'}`} />
                 </Button>
               </div>
             </div>
@@ -412,14 +424,34 @@ export default function ClinicalDashboardPage() {
                 value={odontogramViewMode} 
                 onValueChange={(value: 'wisely' | 'treatment' | 'caries' | 'completed') => setOdontogramViewMode(value)}
               >
-                <SelectTrigger className="h-7 text-xs w-full border border-gray-300">
+                <SelectTrigger className="h-7 text-xs w-full border border-gray-300 hover:border-gray-400 transition-colors">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="wisely">Hover affected by: Wisely</SelectItem>
-                  <SelectItem value="treatment">Hover affected by: Treatment</SelectItem>
-                  <SelectItem value="caries">Hover affected by: Caries</SelectItem>
-                  <SelectItem value="completed">Hover affected by: Completed</SelectItem>
+                  <SelectItem 
+                    value="wisely" 
+                    className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                  >
+                    Hover affected by: Wisely
+                  </SelectItem>
+                  <SelectItem 
+                    value="treatment" 
+                    className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                  >
+                    Hover affected by: Treatment
+                  </SelectItem>
+                  <SelectItem 
+                    value="caries" 
+                    className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                  >
+                    Hover affected by: Caries
+                  </SelectItem>
+                  <SelectItem 
+                    value="completed" 
+                    className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                  >
+                    Hover affected by: Completed
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -602,50 +634,91 @@ export default function ClinicalDashboardPage() {
         {selectedLeadId ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
-              <Select defaultValue="treatment">
-                <SelectTrigger className="h-8 w-64 border border-gray-300">
+              <Select 
+                value={odontogramViewMode} 
+                onValueChange={(value: 'wisely' | 'treatment' | 'caries' | 'completed') => setOdontogramViewMode(value)}
+              >
+                <SelectTrigger className="h-8 w-64 border border-gray-300 hover:border-gray-400 transition-colors">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="treatment">Hover affected by: Treatment</SelectItem>
+                  <SelectItem 
+                    value="wisely" 
+                    className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                  >
+                    Hover affected by: Wisely
+                  </SelectItem>
+                  <SelectItem 
+                    value="treatment" 
+                    className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                  >
+                    Hover affected by: Treatment
+                  </SelectItem>
+                  <SelectItem 
+                    value="caries" 
+                    className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                  >
+                    Hover affected by: Caries
+                  </SelectItem>
+                  <SelectItem 
+                    value="completed" 
+                    className="hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                  >
+                    Hover affected by: Completed
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <div className="flex items-center gap-1">
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                  className="h-8 w-8 p-0 hover:bg-gray-100 active:bg-gray-200 transition-colors"
                   onClick={() => {
                     if (selectedLeadId && leads.length > 0) {
                       const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
                       if (currentIndex > 0) {
-                        setSelectedLeadId(leads[currentIndex - 1].id);
+                        const prevLead = leads[currentIndex - 1];
+                        setSelectedLeadId(prevLead.id);
+                        toast.success(`Switched to ${prevLead.contactPerson || 'patient'}`);
+                      } else {
+                        toast.info('Already at first patient');
                       }
+                    } else {
+                      toast.error('Please select a patient first');
                     }
                   }}
-                  disabled={!selectedLeadId || (selectedLeadId ? leads.findIndex(l => l.id === selectedLeadId) === 0 : false)}
+                  disabled={!selectedLeadId || (selectedLeadId ? (leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === 0) : true)}
                 >
-                  <ChevronLeft className="h-4 w-4 text-gray-600" />
+                  <ChevronLeft className={`h-4 w-4 ${!selectedLeadId || (selectedLeadId && leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === 0) ? 'text-gray-300' : 'text-gray-600'}`} />
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                  className="h-8 w-8 p-0 hover:bg-gray-100 active:bg-gray-200 transition-colors"
                   onClick={() => {
                     if (selectedLeadId && leads.length > 0) {
                       const currentIndex = leads.findIndex(l => l.id === selectedLeadId);
                       if (currentIndex < leads.length - 1) {
-                        setSelectedLeadId(leads[currentIndex + 1].id);
+                        const nextLead = leads[currentIndex + 1];
+                        setSelectedLeadId(nextLead.id);
+                        toast.success(`Switched to ${nextLead.contactPerson || 'patient'}`);
+                      } else {
+                        toast.info('Already at last patient');
                       }
+                    } else {
+                      toast.error('Please select a patient first');
                     }
                   }}
-                  disabled={!selectedLeadId || (selectedLeadId ? leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1 : false)}
+                  disabled={!selectedLeadId || (selectedLeadId ? (leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1) : true)}
                 >
-                  <ChevronRight className="h-4 w-4 text-gray-600" />
+                  <ChevronRight className={`h-4 w-4 ${!selectedLeadId || (selectedLeadId && leads.length > 0 && leads.findIndex(l => l.id === selectedLeadId) === leads.length - 1) ? 'text-gray-300' : 'text-gray-600'}`} />
                 </Button>
               </div>
             </div>
-            <ExactArchOdontogram toothData={odontogramData} />
+            <ExactArchOdontogram 
+              toothData={odontogramData} 
+              initialViewMode={odontogramViewMode === 'treatment' ? 'treatments' : odontogramViewMode === 'caries' ? 'conditions' : odontogramViewMode === 'completed' ? 'completed' : 'all'}
+            />
           </div>
         ) : (
           <div className="text-center py-16 text-gray-400">Select a patient</div>
