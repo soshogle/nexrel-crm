@@ -5,5 +5,11 @@
     "app/api/**/*.ts": {
       "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/twilio-health-monitor",
+      "schedule": "*/2 * * * *"
+    }
+  ]
 }

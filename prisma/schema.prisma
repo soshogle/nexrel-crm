@@ -605,6 +605,10 @@ model VoiceAgent {
   type                    VoiceAgentType                @default(INBOUND)
   status                  VoiceAgentStatus              @default(TESTING)
   twilioPhoneNumber       String?
+  twilioAccountId         String?                       // Which Twilio account owns this number
+  backupPhoneNumber       String?                       // Backup number if failover occurred
+  lastHealthCheck         DateTime?
+  healthStatus            String?                       // HEALTHY, DEGRADED, FAILED
   businessName            String
   businessIndustry        String?
   knowledgeBase           String?
@@ -646,6 +650,9 @@ model VoiceAgent {
   enableReservations      Boolean?                      @default(false)
   inboundGreeting         String?
   outboundGreeting        String?
+
+  // Relations
+  twilioAccount TwilioAccount? @relation(fields: [twilioAccountId], references: [id], onDelete: SetNull)
   callLogs                CallLog[]
   campaigns               Campaign[]
   outboundCalls           OutboundCall[]
@@ -655,6 +662,8 @@ model VoiceAgent {
 
   @@index([userId])
   @@index([status])
+  @@index([twilioAccountId])
+  @@index([healthStatus])
 }
 
 model PurchasedPhoneNumber {
@@ -9338,4 +9347,135 @@ model WebsiteStockSettings {
   website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
 
   @@index([websiteId])
+}
+
+// ==========================================
+// TWILIO FAILOVER SYSTEM
+// ==========================================
+
+// Twilio Account Management - Multiple accounts for failover
+model TwilioAccount {
+  id            String   @id @default(cuid())
+  name          String   // e.g., "Primary", "Backup 1"
+  accountSid    String   @unique
+  authToken     String   // Encrypted
+  isPrimary     Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  status        String   @default("ACTIVE") // ACTIVE, SUSPENDED, FAILED
+  lastHealthCheck DateTime?
+  healthStatus  String?  // HEALTHY, DEGRADED, FAILED
+  phoneNumbersCount Int  @default(0)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  voiceAgents       VoiceAgent[]
+  healthChecks      TwilioHealthCheck[]
+  failoverEventsFrom TwilioFailoverEvent[] @relation("FailoverFromAccount")
+  failoverEventsTo   TwilioFailoverEvent[] @relation("FailoverToAccount")
+  backupPhoneNumbers TwilioBackupPhoneNumber[]
+
+  @@index([isPrimary])
+  @@index([isActive])
+  @@index([status])
+  @@index([healthStatus])
+}
+
+// Failover Events & Logging
+enum TwilioFailoverTriggerType {
+  CRITICAL  // Account hacked, suspended - immediate failover
+  DEGRADED  // Multiple agents failing - approval window
+  MANUAL    // Admin manually triggered
+}
+
+enum TwilioFailoverStatus {
+  PENDING_APPROVAL
+  APPROVED
+  EXECUTING
+  COMPLETED
+  CANCELLED
+  ROLLED_BACK
+}
+
+model TwilioFailoverEvent {
+  id                      String   @id @default(cuid())
+  triggerType             TwilioFailoverTriggerType
+  detectedAt              DateTime @default(now())
+  approvalWindowStarted   DateTime?
+  approvedAt              DateTime?
+  approvedBy              String?  // User ID or 'AUTO'
+  status                  TwilioFailoverStatus @default(PENDING_APPROVAL)
+  affectedAgentsCount     Int
+  totalActiveAgentsCount  Int
+  testResultsDuringWindow Json?    // Store test results during approval window
+  failoverExecutedAt      DateTime?
+  rollbackAt              DateTime?
+  rollbackBy              String?
+  fromAccountId           String?
+  toAccountId             String?
+  notes                   String?
+  errorMessage            String?
+
+  // Relations
+  fromAccount TwilioAccount? @relation("FailoverFromAccount", fields: [fromAccountId], references: [id])
+  toAccount   TwilioAccount? @relation("FailoverToAccount", fields: [toAccountId], references: [id])
+
+  @@index([status])
+  @@index([triggerType])
+  @@index([detectedAt])
+  @@index([fromAccountId])
+  @@index([toAccountId])
+}
+
+// Health Check History
+enum TwilioHealthCheckType {
+  API
+  WEBHOOK
+  PHONE_NUMBER
+  AGENT
+  ACCOUNT_STATUS
+}
+
+enum TwilioHealthCheckStatus {
+  PASS
+  FAIL
+  DEGRADED
+}
+
+model TwilioHealthCheck {
+  id            String   @id @default(cuid())
+  twilioAccountId String
+  checkType     TwilioHealthCheckType
+  status        TwilioHealthCheckStatus
+  details       Json?    // Store detailed results
+  responseTime  Int?     // Milliseconds
+  checkedAt     DateTime @default(now())
+
+  // Relations
+  twilioAccount TwilioAccount @relation(fields: [twilioAccountId], references: [id], onDelete: Cascade)
+
+  @@index([twilioAccountId])
+  @@index([checkType])
+  @@index([status])
+  @@index([checkedAt])
+}
+
+// Backup Phone Number Pool
+model TwilioBackupPhoneNumber {
+  id              String   @id @default(cuid())
+  twilioAccountId String
+  phoneNumber     String   @unique
+  countryCode     String
+  isAssigned      Boolean  @default(false)
+  assignedToAgentId String?
+  assignedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  // Relations
+  twilioAccount TwilioAccount @relation(fields: [twilioAccountId], references: [id], onDelete: Cascade)
+
+  @@index([twilioAccountId])
+  @@index([isAssigned])
+  @@index([assignedToAgentId])
 }
