@@ -227,12 +227,39 @@ You can create complex multi-step workflows with:
 
 AVAILABLE TRIGGERS:
 ${availableTriggers.join('\n')}
+
+WEBSITE TRIGGERS (requires website to be created first):
 - WEBSITE_VISITOR: When someone visits a website
 - WEBSITE_FORM_SUBMITTED: When a form is submitted on a website
 - WEBSITE_PAYMENT_RECEIVED: When a payment is received on a website
+- WEBSITE_PAYMENT_AMOUNT_THRESHOLD: When payment exceeds a threshold (triggerConfig: {"amount": 10000, "operator": "greater_than"})
 - WEBSITE_BOOKING_CREATED: When a booking is created on a website
 - WEBSITE_CTA_CLICKED: When a CTA button is clicked on a website
 - WEBSITE_PAGE_VIEWED: When a specific page is viewed on a website
+- WEBSITE_ORDER_CREATED: When an order is created on a website
+- WEBSITE_PRODUCT_LOW_STOCK: When product inventory falls below threshold
+- WEBSITE_PRODUCT_OUT_OF_STOCK: When product runs out of stock
+- WEBSITE_PRODUCT_BACK_IN_STOCK: When product comes back in stock
+- WEBSITE_CUSTOMER_TIER_CHANGED: When customer tier changes (triggerConfig: {"toTier": "VIP"})
+- WEBSITE_REPEAT_CUSTOMER: When a repeat customer makes a purchase
+- WEBSITE_FIRST_TIME_CUSTOMER: When a first-time customer makes a purchase
+- WEBSITE_PRODUCT_PURCHASED: When a specific product is purchased (triggerConfig: {"productId": "..."})
+- WEBSITE_CART_VALUE_THRESHOLD: When cart value exceeds threshold (triggerConfig: {"amount": 5000, "operator": "greater_than"})
+- WEBSITE_VISITOR_PAGE_VIEWED: When visitor views a specific page (triggerConfig: {"pagePath": "/products"})
+- WEBSITE_VISITOR_TIME_ON_SITE: When visitor spends time on site (triggerConfig: {"minTime": 60})
+- WEBSITE_VISITOR_PAGES_VIEWED: When visitor views multiple pages (triggerConfig: {"minPages": 3})
+- WEBSITE_VISITOR_CTA_CLICKED: When visitor clicks a CTA (triggerConfig: {"ctaId": "..."})
+- WEBSITE_VISITOR_RETURNING: When a returning visitor arrives
+- WEBSITE_VISITOR_ABANDONED_CART: When visitor abandons cart
+- WEBSITE_REVENUE_MILESTONE: When revenue reaches milestone (triggerConfig: {"milestone": 100000})
+- WEBSITE_ORDER_COUNT_MILESTONE: When order count reaches milestone (triggerConfig: {"milestone": 100})
+- WEBSITE_DAILY_REVENUE_THRESHOLD: When daily revenue exceeds threshold (triggerConfig: {"amount": 5000, "operator": "greater_than"})
+
+CONDITIONAL LOGIC:
+Triggers support conditional logic with AND/OR operators:
+- triggerConfig.conditions: [{"field": "paymentAmount", "operator": "greater_than", "value": 10000, "logic": "AND"}, {"field": "customerTier", "operator": "equals", "value": "NEW"}]
+- Operators: "equals", "greater_than", "less_than", "contains"
+- Logic: "AND" (default), "OR"
 
 AVAILABLE ACTIONS:
 ${availableActions.join('\n')}

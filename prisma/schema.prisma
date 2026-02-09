@@ -108,6 +108,7 @@ model User {
   parentRole                  Boolean                      @default(false)
   subdomain                   String?                      @unique
   language                    String?                      @default("en")
+  crmVoiceAgentId             String?                      // ElevenLabs agent ID for CRM voice assistant
   workflowExecutions          AIWorkflowExecution[]        @relation("UserWorkflowExecutions")
   workflowInstances           AIWorkflowInstance[]         @relation("UserWorkflowInstances")
   accounts                    Account[]
@@ -372,6 +373,8 @@ model Lead {
   reWorkflowInstances     REWorkflowInstance[]     @relation("LeadREWorkflowInstances")
   // Generic Multi-Industry Workflow Relations
   workflowInstances       WorkflowInstance[]       @relation("LeadWorkflowInstances")
+  // Website Orders Relations
+  websiteOrders          WebsiteOrder[]
 
   @@index([userId])
   @@index([status])
@@ -1933,6 +1936,7 @@ model Product {
   orders          OrderItem[]
   category        ProductCategory? @relation(fields: [categoryId], references: [id])
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  websiteProducts WebsiteProduct[]
 
   @@index([userId])
   @@index([categoryId])
@@ -2025,6 +2029,7 @@ model Order {
   user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   items                OrderItem[]
   reservationPreOrders Reservation[]
+  websiteOrders        WebsiteOrder[]
 
   @@index([userId])
   @@index([orderNumber])
@@ -4820,6 +4825,25 @@ enum WorkflowTriggerType {
   WEBSITE_BOOKING_CREATED
   WEBSITE_CTA_CLICKED
   WEBSITE_PAGE_VIEWED
+  WEBSITE_PRODUCT_LOW_STOCK
+  WEBSITE_PRODUCT_OUT_OF_STOCK
+  WEBSITE_PRODUCT_BACK_IN_STOCK
+  WEBSITE_ORDER_CREATED
+  WEBSITE_PAYMENT_AMOUNT_THRESHOLD
+  WEBSITE_CUSTOMER_TIER_CHANGED
+  WEBSITE_REPEAT_CUSTOMER
+  WEBSITE_FIRST_TIME_CUSTOMER
+  WEBSITE_PRODUCT_PURCHASED
+  WEBSITE_CART_VALUE_THRESHOLD
+  WEBSITE_VISITOR_PAGE_VIEWED
+  WEBSITE_VISITOR_TIME_ON_SITE
+  WEBSITE_VISITOR_PAGES_VIEWED
+  WEBSITE_VISITOR_CTA_CLICKED
+  WEBSITE_VISITOR_RETURNING
+  WEBSITE_VISITOR_ABANDONED_CART
+  WEBSITE_REVENUE_MILESTONE
+  WEBSITE_ORDER_COUNT_MILESTONE
+  WEBSITE_DAILY_REVENUE_THRESHOLD
 }
 
 enum WorkflowActionType {
@@ -9137,6 +9161,8 @@ model Website {
   stripeConnectAccountId String?
   elevenLabsAgentId      String?
   integrationsConfig     Json    @default("{}") // Active integrations config
+  googleAnalyticsId      String? // Google Analytics tracking ID (UA-XXXXX or G-XXXXX)
+  facebookPixelId         String? // Facebook Pixel ID
 
   // Resources (separate per website)
   githubRepoUrl       String?
@@ -9162,6 +9188,9 @@ model Website {
   websiteIntegrations WebsiteIntegration[]
   visitors            WebsiteVisitor[]
   changeApprovals     WebsiteChangeApproval[]
+  websiteProducts     WebsiteProduct[]
+  websiteOrders       WebsiteOrder[]
+  stockSettings       WebsiteStockSettings?
 
   @@index([userId])
   @@index([status])
@@ -9257,4 +9286,56 @@ model WebsiteTemplate {
 
   @@index([type])
   @@index([category])
+}
+
+// WebsiteProduct - Links products to websites for e-commerce
+model WebsiteProduct {
+  id          String   @id @default(cuid())
+  websiteId   String
+  productId   String
+  displayOrder Int?    // Order in which product appears on website
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([websiteId, productId])
+  @@index([websiteId])
+  @@index([productId])
+}
+
+// WebsiteOrder - Links orders to websites
+model WebsiteOrder {
+  id          String   @id @default(cuid())
+  websiteId   String
+  orderId     String
+  customerId  String?  // Lead ID
+  createdAt   DateTime @default(now())
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer Lead?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@unique([websiteId, orderId])
+  @@index([websiteId])
+  @@index([orderId])
+  @@index([customerId])
+}
+
+// WebsiteStockSettings - Stock management settings per website
+model WebsiteStockSettings {
+  id                String   @id @default(cuid())
+  websiteId         String   @unique
+  lowStockThreshold Int      @default(10)
+  outOfStockAction  String   @default("HIDE") // HIDE, SHOW_OUT_OF_STOCK, PRE_ORDER
+  syncInventory     Boolean  @default(true)
+  autoHideOutOfStock Boolean @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId])
 }

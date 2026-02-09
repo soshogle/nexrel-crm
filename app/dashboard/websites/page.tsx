@@ -6,7 +6,18 @@ import { Plus, Globe, Settings, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface Website {
   id: string;
@@ -25,6 +36,9 @@ export default function WebsitesPage() {
   const { data: session } = useSession();
   const [websites, setWebsites] = useState<Website[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [websiteToDelete, setWebsiteToDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (session) {
@@ -77,6 +91,39 @@ export default function WebsitesPage() {
         return 'Product Website';
       default:
         return type;
+    }
+  };
+
+  const handleDeleteClick = (websiteId: string) => {
+    setWebsiteToDelete(websiteId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!websiteToDelete) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/websites/${websiteToDelete}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete website');
+      }
+
+      toast.success('Website deleted successfully');
+      setDeleteDialogOpen(false);
+      setWebsiteToDelete(null);
+      
+      // Refresh the websites list
+      await fetchWebsites();
+    } catch (error: any) {
+      console.error('Error deleting website:', error);
+      toast.error(error.message || 'Failed to delete website');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -169,7 +216,12 @@ export default function WebsitesPage() {
                       Manage
                     </Button>
                   </Link>
-                  <Button variant="outline" size="icon">
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => handleDeleteClick(website.id)}
+                    disabled={deleting}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -178,6 +230,35 @@ export default function WebsitesPage() {
           ))}
         </div>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Website</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this website? This action cannot be undone.
+              All associated data, including deployments and integrations, will be removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

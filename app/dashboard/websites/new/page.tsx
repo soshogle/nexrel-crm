@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Loader2, Globe, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2, Globe, Sparkles, Wand2, ShoppingCart, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -36,13 +36,73 @@ export default function NewWebsitePage() {
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [enableVoiceAI, setEnableVoiceAI] = useState(true);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [availableProducts, setAvailableProducts] = useState<any[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   // Load templates when template type changes
   useEffect(() => {
     if (step === 'new') {
       loadTemplates();
+      if (templateType === 'PRODUCT') {
+        loadProducts();
+      }
     }
   }, [step, templateType]);
+
+  const loadProducts = async () => {
+    setLoadingProducts(true);
+    try {
+      const response = await fetch('/api/ecommerce/products');
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableProducts(data.products || []);
+      }
+    } catch (error) {
+      console.error('Failed to load products:', error);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  const handleGenerateDescription = async () => {
+    if (!businessDescription.trim() || businessDescription.length < 10) {
+      toast.error('Please enter at least 10 characters of business description first');
+      return;
+    }
+
+    setGeneratingDescription(true);
+    try {
+      const response = await fetch('/api/website-builder/generate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessDescription,
+          websiteName,
+          templateType,
+          services: templateType === 'SERVICE' ? services : undefined,
+          products: templateType === 'PRODUCT' ? products : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate description');
+      }
+
+      const data = await response.json();
+      if (data.generated?.enhancedDescription) {
+        setBusinessDescription(data.generated.enhancedDescription);
+        toast.success('Business description enhanced with AI!');
+      }
+    } catch (error: any) {
+      console.error('Error generating description:', error);
+      toast.error(error.message || 'Failed to generate description');
+    } finally {
+      setGeneratingDescription(false);
+    }
+  };
 
   const loadTemplates = async () => {
     setLoadingTemplates(true);
@@ -116,7 +176,19 @@ export default function NewWebsitePage() {
         businessName: websiteName,
         businessDescription,
         services: services ? services.split(',').map(s => s.trim()) : [],
-        products: products ? products.split(',').map(p => p.trim()) : [],
+        products: templateType === 'PRODUCT' && selectedProducts.length > 0
+          ? selectedProducts.map((productId) => {
+              const product = availableProducts.find((p) => p.id === productId);
+              return product ? {
+                productId: product.id,
+                sku: product.sku,
+                name: product.name,
+                price: product.price,
+                inventory: product.inventory,
+              } : null;
+            }).filter(Boolean)
+          : products ? products.split(',').map(p => p.trim()) : [],
+        selectedProductIds: templateType === 'PRODUCT' ? selectedProducts : [],
         contactInfo: {
           email: contactEmail,
           phone: contactPhone,
@@ -288,54 +360,91 @@ export default function NewWebsitePage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-2xl">
-      <Button
-        variant="ghost"
-        className="mb-6"
-        onClick={() => setStep('initial')}
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
+    <div className="relative min-h-screen">
+      {/* Animated Carousel Background */}
+      <div className="fixed inset-0 overflow-hidden z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50"></div>
+        <div className="absolute inset-0 opacity-20">
+          {/* Animated website preview cards */}
+          <div className="absolute top-10 left-10 w-64 h-48 bg-white rounded-lg shadow-lg transform rotate-3 animate-pulse" style={{ animationDelay: '0s' }}></div>
+          <div className="absolute top-32 right-20 w-72 h-56 bg-white rounded-lg shadow-lg transform -rotate-2 animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-20 left-1/4 w-60 h-44 bg-white rounded-lg shadow-lg transform rotate-1 animate-pulse" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute bottom-40 right-1/3 w-68 h-52 bg-white rounded-lg shadow-lg transform -rotate-3 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+        </div>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Build New Website</CardTitle>
-          <CardDescription>
-            Answer a few questions and we'll build your website
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <Label htmlFor="websiteName">Website Name *</Label>
-            <Input
-              id="websiteName"
-              value={websiteName}
-              onChange={(e) => setWebsiteName(e.target.value)}
-              placeholder="My Business"
-            />
-          </div>
+      {/* Content */}
+      <div className="relative z-10 container mx-auto p-6 max-w-4xl">
+        <Button
+          variant="ghost"
+          className="mb-6 bg-white/80 backdrop-blur-sm"
+          onClick={() => setStep('initial')}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
 
-          <div>
-            <Label>Website Type</Label>
-            <RadioGroup
-              value={templateType}
-              onValueChange={(value) => setTemplateType(value as 'SERVICE' | 'PRODUCT')}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="SERVICE" id="service" />
-                <Label htmlFor="service" className="cursor-pointer">
-                  Service Website
-                </Label>
+        <Card className="bg-white/95 backdrop-blur-sm shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-2xl">Build New Website</CardTitle>
+            <CardDescription>
+              Answer a few questions and we'll build your website
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <Label htmlFor="websiteName">Website Name *</Label>
+              <Input
+                id="websiteName"
+                value={websiteName}
+                onChange={(e) => setWebsiteName(e.target.value)}
+                placeholder="My Business"
+                className="mt-1"
+              />
+            </div>
+
+            {/* Website Type Selection - Enhanced */}
+            <div>
+              <Label className="text-base font-semibold mb-3 block">Website Type</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <Card
+                  className={`cursor-pointer transition-all border-2 ${
+                    templateType === 'SERVICE'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setTemplateType('SERVICE')}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Briefcase className={`h-6 w-6 ${templateType === 'SERVICE' ? 'text-primary' : 'text-gray-400'}`} />
+                      <div>
+                        <h3 className="font-semibold">Service Website</h3>
+                        <p className="text-sm text-muted-foreground">For service-based businesses</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={`cursor-pointer transition-all border-2 ${
+                    templateType === 'PRODUCT'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setTemplateType('PRODUCT')}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <ShoppingCart className={`h-6 w-6 ${templateType === 'PRODUCT' ? 'text-primary' : 'text-gray-400'}`} />
+                      <div>
+                        <h3 className="font-semibold">Product Website</h3>
+                        <p className="text-sm text-muted-foreground">For e-commerce stores</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="PRODUCT" id="product" />
-                <Label htmlFor="product" className="cursor-pointer">
-                  Product Website
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
+            </div>
 
           {/* Template Selection */}
           {templates.length > 0 && (
@@ -359,13 +468,33 @@ export default function NewWebsitePage() {
                       onClick={() => setSelectedTemplateId(template.id)}
                     >
                       <CardContent className="p-4">
-                        {template.previewImage && (
-                          <img
-                            src={template.previewImage}
-                            alt={template.name}
-                            className="w-full h-32 object-cover rounded mb-2"
-                          />
-                        )}
+                        <div className="w-full h-32 rounded mb-2 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center overflow-hidden">
+                          {template.previewImage ? (
+                            <img
+                              src={template.previewImage}
+                              alt={template.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback to placeholder if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent && !parent.querySelector('.image-placeholder')) {
+                                  const placeholder = document.createElement('div');
+                                  placeholder.className = 'image-placeholder w-full h-full flex items-center justify-center text-purple-400';
+                                  placeholder.innerHTML = '<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
+                                  parent.appendChild(placeholder);
+                                }
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-purple-400">
+                              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                              </svg>
+                            </div>
+                          )}
+                        </div>
                         <h4 className="font-semibold text-sm">{template.name}</h4>
                         {template.description && (
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
@@ -384,14 +513,40 @@ export default function NewWebsitePage() {
           )}
 
           <div>
-            <Label htmlFor="description">Business Description *</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="description">Business Description *</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateDescription}
+                disabled={generatingDescription || !businessDescription.trim() || businessDescription.length < 10}
+                className="flex items-center gap-2"
+              >
+                {generatingDescription ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="h-4 w-4" />
+                    AI Enhance
+                  </>
+                )}
+              </Button>
+            </div>
             <Textarea
               id="description"
               value={businessDescription}
               onChange={(e) => setBusinessDescription(e.target.value)}
-              placeholder="Describe your business..."
+              placeholder="Describe your business... (Enter at least 10 characters to enable AI enhancement)"
               rows={4}
+              className="mt-1"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Enter your business description and click "AI Enhance" to generate professional, SEO-optimized content
+            </p>
           </div>
 
           {templateType === 'SERVICE' ? (
@@ -402,17 +557,85 @@ export default function NewWebsitePage() {
                 value={services}
                 onChange={(e) => setServices(e.target.value)}
                 placeholder="Consulting, Design, Development"
+                className="mt-1"
               />
             </div>
           ) : (
-            <div>
-              <Label htmlFor="products">Products (comma-separated)</Label>
-              <Input
-                id="products"
-                value={products}
-                onChange={(e) => setProducts(e.target.value)}
-                placeholder="Product 1, Product 2, Product 3"
-              />
+            <div className="space-y-4">
+              <div>
+                <Label>Select Products for Your Website</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Choose products from your e-commerce catalog to display on your website
+                </p>
+                {loadingProducts ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="ml-2 text-sm text-muted-foreground">Loading products...</span>
+                  </div>
+                ) : availableProducts.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto p-2 border rounded-md">
+                    {availableProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-all ${
+                          selectedProducts.includes(product.id)
+                            ? 'border-primary bg-primary/5'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={() => {
+                          setSelectedProducts((prev) =>
+                            prev.includes(product.id)
+                              ? prev.filter((id) => id !== product.id)
+                              : [...prev, product.id]
+                          );
+                        }}
+                      >
+                        <Checkbox
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={() => {
+                            setSelectedProducts((prev) =>
+                              prev.includes(product.id)
+                                ? prev.filter((id) => id !== product.id)
+                                : [...prev, product.id]
+                            );
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{product.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            ${(product.price / 100).toFixed(2)} • Stock: {product.inventory}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border rounded-md bg-gray-50">
+                    <ShoppingCart className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">No products found</p>
+                    <Link href="/dashboard/ecommerce">
+                      <Button variant="outline" size="sm">
+                        Create Products
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+              {selectedProducts.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected
+                </div>
+              )}
+              <div>
+                <Label htmlFor="products">Or enter products manually (comma-separated)</Label>
+                <Input
+                  id="products"
+                  value={products}
+                  onChange={(e) => setProducts(e.target.value)}
+                  placeholder="Product 1, Product 2, Product 3"
+                  className="mt-1"
+                />
+              </div>
             </div>
           )}
 

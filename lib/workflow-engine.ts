@@ -102,39 +102,98 @@ export class WorkflowEngine {
       }
     }
 
+    // Check website ID match first (if configured)
+    if (config?.websiteId && triggerData?.websiteId !== config.websiteId) {
+      return false;
+    }
+
+    let baseConditionMet = true;
+
     switch (workflow.triggerType) {
       case 'MESSAGE_WITH_KEYWORDS':
-        return this.checkKeywords(triggerData?.messageContent, config?.keywords);
+        baseConditionMet = this.checkKeywords(triggerData?.messageContent, config?.keywords);
+        break;
       
       case 'LEAD_STATUS_CHANGED':
-        return config?.toStatus ? triggerData?.newStatus === config.toStatus : true;
+        baseConditionMet = config?.toStatus ? triggerData?.newStatus === config.toStatus : true;
+        break;
       
       case 'DEAL_STAGE_CHANGED':
-        return config?.toStageId ? triggerData?.newStageId === config.toStageId : true;
+        baseConditionMet = config?.toStageId ? triggerData?.newStageId === config.toStageId : true;
+        break;
       
       case 'WEBSITE_VISITOR':
-        return config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
-      
       case 'WEBSITE_FORM_SUBMITTED':
-        return config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
-      
       case 'WEBSITE_PAYMENT_RECEIVED':
-        return config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
-      
       case 'WEBSITE_BOOKING_CREATED':
-        return config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
-      
       case 'WEBSITE_CTA_CLICKED':
-        return config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
+      case 'WEBSITE_ORDER_CREATED':
+      case 'WEBSITE_REPEAT_CUSTOMER':
+      case 'WEBSITE_FIRST_TIME_CUSTOMER':
+      case 'WEBSITE_VISITOR_RETURNING':
+      case 'WEBSITE_VISITOR_ABANDONED_CART':
+      case 'WEBSITE_PRODUCT_LOW_STOCK':
+      case 'WEBSITE_PRODUCT_OUT_OF_STOCK':
+      case 'WEBSITE_PRODUCT_BACK_IN_STOCK':
+        baseConditionMet = true; // These triggers are met if website matches
+        break;
       
       case 'WEBSITE_PAGE_VIEWED':
-        return config?.websiteId && config?.pagePath
-          ? triggerData?.websiteId === config.websiteId && triggerData?.pagePath === config.pagePath
-          : config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
+      case 'WEBSITE_VISITOR_PAGE_VIEWED':
+        baseConditionMet = config?.pagePath
+          ? triggerData?.pagePath === config.pagePath
+          : true;
+        break;
+
+      case 'WEBSITE_PAYMENT_AMOUNT_THRESHOLD':
+      case 'WEBSITE_CART_VALUE_THRESHOLD':
+      case 'WEBSITE_DAILY_REVENUE_THRESHOLD':
+        baseConditionMet = this.checkAmountThreshold(
+          triggerData?.amount || triggerData?.total || 0,
+          config?.amount || config?.customAmount || 0,
+          config?.operator || 'greater_than'
+        );
+        break;
+
+      case 'WEBSITE_CUSTOMER_TIER_CHANGED':
+        baseConditionMet = config?.toTier ? triggerData?.toTier === config.toTier : true;
+        break;
+
+      case 'WEBSITE_PRODUCT_PURCHASED':
+        baseConditionMet = config?.productId
+          ? triggerData?.productId === config.productId || triggerData?.items?.some((item: any) => item.productId === config.productId)
+          : true;
+        break;
+
+      case 'WEBSITE_VISITOR_TIME_ON_SITE':
+        baseConditionMet = config?.minTime
+          ? (triggerData?.timeOnSite || 0) >= config.minTime
+          : true;
+        break;
+
+      case 'WEBSITE_VISITOR_PAGES_VIEWED':
+        baseConditionMet = config?.minPages
+          ? (triggerData?.pagesVisited?.length || 0) >= config.minPages
+          : true;
+        break;
+
+      case 'WEBSITE_REVENUE_MILESTONE':
+      case 'WEBSITE_ORDER_COUNT_MILESTONE':
+        baseConditionMet = config?.milestone
+          ? (triggerData?.revenue || triggerData?.orderCount || 0) >= config.milestone
+          : true;
+        break;
       
       default:
-        return true; // Execute for simple triggers
+        baseConditionMet = true; // Execute for simple triggers
     }
+
+    // Evaluate conditional logic if present
+    if (baseConditionMet && config?.conditions && Array.isArray(config.conditions) && config.conditions.length > 0) {
+      return this.evaluateConditionalLogic(config.conditions, triggerData, context);
+    }
+
+    return baseConditionMet;
   }
 
   /**
@@ -145,6 +204,99 @@ export class WorkflowEngine {
     
     const lowerContent = messageContent.toLowerCase();
     return keywords.some(keyword => lowerContent.includes(keyword.toLowerCase()));
+  }
+
+  /**
+   * Check amount threshold condition
+   */
+  private checkAmountThreshold(amount: number, threshold: number, operator: string): boolean {
+    switch (operator) {
+      case 'greater_than':
+        return amount > threshold;
+      case 'less_than':
+        return amount < threshold;
+      case 'equals':
+        return amount === threshold;
+      default:
+        return amount >= threshold;
+    }
+  }
+
+  /**
+   * Evaluate conditional logic (AND/OR conditions)
+   */
+  private evaluateConditionalLogic(
+    conditions: Array<{ field: string; operator: string; value: any; logic?: 'AND' | 'OR' }>,
+    triggerData: any,
+    context: ExecutionContext
+  ): boolean {
+    if (conditions.length === 0) return true;
+
+    let result = this.evaluateCondition(conditions[0], triggerData, context);
+
+    for (let i = 1; i < conditions.length; i++) {
+      const condition = conditions[i];
+      const conditionResult = this.evaluateCondition(condition, triggerData, context);
+      const logic = condition.logic || 'AND';
+
+      if (logic === 'AND') {
+        result = result && conditionResult;
+      } else {
+        result = result || conditionResult;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Evaluate a single condition
+   */
+  private evaluateCondition(
+    condition: { field: string; operator: string; value: any },
+    triggerData: any,
+    context: ExecutionContext
+  ): boolean {
+    const fieldValue = this.getFieldValue(condition.field, triggerData, context);
+    const conditionValue = condition.value;
+
+    switch (condition.operator) {
+      case 'equals':
+        return fieldValue == conditionValue; // Use == for type coercion
+      case 'greater_than':
+        return Number(fieldValue) > Number(conditionValue);
+      case 'less_than':
+        return Number(fieldValue) < Number(conditionValue);
+      case 'contains':
+        return String(fieldValue).toLowerCase().includes(String(conditionValue).toLowerCase());
+      default:
+        return true;
+    }
+  }
+
+  /**
+   * Get field value from trigger data or context
+   */
+  private getFieldValue(field: string, triggerData: any, context: ExecutionContext): any {
+    // Check triggerData first
+    if (triggerData?.[field] !== undefined) {
+      return triggerData[field];
+    }
+
+    // Check context variables
+    if (context.variables?.[field] !== undefined) {
+      return context.variables[field];
+    }
+
+    // Handle nested fields
+    const parts = field.split('.');
+    let value = triggerData || context.variables || {};
+    for (const part of parts) {
+      value = value?.[part];
+      if (value === undefined) break;
+    }
+
+    return value;
   }
 
   /**
