@@ -3,3 +3,4 @@ backups/*connection*.txt
 backups/*credentials*.txt
 *.backup
 *.bak
+node_modules
