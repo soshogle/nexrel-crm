@@ -230,17 +230,40 @@ export default function WebsitesPage() {
                 )}
 
                 <div className="flex items-center gap-2 pt-2 border-t">
-                  <Link href={`/dashboard/websites/${website.id}`} className="flex-1">
+                  <Link 
+                    href={`/dashboard/websites/${website.id}`} 
+                    className="flex-1"
+                    onClick={(e) => {
+                      // Prevent navigation if website is in a problematic state
+                      if (website.status === 'BUILDING' && website.buildProgress === 0) {
+                        e.preventDefault();
+                        toast.warning('Website is still building. Please wait or mark as failed first.');
+                        return false;
+                      }
+                    }}
+                  >
                     <Button variant="outline" className="w-full">
                       <Settings className="h-4 w-4 mr-2" />
                       Manage
                     </Button>
                   </Link>
+                  {website.status === 'BUILDING' && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleFixStuckBuild(website.id)}
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                      title="Mark as failed if stuck"
+                    >
+                      <AlertCircle className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     size="icon"
                     onClick={() => handleDeleteClick(website.id)}
                     disabled={deleting}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

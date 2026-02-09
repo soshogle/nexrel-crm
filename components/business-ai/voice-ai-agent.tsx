@@ -296,7 +296,7 @@ export function VoiceAIAgent({
             )}
           </div>
           <div>
-            <h3 className="text-white font-semibold text-sm">Business AI</h3>
+            <h3 className="text-white font-semibold text-sm">AI Brain</h3>
             {healthScore !== null && (
               <p className="text-white/80 text-xs">
                 Health: {healthScore}/100 {getHealthEmoji(healthScore)}
