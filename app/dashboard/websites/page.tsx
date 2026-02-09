@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Plus, Globe, Settings, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Globe, Settings, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -97,6 +97,26 @@ export default function WebsitesPage() {
   const handleDeleteClick = (websiteId: string) => {
     setWebsiteToDelete(websiteId);
     setDeleteDialogOpen(true);
+  };
+
+  const handleFixStuckBuild = async (websiteId: string) => {
+    try {
+      const response = await fetch(`/api/websites/${websiteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'FAILED' }),
+      });
+
+      if (response.ok) {
+        toast.success('Build status updated');
+        await fetchWebsites();
+      } else {
+        throw new Error('Failed to update status');
+      }
+    } catch (error: any) {
+      console.error('Error fixing stuck build:', error);
+      toast.error(error.message || 'Failed to update build status');
+    }
   };
 
   const handleDeleteConfirm = async () => {

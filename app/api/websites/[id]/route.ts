@@ -103,14 +103,65 @@ export async function DELETE(
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
-    // TODO: Clean up resources (GitHub repo, Vercel project, etc.)
-    // await resourceProvisioning.cleanupResources(...)
+    // Delete related records first (cascading deletes)
+    try {
+      // Delete website products
+      await prisma.websiteProduct.deleteMany({
+        where: { websiteId: params.id },
+      });
 
-    await prisma.website.delete({
-      where: { id: params.id },
-    });
+      // Delete website orders
+      await prisma.websiteOrder.deleteMany({
+        where: { websiteId: params.id },
+      });
 
-    return NextResponse.json({ success: true });
+      // Delete website builds
+      await prisma.websiteBuild.deleteMany({
+        where: { websiteId: params.id },
+      });
+
+      // Delete website integrations
+      await prisma.websiteIntegration.deleteMany({
+        where: { websiteId: params.id },
+      });
+
+      // Delete website stock settings
+      await prisma.websiteStockSettings.deleteMany({
+        where: { websiteId: params.id },
+      });
+
+      // Update status to FAILED if stuck in BUILDING
+      if (website.status === 'BUILDING') {
+        await prisma.website.update({
+          where: { id: params.id },
+          data: { status: 'FAILED' },
+        });
+      }
+
+      // TODO: Clean up resources (GitHub repo, Vercel project, etc.)
+      // await resourceProvisioning.cleanupResources(...)
+
+      // Finally delete the website
+      await prisma.website.delete({
+        where: { id: params.id },
+      });
+
+      return NextResponse.json({ success: true });
+    } catch (deleteError: any) {
+      console.error('Error deleting website and related records:', deleteError);
+      
+      // If deletion fails, try to at least mark it as failed
+      try {
+        await prisma.website.update({
+          where: { id: params.id },
+          data: { status: 'FAILED' },
+        });
+      } catch (updateError) {
+        console.error('Error updating website status:', updateError);
+      }
+      
+      throw deleteError;
+    }
   } catch (error: any) {
     console.error('Error deleting website:', error);
     return NextResponse.json(
