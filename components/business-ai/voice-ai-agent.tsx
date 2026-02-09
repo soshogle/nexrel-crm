@@ -25,6 +25,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ChartVisualization } from './chart-visualization';
 
 interface VoiceAIAgentProps {
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'center';
@@ -152,28 +153,58 @@ export function VoiceAIAgent({
     setState('speaking');
     
     try {
-      // Use Web Speech API for TTS
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
-        utterance.pitch = 1;
-        utterance.volume = 1;
+      // Try ElevenLabs first for better quality
+      try {
+        const response = await fetch('/api/business-ai/voice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
 
-        utterance.onend = () => {
-          setState('displaying');
-        };
-
-        utterance.onerror = () => {
-          setState('displaying');
-        };
-
-        window.speechSynthesis.speak(utterance);
-      } else {
-        // Fallback: just display
-        setState('displaying');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.audioUrl) {
+            const audio = new Audio(data.audioUrl);
+            audio.onended = () => {
+              setState('displaying');
+            };
+            audio.onerror = () => {
+              // Fallback to Web Speech API
+              fallbackTTS(text);
+            };
+            audio.play();
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('ElevenLabs TTS not available, using fallback');
       }
+
+      // Fallback to Web Speech API
+      fallbackTTS(text);
     } catch (error) {
       console.error('TTS error:', error);
+      setState('displaying');
+    }
+  };
+
+  const fallbackTTS = (text: string) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+
+      utterance.onend = () => {
+        setState('displaying');
+      };
+
+      utterance.onerror = () => {
+        setState('displaying');
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } else {
       setState('displaying');
     }
   };
@@ -397,34 +428,13 @@ export function VoiceAIAgent({
                 )}
 
                 {visualization.type === 'chart' && visualization.data && (
-                  <div>
-                    <h4 className="font-semibold text-sm mb-2">
-                      {visualization.data.datasets[0]?.label || 'Chart'}
-                    </h4>
-                    <div className="h-48 bg-gray-50 rounded flex items-center justify-center">
-                      <p className="text-gray-400 text-sm">
-                        Chart visualization would render here
-                        <br />
-                        <span className="text-xs">
-                          (Integrate Chart.js or Recharts)
-                        </span>
-                      </p>
-                    </div>
-                    {visualization.current && (
-                      <div className="mt-2 text-sm text-gray-600">
-                        Current: ${visualization.current.toLocaleString()}
-                        {visualization.growth && (
-                          <span className={cn(
-                            'ml-2',
-                            visualization.growth > 0 ? 'text-green-600' : 'text-red-600'
-                          )}>
-                            {visualization.growth > 0 ? <TrendingUp className="inline h-4 w-4" /> : <TrendingDown className="inline h-4 w-4" />}
-                            {Math.abs(visualization.growth).toFixed(1)}%
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <ChartVisualization
+                    type={visualization.chartType || 'line'}
+                    data={visualization.data}
+                    title={visualization.data.datasets[0]?.label || 'Chart'}
+                    current={visualization.current}
+                    growth={visualization.growth}
+                  />
                 )}
               </div>
             )}
