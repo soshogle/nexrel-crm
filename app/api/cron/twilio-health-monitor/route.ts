@@ -3,13 +3,8 @@
  * Runs every 2 minutes to check Twilio account health
  * POST /api/cron/twilio-health-monitor
  * 
- * Configure in Vercel Cron Jobs:
- * {
- *   "crons": [{
- *     "path": "/api/cron/twilio-health-monitor",
- *     "schedule": "*/2 * * * *"
- *   }]
- * }
+ * Configure in Vercel Cron Jobs (vercel.json):
+ * Schedule: every 2 minutes (cron: "*/2 * * * *")
  */
 
 import { NextRequest, NextResponse } from 'next/server';
