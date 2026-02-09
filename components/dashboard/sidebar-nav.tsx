@@ -49,6 +49,7 @@ import {
   Bot,
   Stethoscope,
   ClipboardList,
+  Globe,
 } from 'lucide-react';
 
 // Parent Portal items - what parents see when they log in
@@ -326,6 +327,12 @@ const merchantItems = [
     href: '/dashboard/dental/admin',
     icon: ClipboardList,
   },
+  {
+    id: 'websites' as MenuItemId,
+    title: 'Websites',
+    href: '/dashboard/websites',
+    icon: Globe,
+  },
 ];
 
 // Admin items - Secure section requiring re-authentication
@@ -480,6 +487,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       'dental-management': 'dentalManagement',
       'dental-clinical': 'clinicalDashboard',
       'dental-admin': 'administrativeDashboard',
+      'websites': 'websites',
       'voice-agents': 'voiceAgents',
       'voice-agent-preview': 'testVoiceAgent',
       'voice-ai-notifications': 'callNotifications',

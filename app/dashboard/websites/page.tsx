@@ -1,0 +1,183 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { Plus, Globe, Settings, Trash2, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+
+interface Website {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  buildProgress: number;
+  vercelDeploymentUrl?: string;
+  voiceAIEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+}
+
+export default function WebsitesPage() {
+  const { data: session } = useSession();
+  const [websites, setWebsites] = useState<Website[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (session) {
+      fetchWebsites();
+    }
+  }, [session]);
+
+  const fetchWebsites = async () => {
+    try {
+      const response = await fetch('/api/websites');
+      if (response.ok) {
+        const data = await response.json();
+        setWebsites(data.websites || []);
+      }
+    } catch (error) {
+      console.error('Error fetching websites:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status: string, progress: number) => {
+    if (status === 'BUILDING') {
+      return (
+        <Badge variant="outline" className="flex items-center gap-2">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Building ({progress}%)
+        </Badge>
+      );
+    }
+    if (status === 'READY') {
+      return <Badge variant="default">Ready</Badge>;
+    }
+    if (status === 'PUBLISHED') {
+      return <Badge variant="default" className="bg-green-600">Published</Badge>;
+    }
+    if (status === 'FAILED') {
+      return <Badge variant="destructive">Failed</Badge>;
+    }
+    return <Badge variant="secondary">{status}</Badge>;
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'REBUILT':
+        return 'Rebuilt';
+      case 'SERVICE_TEMPLATE':
+        return 'Service Website';
+      case 'PRODUCT_TEMPLATE':
+        return 'Product Website';
+      default:
+        return type;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Websites</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your websites and create new ones
+          </p>
+        </div>
+        <Link href="/dashboard/websites/new">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Website
+          </Button>
+        </Link>
+      </div>
+
+      {websites.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Globe className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No websites yet</h3>
+            <p className="text-muted-foreground mb-4">
+              Create your first website to get started
+            </p>
+            <Link href="/dashboard/websites/new">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Website
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {websites.map((website) => (
+            <Card key={website.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">{website.name}</CardTitle>
+                    <CardDescription className="mt-1">
+                      {getTypeLabel(website.type)}
+                    </CardDescription>
+                  </div>
+                  {getStatusBadge(website.status, website.buildProgress)}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Voice AI</span>
+                  {website.voiceAIEnabled ? (
+                    <Badge variant="outline" className="bg-green-50 text-green-700">
+                      Enabled
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">Disabled</Badge>
+                  )}
+                </div>
+
+                {website.vercelDeploymentUrl && (
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={website.vercelDeploymentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      <Globe className="h-3 w-3" />
+                      View Website
+                    </a>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <Link href={`/dashboard/websites/${website.id}`} className="flex-1">
+                    <Button variant="outline" className="w-full">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Manage
+                    </Button>
+                  </Link>
+                  <Button variant="outline" size="icon">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

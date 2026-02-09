@@ -227,9 +227,22 @@ You can create complex multi-step workflows with:
 
 AVAILABLE TRIGGERS:
 ${availableTriggers.join('\n')}
+- WEBSITE_VISITOR: When someone visits a website
+- WEBSITE_FORM_SUBMITTED: When a form is submitted on a website
+- WEBSITE_PAYMENT_RECEIVED: When a payment is received on a website
+- WEBSITE_BOOKING_CREATED: When a booking is created on a website
+- WEBSITE_CTA_CLICKED: When a CTA button is clicked on a website
+- WEBSITE_PAGE_VIEWED: When a specific page is viewed on a website
 
 AVAILABLE ACTIONS:
 ${availableActions.join('\n')}
+- CREATE_WEBSITE: Create a new website from template
+- UPDATE_WEBSITE_CONTENT: Update website content/structure
+- ADD_PAYMENT_SECTION: Add Stripe payment section to website
+- ADD_BOOKING_WIDGET: Add booking widget to website
+- ADD_LEAD_FORM: Add lead capture form to website
+- ADD_CTA_BUTTON: Add call-to-action button to website
+- PUBLISH_WEBSITE: Publish website changes
 
 ${context?.existingPipelines?.length ? `\nUSER'S PIPELINES:\n${context.existingPipelines.map((p: any) => `- ${p.name} (stages: ${p.stages?.map((s: any) => s.name).join(', ')})`).join('\n')}` : ''}
 

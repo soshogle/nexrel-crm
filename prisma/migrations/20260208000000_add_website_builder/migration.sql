@@ -1,20 +1,6 @@
-# Migration SQL - Run Manually in Neon SQL Editor
-
-Due to SSL certificate issues with Prisma CLI, please run this migration manually in Neon's SQL Editor.
-
-## Steps
-
-1. Go to your Neon dashboard: https://console.neon.tech
-2. Select your project: `neondb`
-3. Click on "SQL Editor"
-4. Copy and paste the SQL below
-5. Click "Run" to execute
-
-## Migration SQL
-
-```sql
--- Website Builder Migration
--- Adds all tables and enums for the website builder feature
+-- Website Builder Migration SQL
+-- Generated: 2026-02-08
+-- This migration adds all tables and enums for the website builder feature
 
 -- Create Enums
 CREATE TYPE "WebsiteType" AS ENUM ('REBUILT', 'SERVICE_TEMPLATE', 'PRODUCT_TEMPLATE');
@@ -157,44 +143,3 @@ ALTER TABLE "WebsiteBuild" ADD CONSTRAINT "WebsiteBuild_websiteId_fkey" FOREIGN 
 ALTER TABLE "WebsiteIntegration" ADD CONSTRAINT "WebsiteIntegration_websiteId_fkey" FOREIGN KEY ("websiteId") REFERENCES "Website"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "WebsiteVisitor" ADD CONSTRAINT "WebsiteVisitor_websiteId_fkey" FOREIGN KEY ("websiteId") REFERENCES "Website"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "WebsiteChangeApproval" ADD CONSTRAINT "WebsiteChangeApproval_websiteId_fkey" FOREIGN KEY ("websiteId") REFERENCES "Website"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- Mark migration as applied
-INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "logs", "rolled_back_at", "started_at", "applied_steps_count")
-VALUES (
-    gen_random_uuid()::text,
-    '',
-    NOW(),
-    '20260208000000_add_website_builder',
-    NULL,
-    NULL,
-    NOW(),
-    1
-)
-ON CONFLICT DO NOTHING;
-```
-
-## After Running Migration
-
-1. Generate Prisma client:
-   ```bash
-   npx prisma generate
-   ```
-
-2. Verify migration:
-   ```bash
-   npx prisma migrate status
-   ```
-
-3. Test the connection:
-   ```bash
-   npx prisma studio
-   ```
-
-## Troubleshooting SSL Issue
-
-The SSL certificate error is a known issue with Prisma and Neon. Possible solutions:
-
-1. **Update Prisma**: `npm install prisma@latest`
-2. **Use Neon's direct connection** (not pooler) in DATABASE_URL
-3. **Run migration via Neon SQL Editor** (recommended - what we're doing now)
-4. **Check Node.js version** - ensure you're using a compatible version

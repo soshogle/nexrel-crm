@@ -85,7 +85,9 @@ export type MenuItemId =
   // Dental/Orthodontist specific
   | 'dental-management'
   | 'dental-clinical'
-  | 'dental-admin';
+  | 'dental-admin'
+  // Website Builder
+  | 'websites';
 
 // Core menu items visible to ALL industries
 const CORE_MENU_ITEMS: MenuItemId[] = [
@@ -117,6 +119,7 @@ const CORE_MENU_ITEMS: MenuItemId[] = [
   'ecommerce', // E-commerce management for ALL industries
   'payments', // Payment processing for ALL industries
   'referrals', // Referral program for ALL industries
+  'websites', // Website Builder - available to ALL industries
   'billing',
   'settings',
 ];
