@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
-import { RadialBrainVisualization } from '@/components/ai-brain/radial-brain-visualization';
 import { cn } from '@/lib/utils';
 import { 
   Brain, 
@@ -492,32 +491,64 @@ export default function BusinessAIPage() {
 
           {/* Analytical Dashboard Mode */}
           <TabsContent value="dashboard" className="space-y-6 mt-6">
-            {/* Radial Brain Visualization */}
+            {/* Core Metrics Cards */}
             {comprehensiveData && (
-              <Card className="p-6 bg-gradient-to-br from-purple-50/80 via-white/90 to-pink-50/80 border-2 border-purple-200/50 overflow-hidden shadow-2xl backdrop-blur-md relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 animate-gradient-xy" />
-                <div className="absolute inset-0 bg-white/30 backdrop-blur-sm" />
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-50" />
+                  <CardContent className="p-6 relative z-10">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-purple-100 text-sm mb-1">Overall Health</p>
+                        <p className="text-3xl font-bold">{comprehensiveData.core.overallHealth}</p>
+                      </div>
+                      <Activity className="h-8 w-8 text-purple-200 animate-pulse" />
+                    </div>
+                  </CardContent>
+                </Card>
                 
-                <div className="relative z-10">
-                  <RadialBrainVisualization
-                    data={comprehensiveData}
-                    onDataPointClick={(dataPoint) => {
-                      console.log('Data point clicked:', dataPoint);
-                      toast.info(`Selected: ${dataPoint.label} - ${dataPoint.value}${dataPoint.unit}`);
-                    }}
-                  />
-                  
-                  {/* Futuristic overlay effects */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-0 left-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl animate-pulse" />
-                    <div className="absolute bottom-0 right-0 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-                  </div>
-                </div>
-              </Card>
+                <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-50" />
+                  <CardContent className="p-6 relative z-10">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-green-100 text-sm mb-1">Total Revenue</p>
+                        <p className="text-2xl font-bold">${comprehensiveData.core.keyMetrics.totalRevenue.toLocaleString()}</p>
+                      </div>
+                      <TrendingUp className="h-8 w-8 text-green-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-50" />
+                  <CardContent className="p-6 relative z-10">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-100 text-sm mb-1">Active Leads</p>
+                        <p className="text-3xl font-bold">{comprehensiveData.core.keyMetrics.activeLeads}</p>
+                      </div>
+                      <Brain className="h-8 w-8 text-blue-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-50" />
+                  <CardContent className="p-6 relative z-10">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-orange-100 text-sm mb-1">Open Deals</p>
+                        <p className="text-3xl font-bold">{comprehensiveData.core.keyMetrics.openDeals}</p>
+                      </div>
+                      <Target className="h-8 w-8 text-orange-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             )}
 
-            {/* Traditional View - Detailed Insights */}
+            {/* Detailed Insights */}
             {detailedInsights.length > 0 && (
               <Card className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-purple-50/30 backdrop-blur-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl" />
