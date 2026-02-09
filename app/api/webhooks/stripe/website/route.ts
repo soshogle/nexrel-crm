@@ -6,11 +6,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { websiteStripeConnect } from '@/lib/website-builder/stripe-connect';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+const stripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder_for_build';
+const stripe = new Stripe(stripeKey, {
   apiVersion: '2025-10-29.clover',
 });
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_WEBSITE || '';
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_WEBSITE || 'whsec_placeholder_for_build';
 
 export async function POST(request: NextRequest) {
   try {
