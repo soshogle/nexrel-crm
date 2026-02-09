@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WorkflowBuilder } from './workflow-builder';
 import { HITLApprovalPanel } from './hitl-approval-panel';
 import { WorkflowInstanceMonitor } from './workflow-instance-monitor';
+import { ScheduledWorkflowsList } from '@/components/workflows/scheduled-workflows-list';
+import { WorkflowsList } from '@/components/workflows/workflows-list';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 import {
   GitBranch,
   Home,
@@ -19,11 +22,76 @@ import {
   ArrowRight,
   Activity,
   Wrench,
+  Play,
+  CheckCircle2,
+  List,
+  Calendar,
 } from 'lucide-react';
 
 export function REWorkflowsTab() {
   const [showBuilder, setShowBuilder] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState('overview');
+  const [workflows, setWorkflows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchWorkflows();
+  }, []);
+
+  const fetchWorkflows = async () => {
+    try {
+      const response = await fetch('/api/workflows');
+      if (response.ok) {
+        const data = await response.json();
+        setWorkflows(data.workflows || []);
+      }
+    } catch (error) {
+      console.error('Error fetching workflows:', error);
+      toast.error('Failed to load workflows');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleWorkflowStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    
+    try {
+      const response = await fetch(`/api/workflows/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        toast.success(`Workflow ${newStatus.toLowerCase()}`);
+        fetchWorkflows();
+      }
+    } catch (error) {
+      toast.error('Failed to update workflow');
+    }
+  };
+
+  const deleteWorkflow = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this workflow?')) return;
+    
+    try {
+      const response = await fetch(`/api/workflows/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Workflow deleted');
+        fetchWorkflows();
+      }
+    } catch (error) {
+      toast.error('Failed to delete workflow');
+    }
+  };
+
+  const activeCount = workflows.filter(w => w.status === 'ACTIVE').length;
+  const draftCount = workflows.filter(w => w.status === 'DRAFT').length;
+  const totalExecutions = workflows.reduce((sum, w) => sum + (w.completionCount || 0), 0);
   
   if (showBuilder) {
     return (
@@ -73,6 +141,14 @@ export function REWorkflowsTab() {
             <Wrench className="w-4 h-4 mr-2" />
             Overview
           </TabsTrigger>
+          <TabsTrigger value="scheduled" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700">
+            <Calendar className="w-4 h-4 mr-2" />
+            Scheduled
+          </TabsTrigger>
+          <TabsTrigger value="my-workflows" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700">
+            <List className="w-4 h-4 mr-2" />
+            My Workflows
+          </TabsTrigger>
           <TabsTrigger value="approvals" className="data-[state=active]:bg-amber-500 data-[state=active]:text-white text-gray-700">
             <Shield className="w-4 h-4 mr-2" />
             HITL Approvals
@@ -91,7 +167,92 @@ export function REWorkflowsTab() {
           <WorkflowInstanceMonitor />
         </TabsContent>
 
+        <TabsContent value="scheduled">
+          <ScheduledWorkflowsList />
+        </TabsContent>
+
+        <TabsContent value="my-workflows">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            </div>
+          ) : workflows.length === 0 ? (
+            <Card className="bg-white border-2 border-purple-200">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Zap className="h-16 w-16 text-purple-300 mb-4" />
+                <h3 className="text-lg font-semibold mb-2 text-gray-900">No workflows yet</h3>
+                <p className="text-gray-600 text-center mb-4">
+                  Create your first workflow to automate your CRM processes
+                </p>
+                <Button 
+                  onClick={() => setShowBuilder(true)}
+                  className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Create Workflow
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <WorkflowsList
+              workflows={workflows}
+              onToggleStatus={toggleWorkflowStatus}
+              onDelete={deleteWorkflow}
+            />
+          )}
+        </TabsContent>
+
         <TabsContent value="overview">
+          {/* Stats Dashboard */}
+          <div className="grid gap-4 md:grid-cols-4 mb-6">
+            <Card className="bg-white border-2 border-purple-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-900">Total Workflows</CardTitle>
+                <Zap className="h-4 w-4 text-purple-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{workflows.length}</div>
+                <p className="text-xs text-gray-600">
+                  {activeCount} active, {draftCount} draft
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-2 border-purple-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-900">Active Workflows</CardTitle>
+                <Play className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{activeCount}</div>
+                <p className="text-xs text-gray-600">Currently running</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-2 border-purple-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-900">Total Executions</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-purple-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{totalExecutions}</div>
+                <p className="text-xs text-gray-600">All time</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white border-2 border-purple-200">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-gray-900">Automation Rate</CardTitle>
+                <Clock className="h-4 w-4 text-purple-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-900">
+                  {workflows.length > 0 ? Math.round((activeCount / workflows.length) * 100) : 0}%
+                </div>
+                <p className="text-xs text-gray-600">Workflows enabled</p>
+              </CardContent>
+            </Card>
+          </div>
       
       {/* Pipeline Templates */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

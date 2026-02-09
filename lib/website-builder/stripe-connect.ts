@@ -7,7 +7,7 @@ import Stripe from 'stripe';
 import { prisma } from '@/lib/db';
 
 // Use platform Stripe account (your CRM's account)
-const platformStripeKey = process.env.STRIPE_SECRET_KEY || '';
+const platformStripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder_for_build';
 const stripe = new Stripe(platformStripeKey, {
   apiVersion: '2025-10-29.clover',
 });
