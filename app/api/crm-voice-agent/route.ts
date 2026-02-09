@@ -25,9 +25,18 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error getting CRM voice agent:', error);
+    console.error('Error stack:', error?.stack);
+    
+    // Return a graceful error instead of 500
+    // The UI will handle this gracefully
     return NextResponse.json(
-      { error: error.message || 'Failed to get CRM voice agent' },
-      { status: 500 }
+      { 
+        success: false,
+        error: error.message || 'Failed to get CRM voice agent',
+        agentId: null,
+        created: false,
+      },
+      { status: 200 } // Return 200 so UI doesn't break
     );
   }
 }
