@@ -112,6 +112,26 @@ export class WorkflowEngine {
       case 'DEAL_STAGE_CHANGED':
         return config?.toStageId ? triggerData?.newStageId === config.toStageId : true;
       
+      case 'WEBSITE_VISITOR':
+        return config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
+      
+      case 'WEBSITE_FORM_SUBMITTED':
+        return config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
+      
+      case 'WEBSITE_PAYMENT_RECEIVED':
+        return config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
+      
+      case 'WEBSITE_BOOKING_CREATED':
+        return config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
+      
+      case 'WEBSITE_CTA_CLICKED':
+        return config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
+      
+      case 'WEBSITE_PAGE_VIEWED':
+        return config?.websiteId && config?.pagePath
+          ? triggerData?.websiteId === config.websiteId && triggerData?.pagePath === config.pagePath
+          : config?.websiteId ? triggerData?.websiteId === config.websiteId : true;
+      
       default:
         return true; // Execute for simple triggers
     }
@@ -1131,6 +1151,419 @@ export class WorkflowEngine {
       variables: context.variables || {},
     };
     return executeDentalAction(action, enrollment, dentalContext);
+  }
+
+  /**
+   * Create website action
+   */
+  private async createWebsite(context: ExecutionContext, config: any) {
+    const { resourceProvisioning } = await import('@/lib/website-builder/provisioning');
+    const { websiteBuilder } = await import('@/lib/website-builder/builder');
+    
+    const websiteName = this.replaceVariables(config.name || 'New Website', context.variables || {});
+    const type = config.type || 'SERVICE_TEMPLATE';
+    const templateType = config.templateType || 'SERVICE';
+    const questionnaireAnswers = config.questionnaireAnswers || {};
+
+    // Create website
+    const website = await prisma.website.create({
+      data: {
+        userId: context.userId,
+        name: websiteName,
+        type: type as any,
+        templateType: templateType as any,
+        status: 'BUILDING',
+        buildProgress: 0,
+        structure: {},
+        seoData: {},
+        questionnaireAnswers: questionnaireAnswers,
+      },
+    });
+
+    // Build website structure
+    const structure = await websiteBuilder.buildFromQuestionnaire(
+      questionnaireAnswers,
+      templateType as any
+    );
+
+    // Provision resources
+    const provisioningResult = await resourceProvisioning.provisionResources(
+      website.id,
+      websiteName,
+      context.userId
+    );
+
+    // Update website
+    await prisma.website.update({
+      where: { id: website.id },
+      data: {
+        structure,
+        status: 'READY',
+        buildProgress: 100,
+        githubRepoUrl: provisioningResult.githubRepoUrl,
+        neonDatabaseUrl: provisioningResult.neonDatabaseUrl,
+        vercelProjectId: provisioningResult.vercelProjectId,
+        vercelDeploymentUrl: provisioningResult.vercelDeploymentUrl,
+      },
+    });
+
+    return { websiteId: website.id, action: 'created' };
+  }
+
+  /**
+   * Update website content
+   */
+  private async updateWebsiteContent(context: ExecutionContext, config: any) {
+    const websiteId = config.websiteId || context.variables?.websiteId;
+    if (!websiteId) {
+      throw new Error('Website ID is required');
+    }
+
+    const website = await prisma.website.findFirst({
+      where: {
+        id: websiteId,
+        userId: context.userId,
+      },
+    });
+
+    if (!website) {
+      throw new Error('Website not found');
+    }
+
+    const updates: any = {};
+    if (config.structure) updates.structure = config.structure;
+    if (config.seoData) updates.seoData = config.seoData;
+    if (config.content) {
+      // Update specific content paths
+      const structure = website.structure as any;
+      // TODO: Implement content update logic
+      updates.structure = structure;
+    }
+
+    await prisma.website.update({
+      where: { id: websiteId },
+      data: updates,
+    });
+
+    return { websiteId, action: 'updated' };
+  }
+
+  /**
+   * Add payment section to website
+   */
+  private async addPaymentSection(context: ExecutionContext, config: any) {
+    const websiteId = config.websiteId || context.variables?.websiteId;
+    if (!websiteId) {
+      throw new Error('Website ID is required');
+    }
+
+    const website = await prisma.website.findFirst({
+      where: {
+        id: websiteId,
+        userId: context.userId,
+      },
+    });
+
+    if (!website) {
+      throw new Error('Website not found');
+    }
+
+    // Ensure Stripe Connect is set up
+    const { websiteStripeConnect } = await import('@/lib/website-builder/stripe-connect');
+    const stripeStatus = await websiteStripeConnect.getAccountStatus(websiteId);
+
+    if (!stripeStatus.connected) {
+      // Create onboarding link
+      const onboardingLink = await websiteStripeConnect.createAccountLink(
+        websiteId,
+        `${process.env.NEXTAUTH_URL}/dashboard/websites/${websiteId}`
+      );
+
+      // Store pending integration
+      const integration = await prisma.websiteIntegration.create({
+        data: {
+          websiteId,
+          type: 'STRIPE',
+          config: {
+            amount: config.amount,
+            description: config.description,
+            paymentType: config.paymentType || 'one-time',
+            onboardingRequired: true,
+            onboardingUrl: onboardingLink.onboardingUrl,
+          },
+          status: 'PENDING',
+        },
+      });
+
+      return {
+        websiteId,
+        integrationId: integration.id,
+        action: 'payment_added',
+        onboardingRequired: true,
+        onboardingUrl: onboardingLink.onboardingUrl,
+      };
+    }
+
+    // Create Stripe integration
+    const integration = await prisma.websiteIntegration.create({
+      data: {
+        websiteId,
+        type: 'STRIPE',
+        config: {
+          amount: config.amount,
+          description: config.description,
+          paymentType: config.paymentType || 'one-time',
+        },
+        status: 'ACTIVE',
+      },
+    });
+
+    // Add payment component to website structure
+    const structure = website.structure as any;
+    if (structure.pages && structure.pages[0]) {
+      structure.pages[0].components.push({
+        id: `payment-${integration.id}`,
+        type: 'PaymentSection',
+        props: {
+          integrationId: integration.id,
+          websiteId,
+          amount: config.amount,
+          description: config.description,
+        },
+      });
+
+      await prisma.website.update({
+        where: { id: websiteId },
+        data: { structure },
+      });
+    }
+
+    return { websiteId, integrationId: integration.id, action: 'payment_added' };
+  }
+
+  /**
+   * Add booking widget to website
+   */
+  private async addBookingWidget(context: ExecutionContext, config: any) {
+    const websiteId = config.websiteId || context.variables?.websiteId;
+    if (!websiteId) {
+      throw new Error('Website ID is required');
+    }
+
+    const website = await prisma.website.findFirst({
+      where: {
+        id: websiteId,
+        userId: context.userId,
+      },
+    });
+
+    if (!website) {
+      throw new Error('Website not found');
+    }
+
+    // Check if booking settings exist
+    const bookingSettings = await prisma.bookingSettings.findUnique({
+      where: { userId: context.userId },
+    });
+
+    if (!bookingSettings) {
+      // Create default booking settings
+      await prisma.bookingSettings.create({
+        data: {
+          userId: context.userId,
+          slotDuration: config.slotDuration || 30,
+          requireApproval: config.requireApproval !== false,
+          businessHours: config.businessHours || {
+            monday: { start: '09:00', end: '17:00' },
+            tuesday: { start: '09:00', end: '17:00' },
+            wednesday: { start: '09:00', end: '17:00' },
+            thursday: { start: '09:00', end: '17:00' },
+            friday: { start: '09:00', end: '17:00' },
+          },
+        },
+      });
+    }
+
+    // Create booking integration
+    const integration = await prisma.websiteIntegration.create({
+      data: {
+        websiteId,
+        type: 'BOOKING',
+        config: {
+          services: config.services || [],
+          availability: config.availability || {},
+          slotDuration: bookingSettings?.slotDuration || 30,
+        },
+        status: 'ACTIVE',
+      },
+    });
+
+    // Add booking widget to website structure
+    const structure = website.structure as any;
+    if (structure.pages && structure.pages[0]) {
+      structure.pages[0].components.push({
+        id: `booking-${integration.id}`,
+        type: 'BookingWidget',
+        props: {
+          integrationId: integration.id,
+          websiteId,
+          services: config.services || [],
+        },
+      });
+
+      await prisma.website.update({
+        where: { id: websiteId },
+        data: { structure },
+      });
+    }
+
+    return { websiteId, integrationId: integration.id, action: 'booking_added' };
+  }
+
+  /**
+   * Add lead form to website
+   */
+  private async addLeadForm(context: ExecutionContext, config: any) {
+    const websiteId = config.websiteId || context.variables?.websiteId;
+    if (!websiteId) {
+      throw new Error('Website ID is required');
+    }
+
+    const website = await prisma.website.findFirst({
+      where: {
+        id: websiteId,
+        userId: context.userId,
+      },
+    });
+
+    if (!website) {
+      throw new Error('Website not found');
+    }
+
+    // Create form integration
+    const integration = await prisma.websiteIntegration.create({
+      data: {
+        websiteId,
+        type: 'FORM',
+        config: {
+          fields: config.fields || [
+            { name: 'name', type: 'text', label: 'Name', required: true },
+            { name: 'email', type: 'email', label: 'Email', required: true },
+          ],
+          workflowTrigger: config.workflowTrigger || null,
+        },
+        status: 'ACTIVE',
+      },
+    });
+
+    // Add form component to website structure
+    const structure = website.structure as any;
+    if (structure.pages && structure.pages[0]) {
+      structure.pages[0].components.push({
+        id: `form-${integration.id}`,
+        type: 'LeadForm',
+        props: {
+          integrationId: integration.id,
+          fields: config.fields || [],
+        },
+      });
+
+      await prisma.website.update({
+        where: { id: websiteId },
+        data: { structure },
+      });
+    }
+
+    return { websiteId, integrationId: integration.id, action: 'form_added' };
+  }
+
+  /**
+   * Add CTA button to website
+   */
+  private async addCTAButton(context: ExecutionContext, config: any) {
+    const websiteId = config.websiteId || context.variables?.websiteId;
+    if (!websiteId) {
+      throw new Error('Website ID is required');
+    }
+
+    const website = await prisma.website.findFirst({
+      where: {
+        id: websiteId,
+        userId: context.userId,
+      },
+    });
+
+    if (!website) {
+      throw new Error('Website not found');
+    }
+
+    // Create CTA integration
+    const integration = await prisma.websiteIntegration.create({
+      data: {
+        websiteId,
+        type: 'CTA',
+        config: {
+          text: config.text || 'Get Started',
+          link: config.link || '/contact',
+          style: config.style || 'primary',
+        },
+        status: 'ACTIVE',
+      },
+    });
+
+    // Add CTA component to website structure
+    const structure = website.structure as any;
+    if (structure.pages && structure.pages[0]) {
+      structure.pages[0].components.push({
+        id: `cta-${integration.id}`,
+        type: 'CTAButton',
+        props: {
+          integrationId: integration.id,
+          text: config.text || 'Get Started',
+          link: config.link || '/contact',
+          style: config.style || 'primary',
+        },
+      });
+
+      await prisma.website.update({
+        where: { id: websiteId },
+        data: { structure },
+      });
+    }
+
+    return { websiteId, integrationId: integration.id, action: 'cta_added' };
+  }
+
+  /**
+   * Publish website
+   */
+  private async publishWebsite(context: ExecutionContext, config: any) {
+    const websiteId = config.websiteId || context.variables?.websiteId;
+    if (!websiteId) {
+      throw new Error('Website ID is required');
+    }
+
+    const website = await prisma.website.findFirst({
+      where: {
+        id: websiteId,
+        userId: context.userId,
+      },
+    });
+
+    if (!website) {
+      throw new Error('Website not found');
+    }
+
+    // Update website status to published
+    await prisma.website.update({
+      where: { id: websiteId },
+      data: {
+        status: 'PUBLISHED',
+        publishedAt: new Date(),
+      },
+    });
+
+    return { websiteId, action: 'published' };
   }
 }
 

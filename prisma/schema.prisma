@@ -286,6 +286,8 @@ model User {
   voiceAISubscription         VoiceAISubscription?         @relation("VoiceAISubscriptionUser")
   voiceAIUsageLogs            VoiceAIUsageLog[]            @relation("VoiceAIUsageLogUser")
   voiceAIBillingRecords       VoiceAIBillingRecord[]       @relation("VoiceAIBillingRecordUser")
+  // Website Builder Relations
+  websites                    Website[]
 }
 
 model Lead {
@@ -4812,6 +4814,12 @@ enum WorkflowTriggerType {
   LEAD_NO_RESPONSE
   DEAL_STALE
   SCHEDULED
+  WEBSITE_VISITOR
+  WEBSITE_FORM_SUBMITTED
+  WEBSITE_PAYMENT_RECEIVED
+  WEBSITE_BOOKING_CREATED
+  WEBSITE_CTA_CLICKED
+  WEBSITE_PAGE_VIEWED
 }
 
 enum WorkflowActionType {
@@ -4839,6 +4847,13 @@ enum WorkflowActionType {
   SCHEDULE_FOLLOW_UP
   CREATE_DEAL_FROM_LEAD
   MAKE_OUTBOUND_CALL
+  CREATE_WEBSITE
+  UPDATE_WEBSITE_CONTENT
+  ADD_PAYMENT_SECTION
+  ADD_BOOKING_WIDGET
+  ADD_LEAD_FORM
+  ADD_CTA_BUTTON
+  PUBLISH_WEBSITE
 }
 
 enum WorkflowEnrollmentStatus {
@@ -9037,4 +9052,209 @@ enum BreachSeverity {
   MEDIUM
   HIGH
   CRITICAL
+}
+
+// ==========================================
+// WEBSITE BUILDER MODELS
+// ==========================================
+
+enum WebsiteType {
+  REBUILT
+  SERVICE_TEMPLATE
+  PRODUCT_TEMPLATE
+}
+
+enum WebsiteStatus {
+  BUILDING
+  READY
+  PUBLISHED
+  FAILED
+}
+
+enum WebsiteBuildType {
+  INITIAL
+  REBUILD
+  UPDATE
+}
+
+enum WebsiteBuildStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum WebsiteIntegrationType {
+  STRIPE
+  BOOKING
+  FORM
+  CTA
+  CHAT
+  ANALYTICS
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+}
+
+enum ChangeType {
+  AI_MODIFICATION
+  MANUAL_EDIT
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  MODIFIED
+}
+
+enum WebsiteTemplateType {
+  SERVICE
+  PRODUCT
+}
+
+// Website - Main model for user websites
+model Website {
+  id            String               @id @default(cuid())
+  userId        String
+  name          String
+  type          WebsiteType
+  sourceUrl     String? // If rebuilt from existing site
+  templateType  WebsiteTemplateType? // SERVICE, PRODUCT
+  status        WebsiteStatus        @default(BUILDING)
+  buildProgress Int                  @default(0) // 0-100
+
+  // Structure & Content
+  structure            Json // Complete website structure (pages, components, etc.)
+  seoData              Json // SEO metadata
+  extractedData        Json? // All scraped/extracted data
+  questionnaireAnswers Json? // Answers from questionnaire (if new site)
+
+  // Integrations
+  stripeConnectAccountId String?
+  elevenLabsAgentId      String?
+  integrationsConfig     Json    @default("{}") // Active integrations config
+
+  // Resources (separate per website)
+  githubRepoUrl       String?
+  neonDatabaseUrl     String?
+  vercelProjectId     String?
+  vercelDeploymentUrl String?
+
+  // Voice AI
+  voiceAIEnabled Boolean @default(false)
+  voiceAIConfig  Json? // Voice AI settings
+
+  // Approval Queue
+  pendingChanges Json? // Changes awaiting approval
+
+  // Metadata
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  // Relations
+  user                User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  builds              WebsiteBuild[]
+  websiteIntegrations WebsiteIntegration[]
+  visitors            WebsiteVisitor[]
+  changeApprovals     WebsiteChangeApproval[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+}
+
+// WebsiteBuild - Tracks build processes
+model WebsiteBuild {
+  id          String             @id @default(cuid())
+  websiteId   String
+  buildType   WebsiteBuildType
+  status      WebsiteBuildStatus @default(PENDING)
+  progress    Int                @default(0)
+  sourceUrl   String? // If cloning
+  buildData   Json? // Build configuration
+  error       String?
+  startedAt   DateTime           @default(now())
+  completedAt DateTime?
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId])
+  @@index([status])
+}
+
+// WebsiteIntegration - Active integrations on websites
+model WebsiteIntegration {
+  id        String                 @id @default(cuid())
+  websiteId String
+  type      WebsiteIntegrationType
+  config    Json // Integration-specific configuration
+  status    IntegrationStatus      @default(ACTIVE)
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId])
+  @@index([type])
+}
+
+// WebsiteVisitor - Tracks website visitors and interactions
+model WebsiteVisitor {
+  id           String   @id @default(cuid())
+  websiteId    String
+  sessionId    String
+  ipAddress    String?
+  userAgent    String?
+  referrer     String?
+  pagesVisited Json     @default("[]") // Array of page visits
+  interactions Json     @default("{}") // CTA clicks, form submissions, etc.
+  formData     Json? // Submitted form data
+  createdAt    DateTime @default(now())
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId])
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// WebsiteChangeApproval - Tracks pending changes awaiting approval
+model WebsiteChangeApproval {
+  id          String         @id @default(cuid())
+  websiteId   String
+  changeType  ChangeType
+  changes     Json // Proposed changes
+  preview     Json // Preview data
+  status      ApprovalStatus @default(PENDING)
+  requestedBy String? // User ID
+  approvedBy  String?
+  approvedAt  DateTime?
+  createdAt   DateTime       @default(now())
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId])
+  @@index([status])
+}
+
+// WebsiteTemplate - Pre-built templates
+model WebsiteTemplate {
+  id           String              @id @default(cuid())
+  name         String
+  type         WebsiteTemplateType
+  category     String?
+  previewImage String?
+  structure    Json // Template structure
+  description  String?
+  isDefault    Boolean             @default(false)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([type])
+  @@index([category])
 }
