@@ -23,6 +23,7 @@ export type Industry =
 export type MenuItemId =
   | 'dashboard'
   | 'ai-brain'
+  | 'business-ai'
   | 'ai-employees'
   | 'docpen'
   | 'onboarding'
@@ -93,6 +94,7 @@ export type MenuItemId =
 const CORE_MENU_ITEMS: MenuItemId[] = [
   'dashboard',
   'ai-brain', // AI Brain insights - available to ALL industries
+  'business-ai', // Business AI - Revolutionary voice AI business intelligence - available to ALL industries
   'ai-employees', // AI Employees - automated assistants available to ALL industries
   // 'docpen' removed - only available to medical industries (MEDICAL, DENTIST, MEDICAL_SPA, OPTOMETRIST, HEALTH_CLINIC, HOSPITAL)
   'onboarding',

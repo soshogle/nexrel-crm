@@ -95,6 +95,12 @@ const merchantItems = [
     icon: Brain,
   },
   {
+    id: 'business-ai' as MenuItemId,
+    title: 'Business AI',
+    href: '/dashboard/business-ai',
+    icon: Brain,
+  },
+  {
     id: 'ai-employees' as MenuItemId,
     title: 'AI Employees',
     href: '/dashboard/ai-employees',
@@ -455,6 +461,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
     const translationMap: Record<string, string> = {
       'dashboard': 'dashboard',
       'ai-brain': 'aiBrain',
+      'business-ai': 'businessAI',
       'ai-employees': 'aiEmployees',
       'docpen': 'aiDocpen',
       'onboarding': 'onboardingWizard',

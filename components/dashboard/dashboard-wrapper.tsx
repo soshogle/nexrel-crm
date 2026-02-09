@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react'
 import { SidebarNav } from './sidebar-nav'
 import { AIChatAssistant } from './ai-chat-assistant'
 import { GlobalVoiceAssistant } from './global-voice-assistant'
+import { VoiceAIAgent } from '@/components/business-ai/voice-ai-agent'
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
 import { GlobalSearchTrigger } from '@/app/components/unified-search'
 import { HITLNotificationBell } from '@/components/real-estate/workflows/hitl-notification-bell'
@@ -135,6 +136,9 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
 
       {/* Global Voice Assistant */}
       {mounted && <GlobalVoiceAssistant />}
+
+      {/* Business AI Voice Agent - Revolutionary Business Intelligence */}
+      {mounted && <VoiceAIAgent position="bottom-right" />}
     </div>
     </>
   )
