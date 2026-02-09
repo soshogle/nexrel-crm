@@ -306,13 +306,14 @@ export default function BusinessAIPage() {
 
           {/* Voice Assistant Mode */}
           <TabsContent value="voice" className="space-y-6 mt-6">
-            {/* ElevenLabs Voice Agent - Like Landing Page */}
+            {/* ElevenLabs Voice Agent - Auto-start, matches landing page exactly */}
             {!agentLoading && crmAgentId && (
               <Card className="border-2 border-purple-200/50 shadow-2xl bg-gradient-to-br from-white/90 to-purple-50/30 backdrop-blur-md relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
                 <CardContent className="p-8 relative z-10">
                   <ElevenLabsAgent 
                     agentId={crmAgentId}
+                    autoStart={true}
                     onConversationEnd={(transcript, audioBlob) => {
                       console.log('Conversation ended:', transcript);
                     }}

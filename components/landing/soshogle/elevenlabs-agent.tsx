@@ -20,6 +20,7 @@ interface ElevenLabsAgentProps {
   onConversationEnd?: (transcript: ConversationMessage[], audioBlob?: Blob) => void;
   onAgentSpeakingChange?: (isSpeaking: boolean) => void;
   dynamicVariables?: Record<string, string>;
+  autoStart?: boolean; // Auto-start conversation when component mounts
 }
 
 type AgentStatus = "idle" | "connecting" | "listening" | "speaking" | "processing";
@@ -30,6 +31,7 @@ export function ElevenLabsAgent({
   onConversationEnd,
   onAgentSpeakingChange,
   dynamicVariables,
+  autoStart = false,
 }: ElevenLabsAgentProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -281,10 +283,13 @@ export function ElevenLabsAgent({
   };
 
   const stopConversation = () => {
+    // Stop animation frame
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
 
+    // Stop media recorder
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       try {
         mediaRecorderRef.current.stop();
@@ -294,11 +299,15 @@ export function ElevenLabsAgent({
     }
     mediaRecorderRef.current = null;
 
+    // Stop audio stream
     if (audioStreamRef.current) {
-      audioStreamRef.current.getTracks().forEach((track) => track.stop());
+      audioStreamRef.current.getTracks().forEach((track) => {
+        track.stop();
+      });
       audioStreamRef.current = null;
     }
 
+    // End conversation session
     if (conversationRef.current) {
       try {
         conversationRef.current.endSession();
@@ -308,18 +317,43 @@ export function ElevenLabsAgent({
       conversationRef.current = null;
     }
 
+    // Close audio context
     if (audioContextRef.current) {
-      audioContextRef.current.close();
+      try {
+        audioContextRef.current.close();
+      } catch (e) {
+        console.error("Error closing audio context:", e);
+      }
       audioContextRef.current = null;
     }
 
+    // Reset state
     setIsConnected(false);
     setIsAgentSpeaking(false);
+    setIsLoading(false);
+    setStatus("idle");
     setAudioLevel(0);
+    setError(null);
+    
     if (onAudioLevel) {
       onAudioLevel(0);
     }
+    if (onAgentSpeakingChange) {
+      onAgentSpeakingChange(false);
+    }
   };
+
+  // Auto-start conversation if autoStart prop is true
+  useEffect(() => {
+    if (autoStart && agentId && !isConnected && !isLoading && status === 'idle') {
+      // Use setTimeout to ensure component is fully mounted
+      const timer = setTimeout(() => {
+        startConversation();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart, agentId, isConnected, isLoading, status]);
 
   useEffect(() => {
     return () => {
