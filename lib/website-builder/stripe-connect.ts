@@ -5,6 +5,7 @@
 
 import Stripe from 'stripe';
 import { prisma } from '@/lib/db';
+import { websiteOrderService } from './order-service';
 
 // Use platform Stripe account (your CRM's account)
 const platformStripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder_for_build';
@@ -178,6 +179,17 @@ export class WebsiteStripeConnectService {
       const websiteId = paymentIntent.metadata.websiteId;
 
       if (websiteId) {
+        // Get website to find owner
+        const website = await prisma.website.findUnique({
+          where: { id: websiteId },
+          select: { userId: true },
+        });
+
+        if (!website) {
+          console.error(`Website ${websiteId} not found for payment intent ${paymentIntent.id}`);
+          return;
+        }
+
         // Update integration status
         await prisma.websiteIntegration.updateMany({
           where: {
@@ -198,6 +210,88 @@ export class WebsiteStripeConnectService {
           },
         });
 
+        // Extract customer and product data from metadata
+        const metadata = paymentIntent.metadata;
+        const customerEmail = paymentIntent.receipt_email || metadata.customerEmail || '';
+        const customerName = metadata.customerName || 'Customer';
+        const customerPhone = metadata.customerPhone || undefined;
+
+        // Parse product data from metadata (stored as JSON string)
+        let orderItems: Array<{
+          productId: string;
+          productName: string;
+          productSku: string;
+          quantity: number;
+          price: number;
+          total: number;
+        }> = [];
+
+        if (metadata.products) {
+          try {
+            const products = JSON.parse(metadata.products);
+            orderItems = products.map((p: any) => ({
+              productId: p.productId,
+              productName: p.name,
+              productSku: p.sku,
+              quantity: p.quantity,
+              price: Math.round(p.price * 100), // Convert to cents
+              total: Math.round(p.price * p.quantity * 100),
+            }));
+          } catch (e) {
+            console.error('Failed to parse products from metadata:', e);
+          }
+        }
+
+        // Parse shipping address from metadata
+        let shippingAddress: any = undefined;
+        if (metadata.shippingAddress) {
+          try {
+            shippingAddress = JSON.parse(metadata.shippingAddress);
+          } catch (e) {
+            console.error('Failed to parse shipping address:', e);
+          }
+        }
+
+        // Create order if we have product data
+        if (orderItems.length > 0 && customerEmail) {
+          try {
+            const subtotal = orderItems.reduce((sum, item) => sum + item.total, 0);
+            const tax = metadata.tax ? Math.round(parseFloat(metadata.tax) * 100) : 0;
+            const shipping = metadata.shipping ? Math.round(parseFloat(metadata.shipping) * 100) : 0;
+            const discount = metadata.discount ? Math.round(parseFloat(metadata.discount) * 100) : 0;
+            const total = subtotal + tax + shipping - discount;
+
+            await websiteOrderService.createOrder({
+              websiteId,
+              userId: website.userId,
+              customer: {
+                name: customerName,
+                email: customerEmail,
+                phone: customerPhone,
+                shippingAddress,
+                billingAddress: shippingAddress, // Use shipping as billing if not provided
+              },
+              items: orderItems,
+              subtotal,
+              tax,
+              shipping,
+              discount,
+              total,
+              paymentIntentId: paymentIntent.id,
+              paymentMethod: 'stripe',
+              metadata: {
+                ...metadata,
+                stripePaymentIntentId: paymentIntent.id,
+              },
+            });
+
+            console.log(`✅ Order created for website ${websiteId}, payment ${paymentIntent.id}`);
+          } catch (error: any) {
+            console.error('Error creating order from payment:', error);
+            // Don't throw - we still want to trigger the webhook
+          }
+        }
+
         // Trigger website webhook
         await fetch(`${process.env.NEXTAUTH_URL}/api/webhooks/website`, {
           method: 'POST',
@@ -209,7 +303,8 @@ export class WebsiteStripeConnectService {
               paymentIntentId: paymentIntent.id,
               amount: paymentIntent.amount / 100,
               currency: paymentIntent.currency,
-              customerEmail: paymentIntent.receipt_email,
+              customerEmail,
+              orderCreated: orderItems.length > 0,
             },
           }),
         });

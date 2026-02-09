@@ -44,7 +44,8 @@
     "payments": "Pagos",
     "ecommerce": "Comercio electrónico",
     "delivery": "Entrega",
-    "dentalManagement": "Gestión dental"
+    "dentalManagement": "Gestión dental",
+    "websites": "Sitios Web"
   },
   "dashboard": {
     "welcome": "Bienvenido",

@@ -79,7 +79,8 @@
     "myDashboard": "My Dashboard",
     "myFamily": "My Family",
     "mySchedules": "My Schedules",
-    "myPayments": "My Payments"
+    "myPayments": "My Payments",
+    "websites": "Websites"
   },
   "dashboard": {
     "welcome": "Welcome",

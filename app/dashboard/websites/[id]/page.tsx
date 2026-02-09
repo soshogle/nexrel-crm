@@ -12,6 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
+import { StockDashboard } from '@/components/websites/stock-dashboard';
+import { AnalyticsSettings } from '@/components/websites/analytics-settings';
 
 interface Website {
   id: string;
@@ -237,6 +239,8 @@ export default function WebsiteEditorPage() {
         <TabsList>
           <TabsTrigger value="editor">Editor</TabsTrigger>
           <TabsTrigger value="chat">AI Chat</TabsTrigger>
+          <TabsTrigger value="stock">Stock & Inventory</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="approval">
             Pending Changes
             {pendingChanges.length > 0 && (
@@ -321,6 +325,10 @@ export default function WebsiteEditorPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="analytics" className="space-y-4">
+          <AnalyticsSettings websiteId={params.id as string} />
+        </TabsContent>
+
         <TabsContent value="approval" className="space-y-4">
           {pendingChanges.length === 0 ? (
             <Card>
@@ -386,6 +394,10 @@ export default function WebsiteEditorPage() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="stock" className="space-y-4">
+          <StockDashboard websiteId={params.id as string} />
         </TabsContent>
 
         <TabsContent value="preview" className="space-y-4">

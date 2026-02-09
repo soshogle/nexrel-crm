@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import { SidebarNav } from './sidebar-nav'
 import { AIChatAssistant } from './ai-chat-assistant'
+import { GlobalVoiceAssistant } from './global-voice-assistant'
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
 import { GlobalSearchTrigger } from '@/app/components/unified-search'
 import { HITLNotificationBell } from '@/components/real-estate/workflows/hitl-notification-bell'
@@ -131,6 +132,9 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
 
       {/* AI Assistant */}
       {mounted && <AIChatAssistant />}
+
+      {/* Global Voice Assistant */}
+      {mounted && <GlobalVoiceAssistant />}
     </div>
     </>
   )
