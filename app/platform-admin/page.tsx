@@ -11,10 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Search, UserCog, Shield, Users, LogIn, BarChart3, LogOut, Clock, UserPlus, Edit } from 'lucide-react';
+import { Loader2, Search, UserCog, Shield, Users, LogIn, BarChart3, LogOut, Clock, UserPlus, Edit, Phone, AlertTriangle, Settings } from 'lucide-react';
 import UsageAnalyticsDashboard from '@/components/admin/usage-analytics-dashboard';
 import CreateBusinessOwnerDialog from '@/components/admin/create-business-owner-dialog';
 import EditUserDialog from '@/components/admin/edit-user-dialog';
+import TwilioMonitoringTab from '@/components/admin/twilio-failover/monitoring-tab';
+import FailoverEventsTab from '@/components/admin/twilio-failover/failover-events-tab';
+import AccountManagementTab from '@/components/admin/twilio-failover/account-management-tab';
 
 const ADMIN_SESSION_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 
@@ -296,6 +299,18 @@ export default function PlatformAdminPage() {
               <BarChart3 className="h-4 w-4 mr-2" />
               Usage Analytics
             </TabsTrigger>
+            <TabsTrigger value="twilio-monitoring" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600">
+              <Phone className="h-4 w-4 mr-2" />
+              Twilio Monitoring
+            </TabsTrigger>
+            <TabsTrigger value="failover-events" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600">
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Failover Events
+            </TabsTrigger>
+            <TabsTrigger value="account-management" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600">
+              <Settings className="h-4 w-4 mr-2" />
+              Account Management
+            </TabsTrigger>
           </TabsList>
 
           {/* User Management Tab */}
@@ -518,6 +533,18 @@ export default function PlatformAdminPage() {
           {/* Usage Analytics Tab */}
           <TabsContent value="usage">
             <UsageAnalyticsDashboard />
+          </TabsContent>
+
+          <TabsContent value="twilio-monitoring">
+            <TwilioMonitoringTab />
+          </TabsContent>
+
+          <TabsContent value="failover-events">
+            <FailoverEventsTab />
+          </TabsContent>
+
+          <TabsContent value="account-management">
+            <AccountManagementTab />
           </TabsContent>
         </Tabs>
       </div>
