@@ -50,6 +50,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   const [isSaving, setIsSaving] = useState(false);
   const [showNewTaskDialog, setShowNewTaskDialog] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
+  const [newTaskType, setNewTaskType] = useState<string>('CREATE_TASK');
   const [showTemplateGallery, setShowTemplateGallery] = useState(!initialWorkflowId);
   
   const industryConfig = getIndustryConfig(industry);
@@ -247,10 +248,12 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
       displayOrder: newOrder,
       isHITL: false,
       delayMinutes: 0,
+      actionType: newTaskType as any,
     };
     
     setWorkflow({ ...workflow, tasks: [...currentTasks, newTask] });
     setNewTaskName('');
+    setNewTaskType('CREATE_TASK');
     setShowNewTaskDialog(false);
     setSelectedTaskId(newTask.id);
     toast.success('Task added');
@@ -344,17 +347,51 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
                     <DialogTitle>Add New Task</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <Input
-                      placeholder="Task name"
-                      value={newTaskName}
-                      onChange={(e) => setNewTaskName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleAddTask();
-                        }
-                      }}
-                    />
-                    <Button onClick={handleAddTask} className="w-full">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Task Type</label>
+                      <Select value={newTaskType} onValueChange={setNewTaskType}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select task type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="CREATE_TASK">📋 Create Task</SelectItem>
+                          <SelectItem value="SEND_EMAIL">📧 Send Email</SelectItem>
+                          <SelectItem value="SEND_SMS">💬 Send SMS</SelectItem>
+                          <SelectItem value="SEND_MESSAGE">💭 Send Message</SelectItem>
+                          <SelectItem value="UPDATE_LEAD">👤 Update Lead</SelectItem>
+                          <SelectItem value="UPDATE_DEAL">💼 Update Deal</SelectItem>
+                          <SelectItem value="CREATE_APPOINTMENT">📅 Create Appointment</SelectItem>
+                          <SelectItem value="ADD_TAG">🏷️ Add Tag</SelectItem>
+                          <SelectItem value="REMOVE_TAG">❌ Remove Tag</SelectItem>
+                          <SelectItem value="CHANGE_LEAD_STATUS">🔄 Change Lead Status</SelectItem>
+                          <SelectItem value="MOVE_DEAL_STAGE">➡️ Move Deal Stage</SelectItem>
+                          <SelectItem value="ASSIGN_TO_USER">👥 Assign to User</SelectItem>
+                          <SelectItem value="WAIT_DELAY">⏱️ Wait Delay</SelectItem>
+                          <SelectItem value="WEBHOOK">🔗 Webhook</SelectItem>
+                          <SelectItem value="AI_GENERATE_MESSAGE">🤖 AI Generate Message</SelectItem>
+                          <SelectItem value="NOTIFY_USER">🔔 Notify User</SelectItem>
+                          <SelectItem value="SCHEDULE_FOLLOW_UP">📆 Schedule Follow-Up</SelectItem>
+                          <SelectItem value="MAKE_OUTBOUND_CALL">📞 Make Outbound Call</SelectItem>
+                          <SelectItem value="CREATE_LEAD_FROM_MESSAGE">➕ Create Lead from Message</SelectItem>
+                          <SelectItem value="CREATE_DEAL_FROM_LEAD">💼 Create Deal from Lead</SelectItem>
+                          <SelectItem value="AUTO_REPLY">⚡ Auto Reply</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Task Name</label>
+                      <Input
+                        placeholder="Enter task name"
+                        value={newTaskName}
+                        onChange={(e) => setNewTaskName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAddTask();
+                          }
+                        }}
+                      />
+                    </div>
+                    <Button onClick={handleAddTask} className="w-full" disabled={!newTaskName.trim()}>
                       Add Task
                     </Button>
                   </div>

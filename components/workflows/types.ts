@@ -10,6 +10,7 @@ export interface WorkflowTask {
   name: string;
   description: string;
   taskType: string; // Industry-specific task type
+  actionType?: string; // WorkflowActionType (SEND_EMAIL, CREATE_TASK, etc.)
   assignedAgentId: string | null;
   assignedAgentName: string | null;
   agentColor: string;
