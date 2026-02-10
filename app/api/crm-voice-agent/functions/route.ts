@@ -95,8 +95,12 @@ async function getStatistics(userId: string) {
       prisma.campaign.count({ where: { userId } }),
     ]);
 
+    // Get open deals (deals without actualCloseDate)
     const openDeals = await prisma.deal.findMany({
-      where: { userId, status: { not: 'CLOSED' } },
+      where: { 
+        userId, 
+        actualCloseDate: null, // Open deals don't have a close date
+      },
       select: { value: true },
     });
 
@@ -106,7 +110,12 @@ async function getStatistics(userId: string) {
       where: { userId },
       orderBy: { createdAt: 'desc' },
       take: 5,
-      select: { name: true, status: true, createdAt: true },
+      select: { 
+        businessName: true,
+        contactPerson: true,
+        status: true, 
+        createdAt: true 
+      },
     });
 
     return {
@@ -119,7 +128,7 @@ async function getStatistics(userId: string) {
         openDeals: openDeals.length,
         totalRevenue: totalRevenue,
         recentLeads: recentLeads.map(lead => ({
-          name: lead.name,
+          name: lead.contactPerson || lead.businessName || 'Unknown',
           status: lead.status,
           createdAt: lead.createdAt.toISOString(),
         })),

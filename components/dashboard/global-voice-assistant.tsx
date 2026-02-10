@@ -5,12 +5,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Mic, MicOff, X, Minimize2, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
+
+const STORAGE_KEY = 'crm-voice-assistant-state';
 
 export function GlobalVoiceAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,6 +21,36 @@ export function GlobalVoiceAssistant() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const conversationRef = useRef<any>(null);
+  const [conversationActive, setConversationActive] = useState(false);
+
+  // Load persisted state from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem(STORAGE_KEY);
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          setIsOpen(state.isOpen || false);
+          setIsMinimized(state.isMinimized || false);
+          setConversationActive(state.conversationActive || false);
+        } catch (e) {
+          console.error('Failed to load voice assistant state:', e);
+        }
+      }
+    }
+  }, []);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        isOpen,
+        isMinimized,
+        conversationActive,
+      }));
+    }
+  }, [isOpen, isMinimized, conversationActive]);
 
   useEffect(() => {
     // Get or create CRM voice agent
@@ -46,7 +78,19 @@ export function GlobalVoiceAssistant() {
 
   const handleConversationEnd = (transcript: any[], audioBlob?: Blob) => {
     console.log('Conversation ended:', transcript);
+    setConversationActive(false);
+    conversationRef.current = null;
     // Optionally save conversation history or transcript
+  };
+
+  const handleAgentSpeakingChange = (speaking: boolean) => {
+    setIsConnected(speaking);
+    setConversationActive(speaking);
+  };
+
+  const handleStartConversation = () => {
+    setConversationActive(true);
+    setIsOpen(true);
   };
 
   if (loading) {
@@ -59,13 +103,20 @@ export function GlobalVoiceAssistant() {
 
   return (
     <>
-      {/* Floating Button */}
-      {!isOpen && (
+      {/* Floating Button - Show if closed OR if conversation is active but minimized */}
+      {(!isOpen || (isOpen && isMinimized && conversationActive)) && (
         <div className="fixed bottom-6 right-6 z-50">
           <Button
-            onClick={() => setIsOpen(true)}
+            onClick={() => {
+              setIsOpen(true);
+              setIsMinimized(false);
+            }}
             size="lg"
-            className="h-16 w-16 rounded-full shadow-lg bg-primary hover:bg-primary/90"
+            className={`h-16 w-16 rounded-full shadow-lg ${
+              conversationActive 
+                ? 'bg-green-500 hover:bg-green-600 animate-pulse' 
+                : 'bg-primary hover:bg-primary/90'
+            }`}
           >
             <Mic className="h-6 w-6" />
           </Button>
@@ -93,9 +144,16 @@ export function GlobalVoiceAssistant() {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    setIsOpen(false);
-                    setIsMinimized(false);
+                    if (conversationActive) {
+                      // If conversation is active, just minimize instead of closing
+                      setIsMinimized(true);
+                    } else {
+                      setIsOpen(false);
+                      setIsMinimized(false);
+                    }
                   }}
+                  disabled={conversationActive}
+                  title={conversationActive ? 'Conversation active - minimize instead' : 'Close'}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -107,7 +165,7 @@ export function GlobalVoiceAssistant() {
                 <ElevenLabsAgent
                   agentId={agentId}
                   onConversationEnd={handleConversationEnd}
-                  onAgentSpeakingChange={(speaking) => setIsConnected(speaking)}
+                  onAgentSpeakingChange={handleAgentSpeakingChange}
                   dynamicVariables={{
                     company_name: 'Your CRM',
                     user_name: 'User',
