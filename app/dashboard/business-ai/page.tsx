@@ -104,6 +104,7 @@ export default function BusinessAIPage() {
   const [crmStatistics, setCrmStatistics] = useState<any>(null);
   const [showVisualizations, setShowVisualizations] = useState(false);
   const [conversationMessages, setConversationMessages] = useState<any[]>([]);
+  const [lastStatsCheck, setLastStatsCheck] = useState<number>(0);
   
   // Analytical Dashboard Mode State
   const [comprehensiveData, setComprehensiveData] = useState<ComprehensiveBrainData | null>(null);
@@ -372,18 +373,6 @@ export default function BusinessAIPage() {
             {/* ElevenLabs Voice Agent - Matches landing page exactly (no Card wrapper) */}
             {!agentLoading && crmAgentId && (
               <div className="relative w-full space-y-4">
-                {/* Manual Statistics Button */}
-                <div className="flex justify-end">
-                  <Button
-                    onClick={fetchCrmStatistics}
-                    variant="outline"
-                    className="border-purple-200 hover:bg-purple-50"
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Show CRM Statistics
-                  </Button>
-                </div>
-                
                 <ElevenLabsAgent 
                   agentId={crmAgentId}
                   autoStart={false}
@@ -393,27 +382,43 @@ export default function BusinessAIPage() {
                   onAgentSpeakingChange={(isSpeaking) => {
                     // Speaking state callback
                   }}
+                  onMessage={(message) => {
+                    // Real-time message monitoring for automatic visualization
+                    const now = Date.now();
+                    const timeSinceLastCheck = now - lastStatsCheck;
+                    
+                    // Throttle checks to avoid too many API calls (max once per 3 seconds)
+                    if (timeSinceLastCheck < 3000) {
+                      return;
+                    }
+                    
+                    // Check if agent message contains statistics-related keywords
+                    if (message.role === 'agent' && message.content) {
+                      const content = message.content.toLowerCase();
+                      const statsKeywords = [
+                        'statistic', 'statistics', 'stats', 'data', 'revenue', 'leads', 'deals',
+                        'campaigns', 'contacts', 'total', 'overview', 'summary', 'report',
+                        'show', 'display', 'here are', 'you have', 'your crm', 'business performance'
+                      ];
+                      
+                      const hasStatsKeyword = statsKeywords.some(keyword => content.includes(keyword));
+                      
+                      // Also check for numbers that might indicate statistics
+                      const hasNumbers = /\d+/.test(message.content);
+                      
+                      if (hasStatsKeyword || (hasNumbers && (content.includes('lead') || content.includes('deal') || content.includes('revenue')))) {
+                        console.log('📊 Detected statistics query in agent message, fetching data...');
+                        setLastStatsCheck(now);
+                        fetchCrmStatistics();
+                      }
+                    }
+                    
+                    // Update conversation messages
+                    setConversationMessages(prev => [...prev, message]);
+                  }}
                   onConversationEnd={(transcript, audioBlob) => {
                     console.log('Conversation ended:', transcript);
                     setConversationMessages(transcript);
-                    
-                    // Check if agent mentioned statistics or data queries
-                    const lastMessages = transcript.slice(-5);
-                    const hasStatsQuery = lastMessages.some((msg: any) => 
-                      msg.role === 'agent' && 
-                      (msg.content?.toLowerCase().includes('statistic') ||
-                       msg.content?.toLowerCase().includes('revenue') ||
-                       msg.content?.toLowerCase().includes('lead') ||
-                       msg.content?.toLowerCase().includes('deal') ||
-                       msg.content?.toLowerCase().includes('data') ||
-                       msg.content?.toLowerCase().includes('show') ||
-                       msg.content?.toLowerCase().includes('display'))
-                    );
-                    
-                    if (hasStatsQuery) {
-                      // Fetch and display statistics
-                      fetchCrmStatistics();
-                    }
                   }}
                 />
               </div>
