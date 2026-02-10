@@ -161,7 +161,6 @@ async function main() {
         phone: `555-${randomInt(100, 999)}-${randomInt(1000, 9999)}`,
         status: status as any,
         source: randomElement(['Website', 'Referral', 'Social Media', 'Google Ads', 'Walk-in', 'Phone', 'Email Campaign']),
-        notes: `Patient interested in ${randomElement(['braces', 'Invisalign', 'retainers', 'consultation'])}.`,
         createdAt,
         updatedAt: createdAt,
       },
@@ -238,7 +237,7 @@ async function main() {
           data: {
             dealId: deal.id,
             userId: user.id,
-            type: randomElement(['CALL', 'EMAIL', 'MEETING', 'NOTE', 'TASK']) as any,
+            type: randomElement(['CALL', 'EMAIL', 'MEETING', 'NOTE', 'TASK_COMPLETED', 'STAGE_CHANGED']) as any,
             description: randomElement([
               'Initial consultation completed',
               'Treatment plan presented',
@@ -373,7 +372,7 @@ async function main() {
     const createdAt = randomDate(sixMonthsAgo, now);
     const campaignStatuses = ['DRAFT', 'SCHEDULED', 'ACTIVE', 'PAUSED', 'COMPLETED'];
     const campaignStatus = randomElement(campaignStatuses);
-    const campaignType = randomElement(['EMAIL', 'SMS', 'VOICE']);
+    const campaignType = randomElement(['EMAIL', 'SMS', 'VOICE_CALL', 'REVIEW_REQUEST', 'REFERRAL_REQUEST', 'FOLLOW_UP']);
 
     const campaign = await prisma.campaign.create({
       data: {
@@ -381,8 +380,7 @@ async function main() {
         name: campaignNames[i],
         type: campaignType as any,
         status: campaignStatus as any,
-        startDate: createdAt,
-        endDate: new Date(createdAt.getTime() + randomInt(7, 60) * 24 * 60 * 60 * 1000),
+        scheduledFor: campaignStatus === 'SCHEDULED' ? createdAt : null,
         description: `Campaign targeting ${randomElement(['new patients', 'existing patients', 'referrals', 'inactive patients'])}.`,
         createdAt,
         updatedAt: createdAt,
@@ -397,7 +395,7 @@ async function main() {
         data: {
           campaignId: campaign.id,
           leadId: lead.id,
-          status: randomElement(['PENDING', 'SENT', 'OPENED', 'CLICKED', 'REPLIED']),
+          status: randomElement(['PENDING', 'SENT', 'DELIVERED', 'RESPONDED', 'COMPLETED']) as any,
         },
       });
     }
@@ -419,20 +417,7 @@ async function main() {
       data: {
         userId: user.id,
         leadId: lead.id,
-        type: messageType as any,
-        direction: direction as any,
-        from: direction === 'OUTBOUND' ? user.email || 'office@orthodontist.com' : lead.email || 'patient@example.com',
-        to: direction === 'OUTBOUND' ? lead.email || 'patient@example.com' : user.email || 'office@orthodontist.com',
-        subject: messageType === 'EMAIL' ? randomElement([
-          'Consultation Request',
-          'Treatment Plan Inquiry',
-          'Appointment Confirmation',
-          'Follow-up Question',
-          'Thank You Message',
-          'Payment Reminder',
-          'Treatment Update',
-        ]) : null,
-        body: randomElement([
+        content: randomElement([
           'Thank you for your interest in our orthodontic services!',
           'We\'d love to schedule a consultation with you.',
           'Your treatment plan is ready for review.',
@@ -440,7 +425,7 @@ async function main() {
           'Congratulations on completing your treatment!',
           'We have a special offer that might interest you.',
         ]),
-        status: randomElement(['SENT', 'DELIVERED', 'READ', 'REPLIED']),
+        messageType: messageType.toLowerCase() === 'email' ? 'email' : 'sms',
         createdAt,
         updatedAt: createdAt,
       },
@@ -458,19 +443,19 @@ async function main() {
     const lead = randomElement(leads);
     const direction = randomElement(['INBOUND', 'OUTBOUND']);
     const duration = randomInt(30, 900); // 30 seconds to 15 minutes
-    const status = randomElement(['COMPLETED', 'NO_ANSWER', 'BUSY', 'FAILED', 'VOICEMAIL']);
+    const status = randomElement(['COMPLETED', 'NO_ANSWER', 'BUSY', 'FAILED']);
 
     await prisma.callLog.create({
       data: {
         userId: user.id,
         leadId: lead.id,
         direction: direction as any,
-        from: direction === 'OUTBOUND' ? user.phone || '555-000-0000' : lead.phone || '555-000-0000',
-        to: direction === 'OUTBOUND' ? lead.phone || '555-000-0000' : user.phone || '555-000-0000',
-        duration: status === 'COMPLETED' ? duration : 0,
+        fromNumber: direction === 'OUTBOUND' ? user.phone || '555-000-0000' : lead.phone || '555-000-0000',
+        toNumber: direction === 'OUTBOUND' ? lead.phone || '555-000-0000' : user.phone || '555-000-0000',
+        duration: status === 'COMPLETED' ? duration : null,
         status: status as any,
         recordingUrl: status === 'COMPLETED' && Math.random() > 0.5 ? `https://recordings.example.com/call-${i}.mp3` : null,
-        notes: randomElement([
+        transcription: status === 'COMPLETED' && Math.random() > 0.7 ? randomElement([
           'Patient interested in consultation',
           'Scheduled follow-up appointment',
           'Discussed treatment options',
@@ -479,7 +464,7 @@ async function main() {
           'Patient requested callback',
           'Payment plan discussed',
           'Treatment progress reviewed',
-        ]),
+        ]) : null,
         createdAt,
         updatedAt: createdAt,
       },
