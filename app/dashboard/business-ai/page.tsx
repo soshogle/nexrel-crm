@@ -663,7 +663,9 @@ export default function BusinessAIPage() {
                             </Badge>
                           </div>
                           <div className="text-2xl font-bold text-purple-600">
-                            ${prediction.predictedValue.toLocaleString()}
+                            {(prediction.metric === 'revenue' || prediction.metric === 'dealValue')
+                              ? `$${prediction.predictedValue.toLocaleString()}`
+                              : prediction.predictedValue.toLocaleString()}
                           </div>
                           <p className="text-xs text-gray-600 mt-1">
                             {prediction.timeframe}

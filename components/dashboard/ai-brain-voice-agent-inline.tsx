@@ -64,6 +64,8 @@ export function AIBrainVoiceAgentInline() {
       <ElevenLabsAgent 
         agentId={agentId}
         autoStart={false}
+        compactMode={true}
+        hideWhenIdle={true}
         onAudioLevel={() => {}}
         onAgentSpeakingChange={handleAgentSpeakingChange}
         onMessage={handleMessage}

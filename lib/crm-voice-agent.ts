@@ -225,10 +225,9 @@ Communication style:
 - Confirm actions before executing
 - Use natural, spoken language
 
-When users ask about their CRM stats, data, or business performance:
-1. Use the get_statistics function to retrieve current data
-2. Speak the key metrics clearly (total revenue, number of leads, open deals, etc.)
-3. Highlight important trends or insights
+When users ask "how many leads" or "show my contacts" → use list_leads (takes them to contacts page).
+When users ask "how many deals" → use list_deals (takes them to pipeline).
+When users ask for charts, graphs, or sales trends → use get_statistics (shows visualizations on AI Brain).
 
 When users ask you to do something:
 1. Acknowledge the request
@@ -237,15 +236,15 @@ When users ask you to do something:
 4. Confirm completion
 
 Available functions:
-- get_statistics: Get comprehensive CRM statistics (revenue, leads, deals, contacts, campaigns) - USE THIS when asked about stats, data, or business performance
+- list_leads: List contacts/leads. USE THIS when user asks "how many leads", "how many new leads today", "show my contacts", "show my leads", or wants to see the list of contacts. Use period: "today" for leads created today.
+- list_deals: List deals in the pipeline. USE THIS when user asks "how many deals", "show my deals", or wants to see the pipeline.
+- get_statistics: Get comprehensive CRM statistics (revenue, charts, graphs). USE THIS only when user asks for charts, graphs, visualizations, sales over time, revenue comparison, or monthly trends.
 - create_lead: Create a new contact/lead
 - create_deal: Create a new deal
-- list_leads: List contacts/leads
-- list_deals: List deals in the pipeline
 - search_contacts: Search for contacts by name, email, or company
 - get_recent_activity: Get recent CRM activity
 
-IMPORTANT: When users ask about their CRM statistics, business data, revenue, leads, deals, or want to see their data, you MUST call the get_statistics function to retrieve the actual data from their CRM. Do not make up numbers - always use the function to get real data.
+IMPORTANT: When users ask "how many new leads today" or "show me my leads" → use list_leads (navigates to contacts page). When users ask for graphs, charts, or sales trends → use get_statistics (shows visualizations on AI Brain). Do not use get_statistics for simple lead/deal counts.
 
 Remember: You're speaking, not typing. Keep it brief and natural. When reporting statistics, speak clearly and highlight the most important numbers.
 `;
@@ -256,10 +255,10 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
    */
   private getGreetingMessage(language: string): string {
     const greetings: Record<string, string> = {
-      'en': 'Hi! I\'m your CRM assistant. How can I help you today?',
-      'fr': 'Bonjour! Je suis votre assistant CRM. Comment puis-je vous aider aujourd\'hui?',
-      'es': '¡Hola! Soy tu asistente CRM. ¿Cómo puedo ayudarte hoy?',
-      'zh': '你好！我是您的CRM助手。今天我能为您做些什么？',
+      'en': "I'm your business intelligence agent. How can I help you?",
+      'fr': "Je suis votre agent d'intelligence business. Comment puis-je vous aider?",
+      'es': 'Soy tu agente de inteligencia de negocio. ¿Cómo puedo ayudarte?',
+      'zh': '我是您的商业智能助手。有什么可以帮您的？',
     };
     return greetings[language] || greetings['en'];
   }
@@ -300,13 +299,13 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
     return [
       {
         name: 'get_statistics',
-        description: 'Get comprehensive CRM statistics and generate graphs/charts. Use this when the user asks for graphs, charts, visualizations, sales data, revenue comparisons, sales over time, monthly sales, or any statistics. This automatically creates visualizations displayed on the AI Brain page. Supports time-based queries like "last 7 months" or "compare with previous year".',
+        description: 'Get comprehensive CRM statistics and generate graphs/charts. Use ONLY when user asks for graphs, charts, visualizations, sales over time, revenue comparison, or monthly trends. Do NOT use for simple "how many leads" type questions - use list_leads instead.',
         parameters: {
           type: 'object',
           properties: {
             period: {
               type: 'string',
-              description: 'Time period for statistics. Examples: "last_7_months", "last_year", "last_30_days", "all_time"',
+              description: 'Time period. Examples: "last_7_months", "last_year", "last_30_days", "today", "all_time"',
             },
             compareWith: {
               type: 'string',
@@ -373,7 +372,7 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
       },
       {
         name: 'list_leads',
-        description: 'List contacts/leads. Use this when user wants to see their contacts.',
+        description: 'List contacts/leads. Use when user asks "how many leads", "how many new leads today", "show my contacts", or wants to see leads. Use period: "today" for leads created today.',
         parameters: {
           type: 'object',
           properties: {
@@ -381,6 +380,11 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
               type: 'string',
               description: 'Filter by status (optional)',
               enum: ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'],
+            },
+            period: {
+              type: 'string',
+              description: 'Time filter: "today" for leads created today, "all" for all time',
+              enum: ['today', 'all'],
             },
             limit: {
               type: 'number',
@@ -449,6 +453,12 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
     }
 
     try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { language: true },
+      });
+      const language = user?.language || 'en';
+
       // Get current agent config from ElevenLabs
       const getResponse = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, {
         headers: {
@@ -461,35 +471,33 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
       }
 
       const currentAgent = await getResponse.json();
-      
-      // Check if agent already has the correct server_url configured
-      const currentTools = currentAgent.tools || [];
       const crmFunctions = this.buildCrmFunctions();
       const expectedServerUrl = this.getFunctionServerUrl();
-      
-      // Check if any function is missing server_url or has wrong URL
-      const needsUpdate = currentTools.length === 0 || 
+      const fullUser = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true, industry: true } });
+      const newPrompt = this.buildCrmSystemPrompt(fullUser, language);
+
+      const currentTools = currentAgent.tools || [];
+      const needsUpdate = currentTools.length === 0 ||
         currentTools.some((tool: any) => {
           const func = tool.function;
           return !func?.server_url || func.server_url !== expectedServerUrl;
-        });
+        }) ||
+        (currentAgent.conversation_config?.agent?.prompt?.prompt !== newPrompt);
 
       if (!needsUpdate) {
         console.log(`✅ CRM agent ${agentId} already has correct function configurations`);
         return true;
       }
-      
-      // Update with latest function configurations while preserving all existing settings
+
       const updatePayload = {
         name: currentAgent.name,
         conversation_config: {
           ...currentAgent.conversation_config,
-          // Preserve agent config (prompt, first_message, language)
           agent: {
             ...currentAgent.conversation_config?.agent,
-            prompt: currentAgent.conversation_config?.agent?.prompt,
-            first_message: currentAgent.conversation_config?.agent?.first_message,
-            language: currentAgent.conversation_config?.agent?.language || 'en',
+            prompt: { prompt: newPrompt },
+            first_message: this.getGreetingMessage(language),
+            language: currentAgent.conversation_config?.agent?.language || language,
           },
           // Preserve TTS settings
           tts: currentAgent.conversation_config?.tts,
