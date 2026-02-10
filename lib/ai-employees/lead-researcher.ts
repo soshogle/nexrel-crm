@@ -1,21 +1,61 @@
 /**
  * Lead Researcher AI Employee
- * Researches companies and enriches lead data using web search, AI, and Hunter.io
+ * Researches companies and enriches lead data using web search, AI, Hunter.io, Clearbit, and Apify
  */
 
 import { prisma } from '../db';
 import { aiOrchestrator } from '../ai-employee-orchestrator';
 import { AIEmployeeType } from '@prisma/client';
 import * as fs from 'fs';
+import * as path from 'path';
 
-// Hunter.io API helper
+// API key helpers - check env first, then secrets file
 async function getHunterApiKey(): Promise<string | null> {
+  if (process.env.HUNTER_API_KEY) return process.env.HUNTER_API_KEY;
   try {
-    const secretsPath = '/home/ubuntu/.config/abacusai_auth_secrets.json';
-    const data = fs.readFileSync(secretsPath, 'utf8');
-    const secrets = JSON.parse(data);
-    return secrets['hunter.io']?.secrets?.api_key?.value || null;
-  } catch { return null; }
+    const secretsPath = path.join('/home/ubuntu/.config', 'abacusai_auth_secrets.json');
+    if (fs.existsSync(secretsPath)) {
+      const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+      return secrets['hunter.io']?.secrets?.api_key?.value || null;
+    }
+  } catch { }
+  return null;
+}
+
+async function getClearbitApiKey(): Promise<string | null> {
+  if (process.env.CLEARBIT_API_KEY) return process.env.CLEARBIT_API_KEY;
+  try {
+    const secretsPath = path.join('/home/ubuntu/.config', 'abacusai_auth_secrets.json');
+    if (fs.existsSync(secretsPath)) {
+      const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+      return secrets['clearbit']?.secrets?.api_key?.value || null;
+    }
+  } catch { }
+  return null;
+}
+
+async function getApolloApiKey(): Promise<string | null> {
+  if (process.env.APOLLO_API_KEY) return process.env.APOLLO_API_KEY;
+  try {
+    const secretsPath = path.join('/home/ubuntu/.config', 'abacusai_auth_secrets.json');
+    if (fs.existsSync(secretsPath)) {
+      const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+      return secrets['apollo']?.secrets?.api_key?.value || secrets['apollo.io']?.secrets?.api_key?.value || null;
+    }
+  } catch { }
+  return null;
+}
+
+async function getBuiltWithApiKey(): Promise<string | null> {
+  if (process.env.BUILTWITH_API_KEY) return process.env.BUILTWITH_API_KEY;
+  try {
+    const secretsPath = path.join('/home/ubuntu/.config', 'abacusai_auth_secrets.json');
+    if (fs.existsSync(secretsPath)) {
+      const secrets = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
+      return secrets['builtwith']?.secrets?.api_key?.value || null;
+    }
+  } catch { }
+  return null;
 }
 
 interface HunterPerson {
@@ -52,14 +92,23 @@ interface LeadResearchOutput {
       employeeCount?: string;
       companySize?: string;
     };
+    techStack?: string[];
+    funding?: { amount?: string; stage?: string; investors?: string[] };
     keyPeople?: Array<{
       name: string;
       title: string;
       email?: string;
+      phone?: string;
       linkedIn?: string;
+      emailAlternatives?: string[];
       confidence?: number;
       source?: string;
     }>;
+    intentSignals?: {
+      hiring?: boolean;
+      jobPostings?: string[];
+      careersPage?: string;
+    };
     recentNews?: Array<{
       title: string;
       date?: string;
@@ -124,13 +173,34 @@ export class LeadResearcher {
       await aiOrchestrator.updateProgress(jobId, 25, 'Researching company information...');
       const companyInfo = await this.researchCompanyInfo(businessName, website, industry);
 
+      // Step 1b: Enrich with Clearbit (tech stack, funding, phone, social) (30%)
+      const domain = companyInfo.website ? this.extractDomain(companyInfo.website) : (website ? this.extractDomain(website) : '');
+      let clearbitData: { techStack?: string[]; funding?: any; phone?: string; socialProfiles?: any } = {};
+      if (domain) {
+        await aiOrchestrator.updateProgress(jobId, 30, 'Fetching company data from Clearbit...');
+        clearbitData = await this.fetchClearbitCompany(domain);
+        // BuiltWith fallback when Clearbit has no tech stack
+        if ((!clearbitData.techStack || clearbitData.techStack.length === 0)) {
+          const builtWithTech = await this.fetchBuiltWithTech(domain);
+          if (builtWithTech?.length) clearbitData.techStack = builtWithTech;
+        }
+      }
+
       // Step 2: Find key decision makers (50%)
       await aiOrchestrator.updateProgress(jobId, 50, 'Finding key decision makers...');
-      const keyPeople = await this.findKeyPeople(businessName, companyInfo.website);
+      let keyPeople = await this.findKeyPeople(businessName, companyInfo.website);
+      // Enrich key people with Apollo (LinkedIn, phone, alternative emails) when available
+      if (domain && keyPeople.length > 0) {
+        keyPeople = await this.enrichKeyPeopleWithApollo(keyPeople, domain);
+      }
 
-      // Step 3: Gather recent news (75%)
+      // Step 3: Gather recent news - real search via Apify (75%)
       await aiOrchestrator.updateProgress(jobId, 75, 'Gathering recent company news...');
       const recentNews = await this.findRecentNews(businessName);
+
+      // Step 3b: Intent/buying signals - hiring, job postings (77%)
+      await aiOrchestrator.updateProgress(jobId, 77, 'Checking intent signals...');
+      const intentSignals = await this.findIntentSignals(businessName, domain);
 
       // Step 4: Analyze and generate recommendations (90%)
       await aiOrchestrator.updateProgress(jobId, 90, 'Analyzing data and generating insights...');
@@ -138,16 +208,29 @@ export class LeadResearcher {
         businessName,
         companyInfo,
         keyPeople,
-        recentNews
+        recentNews,
+        clearbitData,
+        intentSignals
       });
 
-      // Prepare enriched data
+      // Prepare enriched data (merge Clearbit tech, funding, phone)
+      const contactInfo = {
+        ...analysis.contactInfo,
+        phone: analysis.contactInfo?.phone || clearbitData.phone,
+        socialMedia: {
+          ...analysis.contactInfo?.socialMedia,
+          ...(clearbitData.socialProfiles || {})
+        }
+      };
       const enrichedData = {
         companyInfo: companyInfo,
         businessMetrics: analysis.businessMetrics,
+        techStack: clearbitData.techStack,
+        funding: clearbitData.funding,
         keyPeople: keyPeople,
         recentNews: recentNews,
-        contactInfo: analysis.contactInfo,
+        intentSignals,
+        contactInfo,
         recommendedApproach: analysis.recommendedApproach,
         leadScore: analysis.leadScore
       };
@@ -197,6 +280,194 @@ export class LeadResearcher {
     });
     await aiOrchestrator.startJob(job.id);
     return this.research(job.id, input);
+  }
+
+  private extractDomain(website: string): string {
+    try {
+      const url = website.startsWith('http') ? website : `https://${website}`;
+      return new URL(url).hostname.replace('www.', '');
+    } catch {
+      return website.replace('www.', '').split('/')[0];
+    }
+  }
+
+  /**
+   * Fetch tech stack from BuiltWith (fallback when Clearbit has none)
+   */
+  private async fetchBuiltWithTech(domain: string): Promise<string[]> {
+    const apiKey = await getBuiltWithApiKey();
+    if (!apiKey) return [];
+    try {
+      const url = `https://api.builtwith.com/free1/api.json?KEY=${encodeURIComponent(apiKey)}&LOOKUP=${encodeURIComponent(domain)}`;
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const data = await res.json();
+      const techs: string[] = [];
+      const groups = data.groups || data.Groups || [];
+      for (const g of groups) {
+        const gName = g.name || g.Name;
+        if (gName) techs.push(gName);
+        const cats = g.categories || g.Categories || [];
+        for (const c of cats) {
+          const cName = c.name || c.Name;
+          if (cName) techs.push(cName);
+        }
+      }
+      return techs.slice(0, 20);
+    } catch (e: any) {
+      console.log('[LeadResearcher] BuiltWith error:', e?.message);
+      return [];
+    }
+  }
+
+  /**
+   * Enrich key people with Apollo (LinkedIn, phone, alternative emails)
+   */
+  private async enrichKeyPeopleWithApollo(
+    keyPeople: Array<{ name: string; title: string; email?: string; phone?: string; linkedIn?: string; emailAlternatives?: string[]; confidence?: number; source?: string }>,
+    domain: string
+  ): Promise<typeof keyPeople> {
+    const apiKey = await getApolloApiKey();
+    if (!apiKey) return keyPeople;
+    try {
+      const res = await fetch('https://api.apollo.io/api/v1/mixed_people/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: apiKey,
+          q_organization_domains: [domain],
+          per_page: 25,
+        }),
+      });
+      if (!res.ok) return keyPeople;
+      const data = await res.json();
+      const apolloPeople = (data.people || []) as Array<{
+        name?: string;
+        title?: string;
+        email?: string;
+        phone_numbers?: Array<{ raw_number?: string; sanitized_number?: string }>;
+        linkedin_url?: string;
+        linkedin?: string;
+      }>;
+      const enriched = keyPeople.map((p) => {
+        const match = apolloPeople.find((a) => {
+          const aName = (a.name || '').toLowerCase();
+          const pName = p.name.toLowerCase();
+          return aName.includes(pName.split(' ')[0]) || pName.includes((a.name || '').split(' ')[0]);
+        });
+        if (!match) return p;
+        const out = { ...p };
+        const linkedin = match.linkedin_url || match.linkedin;
+        if (linkedin && !out.linkedIn) {
+          out.linkedIn = linkedin.startsWith('http') ? linkedin : `https://linkedin.com/in/${linkedin}`;
+        }
+        const phone = match.phone_numbers?.[0]?.sanitized_number || match.phone_numbers?.[0]?.raw_number;
+        if (phone && !out.phone) out.phone = phone;
+        if (match.email && !out.email) out.email = match.email;
+        return out;
+      });
+      return enriched;
+    } catch (e: any) {
+      console.log('[LeadResearcher] Apollo enrichment error:', e?.message);
+      return keyPeople;
+    }
+  }
+
+  /**
+   * Find intent/buying signals - hiring, job postings, careers page
+   */
+  private async findIntentSignals(businessName: string, domain?: string): Promise<{
+    hiring?: boolean;
+    jobPostings?: string[];
+    careersPage?: string;
+  }> {
+    const apifyKey = process.env.APIFY_API_KEY || '';
+    if (!apifyKey) return {};
+    try {
+      const query = `${businessName} careers jobs hiring ${domain || ''}`.trim();
+      const res = await fetch(
+        `https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=${apifyKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            queries: query,
+            maxPagesPerQuery: 1,
+            resultsPerPage: 8,
+          }),
+        }
+      );
+      if (!res.ok) return {};
+      const results = (await res.json()) as Array<{ title?: string; url?: string; description?: string }>;
+      const jobPostings: string[] = [];
+      let careersPage: string | undefined;
+      const careersKeywords = ['careers', 'jobs', 'hiring', 'join us', 'work with us', 'employment'];
+      for (const r of results || []) {
+        const title = (r.title || '').toLowerCase();
+        const desc = (r.description || '').toLowerCase();
+        const url = r.url || '';
+        const text = `${title} ${desc}`;
+        if (careersKeywords.some((k) => text.includes(k))) {
+          if (url && (url.includes('/careers') || url.includes('/jobs') || url.includes('/hiring'))) {
+            careersPage = careersPage || url;
+          }
+          if (title && !jobPostings.includes(r.title!)) jobPostings.push(r.title!);
+        }
+      }
+      return {
+        hiring: jobPostings.length > 0 || !!careersPage,
+        jobPostings: jobPostings.slice(0, 5),
+        careersPage,
+      };
+    } catch (e: any) {
+      console.log('[LeadResearcher] Intent signals error:', e?.message);
+      return {};
+    }
+  }
+
+  /**
+   * Fetch company data from Clearbit (tech stack, funding, phone, social)
+   */
+  private async fetchClearbitCompany(domain: string): Promise<{
+    techStack?: string[];
+    funding?: { amount?: string; stage?: string; investors?: string[] };
+    phone?: string;
+    socialProfiles?: { linkedin?: string; twitter?: string; facebook?: string };
+  }> {
+    const apiKey = await getClearbitApiKey();
+    if (!apiKey) {
+      console.log('[LeadResearcher] Clearbit API key not configured');
+      return {};
+    }
+    try {
+      const res = await fetch(
+        `https://company.clearbit.com/v2/companies/find?domain=${encodeURIComponent(domain)}`,
+        { headers: { Authorization: `Bearer ${apiKey}` } }
+      );
+      if (!res.ok) return {};
+      const data = await res.json();
+      const result: any = {};
+      if (data.tech && Array.isArray(data.tech)) {
+        result.techStack = data.tech.slice(0, 15);
+      }
+      const phone = data.phone || (data.phoneNumbers && Array.isArray(data.phoneNumbers) ? data.phoneNumbers[0] : null);
+      if (phone) result.phone = phone;
+      if (data.metrics?.raised) {
+        result.funding = { amount: String(data.metrics.raised), stage: data.metrics?.stage };
+      }
+      const sp: any = {};
+      if (data.twitter?.handle) sp.twitter = data.twitter.handle.startsWith('http') ? data.twitter.handle : `https://twitter.com/${data.twitter.handle}`;
+      if (data.linkedin?.handle) sp.linkedin = data.linkedin.handle.startsWith('http') ? data.linkedin.handle : `https://linkedin.com/company/${data.linkedin.handle}`;
+      if (data.facebook?.handle) sp.facebook = data.facebook.handle.startsWith('http') ? data.facebook.handle : `https://facebook.com/${data.facebook.handle}`;
+      if (Object.keys(sp).length > 0) result.socialProfiles = sp;
+      if (Object.keys(result).length > 0) {
+        console.log('[LeadResearcher] Clearbit data:', Object.keys(result).join(', '));
+      }
+      return result;
+    } catch (e: any) {
+      console.log('[LeadResearcher] Clearbit error:', e?.message);
+      return {};
+    }
   }
 
   /**
@@ -523,9 +794,44 @@ Limit to 5 people maximum.`;
   }
 
   /**
-   * Find recent company news
+   * Find recent company news - real search via Apify Google News, fallback to LLM
    */
   private async findRecentNews(businessName: string) {
+    const apifyKey = process.env.APIFY_API_KEY || '';
+    if (apifyKey) {
+      try {
+        const res = await fetch(
+          `https://api.apify.com/v2/acts/easyapi~google-news-scraper/run-sync-get-dataset-items?token=${apifyKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: `${businessName} company news`,
+              maxItems: 5
+            })
+          }
+        );
+        if (res.ok) {
+          const items = await res.json();
+          if (Array.isArray(items) && items.length > 0) {
+            const news = items.map((r: any) => ({
+              title: r.title || r.name || '',
+              date: r.publishedDate || r.date || r.publishDate,
+              source: r.source || r.publisher?.name,
+              url: r.url || r.link
+            })).filter((n: any) => n.title);
+            if (news.length > 0) {
+              console.log('[LeadResearcher] Apify Google News:', news.length, 'articles');
+              return news;
+            }
+          }
+        }
+      } catch (e: any) {
+        console.log('[LeadResearcher] Apify news error:', e?.message);
+      }
+    }
+
+    // Fallback: LLM-generated news
     try {
       const prompt = `Find recent news and announcements about ${businessName} from the past 6 months.
 
@@ -543,7 +849,6 @@ Limit to 3-5 most relevant news items.`;
 
       const response = await this.callLLM(prompt);
       const recentNews = this.parseJSONResponse(response);
-
       return Array.isArray(recentNews) ? recentNews : [];
     } catch (error) {
       console.error('Error finding recent news:', error);
@@ -562,6 +867,9 @@ Company: ${data.businessName}
 Company Info: ${JSON.stringify(data.companyInfo)}
 Key People: ${JSON.stringify(data.keyPeople)}
 Recent News: ${JSON.stringify(data.recentNews)}
+${data.clearbitData?.techStack ? `Tech Stack: ${JSON.stringify(data.clearbitData.techStack)}` : ''}
+${data.clearbitData?.funding ? `Funding: ${JSON.stringify(data.clearbitData.funding)}` : ''}
+${data.intentSignals?.hiring ? `Intent Signals: Company is hiring (${JSON.stringify(data.intentSignals)})` : ''}
 
 Please provide:
 1. Estimated annual revenue (e.g., "$1M-$5M", "$10M-$50M", "$100M+")

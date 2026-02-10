@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
       domain,
       firstName: lead.contactPerson?.split(' ')[0],
       lastName: lead.contactPerson?.split(' ').slice(1).join(' '),
+      businessName: lead.businessName || undefined,
     });
 
     return NextResponse.json(result);

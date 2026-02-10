@@ -19,12 +19,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Filter, X, CheckCircle2 } from 'lucide-react';
+import { Users, Filter, X, CheckCircle2, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface AudienceConfig {
-  type: 'SINGLE' | 'FILTERED' | 'MANUAL';
+  type: 'SINGLE' | 'FILTERED' | 'MANUAL' | 'WEBSITE_LEADS';
   customerId?: string;
+  websiteId?: string; // For WEBSITE_LEADS - filter by specific website
   filters?: {
     minLeadScore?: number;
     statuses?: string[];
@@ -32,6 +33,7 @@ export interface AudienceConfig {
     types?: string[];
     hasPhone?: boolean;
     hasEmail?: boolean;
+    sources?: string[]; // e.g. ['website', 'manual', 'referral']
   };
   recipientIds?: string[];
 }
@@ -64,6 +66,14 @@ export function AudiencePanel({
   const [loadingCount, setLoadingCount] = useState(false);
   const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [websites, setWebsites] = useState<{ id: string; name: string }[]>([]);
+  const SOURCE_OPTIONS = [
+    { value: 'website', label: 'Website' },
+    { value: 'Website Form', label: 'Website Form' },
+    { value: 'manual', label: 'Manual' },
+    { value: 'referral', label: 'Referral' },
+    { value: 'messaging', label: 'Messaging' },
+  ];
 
   // Only show if campaign mode
   if (executionMode !== 'CAMPAIGN') {
@@ -75,18 +85,33 @@ export function AudiencePanel({
     fetchAvailableFilters();
   }, [localAudience]);
 
+  useEffect(() => {
+    if (localAudience.type === 'WEBSITE_LEADS') {
+      fetch('/api/websites')
+        .then((r) => r.ok ? r.json() : { websites: [] })
+        .then((d) => setWebsites(d.websites || []))
+        .catch(() => setWebsites([]));
+    }
+  }, [localAudience.type]);
+
   const fetchRecipientCount = async () => {
-    if (localAudience.type !== 'FILTERED') {
+    if (localAudience.type !== 'FILTERED' && localAudience.type !== 'WEBSITE_LEADS') {
       setRecipientCount(null);
       return;
     }
 
     setLoadingCount(true);
     try {
+      const filters = localAudience.type === 'WEBSITE_LEADS'
+        ? { ...localAudience.filters, sources: ['website', 'website_form', 'Website Form'] }
+        : localAudience.filters;
+      const body = localAudience.type === 'WEBSITE_LEADS'
+        ? { filters, websiteId: localAudience.websiteId }
+        : { filters };
       const response = await fetch('/api/workflows/campaigns/preview-audience', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filters: localAudience.filters }),
+        body: JSON.stringify(body),
       });
 
       if (response.ok) {
@@ -142,6 +167,14 @@ export function AudiencePanel({
     handleFilterChange('tags', newTags);
   };
 
+  const toggleSource = (source: string) => {
+    const currentSources = localAudience.filters?.sources || [];
+    const newSources = currentSources.includes(source)
+      ? currentSources.filter((s) => s !== source)
+      : [...currentSources, source];
+    handleFilterChange('sources', newSources);
+  };
+
   return (
     <Card className="border-purple-200 bg-white">
       <CardHeader className="pb-3">
@@ -159,7 +192,7 @@ export function AudiencePanel({
           <Label>Audience Type</Label>
           <Select
             value={localAudience.type}
-            onValueChange={(value: 'SINGLE' | 'FILTERED' | 'MANUAL') => {
+            onValueChange={(value: AudienceConfig['type']) => {
               const newAudience = { ...localAudience, type: value };
               setLocalAudience(newAudience);
               onAudienceChange(newAudience);
@@ -170,6 +203,12 @@ export function AudiencePanel({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="FILTERED">Filtered Leads (Recommended)</SelectItem>
+              <SelectItem value="WEBSITE_LEADS">
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Website Visitors / Form Submissions
+                </div>
+              </SelectItem>
               <SelectItem value="MANUAL">Manual Selection</SelectItem>
               <SelectItem value="SINGLE">Single Recipient</SelectItem>
             </SelectContent>
@@ -223,6 +262,27 @@ export function AudiencePanel({
                 </div>
               </div>
             )}
+
+            {/* Source Filter */}
+            <div className="space-y-2">
+              <Label>Lead Source</Label>
+              <div className="flex flex-wrap gap-2">
+                {SOURCE_OPTIONS.map((opt) => {
+                  const isSelected = localAudience.filters?.sources?.includes(opt.value);
+                  return (
+                    <Badge
+                      key={opt.value}
+                      variant={isSelected ? 'default' : 'outline'}
+                      className="cursor-pointer"
+                      onClick={() => toggleSource(opt.value)}
+                    >
+                      {isSelected && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                      {opt.label}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
 
             {/* Tags Filter */}
             {availableTags.length > 0 && (
@@ -291,6 +351,56 @@ export function AudiencePanel({
                   onClick={fetchRecipientCount}
                   disabled={loadingCount}
                 >
+                  <Filter className="h-4 w-4 mr-2" />
+                  Preview
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Website Visitors / Form Submissions */}
+        {localAudience.type === 'WEBSITE_LEADS' && (
+          <div className="space-y-4 border-t pt-4">
+            <p className="text-sm text-muted-foreground">
+              Target leads created from website form submissions and visitors who submitted contact info.
+            </p>
+            {websites.length > 0 && (
+              <div className="space-y-2">
+                <Label>Specific Website (optional)</Label>
+                <Select
+                  value={localAudience.websiteId || 'all'}
+                  onValueChange={(value) => {
+                    const newAudience = { ...localAudience, websiteId: value === 'all' ? undefined : value };
+                    setLocalAudience(newAudience);
+                    onAudienceChange(newAudience);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All websites</SelectItem>
+                    {websites.map((w) => (
+                      <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Estimated Recipients</Label>
+                  {loadingCount ? (
+                    <p className="text-sm text-muted-foreground">Calculating...</p>
+                  ) : recipientCount !== null ? (
+                    <p className="text-2xl font-bold text-purple-600">{recipientCount.toLocaleString()}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Click to preview</p>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={fetchRecipientCount} disabled={loadingCount}>
                   <Filter className="h-4 w-4 mr-2" />
                   Preview
                 </Button>

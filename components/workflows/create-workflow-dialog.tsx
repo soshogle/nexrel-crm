@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, Wand2, Loader2, AlertCircle, CheckCircle2, Zap, ArrowRight, Globe, DollarSign, Users, ShoppingCart, TrendingUp, Eye, Plus, X, Clock, MessageSquare, Briefcase, UserPlus } from 'lucide-react';
+import { Sparkles, Wand2, Loader2, AlertCircle, CheckCircle2, Zap, ArrowRight, Globe, DollarSign, Users, ShoppingCart, TrendingUp, Eye, Plus, X, Clock, MessageSquare, Briefcase, UserPlus, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 
@@ -170,6 +170,12 @@ export function CreateWorkflowDialog({ open, onOpenChange, onSuccess, template }
   ];
 
   const websiteTriggerTypes = [
+    // Lead & Conversion Triggers (for contacts, leads, pipeline)
+    { value: 'WEBSITE_VISITOR', label: 'Website Visitor Arrives', icon: Globe, category: 'visitor' },
+    { value: 'WEBSITE_FORM_SUBMITTED', label: 'Form Submitted', icon: UserPlus, category: 'lead', requiresConfig: true },
+    { value: 'WEBSITE_BOOKING_CREATED', label: 'Booking Created', icon: Calendar, category: 'booking', requiresConfig: true },
+    { value: 'WEBSITE_CTA_CLICKED', label: 'CTA Button Clicked', icon: Zap, category: 'visitor', requiresConfig: true },
+    { value: 'WEBSITE_PAGE_VIEWED', label: 'Specific Page Viewed', icon: Eye, category: 'visitor', requiresConfig: true },
     // Payment & Customer Triggers
     { value: 'WEBSITE_PAYMENT_RECEIVED', label: 'Payment Received', icon: DollarSign, category: 'payment', requiresConfig: true },
     { value: 'WEBSITE_PAYMENT_AMOUNT_THRESHOLD', label: 'Payment Amount Threshold', icon: DollarSign, category: 'payment', requiresConfig: true },

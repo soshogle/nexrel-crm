@@ -78,6 +78,7 @@ export function LeadsList({ leads }: LeadsListProps) {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [sourceFilter, setSourceFilter] = useState<string>('ALL')
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards')
   const [callDialogOpen, setCallDialogOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
@@ -140,21 +141,30 @@ export function LeadsList({ leads }: LeadsListProps) {
     
     const matchesStatus = statusFilter === 'ALL' || lead.status === statusFilter
 
-    return matchesSearch && matchesStatus
+    const matchesSource = sourceFilter === 'ALL' ||
+      (sourceFilter === 'website' && (lead.source?.toLowerCase().includes('website') || lead.source === 'Website Form')) ||
+      (sourceFilter !== 'website' && lead.source?.toLowerCase().includes(sourceFilter.toLowerCase()))
+
+    return matchesSearch && matchesStatus && matchesSource
   })
 
   // Filter social media leads (from Instagram, Facebook, TikTok)
   const socialMediaLeads = filteredLeads.filter((lead) =>
-    lead.source.toLowerCase().includes('instagram') ||
-    lead.source.toLowerCase().includes('facebook') ||
-    lead.source.toLowerCase().includes('tiktok')
+    lead.source?.toLowerCase().includes('instagram') ||
+    lead.source?.toLowerCase().includes('facebook') ||
+    lead.source?.toLowerCase().includes('tiktok')
+  )
+
+  // Filter website leads (form submissions, etc.)
+  const websiteLeads = filteredLeads.filter((lead) =>
+    lead.source?.toLowerCase().includes('website') || lead.source === 'Website Form'
   )
 
   // Get stats for social media leads
   const socialMediaStats = {
-    instagram: leads.filter(l => l.source.toLowerCase().includes('instagram')).length,
-    facebook: leads.filter(l => l.source.toLowerCase().includes('facebook')).length,
-    tiktok: leads.filter(l => l.source.toLowerCase().includes('tiktok')).length,
+    instagram: leads.filter(l => l.source?.toLowerCase().includes('instagram')).length,
+    facebook: leads.filter(l => l.source?.toLowerCase().includes('facebook')).length,
+    tiktok: leads.filter(l => l.source?.toLowerCase().includes('tiktok')).length,
   }
 
   const getStatusColor = (status: string) => {
@@ -170,7 +180,9 @@ export function LeadsList({ leads }: LeadsListProps) {
   }
 
   const getSourceIcon = (source: string) => {
-    return source === 'google_places' ? Globe : Users
+    if (source === 'google_places') return Globe
+    if (source?.toLowerCase().includes('website') || source === 'Website Form') return Globe
+    return Users
   }
 
   // Helper function to render leads content
@@ -399,6 +411,23 @@ export function LeadsList({ leads }: LeadsListProps) {
                   <SelectItem value="LOST">Lost</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                <SelectTrigger className="w-full md:w-40 bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All Sources</SelectItem>
+                  <SelectItem value="website">
+                    <span className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Website
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
+                  <SelectItem value="referral">Referral</SelectItem>
+                  <SelectItem value="messaging">Messaging</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex rounded-md border">
@@ -447,10 +476,14 @@ export function LeadsList({ leads }: LeadsListProps) {
       </Card>
       {/* Tabbed Content */}
       <Tabs defaultValue="all" className="space-y-6">
-        <TabsList className="grid w-full max-w-[600px] grid-cols-2">
+        <TabsList className="grid w-full max-w-[800px] grid-cols-3">
           <TabsTrigger value="all" className="gap-2">
             <Users className="h-4 w-4" />
             All Leads ({filteredLeads.length})
+          </TabsTrigger>
+          <TabsTrigger value="website" className="gap-2">
+            <Globe className="h-4 w-4" />
+            Website ({websiteLeads.length})
           </TabsTrigger>
           <TabsTrigger value="social" className="gap-2">
             <Sparkles className="h-4 w-4" />
@@ -461,6 +494,11 @@ export function LeadsList({ leads }: LeadsListProps) {
         {/* All Leads Tab */}
         <TabsContent value="all" className="space-y-6">
           {renderLeadsContent(filteredLeads, 'No leads yet')}
+        </TabsContent>
+
+        {/* Website Leads Tab */}
+        <TabsContent value="website" className="space-y-6">
+          {renderLeadsContent(websiteLeads, 'No website leads yet. Add a form to your website to capture leads.')}
         </TabsContent>
 
         {/* Social Media Leads Tab */}

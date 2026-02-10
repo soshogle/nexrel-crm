@@ -1711,6 +1711,41 @@ export default function AIEmployeesPage() {
                   </div>
                 )}
 
+                {/* Tech Stack */}
+                {selectedJob.output.enrichedData.techStack && selectedJob.output.enrichedData.techStack.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-primary" />
+                      Tech Stack
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedJob.output.enrichedData.techStack.map((tech: string, idx: number) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {tech}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Funding */}
+                {selectedJob.output.enrichedData.funding && (selectedJob.output.enrichedData.funding.amount || selectedJob.output.enrichedData.funding.stage) && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Briefcase className="h-5 w-5 text-primary" />
+                      Funding
+                    </h3>
+                    <div className="p-3 bg-muted rounded-lg">
+                      {selectedJob.output.enrichedData.funding.amount && (
+                        <p><span className="text-muted-foreground">Amount:</span> {selectedJob.output.enrichedData.funding.amount}</p>
+                      )}
+                      {selectedJob.output.enrichedData.funding.stage && (
+                        <p><span className="text-muted-foreground">Stage:</span> {selectedJob.output.enrichedData.funding.stage}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Lead Score */}
                 {selectedJob.output.enrichedData.leadScore !== undefined && (
                   <div className="space-y-3">
@@ -1771,9 +1806,22 @@ export default function AIEmployeesPage() {
                               </a>
                             </div>
                           )}
+                          {person.phone && (
+                            <div className="mt-1 flex items-center gap-2 text-sm">
+                              <Phone className="h-3 w-3 text-muted-foreground" />
+                              <a href={`tel:${person.phone}`} className="text-primary hover:underline">
+                                {person.phone}
+                              </a>
+                            </div>
+                          )}
+                          {person.emailAlternatives && person.emailAlternatives.length > 0 && (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              Alt emails: {person.emailAlternatives.slice(0, 3).join(', ')}
+                            </div>
+                          )}
                           {person.source && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              {person.source.includes('Hunter') ? '✅' : '⚠️'} {person.source}
+                              {person.source.includes('Hunter') || person.source.includes('Apollo') ? '✅' : '⚠️'} {person.source}
                             </p>
                           )}
                         </div>
@@ -1827,6 +1875,32 @@ export default function AIEmployeesPage() {
                 )}
 
                 {/* Recent News */}
+                {selectedJob.output.enrichedData.intentSignals && (selectedJob.output.enrichedData.intentSignals.hiring || selectedJob.output.enrichedData.intentSignals.jobPostings?.length) && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Target className="h-5 w-5 text-primary" />
+                      Intent Signals
+                    </h3>
+                    <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                      {selectedJob.output.enrichedData.intentSignals.hiring && (
+                        <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Company is hiring – potential buying signal</p>
+                      )}
+                      {selectedJob.output.enrichedData.intentSignals.careersPage && (
+                        <a href={selectedJob.output.enrichedData.intentSignals.careersPage} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline block mt-1">
+                          Careers page
+                        </a>
+                      )}
+                      {selectedJob.output.enrichedData.intentSignals.jobPostings && selectedJob.output.enrichedData.intentSignals.jobPostings.length > 0 && (
+                        <ul className="text-sm text-muted-foreground mt-2 list-disc list-inside">
+                          {selectedJob.output.enrichedData.intentSignals.jobPostings.slice(0, 5).map((j: string, i: number) => (
+                            <li key={i}>{j}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {selectedJob.output.enrichedData.recentNews && selectedJob.output.enrichedData.recentNews.length > 0 && (
                   <div className="space-y-3">
                     <h3 className="font-semibold flex items-center gap-2">

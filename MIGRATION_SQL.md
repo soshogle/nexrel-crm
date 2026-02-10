@@ -190,6 +190,21 @@ ON CONFLICT DO NOTHING;
    npx prisma studio
    ```
 
+## What's Missing and Could Be Added
+
+Optional enhancements to consider for future migrations:
+
+- **Custom domain support** – Add `customDomain`, `domainVerifiedAt` columns to `Website` for user-owned domains
+- **Website slug/URL** – Add `slug` column for friendly URLs (e.g. `my-site.nexrel.com`)
+- **Form submissions table** – Separate `WebsiteFormSubmission` table for structured form data (vs. `formData` in `WebsiteVisitor`)
+- **Website analytics events** – Add `WebsiteAnalyticsEvent` table for page views, clicks, conversions
+- **Website version history** – Store snapshots of `structure`/`seoData` for rollback
+- **Theme/design presets** – Add `themeId` or `designConfig` to `Website` for template variants
+- **Multi-user permissions** – Add `WebsiteCollaborator` table for shared editing
+- **Media/assets library** – Add `WebsiteAsset` table for uploaded images, files
+- **A/B testing** – Add `WebsiteExperiment` table for variant testing
+- **Content blocks** – Add `WebsiteContentBlock` for reusable components across templates
+
 ## Troubleshooting SSL Issue
 
 The SSL certificate error is a known issue with Prisma and Neon. Possible solutions:

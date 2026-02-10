@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { filters } = body;
+    const { filters, websiteId } = body;
 
     if (!filters) {
       return NextResponse.json({ error: 'Filters are required' }, { status: 400 });
@@ -41,6 +41,14 @@ export async function POST(request: NextRequest) {
       where.status = { in: filters.statuses };
     }
 
+    // Source filter (e.g. website, website_form for leads from website)
+    if (filters.sources?.length > 0) {
+      where.source = { in: filters.sources };
+    }
+
+    // Website ID filter (when Lead has websiteId - check schema) - Lead may not have websiteId; if it does we use it
+    // For now we filter by source; websiteId on Lead would need schema addition
+
     // Tags filter - Prisma Json doesn't support hasSome; use raw query when tags specified
     if (filters.tags?.length > 0) {
       const tagConditions = Prisma.join(
@@ -53,6 +61,7 @@ export async function POST(request: NextRequest) {
       ];
       if (filters.minLeadScore != null) conditions.push(Prisma.sql`"leadScore" >= ${filters.minLeadScore}`);
       if (filters.statuses?.length) conditions.push(Prisma.sql`status IN (${Prisma.join(filters.statuses.map((s: string) => Prisma.sql`${s}`), ', ')})`);
+      if (filters.sources?.length) conditions.push(Prisma.sql`source IN (${Prisma.join(filters.sources.map((s: string) => Prisma.sql`${s}`), ', ')})`);
       if (filters.hasPhone) conditions.push(Prisma.sql`phone IS NOT NULL`);
       if (filters.hasEmail) conditions.push(Prisma.sql`email IS NOT NULL`);
       const [row] = await prisma.$queryRaw<[{ count: number }]>`
