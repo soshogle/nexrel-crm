@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, CheckCircle, XCircle, Clock, Phone, Mail, User2 } from 'lucide-react'
+import { Plus, CheckCircle, XCircle, Clock, Phone, Mail, User2, Link2, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { CreateReferralDialog } from './create-referral-dialog'
 
@@ -122,6 +122,14 @@ export function ReferralsList() {
     }
   }
 
+  const copyReferralLink = (referrerLeadId: string) => {
+    const query = `ref=${encodeURIComponent(referrerLeadId)}`
+    navigator.clipboard.writeText(query).then(
+      () => toast.success('Referral param copied. Add ?' + query + ' to your website URL.'),
+      () => toast.error('Failed to copy')
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -178,6 +186,16 @@ export function ReferralsList() {
                     <div className="flex items-center gap-2">
                       <User2 className="h-4 w-4" />
                       <span>Referred by: <strong className="text-gray-200">{referral.referrer.businessName}</strong></span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => copyReferralLink(referral.referrer.id)}
+                      >
+                        <Link2 className="h-3 w-3" />
+                        <Copy className="h-3 w-3" />
+                        Copy referral link
+                      </Button>
                     </div>
                     {referral.referredEmail && (
                       <div className="flex items-center gap-2">

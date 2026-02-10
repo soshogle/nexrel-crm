@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { ReferralStatus } from '@prisma/client'
+import { processReferralTriggers } from '@/lib/referral-triggers'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs';
@@ -101,6 +101,13 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Fire referral triggers (campaigns + workflow enrollment for referrer lead)
+    try {
+      await processReferralTriggers(session.user.id, referrerId, 'REFERRAL_CREATED')
+    } catch (triggerError) {
+      console.error('Referral trigger processing failed:', triggerError)
+    }
 
     return NextResponse.json({ referral }, { status: 201 })
   } catch (error) {

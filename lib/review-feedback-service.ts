@@ -10,6 +10,7 @@
 
 import { prisma } from './db';
 import { elevenLabsService } from './elevenlabs';
+import { processFeedbackPositiveTriggers } from './feedback-positive-triggers';
 
 export interface FeedbackRequest {
   leadId: string;
@@ -221,6 +222,15 @@ export class ReviewFeedbackService {
       if (response.sentiment === 'POSITIVE' && response.rating && response.rating >= 4) {
         // Encourage public review
         await this.requestPublicReview(feedback.lead, feedback.userId, response);
+        // Fire FEEDBACK_POSITIVE triggers for referral-ask workflows/campaigns
+        try {
+          await processFeedbackPositiveTriggers(feedback.userId, feedback.leadId, {
+            rating: response.rating,
+            feedbackId,
+          });
+        } catch (triggerError) {
+          console.error('Error processing feedback-positive triggers:', triggerError);
+        }
       } else if (response.sentiment === 'NEGATIVE' || (response.rating && response.rating <= 2)) {
         // Offer resolution
         await this.offerResolution(feedback.lead, feedback.userId, response);
@@ -245,6 +255,17 @@ export class ReviewFeedbackService {
     feedback: FeedbackResponse
   ): Promise<void> {
     try {
+      // Get review URL from user's review campaign (or any campaign with reviewUrl)
+      const campaignWithUrl = await prisma.campaign.findFirst({
+        where: {
+          userId,
+          type: 'REVIEW_REQUEST',
+          reviewUrl: { not: null },
+        },
+        select: { reviewUrl: true },
+      });
+      const reviewUrl = campaignWithUrl?.reviewUrl?.trim() || '';
+
       // Find or create a reviews campaign
       let campaign = await prisma.campaign.findFirst({
         where: {
@@ -265,8 +286,8 @@ export class ReviewFeedbackService {
         });
       }
 
-      // Send review request message
-      const reviewRequestMessage = `Thank you for the ${feedback.rating}-star feedback! We'd love it if you could share your experience publicly. Would you mind leaving us a review? [Review Link]`;
+      const reviewLinkText = reviewUrl ? ` ${reviewUrl}` : ' (add your Google/Yelp review link in Campaign settings)';
+      const reviewRequestMessage = `Thank you for the ${feedback.rating}-star feedback! We'd love it if you could share your experience publicly. Would you mind leaving us a review?${reviewLinkText}`;
 
       await prisma.message.create({
         data: {

@@ -22,7 +22,7 @@ import { Clock, Plus, X, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface EnrollmentTrigger {
-  type: 'LEAD_CREATED' | 'STATUS_CHANGED' | 'TAG_ADDED' | 'SCORE_REACHED' | 'MANUAL';
+  type: 'LEAD_CREATED' | 'STATUS_CHANGED' | 'TAG_ADDED' | 'SCORE_REACHED' | 'MANUAL' | 'REFERRAL_CREATED' | 'REFERRAL_CONVERTED' | 'SERVICE_COMPLETED' | 'FEEDBACK_POSITIVE';
   conditions?: {
     status?: string[];
     tags?: string[];
@@ -175,6 +175,10 @@ export function EnrollmentPanel({
                             <SelectItem value="STATUS_CHANGED">When Status Changes</SelectItem>
                             <SelectItem value="TAG_ADDED">When Tag is Added</SelectItem>
                             <SelectItem value="SCORE_REACHED">When Score Reaches Threshold</SelectItem>
+                            <SelectItem value="REFERRAL_CREATED">When a Referral is Created</SelectItem>
+                            <SelectItem value="REFERRAL_CONVERTED">When a Referral is Converted to Lead</SelectItem>
+                            <SelectItem value="SERVICE_COMPLETED">When Service/Appointment is Completed</SelectItem>
+                            <SelectItem value="FEEDBACK_POSITIVE">When Feedback is Positive (Rating ≥ 4)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

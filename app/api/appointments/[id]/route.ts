@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { reviewFeedbackService } from '@/lib/review-feedback-service'
+import { processServiceCompletedTriggers } from '@/lib/service-completed-triggers'
 
 // GET /api/appointments/[id] - Get appointment details
 
@@ -141,7 +142,7 @@ export async function PATCH(
       },
     })
 
-    // Trigger feedback collection if appointment was just completed
+    // Trigger feedback collection and workflow/campaign enrollment if appointment was just completed
     if (status === 'COMPLETED' && existingAppointment.status !== 'COMPLETED' && appointment.leadId) {
       try {
         await reviewFeedbackService.triggerFeedbackCollection({
@@ -152,7 +153,14 @@ export async function PATCH(
         });
       } catch (feedbackError) {
         console.error('Error triggering feedback collection:', feedbackError);
-        // Don't fail the appointment update if feedback fails
+      }
+      try {
+        await processServiceCompletedTriggers(session.user.id, appointment.leadId, {
+          appointmentId: appointment.id,
+          serviceType: 'appointment',
+        });
+      } catch (triggerError) {
+        console.error('Error processing service-completed triggers:', triggerError);
       }
     }
 

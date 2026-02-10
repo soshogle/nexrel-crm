@@ -465,6 +465,11 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
                           <SelectItem value="CREATE_LEAD_FROM_MESSAGE">➕ Create Lead from Message</SelectItem>
                           <SelectItem value="CREATE_DEAL_FROM_LEAD">💼 Create Deal from Lead</SelectItem>
                           <SelectItem value="AUTO_REPLY">⚡ Auto Reply</SelectItem>
+                          <SelectItem value="SEND_REFERRAL_LINK">🔗 Send Referral Link</SelectItem>
+                          <SelectItem value="CREATE_REFERRAL">➕ Create Referral</SelectItem>
+                          <SelectItem value="NOTIFY_REFERRAL_CONVERTED">🔔 Notify on Referral Converted</SelectItem>
+                          <SelectItem value="REQUEST_FEEDBACK_VOICE">📞 Request Feedback (Voice AI)</SelectItem>
+                          <SelectItem value="SEND_REVIEW_LINK">⭐ Send Review Link (Google/Yelp)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

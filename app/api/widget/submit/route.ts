@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { processReferralTriggers } from '@/lib/referral-triggers';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract form data
+    // Extract form data (ref = referrer lead id from ?ref= on the page)
     const {
       businessName,
       contactPerson,
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
       address,
       city,
       message,
+      ref: referralRef,
     } = formData;
 
     if (!businessName && !contactPerson && !email) {
@@ -49,7 +51,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create lead in database
+    const referrerLeadId =
+      typeof referralRef === 'string' && referralRef.trim()
+        ? referralRef.trim()
+        : null;
+
+    // If ref provided, resolve referrer and create referral + lead with source referral
+    let referrerLead: { id: string } | null = null;
+    if (referrerLeadId) {
+      referrerLead = await prisma.lead.findFirst({
+        where: { id: referrerLeadId, userId },
+        select: { id: true },
+      });
+    }
+
     const lead = await prisma.lead.create({
       data: {
         userId,
@@ -60,7 +75,7 @@ export async function POST(request: NextRequest) {
         website: website || null,
         address: address || null,
         city: city || null,
-        source: 'Embedded Widget',
+        source: referrerLead ? 'referral' : 'Embedded Widget',
         status: 'NEW',
         notes: message || null,
         enrichedData: {
@@ -68,9 +83,30 @@ export async function POST(request: NextRequest) {
           submittedAt: new Date().toISOString(),
           userAgent: request.headers.get('user-agent') || 'Unknown',
           referer: request.headers.get('referer') || 'Unknown',
+          ...(referrerLeadId ? { referralRef: referrerLeadId } : {}),
         },
       },
     });
+
+    if (referrerLead) {
+      const referral = await prisma.referral.create({
+        data: {
+          userId,
+          referrerId: referrerLead.id,
+          referredName: contactPerson || businessName || 'Unknown',
+          referredEmail: email || null,
+          referredPhone: phone || null,
+          status: 'CONVERTED',
+          convertedLeadId: lead.id,
+        },
+      });
+      try {
+        await processReferralTriggers(userId, referrerLead.id, 'REFERRAL_CREATED');
+        await processReferralTriggers(userId, lead.id, 'REFERRAL_CONVERTED');
+      } catch (triggerError) {
+        console.error('Referral trigger processing failed:', triggerError);
+      }
+    }
 
     console.log(`✅ New lead created from widget: ${lead.id}`);
 
