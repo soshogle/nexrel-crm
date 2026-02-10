@@ -393,13 +393,26 @@ export function ElevenLabsAgent({
   };
 
   // Auto-start conversation if autoStart prop is true
+  // But only after user interaction (browsers require user gesture for getUserMedia)
   useEffect(() => {
     if (autoStart && agentId && !isConnected && !isLoading && status === 'idle') {
-      // Use setTimeout to ensure component is fully mounted
-      const timer = setTimeout(() => {
+      // Create a one-time click handler to start conversation
+      // This ensures getUserMedia is called after user interaction
+      const handleAutoStart = () => {
         startConversation();
-      }, 100);
-      return () => clearTimeout(timer);
+        // Remove listener after first use
+        document.removeEventListener('click', handleAutoStart);
+        document.removeEventListener('touchstart', handleAutoStart);
+      };
+      
+      // Listen for any user interaction
+      document.addEventListener('click', handleAutoStart, { once: true });
+      document.addEventListener('touchstart', handleAutoStart, { once: true });
+      
+      return () => {
+        document.removeEventListener('click', handleAutoStart);
+        document.removeEventListener('touchstart', handleAutoStart);
+      };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart, agentId, isConnected, isLoading, status]);
@@ -417,14 +430,15 @@ export function ElevenLabsAgent({
           <div className="space-y-2">
             <h3 className="text-2xl font-semibold">Talk to Our AI Assistant</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Click the button below to start a live conversation with our AI-powered assistant.
-              Ask anything about Soshogle&apos;s services!
+              {autoStart 
+                ? "Click anywhere to start a live conversation with our AI-powered assistant. Microphone access will be requested."
+                : "Click the button below to start a live conversation with our AI-powered assistant. Ask anything about Soshogle's services!"}
             </p>
           </div>
 
           <Button size="lg" onClick={startConversation} className="bg-primary hover:bg-primary/90 gap-2">
             <Mic className="w-5 h-5" />
-            Start Conversation
+            {autoStart ? "Start Conversation" : "Start Conversation"}
           </Button>
 
           {error && (
