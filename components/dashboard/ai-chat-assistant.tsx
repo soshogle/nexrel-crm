@@ -20,9 +20,12 @@ import {
   Paperclip,
   FileSpreadsheet,
   XCircle,
-  ArrowRight
+  ArrowRight,
+  Mic,
+  BarChart3
 } from "lucide-react";
 import { toast } from "sonner";
+import { ElevenLabsAgent } from "@/components/landing/soshogle/elevenlabs-agent";
 
 interface Message {
   role: "user" | "assistant";
@@ -43,15 +46,40 @@ export function AIChatAssistant() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [crmAgentId, setCrmAgentId] = useState<string | null>(null);
+  const [voiceLoading, setVoiceLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch CRM voice agent ID for voice mode
+  useEffect(() => {
+    const fetchAgent = async () => {
+      try {
+        setVoiceLoading(true);
+        const response = await fetch('/api/crm-voice-agent');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.agentId) {
+            setCrmAgentId(data.agentId);
+            console.log('✅ [Chat Assistant] CRM voice agent loaded:', data.agentId);
+          }
+        }
+      } catch (error) {
+        console.error('❌ [Chat Assistant] Failed to load CRM voice agent:', error);
+      } finally {
+        setVoiceLoading(false);
+      }
+    };
+    fetchAgent();
+  }, []);
 
   // Add welcome message on mount (client-side only)
   useEffect(() => {
     setMessages([{
       role: "assistant",
-      content: "👋 Hi! I'm Soshogle Agent, your AI assistant. I'm here to help you with anything related to your CRM. Ask me about leads, contacts, campaigns, workflows, or any other feature!",
+      content: "👋 Hi! I'm Soshogle Agent, your AI assistant. I'm here to help you with anything related to your CRM. Ask me about leads, contacts, campaigns, workflows, or any other feature! You can type or use voice mode.",
       timestamp: new Date(),
     }]);
   }, []);
@@ -224,11 +252,36 @@ export function AIChatAssistant() {
 
         setMessages((prev) => [...prev, assistantMessage]);
 
+        // Handle visualization trigger
+        if (data.triggerVisualization && data.statistics) {
+          console.log('📊 [Chat Assistant] Triggering visualization with statistics:', data.statistics);
+          // Dispatch event for AI Brain page to receive
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ai-brain-visualization-update', {
+              detail: {
+                statistics: data.statistics,
+                show: true,
+              },
+            }));
+          }
+          // Notify user
+          toast.success("Visualizations ready on AI Brain page!", {
+            icon: <BarChart3 className="h-4 w-4" />,
+            duration: 3000,
+          });
+        }
+
         // Handle navigation if present
         if (data.navigateTo) {
-          toast.success("Taking you to the page...", {
-            icon: <ArrowRight className="h-4 w-4" />,
-          });
+          if (data.triggerVisualization) {
+            toast.success("Taking you to AI Brain page to view visualizations...", {
+              icon: <ArrowRight className="h-4 w-4" />,
+            });
+          } else {
+            toast.success("Taking you to the page...", {
+              icon: <ArrowRight className="h-4 w-4" />,
+            });
+          }
           // Delay navigation slightly to allow user to see the message
           setTimeout(() => {
             router.push(data.navigateTo);
@@ -421,38 +474,141 @@ export function AIChatAssistant() {
                   variant="outline"
                   size="icon"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
+                  disabled={isLoading || voiceMode}
                   title="Upload CSV file"
                 >
                   <Paperclip className="h-4 w-4" />
                 </Button>
 
-                {/* Text Input */}
-                <Input
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={selectedFile ? "Add a message (optional)..." : "Ask me anything about your CRM..."}
-                  disabled={isLoading}
-                  className="flex-1"
-                />
-
-                {/* Send Button */}
+                {/* Voice Mode Toggle */}
                 <Button
-                  data-ai-send-button
-                  onClick={handleSend}
-                  disabled={isLoading || (!input.trim() && !selectedFile)}
+                  type="button"
+                  variant={voiceMode ? "default" : "outline"}
                   size="icon"
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  onClick={() => {
+                    if (!voiceMode && crmAgentId) {
+                      setVoiceMode(true);
+                    } else {
+                      setVoiceMode(false);
+                    }
+                  }}
+                  disabled={isLoading || voiceLoading || !crmAgentId}
+                  title={voiceMode ? "Exit voice mode" : "Enable voice mode"}
+                  className={voiceMode ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" : ""}
                 >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
+                  <Mic className={`h-4 w-4 ${voiceMode ? 'text-white' : ''}`} />
                 </Button>
+
+                {/* Text Input - Hidden when voice mode is active */}
+                {!voiceMode && (
+                  <Input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder={selectedFile ? "Add a message (optional)..." : "Ask me anything about your CRM..."}
+                    disabled={isLoading}
+                    className="flex-1"
+                  />
+                )}
+
+                {/* Voice Agent Display - Show when voice mode is active */}
+                {voiceMode && crmAgentId && (
+                  <div className="flex-1 flex items-center justify-center p-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2 text-sm text-blue-700">
+                      <Mic className="h-4 w-4 animate-pulse" />
+                      <span>Voice mode active - Speak now</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Send Button - Hidden when voice mode is active */}
+                {!voiceMode && (
+                  <Button
+                    data-ai-send-button
+                    onClick={handleSend}
+                    disabled={isLoading || (!input.trim() && !selectedFile)}
+                    size="icon"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
               </div>
+
+              {/* Voice Agent Component - Render when voice mode is active */}
+              {voiceMode && crmAgentId && !isMinimized && (
+                <div className="mt-2 p-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                  <ElevenLabsAgent
+                    agentId={crmAgentId}
+                    autoStart={false}
+                    onAudioLevel={() => {}}
+                    onAgentSpeakingChange={(speaking) => {
+                      // Update UI based on speaking state
+                    }}
+                    onMessage={(message) => {
+                      // Add agent message to chat
+                      if (message.role === 'agent' && message.content) {
+                        const agentMessage: Message = {
+                          role: "assistant",
+                          content: message.content,
+                          timestamp: new Date(),
+                        };
+                        setMessages((prev) => [...prev, agentMessage]);
+                        
+                        // Check if message contains statistics keywords and trigger visualization
+                        const content = message.content.toLowerCase();
+                        const statsKeywords = ['statistic', 'statistics', 'stats', 'revenue', 'leads', 'deals', 'data'];
+                        if (statsKeywords.some(keyword => content.includes(keyword))) {
+                          // Trigger statistics fetch and visualization
+                          fetch('/api/crm-voice-agent/functions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              function_name: 'get_statistics',
+                              parameters: {},
+                            }),
+                          }).then(async (res) => {
+                            if (res.ok) {
+                              const data = await res.json();
+                              if (data.success && data.statistics) {
+                                // Dispatch visualization event
+                                window.dispatchEvent(new CustomEvent('ai-brain-visualization-update', {
+                                  detail: { statistics: data.statistics, show: true },
+                                }));
+                                // Auto-navigate
+                                toast.success("Visualizations ready! Taking you to AI Brain page...", {
+                                  icon: <BarChart3 className="h-4 w-4" />,
+                                });
+                                setTimeout(() => {
+                                  router.push('/dashboard/business-ai?mode=voice');
+                                }, 1500);
+                              }
+                            }
+                          }).catch(console.error);
+                        }
+                      }
+                    }}
+                    onConversationEnd={(transcript) => {
+                      // Add user messages from transcript to chat
+                      transcript.forEach((msg: any) => {
+                        if (msg.role === 'user') {
+                          const userMessage: Message = {
+                            role: "user",
+                            content: msg.content,
+                            timestamp: new Date(msg.timestamp),
+                          };
+                          setMessages((prev) => [...prev, userMessage]);
+                        }
+                      });
+                    }}
+                  />
+                </div>
+              )}
               <p className="text-[10px] text-muted-foreground mt-2 text-center">
                 Press Enter to send • Upload CSV for bulk imports • AI-powered assistance
               </p>

@@ -22,13 +22,18 @@ export function AIBrainVoiceAgentInline() {
 
   const handleAgentSpeakingChange = (speaking: boolean) => {
     console.log('🎤 [AI Brain Voice Inline] Agent speaking change:', speaking);
-    setConversationActive(speaking);
-    // Always persist the active state when speaking starts
-    if (speaking && typeof window !== 'undefined') {
-      localStorage.setItem('ai-brain-voice-agent-state', JSON.stringify({
-        conversationActive: true,
-      }));
+    // When speaking starts, mark as active
+    // When speaking stops, don't immediately mark as inactive - connection might just be paused
+    if (speaking) {
+      setConversationActive(true);
+      // Always persist the active state when speaking starts
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ai-brain-voice-agent-state', JSON.stringify({
+          conversationActive: true,
+        }));
+      }
     }
+    // Don't set to false when speaking stops - connection might still be active
   };
 
   const handleConversationEnd = (transcript: any[], audioBlob?: Blob) => {
