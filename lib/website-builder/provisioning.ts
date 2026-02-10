@@ -14,29 +14,61 @@ export class ResourceProvisioningService {
     websiteName: string,
     userId: string
   ): Promise<ProvisioningResult> {
+    // Make provisioning resilient - continue even if some services fail
+    let githubRepoUrl: string | null = null;
+    let neonDatabaseUrl: string | null = null;
+    let vercelProjectId: string | null = null;
+    let vercelDeploymentUrl: string | null = null;
+    
     try {
-      // Create GitHub repository
-      const githubRepoUrl = await this.createGitHubRepo(websiteId, websiteName, userId);
+      // Create GitHub repository (optional - continue if fails)
+      try {
+        githubRepoUrl = await this.createGitHubRepo(websiteId, websiteName, userId);
+      } catch (error: any) {
+        console.warn('GitHub repo creation failed (continuing):', error.message);
+      }
       
-      // Create Neon database
-      const neonDatabaseUrl = await this.createNeonDatabase(websiteId, websiteName, userId);
+      // Create Neon database (optional - continue if fails)
+      try {
+        neonDatabaseUrl = await this.createNeonDatabase(websiteId, websiteName, userId);
+      } catch (error: any) {
+        console.warn('Neon database creation failed (continuing):', error.message);
+      }
       
-      // Create Vercel project
-      const { vercelProjectId, vercelDeploymentUrl } = await this.createVercelProject(
-        websiteId,
-        websiteName,
-        githubRepoUrl,
-        userId
-      );
+      // Create Vercel project (optional - continue if fails, but needs GitHub URL)
+      if (githubRepoUrl) {
+        try {
+          const vercelResult = await this.createVercelProject(
+            websiteId,
+            websiteName,
+            githubRepoUrl,
+            userId
+          );
+          vercelProjectId = vercelResult.vercelProjectId;
+          vercelDeploymentUrl = vercelResult.vercelDeploymentUrl || null;
+        } catch (error: any) {
+          console.warn('Vercel project creation failed (continuing):', error.message);
+        }
+      } else {
+        console.warn('Skipping Vercel project creation - GitHub repo not available');
+      }
       
+      // Return results even if some are null - website can still be created
       return {
-        githubRepoUrl,
-        neonDatabaseUrl,
-        vercelProjectId,
-        vercelDeploymentUrl,
+        githubRepoUrl: githubRepoUrl || undefined,
+        neonDatabaseUrl: neonDatabaseUrl || undefined,
+        vercelProjectId: vercelProjectId || undefined,
+        vercelDeploymentUrl: vercelDeploymentUrl || undefined,
       };
     } catch (error: any) {
-      throw new Error(`Failed to provision resources: ${error.message}`);
+      // If there's a critical error, still return what we have
+      console.error('Provisioning encountered errors:', error);
+      return {
+        githubRepoUrl: githubRepoUrl || undefined,
+        neonDatabaseUrl: neonDatabaseUrl || undefined,
+        vercelProjectId: vercelProjectId || undefined,
+        vercelDeploymentUrl: vercelDeploymentUrl || undefined,
+      };
     }
   }
 

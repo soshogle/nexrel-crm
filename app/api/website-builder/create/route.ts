@@ -11,6 +11,8 @@ import { websiteScraper } from '@/lib/website-builder/scraper';
 import { websiteBuilder } from '@/lib/website-builder/builder';
 import { resourceProvisioning } from '@/lib/website-builder/provisioning';
 import { websiteVoiceAI } from '@/lib/website-builder/voice-ai';
+import { seoAutomation } from '@/lib/website-builder/seo-automation';
+import { googleSearchConsole } from '@/lib/website-builder/google-search-console';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,6 +30,11 @@ export async function POST(request: NextRequest) {
       templateId, // Optional: specific template ID to use
       questionnaireAnswers, // Required if type is template
       enableVoiceAI = false,
+      // Google Search Console credentials (optional)
+      googleSearchConsoleAccessToken,
+      googleSearchConsoleRefreshToken,
+      googleSearchConsoleTokenExpiry,
+      googleSearchConsoleSiteUrl,
     } = body;
 
     if (!name || !type) {
@@ -75,6 +82,16 @@ export async function POST(request: NextRequest) {
         seoData: {},
         questionnaireAnswers: questionnaireAnswers || null,
         voiceAIEnabled: enableVoiceAI,
+        // Google Search Console credentials (if provided)
+        ...(googleSearchConsoleAccessToken && {
+          googleSearchConsoleAccessToken,
+          googleSearchConsoleRefreshToken: googleSearchConsoleRefreshToken || null,
+          googleSearchConsoleTokenExpiry: googleSearchConsoleTokenExpiry
+            ? new Date(googleSearchConsoleTokenExpiry)
+            : null,
+          googleSearchConsoleSiteUrl: googleSearchConsoleSiteUrl || null,
+          googleSearchConsoleVerified: false, // Will be verified during build
+        }),
       },
     });
 
@@ -215,15 +232,157 @@ async function processWebsiteBuild(
     // Update progress
     await prisma.websiteBuild.update({
       where: { id: buildId },
-      data: { progress: 90 },
+      data: { progress: 85 },
     });
 
-    // Update website with final data
+    // Get website to access Google credentials
+    const website = await prisma.website.findUnique({ where: { id: websiteId } });
+    if (!website) {
+      throw new Error('Website not found');
+    }
+
+    // SEO Automation (if Google credentials are provided)
+    let seoFiles: { sitemap?: string; robots?: string; structuredData?: any } = {};
+    try {
+      const questionnaireAnswers = config.questionnaireAnswers || {};
+      const deploymentUrl = provisioningResult.vercelDeploymentUrl || `https://${website.name.toLowerCase().replace(/\s+/g, '-')}.com`;
+      
+      const seoConfig = {
+        websiteUrl: deploymentUrl,
+        businessName: questionnaireAnswers.businessName || website.name,
+        businessDescription: questionnaireAnswers.businessDescription || '',
+        contactEmail: questionnaireAnswers.contactInfo?.email,
+        contactPhone: questionnaireAnswers.contactInfo?.phone,
+        address: questionnaireAnswers.contactInfo?.address ? {
+          street: questionnaireAnswers.contactInfo.address,
+        } : undefined,
+      };
+
+      // Generate sitemap.xml
+      const sitemapXml = seoAutomation.generateSitemap(structure, seoConfig);
+      seoFiles.sitemap = sitemapXml;
+
+      // Generate robots.txt
+      const robotsTxt = seoAutomation.generateRobotsTxt(seoConfig);
+      seoFiles.robots = robotsTxt;
+
+      // Generate structured data for homepage
+      const homepage = structure.pages?.find((p: any) => p.path === '/' || p.id === 'home');
+      if (homepage) {
+        const structuredData = seoAutomation.generatePageStructuredData(homepage, seoConfig);
+        seoFiles.structuredData = structuredData;
+      }
+
+      // If Google Search Console credentials are available, submit sitemap and request indexing
+      if (
+        website.googleSearchConsoleAccessToken &&
+        website.googleSearchConsoleRefreshToken &&
+        website.vercelDeploymentUrl
+      ) {
+        try {
+          const googleClientId = process.env.GOOGLE_CLIENT_ID;
+          const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+          const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI || `${process.env.NEXTAUTH_URL}/api/auth/callback/google`;
+
+          if (googleClientId && googleClientSecret) {
+            // Refresh token if needed
+            let accessToken = website.googleSearchConsoleAccessToken;
+            let refreshToken = website.googleSearchConsoleRefreshToken;
+            
+            if (website.googleSearchConsoleTokenExpiry && new Date(website.googleSearchConsoleTokenExpiry) < new Date()) {
+              const refreshed = await googleSearchConsole.refreshAccessToken({
+                accessToken,
+                refreshToken,
+                clientId: googleClientId,
+                clientSecret: googleClientSecret,
+                redirectUri: googleRedirectUri,
+              });
+              accessToken = refreshed.accessToken;
+              if (refreshed.refreshToken) {
+                refreshToken = refreshed.refreshToken;
+              }
+            }
+
+            const searchConsoleConfig = {
+              accessToken,
+              refreshToken,
+              clientId: googleClientId,
+              clientSecret: googleClientSecret,
+              redirectUri: googleRedirectUri,
+            };
+
+            // Submit sitemap
+            const sitemapUrl = `${deploymentUrl}/sitemap.xml`;
+            const sitemapResult = await googleSearchConsole.submitSitemap(
+              deploymentUrl,
+              sitemapUrl,
+              searchConsoleConfig
+            );
+
+            if (sitemapResult.success) {
+              console.log(`✅ Sitemap submitted to Google Search Console: ${sitemapUrl}`);
+            } else {
+              console.warn(`⚠️ Failed to submit sitemap: ${sitemapResult.error}`);
+            }
+
+            // Request indexing for homepage and key pages
+            const keyPages = [
+              deploymentUrl, // Homepage
+              ...(structure.pages?.slice(0, 5).map((p: any) => `${deploymentUrl}${p.path}`) || []),
+            ];
+
+            const indexingResult = await googleSearchConsole.requestIndexingForKeyPages(
+              deploymentUrl,
+              keyPages,
+              searchConsoleConfig
+            );
+
+            console.log(`✅ Indexing requested: ${indexingResult.success} succeeded, ${indexingResult.failed} failed`);
+            if (indexingResult.errors.length > 0) {
+              console.warn('Indexing errors:', indexingResult.errors);
+            }
+
+            // Update tokens if refreshed
+            if (accessToken !== website.googleSearchConsoleAccessToken) {
+              await prisma.website.update({
+                where: { id: websiteId },
+                data: {
+                  googleSearchConsoleAccessToken: accessToken,
+                  googleSearchConsoleRefreshToken: refreshToken,
+                  googleSearchConsoleTokenExpiry: new Date(Date.now() + 3600000), // 1 hour from now
+                },
+              });
+            }
+          }
+        } catch (seoError: any) {
+          // Don't fail the build if SEO automation fails
+          console.warn('SEO automation error (non-critical):', seoError.message);
+        }
+      }
+    } catch (seoError: any) {
+      // Don't fail the build if SEO file generation fails
+      console.warn('SEO file generation error (non-critical):', seoError.message);
+    }
+
+    // Update progress
+    await prisma.websiteBuild.update({
+      where: { id: buildId },
+      data: { progress: 95 },
+    });
+
+    // Update website with final data (including SEO files in seoData)
+    const finalSeoData = {
+      ...seoData,
+      sitemap: seoFiles.sitemap,
+      robots: seoFiles.robots,
+      structuredData: seoFiles.structuredData,
+    };
+
     await prisma.website.update({
       where: { id: websiteId },
       data: {
         structure,
-        seoData,
+        seoData: finalSeoData,
         extractedData,
         status: 'READY',
         buildProgress: 100,

@@ -170,6 +170,12 @@ export interface QuestionnaireAnswers {
   logo?: string;
   images?: string[];
   documents?: string[];
+  blog?: {
+    enabled: boolean;
+    includeCTA: boolean;
+    ctaText?: string;
+    ctaLink?: string;
+  };
   [key: string]: any;
 }
 
