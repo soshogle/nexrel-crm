@@ -32,7 +32,7 @@ export class CrmVoiceAgentService {
       throw new Error('User not found');
     }
 
-    // If agent exists, verify it's still valid
+    // If agent exists, verify it's still valid and update functions if needed
     if (user.crmVoiceAgentId) {
       try {
         // Verify agent exists in ElevenLabs
@@ -46,6 +46,10 @@ export class CrmVoiceAgentService {
         );
 
         if (verifyResponse.ok) {
+          // Automatically update agent functions if needed (non-blocking)
+          this.updateAgentFunctions(user.crmVoiceAgentId, userId).catch((err) => {
+            console.warn(`⚠️ Failed to auto-update CRM agent functions (non-critical):`, err.message);
+          });
           return { agentId: user.crmVoiceAgentId, created: false };
         }
       } catch (error) {
@@ -93,6 +97,9 @@ export class CrmVoiceAgentService {
     // Build CRM-specific system prompt
     const systemPrompt = this.buildCrmSystemPrompt(user, language);
 
+    // Build CRM functions
+    const crmFunctions = this.buildCrmFunctions();
+
     // Create agent directly via ElevenLabs API (CRM agents don't need VoiceAgent records)
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
@@ -126,6 +133,10 @@ export class CrmVoiceAgentService {
           enable_auth: false,
         },
       },
+      tools: crmFunctions.map(func => ({
+        type: 'function',
+        function: func,
+      })),
     };
 
     // Add knowledge base if provided
@@ -135,7 +146,13 @@ export class CrmVoiceAgentService {
       };
     }
 
-    console.log('🔄 Creating ElevenLabs agent with payload:', JSON.stringify(agentPayload, null, 2));
+    console.log('🔄 Creating ElevenLabs agent with CRM functions...');
+    console.log('📋 Agent payload:', JSON.stringify({
+      name: agentPayload.name,
+      hasConversationConfig: !!agentPayload.conversation_config,
+      hasTools: !!agentPayload.tools && agentPayload.tools.length > 0,
+      toolCount: agentPayload.tools?.length || 0,
+    }, null, 2));
     
     const response = await fetch('https://api.elevenlabs.io/v1/convai/agents/create', {
       method: 'POST',
@@ -169,6 +186,7 @@ export class CrmVoiceAgentService {
       agentId,
       name: agentData.name,
       createdAt: agentData.created_at_unix_secs,
+      functionCount: crmFunctions.length,
     });
     return agentId;
   }
@@ -187,22 +205,30 @@ export class CrmVoiceAgentService {
 
     return `${languageInstruction}
 
-You are an AI assistant for ${user.name || 'the CRM'}. You help users manage their CRM through voice commands.
+You are an AI assistant for ${user.name || 'the CRM'}. You help users manage their CRM through voice commands and provide real-time insights about their business data.
 
 Your role:
+- Query and report CRM statistics (revenue, leads, deals, contacts, campaigns)
 - Help users create and manage leads, deals, and contacts
+- Search for contacts and deals
+- Provide insights about business performance
 - Set up integrations (Stripe, Twilio, email, etc.)
 - Create and manage workflows and automations
 - Answer questions about CRM features
-- Navigate users to different parts of the CRM
 - Execute actions directly when requested
 
 Communication style:
 - Keep responses brief (1-2 sentences for voice)
 - Be conversational and friendly
+- When providing statistics, speak the numbers clearly
 - Ask ONE clarifying question at a time
 - Confirm actions before executing
 - Use natural, spoken language
+
+When users ask about their CRM stats, data, or business performance:
+1. Use the get_statistics function to retrieve current data
+2. Speak the key metrics clearly (total revenue, number of leads, open deals, etc.)
+3. Highlight important trends or insights
 
 When users ask you to do something:
 1. Acknowledge the request
@@ -211,16 +237,17 @@ When users ask you to do something:
 4. Confirm completion
 
 Available functions:
+- get_statistics: Get comprehensive CRM statistics (revenue, leads, deals, contacts, campaigns) - USE THIS when asked about stats, data, or business performance
 - create_lead: Create a new contact/lead
 - create_deal: Create a new deal
-- create_workflow: Create automation workflows
-- setup_stripe: Configure Stripe payments
-- setup_twilio: Configure Twilio messaging
-- navigate_to: Navigate to CRM pages
-- get_statistics: Get CRM statistics
-- And many more CRM operations
+- list_leads: List contacts/leads
+- list_deals: List deals in the pipeline
+- search_contacts: Search for contacts by name, email, or company
+- get_recent_activity: Get recent CRM activity
 
-Remember: You're speaking, not typing. Keep it brief and natural.
+IMPORTANT: When users ask about their CRM statistics, business data, revenue, leads, deals, or want to see their data, you MUST call the get_statistics function to retrieve the actual data from their CRM. Do not make up numbers - always use the function to get real data.
+
+Remember: You're speaking, not typing. Keep it brief and natural. When reporting statistics, speak clearly and highlight the most important numbers.
 `;
   }
 
@@ -256,6 +283,244 @@ Remember: You're speaking, not typing. Keep it brief and natural.
     return parts.join('\n');
   }
 
+  /**
+   * Get function server URL for CRM voice agent functions
+   */
+  private getFunctionServerUrl(): string {
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://www.nexrel.soshogle.com';
+    return `${baseUrl}/api/crm-voice-agent/functions`;
+  }
+
+  /**
+   * Build CRM functions for voice agent
+   */
+  private buildCrmFunctions() {
+    const serverUrl = this.getFunctionServerUrl();
+    
+    return [
+      {
+        name: 'get_statistics',
+        description: 'Get comprehensive CRM statistics including total revenue, active leads, open deals, contacts, and business health metrics. Use this when the user asks about their CRM stats, business performance, or wants to see data.',
+        parameters: {
+          type: 'object',
+          properties: {},
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'create_lead',
+        description: 'Create a new contact/lead in the CRM. Use this when the user wants to add a new contact.',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Contact person\'s name (required)',
+            },
+            email: {
+              type: 'string',
+              description: 'Contact\'s email address (optional)',
+            },
+            phone: {
+              type: 'string',
+              description: 'Contact\'s phone number (optional)',
+            },
+            company: {
+              type: 'string',
+              description: 'Company or business name (optional)',
+            },
+            status: {
+              type: 'string',
+              description: 'Lead status (optional, defaults to NEW)',
+              enum: ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'],
+            },
+          },
+          required: ['name'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'create_deal',
+        description: 'Create a new deal/opportunity in the sales pipeline',
+        parameters: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: 'Deal title (required)',
+            },
+            value: {
+              type: 'number',
+              description: 'Deal value in dollars (optional)',
+            },
+            leadId: {
+              type: 'string',
+              description: 'Associated lead/contact ID (optional)',
+            },
+          },
+          required: ['title'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'list_leads',
+        description: 'List contacts/leads. Use this when user wants to see their contacts.',
+        parameters: {
+          type: 'object',
+          properties: {
+            status: {
+              type: 'string',
+              description: 'Filter by status (optional)',
+              enum: ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED', 'LOST'],
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of results (optional, default 10)',
+            },
+          },
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'list_deals',
+        description: 'List deals in the sales pipeline',
+        parameters: {
+          type: 'object',
+          properties: {
+            limit: {
+              type: 'number',
+              description: 'Maximum number of results (optional, default 10)',
+            },
+          },
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'search_contacts',
+        description: 'Search for contacts by name, email, or company',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Search query (required)',
+            },
+          },
+          required: ['query'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'get_recent_activity',
+        description: 'Get recent CRM activity including recent leads, deals, and updates',
+        parameters: {
+          type: 'object',
+          properties: {
+            limit: {
+              type: 'number',
+              description: 'Maximum number of results (optional, default 10)',
+            },
+          },
+        },
+        server_url: serverUrl,
+      },
+    ];
+  }
+
+
+  /**
+   * Update existing agent with latest function configurations
+   * This ensures agents have CRM functions even if they were created before functions were added
+   */
+  async updateAgentFunctions(agentId: string, userId: string): Promise<boolean> {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      console.error('❌ No API key available for updating agent functions');
+      return false;
+    }
+
+    try {
+      // Get current agent config from ElevenLabs
+      const getResponse = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, {
+        headers: {
+          'xi-api-key': apiKey,
+        },
+      });
+
+      if (!getResponse.ok) {
+        throw new Error(`Failed to fetch agent: ${getResponse.statusText}`);
+      }
+
+      const currentAgent = await getResponse.json();
+      
+      // Check if agent already has the correct server_url configured
+      const currentTools = currentAgent.tools || [];
+      const crmFunctions = this.buildCrmFunctions();
+      const expectedServerUrl = this.getFunctionServerUrl();
+      
+      // Check if any function is missing server_url or has wrong URL
+      const needsUpdate = currentTools.length === 0 || 
+        currentTools.some((tool: any) => {
+          const func = tool.function;
+          return !func?.server_url || func.server_url !== expectedServerUrl;
+        });
+
+      if (!needsUpdate) {
+        console.log(`✅ CRM agent ${agentId} already has correct function configurations`);
+        return true;
+      }
+      
+      // Update with latest function configurations while preserving all existing settings
+      const updatePayload = {
+        name: currentAgent.name,
+        conversation_config: {
+          ...currentAgent.conversation_config,
+          // Preserve agent config (prompt, first_message, language)
+          agent: {
+            ...currentAgent.conversation_config?.agent,
+            prompt: currentAgent.conversation_config?.agent?.prompt,
+            first_message: currentAgent.conversation_config?.agent?.first_message,
+            language: currentAgent.conversation_config?.agent?.language || 'en',
+          },
+          // Preserve TTS settings
+          tts: currentAgent.conversation_config?.tts,
+          // Preserve conversation settings
+          conversation: currentAgent.conversation_config?.conversation,
+          // Preserve ASR settings
+          asr: currentAgent.conversation_config?.asr,
+          // Preserve turn settings
+          turn: currentAgent.conversation_config?.turn,
+        },
+        platform_settings: currentAgent.platform_settings || {},
+        tools: crmFunctions.map(func => ({
+          type: 'function',
+          function: func,
+        })),
+      };
+
+      console.log(`🔄 Updating CRM agent ${agentId} with ${crmFunctions.length} functions...`);
+
+      const updateResponse = await fetch(`https://api.elevenlabs.io/v1/convai/agents/${agentId}`, {
+        method: 'PATCH',
+        headers: {
+          'xi-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatePayload),
+      });
+
+      if (!updateResponse.ok) {
+        const errorText = await updateResponse.text();
+        throw new Error(`Failed to update agent: ${updateResponse.statusText} - ${errorText}`);
+      }
+
+      console.log(`✅ Successfully updated CRM agent ${agentId} with functions`);
+      return true;
+    } catch (error: any) {
+      console.error(`❌ Failed to update CRM agent functions:`, error);
+      return false;
+    }
+  }
 
   /**
    * Update CRM voice agent configuration
