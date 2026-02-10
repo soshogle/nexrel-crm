@@ -114,7 +114,7 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
         <div className={`sticky top-0 z-40 bg-white border-b border-gray-200 px-8 py-4 ${mounted && (session?.user as any)?.industry === 'REAL_ESTATE' ? 'pt-20' : ''}`}>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">
-              {session?.user?.name ? `Welcome, ${session.user.name}` : 'Dashboard'}
+              {session?.user?.name ?? 'Dashboard'}
             </h2>
             <div className="flex items-center gap-4">
               {/* HITL Notification Bell - Only for Real Estate users */}

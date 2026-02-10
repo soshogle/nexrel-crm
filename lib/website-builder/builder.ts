@@ -206,6 +206,10 @@ export class WebsiteBuilder {
     // Contact page
     pages.push(this.createContactPage(answers));
     
+    // Legal pages (auto-generated from onboarding/questionnaire)
+    pages.push(this.createPrivacyPage(answers));
+    pages.push(this.createTermsPage(answers));
+    
     return {
       pages,
       globalStyles: this.generateGlobalStyles(answers),
@@ -238,6 +242,10 @@ export class WebsiteBuilder {
     
     // Contact page
     pages.push(this.createContactPage(answers));
+    
+    // Legal pages (auto-generated from onboarding/questionnaire)
+    pages.push(this.createPrivacyPage(answers));
+    pages.push(this.createTermsPage(answers));
     
     return {
       pages,
@@ -553,6 +561,88 @@ export class WebsiteBuilder {
   }
 
   /**
+   * Create privacy policy page (auto-generated from legal entity & jurisdiction)
+   */
+  private createPrivacyPage(answers: QuestionnaireAnswers): WebsitePage {
+    const entity = answers.legalEntityName || answers.businessName;
+    const jurisdiction = answers.legalJurisdiction || 'the applicable jurisdiction';
+    const contactEmail = answers.contactInfo?.email || 'contact@example.com';
+    const lastUpdated = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const content = `
+      <p><strong>Effective date:</strong> ${lastUpdated}</p>
+      <p>${entity} ("we", "us", "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or use our services.</p>
+      <h2>1. Information We Collect</h2>
+      <p>We may collect information you provide directly (name, email, phone, address), usage data, and cookies or similar technologies.</p>
+      <h2>2. How We Use Your Information</h2>
+      <p>We use your information to provide and improve our services, communicate with you, and comply with legal obligations.</p>
+      <h2>3. Sharing and Disclosure</h2>
+      <p>We do not sell your personal information. We may share data with service providers, when required by law, or with your consent.</p>
+      <h2>4. Data Retention and Security</h2>
+      <p>We retain your information as long as necessary for the purposes described and use reasonable security measures to protect it.</p>
+      <h2>5. Your Rights</h2>
+      <p>Depending on your location (including ${jurisdiction}), you may have rights to access, correct, delete, or port your data. Contact us to exercise these rights.</p>
+      <h2>6. Contact</h2>
+      <p>For privacy questions, contact us at <a href="mailto:${contactEmail}">${contactEmail}</a>.</p>
+    `.trim();
+
+    return {
+      id: 'privacy',
+      name: 'Privacy Policy',
+      path: '/privacy',
+      components: [
+        { id: 'privacy-header', type: 'PageHeader', props: { title: 'Privacy Policy', description: `Last updated: ${lastUpdated}` } },
+        { id: 'privacy-content', type: 'HtmlContent', props: { html: content } },
+      ],
+      seo: {
+        title: `Privacy Policy - ${answers.businessName}`,
+        description: `Privacy Policy for ${answers.businessName}. How we collect, use, and protect your information.`,
+      },
+    };
+  }
+
+  /**
+   * Create terms & conditions page (auto-generated from legal entity & jurisdiction)
+   */
+  private createTermsPage(answers: QuestionnaireAnswers): WebsitePage {
+    const entity = answers.legalEntityName || answers.businessName;
+    const jurisdiction = answers.legalJurisdiction || 'the applicable jurisdiction';
+    const contactEmail = answers.contactInfo?.email || 'contact@example.com';
+    const lastUpdated = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const content = `
+      <p><strong>Effective date:</strong> ${lastUpdated}</p>
+      <p>These Terms and Conditions ("Terms") govern your use of the website and services of ${entity}. By accessing or using our services, you agree to these Terms.</p>
+      <h2>1. Use of Service</h2>
+      <p>You agree to use our website and services only for lawful purposes and in accordance with these Terms.</p>
+      <h2>2. Intellectual Property</h2>
+      <p>Content, logos, and materials on this site are owned by ${entity} or its licensors and are protected by intellectual property laws.</p>
+      <h2>3. Limitation of Liability</h2>
+      <p>To the fullest extent permitted by law in ${jurisdiction}, ${entity} shall not be liable for indirect, incidental, or consequential damages arising from your use of our services.</p>
+      <h2>4. Changes</h2>
+      <p>We may update these Terms from time to time. Continued use after changes constitutes acceptance.</p>
+      <h2>5. Governing Law</h2>
+      <p>These Terms are governed by the laws of ${jurisdiction}.</p>
+      <h2>6. Contact</h2>
+      <p>For questions about these Terms, contact us at <a href="mailto:${contactEmail}">${contactEmail}</a>.</p>
+    `.trim();
+
+    return {
+      id: 'terms',
+      name: 'Terms & Conditions',
+      path: '/terms',
+      components: [
+        { id: 'terms-header', type: 'PageHeader', props: { title: 'Terms & Conditions', description: `Last updated: ${lastUpdated}` } },
+        { id: 'terms-content', type: 'HtmlContent', props: { html: content } },
+      ],
+      seo: {
+        title: `Terms & Conditions - ${answers.businessName}`,
+        description: `Terms and Conditions for using ${answers.businessName} website and services.`,
+      },
+    };
+  }
+
+  /**
    * Generate global styles from answers
    */
   private generateGlobalStyles(answers: QuestionnaireAnswers): any {
@@ -580,9 +670,10 @@ export class WebsiteBuilder {
    * Generate navigation from pages
    */
   private generateNavigation(pages: WebsitePage[]): any {
+    const legalPaths = ['/privacy', '/terms'];
     return {
       items: pages
-        .filter(page => page.path !== '/')
+        .filter(page => page.path !== '/' && !legalPaths.includes(page.path))
         .map(page => ({
           label: page.name,
           path: page.path,
@@ -602,6 +693,13 @@ export class WebsiteBuilder {
           links: [
             { label: 'About', url: '/about' },
             { label: 'Contact', url: '/contact' },
+          ],
+        },
+        {
+          title: 'Legal',
+          links: [
+            { label: 'Privacy Policy', url: '/privacy' },
+            { label: 'Terms & Conditions', url: '/terms' },
           ],
         },
       ],

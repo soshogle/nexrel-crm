@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, ImagePlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { BusinessProfileStep } from '@/components/onboarding/steps/business-profile-step';
 import { SalesConfigStep } from '@/components/onboarding/steps/sales-config-step';
@@ -39,13 +39,17 @@ export default function OnboardingClientWrapper() {
   const [hasWebsite, setHasWebsite] = useState<boolean | null>(null);
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [extracting, setExtracting] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [companyProfile, setCompanyProfile] = useState({
     name: '',
     email: '',
     phone: '',
     address: '',
     website: '',
-    businessDescription: ''
+    businessDescription: '',
+    legalEntityName: '',
+    legalJurisdiction: '',
+    companyLogoUrl: ''
   });
 
   // All onboarding data with safe defaults
@@ -175,7 +179,10 @@ export default function OnboardingClientWrapper() {
               phone: user.phone || '',
               address: user.address || '',
               website: user.website || '',
-              businessDescription: user.businessDescription || ''
+              businessDescription: user.businessDescription || '',
+              legalEntityName: (user as any).legalEntityName || '',
+              legalJurisdiction: (user as any).legalJurisdiction || '',
+              companyLogoUrl: (user as any).companyLogoUrl || ''
             });
             if (user.website) {
               setHasWebsite(true);
@@ -358,14 +365,17 @@ export default function OnboardingClientWrapper() {
     let dataToSave: any = {};
 
     if (currentStep === 1) {
-      // Save company profile
+      // Save company profile and website-builder legal info
       dataToSave = {
         name: companyProfile.name,
         email: companyProfile.email,
         phone: companyProfile.phone,
         address: companyProfile.address,
         website: companyProfile.website,
-        businessDescription: companyProfile.businessDescription
+        businessDescription: companyProfile.businessDescription,
+        legalEntityName: companyProfile.legalEntityName || undefined,
+        legalJurisdiction: companyProfile.legalJurisdiction || undefined,
+        companyLogoUrl: companyProfile.companyLogoUrl === '' ? null : (companyProfile.companyLogoUrl || undefined)
       };
     } else {
       // For other steps, save the onboardingData
@@ -440,7 +450,10 @@ export default function OnboardingClientWrapper() {
           phone: '',
           address: '',
           website: '',
-          businessDescription: ''
+          businessDescription: '',
+          legalEntityName: '',
+          legalJurisdiction: '',
+          companyLogoUrl: ''
         });
         setOnboardingData({});
       } else {
@@ -659,6 +672,105 @@ export default function OnboardingClientWrapper() {
                       className="w-full px-3 py-2 border border-input rounded-md"
                       rows={3}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Company logo</label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Used in your CRM and on your website. JPEG, PNG, GIF or WebP, max 5MB.
+                    </p>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        className="hidden"
+                        id="company-logo-upload"
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          setLogoUploading(true);
+                          try {
+                            const form = new FormData();
+                            form.append('file', f);
+                            const res = await fetch('/api/onboarding/upload-logo', { method: 'POST', body: form });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error || 'Upload failed');
+                            setCompanyProfile(prev => ({ ...prev, companyLogoUrl: data.url }));
+                            toast.success('Logo uploaded');
+                          } catch (err: any) {
+                            toast.error(err.message || 'Failed to upload logo');
+                          } finally {
+                            setLogoUploading(false);
+                            e.target.value = '';
+                          }
+                        }}
+                        disabled={logoUploading}
+                      />
+                      <label
+                        htmlFor="company-logo-upload"
+                        className="flex items-center gap-2 px-4 py-2 border border-input rounded-md cursor-pointer hover:bg-muted/50 disabled:opacity-50"
+                      >
+                        {logoUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                        <span>{companyProfile.companyLogoUrl ? 'Change logo' : 'Upload logo'}</span>
+                      </label>
+                      {companyProfile.companyLogoUrl && (
+                        <div className="relative flex items-center gap-2">
+                          <img
+                            src={companyProfile.companyLogoUrl}
+                            alt="Company logo"
+                            className="h-12 w-auto object-contain border border-input rounded"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setCompanyProfile(prev => ({ ...prev, companyLogoUrl: '' }));
+                              fetch('/api/onboarding/update-step', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ companyLogoUrl: null }),
+                              }).catch(() => {});
+                            }}
+                            title="Remove logo"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t space-y-4">
+                    <h3 className="text-lg font-semibold">Website & legal information</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Used to build your website and to auto-generate Privacy Policy and Terms &amp; Conditions.
+                    </p>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Legal entity name</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Acme Inc. (for contracts & legal pages)"
+                          value={companyProfile.legalEntityName}
+                          onChange={(e) => setCompanyProfile(prev => ({ ...prev, legalEntityName: e.target.value }))}
+                          className="w-full px-3 py-2 border border-input rounded-md"
+                        />
+                        <p className="text-xs text-muted-foreground">Defaults to company name if left blank.</p>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Country / jurisdiction</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. United States, California"
+                          value={companyProfile.legalJurisdiction}
+                          onChange={(e) => setCompanyProfile(prev => ({ ...prev, legalJurisdiction: e.target.value }))}
+                          className="w-full px-3 py-2 border border-input rounded-md"
+                        />
+                        <p className="text-xs text-muted-foreground">Used in Privacy Policy and Terms.</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

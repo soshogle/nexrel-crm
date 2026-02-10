@@ -9,6 +9,7 @@ export const runtime = 'nodejs';
 // Whitelist of valid fields that exist in Prisma User model
 const VALID_ONBOARDING_FIELDS = new Set([
   'name', 'phone', 'address', 'website', 'businessDescription', 'industry', 'timezone',
+  'legalEntityName', 'legalJurisdiction', 'companyLogoUrl',
   'businessCategory', 'industryNiche', 'targetAudience', 'demographics', 'productsServices',
   'operatingLocation', 'businessLanguage', 'currency', 'teamSize', 'businessHours',
   'averageDealValue', 'salesCycleLength', 'leadSources', 'preferredContactMethod',
@@ -31,12 +32,13 @@ export async function POST(request: NextRequest) {
     console.log('[UPDATE-STEP] Received data:', JSON.stringify(data, null, 2));
     console.log('[UPDATE-STEP] User ID:', session.user.id);
 
-    // Filter out undefined values and only include valid fields
+    // Filter: include valid fields; undefined = skip, null = clear field
     const updateData: any = {};
     for (const [key, value] of Object.entries(data)) {
-      if (value !== undefined && value !== null && VALID_ONBOARDING_FIELDS.has(key)) {
+      if (value === undefined) continue;
+      if (VALID_ONBOARDING_FIELDS.has(key)) {
         updateData[key] = value;
-      } else if (!VALID_ONBOARDING_FIELDS.has(key)) {
+      } else {
         console.warn(`[UPDATE-STEP] Skipping invalid field: ${key}`);
       }
     }
