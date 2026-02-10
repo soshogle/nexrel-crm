@@ -11,7 +11,7 @@ export interface TTSOptions {
   style?: number;
 }
 
-class ElevenLabsTTSService {
+export class ElevenLabsTTSService {
   private apiKey: string;
   private baseUrl = 'https://api.elevenlabs.io/v1';
   private defaultVoiceId = 'EXAVITQu4vr4xnSDxMaL'; // Sarah - Professional female voice

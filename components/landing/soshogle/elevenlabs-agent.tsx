@@ -20,6 +20,7 @@ interface ElevenLabsAgentProps {
   onConversationEnd?: (transcript: ConversationMessage[], audioBlob?: Blob) => void;
   onAgentSpeakingChange?: (isSpeaking: boolean) => void;
   dynamicVariables?: Record<string, string>;
+  autoStart?: boolean; // Auto-start conversation when component mounts
 }
 
 type AgentStatus = "idle" | "connecting" | "listening" | "speaking" | "processing";
@@ -30,6 +31,7 @@ export function ElevenLabsAgent({
   onConversationEnd,
   onAgentSpeakingChange,
   dynamicVariables,
+  autoStart = false,
 }: ElevenLabsAgentProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -234,20 +236,47 @@ export function ElevenLabsAgent({
         }
       }
 
+      // Set up audio context for analysis
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
 
-      try {
-        const audioElement = document.querySelector("audio");
-        if (audioElement) {
-          const source = audioContextRef.current.createMediaElementSource(audioElement);
-          source.connect(analyserRef.current);
-          analyserRef.current.connect(audioContextRef.current.destination);
+      // Connect audio element for analysis and ensure playback works
+      // The ElevenLabs SDK creates audio elements automatically for WebRTC
+      const connectAudioElement = () => {
+        try {
+          // Look for audio element created by SDK or our fallback element
+          const audioElement = document.querySelector("#elevenlabs-audio-output") as HTMLAudioElement || 
+                              document.querySelector("audio") as HTMLAudioElement;
+          
+          if (audioElement && audioContextRef.current && analyserRef.current) {
+            try {
+              // Ensure audio is enabled and will play
+              audioElement.volume = 1.0;
+              audioElement.muted = false;
+              
+              // Connect to audio context for analysis
+              const source = audioContextRef.current.createMediaElementSource(audioElement);
+              source.connect(analyserRef.current);
+              analyserRef.current.connect(audioContextRef.current.destination);
+              console.log("✅ Audio element connected for analysis and playback");
+            } catch (e: any) {
+              // Audio element may already be connected - this is OK
+              if (e.message && !e.message.includes("already been connected")) {
+                console.log("Could not connect to audio element:", e);
+              }
+            }
+          } else {
+            // Retry after a short delay if element not found yet
+            setTimeout(connectAudioElement, 200);
+          }
+        } catch (e) {
+          console.log("Error connecting audio element:", e);
         }
-      } catch (e) {
-        console.log("Could not connect to audio element:", e);
-      }
+      };
+
+      // Start connecting audio element (SDK may create it asynchronously)
+      connectAudioElement();
 
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
 
@@ -281,24 +310,46 @@ export function ElevenLabsAgent({
   };
 
   const stopConversation = () => {
+    console.log('Stopping conversation, current status:', status);
+    
+    // Stop animation frame immediately
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
 
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+    // Stop media recorder - handle all states
+    if (mediaRecorderRef.current) {
       try {
-        mediaRecorderRef.current.stop();
+        if (mediaRecorderRef.current.state === "recording") {
+          mediaRecorderRef.current.stop();
+        } else if (mediaRecorderRef.current.state === "paused") {
+          mediaRecorderRef.current.stop();
+        }
+        // Wait a bit for stop to complete, then nullify
+        setTimeout(() => {
+          mediaRecorderRef.current = null;
+        }, 100);
       } catch (e) {
         console.error("Error stopping media recorder:", e);
+        mediaRecorderRef.current = null;
       }
     }
-    mediaRecorderRef.current = null;
 
+    // Stop all audio stream tracks immediately
     if (audioStreamRef.current) {
-      audioStreamRef.current.getTracks().forEach((track) => track.stop());
+      try {
+        audioStreamRef.current.getTracks().forEach((track) => {
+          track.stop();
+          track.enabled = false;
+        });
+      } catch (e) {
+        console.error("Error stopping audio tracks:", e);
+      }
       audioStreamRef.current = null;
     }
 
+    // End conversation session
     if (conversationRef.current) {
       try {
         conversationRef.current.endSession();
@@ -308,18 +359,50 @@ export function ElevenLabsAgent({
       conversationRef.current = null;
     }
 
+    // Close audio context
     if (audioContextRef.current) {
-      audioContextRef.current.close();
+      try {
+        if (audioContextRef.current.state !== 'closed') {
+          audioContextRef.current.close();
+        }
+      } catch (e) {
+        console.error("Error closing audio context:", e);
+      }
       audioContextRef.current = null;
     }
 
+    // Reset analyser ref
+    analyserRef.current = null;
+
+    // Reset state immediately
     setIsConnected(false);
     setIsAgentSpeaking(false);
+    setIsLoading(false);
+    setStatus("idle");
     setAudioLevel(0);
+    setError(null);
+    
     if (onAudioLevel) {
       onAudioLevel(0);
     }
+    if (onAgentSpeakingChange) {
+      onAgentSpeakingChange(false);
+    }
+    
+    console.log('Conversation stopped successfully');
   };
+
+  // Auto-start conversation if autoStart prop is true
+  useEffect(() => {
+    if (autoStart && agentId && !isConnected && !isLoading && status === 'idle') {
+      // Use setTimeout to ensure component is fully mounted
+      const timer = setTimeout(() => {
+        startConversation();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart, agentId, isConnected, isLoading, status]);
 
   useEffect(() => {
     return () => {
@@ -366,6 +449,14 @@ export function ElevenLabsAgent({
               <img src={APP_LOGO} alt="Soshogle" className="h-6 w-6" />
               <span className="text-sm font-semibold">Soshogle AI</span>
             </div>
+            
+            {/* Hidden audio element for ElevenLabs SDK */}
+            <audio 
+              id="elevenlabs-audio-output" 
+              autoPlay 
+              playsInline
+              style={{ display: 'none' }}
+            />
           </div>
 
           <div className="text-center space-y-4">
