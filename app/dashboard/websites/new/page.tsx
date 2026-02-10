@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Loader2, Globe, Sparkles, Wand2, ShoppingCart, Briefcase } from 'lucide-react';
+import { ArrowLeft, Loader2, Globe, Sparkles, Wand2, ShoppingCart, Briefcase, Code, Palette, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,122 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
 import { toast } from 'sonner';
+
+// Designer Background Carousel Component
+function DesignerBackgroundCarousel() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  
+  const slides = [
+    {
+      gradient: 'from-purple-400 via-pink-400 to-red-400',
+      icon: <Code className="h-32 w-32 text-white/20" />,
+      position: 'top-20 left-10',
+      rotation: 'rotate-12',
+    },
+    {
+      gradient: 'from-blue-400 via-cyan-400 to-teal-400',
+      icon: <Palette className="h-32 w-32 text-white/20" />,
+      position: 'top-40 right-20',
+      rotation: '-rotate-12',
+    },
+    {
+      gradient: 'from-indigo-400 via-purple-400 to-pink-400',
+      icon: <Zap className="h-32 w-32 text-white/20" />,
+      position: 'bottom-32 left-1/4',
+      rotation: 'rotate-6',
+    },
+    {
+      gradient: 'from-rose-400 via-orange-400 to-amber-400',
+      icon: <Globe className="h-32 w-32 text-white/20" />,
+      position: 'bottom-20 right-1/3',
+      rotation: '-rotate-6',
+    },
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [slides.length]);
+
+  return (
+    <div className="fixed inset-0 overflow-hidden z-0">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 via-pink-50 to-cyan-50 animate-gradient-shift"></div>
+      
+      {/* Animated mesh gradient overlay */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-purple-200/30 via-transparent to-blue-200/30 animate-pulse"></div>
+        <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-pink-200/30 via-transparent to-cyan-200/30 animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
+      {/* Floating website preview cards with carousel effect */}
+      <div className="absolute inset-0">
+        {slides.map((slide, index) => {
+          const isActive = index === currentSlide;
+          const offset = (index - currentSlide + slides.length) % slides.length;
+          const scale = isActive ? 1 : 0.8;
+          const opacity = isActive ? 0.25 : 0.1;
+          const translateX = (offset - currentSlide) * 100;
+          
+          return (
+            <div
+              key={index}
+              className={`absolute ${slide.position} transition-all duration-1000 ease-in-out ${slide.rotation}`}
+              style={{
+                transform: `translateX(${translateX}px) scale(${scale})`,
+                opacity: opacity,
+                zIndex: isActive ? 10 : 5,
+              }}
+            >
+              <div className={`w-72 h-56 bg-gradient-to-br ${slide.gradient} rounded-2xl shadow-2xl p-6 flex flex-col justify-between backdrop-blur-sm border border-white/20`}>
+                <div className="flex justify-center items-center h-full">
+                  {slide.icon}
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 mt-2">
+                  <div className="h-2 bg-white/30 rounded-full mb-2"></div>
+                  <div className="h-2 bg-white/20 rounded-full w-3/4"></div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Additional floating elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Small decorative circles */}
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-gradient-to-br from-purple-300/20 to-blue-300/20 blur-xl animate-float"
+            style={{
+              width: `${100 + i * 50}px`,
+              height: `${100 + i * 50}px`,
+              top: `${(i * 12) % 100}%`,
+              left: `${(i * 15) % 100}%`,
+              animationDelay: `${i * 0.5}s`,
+              animationDuration: `${10 + i * 2}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Subtle grid pattern overlay */}
+      <div 
+        className="absolute inset-0 opacity-[0.02]"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px',
+        }}
+      />
+    </div>
+  );
+}
 
 export default function NewWebsitePage() {
   const router = useRouter();
@@ -297,62 +413,70 @@ export default function NewWebsitePage() {
 
   if (step === 'initial') {
     return (
-      <div className="container mx-auto p-6 max-w-4xl">
-        <Link href="/dashboard/websites">
-          <Button variant="ghost" className="mb-6">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Websites
-          </Button>
-        </Link>
+      <div className="relative min-h-screen">
+        {/* Designer Background Carousel */}
+        <DesignerBackgroundCarousel />
+        
+        {/* Content */}
+        <div className="relative z-10 container mx-auto p-6 max-w-4xl">
+          <Link href="/dashboard/websites">
+            <Button variant="ghost" className="mb-6 bg-white/90 backdrop-blur-sm hover:bg-white/95">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Websites
+            </Button>
+          </Link>
 
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Create New Website</h1>
-            <p className="text-muted-foreground">
-              Choose how you'd like to create your website
-            </p>
-          </div>
+          <div className="space-y-6">
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-6 shadow-xl">
+              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                Create New Website
+              </h1>
+              <p className="text-muted-foreground text-lg">
+                Choose how you'd like to create your website
+              </p>
+            </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleInitialChoice('rebuild')}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  Rebuild Existing Website
-                </CardTitle>
-                <CardDescription>
-                  We'll clone and rebuild your current website
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Enter your website URL and we'll extract all content, images, SEO data, and structure to rebuild it for you.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card
+                className="cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-white/95 backdrop-blur-sm border-2 hover:border-purple-300"
+                onClick={() => handleInitialChoice('rebuild')}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Globe className="h-6 w-6 text-purple-600" />
+                    Rebuild Existing Website
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    We'll clone and rebuild your current website
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Enter your website URL and we'll extract all content, images, SEO data, and structure to rebuild it for you.
+                  </p>
+                </CardContent>
+              </Card>
 
-            <Card
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => handleInitialChoice('new')}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
-                  Build New Website
-                </CardTitle>
-                <CardDescription>
-                  We'll build a completely new website for you
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Answer a few questions and upload your assets. We'll build a professional website tailored to your business.
-                </p>
-              </CardContent>
-            </Card>
+              <Card
+                className="cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-white/95 backdrop-blur-sm border-2 hover:border-blue-300"
+                onClick={() => handleInitialChoice('new')}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Sparkles className="h-6 w-6 text-blue-600" />
+                    Build New Website
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    We'll build a completely new website for you
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Answer a few questions and upload your assets. We'll build a professional website tailored to your business.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
@@ -361,89 +485,90 @@ export default function NewWebsitePage() {
 
   if (step === 'rebuild') {
     return (
-      <div className="container mx-auto p-6 max-w-2xl">
-        <Button
-          variant="ghost"
-          className="mb-6"
-          onClick={() => setStep('initial')}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
+      <div className="relative min-h-screen">
+        {/* Designer Background Carousel */}
+        <DesignerBackgroundCarousel />
+        
+        {/* Content */}
+        <div className="relative z-10 container mx-auto p-6 max-w-2xl">
+          <Button
+            variant="ghost"
+            className="mb-6 bg-white/90 backdrop-blur-sm hover:bg-white/95"
+            onClick={() => setStep('initial')}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Rebuild Your Website</CardTitle>
-            <CardDescription>
-              Enter your website URL and we'll rebuild it for you
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="name">Website Name</Label>
-              <Input
-                id="name"
-                value={rebuildName}
-                onChange={(e) => setRebuildName(e.target.value)}
-                placeholder="My Business Website"
-              />
-            </div>
+          <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-2">
+            <CardHeader>
+              <CardTitle className="text-2xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                Rebuild Your Website
+              </CardTitle>
+              <CardDescription className="text-base">
+                Enter your website URL and we'll rebuild it for you
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="name">Website Name</Label>
+                <Input
+                  id="name"
+                  value={rebuildName}
+                  onChange={(e) => setRebuildName(e.target.value)}
+                  placeholder="My Business Website"
+                  className="mt-1"
+                />
+              </div>
 
-            <div>
-              <Label htmlFor="url">Website URL</Label>
-              <Input
-                id="url"
-                type="url"
-                value={rebuildUrl}
-                onChange={(e) => setRebuildUrl(e.target.value)}
-                placeholder="https://example.com"
-              />
-            </div>
+              <div>
+                <Label htmlFor="url">Website URL</Label>
+                <Input
+                  id="url"
+                  type="url"
+                  value={rebuildUrl}
+                  onChange={(e) => setRebuildUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="mt-1"
+                />
+              </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="voiceAI"
-                checked={enableVoiceAI}
-                onCheckedChange={(checked) => setEnableVoiceAI(!!checked)}
-              />
-              <Label htmlFor="voiceAI" className="cursor-pointer">
-                Enable Voice AI Assistant (like on nexrel.soshogle.com)
-              </Label>
-            </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="voiceAI"
+                  checked={enableVoiceAI}
+                  onCheckedChange={(checked) => setEnableVoiceAI(!!checked)}
+                />
+                <Label htmlFor="voiceAI" className="cursor-pointer">
+                  Enable Voice AI Assistant (like on nexrel.soshogle.com)
+                </Label>
+              </div>
 
-            <Button
-              onClick={handleRebuild}
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Rebuilding...
-                </>
-              ) : (
-                'Start Rebuild'
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+              <Button
+                onClick={handleRebuild}
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Rebuilding...
+                  </>
+                ) : (
+                  'Start Rebuild'
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="relative min-h-screen">
-      {/* Animated Carousel Background */}
-      <div className="fixed inset-0 overflow-hidden z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50"></div>
-        <div className="absolute inset-0 opacity-20">
-          {/* Animated website preview cards */}
-          <div className="absolute top-10 left-10 w-64 h-48 bg-white rounded-lg shadow-lg transform rotate-3 animate-pulse" style={{ animationDelay: '0s' }}></div>
-          <div className="absolute top-32 right-20 w-72 h-56 bg-white rounded-lg shadow-lg transform -rotate-2 animate-pulse" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute bottom-20 left-1/4 w-60 h-44 bg-white rounded-lg shadow-lg transform rotate-1 animate-pulse" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute bottom-40 right-1/3 w-68 h-52 bg-white rounded-lg shadow-lg transform -rotate-3 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-        </div>
-      </div>
+      {/* Designer Background Carousel */}
+      <DesignerBackgroundCarousel />
 
       {/* Content */}
       <div className="relative z-10 container mx-auto p-6 max-w-4xl">
@@ -456,10 +581,12 @@ export default function NewWebsitePage() {
           Back
         </Button>
 
-        <Card className="bg-white/95 backdrop-blur-sm shadow-xl">
+        <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-2">
           <CardHeader>
-            <CardTitle className="text-2xl">Build New Website</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-2xl bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              Build New Website
+            </CardTitle>
+            <CardDescription className="text-base">
               Answer a few questions and we'll build your website
             </CardDescription>
           </CardHeader>
