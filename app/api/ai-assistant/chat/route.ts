@@ -589,7 +589,7 @@ You have access to FUNCTIONS that can actually execute actions. When a user asks
 - search_contacts - Search for contacts (required: query)
 - create_campaign - Create a marketing campaign (required: name)
 - create_appointment - Schedule an appointment (required: title, date, time)
-- get_statistics - Get CRM statistics
+- get_statistics - Get CRM statistics and generate graphs/charts. **CRITICAL: ALWAYS use this function when users ask for graphs, charts, visualizations, sales data, revenue comparisons, sales over time, monthly sales, or any statistics. This automatically creates visualizations displayed on the AI Brain page. Examples: "show me a graph", "display sales chart", "compare sales", "sales in last 7 months" - ALL of these require calling get_statistics.**
 - setup_stripe - Configure Stripe payment (required: publishableKey, secretKey)
 - setup_twilio - Configure Twilio (required: accountSid, authToken, phoneNumber)
 - create_voice_agent - Create a voice agent (required: name, optional: voiceId, prompt)

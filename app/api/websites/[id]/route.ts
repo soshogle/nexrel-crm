@@ -107,6 +107,22 @@ export async function DELETE(
     // Use a transaction to ensure atomicity
     try {
       await prisma.$transaction(async (tx) => {
+        // Delete website stock settings first (has unique constraint)
+        // Check if exists to avoid errors
+        try {
+          const stockSettings = await tx.websiteStockSettings.findUnique({
+            where: { websiteId: params.id },
+          });
+          if (stockSettings) {
+            await tx.websiteStockSettings.delete({
+              where: { websiteId: params.id },
+            });
+          }
+        } catch (stockError: any) {
+          // Stock settings might not exist, continue with deletion
+          console.log('[Website Delete] No stock settings found, continuing...');
+        }
+
         // Delete website products
         await tx.websiteProduct.deleteMany({
           where: { websiteId: params.id },
@@ -137,16 +153,14 @@ export async function DELETE(
           where: { websiteId: params.id },
         });
 
-        // Delete website stock settings
-        await tx.websiteStockSettings.deleteMany({
-          where: { websiteId: params.id },
-        });
-
         // Finally delete the website (regardless of status)
         // This will work even if status is BUILDING
+        // Prisma will handle any remaining cascade deletes
         await tx.website.delete({
           where: { id: params.id },
         });
+      }, {
+        timeout: 10000, // 10 second timeout
       });
 
       // TODO: Clean up external resources (GitHub repo, Vercel project, etc.)
@@ -154,13 +168,36 @@ export async function DELETE(
 
       return NextResponse.json({ success: true });
     } catch (deleteError: any) {
-      console.error('Error deleting website and related records:', deleteError);
-      console.error('Delete error details:', {
+      // Log the full error for debugging
+      console.error('❌ [Website Delete] Full error object:', JSON.stringify(deleteError, Object.getOwnPropertyNames(deleteError), 2));
+      console.error('❌ [Website Delete] Error deleting website and related records:', deleteError);
+      console.error('❌ [Website Delete] Error details:', {
         message: deleteError.message,
         code: deleteError.code,
         meta: deleteError.meta,
         stack: deleteError.stack,
+        name: deleteError.name,
       });
+      
+      // Check for specific Prisma errors
+      if (deleteError.code === 'P2003') {
+        return NextResponse.json(
+          { 
+            error: 'Cannot delete website: Related records still exist. Please contact support.',
+            details: process.env.NODE_ENV === 'development' ? deleteError.meta : undefined,
+          },
+          { status: 400 }
+        );
+      }
+      
+      if (deleteError.code === 'P2025') {
+        return NextResponse.json(
+          { 
+            error: 'Website not found or already deleted',
+          },
+          { status: 404 }
+        );
+      }
       
       // Return a more specific error message
       const errorMessage = deleteError.message || 'Failed to delete website';
@@ -171,6 +208,7 @@ export async function DELETE(
             code: deleteError.code,
             meta: deleteError.meta,
             stack: deleteError.stack,
+            name: deleteError.name,
           } : undefined,
         },
         { status: 500 }

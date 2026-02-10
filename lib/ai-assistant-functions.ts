@@ -193,10 +193,19 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
       type: "function",
       function: {
         name: "get_statistics",
-        description: "Get CRM statistics and overview",
+        description: "Get CRM statistics, sales data, and generate graphs/charts. Use this when the user asks for graphs, charts, visualizations, sales data, revenue comparisons, or statistics. This will automatically create visualizations and display them on the AI Brain page.",
         parameters: {
           type: "object",
-          properties: {},
+          properties: {
+            period: {
+              type: "string",
+              description: "Time period for statistics (optional). Examples: 'last_7_months', 'last_year', 'last_30_days', 'all_time'",
+            },
+            compareWith: {
+              type: "string",
+              description: "Compare with previous period (optional). Examples: 'previous_year', 'previous_period'",
+            },
+          },
         },
       },
     },
