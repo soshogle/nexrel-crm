@@ -127,6 +127,16 @@ export async function DELETE(
           where: { websiteId: params.id },
         });
 
+        // Delete website visitors
+        await tx.websiteVisitor.deleteMany({
+          where: { websiteId: params.id },
+        });
+
+        // Delete website change approvals
+        await tx.websiteChangeApproval.deleteMany({
+          where: { websiteId: params.id },
+        });
+
         // Delete website stock settings
         await tx.websiteStockSettings.deleteMany({
           where: { websiteId: params.id },
@@ -149,6 +159,7 @@ export async function DELETE(
         message: deleteError.message,
         code: deleteError.code,
         meta: deleteError.meta,
+        stack: deleteError.stack,
       });
       
       // Return a more specific error message
@@ -156,7 +167,11 @@ export async function DELETE(
       return NextResponse.json(
         { 
           error: errorMessage,
-          details: process.env.NODE_ENV === 'development' ? deleteError.stack : undefined,
+          details: process.env.NODE_ENV === 'development' ? {
+            code: deleteError.code,
+            meta: deleteError.meta,
+            stack: deleteError.stack,
+          } : undefined,
         },
         { status: 500 }
       );
