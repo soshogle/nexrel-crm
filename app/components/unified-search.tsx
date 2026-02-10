@@ -122,13 +122,13 @@ export function UnifiedSearch({ isOpen, onClose }: UnifiedSearchProps) {
     let path = '';
     switch (result.type) {
       case 'lead':
-        path = `/leads/${result.id}`;
+        path = `/dashboard/leads/${result.id}`;
         break;
       case 'deal':
-        path = `/deals/${result.id}`;
+        path = `/dashboard/pipeline?dealId=${result.id}`;
         break;
       case 'task':
-        path = `/tasks/${result.id}`;
+        path = `/dashboard/ai-employees?taskId=${result.id}`;
         break;
     }
     if (path) {

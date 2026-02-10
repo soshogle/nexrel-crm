@@ -279,13 +279,23 @@ export class AIEmployeeOrchestrator {
             name: true,
             type: true
           }
+        },
+        logs: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { message: true }
         }
       },
       orderBy: { createdAt: 'desc' },
       take: options?.limit || 50
     });
 
-    return jobs;
+    // Map progressMessage from latest log
+    return jobs.map((j: any) => ({
+      ...j,
+      progressMessage: j.logs?.[0]?.message || null,
+      logs: undefined
+    }));
   }
 
   /**

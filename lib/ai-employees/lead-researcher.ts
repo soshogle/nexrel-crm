@@ -86,38 +86,54 @@ export class LeadResearcher {
   }
 
   /**
-   * Execute lead research job
+   * Start lead research asynchronously - returns job ID immediately.
+   * Research runs in background (takes 3-4 min). Use this for API to avoid timeout.
    */
-  async research(input: LeadResearchInput): Promise<LeadResearchOutput> {
+  async startResearchAsync(input: LeadResearchInput): Promise<{ jobId: string }> {
     const { userId, leadId, businessName, website, industry } = input;
-    console.log('[LeadResearcher] Starting research for:', businessName, 'userId:', userId);
+    console.log('[LeadResearcher] Starting async research for:', businessName, 'userId:', userId);
 
-    // Create job - use provided userId directly
     const job = await aiOrchestrator.createJob({
-      userId: userId,
+      userId,
       employeeType: AIEmployeeType.LEAD_RESEARCHER,
       jobType: 'lead_enrichment',
       input: { leadId, businessName, website, industry },
-      estimatedTime: 180 // 3 minutes
+      estimatedTime: 180
     });
 
-    try {
-      await aiOrchestrator.startJob(job.id);
+    await aiOrchestrator.startJob(job.id);
 
+    // Run research in background - don't await
+    this.research(job.id, input).catch((err: any) => {
+      console.error('[LeadResearcher] Background research failed:', err);
+      aiOrchestrator.failJob(job.id, err?.message || 'Research failed').catch(() => {});
+    });
+
+    return { jobId: job.id };
+  }
+
+  /**
+   * Execute lead research job (internal - uses existing job ID)
+   */
+  private async research(jobId: string, input: LeadResearchInput): Promise<LeadResearchOutput> {
+    const { userId, leadId, businessName, website, industry } = input;
+    console.log('[LeadResearcher] Running research for:', businessName);
+
+    try {
       // Step 1: Research company information (25%)
-      await aiOrchestrator.updateProgress(job.id, 25, 'Researching company information...');
+      await aiOrchestrator.updateProgress(jobId, 25, 'Researching company information...');
       const companyInfo = await this.researchCompanyInfo(businessName, website, industry);
 
       // Step 2: Find key decision makers (50%)
-      await aiOrchestrator.updateProgress(job.id, 50, 'Finding key decision makers...');
+      await aiOrchestrator.updateProgress(jobId, 50, 'Finding key decision makers...');
       const keyPeople = await this.findKeyPeople(businessName, companyInfo.website);
 
       // Step 3: Gather recent news (75%)
-      await aiOrchestrator.updateProgress(job.id, 75, 'Gathering recent company news...');
+      await aiOrchestrator.updateProgress(jobId, 75, 'Gathering recent company news...');
       const recentNews = await this.findRecentNews(businessName);
 
       // Step 4: Analyze and generate recommendations (90%)
-      await aiOrchestrator.updateProgress(job.id, 90, 'Analyzing data and generating insights...');
+      await aiOrchestrator.updateProgress(jobId, 90, 'Analyzing data and generating insights...');
       const analysis = await this.analyzeAndRecommend({
         businessName,
         companyInfo,
@@ -150,21 +166,37 @@ export class LeadResearcher {
         });
       }
 
-      await aiOrchestrator.updateProgress(job.id, 100, 'Research completed successfully');
+      await aiOrchestrator.updateProgress(jobId, 100, 'Research completed successfully');
 
       const output: LeadResearchOutput = {
         leadId,
         enrichedData
       };
 
-      await aiOrchestrator.completeJob(job.id, output);
+      await aiOrchestrator.completeJob(jobId, output);
 
       return output;
 
     } catch (error: any) {
-      await aiOrchestrator.failJob(job.id, error.message);
+      await aiOrchestrator.failJob(jobId, error.message);
       throw error;
     }
+  }
+
+  /**
+   * Execute lead research job (blocking - for backward compatibility)
+   * Prefer startResearchAsync for API to avoid timeout.
+   */
+  async researchBlocking(input: LeadResearchInput): Promise<LeadResearchOutput> {
+    const job = await aiOrchestrator.createJob({
+      userId: input.userId,
+      employeeType: AIEmployeeType.LEAD_RESEARCHER,
+      jobType: 'lead_enrichment',
+      input: { leadId: input.leadId, businessName: input.businessName, website: input.website, industry: input.industry },
+      estimatedTime: 180
+    });
+    await aiOrchestrator.startJob(job.id);
+    return this.research(job.id, input);
   }
 
   /**

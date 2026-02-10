@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { syncGeneralInventoryToProduct } from '@/lib/general-inventory/product-sync';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (existingItem && mode === 'update') {
+          const newQuantity = item.quantity ? parseInt(item.quantity) : existingItem.quantity;
           // Update existing item
           await prisma.generalInventoryItem.update({
             where: { id: existingItem.id },
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest) {
               categoryId,
               supplierId,
               locationId,
-              quantity: item.quantity ? parseInt(item.quantity) : existingItem.quantity,
+              quantity: newQuantity,
               unit: item.unit || existingItem.unit,
               reorderLevel: item.reorderLevel ? parseInt(item.reorderLevel) : existingItem.reorderLevel,
               reorderQuantity: item.reorderQuantity ? parseInt(item.reorderQuantity) : existingItem.reorderQuantity,
@@ -153,6 +154,13 @@ export async function POST(request: NextRequest) {
               notes: item.notes || existingItem.notes,
             },
           });
+          // Sync to Product and website when quantity changes
+          syncGeneralInventoryToProduct(
+            session.user.id,
+            item.sku,
+            newQuantity,
+            existingItem.quantity
+          ).catch((err) => console.error('Import sync failed:', err));
         } else {
           // Create new item
           const newItem = await prisma.generalInventoryItem.create({
@@ -177,18 +185,26 @@ export async function POST(request: NextRequest) {
           });
 
           // Create initial stock adjustment if quantity > 0
-          if (item.quantity && parseInt(item.quantity) > 0) {
+          const initialQty = item.quantity ? parseInt(item.quantity) : 0;
+          if (initialQty > 0) {
             await prisma.generalInventoryAdjustment.create({
               data: {
                 userId: session.user.id,
                 itemId: newItem.id,
                 type: 'INITIAL',
-                quantity: parseInt(item.quantity),
+                quantity: initialQty,
                 quantityBefore: 0,
-                quantityAfter: parseInt(item.quantity),
+                quantityAfter: initialQty,
                 reason: 'Initial stock from CSV import',
               },
             });
+            // Sync to Product and website when creating with quantity
+            syncGeneralInventoryToProduct(
+              session.user.id,
+              item.sku,
+              initialQty,
+              0
+            ).catch((err) => console.error('Import sync failed:', err));
           }
         }
 

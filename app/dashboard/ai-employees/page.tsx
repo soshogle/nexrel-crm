@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -468,6 +469,8 @@ export default function AIEmployeesPage() {
   const [leadWebsite, setLeadWebsite] = useState('');
   const [leadIndustry, setLeadIndustry] = useState('');
   const [researchLoading, setResearchLoading] = useState(false);
+  const [activeResearchJobId, setActiveResearchJobId] = useState<string | null>(null);
+  const [activeResearchJob, setActiveResearchJob] = useState<{ progress: number; progressMessage: string | null; status: string } | null>(null);
 
   // Workflow Form
   const [customerName, setCustomerName] = useState('');
@@ -592,7 +595,39 @@ export default function AIEmployeesPage() {
     }, 10000);
     return () => clearInterval(interval);
   }, []);
-  
+
+  // Poll active lead research job for live progress
+  useEffect(() => {
+    if (!activeResearchJobId) return;
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/ai-employees/jobs/${activeResearchJobId}`);
+        const data = await res.json();
+        if (!data.success || !data.data) return;
+
+        const job = data.data;
+        const progress = job.progress ?? 0;
+        const progressMessage = job.logs?.[0]?.message ?? null;
+        const status = job.status;
+
+        setActiveResearchJob({ progress, progressMessage, status });
+
+        if (status === 'COMPLETED' || status === 'FAILED') {
+          setActiveResearchJobId(null);
+          setActiveResearchJob(null);
+          fetchJobs();
+        }
+      } catch (e) {
+        console.error('Failed to poll research job:', e);
+      }
+    };
+
+    poll();
+    const interval = setInterval(poll, 2000);
+    return () => clearInterval(interval);
+  }, [activeResearchJobId]);
+
   // Load AI Team from localStorage
   const loadAiTeam = () => {
     try {
@@ -853,10 +888,14 @@ export default function AIEmployeesPage() {
       console.log('[Lead Research] Response data:', data);
       
       if (data.success) {
-        toast.success('Lead research started successfully!');
+        toast.success(data.message || 'Lead research started! Track progress in AI Jobs below.');
         setLeadBusinessName('');
         setLeadWebsite('');
         setLeadIndustry('');
+        if (data.jobId) {
+          setActiveResearchJobId(data.jobId);
+          setActiveResearchJob({ progress: 0, progressMessage: 'Starting research...', status: 'RUNNING' });
+        }
         fetchJobs();
       } else {
         toast.error(data.error || 'Failed to start lead research');
@@ -1228,7 +1267,7 @@ export default function AIEmployeesPage() {
               </div>
               <Button 
                 onClick={handleLeadResearch} 
-                disabled={researchLoading}
+                disabled={researchLoading || !!activeResearchJobId}
                 className="w-full"
               >
                 {researchLoading ? (
@@ -1243,6 +1282,17 @@ export default function AIEmployeesPage() {
                   </>
                 )}
               </Button>
+              {activeResearchJobId && activeResearchJob && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {activeResearchJob.progressMessage || 'Researching...'}
+                    </span>
+                    <span className="font-medium">{activeResearchJob.progress}%</span>
+                  </div>
+                  <Progress value={activeResearchJob.progress} className="h-2" />
+                </div>
+              )}
             </CardContent>
           </Card>
 

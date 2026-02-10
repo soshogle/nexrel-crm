@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { syncGeneralInventoryToProduct } from '@/lib/general-inventory/product-sync';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -150,6 +151,18 @@ export async function POST(request: NextRequest) {
           toLocationId: locationId,
           reason: 'Initial stock count',
         },
+      });
+    }
+
+    // Sync to Product and website stock when General Inventory item is created with quantity
+    if (quantity > 0) {
+      syncGeneralInventoryToProduct(
+        session.user.id,
+        sku,
+        quantity,
+        0
+      ).catch((err) => {
+        console.error('Failed to sync inventory to products:', err);
       });
     }
 
