@@ -55,8 +55,28 @@ export function ElevenLabsAgent({
 
     try {
       conversationMessagesRef.current = [];
-      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioStreamRef.current = micStream;
+      
+      // Request microphone access first (like Docpen does)
+      console.log('🎤 Requesting microphone access...');
+      let micStream: MediaStream;
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioStreamRef.current = micStream;
+        console.log('✅ Microphone access granted');
+      } catch (micError: any) {
+        console.error('❌ Microphone access denied:', micError);
+        setIsLoading(false);
+        setStatus("idle");
+        
+        if (micError.name === 'NotAllowedError' || micError.name === 'PermissionDeniedError') {
+          setError('Microphone access denied. Please allow microphone permissions in your browser settings and try again.');
+        } else if (micError.name === 'NotFoundError') {
+          setError('No microphone found. Please connect a microphone and try again.');
+        } else {
+          setError(`Microphone error: ${micError.message || 'Unknown error'}`);
+        }
+        return;
+      }
 
       audioChunksRef.current = [];
       try {
@@ -428,21 +448,36 @@ export function ElevenLabsAgent({
       {!isConnected && !isLoading && (
         <div className="text-center space-y-6 z-10">
           <div className="space-y-2">
-            <h3 className="text-2xl font-semibold">Talk to Our AI Assistant</h3>
+            <h3 className="text-2xl font-semibold">Talk to Your AI Brain Assistant</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
-              {autoStart 
-                ? "Click anywhere to start a live conversation with our AI-powered assistant. Microphone access will be requested."
-                : "Click the button below to start a live conversation with our AI-powered assistant. Ask anything about Soshogle's services!"}
+              Click the button below to start a live conversation. Your browser will ask for microphone permission.
             </p>
           </div>
 
-          <Button size="lg" onClick={startConversation} className="bg-primary hover:bg-primary/90 gap-2">
+          <Button 
+            size="lg" 
+            onClick={startConversation} 
+            className="bg-primary hover:bg-primary/90 gap-2"
+            disabled={!agentId}
+          >
             <Mic className="w-5 h-5" />
-            {autoStart ? "Start Conversation" : "Start Conversation"}
+            Start Conversation
           </Button>
 
+          {!agentId && (
+            <p className="text-sm text-muted-foreground">Loading agent...</p>
+          )}
+
           {error && (
-            <p className="text-destructive text-sm">{error}</p>
+            <div className="space-y-2">
+              <p className="text-destructive text-sm font-semibold">Error:</p>
+              <p className="text-destructive text-sm">{error}</p>
+              {error.includes('Microphone') && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Please allow microphone access in your browser settings and try again.
+                </p>
+              )}
+            </div>
           )}
         </div>
       )}
