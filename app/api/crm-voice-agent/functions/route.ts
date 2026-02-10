@@ -213,6 +213,45 @@ async function getStatistics(userId: string, params: any = {}) {
       },
     });
 
+    // Prepare chart-ready data formats
+    const chartData = {
+      // Line/Bar chart data for monthly revenue
+      monthlyRevenueChart: {
+        labels: Object.keys(monthlyRevenue).map(month => 
+          new Date(month + '-01').toLocaleDateString('en-US', { month: 'short' })
+        ),
+        datasets: [{
+          label: 'Revenue',
+          data: Object.values(monthlyRevenue),
+          borderColor: 'rgb(139, 92, 246)',
+          backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        }],
+      },
+      // Pie chart data for CRM metrics distribution
+      metricsPieChart: {
+        labels: ['Leads', 'Deals', 'Open Deals', 'Campaigns'],
+        datasets: [{
+          label: 'CRM Metrics',
+          data: [leads, deals, openDeals.length, campaigns],
+          backgroundColor: [
+            'rgba(139, 92, 246, 0.8)',  // Purple for Leads
+            'rgba(59, 130, 246, 0.8)',  // Blue for Deals
+            'rgba(16, 185, 129, 0.8)',  // Green for Open Deals
+            'rgba(245, 158, 11, 0.8)',  // Amber for Campaigns
+          ],
+        }],
+      },
+      // Bar chart data for metrics comparison
+      metricsBarChart: {
+        labels: ['Leads', 'Deals', 'Open Deals', 'Campaigns'],
+        datasets: [{
+          label: 'Count',
+          data: [leads, deals, openDeals.length, campaigns],
+          backgroundColor: 'rgba(139, 92, 246, 0.8)',
+        }],
+      },
+    };
+
     return {
       success: true,
       statistics: {
@@ -230,6 +269,8 @@ async function getStatistics(userId: string, params: any = {}) {
           status: lead.status,
           createdAt: lead.createdAt.toISOString(),
         })),
+        // Chart-ready data formats
+        charts: chartData,
       },
       message: `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns.`,
     };

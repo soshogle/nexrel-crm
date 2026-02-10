@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ComprehensiveBrainData } from '@/lib/ai-brain-enhanced-service';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface GeneralInsight {
   id: string;
@@ -365,53 +365,157 @@ export default function BusinessAIPage() {
                   </div>
                 </div>
 
-                {/* Monthly Revenue Chart or CRM Metrics Bar Chart */}
-                {crmStatistics.monthlyRevenue ? (
-                  <div className="bg-white/50 rounded-lg p-4 border border-purple-200">
-                    <h4 className="text-sm font-semibold mb-4">
-                      {crmStatistics.comparisonData ? 'Sales Comparison (Last 7 Months)' : 'Monthly Revenue (Last 7 Months)'}
-                    </h4>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <BarChart 
-                        data={Object.entries(crmStatistics.monthlyRevenue).map(([month, revenue]) => ({
-                          month: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-                          current: revenue as number,
-                          ...(crmStatistics.comparisonData?.monthlyRevenue && {
-                            previous: crmStatistics.comparisonData.monthlyRevenue[month] || 0,
-                          }),
-                        }))}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip formatter={(value: any) => `$${Number(value).toLocaleString()}`} />
-                        <Legend />
-                        <Bar dataKey="current" fill="#8b5cf6" name="Current Period" />
-                        {crmStatistics.comparisonData && (
-                          <Bar dataKey="previous" fill="#a78bfa" name="Previous Period" />
-                        )}
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="bg-white/50 rounded-lg p-4 border border-purple-200">
-                    <h4 className="text-sm font-semibold mb-4">CRM Metrics Overview</h4>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={[
-                        { name: 'Leads', value: crmStatistics.totalLeads },
-                        { name: 'Deals', value: crmStatistics.totalDeals },
-                        { name: 'Open Deals', value: crmStatistics.openDeals },
-                        { name: 'Campaigns', value: crmStatistics.totalCampaigns },
-                      ]}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="value" fill="#8b5cf6" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
+                {/* Enhanced Charts Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Monthly Revenue Line Chart */}
+                  {crmStatistics.monthlyRevenue && (
+                    <Card className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/95 to-purple-50/30 backdrop-blur-sm">
+                      <CardHeader>
+                        <CardTitle className="text-lg bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                          {crmStatistics.comparisonData ? 'Sales Comparison (Last 7 Months)' : 'Monthly Revenue Trend'}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart 
+                            data={Object.entries(crmStatistics.monthlyRevenue).map(([month, revenue]) => ({
+                              month: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short' }),
+                              current: revenue as number,
+                              ...(crmStatistics.comparisonData?.monthlyRevenue && {
+                                previous: crmStatistics.comparisonData.monthlyRevenue[month] || 0,
+                              }),
+                            }))}
+                            margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                          >
+                            <defs>
+                              <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                              </linearGradient>
+                              {crmStatistics.comparisonData && (
+                                <linearGradient id="previousGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.8}/>
+                                  <stop offset="95%" stopColor="#a78bfa" stopOpacity={0.1}/>
+                                </linearGradient>
+                              )}
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                            <XAxis 
+                              dataKey="month" 
+                              stroke="#6b7280"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <YAxis 
+                              stroke="#6b7280"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(value) => `$${value.toLocaleString()}`}
+                            />
+                            <Tooltip 
+                              contentStyle={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                              }}
+                              formatter={(value: any) => `$${Number(value).toLocaleString()}`}
+                            />
+                            <Legend />
+                            <Line
+                              type="monotone"
+                              dataKey="current"
+                              stroke="#8b5cf6"
+                              strokeWidth={3}
+                              dot={{ fill: '#8b5cf6', r: 4 }}
+                              activeDot={{ r: 6 }}
+                              name="Current Period"
+                              animationDuration={1000}
+                            />
+                            {crmStatistics.comparisonData && (
+                              <Line
+                                type="monotone"
+                                dataKey="previous"
+                                stroke="#a78bfa"
+                                strokeWidth={3}
+                                dot={{ fill: '#a78bfa', r: 4 }}
+                                activeDot={{ r: 6 }}
+                                name="Previous Period"
+                                animationDuration={1000}
+                              />
+                            )}
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* CRM Metrics Pie Chart */}
+                  <Card className="border-2 border-pink-200/50 shadow-xl bg-gradient-to-br from-white/95 to-pink-50/30 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="text-lg bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                        CRM Metrics Distribution
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: 'Leads', value: crmStatistics.totalLeads },
+                              { name: 'Deals', value: crmStatistics.totalDeals },
+                              { name: 'Open Deals', value: crmStatistics.openDeals },
+                              { name: 'Campaigns', value: crmStatistics.totalCampaigns },
+                            ].filter(item => item.value > 0)}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={100}
+                            fill="#8884d8"
+                            dataKey="value"
+                            animationDuration={1000}
+                            animationBegin={0}
+                          >
+                            {[
+                              { name: 'Leads', value: crmStatistics.totalLeads },
+                              { name: 'Deals', value: crmStatistics.totalDeals },
+                              { name: 'Open Deals', value: crmStatistics.openDeals },
+                              { name: 'Campaigns', value: crmStatistics.totalCampaigns },
+                            ].filter(item => item.value > 0).map((entry, index) => {
+                              const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+                              return (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={COLORS[index % COLORS.length]}
+                                  stroke="#fff"
+                                  strokeWidth={2}
+                                />
+                              );
+                            })}
+                          </Pie>
+                          <Tooltip 
+                            contentStyle={{
+                              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            }}
+                          />
+                          <Legend 
+                            verticalAlign="bottom" 
+                            height={36}
+                            formatter={(value) => (
+                              <span className="text-sm text-gray-700">{value}</span>
+                            )}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </div>
 
                 {/* Recent Leads List */}
                 {crmStatistics.recentLeads && crmStatistics.recentLeads.length > 0 && (
