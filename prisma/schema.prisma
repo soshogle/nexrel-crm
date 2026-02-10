@@ -8081,6 +8081,10 @@ model WorkflowTemplate {
   enrollmentMode     Boolean  @default(false)
   enrollmentTriggers Json?
 
+  // Phase 3: A/B Testing fields
+  enableAbTesting    Boolean  @default(false)
+  abTestConfig       Json?    // {splitPercentage: 50, testType: "subject" | "content" | "timing"}
+
   // Relations
   user         User                @relation("UserWorkflowTemplates", fields: [userId], references: [id], onDelete: Cascade)
   tasks        WorkflowTask[]              @relation("WorkflowTemplateTasks")
@@ -8114,6 +8118,17 @@ model WorkflowTask {
   actionConfig      Json // {actions: ["voice_call", "sms"], script: "...", etc}
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  // Phase 2: Enhanced timing options for drip campaigns
+  delayDays         Int      @default(0) // Days delay (for granular control)
+  delayHours        Int      @default(0) // Hours delay (for granular control)
+  preferredSendTime String?  // Preferred time of day to send (HH:MM format, e.g., "09:00")
+  skipConditions    Json?   // Conditions to skip this task (e.g., [{"field": "status", "operator": "equals", "value": "converted"}])
+
+  // Phase 3: A/B Testing fields
+  isAbTestVariant    Boolean  @default(false) // True if this task is an A/B test variant
+  abTestGroup        String?  // 'A' or 'B' - which test group this variant belongs to
+  variantOf          String?  // ID of the original task this variant is based on
 
   // Relations
   template   WorkflowTemplate @relation("WorkflowTemplateTasks", fields: [templateId], references: [id], onDelete: Cascade)

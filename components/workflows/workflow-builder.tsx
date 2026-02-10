@@ -14,6 +14,7 @@ import { ExecutionModeSelector } from './execution-mode-selector';
 import { AudiencePanel, AudienceConfig } from './audience-panel';
 import { CampaignSettingsPanel, CampaignSettings } from './campaign-settings-panel';
 import { EnrollmentPanel } from './enrollment-panel';
+import { ABTestPanel } from './ab-test-panel';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
 import { Industry } from '@prisma/client';
 import { Button } from '@/components/ui/button';
@@ -64,6 +65,9 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   // Drip mode state
   const [enrollmentMode, setEnrollmentMode] = useState<boolean>(false);
   const [enrollmentTriggers, setEnrollmentTriggers] = useState<any[]>([]);
+  // A/B Testing state (Phase 3)
+  const [enableAbTesting, setEnableAbTesting] = useState<boolean>(false);
+  const [abTestConfig, setAbTestConfig] = useState<any>(null);
   
   const industryConfig = getIndustryConfig(industry);
   
@@ -104,6 +108,8 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
             setExecutionMode('DRIP');
             setEnrollmentMode(true);
             if (t.enrollmentTriggers) setEnrollmentTriggers(t.enrollmentTriggers);
+            if (t.enableAbTesting) setEnableAbTesting(true);
+            if (t.abTestConfig) setAbTestConfig(t.abTestConfig);
           }
           
           return {
@@ -211,6 +217,8 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
           campaignSettings,
           enrollmentMode: executionMode === 'DRIP' ? true : false,
           enrollmentTriggers: executionMode === 'DRIP' ? enrollmentTriggers : null,
+          enableAbTesting: executionMode === 'DRIP' && enrollmentMode ? enableAbTesting : false,
+          abTestConfig: executionMode === 'DRIP' && enrollmentMode && enableAbTesting ? abTestConfig : null,
         }),
       });
       
@@ -546,6 +554,15 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
                     onEnrollmentModeChange={setEnrollmentMode}
                     onEnrollmentTriggersChange={setEnrollmentTriggers}
                   />
+                  {/* A/B Testing Panel - Only show when enrollment mode is enabled */}
+                  {enrollmentMode && (
+                    <ABTestPanel
+                      enableAbTesting={enableAbTesting}
+                      abTestConfig={abTestConfig}
+                      onEnableAbTestingChange={setEnableAbTesting}
+                      onABTestConfigChange={setAbTestConfig}
+                    />
+                  )}
                 </div>
               )}
             </>
@@ -562,7 +579,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
             task={selectedTask}
             industry={industry}
             workflowTasks={workflow.tasks}
-            executionMode={executionMode}
+            executionMode={executionMode as 'WORKFLOW' | 'CAMPAIGN' | 'DRIP'}
             onClose={() => setSelectedTaskId(null)}
             onSave={handleUpdateTask}
             onDelete={handleDeleteTask}

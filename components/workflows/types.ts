@@ -29,6 +29,19 @@ export interface WorkflowTask {
     row: number;
     col: number;
   };
+  // Phase 2: Enhanced timing options for drip campaigns
+  delayDays?: number; // Days delay (for granular control)
+  delayHours?: number; // Hours delay (for granular control)
+  preferredSendTime?: string | null; // Preferred time of day to send (HH:MM format)
+  skipConditions?: Array<{
+    field: string;
+    operator: string;
+    value: string;
+  }> | null; // Conditions to skip this task
+  // Phase 3: A/B Testing fields
+  isAbTestVariant?: boolean; // True if this task is an A/B test variant
+  abTestGroup?: string | null; // 'A' or 'B' - which test group this variant belongs to
+  variantOf?: string | null; // ID of the original task this variant is based on
 }
 
 export interface WorkflowTemplate {

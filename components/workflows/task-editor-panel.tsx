@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Trash2, Save, Shield, Clock, GitBranch, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Trash2, Save, Shield, Clock, GitBranch, BarChart3, ChevronDown, ChevronUp, Beaker } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -30,7 +30,7 @@ interface TaskEditorPanelProps {
   task: WorkflowTask | null;
   industry: Industry;
   workflowTasks: WorkflowTask[];
-  executionMode?: 'WORKFLOW' | 'CAMPAIGN';
+  executionMode?: 'WORKFLOW' | 'CAMPAIGN' | 'DRIP';
   onClose: () => void;
   onSave: (task: WorkflowTask) => void;
   onDelete: (taskId: string) => void;
@@ -70,6 +70,8 @@ export function TaskEditorPanel({
   const [showBranching, setShowBranching] = useState(false);
   const [selectedActions, setSelectedActions] = useState<string[]>([]);
   const [showCampaignOptions, setShowCampaignOptions] = useState(false);
+  const [showEnhancedTiming, setShowEnhancedTiming] = useState(false);
+  const [skipConditions, setSkipConditions] = useState<any[]>([]);
   
   const industryConfig = getIndustryConfig(industry);
   
@@ -81,8 +83,21 @@ export function TaskEditorPanel({
     if (task) {
       const actionConfig = (task as any).actionConfig || {};
       setSelectedActions(actionConfig.actions || []);
+      
+      // Load skip conditions
+      const taskAny = task as any;
+      if (taskAny.skipConditions && Array.isArray(taskAny.skipConditions)) {
+        setSkipConditions(taskAny.skipConditions);
+      } else {
+        setSkipConditions([]);
+      }
+      
+      // Show enhanced timing if in DRIP mode or if enhanced fields are set
+      if (executionMode === 'DRIP' || taskAny.delayDays || taskAny.delayHours || taskAny.preferredSendTime) {
+        setShowEnhancedTiming(true);
+      }
     }
-  }, [task]);
+  }, [task, executionMode]);
   
   if (!editedTask || !industryConfig) return null;
   
@@ -224,35 +239,234 @@ export function TaskEditorPanel({
         
         {/* Delay Settings */}
         <Card className="p-4 border-purple-200 bg-purple-50/50">
-          <div className="flex items-center gap-2 mb-3">
-            <Clock className="w-4 h-4 text-purple-600" />
-            <Label className="text-sm font-semibold">Delay Before Task</Label>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-purple-600" />
+              <Label className="text-sm font-semibold">Delay Before Task</Label>
+            </div>
+            {executionMode === 'DRIP' && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowEnhancedTiming(!showEnhancedTiming)}
+                className="text-xs text-purple-600 hover:text-purple-700"
+              >
+                {showEnhancedTiming ? 'Simple' : 'Advanced'}
+              </Button>
+            )}
           </div>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              min="0"
-              value={editedTask.delayMinutes}
-              onChange={(e) => setEditedTask({ ...editedTask, delayMinutes: parseInt(e.target.value) || 0 })}
-              className="flex-1 border-purple-200"
-            />
-            <Select
-              value={editedTask.delayUnit || 'MINUTES'}
-              onValueChange={(value: 'MINUTES' | 'HOURS' | 'DAYS') => setEditedTask({ ...editedTask, delayUnit: value })}
-            >
-              <SelectTrigger className="w-32 border-purple-200">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DELAY_UNITS.map((unit) => (
-                  <SelectItem key={unit} value={unit}>
-                    {unit}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          
+          {!showEnhancedTiming ? (
+            // Simple delay (backward compatible)
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min="0"
+                value={editedTask.delayMinutes || 0}
+                onChange={(e) => setEditedTask({ ...editedTask, delayMinutes: parseInt(e.target.value) || 0 })}
+                className="flex-1 border-purple-200"
+                placeholder="Delay amount"
+              />
+              <Select
+                value={editedTask.delayUnit || 'MINUTES'}
+                onValueChange={(value: 'MINUTES' | 'HOURS' | 'DAYS') => setEditedTask({ ...editedTask, delayUnit: value })}
+              >
+                <SelectTrigger className="w-32 border-purple-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DELAY_UNITS.map((unit) => (
+                    <SelectItem key={unit} value={unit}>
+                      {unit}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            // Enhanced timing (Phase 2 - DRIP mode)
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Days</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={(editedTask as any).delayDays || 0}
+                    onChange={(e) => setEditedTask({ 
+                      ...editedTask, 
+                      ...(editedTask as any),
+                      delayDays: parseInt(e.target.value) || 0 
+                    })}
+                    className="border-purple-200"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Hours</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="23"
+                    value={(editedTask as any).delayHours || 0}
+                    onChange={(e) => setEditedTask({ 
+                      ...editedTask, 
+                      ...(editedTask as any),
+                      delayHours: parseInt(e.target.value) || 0 
+                    })}
+                    className="border-purple-200"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Preferred Send Time (24h format)</Label>
+                <Input
+                  type="time"
+                  value={(editedTask as any).preferredSendTime || ''}
+                  onChange={(e) => setEditedTask({ 
+                    ...editedTask, 
+                    ...(editedTask as any),
+                    preferredSendTime: e.target.value || null
+                  })}
+                  className="border-purple-200"
+                  placeholder="09:00"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Task will be scheduled for this time (e.g., 09:00 for 9 AM)
+                </p>
+              </div>
+            </div>
+          )}
         </Card>
+        
+        {/* A/B Test Variant Options - Only show in DRIP mode with A/B testing enabled */}
+        {executionMode === 'DRIP' && (editedTask as any).isAbTestVariant !== undefined && (
+          <Card className="p-4 border-purple-200 bg-purple-50/50">
+            <div className="flex items-center gap-2 mb-3">
+              <Beaker className="w-4 h-4 text-purple-600" />
+              <Label className="text-sm font-semibold">A/B Test Variant</Label>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="is-ab-variant"
+                  checked={(editedTask as any).isAbTestVariant || false}
+                  onChange={(e) => {
+                    setEditedTask({
+                      ...editedTask,
+                      ...(editedTask as any),
+                      isAbTestVariant: e.target.checked,
+                      abTestGroup: e.target.checked ? ((editedTask as any).abTestGroup || 'A') : null,
+                      variantOf: e.target.checked ? ((editedTask as any).variantOf || null) : null,
+                    });
+                  }}
+                  className="rounded"
+                />
+                <Label htmlFor="is-ab-variant" className="text-sm cursor-pointer">
+                  This is an A/B test variant
+                </Label>
+              </div>
+              {(editedTask as any).isAbTestVariant && (
+                <div className="space-y-2 pl-6">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Test Group</Label>
+                    <Select
+                      value={(editedTask as any).abTestGroup || 'A'}
+                      onValueChange={(value) => {
+                        setEditedTask({
+                          ...editedTask,
+                          ...(editedTask as any),
+                          abTestGroup: value,
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="w-32 border-purple-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A">Group A</SelectItem>
+                        <SelectItem value="B">Group B</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select which test group this variant belongs to
+                  </p>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {/* Skip Conditions - Only show in DRIP mode */}
+        {executionMode === 'DRIP' && (
+          <Card className="p-4 border-purple-200 bg-purple-50/50">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="w-4 h-4 text-purple-600" />
+              <Label className="text-sm font-semibold">Skip Conditions</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Skip this task if any of these conditions are met
+            </p>
+            {skipConditions.length === 0 ? (
+              <div className="text-center py-4 text-sm text-muted-foreground border-2 border-dashed border-purple-200 rounded-lg">
+                No skip conditions configured
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {skipConditions.map((condition, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-white rounded border border-purple-200">
+                    <div className="flex-1 text-sm">
+                      <span className="font-medium">{condition.field}</span>
+                      {' '}
+                      <span className="text-muted-foreground">{condition.operator}</span>
+                      {' '}
+                      <span className="font-medium">{condition.value}</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const newConditions = skipConditions.filter((_, i) => i !== index);
+                        setSkipConditions(newConditions);
+                        setEditedTask({
+                          ...editedTask,
+                          ...(editedTask as any),
+                          skipConditions: newConditions.length > 0 ? newConditions : null,
+                        });
+                      }}
+                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newCondition = { field: 'status', operator: 'equals', value: '' };
+                const newConditions = [...skipConditions, newCondition];
+                setSkipConditions(newConditions);
+                setEditedTask({
+                  ...editedTask,
+                  ...(editedTask as any),
+                  skipConditions: newConditions,
+                });
+              }}
+              className="w-full mt-2 border-purple-200 text-purple-700 hover:bg-purple-50"
+            >
+              + Add Skip Condition
+            </Button>
+          </Card>
+        )}
         
         {/* Campaign Options - Only show in Campaign Mode */}
         {executionMode === 'CAMPAIGN' && (
@@ -525,7 +739,13 @@ export function TaskEditorPanel({
           <Button
             size="sm"
             onClick={() => {
-              onSave(editedTask);
+              // Ensure skip conditions are included in saved task
+              const taskToSave = {
+                ...editedTask,
+                ...(editedTask as any),
+                skipConditions: skipConditions.length > 0 ? skipConditions : null,
+              };
+              onSave(taskToSave);
               onClose();
             }}
             className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"

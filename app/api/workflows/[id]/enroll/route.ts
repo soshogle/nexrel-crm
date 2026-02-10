@@ -100,13 +100,22 @@ export async function POST(
       ? new Date(Date.now() + (firstTask.delayValue || 0) * (firstTask.delayUnit === 'HOURS' ? 3600000 : firstTask.delayUnit === 'DAYS' ? 86400000 : 60000))
       : new Date();
 
+    // Determine A/B test group if A/B testing is enabled
+    let abTestGroup: string | null = null;
+    const workflowAny = workflow as any;
+    if (workflowAny.enableAbTesting && workflowAny.abTestConfig) {
+      const config = workflowAny.abTestConfig as any;
+      const random = Math.random() * 100;
+      abTestGroup = random < (config.splitPercentage || 50) ? 'A' : 'B';
+    }
+
     // Create enrollments
     const enrollments = await Promise.all(
       leadsToEnroll.map((lead) =>
         prisma.$executeRaw`
-          INSERT INTO "WorkflowEnrollment" (
+          INSERT INTO "WorkflowTemplateEnrollment" (
             "id", "workflowId", "leadId", "status", "currentStep", 
-            "nextSendAt", "enrolledAt"
+            "nextSendAt", "enrolledAt", "abTestGroup"
           )
           VALUES (
             gen_random_uuid()::text,
@@ -115,7 +124,8 @@ export async function POST(
             'ACTIVE',
             1,
             ${nextSendAt},
-            CURRENT_TIMESTAMP
+            CURRENT_TIMESTAMP,
+            ${abTestGroup}
           )
           ON CONFLICT ("workflowId", "leadId") DO NOTHING
         `
