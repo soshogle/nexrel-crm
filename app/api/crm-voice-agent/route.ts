@@ -26,9 +26,29 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error getting CRM voice agent:', error);
     console.error('Error stack:', error?.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+    });
     
-    // Return a graceful error instead of 500
-    // The UI will handle this gracefully
+    // Try to create agent even if there's an error
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.id) {
+        console.log('Attempting to create CRM voice agent after error...');
+        const result = await crmVoiceAgentService.getOrCreateCrmVoiceAgent(session.user.id);
+        return NextResponse.json({
+          success: true,
+          agentId: result.agentId,
+          created: result.created,
+        });
+      }
+    } catch (retryError: any) {
+      console.error('Retry failed:', retryError);
+    }
+    
+    // Return error but don't break UI
     return NextResponse.json(
       { 
         success: false,
@@ -36,7 +56,7 @@ export async function GET(request: NextRequest) {
         agentId: null,
         created: false,
       },
-      { status: 200 } // Return 200 so UI doesn't break
+      { status: 200 }
     );
   }
 }

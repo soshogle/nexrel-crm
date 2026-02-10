@@ -123,9 +123,25 @@ export default function BusinessAIPage() {
     try {
       setAgentLoading(true);
       const response = await fetch('/api/crm-voice-agent');
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+      
+      if (data.success && data.agentId) {
         setCrmAgentId(data.agentId);
+        console.log('CRM voice agent loaded:', data.agentId, 'created:', data.created);
+      } else {
+        console.error('Failed to load CRM agent:', data.error);
+        // Retry once after a delay
+        setTimeout(async () => {
+          try {
+            const retryResponse = await fetch('/api/crm-voice-agent');
+            const retryData = await retryResponse.json();
+            if (retryData.success && retryData.agentId) {
+              setCrmAgentId(retryData.agentId);
+            }
+          } catch (retryError) {
+            console.error('Retry failed:', retryError);
+          }
+        }, 2000);
       }
     } catch (error) {
       console.error('Failed to load CRM agent:', error);

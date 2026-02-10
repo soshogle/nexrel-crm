@@ -4,7 +4,6 @@
  */
 
 import { prisma } from '@/lib/db';
-import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
 
 export interface CrmVoiceAgentConfig {
   userId: string;
@@ -94,29 +93,72 @@ export class CrmVoiceAgentService {
     // Build CRM-specific system prompt
     const systemPrompt = this.buildCrmSystemPrompt(user, language);
 
-    // Create agent via ElevenLabs provisioning
-    // Note: ElevenLabs provisioning doesn't support custom functions directly
-    // We'll create the agent and then update it with functions via API
-    const result = await elevenLabsProvisioning.createAgent({
-      name: `${businessName} CRM Assistant`,
-      businessName,
-      businessIndustry: user.industry || 'General',
-      greetingMessage: this.getGreetingMessage(language),
-      systemPrompt,
-      userId: config.userId,
-      voiceAgentId: `crm_${config.userId}`, // Unique ID for CRM voice agent
-      voiceId: config.voiceId || 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
-      knowledgeBase: this.buildKnowledgeBase(user),
-    });
-
-    // Note: CRM functions would need to be added via ElevenLabs API directly
-    // For now, the agent will use the system prompt which instructs it on available functions
-
-    if (!result.success || !result.agentId) {
-      throw new Error(result.error || 'Failed to create CRM voice agent');
+    // Create agent directly via ElevenLabs API (CRM agents don't need VoiceAgent records)
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      throw new Error('ElevenLabs API key not configured');
     }
 
-    return result.agentId;
+    const agentPayload = {
+      name: `${businessName} CRM Assistant`,
+      conversation_config: {
+        agent: {
+          prompt: {
+            prompt: systemPrompt,
+          },
+          first_message: this.getGreetingMessage(language),
+          language: language || 'en',
+        },
+        asr: {
+          quality: 'high',
+          provider: 'elevenlabs',
+        },
+        tts: {
+          voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
+          model_id: 'eleven_turbo_v2_5',
+        },
+        turn: {
+          mode: 'turn_based',
+        },
+      },
+      platform_settings: {
+        auth: {
+          enable_auth: false,
+        },
+      },
+    };
+
+    // Add knowledge base if provided
+    if (this.buildKnowledgeBase(user)) {
+      (agentPayload as any).knowledge_base = {
+        content: this.buildKnowledgeBase(user),
+      };
+    }
+
+    const response = await fetch('https://api.elevenlabs.io/v1/convai/agents/create', {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(agentPayload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('ElevenLabs agent creation failed:', errorText);
+      throw new Error(`Failed to create CRM voice agent: ${errorText}`);
+    }
+
+    const agentData = await response.json();
+    const agentId = agentData.agent_id;
+
+    if (!agentId) {
+      throw new Error('Failed to create CRM voice agent: No agent ID returned');
+    }
+
+    console.log('✅ CRM voice agent created:', agentId);
+    return agentId;
   }
 
   /**
