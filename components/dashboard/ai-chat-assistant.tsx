@@ -567,15 +567,15 @@ export function AIChatAssistant() {
                         
                         // Check if message contains statistics keywords and trigger visualization
                         const content = message.content.toLowerCase();
-                        const statsKeywords = ['statistic', 'statistics', 'stats', 'revenue', 'leads', 'deals', 'data'];
+                        const statsKeywords = ['statistic', 'statistics', 'stats', 'revenue', 'leads', 'deals', 'data', 'what if', 'predict', 'project', 'simulate'];
                         if (statsKeywords.some(keyword => content.includes(keyword))) {
-                          // Trigger statistics fetch and visualization
+                          // Trigger statistics fetch and visualization (pass message for dynamic chart parsing)
                           fetch('/api/crm-voice-agent/functions', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                               function_name: 'get_statistics',
-                              parameters: {},
+                              parameters: { chartIntent: message.content },
                             }),
                           }).then(async (res) => {
                             if (res.ok) {

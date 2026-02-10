@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
+import { useAIBrainVoice } from '@/lib/ai-brain-voice-context';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Mic, MicOff, X, Minimize2, Maximize2 } from 'lucide-react';
@@ -15,6 +16,7 @@ import { toast } from 'sonner';
 const STORAGE_KEY = 'crm-voice-assistant-state';
 
 export function GlobalVoiceAssistant() {
+  const { handleMessage } = useAIBrainVoice();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [agentId, setAgentId] = useState<string | null>(null);
@@ -164,6 +166,7 @@ export function GlobalVoiceAssistant() {
               <div className="p-4">
                 <ElevenLabsAgent
                   agentId={agentId}
+                  onMessage={handleMessage}
                   onConversationEnd={handleConversationEnd}
                   onAgentSpeakingChange={handleAgentSpeakingChange}
                   dynamicVariables={{

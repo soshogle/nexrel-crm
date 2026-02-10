@@ -945,7 +945,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
             },
             body: JSON.stringify({
               action: action,
-              parameters: functionArgs,
+              parameters: { ...functionArgs, ...(action === "get_statistics" && { chartIntent: message }) },
               userId: user.id,
             }),
           });

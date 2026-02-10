@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { parseChartIntent, getDynamicChartData } from '@/lib/crm-chart-intent';
+import { parseScenarioIntent, calculateScenario } from '@/lib/crm-scenario-predictor';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -67,6 +69,10 @@ export async function POST(req: NextRequest) {
         result = await getRecentActivity(userId, parameters);
         break;
 
+      case 'predict_scenario':
+        result = await predictScenario(userId, parameters || {});
+        break;
+
       default:
         result = { error: `Unknown function: ${function_name}` };
     }
@@ -88,7 +94,7 @@ export async function POST(req: NextRequest) {
  */
 async function getStatistics(userId: string, params: any = {}) {
   try {
-    const { period = 'all_time', compareWith } = params;
+    const { period = 'all_time', compareWith, chartIntent } = params;
     
     // Calculate date ranges based on period
     const now = new Date();
@@ -254,6 +260,47 @@ async function getStatistics(userId: string, params: any = {}) {
       },
     };
 
+    // Parse chart intent and fetch dynamic chart data if user requested a specific chart
+    let dynamicCharts: { chartType: 'pie' | 'bar' | 'line'; dimension: string; title: string; data: { name: string; value: number }[] }[] = [];
+    if (chartIntent) {
+      const intent = parseChartIntent(chartIntent);
+      if (intent) {
+        let data: { name: string; value: number }[] = [];
+        if (intent.dimension === 'revenue_by_month') {
+          data = Object.entries(monthlyRevenue).map(([month, value]) => ({
+            name: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short' }),
+            value,
+          }));
+        } else {
+          data = await getDynamicChartData(userId, intent.dimension);
+        }
+        if (data.length > 0) {
+          const titles: Record<string, string> = {
+            leads_by_status: 'Leads by Status',
+            leads_by_source: 'Leads by Source',
+            deals_by_stage: 'Deals by Stage',
+            revenue_by_stage: 'Revenue by Stage',
+            revenue_by_month: 'Monthly Revenue',
+          };
+          dynamicCharts = [{
+            chartType: intent.chartType,
+            dimension: intent.dimension,
+            title: titles[intent.dimension] || intent.dimension,
+            data,
+          }];
+        }
+      }
+    }
+
+    // "What if" scenario prediction when user asks for projections
+    let scenarioResult: any = null;
+    if (chartIntent) {
+      const scenarioIntent = parseScenarioIntent(chartIntent);
+      if (scenarioIntent) {
+        scenarioResult = await calculateScenario(userId, scenarioIntent.type, scenarioIntent.params);
+      }
+    }
+
     return {
       success: true,
       navigateTo: '/dashboard/business-ai?mode=voice',
@@ -274,8 +321,14 @@ async function getStatistics(userId: string, params: any = {}) {
         })),
         // Chart-ready data formats
         charts: chartData,
+        // Dynamic charts based on user request
+        dynamicCharts,
+        // "What if" scenario projection
+        scenarioResult,
       },
-      message: `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns.`,
+      message: scenarioResult
+        ? `Scenario: ${scenarioResult.scenario}. ${scenarioResult.assumption} → $${scenarioResult.impact.toLocaleString()} ${scenarioResult.unit === 'revenue' ? 'additional revenue' : 'potential'}.`
+        : `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns.`,
     };
   } catch (error: any) {
     console.error('Error getting statistics:', error);
@@ -529,5 +582,37 @@ async function getRecentActivity(userId: string, params: any) {
   } catch (error: any) {
     console.error('Error getting recent activity:', error);
     return { error: 'Failed to get recent activity', details: error.message };
+  }
+}
+
+/**
+ * Predict "what if" scenario - standalone for direct predict_scenario calls
+ */
+async function predictScenario(userId: string, params: any) {
+  try {
+    const { scenarioIntent } = params;
+    const text = scenarioIntent || params.text || '';
+    const intent = parseScenarioIntent(text);
+    if (!intent) {
+      return {
+        success: false,
+        error: 'Could not parse scenario. Try: "What if I convert 10 more leads?" or "What if I get 50 more leads?"',
+      };
+    }
+    const scenarioResult = await calculateScenario(userId, intent.type, intent.params);
+    if (!scenarioResult) {
+      return { success: false, error: 'Could not calculate scenario.' };
+    }
+    return {
+      success: true,
+      navigateTo: '/dashboard/business-ai?mode=voice',
+      scenarioResult,
+      statistics: { scenarioResult },
+      triggerVisualization: true,
+      message: `${scenarioResult.scenario}. ${scenarioResult.assumption} → $${scenarioResult.impact.toLocaleString()} ${scenarioResult.unit === 'revenue' ? 'additional revenue' : 'potential'}.`,
+    };
+  } catch (error: any) {
+    console.error('Error predicting scenario:', error);
+    return { error: 'Failed to predict scenario', details: error.message };
   }
 }

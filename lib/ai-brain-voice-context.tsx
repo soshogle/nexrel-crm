@@ -19,7 +19,7 @@ interface AIBrainVoiceContextType {
   error: string | null;
   conversationActive: boolean;
   setConversationActive: (active: boolean) => void;
-  fetchCrmStatistics: () => Promise<void>;
+  fetchCrmStatistics: (chartIntent?: string) => Promise<void>;
   handleMessage: (message: any) => void;
   navigateTo: (path: string) => void;
 }
@@ -104,15 +104,15 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
     fetchAgent();
   }, []);
 
-  const fetchCrmStatistics = useCallback(async () => {
+  const fetchCrmStatistics = useCallback(async (chartIntent?: string) => {
     try {
-      console.log('📊 [AI Brain Voice Context] Fetching CRM statistics...');
+      console.log('📊 [AI Brain Voice Context] Fetching CRM statistics...', chartIntent ? { chartIntent } : '');
       const response = await fetch('/api/crm-voice-agent/functions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           function_name: 'get_statistics',
-          parameters: {},
+          parameters: chartIntent ? { chartIntent } : {},
         }),
       });
       
@@ -183,7 +183,7 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
         console.log('📊 [AI Brain Voice Context] Detected visualization request, navigating to AI Brain and fetching stats');
         lastStatsCheckRef.current = now;
         navigateTo('/dashboard/business-ai?mode=voice');
-        fetchCrmStatistics();
+        fetchCrmStatistics(message.content);
         return;
       }
 
@@ -208,13 +208,16 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
         return;
       }
 
+      const scenarioKeywords = ['what if', 'what would happen', 'predict', 'project', 'simulate', 'if i convert', 'if i get'];
+      const wantsScenario = scenarioKeywords.some(k => content.includes(k));
+
       const statsKeywords = ['statistic', 'statistics', 'stats', 'revenue', 'total', 'overview', 'summary', 'business performance', 'sales', 'leads', 'deals', 'pipeline'];
       const hasStatsKeyword = statsKeywords.some(k => content.includes(k));
-      if (hasStatsKeyword && !wantsVisualization) {
+      if ((hasStatsKeyword || wantsScenario) && !wantsVisualization) {
         console.log('📊 [AI Brain Voice Context] General stats query, navigating to AI Brain for overview');
         lastStatsCheckRef.current = now;
         navigateTo('/dashboard/business-ai?mode=voice');
-        fetchCrmStatistics();
+        fetchCrmStatistics(message.content);
       }
     }
   }, [fetchCrmStatistics, navigateTo]);
