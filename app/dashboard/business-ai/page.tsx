@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { AIBrainVoiceAgentInline } from '@/components/dashboard/ai-brain-voice-agent-inline';
 import { 
   Brain, 
   TrendingUp, 
@@ -316,9 +317,8 @@ export default function BusinessAIPage() {
 
           {/* Voice Assistant Mode */}
           <TabsContent value="voice" className="space-y-6 mt-6">
-            {/* Note: AI Brain Voice Agent is rendered globally in dashboard-wrapper.tsx */}
-            {/* It persists across page navigation and displays inline on this page */}
-            {/* Visualizations will appear below when the agent queries statistics */}
+            {/* AI Brain Voice Agent - Rendered directly on this page for proper display */}
+            <AIBrainVoiceAgentInline />
 
             {/* CRM Statistics Visualizations - Displayed when agent queries data */}
             {showVisualizations && crmStatistics && (
