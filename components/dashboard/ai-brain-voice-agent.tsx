@@ -23,7 +23,8 @@ export function AIBrainVoiceAgent() {
 
   // Only show on AI Brain page or when conversation is active
   const isAIBrainPage = pathname?.includes('/dashboard/business-ai') || pathname?.includes('/dashboard/ai-brain');
-  const shouldShow = isAIBrainPage || conversationActive;
+  // Don't render globally when on AI Brain page - it will be rendered directly in the page
+  const shouldShow = !isAIBrainPage && conversationActive;
 
 
   // Load persisted state
@@ -163,28 +164,10 @@ export function AIBrainVoiceAgent() {
     return null;
   }
 
-  // Render the agent only when on AI Brain page or conversation is active
-  // Position it differently based on whether we're on the AI Brain page
+  // Only render globally when NOT on AI Brain page and conversation is active
+  // When on AI Brain page, the agent will be rendered directly in the page component
   if (!shouldShow) {
     return null;
-  }
-
-  // If on AI Brain page, render inline in the page content
-  // If conversation active but not on page, render as floating widget
-  if (isAIBrainPage) {
-    // Render inline on the AI Brain page
-    return (
-      <div className="relative w-full">
-        <ElevenLabsAgent 
-          agentId={agentId}
-          autoStart={false}
-          onAudioLevel={() => {}}
-          onAgentSpeakingChange={handleAgentSpeakingChange}
-          onMessage={handleMessage}
-          onConversationEnd={handleConversationEnd}
-        />
-      </div>
-    );
   }
 
   // Render as floating widget when conversation is active but not on AI Brain page
@@ -208,6 +191,125 @@ export function AIBrainVoiceAgent() {
       </div>
     </div>
   );
+}
+
+// Hook to get the agent component for inline rendering on AI Brain page
+export function useAIBrainVoiceAgent() {
+  const pathname = usePathname();
+  const [agentId, setAgentId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [conversationActive, setConversationActive] = useState(false);
+  const lastStatsCheckRef = useRef<number>(0);
+
+  const isAIBrainPage = pathname?.includes('/dashboard/business-ai') || pathname?.includes('/dashboard/ai-brain');
+
+  useEffect(() => {
+    if (!isAIBrainPage) return;
+    
+    const fetchAgent = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/crm-voice-agent');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.agentId) {
+            setAgentId(data.agentId);
+          }
+        }
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAgent();
+  }, [isAIBrainPage]);
+
+  const fetchCrmStatistics = async () => {
+    try {
+      const response = await fetch('/api/crm-voice-agent/functions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          function_name: 'get_statistics',
+          parameters: {},
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.statistics) {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent(VISUALIZATION_EVENT, {
+              detail: {
+                statistics: data.statistics,
+                show: true,
+              },
+            }));
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to fetch CRM statistics:', error);
+    }
+  };
+
+  const handleMessage = (message: any) => {
+    const now = Date.now();
+    const timeSinceLastCheck = now - lastStatsCheckRef.current;
+    
+    if (timeSinceLastCheck < 3000) {
+      return;
+    }
+    
+    if (message.role === 'agent' && message.content) {
+      const content = message.content.toLowerCase();
+      const statsKeywords = [
+        'statistic', 'statistics', 'stats', 'data', 'revenue', 'leads', 'deals',
+        'campaigns', 'contacts', 'total', 'overview', 'summary', 'report',
+        'show', 'display', 'here are', 'you have', 'your crm', 'business performance'
+      ];
+      
+      const hasStatsKeyword = statsKeywords.some(keyword => content.includes(keyword));
+      const hasNumbers = /\d+/.test(message.content);
+      
+      if (hasStatsKeyword || (hasNumbers && (content.includes('lead') || content.includes('deal') || content.includes('revenue')))) {
+        lastStatsCheckRef.current = now;
+        fetchCrmStatistics();
+      }
+    }
+  };
+
+  const handleAgentSpeakingChange = (speaking: boolean) => {
+    setConversationActive(speaking);
+    // Save to localStorage for persistence
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        conversationActive: speaking,
+      }));
+    }
+  };
+
+  const handleConversationEnd = () => {
+    setConversationActive(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        conversationActive: false,
+      }));
+    }
+  };
+
+  return {
+    agentId,
+    loading,
+    error,
+    conversationActive,
+    handleMessage,
+    handleAgentSpeakingChange,
+    handleConversationEnd,
+  };
 }
 
 // Export event name for use in AI Brain page
