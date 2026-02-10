@@ -121,7 +121,7 @@ export default function AIAutomationsPage() {
           <Button
             size="lg"
             variant="outline"
-            onClick={() => router.push('/dashboard/campaigns')}
+            onClick={() => router.push('/dashboard/ai-employees?tab=workflows&mode=campaign')}
             className="px-8 py-6 text-lg"
           >
             <BarChart3 className="h-5 w-5 mr-2" />

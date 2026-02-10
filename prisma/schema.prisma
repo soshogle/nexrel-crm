@@ -346,7 +346,6 @@ model Lead {
   smsCampaignDeals        SmsCampaignDeal[]
   smsEnrollments          SmsEnrollment[]
   tasks                   Task[]
-  workflowEnrollments     WorkflowEnrollment[]
   docpenSessions          DocpenSession[]
   // Real Estate Industry Relations
   rePropertySeller        REProperty[]             @relation("REPropertySeller")
@@ -372,7 +371,9 @@ model Lead {
   // Real Estate Workflow Relations
   reWorkflowInstances     REWorkflowInstance[]     @relation("LeadREWorkflowInstances")
   // Generic Multi-Industry Workflow Relations
-  workflowInstances       WorkflowInstance[]       @relation("LeadWorkflowInstances")
+  workflowInstances           WorkflowInstance[]           @relation("LeadWorkflowInstances")
+  workflowEnrollments         WorkflowEnrollment[]         @relation("LeadWorkflowEnrollments")
+  workflowTemplateEnrollments WorkflowTemplateEnrollment[] @relation("LeadWorkflowTemplateEnrollments")
   // Website Orders Relations
   websiteOrders           WebsiteOrder[]
 
@@ -1061,7 +1062,7 @@ model WorkflowEnrollment {
   updatedAt   DateTime                  @updatedAt
   executions  WorkflowActionExecution[]
   deal        Deal?                     @relation(fields: [dealId], references: [id])
-  lead        Lead?                     @relation(fields: [leadId], references: [id])
+  lead        Lead?                     @relation("LeadWorkflowEnrollments", fields: [leadId], references: [id])
   user        User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workflow    Workflow                  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
@@ -4891,6 +4892,7 @@ enum WorkflowActionType {
 
 enum WorkflowEnrollmentStatus {
   ACTIVE
+  PAUSED
   COMPLETED
   FAILED
   CANCELLED
@@ -8058,15 +8060,39 @@ model WorkflowTemplate {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  // Campaign mode fields (added in previous migration)
+  executionMode     String?  // WORKFLOW, CAMPAIGN, DRIP
+  audience          Json?
+  campaignSettings  Json?
+  analytics         Json?
+  totalRecipients   Int      @default(0)
+  sentCount         Int      @default(0)
+  deliveredCount    Int      @default(0)
+  openedCount       Int      @default(0)
+  clickedCount      Int      @default(0)
+  repliedCount      Int      @default(0)
+  failedCount       Int      @default(0)
+  openRate          Float?
+  clickRate          Float?
+  deliveryRate       Float?
+  replyRate          Float?
+
+  // Enrollment mode fields (Phase 1 - Drip Campaigns)
+  enrollmentMode     Boolean  @default(false)
+  enrollmentTriggers Json?
+
   // Relations
-  user      User               @relation("UserWorkflowTemplates", fields: [userId], references: [id], onDelete: Cascade)
-  tasks     WorkflowTask[]     @relation("WorkflowTemplateTasks")
-  instances WorkflowInstance[] @relation("WorkflowTemplateInstances")
+  user         User                @relation("UserWorkflowTemplates", fields: [userId], references: [id], onDelete: Cascade)
+  tasks        WorkflowTask[]              @relation("WorkflowTemplateTasks")
+  instances    WorkflowInstance[]          @relation("WorkflowTemplateInstances")
+  enrollments  WorkflowTemplateEnrollment[] @relation("WorkflowTemplateEnrollments")
 
   @@index([userId])
   @@index([industry])
   @@index([type])
   @@index([isDefault])
+  @@index([executionMode])
+  @@index([enrollmentMode])
 }
 
 // Generic Workflow Task - a single task/step in the workflow
@@ -8159,6 +8185,32 @@ model TaskExecution {
   @@index([taskId])
   @@index([status])
   @@index([scheduledFor])
+}
+
+// WorkflowTemplate Enrollment - tracks individual lead enrollments in enrollment-mode workflows (drip campaigns)
+// This is separate from WorkflowEnrollment which is for the older Workflow model
+model WorkflowTemplateEnrollment {
+  id          String                   @id @default(cuid())
+  workflowId  String
+  leadId      String
+  status      WorkflowEnrollmentStatus @default(ACTIVE)
+  currentStep Int                      @default(1)
+  nextSendAt  DateTime?
+  abTestGroup String?
+  enrolledAt  DateTime                 @default(now())
+  completedAt DateTime?
+  pausedAt    DateTime?
+  metadata    Json?
+
+  // Relations
+  workflow WorkflowTemplate @relation("WorkflowTemplateEnrollments", fields: [workflowId], references: [id], onDelete: Cascade)
+  lead     Lead             @relation("LeadWorkflowTemplateEnrollments", fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, leadId])
+  @@index([workflowId])
+  @@index([leadId])
+  @@index([status])
+  @@index([nextSendAt])
 }
 
 // Generic HITL Notification Queue - tracks pending human-in-the-loop approvals
