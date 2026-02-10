@@ -185,6 +185,8 @@ export default function WidgetsPage() {
     for (let [key, value] of formData.entries()) {
       data[key] = value;
     }
+    var ref = typeof window !== 'undefined' && window.location && new URLSearchParams(window.location.search).get('ref');
+    if (ref) data.ref = ref;
 
     const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.disabled = true;

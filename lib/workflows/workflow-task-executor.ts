@@ -60,6 +60,21 @@ export async function executeTask(
         case 'lead_research':
           result = await executeLeadResearch(task, instance);
           break;
+        case 'send_referral_link':
+          result = await executeSendReferralLink(task, instance);
+          break;
+        case 'create_referral':
+          result = await executeCreateReferral(task, instance);
+          break;
+        case 'notify_referral_converted':
+          result = await executeNotifyReferralConverted(task, instance);
+          break;
+        case 'request_feedback_voice':
+          result = await executeRequestFeedbackVoice(task, instance);
+          break;
+        case 'send_review_link':
+          result = await executeSendReviewLink(task, instance);
+          break;
         default:
           // Try industry-specific actions
           result = await executeIndustrySpecificAction(action, task, instance);
@@ -104,7 +119,22 @@ function inferActionFromTaskType(taskType: string): string | null {
   if (typeLower.includes('calendar') || typeLower.includes('appointment') || typeLower.includes('schedule')) {
     return 'calendar';
   }
-  
+  if (typeLower.includes('referral') && typeLower.includes('link')) {
+    return 'send_referral_link';
+  }
+  if (typeLower.includes('create') && typeLower.includes('referral')) {
+    return 'create_referral';
+  }
+  if (typeLower.includes('notify') && typeLower.includes('referral')) {
+    return 'notify_referral_converted';
+  }
+  if (typeLower.includes('request') && typeLower.includes('feedback') && typeLower.includes('voice')) {
+    return 'request_feedback_voice';
+  }
+  if (typeLower.includes('review') && typeLower.includes('link')) {
+    return 'send_review_link';
+  }
+
   return null;
 }
 
@@ -470,6 +500,262 @@ async function executeLeadResearch(
       success: false,
       error: `Failed to execute lead research: ${error.message}`,
     };
+  }
+}
+
+/**
+ * Send referral link to lead (email or SMS so they can share)
+ */
+async function executeSendReferralLink(
+  task: WorkflowTask,
+  instance: WorkflowInstance
+): Promise<TaskResult> {
+  const lead = instance.leadId
+    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    : null;
+  if (!lead) {
+    return { success: false, error: 'No lead for referral link' };
+  }
+
+  const actionConfig = task.actionConfig as { baseUrl?: string; channel?: 'email' | 'sms' } | undefined;
+  const baseUrl = actionConfig?.baseUrl || process.env.NEXTAUTH_URL || '';
+  const channel = actionConfig?.channel || 'email';
+  const referralQuery = `ref=${encodeURIComponent(lead.id)}`;
+  const referralUrl = baseUrl ? `${baseUrl.replace(/\/$/, '')}/?${referralQuery}` : `?${referralQuery}`;
+  const message = (actionConfig as any)?.message || `Share your referral link: ${referralUrl}`;
+
+  if (channel === 'sms') {
+    if (!lead.phone) return { success: false, error: 'No phone for SMS' };
+    const personalized = message.replace(/\{referralLink\}/g, referralUrl).replace(/\{contactPerson\}/g, lead.contactPerson || 'there');
+    try {
+      await sendSMS(lead.phone, personalized);
+      return { success: true, data: { channel: 'sms', timestamp: new Date().toISOString() } };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  if (!lead.email) return { success: false, error: 'No email for referral link' };
+  const emailBody = message.replace(/\{referralLink\}/g, referralUrl).replace(/\{contactPerson\}/g, lead.contactPerson || 'there');
+  try {
+    const emailService = new EmailService();
+    const ok = await emailService.sendEmail({
+      to: lead.email,
+      subject: (actionConfig as any)?.subject || 'Your referral link',
+      html: `<p>${emailBody.replace(/\n/g, '<br>')}</p>`,
+      text: emailBody,
+      userId: instance.userId,
+    });
+    return ok
+      ? { success: true, data: { channel: 'email', timestamp: new Date().toISOString() } }
+      : { success: false, error: 'Failed to send email' };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Create a referral record (referrer = current lead; referred info from actionConfig or placeholder)
+ */
+async function executeCreateReferral(
+  task: WorkflowTask,
+  instance: WorkflowInstance
+): Promise<TaskResult> {
+  const lead = instance.leadId
+    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    : null;
+  if (!lead) {
+    return { success: false, error: 'No lead for create referral' };
+  }
+
+  const actionConfig = task.actionConfig as { referredName?: string; referredEmail?: string; referredPhone?: string } | undefined;
+  const referredName = actionConfig?.referredName || 'Referred contact';
+  const referredEmail = actionConfig?.referredEmail || null;
+  const referredPhone = actionConfig?.referredPhone || null;
+
+  try {
+    await prisma.referral.create({
+      data: {
+        userId: instance.userId,
+        referrerId: lead.id,
+        referredName,
+        referredEmail,
+        referredPhone,
+        status: 'PENDING',
+      },
+    });
+    return { success: true, data: { referrerId: lead.id, referredName, timestamp: new Date().toISOString() } };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Notify (e.g. email/SMS) when a referral is converted – run in context of the new lead; find referrer and notify them.
+ */
+async function executeNotifyReferralConverted(
+  task: WorkflowTask,
+  instance: WorkflowInstance
+): Promise<TaskResult> {
+  if (!instance.leadId) {
+    return { success: false, error: 'No lead in context' };
+  }
+
+  const referral = await prisma.referral.findFirst({
+    where: { convertedLeadId: instance.leadId, userId: instance.userId },
+    include: { referrer: true },
+  });
+  if (!referral?.referrer) {
+    return { success: false, error: 'No referrer found for this lead' };
+  }
+
+  const actionConfig = task.actionConfig as { channel?: 'email' | 'sms'; message?: string } | undefined;
+  const channel = actionConfig?.channel || 'email';
+  const newLead = await prisma.lead.findUnique({ where: { id: instance.leadId } });
+  const message = (actionConfig?.message || 'Your referral {{referredName}} has signed up.')
+    .replace(/\{\{referredName\}\}/g, newLead?.contactPerson || newLead?.businessName || 'Someone')
+    .replace(/\{\{contactPerson\}\}/g, referral.referrer.contactPerson || referral.referrer.businessName || 'there');
+
+  if (channel === 'sms' && referral.referrer.phone) {
+    try {
+      await sendSMS(referral.referrer.phone, message);
+      return { success: true, data: { channel: 'sms', timestamp: new Date().toISOString() } };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  if (referral.referrer.email) {
+    try {
+      const emailService = new EmailService();
+      const ok = await emailService.sendEmail({
+        to: referral.referrer.email,
+        subject: (actionConfig as any)?.subject || 'Your referral signed up',
+        html: `<p>${message.replace(/\n/g, '<br>')}</p>`,
+        text: message,
+        userId: instance.userId,
+      });
+      return ok
+        ? { success: true, data: { channel: 'email', timestamp: new Date().toISOString() } }
+        : { success: false, error: 'Failed to send email' };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  return { success: false, error: 'Referrer has no email or phone for notification' };
+}
+
+/**
+ * Request feedback via voice AI (post-service feedback call)
+ */
+async function executeRequestFeedbackVoice(
+  task: WorkflowTask,
+  instance: WorkflowInstance
+): Promise<TaskResult> {
+  const lead = instance.leadId
+    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    : null;
+  if (!lead?.phone) {
+    return { success: false, error: 'No lead or phone for feedback call' };
+  }
+
+  try {
+    const { reviewFeedbackService } = await import('@/lib/review-feedback-service');
+    await reviewFeedbackService.triggerFeedbackCollection({
+      leadId: lead.id,
+      userId: instance.userId,
+      appointmentId: (task.actionConfig as any)?.appointmentId,
+      preferredMethod: 'VOICE',
+    });
+    return { success: true, data: { leadId: lead.id, method: 'VOICE', timestamp: new Date().toISOString() } };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Send Google and/or Yelp review link to lead (email or SMS)
+ */
+async function executeSendReviewLink(
+  task: WorkflowTask,
+  instance: WorkflowInstance
+): Promise<TaskResult> {
+  const lead = instance.leadId
+    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    : null;
+  if (!lead) {
+    return { success: false, error: 'No lead for review link' };
+  }
+
+  const config = task.actionConfig as {
+    googleUrl?: string;
+    yelpUrl?: string;
+    channel?: 'email' | 'sms' | 'both';
+    message?: string;
+    subject?: string;
+  } | undefined;
+
+  let googleUrl = config?.googleUrl?.trim();
+  let yelpUrl = config?.yelpUrl?.trim();
+  const channel = config?.channel || 'email';
+
+  if (!googleUrl && !yelpUrl) {
+    const campaign = await prisma.campaign.findFirst({
+      where: { userId: instance.userId, type: 'REVIEW_REQUEST', reviewUrl: { not: null } },
+      select: { reviewUrl: true },
+    });
+    const fallbackUrl = campaign?.reviewUrl?.trim();
+    if (fallbackUrl) googleUrl = fallbackUrl;
+  }
+
+  if (!googleUrl && !yelpUrl) {
+    return { success: false, error: 'Configure at least one review URL in the task or in a Review campaign' };
+  }
+
+  const links: string[] = [];
+  if (googleUrl) links.push(`Google: ${googleUrl}`);
+  if (yelpUrl) links.push(`Yelp: ${yelpUrl}`);
+  const linkBlock = links.join('\n');
+
+  const defaultMessage = `Thank you for your business! We'd love it if you could share your experience. Leave us a review:\n${linkBlock}`;
+  const message = (config?.message || defaultMessage)
+    .replace(/\{contactPerson\}/g, lead.contactPerson || 'there')
+    .replace(/\{businessName\}/g, lead.businessName || '')
+    .replace(/\{googleUrl\}/g, googleUrl || '')
+    .replace(/\{yelpUrl\}/g, yelpUrl || '');
+
+  const sendEmail = async () => {
+    if (!lead.email) return false;
+    const emailService = new EmailService();
+    return emailService.sendEmail({
+      to: lead.email,
+      subject: (config?.subject || 'Share your experience'),
+      html: `<p>${message.replace(/\n/g, '<br>')}</p>`,
+      text: message,
+      userId: instance.userId,
+    });
+  };
+
+  const sendSmsFn = async () => {
+    if (!lead.phone) return false;
+    await sendSMS(lead.phone, message);
+    return true;
+  };
+
+  try {
+    if (channel === 'sms') {
+      const ok = await sendSmsFn();
+      return ok ? { success: true, data: { channel: 'sms', timestamp: new Date().toISOString() } } : { success: false, error: 'No phone' };
+    }
+    if (channel === 'both') {
+      await Promise.all([sendEmail(), sendSmsFn()]);
+      return { success: true, data: { channel: 'both', timestamp: new Date().toISOString() } };
+    }
+    const ok = await sendEmail();
+    return ok ? { success: true, data: { channel: 'email', timestamp: new Date().toISOString() } } : { success: false, error: 'No email' };
+  } catch (e: any) {
+    return { success: false, error: e.message };
   }
 }
 

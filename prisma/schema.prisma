@@ -6218,6 +6218,10 @@ enum DripTriggerType {
   FORM_SUBMITTED // Trigger when form is submitted
   LIST_ADDED // Trigger when added to list
   SCHEDULED // Trigger on specific date/time
+  REFERRAL_CREATED // Trigger when a referral is created (enrolls referrer lead)
+  REFERRAL_CONVERTED // Trigger when a referral is converted to lead (enrolls new lead)
+  SERVICE_COMPLETED // Trigger when appointment/service is completed (enrolls client lead)
+  FEEDBACK_POSITIVE // Trigger when feedback is positive (rating >= 4) - for referral ask flow
 }
 
 enum DripEnrollmentStatus {

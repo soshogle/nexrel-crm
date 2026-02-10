@@ -8,7 +8,11 @@ interface TriggerContext {
     | 'LEAD_STATUS'
     | 'TAG_ADDED'
     | 'FORM_SUBMITTED'
-    | 'DEAL_CREATED';
+    | 'DEAL_CREATED'
+    | 'REFERRAL_CREATED'
+    | 'REFERRAL_CONVERTED'
+    | 'SERVICE_COMPLETED'
+    | 'FEEDBACK_POSITIVE';
   metadata?: {
     oldStatus?: string;
     newStatus?: string;

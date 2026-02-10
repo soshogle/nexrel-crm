@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { processReferralTriggers } from '@/lib/referral-triggers'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs';
@@ -63,6 +64,13 @@ export async function POST(
         convertedLead: true,
       },
     })
+
+    // Fire referral-converted triggers (enroll new lead in campaigns/workflows)
+    try {
+      await processReferralTriggers(session.user.id, newLead.id, 'REFERRAL_CONVERTED')
+    } catch (triggerError) {
+      console.error('Referral convert trigger processing failed:', triggerError)
+    }
 
     return NextResponse.json({ referral: updatedReferral, lead: newLead })
   } catch (error) {
