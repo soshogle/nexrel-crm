@@ -21,14 +21,21 @@ export function AIBrainVoiceAgentInline() {
   } = useAIBrainVoice();
 
   const handleAgentSpeakingChange = (speaking: boolean) => {
+    console.log('🎤 [AI Brain Voice Inline] Agent speaking change:', speaking);
     setConversationActive(speaking);
+    // Always persist the active state when speaking starts
+    if (speaking && typeof window !== 'undefined') {
+      localStorage.setItem('ai-brain-voice-agent-state', JSON.stringify({
+        conversationActive: true,
+      }));
+    }
   };
 
   const handleConversationEnd = (transcript: any[], audioBlob?: Blob) => {
     console.log('🛑 [AI Brain Voice Inline] Conversation ended:', transcript);
-    // Only set to false if this is an explicit end (not just unmounting)
-    // The conversation state will persist in localStorage for reconnection
-    // Don't immediately set to false - let user explicitly stop via button
+    // Don't set to false - keep state active for reconnection
+    // The WebRTC connection closes on unmount, but we want to preserve the "intent" to keep talking
+    // Only clear state if user explicitly stops via button (which we'll handle separately)
   };
 
   if (loading) {
