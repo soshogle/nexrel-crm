@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { parseChartIntent, getDynamicChartData } from "@/lib/crm-chart-intent";
+import { parseScenarioIntent, calculateScenario } from "@/lib/crm-scenario-predictor";
 
 // Define available actions
 
@@ -778,7 +780,8 @@ async function deleteDuplicateContacts(userId: string, params: any) {
 
 async function getStatistics(userId: string, params: any = {}) {
   try {
-    const { period = 'all_time', compareWith } = params;
+    const { period = 'all_time', compareWith, chartIntent } = params;
+    const scenarioIntent = chartIntent; // Same message can contain both chart and scenario
     
     // Calculate date ranges based on period
     const now = new Date();
@@ -903,6 +906,47 @@ async function getStatistics(userId: string, params: any = {}) {
       },
     });
 
+    // "What if" scenario prediction
+    let scenarioResult: any = null;
+    if (scenarioIntent) {
+      const parsed = parseScenarioIntent(scenarioIntent);
+      if (parsed) {
+        scenarioResult = await calculateScenario(userId, parsed.type, parsed.params);
+      }
+    }
+
+    // Dynamic charts based on user's chart intent
+    let dynamicCharts: { chartType: 'pie' | 'bar' | 'line'; dimension: string; title: string; data: { name: string; value: number }[] }[] = [];
+    if (chartIntent) {
+      const intent = parseChartIntent(chartIntent);
+      if (intent) {
+        let data: { name: string; value: number }[] = [];
+        if (intent.dimension === 'revenue_by_month') {
+          data = Object.entries(monthlyRevenue).map(([month, value]) => ({
+            name: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short' }),
+            value,
+          }));
+        } else {
+          data = await getDynamicChartData(userId, intent.dimension);
+        }
+        if (data.length > 0) {
+          const titles: Record<string, string> = {
+            leads_by_status: 'Leads by Status',
+            leads_by_source: 'Leads by Source',
+            deals_by_stage: 'Deals by Stage',
+            revenue_by_stage: 'Revenue by Stage',
+            revenue_by_month: 'Monthly Revenue',
+          };
+          dynamicCharts = [{
+            chartType: intent.chartType,
+            dimension: intent.dimension,
+            title: titles[intent.dimension] || intent.dimension,
+            data,
+          }];
+        }
+      }
+    }
+
     // Return format matching CRM voice agent functions route
     return {
       success: true,
@@ -921,6 +965,8 @@ async function getStatistics(userId: string, params: any = {}) {
           status: lead.status,
           createdAt: lead.createdAt.toISOString(),
         })),
+        dynamicCharts,
+        scenarioResult,
       },
       message: `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns.`,
       // Flag to trigger visualization

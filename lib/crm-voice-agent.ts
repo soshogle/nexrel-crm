@@ -299,7 +299,7 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
     return [
       {
         name: 'get_statistics',
-        description: 'Get comprehensive CRM statistics and generate graphs/charts. Use ONLY when user asks for graphs, charts, visualizations, sales over time, revenue comparison, or monthly trends. Do NOT use for simple "how many leads" type questions - use list_leads instead.',
+        description: 'Get CRM statistics, graphs/charts, and "what if" scenario predictions. Use when user asks for: graphs, charts, visualizations, sales data, revenue comparisons, statistics, OR "what if" scenarios (e.g. "what if I convert 10 more leads?", "what if I get 50 more leads?", "what if conversion improved 5%?").',
         parameters: {
           type: 'object',
           properties: {

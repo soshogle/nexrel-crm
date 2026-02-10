@@ -193,7 +193,7 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
       type: "function",
       function: {
         name: "get_statistics",
-        description: "Get CRM statistics, sales data, and generate graphs/charts. Use this when the user asks for graphs, charts, visualizations, sales data, revenue comparisons, or statistics. This will automatically create visualizations and display them on the AI Brain page.",
+        description: "Get CRM statistics, sales data, graphs/charts, and 'what if' scenario predictions. Use when user asks for: graphs, charts, visualizations, sales data, revenue comparisons, statistics, OR 'what if' scenarios (e.g. 'what if I convert 10 more leads?', 'what if I get 50 more leads?', 'what if conversion rate improved 5%?'). Displays results on AI Brain page.",
         parameters: {
           type: "object",
           properties: {

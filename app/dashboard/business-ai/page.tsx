@@ -358,6 +358,103 @@ export default function BusinessAIPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* "What if" Scenario Result */}
+                {crmStatistics.scenarioResult && (
+                  <Card className="md:col-span-2 border-2 border-emerald-200/50 shadow-xl bg-gradient-to-br from-white/95 to-emerald-50/30 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                        <Target className="h-5 w-5 text-emerald-600" />
+                        What If: {crmStatistics.scenarioResult.scenario}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600 mb-3">{crmStatistics.scenarioResult.assumption}</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-3 bg-white/60 rounded-lg border border-emerald-200">
+                          <p className="text-xs text-gray-500">Projected Impact</p>
+                          <p className="text-xl font-bold text-emerald-600">
+                            {crmStatistics.scenarioResult.unit === 'revenue' ? '$' : ''}
+                            {crmStatistics.scenarioResult.impact.toLocaleString()}
+                            {crmStatistics.scenarioResult.unit === 'revenue' ? '' : ' potential'}
+                          </p>
+                        </div>
+                        {crmStatistics.scenarioResult.impactPercent != null && (
+                          <div className="p-3 bg-white/60 rounded-lg border border-emerald-200">
+                            <p className="text-xs text-gray-500">Increase</p>
+                            <p className="text-xl font-bold text-emerald-600">+{crmStatistics.scenarioResult.impactPercent.toFixed(0)}%</p>
+                          </div>
+                        )}
+                        <div className="p-3 bg-white/60 rounded-lg border border-emerald-200">
+                          <p className="text-xs text-gray-500">Confidence</p>
+                          <p className="text-xl font-bold text-emerald-600">{crmStatistics.scenarioResult.confidence}%</p>
+                        </div>
+                        <div className="p-3 bg-white/60 rounded-lg border border-emerald-200 col-span-2 md:col-span-1">
+                          <p className="text-xs text-gray-500">Formula</p>
+                          <p className="text-sm font-medium text-gray-700">{crmStatistics.scenarioResult.formula}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Dynamic Charts - Created from user's specific request */}
+                {crmStatistics.dynamicCharts && crmStatistics.dynamicCharts.length > 0 && (
+                  <div className="md:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {crmStatistics.dynamicCharts.map((chart: any, idx: number) => (
+                      <Card key={idx} className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/95 to-purple-50/30 backdrop-blur-sm">
+                        <CardHeader>
+                          <CardTitle className="text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            {chart.title}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <ResponsiveContainer width="100%" height={300}>
+                            {chart.chartType === 'pie' && (
+                              <PieChart>
+                                <Pie
+                                  data={chart.data}
+                                  cx="50%"
+                                  cy="50%"
+                                  labelLine={false}
+                                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                  outerRadius={100}
+                                  dataKey="value"
+                                  animationDuration={1000}
+                                >
+                                  {chart.data.map((_: any, i: number) => {
+                                    const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
+                                    return <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="#fff" strokeWidth={2} />;
+                                  })}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                              </PieChart>
+                            )}
+                            {chart.chartType === 'bar' && (
+                              <BarChart data={chart.data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                                <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
+                                <YAxis stroke="#6b7280" fontSize={12} />
+                                <Tooltip formatter={(v: any) => chart.dimension?.includes('revenue') ? `$${Number(v).toLocaleString()}` : v} />
+                                <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} animationDuration={1000} />
+                              </BarChart>
+                            )}
+                            {chart.chartType === 'line' && (
+                              <LineChart data={chart.data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                                <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
+                                <YAxis stroke="#6b7280" fontSize={12} tickFormatter={(v) => chart.dimension?.includes('revenue') ? `$${v}` : String(v)} />
+                                <Tooltip formatter={(v: any) => chart.dimension?.includes('revenue') ? `$${Number(v).toLocaleString()}` : v} />
+                                <Line type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} animationDuration={1000} />
+                              </LineChart>
+                            )}
+                          </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
                 {/* Key Metrics Cards */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-4 bg-white/50 rounded-lg border border-purple-200">
