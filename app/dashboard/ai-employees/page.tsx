@@ -66,6 +66,7 @@ import { HospitalWorkflowsTab } from '@/components/hospital/workflows/hospital-w
 import { TechnologyWorkflowsTab } from '@/components/technology/workflows/technology-workflows-tab';
 import { SportsClubWorkflowsTab } from '@/components/sports-club/workflows/sports-club-workflows-tab';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
+import { UnifiedMonitor } from '@/components/workflows/unified-monitor';
 
 // Full Task Manager Component - Imported from admin tasks page
 import CreateTaskDialog from '@/components/tasks/create-task-dialog';
@@ -1161,7 +1162,7 @@ export default function AIEmployeesPage() {
           hasWorkflowSystem ? 'grid-cols-5' : 
           'grid-cols-4'
         }`}>
-          <TabsTrigger value="trigger">Trigger Tasks</TabsTrigger>
+          <TabsTrigger value="trigger">Lead Search</TabsTrigger>
           <TabsTrigger value="ai-team">AI Team</TabsTrigger>
           {isRealEstateUser && (
             <TabsTrigger 
@@ -1481,164 +1482,10 @@ export default function AIEmployeesPage() {
         </Dialog>
 
         <TabsContent value="monitor" className="space-y-4">
-          {/* Workflow History - Reopenable Results */}
-          {workflowHistory.length > 0 && (
-            <Card className="border-primary/30 bg-primary/5">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Workflow className="h-5 w-5 text-primary" />
-                  Recent Workflow Results
-                </CardTitle>
-                <CardDescription>Click to view full results</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-2">
-                  {workflowHistory.map((wf) => (
-                    <div 
-                      key={wf.id}
-                      onClick={() => {
-                        setWorkflowResults({ ...wf.results, customerName: wf.customerName, customerEmail: wf.customerEmail });
-                        setShowWorkflowResults(true);
-                      }}
-                      className="flex items-center justify-between p-3 bg-background rounded-lg border cursor-pointer hover:border-primary transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{wf.customerName || 'Workflow'}</p>
-                          <p className="text-xs text-muted-foreground">{wf.customerEmail}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="default" className="mb-1">Completed</Badge>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(wf.completedAt).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+          {/* Unified Monitoring View - Shows all automation activity */}
+          {session?.user?.id && (
+            <UnifiedMonitor userId={session.user.id} industry={userIndustry} />
           )}
-
-          {/* Jobs Organized by Category */}
-          <Card>
-            <CardHeader>
-              <CardTitle>All Jobs</CardTitle>
-              <CardDescription>
-                {jobs.length} total jobs {fetchError && <span className="text-red-500">- Error loading</span>}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {fetchError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  <AlertCircle className="h-4 w-4 inline mr-2" />
-                  {fetchError}
-                  <Button variant="link" size="sm" onClick={() => fetchJobs()} className="ml-2">
-                    Retry
-                  </Button>
-                </div>
-              )}
-              {jobs.length === 0 && !fetchError ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No jobs yet. Start by triggering a task above.
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Group jobs by employee type */}
-                  {['LEAD_RESEARCHER', 'CUSTOMER_ONBOARDING', 'BOOKING_COORDINATOR', 'PROJECT_MANAGER', 'COMMUNICATION_SPECIALIST'].map((type) => {
-                    const typeJobs = jobs.filter(j => j.employee.type === type);
-                    if (typeJobs.length === 0) return null;
-                    
-                    const categoryInfo: Record<string, { name: string; color: string; bgColor: string }> = {
-                      'LEAD_RESEARCHER': { name: 'Lead Research (Sarah)', color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-950' },
-                      'CUSTOMER_ONBOARDING': { name: 'Customer Onboarding (Alex)', color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-950' },
-                      'BOOKING_COORDINATOR': { name: 'Booking (Maya)', color: 'text-purple-600', bgColor: 'bg-purple-50 dark:bg-purple-950' },
-                      'PROJECT_MANAGER': { name: 'Project Management (David)', color: 'text-orange-600', bgColor: 'bg-orange-50 dark:bg-orange-950' },
-                      'COMMUNICATION_SPECIALIST': { name: 'Communications (Emma)', color: 'text-pink-600', bgColor: 'bg-pink-50 dark:bg-pink-950' },
-                    };
-                    
-                    const info = categoryInfo[type] || { name: type, color: 'text-gray-600', bgColor: 'bg-gray-50' };
-                    
-                    return (
-                      <div key={type} className={`rounded-lg ${info.bgColor} p-4`}>
-                        <h3 className={`font-semibold ${info.color} mb-3 flex items-center gap-2`}>
-                          {getEmployeeIcon(type)}
-                          {info.name}
-                          <Badge variant="outline" className="ml-auto">{typeJobs.length} jobs</Badge>
-                        </h3>
-                        <div className="space-y-2">
-                          {typeJobs.map((job) => (
-                            <div 
-                              key={job.id}
-                              onClick={() => viewJobResults(job)}
-                              className={`flex items-center justify-between p-3 bg-background rounded-lg border transition-colors ${
-                                job.status === 'COMPLETED' || job.status === 'FAILED'
-                                  ? 'cursor-pointer hover:border-primary/50'
-                                  : 'cursor-default'
-                              }`}
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-sm capitalize">
-                                    {job.jobType.replace(/_/g, ' ')}
-                                  </span>
-                                  {job.status === 'RUNNING' && (
-                                    <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
-                                      {job.progress}%
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-3">
-                                  {job.input?.businessName && <span>📍 {job.input.businessName}</span>}
-                                  {job.input?.customerName && <span>👤 {job.input.customerName}</span>}
-                                  <span>🕐 {new Date(job.createdAt).toLocaleString()}</span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {job.status === 'COMPLETED' && (
-                                  <Badge variant="default" className="bg-green-600">
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                    Done
-                                  </Badge>
-                                )}
-                                {job.status === 'RUNNING' && (
-                                  <Badge variant="secondary">
-                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                    Running
-                                  </Badge>
-                                )}
-                                {job.status === 'FAILED' && (
-                                  <Badge variant="destructive">
-                                    <AlertCircle className="h-3 w-3 mr-1" />
-                                    Failed
-                                  </Badge>
-                                )}
-                                {job.status === 'PENDING' && (
-                                  <Badge variant="outline">
-                                    <Clock className="h-3 w-3 mr-1" />
-                                    Pending
-                                  </Badge>
-                                )}
-                                {(job.status === 'COMPLETED' || job.status === 'FAILED') && (
-                                  <Button variant="ghost" size="sm">
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="tasks" className="space-y-4">
