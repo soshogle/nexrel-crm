@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +25,11 @@ import {
   Webhook,
 } from 'lucide-react';
 
+const ADMIN_ROLES = ['SUPER_ADMIN', 'AGENCY_ADMIN'];
+
 export default function EcommerceSyncTab() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role && ADMIN_ROLES.includes(session.user.role as string);
   const [webhookUrl, setWebhookUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [copied, setCopied] = useState(false);
@@ -83,9 +88,9 @@ export default function EcommerceSyncTab() {
       </div>
 
       <Tabs defaultValue="export" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className={isAdmin ? 'grid w-full grid-cols-3' : 'grid w-full grid-cols-2'}>
           <TabsTrigger value="export">CSV Export</TabsTrigger>
-          <TabsTrigger value="webhook">Webhook Sync</TabsTrigger>
+          {isAdmin && <TabsTrigger value="webhook">Webhook Sync</TabsTrigger>}
           <TabsTrigger value="internal">Internal Store</TabsTrigger>
         </TabsList>
 
@@ -215,7 +220,8 @@ export default function EcommerceSyncTab() {
           </Card>
         </TabsContent>
 
-        {/* Webhook Tab */}
+        {/* Webhook Tab - Admin only */}
+        {isAdmin && (
         <TabsContent value="webhook" className="space-y-4">
           <Card>
             <CardHeader>
@@ -350,6 +356,7 @@ export default function EcommerceSyncTab() {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
         {/* Internal Store Tab */}
         <TabsContent value="internal" className="space-y-4">

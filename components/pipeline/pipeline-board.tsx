@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Plus, TrendingUp, DollarSign, Target, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -49,6 +50,8 @@ interface Deal {
 }
 
 export function PipelineBoard() {
+  const searchParams = useSearchParams();
+  const dealIdFromUrl = searchParams.get('dealId');
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [selectedPipeline, setSelectedPipeline] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -59,6 +62,32 @@ export function PipelineBoard() {
   useEffect(() => {
     loadPipelines();
   }, []);
+
+  // Open deal from URL (e.g. from unified search)
+  useEffect(() => {
+    if (!dealIdFromUrl || !pipelines.length) return;
+    const findDeal = (): Deal | null => {
+      for (const pipeline of pipelines) {
+        for (const stage of pipeline.stages || []) {
+          const deal = stage.deals?.find((d) => d.id === dealIdFromUrl);
+          if (deal) return deal;
+        }
+      }
+      return null;
+    };
+    const deal = findDeal();
+    if (deal) {
+      setSelectedDeal(deal);
+    } else {
+      // Deal might not be loaded yet - fetch it directly
+      fetch(`/api/deals/${dealIdFromUrl}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) setSelectedDeal(data);
+        })
+        .catch(() => {});
+    }
+  }, [dealIdFromUrl, pipelines]);
 
   const loadPipelines = async () => {
     try {

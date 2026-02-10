@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { syncGeneralInventoryToProduct } from '@/lib/general-inventory/product-sync';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -95,6 +96,16 @@ export async function POST(request: NextRequest) {
         },
       }),
     ]);
+
+    // Sync to Product and website stock when General Inventory changes
+    syncGeneralInventoryToProduct(
+      session.user.id,
+      item.sku,
+      quantityAfter,
+      quantityBefore
+    ).catch((err) => {
+      console.error('Failed to sync inventory to products:', err);
+    });
 
     // Trigger external sync if autoSync is enabled
     try {

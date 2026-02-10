@@ -1,6 +1,6 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { syncGeneralInventoryToProduct } from '@/lib/general-inventory/product-sync';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -87,6 +87,14 @@ export async function POST(request: NextRequest) {
             notes: JSON.stringify(body),
           },
         });
+
+        // Sync to Product and website stock
+        syncGeneralInventoryToProduct(
+          user.id,
+          sku,
+          newQuantity,
+          item.quantity
+        ).catch((err) => console.error('Webhook sync failed:', err));
 
         console.log(`✅ E-commerce webhook: ${action} for SKU ${sku}, quantity change: ${quantity_change}`);
 

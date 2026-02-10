@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Start research
-    const result = await leadResearcher.research({
+    // Start research asynchronously - returns immediately to avoid timeout (research takes 3-4 min)
+    const { jobId } = await leadResearcher.startResearchAsync({
       userId: session.user.id,
       leadId: leadId || undefined,
       businessName: leadData?.businessName || businessName,
@@ -70,7 +70,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result
+      jobId,
+      message: 'Lead research started. Results will appear in your AI Jobs list.'
     });
 
   } catch (error: any) {
