@@ -80,6 +80,13 @@ export async function GET(
         isHITL: t.isHITL,
         delayMinutes: t.delayValue,
         delayUnit: t.delayUnit as 'MINUTES' | 'HOURS' | 'DAYS',
+        delayDays: (t as any).delayDays || 0,
+        delayHours: (t as any).delayHours || 0,
+        preferredSendTime: (t as any).preferredSendTime || null,
+        skipConditions: (t as any).skipConditions || null,
+        isAbTestVariant: (t as any).isAbTestVariant || false,
+        abTestGroup: (t as any).abTestGroup || null,
+        variantOf: (t as any).variantOf || null,
         parentTaskId: t.parentTaskId || null,
         branchCondition: t.branchCondition as any || null,
       })),
@@ -128,7 +135,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, isActive, tasks, executionMode, audience, campaignSettings, enrollmentMode, enrollmentTriggers } = body;
+    const { name, description, isActive, tasks, executionMode, audience, campaignSettings, enrollmentMode, enrollmentTriggers, enableAbTesting, abTestConfig } = body;
 
     // Update workflow
     const updateData: any = {};
@@ -140,6 +147,8 @@ export async function PUT(
     if (campaignSettings !== undefined) updateData.campaignSettings = campaignSettings;
     if (enrollmentMode !== undefined) updateData.enrollmentMode = enrollmentMode;
     if (enrollmentTriggers !== undefined) updateData.enrollmentTriggers = enrollmentTriggers;
+    if (enableAbTesting !== undefined) updateData.enableAbTesting = enableAbTesting;
+    if (abTestConfig !== undefined) updateData.abTestConfig = abTestConfig;
 
     // If tasks are provided, update them
     if (tasks && Array.isArray(tasks)) {
@@ -157,6 +166,13 @@ export async function PUT(
           assignedAgentType: null,
           delayValue: task.delayMinutes || task.delayValue || 0,
           delayUnit: (task.delayUnit || 'MINUTES') as string,
+          delayDays: task.delayDays || 0,
+          delayHours: task.delayHours || 0,
+          preferredSendTime: task.preferredSendTime || null,
+          skipConditions: task.skipConditions || null,
+          isAbTestVariant: task.isAbTestVariant || false,
+          abTestGroup: task.abTestGroup || null,
+          variantOf: task.variantOf || null,
           isHITL: task.isHITL as boolean || false,
           isOptional: false,
           position: task.position || { row: Math.floor(index / 3), col: index % 3 },
@@ -199,6 +215,13 @@ export async function PUT(
         isHITL: t.isHITL,
         delayMinutes: t.delayValue,
         delayUnit: t.delayUnit as 'MINUTES' | 'HOURS' | 'DAYS',
+        delayDays: (t as any).delayDays || 0,
+        delayHours: (t as any).delayHours || 0,
+        preferredSendTime: (t as any).preferredSendTime || null,
+        skipConditions: (t as any).skipConditions || null,
+        isAbTestVariant: (t as any).isAbTestVariant || false,
+        abTestGroup: (t as any).abTestGroup || null,
+        variantOf: (t as any).variantOf || null,
         parentTaskId: t.parentTaskId || null,
         branchCondition: t.branchCondition as any || null,
       })),

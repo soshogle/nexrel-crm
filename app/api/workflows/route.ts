@@ -70,6 +70,8 @@ export async function GET(request: NextRequest) {
       campaignSettings: (w as any).campaignSettings || null,
       enrollmentMode: (w as any).enrollmentMode || false,
       enrollmentTriggers: (w as any).enrollmentTriggers || null,
+      enableAbTesting: (w as any).enableAbTesting || false,
+      abTestConfig: (w as any).abTestConfig || null,
       tasks: w.tasks.map(t => ({
         id: t.id,
         name: t.name,
@@ -82,6 +84,13 @@ export async function GET(request: NextRequest) {
         isHITL: t.isHITL,
         delayMinutes: t.delayValue,
         delayUnit: t.delayUnit as 'MINUTES' | 'HOURS' | 'DAYS',
+        delayDays: (t as any).delayDays || 0,
+        delayHours: (t as any).delayHours || 0,
+        preferredSendTime: (t as any).preferredSendTime || null,
+        skipConditions: (t as any).skipConditions || null,
+        isAbTestVariant: (t as any).isAbTestVariant || false,
+        abTestGroup: (t as any).abTestGroup || null,
+        variantOf: (t as any).variantOf || null,
         parentTaskId: t.parentTaskId || null,
         branchCondition: t.branchCondition as any || null,
       })),
@@ -140,7 +149,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, type, description, fromTemplate, tasks, executionMode, audience, campaignSettings, enrollmentMode, enrollmentTriggers } = body;
+    const { name, type, description, fromTemplate, tasks, executionMode, audience, campaignSettings, enrollmentMode, enrollmentTriggers, enableAbTesting, abTestConfig } = body;
 
     // If creating from a template
     if (fromTemplate) {
@@ -167,6 +176,8 @@ export async function POST(request: NextRequest) {
           campaignSettings: campaignSettings || null,
           enrollmentMode: enrollmentMode || false,
           enrollmentTriggers: enrollmentTriggers || null,
+          enableAbTesting: enableAbTesting || false,
+          abTestConfig: abTestConfig || null,
           tasks: {
             create: template.tasks.map((task, index) => ({
               name: task.name,
@@ -256,6 +267,13 @@ export async function POST(request: NextRequest) {
             assignedAgentType: null,
             delayValue: task.delayMinutes || task.delayValue || 0,
             delayUnit: (task.delayUnit || 'MINUTES') as string,
+            delayDays: task.delayDays || 0,
+            delayHours: task.delayHours || 0,
+            preferredSendTime: task.preferredSendTime || null,
+            skipConditions: task.skipConditions || null,
+            isAbTestVariant: task.isAbTestVariant || false,
+            abTestGroup: task.abTestGroup || null,
+            variantOf: task.variantOf || null,
             isHITL: task.isHITL as boolean || false,
             isOptional: false,
             position: task.position || { row: Math.floor(index / 3), col: index % 3 },
