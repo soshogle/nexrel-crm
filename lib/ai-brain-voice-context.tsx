@@ -6,10 +6,12 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
 const STORAGE_KEY = 'ai-brain-voice-agent-state';
 const VISUALIZATION_EVENT = 'ai-brain-visualization-update';
 const CONVERSATION_STATE_EVENT = 'ai-brain-conversation-state';
+const NAVIGATION_EVENT = 'ai-brain-voice-navigate';
 
 interface AIBrainVoiceContextType {
   agentId: string | null;
@@ -19,16 +21,19 @@ interface AIBrainVoiceContextType {
   setConversationActive: (active: boolean) => void;
   fetchCrmStatistics: () => Promise<void>;
   handleMessage: (message: any) => void;
+  navigateTo: (path: string) => void;
 }
 
 const AIBrainVoiceContext = createContext<AIBrainVoiceContextType | undefined>(undefined);
 
 export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [agentId, setAgentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [conversationActive, setConversationActiveState] = useState(false);
   const lastStatsCheckRef = useRef<number>(0);
+  const lastNavigateRef = useRef<number>(0);
 
   // Load persisted state
   useEffect(() => {
@@ -154,37 +159,66 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
+  const navigateTo = useCallback((path: string) => {
+    const now = Date.now();
+    if (now - lastNavigateRef.current < 2000) return; // Throttle
+    lastNavigateRef.current = now;
+    if (typeof window !== 'undefined' && path) {
+      window.dispatchEvent(new CustomEvent(NAVIGATION_EVENT, { detail: { path } }));
+      router.push(path);
+    }
+  }, [router]);
+
   const handleMessage = useCallback((message: any) => {
-    // Real-time message monitoring for automatic visualization
     const now = Date.now();
     const timeSinceLastCheck = now - lastStatsCheckRef.current;
-    
-    // Throttle checks to avoid too many API calls (max once per 3 seconds)
-    if (timeSinceLastCheck < 3000) {
-      return;
-    }
-    
-    // Check if agent message contains statistics-related keywords
+    if (timeSinceLastCheck < 3000) return;
+
     if (message.role === 'agent' && message.content) {
       const content = message.content.toLowerCase();
-      const statsKeywords = [
-        'statistic', 'statistics', 'stats', 'data', 'revenue', 'leads', 'deals',
-        'campaigns', 'contacts', 'total', 'overview', 'summary', 'report',
-        'show', 'display', 'here are', 'you have', 'your crm', 'business performance'
-      ];
-      
-      const hasStatsKeyword = statsKeywords.some(keyword => content.includes(keyword));
-      
-      // Also check for numbers that might indicate statistics
-      const hasNumbers = /\d+/.test(message.content);
-      
-      if (hasStatsKeyword || (hasNumbers && (content.includes('lead') || content.includes('deal') || content.includes('revenue')))) {
-        console.log('📊 [AI Brain Voice Context] Detected statistics query in agent message, fetching data...');
+      const visualizationKeywords = ['chart', 'graph', 'visualization', 'visualize', 'trend', 'over time', 'monthly', 'revenue comparison', 'sales over'];
+      const wantsVisualization = visualizationKeywords.some(k => content.includes(k));
+
+      if (wantsVisualization) {
+        console.log('📊 [AI Brain Voice Context] Detected visualization request, navigating to AI Brain and fetching stats');
         lastStatsCheckRef.current = now;
+        navigateTo('/dashboard/business-ai?mode=voice');
+        fetchCrmStatistics();
+        return;
+      }
+
+      if (content.includes('lead') || content.includes('contact')) {
+        console.log('📋 [AI Brain Voice Context] Detected leads/contacts query, navigating to contacts');
+        lastStatsCheckRef.current = now;
+        navigateTo('/dashboard/contacts');
+        return;
+      }
+
+      if (content.includes('deal') || content.includes('pipeline')) {
+        console.log('💼 [AI Brain Voice Context] Detected deals query, navigating to pipeline');
+        lastStatsCheckRef.current = now;
+        navigateTo('/dashboard/pipeline');
+        return;
+      }
+
+      if (content.includes('campaign')) {
+        console.log('📧 [AI Brain Voice Context] Detected campaigns query, navigating to campaigns');
+        lastStatsCheckRef.current = now;
+        navigateTo('/dashboard/campaigns');
+        return;
+      }
+
+      const statsKeywords = ['statistic', 'statistics', 'revenue', 'total', 'overview', 'summary', 'business performance'];
+      const hasStatsKeyword = statsKeywords.some(k => content.includes(k));
+      const hasNumbers = /\d+/.test(message.content);
+      if (hasStatsKeyword && hasNumbers && !wantsVisualization) {
+        console.log('📊 [AI Brain Voice Context] General stats query, navigating to AI Brain for overview');
+        lastStatsCheckRef.current = now;
+        navigateTo('/dashboard/business-ai?mode=voice');
         fetchCrmStatistics();
       }
     }
-  }, [fetchCrmStatistics]);
+  }, [fetchCrmStatistics, navigateTo]);
 
   return (
     <AIBrainVoiceContext.Provider
@@ -196,6 +230,7 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
         setConversationActive,
         fetchCrmStatistics,
         handleMessage,
+        navigateTo,
       }}
     >
       {children}

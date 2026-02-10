@@ -96,7 +96,9 @@ async function getStatistics(userId: string, params: any = {}) {
     let compareStartDate: Date | null = null;
     let compareEndDate: Date | null = null;
     
-    if (period === 'last_7_months') {
+    if (period === 'today') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (period === 'last_7_months') {
       startDate = new Date(now.getFullYear(), now.getMonth() - 7, 1);
       if (compareWith === 'previous_year' || compareWith === 'previous_period') {
         compareStartDate = new Date(now.getFullYear() - 1, now.getMonth() - 7, 1);
@@ -254,6 +256,7 @@ async function getStatistics(userId: string, params: any = {}) {
 
     return {
       success: true,
+      navigateTo: '/dashboard/business-ai?mode=voice',
       statistics: {
         totalLeads: leads,
         totalDeals: deals,
@@ -293,11 +296,11 @@ async function createLead(userId: string, params: any) {
 
     const lead = await prisma.lead.create({
       data: {
-        name,
+        contactPerson: name,
+        businessName: company || name,
         email,
         phone,
-        company,
-        status,
+        status: status as any,
         userId,
         source: 'Voice AI',
       },
@@ -305,12 +308,13 @@ async function createLead(userId: string, params: any) {
 
     return {
       success: true,
+      navigateTo: '/dashboard/contacts',
       lead: {
         id: lead.id,
-        name: lead.name,
+        contactPerson: lead.contactPerson,
+        businessName: lead.businessName,
         email: lead.email,
         phone: lead.phone,
-        company: lead.company,
         status: lead.status,
       },
       message: `Created contact ${name}${email ? ` (${email})` : ''}`,
@@ -363,30 +367,40 @@ async function createDeal(userId: string, params: any) {
  */
 async function listLeads(userId: string, params: any) {
   try {
-    const { status, limit = 10 } = params;
+    const { status, limit = 10, period } = params;
+
+    const now = new Date();
+    let startOfToday: Date | undefined;
+    if (period === 'today') {
+      startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    const where: any = { userId };
+    if (status) where.status = status;
+    if (startOfToday) where.createdAt = { gte: startOfToday };
 
     const leads = await prisma.lead.findMany({
-      where: {
-        userId,
-        ...(status && { status }),
-      },
+      where,
       take: limit,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
-        name: true,
+        contactPerson: true,
+        businessName: true,
         email: true,
         phone: true,
-        company: true,
         status: true,
+        createdAt: true,
       },
     });
 
+    const periodLabel = period === 'today' ? ' created today' : '';
     return {
       success: true,
       leads: leads,
       count: leads.length,
-      message: `Found ${leads.length} ${status ? status.toLowerCase() : ''} lead${leads.length !== 1 ? 's' : ''}`,
+      navigateTo: '/dashboard/contacts',
+      message: `You have ${leads.length} ${status ? status.toLowerCase() : ''} lead${leads.length !== 1 ? 's' : ''}${periodLabel}.`,
     };
   } catch (error: any) {
     console.error('Error listing leads:', error);
@@ -415,6 +429,7 @@ async function listDeals(userId: string, params: any) {
 
     return {
       success: true,
+      navigateTo: '/dashboard/pipeline',
       deals: deals,
       count: deals.length,
       message: `Found ${deals.length} deal${deals.length !== 1 ? 's' : ''}`,
@@ -440,24 +455,25 @@ async function searchContacts(userId: string, params: any) {
       where: {
         userId,
         OR: [
-          { name: { contains: query, mode: 'insensitive' } },
+          { contactPerson: { contains: query, mode: 'insensitive' } },
+          { businessName: { contains: query, mode: 'insensitive' } },
           { email: { contains: query, mode: 'insensitive' } },
-          { company: { contains: query, mode: 'insensitive' } },
         ],
       },
       take: 10,
       select: {
         id: true,
-        name: true,
+        contactPerson: true,
+        businessName: true,
         email: true,
         phone: true,
-        company: true,
         status: true,
       },
     });
 
     return {
       success: true,
+      navigateTo: '/dashboard/contacts',
       contacts: leads,
       count: leads.length,
       message: `Found ${leads.length} contact${leads.length !== 1 ? 's' : ''} matching "${query}"`,
@@ -482,7 +498,8 @@ async function getRecentActivity(userId: string, params: any) {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
-          name: true,
+          contactPerson: true,
+          businessName: true,
           status: true,
           createdAt: true,
         },

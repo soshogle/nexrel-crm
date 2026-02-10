@@ -201,7 +201,7 @@ export class BusinessDataPipeline {
       where: {
         userId,
         createdAt: { gte: periodStart, lte: periodEnd },
-        status: 'COMPLETED',
+        status: 'SUCCEEDED',
       },
     });
 
@@ -209,7 +209,7 @@ export class BusinessDataPipeline {
       where: {
         userId,
         createdAt: { gte: lastPeriodStart, lte: lastPeriodEnd },
-        status: 'COMPLETED',
+        status: 'SUCCEEDED',
       },
     });
 
@@ -221,7 +221,7 @@ export class BusinessDataPipeline {
       where: {
         userId,
         createdAt: { gte: periodStart, lte: periodEnd },
-        status: { not: 'CANCELED' },
+        status: { not: 'CANCELED' as any },
       },
       include: {
         items: {
@@ -257,7 +257,7 @@ export class BusinessDataPipeline {
         where: {
           userId,
           createdAt: { gte: dayStart, lte: dayEnd },
-          status: 'COMPLETED',
+          status: 'SUCCEEDED',
         },
       });
       
@@ -468,32 +468,17 @@ export class BusinessDataPipeline {
     const products = await prisma.product.findMany({
       where: { userId },
       include: {
-        orderItems: {
-          include: {
-            order: true,
-          },
-        },
+        orders: true,
       },
     });
 
-    const activeProducts = products.filter(p => p.status === 'ACTIVE');
-    const lowStock = products.filter(p => {
-      if (p.type === 'PHYSICAL' && p.stockLevel !== null) {
-        return p.stockLevel < (p.lowStockThreshold || 10);
-      }
-      return false;
-    });
-    const outOfStock = products.filter(p => {
-      if (p.type === 'PHYSICAL' && p.stockLevel !== null) {
-        return p.stockLevel === 0;
-      }
-      return false;
-    });
+    const activeProducts = products.filter(p => p.active);
+    const lowStock = products.filter(p => p.inventory > 0 && p.inventory < 10);
+    const outOfStock = products.filter(p => p.inventory === 0);
 
-    // Top selling products
     const productSales = products.map(product => {
-      const sales = product.orderItems.reduce((sum, item) => sum + item.quantity, 0);
-      const revenue = product.orderItems.reduce((sum, item) => sum + item.total, 0);
+      const sales = product.orders.reduce((sum, item) => sum + item.quantity, 0);
+      const revenue = product.orders.reduce((sum, item) => sum + item.total, 0);
       return {
         productId: product.id,
         productName: product.name,
@@ -508,7 +493,7 @@ export class BusinessDataPipeline {
       lowStock: lowStock.length,
       outOfStock: outOfStock.length,
       topSelling: productSales.slice(0, 10),
-      slowMoving: [], // Would need calculation
+      slowMoving: [],
     };
   }
 
@@ -525,7 +510,7 @@ export class BusinessDataPipeline {
     });
 
     const pending = orders.filter(o => o.status === 'PENDING').length;
-    const completed = orders.filter(o => o.status === 'COMPLETED').length;
+    const completed = orders.filter(o => ['DELIVERED', 'SHIPPED', 'PROCESSING'].includes(o.status)).length;
     const canceled = orders.filter(o => o.status === 'CANCELED').length;
 
     const totalValue = orders.reduce((sum, o) => sum + o.total, 0);
@@ -565,15 +550,7 @@ export class BusinessDataPipeline {
         createdAt: { gte: periodStart, lte: periodEnd },
       },
       include: {
-        deals: {
-          include: {
-            deal: {
-              include: {
-                emailCampaignDeals: true,
-              },
-            },
-          },
-        },
+        recipients: true,
       },
     });
 
@@ -581,9 +558,10 @@ export class BusinessDataPipeline {
     let emailsOpened = 0;
     let emailsClicked = 0;
 
+    const sentStatuses = ['SENT', 'DELIVERED', 'OPENED', 'CLICKED'];
     emailCampaigns.forEach(campaign => {
-      campaign.deals.forEach(cd => {
-        if (cd.status === 'SENT') emailsSent++;
+      campaign.recipients.forEach(cd => {
+        if (cd.sentAt != null || sentStatuses.includes(cd.status)) emailsSent++;
         if (cd.openedAt) emailsOpened++;
         if (cd.clickedAt) emailsClicked++;
       });
@@ -597,7 +575,7 @@ export class BusinessDataPipeline {
       },
     });
 
-    const smsSent = smsCampaigns.reduce((sum, c) => sum + (c.recipientCount || 0), 0);
+    const smsSent = smsCampaigns.reduce((sum, c) => sum + (c.totalSent || 0), 0);
     const smsReplied = 0; // Would need SMS reply tracking
 
     // Calls

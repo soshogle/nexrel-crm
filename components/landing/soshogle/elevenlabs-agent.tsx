@@ -22,6 +22,8 @@ interface ElevenLabsAgentProps {
   onMessage?: (message: ConversationMessage) => void; // Real-time message callback
   dynamicVariables?: Record<string, string>;
   autoStart?: boolean; // Auto-start conversation when component mounts
+  compactMode?: boolean; // Hide intro text - show only Start button (for pages that already have chat)
+  hideWhenIdle?: boolean; // Hide entire pre-connection UI when not connected (e.g. when voice is in chat widget)
 }
 
 type AgentStatus = "idle" | "connecting" | "listening" | "speaking" | "processing";
@@ -34,6 +36,8 @@ export function ElevenLabsAgent({
   onMessage,
   dynamicVariables,
   autoStart = false,
+  compactMode = false,
+  hideWhenIdle = false,
 }: ElevenLabsAgentProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -477,19 +481,26 @@ export function ElevenLabsAgent({
     };
   }, []);
 
+  // When hideWhenIdle and idle, render nothing to avoid empty space
+  if (hideWhenIdle && !isConnected && !isLoading) {
+    return <div className="hidden" aria-hidden="true" />;
+  }
+
   return (
     <div className="relative w-full flex flex-col items-center justify-center">
       {!isConnected && !isLoading && (
-        <div className="text-center space-y-6 z-10">
-          <div className="space-y-2">
-            <h3 className="text-2xl font-semibold">Talk to Your AI Brain Assistant</h3>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Click the button below to start a live conversation. Your browser will ask for microphone permission.
-            </p>
-          </div>
+        <div className="text-center space-y-4 z-10">
+          {!compactMode && (
+            <div className="space-y-2">
+              <h3 className="text-2xl font-semibold">Talk to Your AI Brain Assistant</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Click the button below to start a live conversation. Your browser will ask for microphone permission.
+              </p>
+            </div>
+          )}
 
           <Button 
-            size="lg" 
+            size={compactMode ? "default" : "lg"}
             onClick={startConversation} 
             className="bg-primary hover:bg-primary/90 gap-2"
             disabled={!agentId}
