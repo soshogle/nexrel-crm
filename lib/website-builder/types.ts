@@ -166,6 +166,10 @@ export interface QuestionnaireAnswers {
     phone?: string;
     address?: string;
   };
+  /** Legal entity name for Privacy Policy & Terms (e.g. "Acme Inc."). Defaults to businessName. */
+  legalEntityName?: string;
+  /** Jurisdiction for legal pages (e.g. "United States", "California"). */
+  legalJurisdiction?: string;
   brandColors?: string[];
   logo?: string;
   images?: string[];

@@ -13,6 +13,7 @@ import { resourceProvisioning } from '@/lib/website-builder/provisioning';
 import { websiteVoiceAI } from '@/lib/website-builder/voice-ai';
 import { seoAutomation } from '@/lib/website-builder/seo-automation';
 import { googleSearchConsole } from '@/lib/website-builder/google-search-console';
+import { buildQuestionnaireFromUser } from '@/lib/website-builder/prefill-from-user';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,13 +23,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
+    let {
       name,
       type, // 'REBUILT' | 'SERVICE_TEMPLATE' | 'PRODUCT_TEMPLATE'
       sourceUrl, // Required if type is 'REBUILT'
       templateType, // 'SERVICE' | 'PRODUCT' - Required if type is template
       templateId, // Optional: specific template ID to use
-      questionnaireAnswers, // Required if type is template
+      questionnaireAnswers, // Required if type is template; can be pre-filled from user
+      prefillFromUser, // If true and questionnaireAnswers empty, fill from onboarding/user
       enableVoiceAI = false,
       // Google Search Console credentials (optional)
       googleSearchConsoleAccessToken,
@@ -36,6 +38,32 @@ export async function POST(request: NextRequest) {
       googleSearchConsoleTokenExpiry,
       googleSearchConsoleSiteUrl,
     } = body;
+
+    // Pre-fill questionnaire from user/onboarding when building from template
+    if ((type === 'SERVICE_TEMPLATE' || type === 'PRODUCT_TEMPLATE') && prefillFromUser && !questionnaireAnswers?.businessName) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+          name: true,
+          email: true,
+          phone: true,
+          address: true,
+          website: true,
+          businessDescription: true,
+          legalEntityName: true,
+          legalJurisdiction: true,
+          companyLogoUrl: true,
+          productsServices: true,
+          targetAudience: true,
+          industryNiche: true,
+          businessCategory: true,
+          operatingLocation: true,
+        },
+      });
+      if (user) {
+        questionnaireAnswers = buildQuestionnaireFromUser(user);
+      }
+    }
 
     if (!name || !type) {
       return NextResponse.json(

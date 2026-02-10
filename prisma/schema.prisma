@@ -66,6 +66,9 @@ model User {
   phone                       String?
   timezone                    String?                      @default("America/New_York")
   website                     String?
+  legalEntityName             String?   // Legal name for contracts, privacy policy, terms (e.g. "Acme Inc.")
+  legalJurisdiction           String?   // Country/region for legal pages (e.g. "United States", "California")
+  companyLogoUrl              String?   // Company logo URL (from onboarding upload; used in CRM and website)
   averageDealValue            Float?
   businessCategory            String?
   businessHours               String?
