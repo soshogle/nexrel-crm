@@ -257,14 +257,20 @@ async function main() {
   console.log('💳 Creating Payments...');
   const payments: any[] = [];
   
-  // Get won deals for payments
-  const wonDeals = deals.filter(d => {
-    const dealStage = stages.find(s => s.id === d.stageId);
-    return dealStage?.name === 'Won';
+  // Get won deals for payments (fetch with lead data)
+  const wonDealsWithLeads = await prisma.deal.findMany({
+    where: { 
+      userId: user.id,
+      stageId: stages.find(s => s.name === 'Won')?.id,
+    },
+    include: {
+      lead: true,
+    },
+    take: 12,
   });
 
   // Create payments for won deals (some partial, some full)
-  for (const deal of wonDeals.slice(0, 12)) {
+  for (const deal of wonDealsWithLeads) {
     const paymentCount = randomInt(1, 3); // 1-3 payments per deal
     const totalPaid = deal.value;
     const paymentAmount = totalPaid / paymentCount;
@@ -282,7 +288,7 @@ async function main() {
           currency: 'USD',
           status: paymentStatus,
           paymentType,
-          customerName: deal.lead?.contactPerson || 'Customer',
+          customerName: deal.lead?.contactPerson || deal.lead?.businessName || 'Customer',
           customerEmail: deal.lead?.email || 'customer@example.com',
           customerPhone: deal.lead?.phone || null,
           dealId: deal.id,
