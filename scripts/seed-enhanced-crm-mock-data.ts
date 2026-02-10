@@ -59,8 +59,9 @@ function randomFloat(min: number, max: number): number {
 
 async function main() {
   console.log('🌱 Starting enhanced mock data seeding...\n');
+  console.log(`📧 Target user: ${USER_EMAIL}\n`);
 
-  // Find the user
+  // Find the user - ONLY for orthodontist@nexrel.com
   const user = await prisma.user.findUnique({
     where: { email: USER_EMAIL },
   });
@@ -71,10 +72,17 @@ async function main() {
     return;
   }
 
-  console.log(`✅ Found user: ${user.name} (${user.email})\n`);
+  // Double-check we're targeting the correct user
+  if (user.email !== USER_EMAIL) {
+    console.error(`❌ User email mismatch! Expected ${USER_EMAIL}, got ${user.email}`);
+    return;
+  }
 
-  // Clear existing data
-  console.log('🧹 Cleaning existing data...');
+  console.log(`✅ Found user: ${user.name} (${user.email})`);
+  console.log(`   User ID: ${user.id}\n`);
+
+  // Clear existing data - ONLY for orthodontist@nexrel.com
+  console.log(`🧹 Cleaning existing data for ${USER_EMAIL}...`);
   await prisma.payment.deleteMany({ where: { userId: user.id } });
   await prisma.dealActivity.deleteMany({ where: { deal: { userId: user.id } } });
   await prisma.deal.deleteMany({ where: { userId: user.id } });
@@ -86,7 +94,7 @@ async function main() {
   await prisma.message.deleteMany({ where: { userId: user.id } });
   await prisma.callLog.deleteMany({ where: { userId: user.id } });
   await prisma.lead.deleteMany({ where: { userId: user.id } });
-  console.log('✅ Existing data cleaned\n');
+  console.log(`✅ Existing data cleaned for ${USER_EMAIL}\n`);
 
   const now = new Date();
   const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
