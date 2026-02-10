@@ -55,6 +55,15 @@ const AVAILABLE_ACTIONS = [
   { value: 'task', label: 'Create Task', icon: '✅', description: 'Create a task in CRM' },
   { value: 'calendar', label: 'Calendar Event', icon: '📅', description: 'Create calendar appointment' },
   { value: 'lead_research', label: 'Lead Research', icon: '🔍', description: 'Research lead/customer information' },
+  // Website actions (for workflows triggered by or targeting website)
+  { value: 'create_lead_from_website', label: 'Create Lead from Form', icon: '🌐', description: 'Create lead from website form submission' },
+  { value: 'add_website_form', label: 'Add Lead Form to Website', icon: '📝', description: 'Add lead capture form to website' },
+  { value: 'add_website_cta', label: 'Add CTA to Website', icon: '🔘', description: 'Add call-to-action button to website' },
+  { value: 'add_website_booking', label: 'Add Booking Widget', icon: '📅', description: 'Add booking widget to website' },
+  { value: 'add_website_payment', label: 'Add Payment Section', icon: '💳', description: 'Add Stripe payment section to website' },
+  { value: 'update_website_content', label: 'Update Website Content', icon: '✏️', description: 'Update website structure or content' },
+  { value: 'publish_website', label: 'Publish Website', icon: '🚀', description: 'Publish website changes' },
+  { value: 'notify_website_event', label: 'Notify on Website Event', icon: '🔔', description: 'Notify when visitor submits form or books' },
 ];
 
 export function TaskEditorPanel({

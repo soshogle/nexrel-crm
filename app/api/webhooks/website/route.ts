@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { workflowEngine } from '@/lib/workflow-engine';
+import { processWebsiteTriggers } from '@/lib/website-triggers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (integration && (integration.config as any).createLead) {
-        await prisma.lead.create({
+        const lead = await prisma.lead.create({
           data: {
             userId: website.userId,
             businessName: data.formData.name || data.formData.businessName || 'Website Visitor',
@@ -99,6 +100,8 @@ export async function POST(request: NextRequest) {
             status: 'NEW',
           },
         });
+        // Auto-enroll in drip workflows with WEBSITE_FORM_SUBMITTED trigger
+        await processWebsiteTriggers(website.userId, lead.id, 'WEBSITE_FORM_SUBMITTED', { websiteId });
       }
     }
 

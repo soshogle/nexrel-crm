@@ -242,11 +242,70 @@ export class DataEnrichmentService {
           revenue: data.metrics?.estimatedAnnualRevenue,
           location: data.location,
           logo: data.logo,
+          techStack: Array.isArray(data.tech) ? data.tech.slice(0, 15) : undefined,
         },
       };
     } catch (error: any) {
       console.error('❌ Clearbit company enrichment error:', error);
       return {};
+    }
+  }
+
+  /**
+   * Fetch tech stack from BuiltWith (fallback when Clearbit has none)
+   */
+  private async fetchBuiltWithTech(domain: string): Promise<string[]> {
+    const apiKey = process.env.BUILTWITH_API_KEY;
+    if (!apiKey) return [];
+    try {
+      const url = `https://api.builtwith.com/free1/api.json?KEY=${encodeURIComponent(apiKey)}&LOOKUP=${encodeURIComponent(domain)}`;
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const data = await res.json();
+      const techs: string[] = [];
+      for (const g of data.groups || []) {
+        if (g.name) techs.push(g.name);
+        for (const c of g.categories || []) {
+          if (c.name) techs.push(c.name);
+        }
+      }
+      return techs.slice(0, 20);
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Fetch intent signals (hiring, job postings)
+   */
+  private async fetchIntentSignals(businessName: string, domain?: string): Promise<{ hiring?: boolean; jobPostings?: string[]; careersPage?: string } | null> {
+    const apifyKey = process.env.APIFY_API_KEY;
+    if (!apifyKey) return null;
+    try {
+      const query = `${businessName} careers jobs hiring ${domain || ''}`.trim();
+      const res = await fetch(
+        `https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=${apifyKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ queries: query, maxPagesPerQuery: 1, resultsPerPage: 8 }),
+        }
+      );
+      if (!res.ok) return null;
+      const results = (await res.json()) as Array<{ title?: string; url?: string; description?: string }>;
+      const jobPostings: string[] = [];
+      let careersPage: string | undefined;
+      const keywords = ['careers', 'jobs', 'hiring', 'join us', 'employment'];
+      for (const r of results || []) {
+        const text = `${r.title || ''} ${r.description || ''}`.toLowerCase();
+        if (keywords.some((k) => text.includes(k))) {
+          if (r.url?.includes('/careers') || r.url?.includes('/jobs')) careersPage = careersPage || r.url;
+          if (r.title && !jobPostings.includes(r.title)) jobPostings.push(r.title);
+        }
+      }
+      return { hiring: jobPostings.length > 0 || !!careersPage, jobPostings: jobPostings.slice(0, 5), careersPage };
+    } catch {
+      return null;
     }
   }
 
@@ -304,10 +363,11 @@ export class DataEnrichmentService {
       domain?: string;
       firstName?: string;
       lastName?: string;
+      businessName?: string;
     }
   ): Promise<EnrichmentResult> {
     try {
-      const { email, domain, firstName, lastName, skipCache = false } = options || {};
+      const { email, domain, firstName, lastName, businessName, skipCache = false } = options || {};
 
       // Check cache first (unless skipped)
       if (!skipCache) {
@@ -355,6 +415,21 @@ export class DataEnrichmentService {
         enrichedData = { ...enrichedData, ...clearbitCompany };
         if (clearbitCompany.company) {
           sources.push('clearbit');
+        }
+        // BuiltWith tech stack fallback when Clearbit has none
+        const company = enrichedData.company;
+        const hasTech = company?.techStack && Array.isArray(company.techStack) && company.techStack.length > 0;
+        if (!hasTech && process.env.BUILTWITH_API_KEY) {
+          const builtWithTech = await this.fetchBuiltWithTech(domain);
+          if (builtWithTech?.length) {
+            enrichedData.company = { ...(enrichedData.company || {}), techStack: builtWithTech };
+            sources.push('builtwith');
+          }
+        }
+        // Intent signals (hiring, careers)
+        const intentSignals = await this.fetchIntentSignals(businessName || domain, domain);
+        if (intentSignals?.hiring || intentSignals?.jobPostings?.length) {
+          enrichedData.intentSignals = intentSignals;
         }
       }
 
@@ -411,6 +486,7 @@ export class DataEnrichmentService {
           domain: lead.website ? new URL(lead.website).hostname : undefined,
           firstName: lead.contactPerson?.split(' ')[0],
           lastName: lead.contactPerson?.split(' ').slice(1).join(' '),
+          businessName: lead.businessName || undefined,
         });
 
         if (result.success) {

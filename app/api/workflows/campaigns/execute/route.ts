@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const audience = (workflow as any).audience as any;
     const campaignSettings = (workflow as any).campaignSettings as any;
 
-    if (!audience || audience.type !== 'FILTERED') {
+    if (!audience || (audience.type !== 'FILTERED' && audience.type !== 'WEBSITE_LEADS')) {
       return NextResponse.json(
         { error: 'Invalid audience configuration' },
         { status: 400 }
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (audience.filters?.minLeadScore) {
-      leadWhere.score = { gte: audience.filters.minLeadScore };
+      leadWhere.leadScore = { gte: audience.filters.minLeadScore };
     }
     if (audience.filters?.statuses?.length > 0) {
       leadWhere.status = { in: audience.filters.statuses };
@@ -75,6 +75,12 @@ export async function POST(request: NextRequest) {
     }
     if (audience.filters?.hasEmail) {
       leadWhere.email = { not: null };
+    }
+    // Website leads: filter by source (website, Website Form, etc.)
+    if (audience.filters?.sources?.length > 0) {
+      leadWhere.source = { in: audience.filters.sources };
+    } else if (audience.type === 'WEBSITE_LEADS') {
+      leadWhere.source = { in: ['website', 'Website Form', 'website_form', 'Website'] };
     }
 
     // Get matching leads
