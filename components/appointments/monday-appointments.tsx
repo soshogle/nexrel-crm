@@ -64,12 +64,12 @@ interface MondayAppointmentsProps {
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  'SCHEDULED': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300', dot: 'bg-blue-500' },
-  'CONFIRMED': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', dot: 'bg-green-500' },
-  'IN_PROGRESS': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300', dot: 'bg-purple-500' },
-  'COMPLETED': { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300', dot: 'bg-gray-500' },
-  'CANCELLED': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300', dot: 'bg-red-500' },
-  'NO_SHOW': { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-300', dot: 'bg-orange-500' },
+  'SCHEDULED': { bg: 'bg-blue-500/20', text: 'text-blue-400', dot: 'bg-blue-500' },
+  'CONFIRMED': { bg: 'bg-green-500/20', text: 'text-green-400', dot: 'bg-green-500' },
+  'IN_PROGRESS': { bg: 'bg-purple-500/20', text: 'text-purple-400', dot: 'bg-purple-500' },
+  'COMPLETED': { bg: 'bg-gray-500/20', text: 'text-gray-400', dot: 'bg-gray-500' },
+  'CANCELLED': { bg: 'bg-red-500/20', text: 'text-red-400', dot: 'bg-red-500' },
+  'NO_SHOW': { bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-500' },
 };
 
 const TYPE_ICONS: Record<string, any> = {
@@ -206,7 +206,7 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
       </div>
     );
   }
@@ -217,23 +217,23 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
           <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-300/60" />
             <Input
               placeholder="Search appointments..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-black/40 border-purple-500/20 text-white placeholder:text-purple-300/40 focus:border-purple-500/40"
             />
           </div>
-          <div className="flex rounded-lg border overflow-hidden">
+          <div className="flex rounded-lg border border-purple-500/20 overflow-hidden bg-black/40">
             {(['upcoming', 'today', 'past', 'all'] as const).map(mode => (
               <button
                 key={mode}
                 onClick={() => setViewMode(mode)}
                 className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
                   viewMode === mode 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-background hover:bg-muted'
+                    ? 'gradient-primary text-white shadow-lg shadow-purple-500/30' 
+                    : 'bg-transparent hover:bg-purple-500/10 text-purple-300/70'
                 }`}
               >
                 {mode}
@@ -242,12 +242,12 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={fetchAppointments}>
+          <Button variant="outline" size="sm" onClick={fetchAppointments} className="border-purple-500/20 text-purple-300 hover:border-purple-500 hover:bg-purple-500/10">
             <RefreshCw className="h-4 w-4 mr-1" />
             Refresh
           </Button>
           {isAdmin && (
-            <Button size="sm" onClick={() => setShowCreateDialog(true)}>
+            <Button size="sm" onClick={() => setShowCreateDialog(true)} className="gradient-primary text-white shadow-lg shadow-purple-500/30">
               <Plus className="h-4 w-4 mr-1" />
               New Appointment
             </Button>
@@ -257,28 +257,28 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
 
       {/* Stats Row */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-          <div className="text-2xl font-bold text-blue-600">{appointments.filter(a => a.status === 'SCHEDULED').length}</div>
-          <div className="text-xs text-blue-600/70">Scheduled</div>
+        <div className="bg-blue-500/20 rounded-lg p-4 border border-blue-500/30">
+          <div className="text-2xl font-bold text-blue-400">{appointments.filter(a => a.status === 'SCHEDULED').length}</div>
+          <div className="text-xs text-blue-300/70">Scheduled</div>
         </div>
-        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
-          <div className="text-2xl font-bold text-green-600">{appointments.filter(a => a.status === 'CONFIRMED').length}</div>
-          <div className="text-xs text-green-600/70">Confirmed</div>
+        <div className="bg-green-500/20 rounded-lg p-4 border border-green-500/30">
+          <div className="text-2xl font-bold text-green-400">{appointments.filter(a => a.status === 'CONFIRMED').length}</div>
+          <div className="text-xs text-green-300/70">Confirmed</div>
         </div>
-        <div className="bg-gray-50 dark:bg-gray-900/20 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-          <div className="text-2xl font-bold text-gray-600">{appointments.filter(a => a.status === 'COMPLETED').length}</div>
-          <div className="text-xs text-gray-500">Completed</div>
+        <div className="bg-gray-500/20 rounded-lg p-4 border border-gray-500/30">
+          <div className="text-2xl font-bold text-gray-400">{appointments.filter(a => a.status === 'COMPLETED').length}</div>
+          <div className="text-xs text-gray-300/70">Completed</div>
         </div>
-        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-800">
-          <div className="text-2xl font-bold text-red-600">{appointments.filter(a => ['CANCELLED', 'NO_SHOW'].includes(a.status)).length}</div>
-          <div className="text-xs text-red-600/70">Cancelled/No-show</div>
+        <div className="bg-red-500/20 rounded-lg p-4 border border-red-500/30">
+          <div className="text-2xl font-bold text-red-400">{appointments.filter(a => ['CANCELLED', 'NO_SHOW'].includes(a.status)).length}</div>
+          <div className="text-xs text-red-300/70">Cancelled/No-show</div>
         </div>
       </div>
 
       {/* Monday-style Table */}
-      <div className="border rounded-lg overflow-hidden bg-background">
+      <div className="border border-purple-500/20 rounded-lg overflow-hidden glass-effect shadow-xl">
         {/* Table Header */}
-        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-muted/50 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-black/40 border-b border-purple-500/20 text-xs font-medium text-purple-300/80 uppercase tracking-wider">
           <div className="col-span-4">Appointment</div>
           <div className="col-span-2 text-center">Date & Time</div>
           <div className="col-span-2 text-center">Status</div>
@@ -288,22 +288,22 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
 
         {/* Grouped by Date */}
         {Object.keys(groupedByDate).length === 0 ? (
-          <div className="px-4 py-12 text-center text-muted-foreground">
-            <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
+          <div className="px-4 py-12 text-center text-purple-300/50">
+            <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30 text-purple-400" />
             <p>No appointments found</p>
           </div>
         ) : (
           Object.entries(groupedByDate).map(([date, dateAppointments]) => (
-            <div key={date} className="border-b last:border-b-0">
+            <div key={date} className="border-b border-purple-500/20 last:border-b-0">
               {/* Date Header */}
-              <div className="px-4 py-2 bg-muted/30 flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-primary" />
-                <span className="font-semibold text-sm">
+              <div className="px-4 py-2 bg-black/20 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-purple-400" />
+                <span className="font-semibold text-sm text-white">
                   {new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                 </span>
-                <Badge variant="secondary" className="text-xs">{dateAppointments.length}</Badge>
+                <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-300 border-purple-500/30">{dateAppointments.length}</Badge>
                 {date === today.toDateString() && (
-                  <Badge className="bg-primary text-xs">Today</Badge>
+                  <Badge className="gradient-primary text-white text-xs shadow-lg shadow-purple-500/30">Today</Badge>
                 )}
               </div>
 
@@ -315,15 +315,15 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
                 return (
                   <div 
                     key={apt.id} 
-                    className="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-muted/20 border-l-4 border-l-primary/30"
+                    className="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-purple-500/10 border-l-4 border-l-purple-500/30 transition-colors"
                   >
                     {/* Appointment Title */}
                     <div className="col-span-4 flex items-center gap-3">
-                      <GripVertical className="h-4 w-4 text-muted-foreground/40" />
+                      <GripVertical className="h-4 w-4 text-purple-300/40" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{apt.title}</p>
+                        <p className="font-medium text-sm truncate text-white">{apt.title}</p>
                         {apt.contact && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <p className="text-xs text-purple-300/60 flex items-center gap-1">
                             <User className="h-3 w-3" />
                             {apt.contact.name}
                           </p>
@@ -333,10 +333,10 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
 
                     {/* Date & Time */}
                     <div className="col-span-2 text-center">
-                      <div className="text-sm font-medium">
+                      <div className="text-sm font-medium text-white">
                         {new Date(apt.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs text-purple-300/60">
                         {apt.endTime && `to ${new Date(apt.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
                       </div>
                     </div>
@@ -345,14 +345,14 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
                     <div className="col-span-2 flex justify-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild disabled={!isAdmin}>
-                          <button className={`px-3 py-1 rounded-full text-xs font-medium ${colors.bg} ${colors.text} hover:opacity-80`}>
+                          <button className={`px-3 py-1 rounded-full text-xs font-medium border ${colors.bg} ${colors.text} border-purple-500/30 hover:opacity-80`}>
                             <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${colors.dot}`} />
                             {apt.status.replace('_', ' ')}
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent>
+                        <DropdownMenuContent className="bg-black/90 border-purple-500/20">
                           {Object.keys(STATUS_COLORS).map(s => (
-                            <DropdownMenuItem key={s} onClick={() => updateStatus(apt.id, s)}>
+                            <DropdownMenuItem key={s} onClick={() => updateStatus(apt.id, s)} className="text-white hover:bg-purple-500/20">
                               <div className={`w-2 h-2 rounded-full mr-2 ${STATUS_COLORS[s]?.dot}`} />
                               {s.replace('_', ' ')}
                             </DropdownMenuItem>
@@ -363,7 +363,7 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
 
                     {/* Type */}
                     <div className="col-span-2 flex justify-center">
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-300 bg-purple-500/10">
                         <TypeIcon className="h-3 w-3 mr-1" />
                         {apt.type.replace('_', ' ')}
                       </Badge>
@@ -372,33 +372,33 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
                     {/* Actions */}
                     <div className="col-span-2 flex justify-center gap-1">
                       {apt.meetingUrl && (
-                        <Button variant="ghost" size="sm" asChild>
+                        <Button variant="ghost" size="sm" asChild className="hover:bg-purple-500/20 border border-purple-500/20">
                           <a href={apt.meetingUrl} target="_blank" rel="noopener noreferrer">
-                            <Video className="h-4 w-4" />
+                            <Video className="h-4 w-4 text-purple-400" />
                           </a>
                         </Button>
                       )}
                       {isAdmin && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-purple-500/20 border border-purple-500/20">
+                              <MoreHorizontal className="h-4 w-4 text-purple-300" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => updateStatus(apt.id, 'CONFIRMED')}>
-                              <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                          <DropdownMenuContent align="end" className="bg-black/90 border-purple-500/20">
+                            <DropdownMenuItem onClick={() => updateStatus(apt.id, 'CONFIRMED')} className="text-white hover:bg-green-500/20">
+                              <CheckCircle2 className="h-4 w-4 mr-2 text-green-400" />
                               Confirm
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => updateStatus(apt.id, 'COMPLETED')}>
-                              <CheckCircle2 className="h-4 w-4 mr-2 text-gray-500" />
+                            <DropdownMenuItem onClick={() => updateStatus(apt.id, 'COMPLETED')} className="text-white hover:bg-gray-500/20">
+                              <CheckCircle2 className="h-4 w-4 mr-2 text-gray-400" />
                               Mark Complete
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => updateStatus(apt.id, 'CANCELLED')} className="text-red-600">
+                            <DropdownMenuItem onClick={() => updateStatus(apt.id, 'CANCELLED')} className="text-red-400 hover:bg-red-500/20">
                               <XCircle className="h-4 w-4 mr-2" />
                               Cancel
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => deleteAppointment(apt.id)} className="text-red-600">
+                            <DropdownMenuItem onClick={() => deleteAppointment(apt.id)} className="text-red-400 hover:bg-red-500/20">
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -415,43 +415,46 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
+        <DialogContent className="bg-black/95 border-purple-500/20 text-white">
           <DialogHeader>
-            <DialogTitle>Create Appointment</DialogTitle>
+            <DialogTitle className="gradient-text">Create Appointment</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Title *</Label>
+              <Label className="text-purple-300">Title *</Label>
               <Input
                 value={newAppointment.title}
                 onChange={(e) => setNewAppointment(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Meeting with..."
+                className="bg-black/40 border-purple-500/20 text-white placeholder:text-purple-300/40 focus:border-purple-500/40"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Start Time *</Label>
+                <Label className="text-purple-300">Start Time *</Label>
                 <Input
                   type="datetime-local"
                   value={newAppointment.startTime}
                   onChange={(e) => setNewAppointment(prev => ({ ...prev, startTime: e.target.value }))}
+                  className="bg-black/40 border-purple-500/20 text-white focus:border-purple-500/40"
                 />
               </div>
               <div className="space-y-2">
-                <Label>End Time</Label>
+                <Label className="text-purple-300">End Time</Label>
                 <Input
                   type="datetime-local"
                   value={newAppointment.endTime}
                   onChange={(e) => setNewAppointment(prev => ({ ...prev, endTime: e.target.value }))}
+                  className="bg-black/40 border-purple-500/20 text-white focus:border-purple-500/40"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Type</Label>
+              <Label className="text-purple-300">Type</Label>
               <select
                 value={newAppointment.type}
                 onChange={(e) => setNewAppointment(prev => ({ ...prev, type: e.target.value }))}
-                className="w-full h-10 px-3 border rounded-md bg-background"
+                className="w-full h-10 px-3 border border-purple-500/20 rounded-md bg-black/40 text-white focus:border-purple-500/40"
               >
                 <option value="VIDEO">Video Call</option>
                 <option value="PHONE">Phone Call</option>
@@ -459,26 +462,28 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
               </select>
             </div>
             <div className="space-y-2">
-              <Label>Location / Meeting URL</Label>
+              <Label className="text-purple-300">Location / Meeting URL</Label>
               <Input
                 value={newAppointment.location}
                 onChange={(e) => setNewAppointment(prev => ({ ...prev, location: e.target.value }))}
                 placeholder="Zoom link or address"
+                className="bg-black/40 border-purple-500/20 text-white placeholder:text-purple-300/40 focus:border-purple-500/40"
               />
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label className="text-purple-300">Description</Label>
               <Textarea
                 value={newAppointment.description}
                 onChange={(e) => setNewAppointment(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Meeting notes..."
                 rows={3}
+                className="bg-black/40 border-purple-500/20 text-white placeholder:text-purple-300/40 focus:border-purple-500/40"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-            <Button onClick={createAppointment}>Create Appointment</Button>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)} className="border-purple-500/20 text-purple-300 hover:border-purple-500 hover:bg-purple-500/10">Cancel</Button>
+            <Button onClick={createAppointment} className="gradient-primary text-white shadow-lg shadow-purple-500/30">Create Appointment</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

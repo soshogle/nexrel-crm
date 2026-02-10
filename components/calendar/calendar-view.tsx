@@ -77,9 +77,9 @@ function DraggableAppointment({ appointment, statusColors, meetingTypeIcons, onC
       {...listeners}
       {...attributes}
       className={`
-        text-xs px-2 py-1 rounded border cursor-move
-        ${statusColor || 'bg-blue-500 text-white border-blue-600'}
-        ${isDragging ? 'opacity-50' : ''}
+        text-xs px-2 py-1 rounded-lg border cursor-move shadow-sm
+        ${statusColor || 'gradient-primary text-white border-purple-500/30'}
+        ${isDragging ? 'opacity-50' : 'hover:shadow-md hover:shadow-purple-500/20'}
       `}
       onClick={(e) => {
         e.stopPropagation()
@@ -107,17 +107,9 @@ function DroppableDay({ date, children, onDateClick, isCurrentMonth, isTodayDate
       ref={setNodeRef}
       className={`
         aspect-square rounded-lg p-2 cursor-pointer transition-all relative
-        ${isCurrentMonth ? 'bg-white hover:bg-gray-50' : 'bg-gray-200'}
-        ${isOver ? 'ring-2 ring-purple-400 scale-105' : ''}
+        ${isCurrentMonth ? 'bg-black/40 border border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/10' : 'bg-black/20 border border-purple-500/10'}
+        ${isOver ? 'ring-2 ring-purple-500 scale-105 shadow-lg shadow-purple-500/30' : ''}
       `}
-      style={{
-        border: isCurrentMonth ? '3px solid transparent' : '2px solid #d1d5db',
-        backgroundImage: isCurrentMonth 
-          ? 'linear-gradient(white, white), linear-gradient(135deg, hsl(262, 83%, 58%) 0%, hsl(280, 70%, 58%) 50%, hsl(330, 80%, 55%) 100%)'
-          : undefined,
-        backgroundOrigin: 'border-box',
-        backgroundClip: 'padding-box, border-box',
-      }}
       onClick={() => onDateClick(date)}
     >
       {children}
@@ -267,7 +259,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
   if (!mounted || !currentMonth) {
     return (
       <div className="flex items-center justify-center p-12">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full"></div>
       </div>
     )
   }
@@ -282,11 +274,11 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
   const paddingDays = Array(startDayOfWeek).fill(null)
 
   const statusColors: Record<string, string> = {
-    SCHEDULED: 'bg-blue-500 text-white border-blue-600',
-    CONFIRMED: 'bg-green-500 text-white border-green-600',
-    COMPLETED: 'bg-gray-500 text-white border-gray-600',
-    NO_SHOW: 'bg-red-500 text-white border-red-600',
-    CANCELLED: 'bg-orange-500 text-white border-orange-600',
+    SCHEDULED: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    CONFIRMED: 'bg-green-500/20 text-green-400 border-green-500/30',
+    COMPLETED: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+    NO_SHOW: 'bg-red-500/20 text-red-400 border-red-500/30',
+    CANCELLED: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   }
 
   const meetingTypeIcons: Record<string, any> = {
@@ -305,21 +297,21 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={handlePreviousMonth}>
+          <Button variant="outline" size="icon" onClick={handlePreviousMonth} className="border-purple-500/20 text-purple-300 hover:border-purple-500 hover:bg-purple-500/10">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h2 className="text-2xl font-bold text-black">{format(currentMonth, 'MMMM yyyy')}</h2>
-          <Button variant="outline" size="icon" onClick={handleNextMonth}>
+          <h2 className="text-2xl font-bold gradient-text">{format(currentMonth, 'MMMM yyyy')}</h2>
+          <Button variant="outline" size="icon" onClick={handleNextMonth} className="border-purple-500/20 text-purple-300 hover:border-purple-500 hover:bg-purple-500/10">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Calendar Grid */}
-        <Card className="p-6 bg-white border-gray-300">
+        <Card className="p-6 glass-effect border-purple-500/20 shadow-xl">
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-2 mb-4">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-sm font-semibold text-gray-700 py-2">
+              <div key={day} className="text-center text-sm font-semibold text-purple-300/80 py-2">
                 {day}
               </div>
             ))}
@@ -344,7 +336,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
                   isTodayDate={isTodayDate}
                 >
                   <div className="flex flex-col h-full">
-                    <div className={`text-sm font-medium mb-1 ${isTodayDate ? 'text-purple-600' : isCurrentMonth ? 'text-gray-900' : 'text-gray-800'}`}>
+                    <div className={`text-sm font-medium mb-1 ${isTodayDate ? 'gradient-text font-bold' : isCurrentMonth ? 'text-white' : 'text-purple-300/40'}`}>
                       {format(date, 'd')}
                     </div>
                     <div className="flex-1 space-y-1 overflow-hidden">
@@ -358,7 +350,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
                         />
                       ))}
                       {dayAppointments.length > 3 && (
-                        <div className={`text-xs px-2 ${isCurrentMonth ? 'text-gray-700' : 'text-gray-600'}`}>
+                        <div className={`text-xs px-2 ${isCurrentMonth ? 'text-purple-300/60' : 'text-purple-300/30'}`}>
                           +{dayAppointments.length - 3} more
                         </div>
                       )}
@@ -389,8 +381,8 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
         {activeAppointment ? (
           <div
             className={`
-              text-xs px-2 py-1 rounded border opacity-90 shadow-lg
-              ${statusColors[activeAppointment.status] || 'bg-muted text-foreground'}
+              text-xs px-2 py-1 rounded-lg border opacity-90 shadow-xl shadow-purple-500/30
+              ${statusColors[activeAppointment.status] || 'gradient-primary text-white border-purple-500/30'}
             `}
           >
             <div className="flex items-center gap-1">

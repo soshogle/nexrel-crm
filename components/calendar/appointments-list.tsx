@@ -25,11 +25,11 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
   const [appointmentForCall, setAppointmentForCall] = useState<Appointment | null>(null);
 
   const statusColors: Record<string, string> = {
-    SCHEDULED: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    CONFIRMED: 'bg-green-500/10 text-green-400 border-green-500/20',
-    COMPLETED: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
-    NO_SHOW: 'bg-red-500/10 text-red-400 border-red-500/20',
-    CANCELLED: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    SCHEDULED: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    CONFIRMED: 'bg-green-500/20 text-green-400 border-green-500/30',
+    COMPLETED: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+    NO_SHOW: 'bg-red-500/20 text-red-400 border-red-500/30',
+    CANCELLED: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   };
 
   const meetingTypeIcons: Record<string, any> = {
@@ -87,9 +87,9 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
 
   if (sortedAppointments.length === 0) {
     return (
-      <Card className="bg-gray-900 border-gray-800">
-        <div className="text-center py-12 text-gray-400">
-          <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+      <Card className="glass-effect border-purple-500/20">
+        <div className="text-center py-12 text-purple-300/50">
+          <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50 text-purple-400" />
           <p>No appointments scheduled</p>
         </div>
       </Card>
@@ -107,7 +107,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
           <Card
             key={apt.id}
             className={`
-              bg-gray-900 border-gray-800 hover:border-purple-500/50 transition-all cursor-pointer
+              glass-effect border-purple-500/20 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 transition-all cursor-pointer
               ${apt.status === 'CANCELLED' ? 'opacity-50' : ''}
             `}
             onClick={() => handleAppointmentClick(apt)}
@@ -117,7 +117,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
                 {/* Left Section - Icon & Details */}
                 <div className="flex items-start gap-4 flex-1">
                   <div className="flex-shrink-0 mt-1">
-                    <div className="bg-purple-500/10 p-3 rounded-lg">
+                    <div className="bg-purple-500/20 p-3 rounded-lg border border-purple-500/30">
                       <MeetingIcon className="h-5 w-5 text-purple-400" />
                     </div>
                   </div>
@@ -144,14 +144,14 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
                     {/* Metadata Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       {/* Date & Time */}
-                      <div className="flex items-center gap-2 text-gray-300">
+                      <div className="flex items-center gap-2 text-purple-300/80">
                         <Clock className="h-4 w-4 text-purple-400" />
                         <span>{format(startDate, 'MMM d, yyyy • h:mm a')}</span>
                       </div>
 
                       {/* Lead/Contact */}
                       {apt.lead && (
-                        <div className="flex items-center gap-2 text-gray-300">
+                        <div className="flex items-center gap-2 text-purple-300/80">
                           <User className="h-4 w-4 text-purple-400" />
                           <span className="truncate">{apt.lead.contactPerson}</span>
                         </div>
@@ -159,7 +159,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
 
                       {/* Location */}
                       {apt.location && apt.meetingType === 'IN_PERSON' && (
-                        <div className="flex items-center gap-2 text-gray-300">
+                        <div className="flex items-center gap-2 text-purple-300/80">
                           <MapPin className="h-4 w-4 text-purple-400" />
                           <span className="truncate">{apt.location}</span>
                         </div>
@@ -167,7 +167,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
 
                       {/* Payment Info */}
                       {apt.requiresPayment && apt.paymentAmount && (
-                        <div className="flex items-center gap-2 text-gray-300">
+                        <div className="flex items-center gap-2 text-purple-300/80">
                           <span className="text-purple-400 font-medium">
                             ${(apt.paymentAmount / 100).toFixed(2)}
                           </span>
@@ -189,7 +189,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
                       variant="ghost"
                       size="icon"
                       onClick={(e) => handleMakeCall(apt, e)}
-                      className="hover:bg-purple-500/10 hover:text-purple-400"
+                      className="hover:bg-purple-500/20 hover:text-purple-400 border border-purple-500/20"
                       title="Make Voice AI Call"
                     >
                       <Phone className="h-4 w-4" />
@@ -200,7 +200,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
                       variant="ghost"
                       size="icon"
                       onClick={() => handleDeleteAppointment(apt.id)}
-                      className="hover:bg-red-500/10 hover:text-red-400"
+                      className="hover:bg-red-500/20 hover:text-red-400 border border-red-500/20"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
