@@ -77,7 +77,7 @@ export class CrmVoiceAgentService {
       select: {
         name: true,
         email: true,
-        businessName: true,
+        businessDescription: true,
         industry: true,
         language: true,
       },
@@ -87,7 +87,7 @@ export class CrmVoiceAgentService {
       throw new Error('User not found');
     }
 
-    const businessName = user.businessName || user.name || 'Your Business';
+    const businessName = user.name || 'Your Business';
     const language = config.language || user.language || 'en';
 
     // Build CRM-specific system prompt
@@ -175,7 +175,7 @@ export class CrmVoiceAgentService {
 
     return `${languageInstruction}
 
-You are an AI assistant for ${user.businessName || user.name || 'the CRM'}. You help users manage their CRM through voice commands.
+You are an AI assistant for ${user.name || 'the CRM'}. You help users manage their CRM through voice commands.
 
 Your role:
 - Help users create and manage leads, deals, and contacts
@@ -231,8 +231,8 @@ Remember: You're speaking, not typing. Keep it brief and natural.
   private buildKnowledgeBase(user: any): string {
     const parts: string[] = [];
 
-    if (user.businessName) {
-      parts.push(`Business Name: ${user.businessName}`);
+    if (user.name) {
+      parts.push(`Business Name: ${user.name}`);
     }
     if (user.industry) {
       parts.push(`Industry: ${user.industry}`);
