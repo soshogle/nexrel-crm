@@ -319,36 +319,41 @@ export function ElevenLabsAgent({
 
       // Connect audio element for analysis and ensure playback works
       // The ElevenLabs SDK creates audio elements automatically for WebRTC
+      // IMPORTANT: Use only elements not yet connected - createMediaElementSource can only be called once per element
       const connectAudioElement = () => {
         try {
-          // Look for audio element created by SDK or our fallback element
-          const audioElement = document.querySelector("#elevenlabs-audio-output") as HTMLAudioElement || 
-                              document.querySelector("audio") as HTMLAudioElement;
-          
+          const candidates = document.querySelectorAll('audio');
+          let audioElement: HTMLAudioElement | null = null;
+          for (const el of candidates) {
+            if ((el as HTMLAudioElement).dataset.audioSourceConnected !== 'true') {
+              audioElement = el as HTMLAudioElement;
+              break;
+            }
+          }
+          audioElement = audioElement || (document.querySelector("#elevenlabs-audio-output") as HTMLAudioElement);
+
           if (audioElement && audioContextRef.current && analyserRef.current) {
             try {
-              // Ensure audio is enabled and will play
+              // Skip if already connected (prevents InvalidStateError on reconnect)
+              if (audioElement.dataset.audioSourceConnected === 'true') return;
+
               audioElement.volume = 1.0;
               audioElement.muted = false;
-              
-              // Play the audio element to ensure it's active
               audioElement.play().catch((e) => {
                 console.log("Audio play() called (may fail if no audio yet):", e);
               });
-              
-              // Connect to audio context for analysis
+
               const source = audioContextRef.current.createMediaElementSource(audioElement);
               source.connect(analyserRef.current);
               analyserRef.current.connect(audioContextRef.current.destination);
+              audioElement.dataset.audioSourceConnected = 'true';
               console.log("✅ Audio element connected for analysis and playback");
             } catch (e: any) {
-              // Audio element may already be connected - this is OK
-              if (e.message && !e.message.includes("already been connected")) {
+              if (e?.name !== 'InvalidStateError' && e?.message && !e.message.includes('already')) {
                 console.log("Could not connect to audio element:", e);
               }
             }
           } else {
-            // Retry after a short delay if element not found yet
             setTimeout(connectAudioElement, 200);
           }
         } catch (e) {

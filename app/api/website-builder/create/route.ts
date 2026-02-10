@@ -160,8 +160,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Website creation error:', error);
+    const message = error?.message || error?.cause?.message || 'Failed to create website';
     return NextResponse.json(
-      { error: error.message || 'Failed to create website' },
+      { error: String(message) },
       { status: 500 }
     );
   }

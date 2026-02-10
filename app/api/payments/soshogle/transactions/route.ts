@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     const customer = await soshoglePay.getCustomer(session.user.id);
     if (!customer) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+      return NextResponse.json({ success: true, transactions: [] });
     }
 
     const { searchParams } = new URL(req.url);

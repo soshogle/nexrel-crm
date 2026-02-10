@@ -3,10 +3,14 @@
  * Returns count of leads matching audience filters
  */
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,46 +31,45 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
     };
 
-    // Lead score filter
-    if (filters.minLeadScore) {
-      where.score = {
-        gte: filters.minLeadScore,
-      };
+    // Lead score filter (Lead model uses leadScore, not score)
+    if (filters.minLeadScore != null) {
+      where.leadScore = { gte: filters.minLeadScore };
     }
 
     // Status filter
-    if (filters.statuses && filters.statuses.length > 0) {
-      where.status = {
-        in: filters.statuses,
-      };
+    if (filters.statuses?.length > 0) {
+      where.status = { in: filters.statuses };
     }
 
-    // Tags filter
-    if (filters.tags && filters.tags.length > 0) {
-      where.tags = {
-        hasSome: filters.tags,
-      };
-    }
-
-    // Type filter
-    if (filters.types && filters.types.length > 0) {
-      where.type = {
-        in: filters.types,
-      };
+    // Tags filter - Prisma Json doesn't support hasSome; use raw query when tags specified
+    if (filters.tags?.length > 0) {
+      const tagConditions = Prisma.join(
+        filters.tags.map((tag: string) => Prisma.sql`(tags::jsonb ? ${tag}::text)`),
+        ' OR '
+      );
+      const conditions = [
+        Prisma.sql`"userId" = ${session.user.id}`,
+        Prisma.sql`(${tagConditions})`,
+      ];
+      if (filters.minLeadScore != null) conditions.push(Prisma.sql`"leadScore" >= ${filters.minLeadScore}`);
+      if (filters.statuses?.length) conditions.push(Prisma.sql`status IN (${Prisma.join(filters.statuses.map((s: string) => Prisma.sql`${s}`), ', ')})`);
+      if (filters.hasPhone) conditions.push(Prisma.sql`phone IS NOT NULL`);
+      if (filters.hasEmail) conditions.push(Prisma.sql`email IS NOT NULL`);
+      const [row] = await prisma.$queryRaw<[{ count: number }]>`
+        SELECT COUNT(*)::int as count FROM "Lead"
+        WHERE ${Prisma.join(conditions, ' AND ')}
+      `;
+      return NextResponse.json({ count: row?.count ?? 0 });
     }
 
     // Phone requirement
     if (filters.hasPhone) {
-      where.phone = {
-        not: null,
-      };
+      where.phone = { not: null };
     }
 
     // Email requirement
     if (filters.hasEmail) {
-      where.email = {
-        not: null,
-      };
+      where.email = { not: null };
     }
 
     // Count matching leads
