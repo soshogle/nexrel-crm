@@ -104,63 +104,62 @@ export async function DELETE(
     }
 
     // Delete related records first (cascading deletes)
+    // Use a transaction to ensure atomicity
     try {
-      // Delete website products
-      await prisma.websiteProduct.deleteMany({
-        where: { websiteId: params.id },
-      });
-
-      // Delete website orders
-      await prisma.websiteOrder.deleteMany({
-        where: { websiteId: params.id },
-      });
-
-      // Delete website builds
-      await prisma.websiteBuild.deleteMany({
-        where: { websiteId: params.id },
-      });
-
-      // Delete website integrations
-      await prisma.websiteIntegration.deleteMany({
-        where: { websiteId: params.id },
-      });
-
-      // Delete website stock settings
-      await prisma.websiteStockSettings.deleteMany({
-        where: { websiteId: params.id },
-      });
-
-      // Update status to FAILED if stuck in BUILDING
-      if (website.status === 'BUILDING') {
-        await prisma.website.update({
-          where: { id: params.id },
-          data: { status: 'FAILED' },
+      await prisma.$transaction(async (tx) => {
+        // Delete website products
+        await tx.websiteProduct.deleteMany({
+          where: { websiteId: params.id },
         });
-      }
 
-      // TODO: Clean up resources (GitHub repo, Vercel project, etc.)
-      // await resourceProvisioning.cleanupResources(...)
+        // Delete website orders
+        await tx.websiteOrder.deleteMany({
+          where: { websiteId: params.id },
+        });
 
-      // Finally delete the website
-      await prisma.website.delete({
-        where: { id: params.id },
+        // Delete website builds
+        await tx.websiteBuild.deleteMany({
+          where: { websiteId: params.id },
+        });
+
+        // Delete website integrations
+        await tx.websiteIntegration.deleteMany({
+          where: { websiteId: params.id },
+        });
+
+        // Delete website stock settings
+        await tx.websiteStockSettings.deleteMany({
+          where: { websiteId: params.id },
+        });
+
+        // Finally delete the website (regardless of status)
+        // This will work even if status is BUILDING
+        await tx.website.delete({
+          where: { id: params.id },
+        });
       });
+
+      // TODO: Clean up external resources (GitHub repo, Vercel project, etc.)
+      // await resourceProvisioning.cleanupResources(...)
 
       return NextResponse.json({ success: true });
     } catch (deleteError: any) {
       console.error('Error deleting website and related records:', deleteError);
+      console.error('Delete error details:', {
+        message: deleteError.message,
+        code: deleteError.code,
+        meta: deleteError.meta,
+      });
       
-      // If deletion fails, try to at least mark it as failed
-      try {
-        await prisma.website.update({
-          where: { id: params.id },
-          data: { status: 'FAILED' },
-        });
-      } catch (updateError) {
-        console.error('Error updating website status:', updateError);
-      }
-      
-      throw deleteError;
+      // Return a more specific error message
+      const errorMessage = deleteError.message || 'Failed to delete website';
+      return NextResponse.json(
+        { 
+          error: errorMessage,
+          details: process.env.NODE_ENV === 'development' ? deleteError.stack : undefined,
+        },
+        { status: 500 }
+      );
     }
   } catch (error: any) {
     console.error('Error deleting website:', error);

@@ -4,3 +4,5 @@ backups/*credentials*.txt
 *.backup
 *.bak
 node_modules
+.env
+.env.local

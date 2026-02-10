@@ -25,7 +25,7 @@ export class BusinessNLUService {
   /**
    * Parse natural language query into structured intent
    */
-  async parseQuery(query: string, context?: BusinessDataSnapshot): Promise<QueryIntent> {
+  parseQuery(query: string, context?: BusinessDataSnapshot): QueryIntent {
     const lowerQuery = query.toLowerCase().trim();
 
     // Metric queries

@@ -160,6 +160,48 @@ export function GeometricShapes({ audioLevel = 0, isAgentSpeaking = false }: Geo
           style={{ opacity: isAgentSpeaking ? (0.5 + (audioLevel * 0.5)) : 0.5 }}
         />
       </div>
+      {/* Centered Microphone Icon - Matches landing page design */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+        <div className="relative">
+          {/* Blue circle outline around mic */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div 
+              className="w-20 h-20 md:w-24 md:h-24 rounded-full border-2 transition-all duration-300"
+              style={{
+                borderColor: isAgentSpeaking 
+                  ? `rgba(34, 211, 238, ${0.8 + (audioLevel * 0.2)})` 
+                  : 'rgba(34, 211, 238, 0.6)',
+                boxShadow: isAgentSpeaking
+                  ? `0 0 20px rgba(34, 211, 238, ${0.5 + (audioLevel * 0.3)})`
+                  : '0 0 10px rgba(34, 211, 238, 0.3)',
+              }}
+            />
+          </div>
+          {/* Microphone Icon */}
+          <svg 
+            className="w-12 h-12 md:w-16 md:h-16 transition-all duration-300"
+            style={{
+              color: isAgentSpeaking 
+                ? `rgba(139, 92, 246, ${1})` 
+                : 'rgba(139, 92, 246, 0.9)',
+              filter: isAgentSpeaking
+                ? `drop-shadow(0 0 8px rgba(139, 92, 246, ${0.8 + (audioLevel * 0.2)}))`
+                : 'drop-shadow(0 0 4px rgba(139, 92, 246, 0.5))',
+              transform: isAgentSpeaking ? `scale(${1 + (audioLevel * 0.1)})` : 'scale(1)',
+            }}
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" 
+            />
+          </svg>
+        </div>
+      </div>
     </div>
   );
 }

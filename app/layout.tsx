@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
+import { Toaster as SonnerToaster } from '@/components/ui/sonner'
 import { SessionProvider } from '@/components/providers/session-provider'
 import { IntlProviderWrapper } from '@/components/providers/intl-provider-wrapper'
 
@@ -44,6 +45,7 @@ export default function RootLayout({
             >
               {children}
               <Toaster />
+              <SonnerToaster />
             </ThemeProvider>
           </IntlProviderWrapper>
         </SessionProvider>

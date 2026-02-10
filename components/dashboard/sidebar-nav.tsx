@@ -89,14 +89,8 @@ const merchantItems = [
     icon: LayoutDashboard,
   },
   {
-    id: 'ai-brain' as MenuItemId,
-    title: 'AI Brain',
-    href: '/dashboard/ai-brain',
-    icon: Brain,
-  },
-  {
     id: 'business-ai' as MenuItemId,
-    title: 'Business AI',
+    title: 'AI Brain',
     href: '/dashboard/business-ai',
     icon: Brain,
   },

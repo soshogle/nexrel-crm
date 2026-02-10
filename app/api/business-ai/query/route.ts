@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
     // Generate insights
     const insights = businessAnalyticsEngine.generateInsights(businessData);
 
-    // Parse query intent
-    const intent = await businessNLUService.parseQuery(query, businessData);
+    // Parse query intent (synchronous)
+    const intent = businessNLUService.parseQuery(query, businessData);
 
     // Generate response
     const response = businessNLUService.generateResponse(
