@@ -30,9 +30,11 @@ import {
   Target,
   Sparkles,
   ChevronRight,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ComprehensiveBrainData } from '@/lib/ai-brain-enhanced-service';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface GeneralInsight {
   id: string;
@@ -98,6 +100,11 @@ export default function BusinessAIPage() {
   const [crmAgentId, setCrmAgentId] = useState<string | null>(null);
   const [agentLoading, setAgentLoading] = useState(true);
   
+  // Visualization state for voice agent queries
+  const [crmStatistics, setCrmStatistics] = useState<any>(null);
+  const [showVisualizations, setShowVisualizations] = useState(false);
+  const [conversationMessages, setConversationMessages] = useState<any[]>([]);
+  
   // Analytical Dashboard Mode State
   const [comprehensiveData, setComprehensiveData] = useState<ComprehensiveBrainData | null>(null);
   const [detailedInsights, setDetailedInsights] = useState<GeneralInsight[]>([]);
@@ -148,6 +155,28 @@ export default function BusinessAIPage() {
       console.error('Error stack:', error?.stack);
     } finally {
       setAgentLoading(false);
+    }
+  };
+
+  const fetchCrmStatistics = async () => {
+    try {
+      const response = await fetch('/api/crm-voice-agent/functions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          function_name: 'get_statistics',
+          parameters: {},
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.statistics) {
+        setCrmStatistics(data.statistics);
+        setShowVisualizations(true);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch CRM statistics:', error);
     }
   };
 
@@ -325,7 +354,19 @@ export default function BusinessAIPage() {
           <TabsContent value="voice" className="space-y-6 mt-6">
             {/* ElevenLabs Voice Agent - Matches landing page exactly (no Card wrapper) */}
             {!agentLoading && crmAgentId && (
-              <div className="relative w-full">
+              <div className="relative w-full space-y-4">
+                {/* Manual Statistics Button */}
+                <div className="flex justify-end">
+                  <Button
+                    onClick={fetchCrmStatistics}
+                    variant="outline"
+                    className="border-purple-200 hover:bg-purple-50"
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Show CRM Statistics
+                  </Button>
+                </div>
+                
                 <ElevenLabsAgent 
                   agentId={crmAgentId}
                   autoStart={false}
@@ -337,6 +378,25 @@ export default function BusinessAIPage() {
                   }}
                   onConversationEnd={(transcript, audioBlob) => {
                     console.log('Conversation ended:', transcript);
+                    setConversationMessages(transcript);
+                    
+                    // Check if agent mentioned statistics or data queries
+                    const lastMessages = transcript.slice(-5);
+                    const hasStatsQuery = lastMessages.some((msg: any) => 
+                      msg.role === 'agent' && 
+                      (msg.content?.toLowerCase().includes('statistic') ||
+                       msg.content?.toLowerCase().includes('revenue') ||
+                       msg.content?.toLowerCase().includes('lead') ||
+                       msg.content?.toLowerCase().includes('deal') ||
+                       msg.content?.toLowerCase().includes('data') ||
+                       msg.content?.toLowerCase().includes('show') ||
+                       msg.content?.toLowerCase().includes('display'))
+                    );
+                    
+                    if (hasStatsQuery) {
+                      // Fetch and display statistics
+                      fetchCrmStatistics();
+                    }
                   }}
                 />
               </div>
@@ -346,6 +406,95 @@ export default function BusinessAIPage() {
               <Card className="border-2 border-purple-200/50 shadow-xl bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-12 flex items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* CRM Statistics Visualizations - Displayed when agent queries data */}
+            {showVisualizations && crmStatistics && (
+              <Card className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-purple-50/30 backdrop-blur-sm mt-6">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-purple-600" />
+                    CRM Statistics Visualization
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowVisualizations(false);
+                      setCrmStatistics(null);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Key Metrics Cards */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-4 bg-white/50 rounded-lg border border-purple-200">
+                        <p className="text-sm text-gray-600 mb-1">Total Leads</p>
+                        <p className="text-3xl font-bold text-purple-600">{crmStatistics.totalLeads}</p>
+                      </div>
+                      <div className="text-center p-4 bg-white/50 rounded-lg border border-green-200">
+                        <p className="text-sm text-gray-600 mb-1">Open Deals</p>
+                        <p className="text-3xl font-bold text-green-600">{crmStatistics.openDeals}</p>
+                      </div>
+                      <div className="text-center p-4 bg-white/50 rounded-lg border border-blue-200">
+                        <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
+                        <p className="text-2xl font-bold text-blue-600">${crmStatistics.totalRevenue?.toLocaleString() || 0}</p>
+                      </div>
+                      <div className="text-center p-4 bg-white/50 rounded-lg border border-orange-200">
+                        <p className="text-sm text-gray-600 mb-1">Campaigns</p>
+                        <p className="text-3xl font-bold text-orange-600">{crmStatistics.totalCampaigns}</p>
+                      </div>
+                    </div>
+
+                    {/* CRM Metrics Bar Chart */}
+                    <div className="bg-white/50 rounded-lg p-4 border border-purple-200">
+                      <h4 className="text-sm font-semibold mb-4">CRM Metrics Overview</h4>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={[
+                          { name: 'Leads', value: crmStatistics.totalLeads },
+                          { name: 'Deals', value: crmStatistics.totalDeals },
+                          { name: 'Open Deals', value: crmStatistics.openDeals },
+                          { name: 'Campaigns', value: crmStatistics.totalCampaigns },
+                        ]}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="value" fill="#8b5cf6" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Recent Leads List */}
+                    {crmStatistics.recentLeads && crmStatistics.recentLeads.length > 0 && (
+                      <Card className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-blue-50/30 backdrop-blur-sm">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Activity className="h-5 w-5 text-blue-600" />
+                            Recent Leads
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {crmStatistics.recentLeads.slice(0, 5).map((lead: any, index: number) => (
+                              <div key={index} className="flex items-center justify-between p-2 bg-white/50 rounded-lg">
+                                <div>
+                                  <p className="font-semibold text-sm">{lead.name}</p>
+                                  <p className="text-xs text-gray-500">{lead.status}</p>
+                                </div>
+                                <Badge variant="outline">{new Date(lead.createdAt).toLocaleDateString()}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
