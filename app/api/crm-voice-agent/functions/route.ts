@@ -96,13 +96,16 @@ async function getStatistics(userId: string) {
     ]);
 
     // Get open deals (deals without actualCloseDate)
-    const openDeals = await prisma.deal.findMany({
-      where: { 
-        userId, 
-        actualCloseDate: null, // Open deals don't have a close date
+    // Use a simpler approach: get all deals and filter in memory, or use a different query
+    const allDeals = await prisma.deal.findMany({
+      where: { userId },
+      select: { 
+        value: true,
+        actualCloseDate: true,
       },
-      select: { value: true },
     });
+    
+    const openDeals = allDeals.filter(deal => deal.actualCloseDate === null);
 
     const totalRevenue = openDeals.reduce((sum, deal) => sum + (deal.value || 0), 0);
 
