@@ -19,6 +19,7 @@ interface ElevenLabsAgentProps {
   onAudioLevel?: (level: number) => void;
   onConversationEnd?: (transcript: ConversationMessage[], audioBlob?: Blob) => void;
   onAgentSpeakingChange?: (isSpeaking: boolean) => void;
+  onMessage?: (message: ConversationMessage) => void; // Real-time message callback
   dynamicVariables?: Record<string, string>;
   autoStart?: boolean; // Auto-start conversation when component mounts
 }
@@ -30,6 +31,7 @@ export function ElevenLabsAgent({
   onAudioLevel,
   onConversationEnd,
   onAgentSpeakingChange,
+  onMessage,
   dynamicVariables,
   autoStart = false,
 }: ElevenLabsAgentProps) {
@@ -221,11 +223,17 @@ export function ElevenLabsAgent({
         },
         onMessage: (message: any) => {
           if (message.message) {
-            conversationMessagesRef.current.push({
+            const conversationMessage: ConversationMessage = {
               role: message.source === "ai" ? "agent" : "user",
               content: message.message,
               timestamp: Date.now(),
-            });
+            };
+            conversationMessagesRef.current.push(conversationMessage);
+            
+            // Call onMessage callback for real-time message handling
+            if (onMessage) {
+              onMessage(conversationMessage);
+            }
           }
         },
         onModeChange: (mode: any) => {
