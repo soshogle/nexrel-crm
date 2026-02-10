@@ -323,20 +323,23 @@ export default function BusinessAIPage() {
 
           {/* Voice Assistant Mode */}
           <TabsContent value="voice" className="space-y-6 mt-6">
-            {/* ElevenLabs Voice Agent - Auto-start, matches landing page exactly */}
+            {/* ElevenLabs Voice Agent - Matches landing page exactly (no Card wrapper) */}
             {!agentLoading && crmAgentId && (
-              <Card className="border-2 border-purple-200/50 shadow-2xl bg-gradient-to-br from-white/90 to-purple-50/30 backdrop-blur-md relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
-                <CardContent className="p-8 relative z-10">
-                  <ElevenLabsAgent 
-                    agentId={crmAgentId}
-                    autoStart={true}
-                    onConversationEnd={(transcript, audioBlob) => {
-                      console.log('Conversation ended:', transcript);
-                    }}
-                  />
-                </CardContent>
-              </Card>
+              <div className="relative w-full">
+                <ElevenLabsAgent 
+                  agentId={crmAgentId}
+                  autoStart={false}
+                  onAudioLevel={(level) => {
+                    // Audio level callback for visualization
+                  }}
+                  onAgentSpeakingChange={(isSpeaking) => {
+                    // Speaking state callback
+                  }}
+                  onConversationEnd={(transcript, audioBlob) => {
+                    console.log('Conversation ended:', transcript);
+                  }}
+                />
+              </div>
             )}
 
             {agentLoading && (

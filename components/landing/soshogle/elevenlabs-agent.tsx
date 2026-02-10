@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { GeometricShapes } from "./geometric-shapes";
@@ -295,6 +295,13 @@ export function ElevenLabsAgent({
 
       // Set up audio context for analysis
       audioContextRef.current = new AudioContext();
+      
+      // Resume audio context if suspended (browser requirement)
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+        console.log('🔊 Audio context resumed');
+      }
+      
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
 
@@ -311,6 +318,11 @@ export function ElevenLabsAgent({
               // Ensure audio is enabled and will play
               audioElement.volume = 1.0;
               audioElement.muted = false;
+              
+              // Play the audio element to ensure it's active
+              audioElement.play().catch((e) => {
+                console.log("Audio play() called (may fail if no audio yet):", e);
+              });
               
               // Connect to audio context for analysis
               const source = audioContextRef.current.createMediaElementSource(audioElement);
@@ -366,8 +378,8 @@ export function ElevenLabsAgent({
     }
   };
 
-  const stopConversation = () => {
-    console.log('Stopping conversation, current status:', status);
+  const stopConversation = useCallback(() => {
+    console.log('🛑 stopConversation called, current status:', status);
     
     // Stop animation frame immediately
     if (animationFrameRef.current) {
@@ -378,17 +390,13 @@ export function ElevenLabsAgent({
     // Stop media recorder - handle all states
     if (mediaRecorderRef.current) {
       try {
-        if (mediaRecorderRef.current.state === "recording") {
-          mediaRecorderRef.current.stop();
-        } else if (mediaRecorderRef.current.state === "paused") {
+        console.log('🛑 Stopping media recorder, state:', mediaRecorderRef.current.state);
+        if (mediaRecorderRef.current.state === "recording" || mediaRecorderRef.current.state === "paused") {
           mediaRecorderRef.current.stop();
         }
-        // Wait a bit for stop to complete, then nullify
-        setTimeout(() => {
-          mediaRecorderRef.current = null;
-        }, 100);
+        mediaRecorderRef.current = null;
       } catch (e) {
-        console.error("Error stopping media recorder:", e);
+        console.error("❌ Error stopping media recorder:", e);
         mediaRecorderRef.current = null;
       }
     }
@@ -396,12 +404,13 @@ export function ElevenLabsAgent({
     // Stop all audio stream tracks immediately
     if (audioStreamRef.current) {
       try {
+        console.log('🛑 Stopping audio stream tracks');
         audioStreamRef.current.getTracks().forEach((track) => {
           track.stop();
           track.enabled = false;
         });
       } catch (e) {
-        console.error("Error stopping audio tracks:", e);
+        console.error("❌ Error stopping audio tracks:", e);
       }
       audioStreamRef.current = null;
     }
@@ -409,9 +418,10 @@ export function ElevenLabsAgent({
     // End conversation session
     if (conversationRef.current) {
       try {
+        console.log('🛑 Ending conversation session');
         conversationRef.current.endSession();
       } catch (e) {
-        console.error("Error ending session:", e);
+        console.error("❌ Error ending session:", e);
       }
       conversationRef.current = null;
     }
@@ -420,10 +430,11 @@ export function ElevenLabsAgent({
     if (audioContextRef.current) {
       try {
         if (audioContextRef.current.state !== 'closed') {
+          console.log('🛑 Closing audio context');
           audioContextRef.current.close();
         }
       } catch (e) {
-        console.error("Error closing audio context:", e);
+        console.error("❌ Error closing audio context:", e);
       }
       audioContextRef.current = null;
     }
@@ -446,8 +457,8 @@ export function ElevenLabsAgent({
       onAgentSpeakingChange(false);
     }
     
-    console.log('Conversation stopped successfully');
-  };
+    console.log('✅ Conversation stopped successfully');
+  }, [status, onAudioLevel, onAgentSpeakingChange]);
 
   // Note: autoStart prop is ignored - user must always click button to start
   // This ensures getUserMedia is called with proper user interaction (browser requirement)
@@ -506,12 +517,12 @@ export function ElevenLabsAgent({
 
       {isConnected && (
         <div className="w-full space-y-6">
-          <div className="relative w-full h-[400px] md:h-[500px] rounded-2xl overflow-hidden bg-gradient-to-br from-background to-card border border-white/10">
+          <div className="relative w-full h-[400px] md:h-[500px] rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-black border border-gray-800">
             <GeometricShapes audioLevel={audioLevel} isAgentSpeaking={isAgentSpeaking} />
 
-            <div className="absolute top-6 left-6 flex items-center gap-2 bg-background/80 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10">
+            <div className="absolute top-6 left-6 flex items-center gap-2 bg-gray-900/80 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-700">
               <img src={APP_LOGO} alt="Soshogle" className="h-6 w-6" />
-              <span className="text-sm font-semibold">Soshogle AI</span>
+              <span className="text-sm font-semibold text-white">Soshogle AI</span>
             </div>
             
             {/* Hidden audio element for ElevenLabs SDK */}
