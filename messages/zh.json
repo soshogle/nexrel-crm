@@ -45,7 +45,8 @@
     "ecommerce": "电子商务",
     "delivery": "配送",
     "dentalManagement": "牙科管理",
-    "websites": "网站"
+    "websites": "网站",
+    "aiAutomations": "AI自动化"
   },
   "dashboard": {
     "welcome": "欢迎",
