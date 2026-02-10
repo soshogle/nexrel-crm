@@ -138,7 +138,10 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
       {mounted && <GlobalVoiceAssistant />}
 
       {/* Business AI Voice Agent - Revolutionary Business Intelligence */}
-      {mounted && <VoiceAIAgent position="bottom-right" />}
+      {/* Hide on business-ai page since it uses ElevenLabsAgent instead */}
+      {mounted && typeof window !== 'undefined' && !window.location.pathname.includes('/dashboard/business-ai') && (
+        <VoiceAIAgent position="bottom-right" />
+      )}
     </div>
     </>
   )
