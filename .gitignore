@@ -4,5 +4,6 @@ backups/*credentials*.txt
 *.backup
 *.bak
 node_modules
+.next
 .env
 .env.local
