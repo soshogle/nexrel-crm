@@ -172,7 +172,20 @@ async function processWebsiteBuild(
         data: { progress: 20 },
       });
 
-      const scrapedData = await websiteScraper.scrapeWebsite(config.sourceUrl!);
+      // Get user ID for image storage
+      const website = await prisma.website.findUnique({
+        where: { id: websiteId },
+        select: { userId: true },
+      });
+
+      // Scrape website with image downloading enabled
+      const downloadImages = process.env.ENABLE_IMAGE_DOWNLOAD === 'true';
+      const scrapedData = await websiteScraper.scrapeWebsite(
+        config.sourceUrl!,
+        website?.userId,
+        websiteId,
+        downloadImages
+      );
       extractedData = scrapedData;
 
       // Convert scraped data to website structure

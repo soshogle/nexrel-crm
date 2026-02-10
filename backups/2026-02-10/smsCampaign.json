@@ -1,0 +1,33 @@
+[
+  {
+    "id": "cml7yjy68001jpugjf5dott8t",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "name": "Rappel examens annuels - Hiver 2024",
+    "message": "Bonjour {name}, il est temps pour votre examen annuel de la vue! Appelez-nous pour prendre rendez-vous.",
+    "status": "SCHEDULED",
+    "fromNumber": null,
+    "scheduledFor": null,
+    "sentAt": null,
+    "completedAt": null,
+    "tags": "MOCK_DATA",
+    "minLeadScore": 75,
+    "targetLeadIds": null,
+    "dailyLimit": null,
+    "weeklyLimit": null,
+    "lastSentDate": null,
+    "sentToday": 0,
+    "sentThisWeek": 0,
+    "totalRecipients": 0,
+    "totalSent": 0,
+    "totalDelivered": 0,
+    "totalReplied": 0,
+    "totalFailed": 0,
+    "isSequence": false,
+    "triggerType": null,
+    "avgReplyRate": 0,
+    "totalCompleted": 0,
+    "totalEnrolled": 0,
+    "createdAt": "2026-02-04T11:42:20.096Z",
+    "updatedAt": "2026-02-04T11:42:20.096Z"
+  }
+]

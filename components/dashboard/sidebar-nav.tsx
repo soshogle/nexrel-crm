@@ -254,6 +254,12 @@ const merchantItems = [
     icon: MessageSquare,
   },
   {
+    id: 'ai-automations' as MenuItemId,
+    title: 'AI Automations',
+    href: '/dashboard/ai-automations',
+    icon: Sparkles,
+  },
+  {
     id: 'workflows' as MenuItemId,
     title: 'Workflows',
     href: '/dashboard/workflows',
@@ -476,6 +482,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       'ecommerce': 'ecommerce',
       'campaigns': 'campaigns',
       'sms-campaigns': 'smsCampaigns',
+      'ai-automations': 'aiAutomations',
       'workflows': 'workflows',
       'reviews': 'reviews',
       'referrals': 'referrals',

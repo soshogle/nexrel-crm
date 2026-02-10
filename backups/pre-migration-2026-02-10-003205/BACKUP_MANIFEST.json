@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-02-10T05:32:21.056Z",
+  "backupPath": "/Users/cyclerun/Desktop/nexrel-crm/backups/pre-migration-2026-02-10-003205",
+  "methods": [
+    "Neon branch (manual)",
+    "Prisma schema",
+    "Prisma JSON export"
+  ],
+  "errors": [
+    "pg_dump failed: Command failed: pg_dump \"postgresql://neondb_owner:npg_MFCmq14EUpng@ep-noisy-meadow-ahhrsg4f-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require\" --no-owner --no-acl --clean --if-exists -f \"/Users/cyclerun/Desktop/nexrel-crm/backups/pre-migration-2026-02-10-003205/database.sql\""
+  ],
+  "databaseUrl": "postgresql://neondb_owner:****@ep-noisy-meadow-ahhrsg4f-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require",
+  "migrationCommand": "dev --name add_google_search_console_oauth"
+}

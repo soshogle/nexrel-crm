@@ -1,0 +1,62 @@
+[
+  {
+    "id": "cml7yjyrt002bpugj2ruloyxl",
+    "campaignId": "cml7yjypt0029pugjoyn7fqa5",
+    "leadId": "cml7yjx6w0001pugjz2d67ovk",
+    "source": "GOOGLE",
+    "rating": 4,
+    "reviewText": "Excellent service! Le personnel est très professionnel et les examens sont complets.",
+    "reviewUrl": null,
+    "isPublic": true,
+    "createdAt": "2026-02-04T11:42:20.873Z",
+    "updatedAt": "2026-02-04T11:42:20.873Z"
+  },
+  {
+    "id": "cml7yjytr002dpugjhk1zemmg",
+    "campaignId": "cml7yjypt0029pugjoyn7fqa5",
+    "leadId": "cml7yjx930003pugjjp45dusp",
+    "source": "GOOGLE",
+    "rating": 5,
+    "reviewText": "Très satisfait de mes nouvelles lunettes. Qualité exceptionnelle.",
+    "reviewUrl": null,
+    "isPublic": true,
+    "createdAt": "2026-02-04T11:42:20.943Z",
+    "updatedAt": "2026-02-04T11:42:20.943Z"
+  },
+  {
+    "id": "cml7yjyuo002fpugjb3ep5385",
+    "campaignId": "cml7yjypt0029pugjoyn7fqa5",
+    "leadId": "cml7yjxa50005pugjg1x1ts9w",
+    "source": "GOOGLE",
+    "rating": 4,
+    "reviewText": "Clinique moderne avec un équipement à la pointe de la technologie.",
+    "reviewUrl": null,
+    "isPublic": true,
+    "createdAt": "2026-02-04T11:42:20.976Z",
+    "updatedAt": "2026-02-04T11:42:20.976Z"
+  },
+  {
+    "id": "cml7yjyvn002hpugj0zusziub",
+    "campaignId": "cml7yjypt0029pugjoyn7fqa5",
+    "leadId": "cml7yjxbm0007pugjmtifawtf",
+    "source": "GOOGLE",
+    "rating": 5,
+    "reviewText": "Dr. Marie-Claire est très à l'écoute et explique tout en détail.",
+    "reviewUrl": null,
+    "isPublic": true,
+    "createdAt": "2026-02-04T11:42:21.011Z",
+    "updatedAt": "2026-02-04T11:42:21.011Z"
+  },
+  {
+    "id": "cml7yjywl002jpugjtb12pemr",
+    "campaignId": "cml7yjypt0029pugjoyn7fqa5",
+    "leadId": "cml7yjxct0009pugjj00et0yb",
+    "source": "GOOGLE",
+    "rating": 4,
+    "reviewText": "Je recommande vivement cette clinique!",
+    "reviewUrl": null,
+    "isPublic": true,
+    "createdAt": "2026-02-04T11:42:21.045Z",
+    "updatedAt": "2026-02-04T11:42:21.045Z"
+  }
+]

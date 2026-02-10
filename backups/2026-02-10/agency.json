@@ -1,0 +1,14 @@
+[
+  {
+    "id": "cmhpfqxeu0000r3qhd47he1sx",
+    "name": "Example Marketing Agency",
+    "email": "agency@example.com",
+    "phone": "+1 (555) 000-0000",
+    "address": null,
+    "website": "https://example-agency.com",
+    "logo": null,
+    "isActive": true,
+    "createdAt": "2025-11-07T22:36:54.823Z",
+    "updatedAt": "2025-11-07T22:36:54.823Z"
+  }
+]

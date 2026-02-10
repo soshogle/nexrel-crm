@@ -1,0 +1,24 @@
+[
+  {
+    "id": "cml7yjz3a002rpugj3pu6jtiw",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "name": "Examen de la vue complet",
+    "description": "Examen complet de la vue",
+    "category": "CONSULTATION",
+    "duration": 60,
+    "price": null,
+    "currency": "USD",
+    "color": null,
+    "isActive": true,
+    "requiresPayment": false,
+    "paymentRequired": "none",
+    "depositPercentage": null,
+    "bufferTimeBefore": 0,
+    "bufferTimeAfter": 0,
+    "maxBookingsPerDay": null,
+    "bookingLeadTime": 60,
+    "questions": null,
+    "createdAt": "2026-02-04T11:42:21.287Z",
+    "updatedAt": "2026-02-04T11:42:21.287Z"
+  }
+]

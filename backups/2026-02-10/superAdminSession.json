@@ -1,0 +1,62 @@
+[
+  {
+    "id": "cml812ne90003jm04vwtrkcgy",
+    "superAdminId": "cmif8lq3p0000tky7tx02rrea",
+    "impersonatedUserId": "cml7yilt20000puy5mgn7oxqq",
+    "sessionToken": "8d570c1b3bf1f67f0da9b11af059efa686c1a89b8eb60bf0c9ce1f09388141f6",
+    "ipAddress": "70.80.44.97",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+    "startedAt": "2026-02-04T12:52:51.825Z",
+    "lastActivity": "2026-02-04T12:53:54.941Z",
+    "endedAt": "2026-02-04T12:53:54.952Z",
+    "isActive": false
+  },
+  {
+    "id": "cml1bd5in0001jo04terielkr",
+    "superAdminId": "cmidlmvpc0000yng92gsr9nd6",
+    "impersonatedUserId": "cmkta2iry0000xwvtkce01tvl",
+    "sessionToken": "0f198e0bf4e9a82c74c0f9c3ec16f3126a57e71c7b54b23bedbf6c9557c970e9",
+    "ipAddress": "142.243.253.20",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
+    "startedAt": "2026-01-30T20:06:34.799Z",
+    "lastActivity": "2026-01-30T20:39:14.766Z",
+    "endedAt": null,
+    "isActive": true
+  },
+  {
+    "id": "cml7zpdrr0001ky04yp0bykbz",
+    "superAdminId": "cmif8lq3p0000tky7tx02rrea",
+    "impersonatedUserId": "cmisd9zsl0000s3089k0xv2ap",
+    "sessionToken": "ba21d48f6b0d290f99ca41bac40157721c3400b566cad770dd381be22c0e5e82",
+    "ipAddress": "70.80.44.97",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+    "startedAt": "2026-02-04T12:14:33.207Z",
+    "lastActivity": "2026-02-04T12:48:44.720Z",
+    "endedAt": "2026-02-04T12:48:44.740Z",
+    "isActive": false
+  },
+  {
+    "id": "cml86s6mp0001kw04vhpnalh1",
+    "superAdminId": "cmif8lq3p0000tky7tx02rrea",
+    "impersonatedUserId": "cmisd9zsl0000s3089k0xv2ap",
+    "sessionToken": "4da2f9173b953f68076676e46a89b427d1180a4e52889359d6a88adf94444030",
+    "ipAddress": "70.80.44.97",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+    "startedAt": "2026-02-04T15:32:41.233Z",
+    "lastActivity": "2026-02-04T15:32:46.472Z",
+    "endedAt": "2026-02-04T15:32:46.482Z",
+    "isActive": false
+  },
+  {
+    "id": "cml80yjlk0001jm04kr579gh6",
+    "superAdminId": "cmif8lq3p0000tky7tx02rrea",
+    "impersonatedUserId": "cminj7jv90000ow08pm5bbza5",
+    "sessionToken": "f83f555f6493ce668674c566b0acf026cd389e15a6d89877d32125936b732db2",
+    "ipAddress": "70.80.44.97",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+    "startedAt": "2026-02-04T12:49:40.280Z",
+    "lastActivity": "2026-02-04T12:52:45.429Z",
+    "endedAt": "2026-02-04T12:52:45.438Z",
+    "isActive": false
+  }
+]

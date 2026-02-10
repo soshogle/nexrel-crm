@@ -1,0 +1,24 @@
+[
+  {
+    "id": "cml5cxs740005k004qxxriclb",
+    "sessionId": "cml5cwj1z0001k004rlfz9wks",
+    "queryType": "medical_lookup",
+    "queryText": "hi",
+    "responseText": "Hello, how can I assist you today? Please provide the specific medical topic or question for which you need evidence-based information.",
+    "triggerMethod": "text",
+    "timestamp": null,
+    "sourcesCited": [],
+    "createdAt": "2026-02-02T16:01:41.633Z"
+  },
+  {
+    "id": "cml6ug3mh0003jv041s0v6d1i",
+    "sessionId": "cml6ufocx0001jv048hbix2z0",
+    "queryType": "medical_lookup",
+    "queryText": "ji",
+    "responseText": "I'm sorry, but the query \"ji\" does not provide enough information for me to assist you. Could you please provide more details or clarify your question?",
+    "triggerMethod": "text",
+    "timestamp": null,
+    "sourcesCited": [],
+    "createdAt": "2026-02-03T16:59:35.898Z"
+  }
+]

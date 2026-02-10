@@ -63,6 +63,9 @@ export async function GET(
       description: workflow.description || '',
       workflowType: workflow.type,
       industry: workflow.industry,
+      executionMode: (workflow as any).executionMode || 'WORKFLOW',
+      audience: (workflow as any).audience || null,
+      campaignSettings: (workflow as any).campaignSettings || null,
       tasks: workflow.tasks.map(t => ({
         id: t.id,
         name: t.name,
@@ -123,13 +126,16 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, isActive, tasks } = body;
+    const { name, description, isActive, tasks, executionMode, audience, campaignSettings } = body;
 
     // Update workflow
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (executionMode !== undefined) updateData.executionMode = executionMode;
+    if (audience !== undefined) updateData.audience = audience;
+    if (campaignSettings !== undefined) updateData.campaignSettings = campaignSettings;
 
     // If tasks are provided, update them
     if (tasks && Array.isArray(tasks)) {

@@ -1,0 +1,852 @@
+[
+  {
+    "id": "cml7yjrn30019pudsfv83vebz",
+    "leadId": "cml7yjqvr0001pudsag2cxjdm",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "content": "Bonjour Marie Dubois, votre rendez-vous est confirmé pour le {date} à {time}. À bientôt!",
+    "messageType": "SMS",
+    "isUsed": false,
+    "createdAt": "2026-02-04T11:42:11.631Z",
+    "updatedAt": "2026-02-04T11:42:11.631Z"
+  },
+  {
+    "id": "cml7yjrp6001bpudshusjp1n7",
+    "leadId": "cml7yjqxr0003puds3oedw8uz",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "content": "Rappel: Votre examen de la vue est prévu demain à {time}. Merci de confirmer votre présence.",
+    "messageType": "SMS",
+    "isUsed": false,
+    "createdAt": "2026-02-04T11:42:11.706Z",
+    "updatedAt": "2026-02-04T11:42:11.706Z"
+  },
+  {
+    "id": "cml7yjrqj001dpudsnyjyyjx7",
+    "leadId": "cml7yjqyq0005puds7ol7xwrx",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "content": "Bonjour Sophie Gagnon, vos nouvelles lunettes sont prêtes! Vous pouvez venir les récupérer à votre convenance.",
+    "messageType": "SMS",
+    "isUsed": false,
+    "createdAt": "2026-02-04T11:42:11.755Z",
+    "updatedAt": "2026-02-04T11:42:11.755Z"
+  },
+  {
+    "id": "cml7yjrre001fpudshm0zwx1t",
+    "leadId": "cml7yjqzl0007pudsjp6gnjhf",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "content": "Merci pour votre visite! N'hésitez pas à nous laisser un avis sur Google.",
+    "messageType": "SMS",
+    "isUsed": false,
+    "createdAt": "2026-02-04T11:42:11.787Z",
+    "updatedAt": "2026-02-04T11:42:11.787Z"
+  },
+  {
+    "id": "cml7yjrsc001hpuds1t8slv6t",
+    "leadId": "cml7yjr0i0009pudsllx8xicu",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "content": "Bonjour Isabelle Côté, votre rendez-vous est confirmé pour le {date} à {time}. À bientôt!",
+    "messageType": "SMS",
+    "isUsed": false,
+    "createdAt": "2026-02-04T11:42:11.820Z",
+    "updatedAt": "2026-02-04T11:42:11.820Z"
+  },
+  {
+    "id": "cml7yjy0n0019pugjiqc2nbhk",
+    "leadId": "cml7yjx6w0001pugjz2d67ovk",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "content": "Bonjour Marie Dubois, votre rendez-vous est confirmé pour le {date} à {time}. À bientôt!",
+    "messageType": "SMS",
+    "isUsed": false,
+    "createdAt": "2026-02-04T11:42:19.895Z",
+    "updatedAt": "2026-02-04T11:42:19.895Z"
+  },
+  {
+    "id": "cml7yjy2h001bpugj0r1p8mxq",
+    "leadId": "cml7yjx930003pugjjp45dusp",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "content": "Rappel: Votre examen de la vue est prévu demain à {time}. Merci de confirmer votre présence.",
+    "messageType": "SMS",
+    "isUsed": false,
+    "createdAt": "2026-02-04T11:42:19.961Z",
+    "updatedAt": "2026-02-04T11:42:19.961Z"
+  },
+  {
+    "id": "cml7yjy3f001dpugjqcoeaf3p",
+    "leadId": "cml7yjxa50005pugjg1x1ts9w",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "content": "Bonjour Sophie Gagnon, vos nouvelles lunettes sont prêtes! Vous pouvez venir les récupérer à votre convenance.",
+    "messageType": "SMS",
+    "isUsed": false,
+    "createdAt": "2026-02-04T11:42:19.996Z",
+    "updatedAt": "2026-02-04T11:42:19.996Z"
+  },
+  {
+    "id": "cml7yjy4b001fpugjvq804715",
+    "leadId": "cml7yjxbm0007pugjmtifawtf",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "content": "Merci pour votre visite! N'hésitez pas à nous laisser un avis sur Google.",
+    "messageType": "SMS",
+    "isUsed": false,
+    "createdAt": "2026-02-04T11:42:20.028Z",
+    "updatedAt": "2026-02-04T11:42:20.028Z"
+  },
+  {
+    "id": "cml7yjy59001hpugjzhucd78r",
+    "leadId": "cml7yjxct0009pugjj00et0yb",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "content": "Bonjour Isabelle Côté, votre rendez-vous est confirmé pour le {date} à {time}. À bientôt!",
+    "messageType": "SMS",
+    "isUsed": false,
+    "createdAt": "2026-02-04T11:42:20.061Z",
+    "updatedAt": "2026-02-04T11:42:20.061Z"
+  },
+  {
+    "id": "cmlg3tfe300tpputypx3e2zh3",
+    "leadId": "cmlg3t0jc001dputypgyiback",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-10-03T23:44:32.849Z",
+    "updatedAt": "2025-10-03T23:44:32.849Z"
+  },
+  {
+    "id": "cmlg3tffz00trputyg8mkxig7",
+    "leadId": "cmlg3t14v002jputycskdd5c7",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2026-01-12T03:51:55.931Z",
+    "updatedAt": "2026-01-12T03:51:55.931Z"
+  },
+  {
+    "id": "cmlg3tfh000ttputyksvr6hnb",
+    "leadId": "cmlg3t0wf0023puty41wkkp1x",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Your treatment plan is ready for review.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-11-06T16:41:14.137Z",
+    "updatedAt": "2025-11-06T16:41:14.137Z"
+  },
+  {
+    "id": "cmlg3tfhy00tvputy3zmormpp",
+    "leadId": "cmlg3t0wf0023puty41wkkp1x",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-09-24T05:25:48.594Z",
+    "updatedAt": "2025-09-24T05:25:48.594Z"
+  },
+  {
+    "id": "cmlg3tfiy00txputyam3rvdsu",
+    "leadId": "cmlg3t082000rputyhjvhcjeu",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-11-27T15:52:14.141Z",
+    "updatedAt": "2025-11-27T15:52:14.141Z"
+  },
+  {
+    "id": "cmlg3tfjw00tzputy80xkiqbq",
+    "leadId": "cmlg3t1e2002zputyyfdlbd59",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-11-09T18:18:05.156Z",
+    "updatedAt": "2025-11-09T18:18:05.156Z"
+  },
+  {
+    "id": "cmlg3tfkx00u1putyualb5pi8",
+    "leadId": "cmlg3t0sf001vputyaitrdrvn",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-10-15T14:55:06.353Z",
+    "updatedAt": "2025-10-15T14:55:06.353Z"
+  },
+  {
+    "id": "cmlg3tflu00u3puty1wyih6er",
+    "leadId": "cmlg3t0gd0017putygt9uh1h4",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-02-06T18:29:47.071Z",
+    "updatedAt": "2026-02-06T18:29:47.071Z"
+  },
+  {
+    "id": "cmlg3tfmr00u5putyijqgrpjz",
+    "leadId": "cmlg3t16w002nputyktri9p7q",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Congratulations on completing your treatment!",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-10-16T14:22:59.309Z",
+    "updatedAt": "2025-10-16T14:22:59.309Z"
+  },
+  {
+    "id": "cmlg3tfns00u7putyrbk124fa",
+    "leadId": "cmlg3t12w002fputybmj49dtj",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-12-07T09:24:11.774Z",
+    "updatedAt": "2025-12-07T09:24:11.774Z"
+  },
+  {
+    "id": "cmlg3tfoz00u9putyd1ajftkr",
+    "leadId": "cmlg3t1f20031putyk87xhgb3",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-10-30T08:30:49.352Z",
+    "updatedAt": "2025-10-30T08:30:49.352Z"
+  },
+  {
+    "id": "cmlg3tfpz00ubputyjui7zl4u",
+    "leadId": "cmlg3t0ay000xputytxziegsz",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-11-26T16:39:18.526Z",
+    "updatedAt": "2025-11-26T16:39:18.526Z"
+  },
+  {
+    "id": "cmlg3tfr100udputyljdhapzb",
+    "leadId": "cmlg3t0gd0017putygt9uh1h4",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-09-15T23:05:02.504Z",
+    "updatedAt": "2025-09-15T23:05:02.504Z"
+  },
+  {
+    "id": "cmlg3tfs100ufputy7jzahl95",
+    "leadId": "cmlg3t0oc001nputy1kxpw8cx",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-12-23T09:47:28.422Z",
+    "updatedAt": "2025-12-23T09:47:28.422Z"
+  },
+  {
+    "id": "cmlg3tftd00uhputyp5ezvhnz",
+    "leadId": "cmlg3t0qa001rputy4uy7ijqb",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Congratulations on completing your treatment!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-15T07:46:21.650Z",
+    "updatedAt": "2026-01-15T07:46:21.650Z"
+  },
+  {
+    "id": "cmlg3tfuc00ujputyaqx1p5b8",
+    "leadId": "cmlg3t0nc001lputysrxy6tsl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Your treatment plan is ready for review.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2026-01-17T05:18:40.246Z",
+    "updatedAt": "2026-01-17T05:18:40.246Z"
+  },
+  {
+    "id": "cmlg3tfvb00ulputyldgie7ie",
+    "leadId": "cmlg3t16w002nputyktri9p7q",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-10-16T14:41:33.538Z",
+    "updatedAt": "2025-10-16T14:41:33.538Z"
+  },
+  {
+    "id": "cmlg3tfw900unputy4xkgdyxm",
+    "leadId": "cmlg3t0rd001tputyyhuye90b",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-12-12T15:14:30.031Z",
+    "updatedAt": "2025-12-12T15:14:30.031Z"
+  },
+  {
+    "id": "cmlg3tfx700upputybnmgac2d",
+    "leadId": "cmlg3t16w002nputyktri9p7q",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-12-08T11:30:13.375Z",
+    "updatedAt": "2025-12-08T11:30:13.375Z"
+  },
+  {
+    "id": "cmlg3tfy200urputyirva6ou0",
+    "leadId": "cmlg3t0gd0017putygt9uh1h4",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-10-14T19:13:33.717Z",
+    "updatedAt": "2025-10-14T19:13:33.717Z"
+  },
+  {
+    "id": "cmlg3tfz000utputylxaw5fxz",
+    "leadId": "cmlg3t062000nputyesvjxb29",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-11-14T01:11:23.021Z",
+    "updatedAt": "2025-11-14T01:11:23.021Z"
+  },
+  {
+    "id": "cmlg3tfzy00uvputylk3tilk0",
+    "leadId": "cmlg3t062000nputyesvjxb29",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Congratulations on completing your treatment!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-12-09T14:52:28.462Z",
+    "updatedAt": "2025-12-09T14:52:28.462Z"
+  },
+  {
+    "id": "cmlg3tg0v00uxputyzbjupgyg",
+    "leadId": "cmlg3t12w002fputybmj49dtj",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Your treatment plan is ready for review.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-11-17T22:45:34.653Z",
+    "updatedAt": "2025-11-17T22:45:34.653Z"
+  },
+  {
+    "id": "cmlg3tg1s00uzputylm8xzckr",
+    "leadId": "cmlg3t1a2002tputy2wkzrhe3",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-31T14:41:53.245Z",
+    "updatedAt": "2026-01-31T14:41:53.245Z"
+  },
+  {
+    "id": "cmlg3tg2q00v1putyt33s3wfi",
+    "leadId": "cmlg3t055000lputyyu64pkqk",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Congratulations on completing your treatment!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-08-21T13:44:29.525Z",
+    "updatedAt": "2025-08-21T13:44:29.525Z"
+  },
+  {
+    "id": "cmlg3tg3p00v3putyfk31aja9",
+    "leadId": "cmlg3t0jc001dputypgyiback",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-12-29T00:13:35.431Z",
+    "updatedAt": "2025-12-29T00:13:35.431Z"
+  },
+  {
+    "id": "cmlg3tg4r00v5putyb92p6c26",
+    "leadId": "cmlg3t11y002dputy9o97x08z",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Congratulations on completing your treatment!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-02-02T22:57:22.278Z",
+    "updatedAt": "2026-02-02T22:57:22.278Z"
+  },
+  {
+    "id": "cmlg3tg5r00v7putyha94hlbf",
+    "leadId": "cmlg3t0mc001jputydy6603e1",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Your treatment plan is ready for review.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-11-06T23:44:07.704Z",
+    "updatedAt": "2025-11-06T23:44:07.704Z"
+  },
+  {
+    "id": "cmlg3tg6o00v9putyjdj62dnh",
+    "leadId": "cmlg3t18u002rputyq5w7ljsa",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-12-12T23:10:37.094Z",
+    "updatedAt": "2025-12-12T23:10:37.094Z"
+  },
+  {
+    "id": "cmlg3tg7o00vbputymj2bfrd1",
+    "leadId": "cmlg3t0tf001xputywm7jt3l2",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-10-20T13:34:55.065Z",
+    "updatedAt": "2025-10-20T13:34:55.065Z"
+  },
+  {
+    "id": "cmlg3tg8q00vdputy4eg9a7kq",
+    "leadId": "cmlg3t1g10033putyxvsjmh79",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We have a special offer that might interest you.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-11-30T11:52:23.559Z",
+    "updatedAt": "2025-11-30T11:52:23.559Z"
+  },
+  {
+    "id": "cmlg3tga300vfputyjc097y7e",
+    "leadId": "cmlg3t0ic001bputysfxgnxl3",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We have a special offer that might interest you.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-08-23T09:02:53.814Z",
+    "updatedAt": "2025-08-23T09:02:53.814Z"
+  },
+  {
+    "id": "cmlg3tgbf00vhputyzun8uym7",
+    "leadId": "cmlg3t055000lputyyu64pkqk",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-11-04T17:43:46.242Z",
+    "updatedAt": "2025-11-04T17:43:46.242Z"
+  },
+  {
+    "id": "cmlg3tgcf00vjputyke6seqhk",
+    "leadId": "cmlg3t0xg0025putyr5s0esjq",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Your treatment plan is ready for review.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-26T20:58:22.044Z",
+    "updatedAt": "2026-01-26T20:58:22.044Z"
+  },
+  {
+    "id": "cmlg3tgdg00vlputydr5n70xa",
+    "leadId": "cmlg3t0nc001lputysrxy6tsl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-11-30T06:58:20.028Z",
+    "updatedAt": "2025-11-30T06:58:20.028Z"
+  },
+  {
+    "id": "cmlg3tgei00vnputyissolg1g",
+    "leadId": "cmlg3t0rd001tputyyhuye90b",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-11-14T02:18:08.633Z",
+    "updatedAt": "2025-11-14T02:18:08.633Z"
+  },
+  {
+    "id": "cmlg3tgfh00vpputyy0ml9i23",
+    "leadId": "cmlg3t0ic001bputysfxgnxl3",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Congratulations on completing your treatment!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-11-07T19:15:35.771Z",
+    "updatedAt": "2025-11-07T19:15:35.771Z"
+  },
+  {
+    "id": "cmlg3tggj00vrputy3f0xbugx",
+    "leadId": "cmlg3t0sf001vputyaitrdrvn",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-10-11T02:44:00.484Z",
+    "updatedAt": "2025-10-11T02:44:00.484Z"
+  },
+  {
+    "id": "cmlg3tghi00vtputy5pfzx92t",
+    "leadId": "cmlg3t0vf0021putyw0cwn3wv",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-11-07T15:55:14.261Z",
+    "updatedAt": "2025-11-07T15:55:14.261Z"
+  },
+  {
+    "id": "cmlg3tgii00vvputymix764l2",
+    "leadId": "cmlg3t0oc001nputy1kxpw8cx",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Your treatment plan is ready for review.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-12-19T07:01:33.216Z",
+    "updatedAt": "2025-12-19T07:01:33.216Z"
+  },
+  {
+    "id": "cmlg3tgji00vxputy4bxljhbz",
+    "leadId": "cmlg3t1e2002zputyyfdlbd59",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2026-01-10T20:50:39.934Z",
+    "updatedAt": "2026-01-10T20:50:39.934Z"
+  },
+  {
+    "id": "cmlg3tgki00vzputy83xmzz4r",
+    "leadId": "cmlg3t0mc001jputydy6603e1",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-08-20T13:17:05.888Z",
+    "updatedAt": "2025-08-20T13:17:05.888Z"
+  },
+  {
+    "id": "cmlg3tgli00w1putyk4an390x",
+    "leadId": "cmlg3t0lc001hputyf1hxyk1a",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-14T01:07:17.155Z",
+    "updatedAt": "2026-01-14T01:07:17.155Z"
+  },
+  {
+    "id": "cmlg3tgmh00w3putyqm7q1mbs",
+    "leadId": "cmlg3t0ec0013puty62hbavd3",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Your treatment plan is ready for review.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-02-02T01:18:38.797Z",
+    "updatedAt": "2026-02-02T01:18:38.797Z"
+  },
+  {
+    "id": "cmlg3tgnh00w5putyjyt2r154",
+    "leadId": "cmlg3t14v002jputycskdd5c7",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-08-17T21:23:01.997Z",
+    "updatedAt": "2025-08-17T21:23:01.997Z"
+  },
+  {
+    "id": "cmlg3tgoe00w7putynqboh4wt",
+    "leadId": "cmlg3t0ay000xputytxziegsz",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Your treatment plan is ready for review.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-04T09:50:03.245Z",
+    "updatedAt": "2026-01-04T09:50:03.245Z"
+  },
+  {
+    "id": "cmlg3tgpf00w9puty7k4gnodq",
+    "leadId": "cmlg3t1h70035puty36a3iz3e",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-09-21T14:52:04.496Z",
+    "updatedAt": "2025-09-21T14:52:04.496Z"
+  },
+  {
+    "id": "cmlg3tgqi00wbputy0f4ekjdq",
+    "leadId": "cmlg3t1g10033putyxvsjmh79",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Your treatment plan is ready for review.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-22T14:32:26.220Z",
+    "updatedAt": "2026-01-22T14:32:26.220Z"
+  },
+  {
+    "id": "cmlg3tgri00wdputyx7kyeioe",
+    "leadId": "cmlg3t0nc001lputysrxy6tsl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Congratulations on completing your treatment!",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-11-19T03:36:16.261Z",
+    "updatedAt": "2025-11-19T03:36:16.261Z"
+  },
+  {
+    "id": "cmlg3tgsf00wfputyr5nqbbj0",
+    "leadId": "cmlg3t0fc0015puty2xwxd4k3",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-09-01T00:25:27.356Z",
+    "updatedAt": "2025-09-01T00:25:27.356Z"
+  },
+  {
+    "id": "cmlg3tgtf00whputytris1xij",
+    "leadId": "cmlg3t0nc001lputysrxy6tsl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We have a special offer that might interest you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-09-25T21:51:32.581Z",
+    "updatedAt": "2025-09-25T21:51:32.581Z"
+  },
+  {
+    "id": "cmlg3tgun00wjputyswm23sqx",
+    "leadId": "cmlg3t0ug001zputy4ipgps69",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-09-06T05:24:18.016Z",
+    "updatedAt": "2025-09-06T05:24:18.016Z"
+  },
+  {
+    "id": "cmlg3tgvo00wlputyxa9sq46e",
+    "leadId": "cmlg3t0ug001zputy4ipgps69",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-10-26T12:57:55.807Z",
+    "updatedAt": "2025-10-26T12:57:55.807Z"
+  },
+  {
+    "id": "cmlg3tgwr00wnputycfk6v4y3",
+    "leadId": "cmlg3t1g10033putyxvsjmh79",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-25T15:05:13.099Z",
+    "updatedAt": "2026-01-25T15:05:13.099Z"
+  },
+  {
+    "id": "cmlg3tgxp00wpputy67q4xbqv",
+    "leadId": "cmlg3t062000nputyesvjxb29",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Your treatment plan is ready for review.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-18T18:56:51.420Z",
+    "updatedAt": "2026-01-18T18:56:51.420Z"
+  },
+  {
+    "id": "cmlg3tgyq00wrputy6768ow3d",
+    "leadId": "cmlg3t0oc001nputy1kxpw8cx",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We have a special offer that might interest you.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-09-01T05:41:53.292Z",
+    "updatedAt": "2025-09-01T05:41:53.292Z"
+  },
+  {
+    "id": "cmlg3tgzn00wtputy5u4facm3",
+    "leadId": "cmlg3t0mc001jputydy6603e1",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Congratulations on completing your treatment!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-11-27T18:27:42.851Z",
+    "updatedAt": "2025-11-27T18:27:42.851Z"
+  },
+  {
+    "id": "cmlg3th0l00wvputyinjydxd1",
+    "leadId": "cmlg3t0xg0025putyr5s0esjq",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Congratulations on completing your treatment!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-23T00:29:59.169Z",
+    "updatedAt": "2026-01-23T00:29:59.169Z"
+  },
+  {
+    "id": "cmlg3th1t00wxputy22gkqq24",
+    "leadId": "cmlg3t0sf001vputyaitrdrvn",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-05T10:55:46.275Z",
+    "updatedAt": "2026-01-05T10:55:46.275Z"
+  },
+  {
+    "id": "cmlg3th2q00wzputyq6xtg7jz",
+    "leadId": "cmlg3t0kb001fputy044nd0kh",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-11-09T13:33:44.551Z",
+    "updatedAt": "2025-11-09T13:33:44.551Z"
+  },
+  {
+    "id": "cmlg3th3n00x1puty39dk8yhu",
+    "leadId": "cmlg3t0hc0019putyi1t3iw0q",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2026-01-02T04:16:06.167Z",
+    "updatedAt": "2026-01-02T04:16:06.167Z"
+  },
+  {
+    "id": "cmlg3th4m00x3putyhfhdambe",
+    "leadId": "cmlg3t17w002pputytrg40rq0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-08-28T15:49:13.003Z",
+    "updatedAt": "2025-08-28T15:49:13.003Z"
+  },
+  {
+    "id": "cmlg3th5l00x5putya28txirv",
+    "leadId": "cmlg3t14v002jputycskdd5c7",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-11-21T23:23:57.249Z",
+    "updatedAt": "2025-11-21T23:23:57.249Z"
+  },
+  {
+    "id": "cmlg3th6k00x7putyw8jidpuz",
+    "leadId": "cmlg3t17w002pputytrg40rq0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We have a special offer that might interest you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-09-18T00:35:00.545Z",
+    "updatedAt": "2025-09-18T00:35:00.545Z"
+  },
+  {
+    "id": "cmlg3th7l00x9puty798zvo4q",
+    "leadId": "cmlg3t0tf001xputywm7jt3l2",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Reminder: Your next appointment is coming up.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-12-15T10:42:17.016Z",
+    "updatedAt": "2025-12-15T10:42:17.016Z"
+  },
+  {
+    "id": "cmlg3th8j00xbputydh617p2b",
+    "leadId": "cmlg3t0rd001tputyyhuye90b",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Your treatment plan is ready for review.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-09-28T13:35:14.245Z",
+    "updatedAt": "2025-09-28T13:35:14.245Z"
+  },
+  {
+    "id": "cmlg3th9i00xdputyqvy0ak07",
+    "leadId": "cmlg3t1d1002xputynfl58o34",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-09-21T01:09:13.696Z",
+    "updatedAt": "2025-09-21T01:09:13.696Z"
+  },
+  {
+    "id": "cmlg3thag00xfputy1a0uh7g7",
+    "leadId": "cmlg3t0ec0013puty62hbavd3",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-12-04T22:05:12.521Z",
+    "updatedAt": "2025-12-04T22:05:12.521Z"
+  },
+  {
+    "id": "cmlg3thbg00xhputy7xp6z9qu",
+    "leadId": "cmlg3t17w002pputytrg40rq0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-10-29T15:37:25.972Z",
+    "updatedAt": "2025-10-29T15:37:25.972Z"
+  },
+  {
+    "id": "cmlg3thcg00xjputyslvh9bwk",
+    "leadId": "cmlg3t0gd0017putygt9uh1h4",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2026-01-08T06:42:28.723Z",
+    "updatedAt": "2026-01-08T06:42:28.723Z"
+  },
+  {
+    "id": "cmlg3thdd00xlputy3rrioxvz",
+    "leadId": "cmlg3t1g10033putyxvsjmh79",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "Thank you for your interest in our orthodontic services!",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-19T22:25:18.162Z",
+    "updatedAt": "2026-01-19T22:25:18.162Z"
+  },
+  {
+    "id": "cmlg3thek00xnputygtwkkiry",
+    "leadId": "cmlg3t1d1002xputynfl58o34",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2025-08-17T09:41:48.017Z",
+    "updatedAt": "2025-08-17T09:41:48.017Z"
+  },
+  {
+    "id": "cmlg3thfl00xpputylkahgco4",
+    "leadId": "cmlg3t17w002pputytrg40rq0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We'd love to schedule a consultation with you.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2026-01-25T09:41:09.907Z",
+    "updatedAt": "2026-01-25T09:41:09.907Z"
+  },
+  {
+    "id": "cmlg3thgk00xrputy4k2921h2",
+    "leadId": "cmlg3t0bv000zputykffw6exb",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We have a special offer that might interest you.",
+    "messageType": "email",
+    "isUsed": false,
+    "createdAt": "2025-09-09T22:27:09.144Z",
+    "updatedAt": "2025-09-09T22:27:09.144Z"
+  },
+  {
+    "id": "cmlg3thhg00xtputyqt6id1s1",
+    "leadId": "cmlg3t047000jputynijbyr2z",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "content": "We have a special offer that might interest you.",
+    "messageType": "sms",
+    "isUsed": false,
+    "createdAt": "2026-01-28T18:48:33.903Z",
+    "updatedAt": "2026-01-28T18:48:33.903Z"
+  }
+]

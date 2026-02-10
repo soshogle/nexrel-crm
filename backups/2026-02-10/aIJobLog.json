@@ -1,0 +1,284 @@
+[
+  {
+    "id": "cmkyrx77e0005l40478c5bk5q",
+    "jobId": "cmkyrx76o0003l404iir0tkug",
+    "level": "INFO",
+    "message": "Job created: lead_enrichment",
+    "data": {},
+    "createdAt": "2026-01-29T01:26:45.434Z"
+  },
+  {
+    "id": "cmkyrx7810007l404ry9eaati",
+    "jobId": "cmkyrx76o0003l404iir0tkug",
+    "level": "INFO",
+    "message": "Job execution started",
+    "data": {},
+    "createdAt": "2026-01-29T01:26:45.458Z"
+  },
+  {
+    "id": "cmkyrx78b0009l4044s7lf191",
+    "jobId": "cmkyrx76o0003l404iir0tkug",
+    "level": "INFO",
+    "message": "Researching company information...",
+    "data": {},
+    "createdAt": "2026-01-29T01:26:45.468Z"
+  },
+  {
+    "id": "cmkyrx7p5000bl404wdyp59ex",
+    "jobId": "cmkyrx76o0003l404iir0tkug",
+    "level": "INFO",
+    "message": "Finding key decision makers...",
+    "data": {},
+    "createdAt": "2026-01-29T01:26:46.073Z"
+  },
+  {
+    "id": "cmkyrxk84000dl404hi9ifit5",
+    "jobId": "cmkyrx76o0003l404iir0tkug",
+    "level": "INFO",
+    "message": "Gathering recent company news...",
+    "data": {},
+    "createdAt": "2026-01-29T01:27:02.308Z"
+  },
+  {
+    "id": "cmkyrxkdx000fl404r2itma3t",
+    "jobId": "cmkyrx76o0003l404iir0tkug",
+    "level": "INFO",
+    "message": "Analyzing data and generating insights...",
+    "data": {},
+    "createdAt": "2026-01-29T01:27:02.518Z"
+  },
+  {
+    "id": "cmkyrxkir000hl404wr41x61r",
+    "jobId": "cmkyrx76o0003l404iir0tkug",
+    "level": "INFO",
+    "message": "Research completed successfully",
+    "data": {},
+    "createdAt": "2026-01-29T01:27:02.691Z"
+  },
+  {
+    "id": "cmkyrxkj7000jl404r578rz5z",
+    "jobId": "cmkyrx76o0003l404iir0tkug",
+    "level": "SUCCESS",
+    "message": "Job completed successfully",
+    "data": {
+      "enrichedData": {
+        "keyPeople": [],
+        "leadScore": 50,
+        "recentNews": [],
+        "companyInfo": {
+          "name": "nike",
+          "_error": "LLM API error: 400 - {\"success\": false, \"error\": \"You have no remaining credits to use the LLM apis.\"}",
+          "website": "nike.com",
+          "industry": "RETAIL",
+          "description": "Research failed: LLM API error: 400 - {\"success\": false, \"error\": \"You have no remaining credits to use the LLM apis.\"}",
+          "foundedYear": "Unknown",
+          "headquarters": "Unknown"
+        },
+        "contactInfo": {},
+        "businessMetrics": {},
+        "recommendedApproach": "Standard outreach approach"
+      }
+    },
+    "createdAt": "2026-01-29T01:27:02.708Z"
+  },
+  {
+    "id": "cml5cyl9u0009k00471i33bs3",
+    "jobId": "cml5cyl8y0007k004wr5ym18i",
+    "level": "INFO",
+    "message": "Job created: lead_enrichment",
+    "data": {},
+    "createdAt": "2026-02-02T16:02:19.314Z"
+  },
+  {
+    "id": "cml5cylal000bk004fb12jdio",
+    "jobId": "cml5cyl8y0007k004wr5ym18i",
+    "level": "INFO",
+    "message": "Job execution started",
+    "data": {},
+    "createdAt": "2026-02-02T16:02:19.341Z"
+  },
+  {
+    "id": "cml5cylb6000dk004t987gfmt",
+    "jobId": "cml5cyl8y0007k004wr5ym18i",
+    "level": "INFO",
+    "message": "Researching company information...",
+    "data": {},
+    "createdAt": "2026-02-02T16:02:19.362Z"
+  },
+  {
+    "id": "cml5cyqy2000fk0040gub12yq",
+    "jobId": "cml5cyl8y0007k004wr5ym18i",
+    "level": "INFO",
+    "message": "Finding key decision makers...",
+    "data": {},
+    "createdAt": "2026-02-02T16:02:26.667Z"
+  },
+  {
+    "id": "cml5cz2mz000hk004dr7g14rm",
+    "jobId": "cml5cyl8y0007k004wr5ym18i",
+    "level": "INFO",
+    "message": "Gathering recent company news...",
+    "data": {},
+    "createdAt": "2026-02-02T16:02:41.819Z"
+  },
+  {
+    "id": "cml5czdl3000jk004flrbmmsk",
+    "jobId": "cml5cyl8y0007k004wr5ym18i",
+    "level": "INFO",
+    "message": "Analyzing data and generating insights...",
+    "data": {},
+    "createdAt": "2026-02-02T16:02:56.007Z"
+  },
+  {
+    "id": "cml5cziuh000lk004inric84n",
+    "jobId": "cml5cyl8y0007k004wr5ym18i",
+    "level": "INFO",
+    "message": "Research completed successfully",
+    "data": {},
+    "createdAt": "2026-02-02T16:03:02.825Z"
+  },
+  {
+    "id": "cml5cziv7000nk004v5q098iu",
+    "jobId": "cml5cyl8y0007k004wr5ym18i",
+    "level": "SUCCESS",
+    "message": "Job completed successfully",
+    "data": {
+      "enrichedData": {
+        "keyPeople": [
+          {
+            "name": "John Donahoe",
+            "email": "john.donahoe@nike.com",
+            "title": "President and CEO",
+            "source": "🔍 Google Search (Real-Time 2026)",
+            "linkedIn": null,
+            "confidence": 80,
+            "emailAlternatives": [
+              "johndonahoe@nike.com",
+              "jdonahoe@nike.com",
+              "john_donahoe@nike.com",
+              "john@nike.com",
+              "donahoe.john@nike.com"
+            ]
+          },
+          {
+            "name": "Matthew Friend",
+            "email": "matthew.friend@nike.com",
+            "title": "Chief Financial Officer",
+            "source": "🔍 Google Search (Real-Time 2026)",
+            "linkedIn": null,
+            "confidence": 80,
+            "emailAlternatives": [
+              "matthewfriend@nike.com",
+              "mfriend@nike.com",
+              "matthew_friend@nike.com",
+              "matthew@nike.com",
+              "friend.matthew@nike.com"
+            ]
+          },
+          {
+            "name": "Heidi O'Neill",
+            "email": "heidi.o'neill@nike.com",
+            "title": "President of Consumer and Marketplace",
+            "source": "🔍 Google Search (Real-Time 2026)",
+            "linkedIn": null,
+            "confidence": 80,
+            "emailAlternatives": [
+              "heidio'neill@nike.com",
+              "ho'neill@nike.com",
+              "heidi_o'neill@nike.com",
+              "heidi@nike.com",
+              "o'neill.heidi@nike.com"
+            ]
+          },
+          {
+            "name": "Michael Spillane",
+            "email": "michael.spillane@nike.com",
+            "title": "President of Product and Merchandising",
+            "source": "🔍 Google Search (Real-Time 2026)",
+            "linkedIn": null,
+            "confidence": 80,
+            "emailAlternatives": [
+              "michaelspillane@nike.com",
+              "mspillane@nike.com",
+              "michael_spillane@nike.com",
+              "michael@nike.com",
+              "spillane.michael@nike.com"
+            ]
+          },
+          {
+            "name": "Katrina McGhee",
+            "email": "katrina.mcghee@nike.com",
+            "title": "Chief Marketing Officer",
+            "source": "🔍 Google Search (Real-Time 2026)",
+            "linkedIn": null,
+            "confidence": 80,
+            "emailAlternatives": [
+              "katrinamcghee@nike.com",
+              "kmcghee@nike.com",
+              "katrina_mcghee@nike.com",
+              "katrina@nike.com",
+              "mcghee.katrina@nike.com"
+            ]
+          }
+        ],
+        "leadScore": 85,
+        "recentNews": [
+          {
+            "url": "https://www.businessinsider.com/nike-launches-sustainability-initiative-2023-9",
+            "date": "2023-09-15",
+            "title": "Nike Launches New Sustainability Initiative",
+            "source": "Business Insider"
+          },
+          {
+            "url": "https://www.reuters.com/business/nike-reports-strong-q2-earnings-2023-9-28",
+            "date": "2023-09-28",
+            "title": "Nike Reports Strong Q2 Earnings Amidst Market Challenges",
+            "source": "Reuters"
+          },
+          {
+            "url": "https://hypebeast.com/2023/10/nike-local-artists-collaboration-collection",
+            "date": "2023-10-05",
+            "title": "Nike Collaborates with Local Artists for New Collection",
+            "source": "Hypebeast"
+          },
+          {
+            "url": "https://www.adweek.com/brand-marketing/nike-gen-z-advertising-campaign-2023-8-20",
+            "date": "2023-08-20",
+            "title": "Nike's New Advertising Campaign Targets Gen Z",
+            "source": "Adweek"
+          },
+          {
+            "url": "https://www.cnbc.com/2023/07/10/nike-expands-direct-to-consumer-strategy.html",
+            "date": "2023-07-10",
+            "title": "Nike Expands Direct-to-Consumer Strategy",
+            "source": "CNBC"
+          }
+        ],
+        "companyInfo": {
+          "name": "Nike, Inc.",
+          "website": "nike.com",
+          "industry": "Retail",
+          "description": "Nike, Inc. is a global leader in athletic footwear, apparel, and equipment, known for its innovative products and marketing strategies. The company designs, develops, and sells a wide range of sports-related products and is recognized for its iconic branding and sponsorship of top athletes and teams.",
+          "foundedYear": "1964",
+          "headquarters": "Beaverton, Oregon, USA"
+        },
+        "contactInfo": {
+          "email": "john.donahoe@nike.com",
+          "phone": null,
+          "socialMedia": {
+            "twitter": "https://twitter.com/Nike",
+            "facebook": "https://www.facebook.com/nike",
+            "linkedin": "https://www.linkedin.com/company/nike"
+          }
+        },
+        "businessMetrics": {
+          "companySize": "Enterprise",
+          "employeeCount": "75,000+",
+          "estimatedRevenue": "$40B+"
+        },
+        "recommendedApproach": "To engage Nike effectively, focus on their commitment to innovation and sustainability. Highlight how your solutions can enhance their product offerings or improve operational efficiencies, particularly in their direct-to-consumer strategy."
+      }
+    },
+    "createdAt": "2026-02-02T16:03:02.851Z"
+  }
+]
