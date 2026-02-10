@@ -9,6 +9,7 @@ import { AIChatAssistant } from './ai-chat-assistant'
 import { GlobalVoiceAssistant } from './global-voice-assistant'
 import { AIBrainVoiceAgent } from './ai-brain-voice-agent'
 import { VoiceAIAgent } from '@/components/business-ai/voice-ai-agent'
+import { AIBrainVoiceProvider } from '@/lib/ai-brain-voice-context'
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
 import { GlobalSearchTrigger } from '@/app/components/unified-search'
 import { HITLNotificationBell } from '@/components/real-estate/workflows/hitl-notification-bell'
@@ -63,7 +64,7 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
   }, [status, mounted, sessionChecked]) // Removed 'update' from dependencies to prevent infinite loop
 
   return (
-    <>
+    <AIBrainVoiceProvider>
       {/* Impersonation Banner - Always renders but only shows when impersonating */}
       <ImpersonationBanner />
       
@@ -147,6 +148,6 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
         <VoiceAIAgent position="bottom-right" />
       )}
     </div>
-    </>
+    </AIBrainVoiceProvider>
   )
 }
