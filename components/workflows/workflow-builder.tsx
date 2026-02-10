@@ -10,6 +10,9 @@ import { WorkflowTask, WorkflowTemplate } from './types';
 import { WorkflowCanvas } from './workflow-canvas';
 import { TaskEditorPanel } from './task-editor-panel';
 import { WorkflowTemplatesGallery } from './workflow-templates-gallery';
+import { ExecutionModeSelector } from './execution-mode-selector';
+import { AudiencePanel, AudienceConfig } from './audience-panel';
+import { CampaignSettingsPanel, CampaignSettings } from './campaign-settings-panel';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
 import { Industry } from '@prisma/client';
 import { Button } from '@/components/ui/button';
@@ -53,6 +56,11 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   const [newTaskType, setNewTaskType] = useState<string>('CREATE_TASK');
   const [showTemplateGallery, setShowTemplateGallery] = useState(!initialWorkflowId);
   
+  // Campaign mode state
+  const [executionMode, setExecutionMode] = useState<'WORKFLOW' | 'CAMPAIGN'>('WORKFLOW');
+  const [audience, setAudience] = useState<AudienceConfig | null>(null);
+  const [campaignSettings, setCampaignSettings] = useState<CampaignSettings | null>(null);
+  
   const industryConfig = getIndustryConfig(industry);
   
   // Fetch workflows on mount
@@ -82,31 +90,40 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
         const dbTemplates = data.workflows || [];
         
         // Transform DB templates to match WorkflowTemplate interface
-        const transformedTemplates = dbTemplates.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          description: t.description || '',
-          workflowType: t.type || 'CUSTOM',
-          industry: t.industry || industry,
-          tasks: (t.tasks || []).map((task: any) => ({
-            id: task.id,
-            name: task.name,
-            description: task.description || '',
-            taskType: task.taskType,
-            assignedAgentId: null,
-            assignedAgentName: null,
-            agentColor: '#6B7280',
-            displayOrder: task.displayOrder || 0,
-            isHITL: task.isHITL || false,
-            delayMinutes: task.delayValue || 0,
-            delayUnit: task.delayUnit || 'MINUTES',
-            parentTaskId: null,
-            branchCondition: null,
-          })),
-          isDefault: t.isDefault || false,
-          createdAt: t.createdAt || new Date().toISOString(),
-          updatedAt: t.updatedAt || new Date().toISOString(),
-        }));
+        const transformedTemplates = dbTemplates.map((t: any) => {
+          // Load campaign mode settings if they exist
+          if (t.executionMode === 'CAMPAIGN') {
+            setExecutionMode('CAMPAIGN');
+            if (t.audience) setAudience(t.audience);
+            if (t.campaignSettings) setCampaignSettings(t.campaignSettings);
+          }
+          
+          return {
+            id: t.id,
+            name: t.name,
+            description: t.description || '',
+            workflowType: t.type || 'CUSTOM',
+            industry: t.industry || industry,
+            tasks: (t.tasks || []).map((task: any) => ({
+              id: task.id,
+              name: task.name,
+              description: task.description || '',
+              taskType: task.taskType,
+              assignedAgentId: null,
+              assignedAgentName: null,
+              agentColor: '#6B7280',
+              displayOrder: task.displayOrder || 0,
+              isHITL: task.isHITL || false,
+              delayMinutes: task.delayValue || 0,
+              delayUnit: task.delayUnit || 'MINUTES',
+              parentTaskId: null,
+              branchCondition: null,
+            })),
+            isDefault: t.isDefault || false,
+            createdAt: t.createdAt || new Date().toISOString(),
+            updatedAt: t.updatedAt || new Date().toISOString(),
+          };
+        });
         
         setWorkflows(transformedTemplates);
       }
@@ -181,13 +198,16 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
         body: JSON.stringify({
           ...workflow,
           industry,
+          executionMode,
+          audience,
+          campaignSettings,
         }),
       });
       
       if (res.ok) {
         const data = await res.json();
         setWorkflow(data.workflow);
-        toast.success('Workflow saved successfully');
+        toast.success(executionMode === 'CAMPAIGN' ? 'Campaign saved successfully' : 'Workflow saved successfully');
         fetchWorkflows(); // Refresh list
       } else {
         throw new Error('Failed to save');
@@ -308,14 +328,50 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
           </Select>
           
           {workflow && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowTemplateGallery(true)}
-              className="border-purple-200 text-gray-700 hover:bg-purple-50"
-            >
-              Browse Templates
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowTemplateGallery(true)}
+                className="border-purple-200 text-gray-700 hover:bg-purple-50"
+              >
+                Browse Templates
+              </Button>
+              
+              {/* Execution Mode Selector - Only show when workflow is loaded */}
+              <ExecutionModeSelector
+                mode={executionMode}
+                onModeChange={(mode) => {
+                  setExecutionMode(mode);
+                  // Reset campaign settings when switching to workflow mode
+                  if (mode === 'WORKFLOW') {
+                    setAudience(null);
+                    setCampaignSettings(null);
+                  } else {
+                    // Initialize campaign settings when switching to campaign mode
+                    if (!campaignSettings) {
+                      setCampaignSettings({
+                        frequency: 'ONE_TIME',
+                        tone: 'professional',
+                      });
+                    }
+                    if (!audience) {
+                      setAudience({
+                        type: 'FILTERED',
+                        filters: {
+                          minLeadScore: 75,
+                          statuses: [],
+                          tags: [],
+                          types: [],
+                          hasPhone: false,
+                          hasEmail: false,
+                        },
+                      });
+                    }
+                  }
+                }}
+              />
+            </>
           )}
         </div>
         
@@ -419,7 +475,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Template Gallery or Canvas */}
-        <div className="flex-1 p-6 overflow-y-auto">
+        <div className="flex-1 p-6 overflow-y-auto space-y-4">
           {showTemplateGallery ? (
             <WorkflowTemplatesGallery
               industry={industry}
@@ -427,15 +483,34 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
               onCreateCustom={handleCreateCustom}
             />
           ) : workflow ? (
-            <WorkflowCanvas
-              workflow={workflow}
-              industry={industry}
-              selectedTaskId={selectedTaskId}
-              onSelectTask={setSelectedTaskId}
-              onUpdateTask={handleUpdateTask}
-              onReorderTasks={handleReorderTasks}
-              onAddTask={() => setShowNewTaskDialog(true)}
-            />
+            <>
+              {/* Workflow Canvas - Always visible, unchanged */}
+              <WorkflowCanvas
+                workflow={workflow}
+                industry={industry}
+                selectedTaskId={selectedTaskId}
+                onSelectTask={setSelectedTaskId}
+                onUpdateTask={handleUpdateTask}
+                onReorderTasks={handleReorderTasks}
+                onAddTask={() => setShowNewTaskDialog(true)}
+              />
+              
+              {/* Campaign Panels - Only show when Campaign Mode is enabled */}
+              {executionMode === 'CAMPAIGN' && (
+                <div className="space-y-4 mt-6">
+                  <AudiencePanel
+                    audience={audience}
+                    onAudienceChange={setAudience}
+                    executionMode={executionMode}
+                  />
+                  <CampaignSettingsPanel
+                    settings={campaignSettings}
+                    onSettingsChange={setCampaignSettings}
+                    executionMode={executionMode}
+                  />
+                </div>
+              )}
+            </>
           ) : (
             <div className="flex items-center justify-center h-full text-gray-600 bg-white rounded-xl border-2 border-purple-200">
               <p className="text-lg">Select a workflow or load a template to get started</p>
@@ -449,6 +524,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
             task={selectedTask}
             industry={industry}
             workflowTasks={workflow.tasks}
+            executionMode={executionMode}
             onClose={() => setSelectedTaskId(null)}
             onSave={handleUpdateTask}
             onDelete={handleDeleteTask}

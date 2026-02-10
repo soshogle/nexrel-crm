@@ -1,0 +1,42 @@
+[
+  {
+    "id": "cmkyamna40001jm04g4mmrx2o",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "employeeType": "RE_SPEED_TO_LEAD",
+    "employeeName": null,
+    "targetType": null,
+    "targetId": null,
+    "status": "SUCCESS",
+    "startedAt": null,
+    "completedAt": "2026-01-28T17:22:39.580Z",
+    "result": {
+      "leadIds": []
+    },
+    "error": null,
+    "callMade": false,
+    "smsSent": false,
+    "emailSent": false,
+    "taskCreated": false,
+    "createdAt": "2026-01-28T17:22:39.581Z"
+  },
+  {
+    "id": "cmkysahly0001ic046508kb3m",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "employeeType": "RE_FSBO_OUTREACH",
+    "employeeName": null,
+    "targetType": null,
+    "targetId": null,
+    "status": "SUCCESS",
+    "startedAt": null,
+    "completedAt": "2026-01-29T01:37:05.445Z",
+    "result": {
+      "listingIds": []
+    },
+    "error": null,
+    "callMade": false,
+    "smsSent": false,
+    "emailSent": false,
+    "taskCreated": false,
+    "createdAt": "2026-01-29T01:37:05.446Z"
+  }
+]

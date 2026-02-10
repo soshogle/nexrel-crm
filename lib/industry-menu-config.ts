@@ -87,7 +87,9 @@ export type MenuItemId =
   | 'dental-clinical'
   | 'dental-admin'
   // Website Builder
-  | 'websites';
+  | 'websites'
+  // AI Automations
+  | 'ai-automations';
 
 // Core menu items visible to ALL industries
 const CORE_MENU_ITEMS: MenuItemId[] = [
@@ -112,6 +114,7 @@ const CORE_MENU_ITEMS: MenuItemId[] = [
   'sms-campaigns', // SMS Campaign Management - Available to all industries
   'reviews',
   'analytics',
+  'ai-automations', // AI Automations - Unified workflow and campaign builder
   'workflows',
   'team',
   'reports',

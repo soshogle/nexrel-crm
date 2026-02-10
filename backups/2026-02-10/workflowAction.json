@@ -1,0 +1,154 @@
+[
+  {
+    "id": "cml7ob6dj0002lh04hiwcjdhu",
+    "workflowId": "cml7ob6dj0001lh04ivcb1ltc",
+    "type": "WEBHOOK",
+    "displayOrder": 0,
+    "actionConfig": {
+      "url": "/api/outbound-calls",
+      "body": {
+        "notes": "Happy Birthday {{contactPerson}}! 🎉 We hope you have a fantastic day filled with joy and laughter!",
+        "purpose": "Birthday call",
+        "immediate": true,
+        "contactName": "{{contactPerson}}",
+        "phoneNumber": "{{phone}}"
+      },
+      "method": "POST"
+    },
+    "delayMinutes": 0,
+    "parentActionId": null,
+    "createdAt": "2026-02-04T06:55:34.661Z",
+    "updatedAt": "2026-02-04T06:55:34.661Z"
+  },
+  {
+    "id": "cml7ob6dj0003lh04649oo99l",
+    "workflowId": "cml7ob6dj0001lh04ivcb1ltc",
+    "type": "WAIT_DELAY",
+    "displayOrder": 1,
+    "actionConfig": {},
+    "delayMinutes": 10080,
+    "parentActionId": null,
+    "createdAt": "2026-02-04T06:55:34.661Z",
+    "updatedAt": "2026-02-04T06:55:34.661Z"
+  },
+  {
+    "id": "cml7ob6dj0004lh04bmupxy44",
+    "workflowId": "cml7ob6dj0001lh04ivcb1ltc",
+    "type": "SEND_EMAIL",
+    "displayOrder": 2,
+    "actionConfig": {
+      "body": "Join us for an exciting webinar on tips and tricks for buying your dream home in Montreal! Don't miss out on valuable insights! Webinar link: webinarlink123",
+      "subject": "Join Our Webinar on Home Buying Tips!",
+      "toField": "email"
+    },
+    "delayMinutes": 0,
+    "parentActionId": null,
+    "createdAt": "2026-02-04T06:55:34.661Z",
+    "updatedAt": "2026-02-04T06:55:34.661Z"
+  },
+  {
+    "id": "cml7ob6dj0005lh04enewwpq5",
+    "workflowId": "cml7ob6dj0001lh04ivcb1ltc",
+    "type": "SEND_SMS",
+    "displayOrder": 3,
+    "actionConfig": {
+      "template": "Hi {{contactPerson}}, join our webinar on home buying tips in Montreal! Webinar link: webinarlink123",
+      "phoneField": "phone"
+    },
+    "delayMinutes": 0,
+    "parentActionId": null,
+    "createdAt": "2026-02-04T06:55:34.661Z",
+    "updatedAt": "2026-02-04T06:55:34.661Z"
+  },
+  {
+    "id": "cml7ob6dj0006lh04j1my8sct",
+    "workflowId": "cml7ob6dj0001lh04ivcb1ltc",
+    "type": "WAIT_DELAY",
+    "displayOrder": 4,
+    "actionConfig": {},
+    "delayMinutes": 5760,
+    "parentActionId": null,
+    "createdAt": "2026-02-04T06:55:34.661Z",
+    "updatedAt": "2026-02-04T06:55:34.661Z"
+  },
+  {
+    "id": "cml7ob6dj0007lh0410f3f2jt",
+    "workflowId": "cml7ob6dj0001lh04ivcb1ltc",
+    "type": "SEND_SMS",
+    "displayOrder": 5,
+    "actionConfig": {
+      "template": "Reminder: Our webinar on home buying tips is tomorrow! Don't miss it! Webinar link: webinarlink123",
+      "phoneField": "phone"
+    },
+    "delayMinutes": 0,
+    "parentActionId": null,
+    "createdAt": "2026-02-04T06:55:34.661Z",
+    "updatedAt": "2026-02-04T06:55:34.661Z"
+  },
+  {
+    "id": "cml7ob6dj0008lh040k761nol",
+    "workflowId": "cml7ob6dj0001lh04ivcb1ltc",
+    "type": "WAIT_DELAY",
+    "displayOrder": 6,
+    "actionConfig": {},
+    "delayMinutes": 120,
+    "parentActionId": null,
+    "createdAt": "2026-02-04T06:55:34.661Z",
+    "updatedAt": "2026-02-04T06:55:34.661Z"
+  },
+  {
+    "id": "cml7ob6dj0009lh04p0wxdzgx",
+    "workflowId": "cml7ob6dj0001lh04ivcb1ltc",
+    "type": "SEND_SMS",
+    "displayOrder": 7,
+    "actionConfig": {
+      "template": "Final reminder: Our webinar on home buying tips starts in 2 hours! Join us at webinarlink123",
+      "phoneField": "phone"
+    },
+    "delayMinutes": 0,
+    "parentActionId": null,
+    "createdAt": "2026-02-04T06:55:34.661Z",
+    "updatedAt": "2026-02-04T06:55:34.661Z"
+  },
+  {
+    "id": "cml7yjyg2001xpugjuhejnzyf",
+    "workflowId": "cml7yjydx001vpugjge8cgu21",
+    "type": "SEND_SMS",
+    "displayOrder": 0,
+    "actionConfig": {
+      "template": "Merci pour votre visite! Comment s'est passé votre examen?",
+      "delayMinutes": 0
+    },
+    "delayMinutes": null,
+    "parentActionId": null,
+    "createdAt": "2026-02-04T11:42:20.451Z",
+    "updatedAt": "2026-02-04T11:42:20.451Z"
+  },
+  {
+    "id": "cml7yjyi1001zpugjpx1mxkcj",
+    "workflowId": "cml7yjydx001vpugjge8cgu21",
+    "type": "WAIT_DELAY",
+    "displayOrder": 1,
+    "actionConfig": {
+      "delayMinutes": 1440
+    },
+    "delayMinutes": null,
+    "parentActionId": null,
+    "createdAt": "2026-02-04T11:42:20.521Z",
+    "updatedAt": "2026-02-04T11:42:20.521Z"
+  },
+  {
+    "id": "cml7yjyiy0021pugjufdbg8rq",
+    "workflowId": "cml7yjydx001vpugjge8cgu21",
+    "type": "SEND_EMAIL",
+    "displayOrder": 2,
+    "actionConfig": {
+      "subject": "Demande d'avis - Vision Plus",
+      "template": "Bonjour, nous aimerions connaître votre avis sur nos services."
+    },
+    "delayMinutes": null,
+    "parentActionId": null,
+    "createdAt": "2026-02-04T11:42:20.554Z",
+    "updatedAt": "2026-02-04T11:42:20.554Z"
+  }
+]

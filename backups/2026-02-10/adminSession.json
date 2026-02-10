@@ -1,0 +1,35 @@
+[
+  {
+    "id": "cml7z8dl20001l804jy6jzcm6",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "sessionToken": "711422fb-70a9-4840-8fdc-6e83608ccbf5",
+    "ipAddress": "70.80.44.97",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+    "expiresAt": "2026-02-04T12:16:19.813Z",
+    "lastActivity": "2026-02-04T12:01:19.814Z",
+    "isActive": true,
+    "createdAt": "2026-02-04T12:01:19.814Z"
+  },
+  {
+    "id": "cml8dcv0f0001l1048kvk7r4u",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "sessionToken": "30991e4e-8956-43a1-9542-8d54514275db",
+    "ipAddress": "70.80.44.97",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+    "expiresAt": "2026-02-04T18:51:43.646Z",
+    "lastActivity": "2026-02-04T18:36:43.647Z",
+    "isActive": true,
+    "createdAt": "2026-02-04T18:36:43.647Z"
+  },
+  {
+    "id": "cml9nd8aq0001l404oudipgwq",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "sessionToken": "4f465494-abc2-40a4-9c49-e78c41d42951",
+    "ipAddress": "70.80.44.97",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+    "expiresAt": "2026-02-05T16:19:43.202Z",
+    "lastActivity": "2026-02-05T16:04:43.203Z",
+    "isActive": true,
+    "createdAt": "2026-02-05T16:04:43.203Z"
+  }
+]

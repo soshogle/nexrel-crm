@@ -1,0 +1,35 @@
+[
+  {
+    "id": "cmky05obx0001jh05rzo219im",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "name": "Default Pipeline",
+    "description": "Your default sales pipeline",
+    "color": null,
+    "isDefault": true,
+    "displayOrder": 0,
+    "createdAt": "2026-01-28T12:29:31.629Z",
+    "updatedAt": "2026-01-28T12:29:31.629Z"
+  },
+  {
+    "id": "cml7yimeb000wpuy5o7yiiwnd",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "name": "Pipeline Principal",
+    "description": null,
+    "color": null,
+    "isDefault": true,
+    "displayOrder": 0,
+    "createdAt": "2026-02-04T11:41:18.180Z",
+    "updatedAt": "2026-02-04T11:41:18.180Z"
+  },
+  {
+    "id": "cmlg3szsj0001puty2g9vjm1s",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "name": "Sales Pipeline",
+    "description": "Main sales pipeline for orthodontic treatments",
+    "color": null,
+    "isDefault": true,
+    "displayOrder": 0,
+    "createdAt": "2026-02-10T04:31:29.586Z",
+    "updatedAt": "2026-02-10T04:31:29.586Z"
+  }
+]

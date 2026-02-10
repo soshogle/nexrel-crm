@@ -65,6 +65,9 @@ export async function GET(request: NextRequest) {
       description: w.description || '',
       workflowType: w.type,
       industry: w.industry,
+      executionMode: (w as any).executionMode || 'WORKFLOW',
+      audience: (w as any).audience || null,
+      campaignSettings: (w as any).campaignSettings || null,
       tasks: w.tasks.map(t => ({
         id: t.id,
         name: t.name,
@@ -135,7 +138,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, type, description, fromTemplate, tasks } = body;
+    const { name, type, description, fromTemplate, tasks, executionMode, audience, campaignSettings } = body;
 
     // If creating from a template
     if (fromTemplate) {
@@ -157,6 +160,9 @@ export async function POST(request: NextRequest) {
           description: description || template.description,
           isDefault: false,
           isActive: true,
+          executionMode: executionMode || 'WORKFLOW',
+          audience: audience || null,
+          campaignSettings: campaignSettings || null,
           tasks: {
             create: template.tasks.map((task, index) => ({
               name: task.name,
@@ -189,6 +195,9 @@ export async function POST(request: NextRequest) {
           description: workflow.description,
           workflowType: workflow.type,
           industry: workflow.industry,
+          executionMode: (workflow as any).executionMode || 'WORKFLOW',
+          audience: (workflow as any).audience || null,
+          campaignSettings: (workflow as any).campaignSettings || null,
           tasks: workflow.tasks.map(t => ({
             id: t.id,
             name: t.name,
@@ -228,6 +237,9 @@ export async function POST(request: NextRequest) {
         description: description || '',
         isDefault: false,
         isActive: true,
+        executionMode: executionMode || 'WORKFLOW',
+        audience: audience || null,
+        campaignSettings: campaignSettings || null,
         tasks: tasks ? {
           create: tasks.map((task: any, index: number) => ({
             name: task.name as string,

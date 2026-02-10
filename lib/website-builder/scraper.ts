@@ -15,8 +15,17 @@ import type {
 export class WebsiteScraper {
   /**
    * Scrape a website and extract all relevant data
+   * @param url - Source website URL
+   * @param userId - User ID for multi-tenant storage
+   * @param websiteId - Website ID for multi-tenant storage
+   * @param downloadImages - Whether to download and store images (default: false)
    */
-  async scrapeWebsite(url: string): Promise<ScrapedWebsiteData> {
+  async scrapeWebsite(
+    url: string,
+    userId?: string,
+    websiteId?: string,
+    downloadImages: boolean = false
+  ): Promise<ScrapedWebsiteData> {
     try {
       // Fetch HTML
       const html = await this.fetchHTML(url);
@@ -25,7 +34,57 @@ export class WebsiteScraper {
       const seo = await this.extractSEO(html, url);
       
       // Extract images
-      const images = await this.extractImages(html, url);
+      let images = await this.extractImages(html, url);
+      
+      // Download and store images if requested and credentials provided
+      if (downloadImages && userId && websiteId) {
+        try {
+          const { WebsiteImageStorage } = await import('./image-storage');
+          const storageProvider = (process.env.IMAGE_STORAGE_PROVIDER || 'vercel') as 'vercel' | 's3' | 'r2';
+          const imageStorage = new WebsiteImageStorage({
+            provider: storageProvider,
+            userId,
+            websiteId,
+          });
+
+          // Download and store images (with error handling per image)
+          const storedImages = await Promise.allSettled(
+            images.map(async (img) => {
+              try {
+                const stored = await imageStorage.downloadAndStore(
+                  img.url,
+                  img.alt,
+                  {
+                    createOptimized: true,
+                    createThumbnail: true,
+                    maxWidth: 1920, // Max width for optimized version
+                    maxHeight: 1080,
+                  }
+                );
+                return {
+                  ...stored,
+                  alt: img.alt,
+                };
+              } catch (error: any) {
+                console.warn(`Failed to store image ${img.url}:`, error.message);
+                // Return original image info if storage fails
+                return img;
+              }
+            })
+          );
+
+          // Update images array with stored URLs (or keep original if storage failed)
+          images = storedImages.map((result, index) => {
+            if (result.status === 'fulfilled' && 'url' in result.value) {
+              return result.value as any; // Stored image
+            }
+            return images[index]; // Original image (fallback)
+          });
+        } catch (error: any) {
+          console.error('Image storage initialization failed:', error.message);
+          // Continue with original image URLs if storage fails
+        }
+      }
       
       // Extract videos
       const videos = await this.extractVideos(html);

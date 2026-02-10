@@ -21,14 +21,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Trash2, Save, Shield, Clock, GitBranch } from 'lucide-react';
+import { X, Trash2, Save, Shield, Clock, GitBranch, BarChart3, ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface TaskEditorPanelProps {
   task: WorkflowTask | null;
   industry: Industry;
   workflowTasks: WorkflowTask[];
+  executionMode?: 'WORKFLOW' | 'CAMPAIGN';
   onClose: () => void;
   onSave: (task: WorkflowTask) => void;
   onDelete: (taskId: string) => void;
@@ -59,6 +61,7 @@ export function TaskEditorPanel({
   task,
   industry,
   workflowTasks,
+  executionMode = 'WORKFLOW',
   onClose,
   onSave,
   onDelete,
@@ -66,6 +69,7 @@ export function TaskEditorPanel({
   const [editedTask, setEditedTask] = useState<WorkflowTask | null>(task);
   const [showBranching, setShowBranching] = useState(false);
   const [selectedActions, setSelectedActions] = useState<string[]>([]);
+  const [showCampaignOptions, setShowCampaignOptions] = useState(false);
   
   const industryConfig = getIndustryConfig(industry);
   
@@ -250,6 +254,130 @@ export function TaskEditorPanel({
           </div>
         </Card>
         
+        {/* Campaign Options - Only show in Campaign Mode */}
+        {executionMode === 'CAMPAIGN' && (
+          <Collapsible open={showCampaignOptions} onOpenChange={setShowCampaignOptions}>
+            <Card className="p-4 border-purple-200 bg-blue-50/50">
+              <CollapsibleTrigger className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-blue-600" />
+                  <Label className="text-sm font-semibold">Campaign Tracking Options</Label>
+                </div>
+                {showCampaignOptions ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3 space-y-3">
+                {(editedTask.taskType === 'SEND_EMAIL' || editedTask.actionType === 'SEND_EMAIL') && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="track-opens"
+                        checked={(editedTask as any).trackOpens !== false}
+                        onChange={(e) => {
+                          setEditedTask({
+                            ...editedTask,
+                            ...(editedTask as any),
+                            trackOpens: e.target.checked,
+                          });
+                        }}
+                        className="rounded"
+                      />
+                      <Label htmlFor="track-opens" className="text-sm cursor-pointer">
+                        Track Email Opens
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="track-clicks"
+                        checked={(editedTask as any).trackClicks !== false}
+                        onChange={(e) => {
+                          setEditedTask({
+                            ...editedTask,
+                            ...(editedTask as any),
+                            trackClicks: e.target.checked,
+                          });
+                        }}
+                        className="rounded"
+                      />
+                      <Label htmlFor="track-clicks" className="text-sm cursor-pointer">
+                        Track Email Clicks
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="track-replies"
+                        checked={(editedTask as any).trackReplies !== false}
+                        onChange={(e) => {
+                          setEditedTask({
+                            ...editedTask,
+                            ...(editedTask as any),
+                            trackReplies: e.target.checked,
+                          });
+                        }}
+                        className="rounded"
+                      />
+                      <Label htmlFor="track-replies" className="text-sm cursor-pointer">
+                        Track Email Replies
+                      </Label>
+                    </div>
+                  </div>
+                )}
+                {(editedTask.taskType === 'SEND_SMS' || editedTask.actionType === 'SEND_SMS') && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="track-delivery"
+                        checked={(editedTask as any).trackDelivery !== false}
+                        onChange={(e) => {
+                          setEditedTask({
+                            ...editedTask,
+                            ...(editedTask as any),
+                            trackDelivery: e.target.checked,
+                          });
+                        }}
+                        className="rounded"
+                      />
+                      <Label htmlFor="track-delivery" className="text-sm cursor-pointer">
+                        Track SMS Delivery
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="track-sms-replies"
+                        checked={(editedTask as any).trackReplies !== false}
+                        onChange={(e) => {
+                          setEditedTask({
+                            ...editedTask,
+                            ...(editedTask as any),
+                            trackReplies: e.target.checked,
+                          });
+                        }}
+                        className="rounded"
+                      />
+                      <Label htmlFor="track-sms-replies" className="text-sm cursor-pointer">
+                        Track SMS Replies
+                      </Label>
+                    </div>
+                  </div>
+                )}
+                <div className="pt-2 border-t">
+                  <Label className="text-xs text-muted-foreground">
+                    Personalization: Use {'{name}'}, {'{company}'}, {'{businessName}'} in content
+                  </Label>
+                </div>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
+
         {/* HITL Gate */}
         <Card className="p-4 border-purple-200 bg-amber-50/50">
           <div className="flex items-center justify-between">

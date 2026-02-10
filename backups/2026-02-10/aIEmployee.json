@@ -1,0 +1,18 @@
+[
+  {
+    "id": "cmkyrx7670001l4040gol8fqo",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "name": "Sarah - Lead Researcher",
+    "type": "LEAD_RESEARCHER",
+    "description": "Researches companies and enriches lead data",
+    "isActive": true,
+    "capabilities": {
+      "webResearch": true,
+      "dataEnrichment": true,
+      "companyAnalysis": true,
+      "contactDiscovery": true
+    },
+    "createdAt": "2026-01-29T01:26:45.391Z",
+    "updatedAt": "2026-01-29T01:26:45.391Z"
+  }
+]

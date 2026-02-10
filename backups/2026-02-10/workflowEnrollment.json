@@ -1,0 +1,38 @@
+[
+  {
+    "id": "cml7yjyjv0023pugjpo2f96r8",
+    "workflowId": "cml7yjydx001vpugjge8cgu21",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "leadId": "cml7yjx6w0001pugjz2d67ovk",
+    "dealId": null,
+    "status": "ACTIVE",
+    "enrolledAt": "2026-02-04T11:42:20.586Z",
+    "completedAt": null,
+    "createdAt": "2026-02-04T11:42:20.588Z",
+    "updatedAt": "2026-02-04T11:42:20.588Z"
+  },
+  {
+    "id": "cml7yjyly0025pugj6y7r9v0m",
+    "workflowId": "cml7yjydx001vpugjge8cgu21",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "leadId": "cml7yjx930003pugjjp45dusp",
+    "dealId": null,
+    "status": "ACTIVE",
+    "enrolledAt": "2026-02-02T11:42:20.661Z",
+    "completedAt": null,
+    "createdAt": "2026-02-04T11:42:20.662Z",
+    "updatedAt": "2026-02-04T11:42:20.662Z"
+  },
+  {
+    "id": "cml7yjyn00027pugj5x5ad0fk",
+    "workflowId": "cml7yjydx001vpugjge8cgu21",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "leadId": "cml7yjxa50005pugjg1x1ts9w",
+    "dealId": null,
+    "status": "ACTIVE",
+    "enrolledAt": "2026-01-31T11:42:20.699Z",
+    "completedAt": null,
+    "createdAt": "2026-02-04T11:42:20.700Z",
+    "updatedAt": "2026-02-04T11:42:20.700Z"
+  }
+]

@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { changeApproval } from '@/lib/website-builder/approval';
+import { aiModificationService } from '@/lib/website-builder/ai-modification-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { websiteId, message } = body;
+    const { websiteId, message, imageUpload } = body; // imageUpload for image swapping
 
     if (!websiteId || !message) {
       return NextResponse.json(
@@ -37,9 +38,72 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
-    // TODO: Use AI to interpret the message and generate changes
-    // For now, create a placeholder change structure
-    const changes = await generateChangesFromMessage(message, website.structure as any);
+    // Handle image upload if provided (for image swapping)
+    let imagePathToReplace: string | null = null;
+    let newImageUrl: string | null = null;
+    
+    if (imageUpload) {
+      // First, get the image path from the message context
+      // We'll need to call AI to identify which image to replace
+      const tempResult = await aiModificationService.generateChanges({
+        message,
+        websiteStructure: website.structure as any,
+        userId: session.user.id,
+        websiteId,
+        extractedData: website.extractedData as any,
+      });
+
+      if (tempResult.requiresImageUpload) {
+        imagePathToReplace = tempResult.requiresImageUpload.currentImagePath;
+        
+        // Upload the new image
+        const imageBuffer = Buffer.from(imageUpload.data, 'base64');
+        const swappedImage = await aiModificationService.swapImage(
+          imagePathToReplace,
+          imageBuffer,
+          imageUpload.contentType || 'image/jpeg',
+          session.user.id,
+          websiteId
+        );
+        
+        newImageUrl = swappedImage.url;
+      }
+    }
+
+    // Use AI to interpret the message and generate changes
+    // If we have a new image URL, include it in the context
+    const modificationMessage = newImageUrl && imagePathToReplace
+      ? `${message} (use image URL: ${newImageUrl} for path: ${imagePathToReplace})`
+      : message;
+
+    const modificationResult = await aiModificationService.generateChanges({
+      message: modificationMessage,
+      websiteStructure: website.structure as any,
+      userId: session.user.id,
+      websiteId,
+      extractedData: website.extractedData as any,
+    });
+
+    // If we uploaded an image, ensure the change is included
+    let changes = modificationResult.changes;
+    if (newImageUrl && imagePathToReplace) {
+      // Check if change already exists, otherwise add it
+      const existingChange = changes.find(
+        (ch: any) => ch.path === imagePathToReplace && ch.type === 'update'
+      );
+      
+      if (!existingChange) {
+        changes.push({
+          type: 'update',
+          path: imagePathToReplace,
+          data: newImageUrl,
+          description: 'Replace image with uploaded image',
+        });
+      } else {
+        // Update existing change with new URL
+        existingChange.data = newImageUrl;
+      }
+    }
 
     // Generate preview
     const preview = changeApproval.generatePreview(
@@ -76,6 +140,8 @@ export async function POST(request: NextRequest) {
       approvalId: approval.id,
       changes,
       preview,
+      requiresImageUpload: !imageUpload ? modificationResult.requiresImageUpload : undefined,
+      explanation: modificationResult.explanation,
     });
   } catch (error: any) {
     console.error('Error processing modification:', error);
@@ -86,93 +152,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Generate changes from user message using AI
- * TODO: Integrate with OpenAI/Claude to interpret natural language
- */
-async function generateChangesFromMessage(
-  message: string,
-  currentStructure: any
-): Promise<any[]> {
-  // This is a placeholder - should use AI to interpret the message
-  // For now, return a simple change structure
-  
-  const changes: any[] = [];
-  const lowerMessage = message.toLowerCase();
-
-  // Simple pattern matching (will be replaced with AI)
-  if (lowerMessage.includes('header') && lowerMessage.includes('color')) {
-    const colorMatch = message.match(/(?:color|colour)\s+(?:to\s+)?([a-z]+)/i);
-    const color = colorMatch ? colorMatch[1] : 'blue';
-    
-    changes.push({
-      type: 'update',
-      path: 'globalStyles.colors.primary',
-      data: `#${getColorHex(color)}`,
-    });
-  }
-
-  if (lowerMessage.includes('add') && lowerMessage.includes('form')) {
-    changes.push({
-      type: 'add',
-      path: 'pages[0].components',
-      data: {
-        id: `form-${Date.now()}`,
-        type: 'ContactForm',
-        props: {
-          fields: [
-            { name: 'name', type: 'text', label: 'Name', required: true },
-            { name: 'email', type: 'email', label: 'Email', required: true },
-            { name: 'message', type: 'textarea', label: 'Message', required: true },
-          ],
-        },
-      },
-    });
-  }
-
-  if (lowerMessage.includes('change') && lowerMessage.includes('title')) {
-    const titleMatch = message.match(/title\s+(?:to\s+)?["']?([^"']+)["']?/i);
-    const newTitle = titleMatch ? titleMatch[1] : 'New Title';
-    
-    changes.push({
-      type: 'update',
-      path: 'pages[0].seo.title',
-      data: newTitle,
-    });
-  }
-
-  // If no specific changes detected, return a generic update
-  if (changes.length === 0) {
-    changes.push({
-      type: 'update',
-      path: 'pages[0].components[0].props',
-      data: {
-        note: 'AI modification requested',
-        originalMessage: message,
-      },
-    });
-  }
-
-  return changes;
-}
-
-/**
- * Convert color name to hex (simple mapping)
- */
-function getColorHex(colorName: string): string {
-  const colors: Record<string, string> = {
-    blue: '3B82F6',
-    red: 'EF4444',
-    green: '10B981',
-    yellow: 'F59E0B',
-    purple: '8B5CF6',
-    pink: 'EC4899',
-    orange: 'F97316',
-    black: '000000',
-    white: 'FFFFFF',
-    gray: '6B7280',
-    grey: '6B7280',
-  };
-  
-  return colors[colorName.toLowerCase()] || '3B82F6';
-}
+// Legacy functions removed - now using AIModificationService

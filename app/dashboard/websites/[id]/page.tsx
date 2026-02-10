@@ -3,12 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Globe, Settings, Loader2, MessageSquare, Eye, Check, X } from 'lucide-react';
+import { ArrowLeft, Globe, Settings, Loader2, MessageSquare, Eye, Check, X, Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
@@ -38,6 +41,7 @@ interface PendingChange {
   preview: any;
   status: string;
   createdAt: string;
+  explanation?: string;
 }
 
 export default function WebsiteEditorPage() {
@@ -48,6 +52,13 @@ export default function WebsiteEditorPage() {
   const [loading, setLoading] = useState(true);
   const [chatMessage, setChatMessage] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [requiresImageUpload, setRequiresImageUpload] = useState<{
+    description: string;
+    currentImagePath: string;
+    currentImageUrl?: string;
+  } | null>(null);
+  const [imageUploadFile, setImageUploadFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
   const [activeTab, setActiveTab] = useState('editor');
 
@@ -93,15 +104,31 @@ export default function WebsiteEditorPage() {
     if (!chatMessage.trim() || chatLoading) return;
 
     setChatLoading(true);
+    setRequiresImageUpload(null);
+    setImageUploadFile(null);
+    
     try {
+      // Prepare request body
+      const requestBody: any = {
+        websiteId: params.id,
+        message: chatMessage,
+      };
+
+      // If image upload file exists, include it
+      if (imageUploadFile) {
+        const arrayBuffer = await imageUploadFile.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        requestBody.imageUpload = {
+          data: base64,
+          contentType: imageUploadFile.type,
+        };
+      }
+
       // Send chat message to AI for website modification
       const response = await fetch(`/api/website-builder/modify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          websiteId: params.id,
-          message: chatMessage,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -111,6 +138,14 @@ export default function WebsiteEditorPage() {
 
       const data = await response.json();
       
+      // Check if image upload is required
+      if (data.requiresImageUpload && !imageUploadFile) {
+        setRequiresImageUpload(data.requiresImageUpload);
+        toast.info('Please upload an image to replace the existing one');
+        setChatLoading(false);
+        return;
+      }
+
       // Show preview of changes
       setPendingChanges([...pendingChanges, {
         id: data.approvalId,
@@ -118,15 +153,59 @@ export default function WebsiteEditorPage() {
         preview: data.preview,
         status: 'PENDING',
         createdAt: new Date().toISOString(),
+        explanation: data.explanation,
       }]);
 
       setChatMessage('');
-      toast.success('Changes generated! Review and approve below.');
+      setImageUploadFile(null);
+      setRequiresImageUpload(null);
+      
+      if (data.explanation) {
+        toast.success(data.explanation);
+      } else {
+        toast.success('Changes generated! Review and approve below.');
+      }
       setActiveTab('approval');
     } catch (error: any) {
       toast.error(error.message || 'Failed to process modification');
     } finally {
       setChatLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!requiresImageUpload) return;
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('websiteId', params.id);
+      formData.append('imagePath', requiresImageUpload.currentImagePath);
+
+      const response = await fetch('/api/website-builder/upload-image-swap', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const data = await response.json();
+      
+      // Now resubmit the original chat message with the uploaded image
+      setImageUploadFile(file);
+      
+      // Automatically resubmit the chat message
+      const chatForm = document.querySelector('form[onsubmit]') as HTMLFormElement;
+      if (chatForm) {
+        chatForm.requestSubmit();
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload image');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -287,24 +366,92 @@ export default function WebsiteEditorPage() {
                   <Textarea
                     value={chatMessage}
                     onChange={(e) => setChatMessage(e.target.value)}
-                    placeholder="Example: Change the header color to blue, add a contact form, update the about section..."
+                    placeholder="Example: Change background to white, swap the image of the girl in red top, change button text to 'Get Started', update heading to 'Welcome'..."
                     rows={4}
-                    disabled={chatLoading}
+                    disabled={chatLoading || uploadingImage}
                   />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    💡 Try: "Change background to white", "Swap that image", "Change button text to 'Get Started'", "Update heading to 'Welcome'"
+                  </p>
                 </div>
-                <Button type="submit" disabled={chatLoading || !chatMessage.trim()}>
-                  {chatLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Generate Changes
-                    </>
+
+                {/* Image Upload Section (shown when AI requests image swap) */}
+                {requiresImageUpload && (
+                  <Alert>
+                    <ImageIcon className="h-4 w-4" />
+                    <AlertDescription className="space-y-3">
+                      <div>
+                        <p className="font-semibold">Image Replacement Required</p>
+                        <p className="text-sm text-muted-foreground">
+                          AI identified: <strong>{requiresImageUpload.description}</strong>
+                        </p>
+                        {requiresImageUpload.currentImageUrl && (
+                          <div className="mt-2">
+                            <p className="text-xs text-muted-foreground mb-1">Current image:</p>
+                            <img 
+                              src={requiresImageUpload.currentImageUrl} 
+                              alt="Current" 
+                              className="max-w-xs rounded border"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="image-upload">Upload Replacement Image</Label>
+                        <Input
+                          id="image-upload"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleImageUpload(file);
+                            }
+                          }}
+                          disabled={uploadingImage}
+                        />
+                        {uploadingImage && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Uploading image...
+                          </p>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex gap-2">
+                  <Button type="submit" disabled={chatLoading || uploadingImage || !chatMessage.trim()}>
+                    {chatLoading || uploadingImage ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {uploadingImage ? 'Uploading...' : 'Processing...'}
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Generate Changes
+                      </>
+                    )}
+                  </Button>
+                  {requiresImageUpload && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setRequiresImageUpload(null);
+                        setImageUploadFile(null);
+                        setChatMessage('');
+                      }}
+                    >
+                      Cancel
+                    </Button>
                   )}
-                </Button>
+                </div>
               </form>
 
               {website.voiceAIEnabled && website.elevenLabsAgentId && (
@@ -354,6 +501,13 @@ export default function WebsiteEditorPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {change.explanation && (
+                      <Alert>
+                        <AlertDescription>
+                          <strong>AI Explanation:</strong> {change.explanation}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <h4 className="font-semibold mb-2">Current</h4>
@@ -372,6 +526,18 @@ export default function WebsiteEditorPage() {
                         </div>
                       </div>
                     </div>
+                    {change.changes && change.changes.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold mb-2">Changes Summary</h4>
+                        <ul className="list-disc list-inside space-y-1 text-sm">
+                          {change.changes.map((ch: any, idx: number) => (
+                            <li key={idx}>
+                              <strong>{ch.type}:</strong> {ch.description || ch.path}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
                       <Button
                         onClick={() => handleApprove(change.id)}

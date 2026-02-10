@@ -1,0 +1,47 @@
+[
+  {
+    "id": "cml7yjyxi002lpugjsx5fszn3",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "referrerId": "cml7yjx6w0001pugjz2d67ovk",
+    "referredName": "Patient Référence 1",
+    "referredEmail": "reference1@email.com",
+    "referredPhone": "+15141234590",
+    "status": "CONVERTED",
+    "notes": "Référencé par Marie Dubois",
+    "rewardGiven": false,
+    "rewardDetails": null,
+    "convertedLeadId": null,
+    "createdAt": "2026-02-04T11:42:21.078Z",
+    "updatedAt": "2026-02-04T11:42:21.078Z"
+  },
+  {
+    "id": "cml7yjyzj002npugj7gfo27rc",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "referrerId": "cml7yjx930003pugjjp45dusp",
+    "referredName": "Patient Référence 2",
+    "referredEmail": "reference2@email.com",
+    "referredPhone": "+15141234591",
+    "status": "CONTACTED",
+    "notes": "Référencé par Jean Tremblay",
+    "rewardGiven": false,
+    "rewardDetails": null,
+    "convertedLeadId": null,
+    "createdAt": "2026-02-04T11:42:21.151Z",
+    "updatedAt": "2026-02-04T11:42:21.151Z"
+  },
+  {
+    "id": "cml7yjz0f002ppugjro7yby8l",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "referrerId": "cml7yjxa50005pugjg1x1ts9w",
+    "referredName": "Patient Référence 3",
+    "referredEmail": "reference3@email.com",
+    "referredPhone": "+15141234592",
+    "status": "PENDING",
+    "notes": "Référencé par Sophie Gagnon",
+    "rewardGiven": false,
+    "rewardDetails": null,
+    "convertedLeadId": null,
+    "createdAt": "2026-02-04T11:42:21.183Z",
+    "updatedAt": "2026-02-04T11:42:21.183Z"
+  }
+]

@@ -1,0 +1,2450 @@
+[
+  {
+    "id": "cmlg3t1lj003bputyfz2ake3b",
+    "dealId": "cmlg3t1jd0039putyqnaiux8x",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2026-01-05T13:02:28.599Z"
+  },
+  {
+    "id": "cmlg3t1nm003dputy6p8hm9qr",
+    "dealId": "cmlg3t1jd0039putyqnaiux8x",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-12-26T08:25:35.330Z"
+  },
+  {
+    "id": "cmlg3t1ol003fputys9qiql1p",
+    "dealId": "cmlg3t1jd0039putyqnaiux8x",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-02T02:43:07.274Z"
+  },
+  {
+    "id": "cmlg3t1pg003hputy43i3iejn",
+    "dealId": "cmlg3t1jd0039putyqnaiux8x",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-02-04T22:21:03.239Z"
+  },
+  {
+    "id": "cmlg3t1qj003jputyk5v87kzv",
+    "dealId": "cmlg3t1jd0039putyqnaiux8x",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-01-03T21:34:53.027Z"
+  },
+  {
+    "id": "cmlg3t1rj003lputy7wpuhyb6",
+    "dealId": "cmlg3t1jd0039putyqnaiux8x",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-12-26T14:58:20.904Z"
+  },
+  {
+    "id": "cmlg3t1tm003pputyuzfqs2o6",
+    "dealId": "cmlg3t1sl003nputyd2k2pfth",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-02-09T08:57:29.415Z"
+  },
+  {
+    "id": "cmlg3t1uk003rputy7jhxw338",
+    "dealId": "cmlg3t1sl003nputyd2k2pfth",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-02-09T18:39:52.018Z"
+  },
+  {
+    "id": "cmlg3t1vg003tputyio13ycpf",
+    "dealId": "cmlg3t1sl003nputyd2k2pfth",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2026-02-07T02:11:29.663Z"
+  },
+  {
+    "id": "cmlg3t1ws003vputyb2hzn0u7",
+    "dealId": "cmlg3t1sl003nputyd2k2pfth",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-02-09T06:39:58.747Z"
+  },
+  {
+    "id": "cmlg3t1yu003zputy9yhb8n93",
+    "dealId": "cmlg3t1xw003xputymmgjfiyu",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-12-15T05:30:54.402Z"
+  },
+  {
+    "id": "cmlg3t1zs0041putyckpcqt4d",
+    "dealId": "cmlg3t1xw003xputymmgjfiyu",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-24T21:20:58.617Z"
+  },
+  {
+    "id": "cmlg3t20u0043putyrfqslie7",
+    "dealId": "cmlg3t1xw003xputymmgjfiyu",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-12-26T10:40:37.553Z"
+  },
+  {
+    "id": "cmlg3t21u0045puty207ukyw9",
+    "dealId": "cmlg3t1xw003xputymmgjfiyu",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2026-01-05T02:12:44.995Z"
+  },
+  {
+    "id": "cmlg3t23s0049puty4e1fwls5",
+    "dealId": "cmlg3t22t0047puty5i128vpn",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2025-12-19T07:12:50.714Z"
+  },
+  {
+    "id": "cmlg3t24s004bputydhgbi73v",
+    "dealId": "cmlg3t22t0047puty5i128vpn",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-12-28T18:05:03.325Z"
+  },
+  {
+    "id": "cmlg3t25r004dputyvfnj4lwa",
+    "dealId": "cmlg3t22t0047puty5i128vpn",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-04T00:36:12.531Z"
+  },
+  {
+    "id": "cmlg3t26r004fputy5f19hd0q",
+    "dealId": "cmlg3t22t0047puty5i128vpn",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2026-02-08T02:47:01.738Z"
+  },
+  {
+    "id": "cmlg3t27y004hputyb3dgblok",
+    "dealId": "cmlg3t22t0047puty5i128vpn",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2025-12-20T14:56:41.103Z"
+  },
+  {
+    "id": "cmlg3t29z004lputy43a5wqmk",
+    "dealId": "cmlg3t28y004jputyop7lg0cm",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-12-24T14:57:47.261Z"
+  },
+  {
+    "id": "cmlg3t2b0004nputyrriuc66j",
+    "dealId": "cmlg3t28y004jputyop7lg0cm",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-11-27T18:10:38.688Z"
+  },
+  {
+    "id": "cmlg3t2by004pputyx9j7b4pm",
+    "dealId": "cmlg3t28y004jputyop7lg0cm",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-15T07:24:46.808Z"
+  },
+  {
+    "id": "cmlg3t2dv004tputy5z7j9e9p",
+    "dealId": "cmlg3t2cw004rputywfhvnx2r",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-02-05T04:30:05.402Z"
+  },
+  {
+    "id": "cmlg3t2ev004vputy1knbopwn",
+    "dealId": "cmlg3t2cw004rputywfhvnx2r",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-02-05T22:59:49.937Z"
+  },
+  {
+    "id": "cmlg3t2fr004xputy55xbmyr1",
+    "dealId": "cmlg3t2cw004rputywfhvnx2r",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2026-02-09T06:09:06.984Z"
+  },
+  {
+    "id": "cmlg3t2go004zputyx3taqayi",
+    "dealId": "cmlg3t2cw004rputywfhvnx2r",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-02-07T23:32:49.146Z"
+  },
+  {
+    "id": "cmlg3t2io0053putyaswfogg6",
+    "dealId": "cmlg3t2hn0051putyd5fo0wiz",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2026-02-09T03:24:37.320Z"
+  },
+  {
+    "id": "cmlg3t2jl0055puty61y0m8kt",
+    "dealId": "cmlg3t2hn0051putyd5fo0wiz",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-02-07T03:12:42.799Z"
+  },
+  {
+    "id": "cmlg3t2kr0057putybedxa719",
+    "dealId": "cmlg3t2hn0051putyd5fo0wiz",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-02-07T20:36:54.886Z"
+  },
+  {
+    "id": "cmlg3t2mv005bputyastcayhv",
+    "dealId": "cmlg3t2ls0059putyz5unvzfl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-10-24T03:44:01.828Z"
+  },
+  {
+    "id": "cmlg3t2nv005dputy6o5dcgd7",
+    "dealId": "cmlg3t2ls0059putyz5unvzfl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-10-30T20:41:53.616Z"
+  },
+  {
+    "id": "cmlg3t2ot005fputy998vdgrh",
+    "dealId": "cmlg3t2ls0059putyz5unvzfl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-01-08T20:23:23.927Z"
+  },
+  {
+    "id": "cmlg3t2rf005jputypwgqhet1",
+    "dealId": "cmlg3t2q7005hputy9gniap1z",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-12-01T19:04:25.254Z"
+  },
+  {
+    "id": "cmlg3t2sm005lputydas5656d",
+    "dealId": "cmlg3t2q7005hputy9gniap1z",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-10-05T10:02:31.595Z"
+  },
+  {
+    "id": "cmlg3t2ts005nputyuh94bq34",
+    "dealId": "cmlg3t2q7005hputy9gniap1z",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2025-12-17T22:43:38.871Z"
+  },
+  {
+    "id": "cmlg3t2uq005pputy8y0bgw7s",
+    "dealId": "cmlg3t2q7005hputy9gniap1z",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-09-30T22:16:44.416Z"
+  },
+  {
+    "id": "cmlg3t2vs005rputyw46zfqv5",
+    "dealId": "cmlg3t2q7005hputy9gniap1z",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-10-28T15:12:55.987Z"
+  },
+  {
+    "id": "cmlg3t2xq005vputyvmqkqdi4",
+    "dealId": "cmlg3t2wq005tputyrdks5znc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2026-02-03T11:50:34.464Z"
+  },
+  {
+    "id": "cmlg3t2yp005xputyhgt9axeb",
+    "dealId": "cmlg3t2wq005tputyrdks5znc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2026-02-08T13:59:23.928Z"
+  },
+  {
+    "id": "cmlg3t2zp005zputyjkawjz4i",
+    "dealId": "cmlg3t2wq005tputyrdks5znc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-02-09T23:49:49.558Z"
+  },
+  {
+    "id": "cmlg3t30q0061putyakfbd9au",
+    "dealId": "cmlg3t2wq005tputyrdks5znc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-01-18T05:22:47.948Z"
+  },
+  {
+    "id": "cmlg3t31p0063putyuth2852h",
+    "dealId": "cmlg3t2wq005tputyrdks5znc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-16T05:35:04.685Z"
+  },
+  {
+    "id": "cmlg3t32o0065putycne4ar0c",
+    "dealId": "cmlg3t2wq005tputyrdks5znc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-01-28T12:52:06.996Z"
+  },
+  {
+    "id": "cmlg3t34n0069puty08512yz7",
+    "dealId": "cmlg3t33l0067putykkhqfpw9",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-10-19T02:55:24.110Z"
+  },
+  {
+    "id": "cmlg3t35l006bputyt7dqfgxf",
+    "dealId": "cmlg3t33l0067putykkhqfpw9",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-09-23T15:35:03.472Z"
+  },
+  {
+    "id": "cmlg3t36l006dputyf87oou86",
+    "dealId": "cmlg3t33l0067putykkhqfpw9",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2026-02-04T15:04:10.144Z"
+  },
+  {
+    "id": "cmlg3t38l006hputyiu7g188x",
+    "dealId": "cmlg3t37j006fputyz9bnile2",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-11-04T00:15:48.319Z"
+  },
+  {
+    "id": "cmlg3t39n006jputyhx11ob3f",
+    "dealId": "cmlg3t37j006fputyz9bnile2",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-12-21T05:40:23.022Z"
+  },
+  {
+    "id": "cmlg3t3bt006nputy8s6vywi1",
+    "dealId": "cmlg3t3an006lputy7nmgtcyy",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-01-31T12:02:19.850Z"
+  },
+  {
+    "id": "cmlg3t3cr006pputy4cuqxzwk",
+    "dealId": "cmlg3t3an006lputy7nmgtcyy",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-01-27T23:55:28.596Z"
+  },
+  {
+    "id": "cmlg3t3do006rputy8vvofqti",
+    "dealId": "cmlg3t3an006lputy7nmgtcyy",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-02-07T17:28:19.312Z"
+  },
+  {
+    "id": "cmlg3t3ep006tputylaemsxi0",
+    "dealId": "cmlg3t3an006lputy7nmgtcyy",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2026-01-31T23:04:30.665Z"
+  },
+  {
+    "id": "cmlg3t3fo006vputy4fx68oqv",
+    "dealId": "cmlg3t3an006lputy7nmgtcyy",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-02-02T16:22:07.868Z"
+  },
+  {
+    "id": "cmlg3t3hm006zputy5tdihfkj",
+    "dealId": "cmlg3t3gn006xputyfoumkrs2",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2026-01-01T17:34:37.088Z"
+  },
+  {
+    "id": "cmlg3t3ij0071puty3mxfyayn",
+    "dealId": "cmlg3t3gn006xputyfoumkrs2",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-10-22T19:58:27.687Z"
+  },
+  {
+    "id": "cmlg3t3ki0075puty5973nuwc",
+    "dealId": "cmlg3t3ji0073puty3oryse5b",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2025-11-06T02:55:25.075Z"
+  },
+  {
+    "id": "cmlg3t3lg0077puty09eu0ln9",
+    "dealId": "cmlg3t3ji0073puty3oryse5b",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2025-11-28T04:33:32.090Z"
+  },
+  {
+    "id": "cmlg3t3md0079putybkagwkz9",
+    "dealId": "cmlg3t3ji0073puty3oryse5b",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-11-16T21:59:40.036Z"
+  },
+  {
+    "id": "cmlg3t3ob007dputy8v9224er",
+    "dealId": "cmlg3t3na007bputy9v8jiiul",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-10-18T18:14:31.665Z"
+  },
+  {
+    "id": "cmlg3t3pc007fputylawl8gwb",
+    "dealId": "cmlg3t3na007bputy9v8jiiul",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-10-06T21:22:16.186Z"
+  },
+  {
+    "id": "cmlg3t3qc007hputyewowd1uk",
+    "dealId": "cmlg3t3na007bputy9v8jiiul",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2025-11-19T00:28:07.569Z"
+  },
+  {
+    "id": "cmlg3t3r9007jputye991imh3",
+    "dealId": "cmlg3t3na007bputy9v8jiiul",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2025-11-15T21:24:54.378Z"
+  },
+  {
+    "id": "cmlg3t3sp007lputyslt0t24b",
+    "dealId": "cmlg3t3na007bputy9v8jiiul",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-18T18:45:51.194Z"
+  },
+  {
+    "id": "cmlg3t3to007nputyi0st0jsf",
+    "dealId": "cmlg3t3na007bputy9v8jiiul",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2025-09-18T16:50:02.476Z"
+  },
+  {
+    "id": "cmlg3t3vm007rputyujho9065",
+    "dealId": "cmlg3t3um007pputymcfzj080",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-12-13T16:40:29.258Z"
+  },
+  {
+    "id": "cmlg3t3wj007tputyyfxrtaqz",
+    "dealId": "cmlg3t3um007pputymcfzj080",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-12-25T12:57:04.023Z"
+  },
+  {
+    "id": "cmlg3t3xg007vputyy8640jui",
+    "dealId": "cmlg3t3um007pputymcfzj080",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2025-12-26T23:33:12.257Z"
+  },
+  {
+    "id": "cmlg3t3ye007xputykdw9xavv",
+    "dealId": "cmlg3t3um007pputymcfzj080",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-02-06T12:16:24.114Z"
+  },
+  {
+    "id": "cmlg3t3zd007zputynx6a1vhn",
+    "dealId": "cmlg3t3um007pputymcfzj080",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-11-27T02:59:58.168Z"
+  },
+  {
+    "id": "cmlg3t40b0081puty0f06afkt",
+    "dealId": "cmlg3t3um007pputymcfzj080",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-01-23T02:07:37.872Z"
+  },
+  {
+    "id": "cmlg3t42b0085puty8rf5cpkx",
+    "dealId": "cmlg3t41b0083puty4fwoz2vh",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2026-02-05T18:07:43.440Z"
+  },
+  {
+    "id": "cmlg3t43b0087putyjrro6jym",
+    "dealId": "cmlg3t41b0083puty4fwoz2vh",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2025-12-26T15:29:43.316Z"
+  },
+  {
+    "id": "cmlg3t44c0089putyt8uqt11p",
+    "dealId": "cmlg3t41b0083puty4fwoz2vh",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-01-13T12:33:55.737Z"
+  },
+  {
+    "id": "cmlg3t45a008bputy8dqvzyod",
+    "dealId": "cmlg3t41b0083puty4fwoz2vh",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-12-23T23:00:56.348Z"
+  },
+  {
+    "id": "cmlg3t46a008dputyqxkjx7bt",
+    "dealId": "cmlg3t41b0083puty4fwoz2vh",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2025-12-25T06:43:53.228Z"
+  },
+  {
+    "id": "cmlg3t488008hputylmth5tuo",
+    "dealId": "cmlg3t478008fputyrnhoco55",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-01-16T12:05:43.684Z"
+  },
+  {
+    "id": "cmlg3t49a008jputy4rvh7f4v",
+    "dealId": "cmlg3t478008fputyrnhoco55",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2026-01-18T16:15:56.573Z"
+  },
+  {
+    "id": "cmlg3t4a8008lputy5xgh9h0m",
+    "dealId": "cmlg3t478008fputyrnhoco55",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-01-02T14:23:01.718Z"
+  },
+  {
+    "id": "cmlg3t4b5008nputywsz56u3w",
+    "dealId": "cmlg3t478008fputyrnhoco55",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2026-01-06T18:14:05.112Z"
+  },
+  {
+    "id": "cmlg3t4c9008pputyasat52a5",
+    "dealId": "cmlg3t478008fputyrnhoco55",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-02-01T00:30:43.349Z"
+  },
+  {
+    "id": "cmlg3t4dd008rputy569tn3gk",
+    "dealId": "cmlg3t478008fputyrnhoco55",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-01-30T09:41:20.820Z"
+  },
+  {
+    "id": "cmlg3t4fa008vputyssngmhc2",
+    "dealId": "cmlg3t4ec008tputyb71pf82v",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2026-02-03T05:10:59.885Z"
+  },
+  {
+    "id": "cmlg3t4g8008xputyjhfids6j",
+    "dealId": "cmlg3t4ec008tputyb71pf82v",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-01-24T07:36:48.628Z"
+  },
+  {
+    "id": "cmlg3t4h6008zputy62jfebd2",
+    "dealId": "cmlg3t4ec008tputyb71pf82v",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2025-12-18T04:00:57.610Z"
+  },
+  {
+    "id": "cmlg3t4i80091putylusnbwo9",
+    "dealId": "cmlg3t4ec008tputyb71pf82v",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-10T15:30:41.345Z"
+  },
+  {
+    "id": "cmlg3t4mc0095putyvkfx28rw",
+    "dealId": "cmlg3t4la0093puty7arznvyl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-01-05T21:42:52.363Z"
+  },
+  {
+    "id": "cmlg3t4na0097putys6tshvvr",
+    "dealId": "cmlg3t4la0093puty7arznvyl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2025-12-14T20:58:36.446Z"
+  },
+  {
+    "id": "cmlg3t4oe0099putyazbcbxaa",
+    "dealId": "cmlg3t4la0093puty7arznvyl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-01-19T00:42:35.746Z"
+  },
+  {
+    "id": "cmlg3t4pd009bputyep9fbsyf",
+    "dealId": "cmlg3t4la0093puty7arznvyl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-01-15T23:26:07.414Z"
+  },
+  {
+    "id": "cmlg3t4re009fputyhzm04ner",
+    "dealId": "cmlg3t4qd009dputyi3vbnp3e",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-12-18T03:08:05.796Z"
+  },
+  {
+    "id": "cmlg3t4si009hputy4qz2mpb8",
+    "dealId": "cmlg3t4qd009dputyi3vbnp3e",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-12-27T14:18:22.067Z"
+  },
+  {
+    "id": "cmlg3t4tk009jputymx7p1wcv",
+    "dealId": "cmlg3t4qd009dputyi3vbnp3e",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-12-27T21:21:04.725Z"
+  },
+  {
+    "id": "cmlg3t4ut009lputypr0q9s6p",
+    "dealId": "cmlg3t4qd009dputyi3vbnp3e",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-12-16T03:16:40.237Z"
+  },
+  {
+    "id": "cmlg3t4wp009pputygrfs5324",
+    "dealId": "cmlg3t4vq009nputyckg3d132",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-11-29T03:26:18.166Z"
+  },
+  {
+    "id": "cmlg3t4xl009rputyw22kn3pt",
+    "dealId": "cmlg3t4vq009nputyckg3d132",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-12-25T19:58:17.036Z"
+  },
+  {
+    "id": "cmlg3t4z2009tputymtijmr3e",
+    "dealId": "cmlg3t4vq009nputyckg3d132",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-12-23T06:15:15.859Z"
+  },
+  {
+    "id": "cmlg3t503009vputy704iyczz",
+    "dealId": "cmlg3t4vq009nputyckg3d132",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-11-16T12:35:58.076Z"
+  },
+  {
+    "id": "cmlg3t522009zputy136kuwn7",
+    "dealId": "cmlg3t514009xputy95czjluy",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-12-30T22:50:21.320Z"
+  },
+  {
+    "id": "cmlg3t53100a1putyny7d3so3",
+    "dealId": "cmlg3t514009xputy95czjluy",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2025-12-26T20:29:10.587Z"
+  },
+  {
+    "id": "cmlg3t54500a3putycr41jal9",
+    "dealId": "cmlg3t514009xputy95czjluy",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2026-01-08T22:50:57.085Z"
+  },
+  {
+    "id": "cmlg3t55c00a5puty45gkdga4",
+    "dealId": "cmlg3t514009xputy95czjluy",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-12-12T03:43:23.915Z"
+  },
+  {
+    "id": "cmlg3t57b00a9putyv1vanxji",
+    "dealId": "cmlg3t56d00a7putyxfdaokhx",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-12-07T14:43:53.000Z"
+  },
+  {
+    "id": "cmlg3t58a00abputyut6e11wh",
+    "dealId": "cmlg3t56d00a7putyxfdaokhx",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-11-08T19:44:18.800Z"
+  },
+  {
+    "id": "cmlg3t59600adputy3gotntde",
+    "dealId": "cmlg3t56d00a7putyxfdaokhx",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-10-12T13:32:13.598Z"
+  },
+  {
+    "id": "cmlg3t5a600afputy36q6n5xq",
+    "dealId": "cmlg3t56d00a7putyxfdaokhx",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-01-03T00:46:48.833Z"
+  },
+  {
+    "id": "cmlg3t5bb00ahputyki1mwfwf",
+    "dealId": "cmlg3t56d00a7putyxfdaokhx",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2025-11-15T15:22:00.275Z"
+  },
+  {
+    "id": "cmlg3t5cb00ajputy92ej6tm6",
+    "dealId": "cmlg3t56d00a7putyxfdaokhx",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-02-04T15:28:31.296Z"
+  },
+  {
+    "id": "cmlg3t5e900anputyfxs7hgld",
+    "dealId": "cmlg3t5da00alputy6y60qbav",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-12-01T20:18:59.858Z"
+  },
+  {
+    "id": "cmlg3t5f700apputyabeoy6o7",
+    "dealId": "cmlg3t5da00alputy6y60qbav",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-12-08T17:07:44.839Z"
+  },
+  {
+    "id": "cmlg3t5g400arputynwegxce5",
+    "dealId": "cmlg3t5da00alputy6y60qbav",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-01-02T09:21:24.493Z"
+  },
+  {
+    "id": "cmlg3t5h200atputynmn5hh58",
+    "dealId": "cmlg3t5da00alputy6y60qbav",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-11T03:46:07.606Z"
+  },
+  {
+    "id": "cmlg3t5i100avputyazrn07q8",
+    "dealId": "cmlg3t5da00alputy6y60qbav",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-01-11T00:55:27.905Z"
+  },
+  {
+    "id": "cmlg3t5l100azputy8fvkjdyd",
+    "dealId": "cmlg3t5j300axputyu9tmw5tm",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2025-12-29T16:25:26.551Z"
+  },
+  {
+    "id": "cmlg3t5m100b1putyxpyrd5hq",
+    "dealId": "cmlg3t5j300axputyu9tmw5tm",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-01-20T00:12:48.288Z"
+  },
+  {
+    "id": "cmlg3t5mz00b3putyu61atjtg",
+    "dealId": "cmlg3t5j300axputyu9tmw5tm",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-01-07T17:13:24.433Z"
+  },
+  {
+    "id": "cmlg3t5p000b7putykg93a5r0",
+    "dealId": "cmlg3t5o000b5putyozt5o1ad",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2025-10-07T14:35:48.618Z"
+  },
+  {
+    "id": "cmlg3t5py00b9puty3a82q5bt",
+    "dealId": "cmlg3t5o000b5putyozt5o1ad",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-10-30T09:05:27.612Z"
+  },
+  {
+    "id": "cmlg3t5qy00bbputyrm0n9adq",
+    "dealId": "cmlg3t5o000b5putyozt5o1ad",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-01-28T06:35:08.692Z"
+  },
+  {
+    "id": "cmlg3t5sw00bfputyln1e3lha",
+    "dealId": "cmlg3t5rx00bdputytvdx6ds6",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-01-03T12:20:36.978Z"
+  },
+  {
+    "id": "cmlg3t5tz00bhputyhan7xu06",
+    "dealId": "cmlg3t5rx00bdputytvdx6ds6",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2026-01-14T18:50:21.790Z"
+  },
+  {
+    "id": "cmlg3t5v400bjputyea21wxsm",
+    "dealId": "cmlg3t5rx00bdputytvdx6ds6",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-01-11T02:04:02.774Z"
+  },
+  {
+    "id": "cmlg3t5w200blputy88brjxqf",
+    "dealId": "cmlg3t5rx00bdputytvdx6ds6",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2025-12-31T00:20:41.602Z"
+  },
+  {
+    "id": "cmlg3t5x200bnputyod8f50zf",
+    "dealId": "cmlg3t5rx00bdputytvdx6ds6",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2025-12-31T13:48:39.325Z"
+  },
+  {
+    "id": "cmlg3t5xy00bpputyyrlmcygi",
+    "dealId": "cmlg3t5rx00bdputytvdx6ds6",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-01-31T06:31:48.112Z"
+  },
+  {
+    "id": "cmlg3t5zt00btputywcks0ztu",
+    "dealId": "cmlg3t5yw00brputym95diwyc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-11-08T21:32:33.314Z"
+  },
+  {
+    "id": "cmlg3t60t00bvputyf2i600pe",
+    "dealId": "cmlg3t5yw00brputym95diwyc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2025-12-02T02:28:01.484Z"
+  },
+  {
+    "id": "cmlg3t61q00bxputysbwzy2qj",
+    "dealId": "cmlg3t5yw00brputym95diwyc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2025-11-09T21:01:14.694Z"
+  },
+  {
+    "id": "cmlg3t62p00bzputylr4cuga7",
+    "dealId": "cmlg3t5yw00brputym95diwyc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2025-12-27T22:02:11.247Z"
+  },
+  {
+    "id": "cmlg3t63n00c1putyt3wa4byj",
+    "dealId": "cmlg3t5yw00brputym95diwyc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-11-15T11:23:21.738Z"
+  },
+  {
+    "id": "cmlg3t65l00c5putyun87fy4s",
+    "dealId": "cmlg3t64n00c3putyicubntgc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-28T02:49:54.455Z"
+  },
+  {
+    "id": "cmlg3t66j00c7putyop3xo79b",
+    "dealId": "cmlg3t64n00c3putyicubntgc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-01-27T23:34:56.346Z"
+  },
+  {
+    "id": "cmlg3t67g00c9putya5i5zzn3",
+    "dealId": "cmlg3t64n00c3putyicubntgc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-10-14T11:36:03.810Z"
+  },
+  {
+    "id": "cmlg3t68f00cbputy029707k6",
+    "dealId": "cmlg3t64n00c3putyicubntgc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-10-19T03:14:57.831Z"
+  },
+  {
+    "id": "cmlg3t69e00cdputyussbop2a",
+    "dealId": "cmlg3t64n00c3putyicubntgc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-11-29T04:14:00.099Z"
+  },
+  {
+    "id": "cmlg3t6bh00chputyb64s771t",
+    "dealId": "cmlg3t6ah00cfputyfixdziwl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-11-28T00:02:42.803Z"
+  },
+  {
+    "id": "cmlg3t6cg00cjputyqpkrdua7",
+    "dealId": "cmlg3t6ah00cfputyfixdziwl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-12-13T00:19:29.803Z"
+  },
+  {
+    "id": "cmlg3t6do00clputy712zkvl1",
+    "dealId": "cmlg3t6ah00cfputyfixdziwl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-10-26T17:57:02.888Z"
+  },
+  {
+    "id": "cmlg3t6em00cnputyrboar62r",
+    "dealId": "cmlg3t6ah00cfputyfixdziwl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-10-11T06:37:09.684Z"
+  },
+  {
+    "id": "cmlg3t6fq00cpputy8cx57563",
+    "dealId": "cmlg3t6ah00cfputyfixdziwl",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-10-15T02:22:32.870Z"
+  },
+  {
+    "id": "cmlg3t6ho00ctputynhib27xr",
+    "dealId": "cmlg3t6go00crputy3bvtk0b7",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-25T11:58:52.573Z"
+  },
+  {
+    "id": "cmlg3t6im00cvputywc30tkxd",
+    "dealId": "cmlg3t6go00crputy3bvtk0b7",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-12-07T09:15:22.538Z"
+  },
+  {
+    "id": "cmlg3t6la00czputyqc4fmnjq",
+    "dealId": "cmlg3t6kb00cxputyt5hjkyw0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-21T23:13:36.817Z"
+  },
+  {
+    "id": "cmlg3t6m800d1putyoc4bj36n",
+    "dealId": "cmlg3t6kb00cxputyt5hjkyw0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2025-11-19T20:45:20.452Z"
+  },
+  {
+    "id": "cmlg3t6na00d3putymiojmi87",
+    "dealId": "cmlg3t6kb00cxputyt5hjkyw0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-11-17T21:54:15.707Z"
+  },
+  {
+    "id": "cmlg3t6pa00d7putyhwuvhtal",
+    "dealId": "cmlg3t6ob00d5putyaijv2b8f",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-11-27T21:46:44.866Z"
+  },
+  {
+    "id": "cmlg3t6q700d9puty0tc39fzg",
+    "dealId": "cmlg3t6ob00d5putyaijv2b8f",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2025-12-15T11:44:20.662Z"
+  },
+  {
+    "id": "cmlg3t6s600ddputy5lspd9ix",
+    "dealId": "cmlg3t6r700dbputyr4tgrras",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-04T07:14:54.431Z"
+  },
+  {
+    "id": "cmlg3t6t500dfputyyxo93lhv",
+    "dealId": "cmlg3t6r700dbputyr4tgrras",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2026-01-10T04:58:57.425Z"
+  },
+  {
+    "id": "cmlg3t6ua00dhputykhbp7gec",
+    "dealId": "cmlg3t6r700dbputyr4tgrras",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2026-01-08T15:17:23.746Z"
+  },
+  {
+    "id": "cmlg3t6vh00djputy46q0bdg0",
+    "dealId": "cmlg3t6r700dbputyr4tgrras",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-02T10:54:18.976Z"
+  },
+  {
+    "id": "cmlg3t6xk00dnputyjflowaiv",
+    "dealId": "cmlg3t6wm00dlputyn98bq131",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-01-31T18:09:49.882Z"
+  },
+  {
+    "id": "cmlg3t6yk00dpputyvmqpmeh6",
+    "dealId": "cmlg3t6wm00dlputyn98bq131",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2026-02-06T01:29:38.011Z"
+  },
+  {
+    "id": "cmlg3t6zh00drputyy0jukant",
+    "dealId": "cmlg3t6wm00dlputyn98bq131",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2026-02-03T11:00:48.709Z"
+  },
+  {
+    "id": "cmlg3t70g00dtputyq9yv97li",
+    "dealId": "cmlg3t6wm00dlputyn98bq131",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-01-22T19:53:15.015Z"
+  },
+  {
+    "id": "cmlg3t72f00dxputymua1r0z0",
+    "dealId": "cmlg3t71h00dvputybmu0sq2z",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2025-11-17T20:44:49.076Z"
+  },
+  {
+    "id": "cmlg3t73i00dzputytb9m5hwq",
+    "dealId": "cmlg3t71h00dvputybmu0sq2z",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-02-02T00:42:55.186Z"
+  },
+  {
+    "id": "cmlg3t74i00e1putyyznigdxv",
+    "dealId": "cmlg3t71h00dvputybmu0sq2z",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-02-02T14:16:00.006Z"
+  },
+  {
+    "id": "cmlg3t75p00e3putyw313vjui",
+    "dealId": "cmlg3t71h00dvputybmu0sq2z",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-11-11T14:38:43.317Z"
+  },
+  {
+    "id": "cmlg3t77p00e7putygmjwhklb",
+    "dealId": "cmlg3t76q00e5puty0ov4kffc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-12-26T12:04:36.785Z"
+  },
+  {
+    "id": "cmlg3t78m00e9putyct0tutm3",
+    "dealId": "cmlg3t76q00e5puty0ov4kffc",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-01-26T18:51:15.400Z"
+  },
+  {
+    "id": "cmlg3t7ar00edputyjmzqjcxo",
+    "dealId": "cmlg3t79m00ebputyzvtg0fy0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2025-12-07T02:34:50.539Z"
+  },
+  {
+    "id": "cmlg3t7bp00efputy8jxx9071",
+    "dealId": "cmlg3t79m00ebputyzvtg0fy0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2025-12-12T17:13:12.871Z"
+  },
+  {
+    "id": "cmlg3t7cp00ehputyf6n4dfik",
+    "dealId": "cmlg3t79m00ebputyzvtg0fy0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-01-22T23:07:54.550Z"
+  },
+  {
+    "id": "cmlg3t7do00ejputyoxgqk78m",
+    "dealId": "cmlg3t79m00ebputyzvtg0fy0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2025-10-19T04:57:34.915Z"
+  },
+  {
+    "id": "cmlg3t7el00elputy0p8725hv",
+    "dealId": "cmlg3t79m00ebputyzvtg0fy0",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2026-01-22T16:30:30.332Z"
+  },
+  {
+    "id": "cmlg3t7gk00epputy5ss6a3kh",
+    "dealId": "cmlg3t7fk00enputyb9nm7xdf",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-01-04T15:53:55.008Z"
+  },
+  {
+    "id": "cmlg3t7hl00erputyocfeg62c",
+    "dealId": "cmlg3t7fk00enputyb9nm7xdf",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-01-13T07:35:34.768Z"
+  },
+  {
+    "id": "cmlg3t7im00etputypmv9nz6c",
+    "dealId": "cmlg3t7fk00enputyb9nm7xdf",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-11-17T00:59:45.714Z"
+  },
+  {
+    "id": "cmlg3t7jo00evputykox0o4qh",
+    "dealId": "cmlg3t7fk00enputyb9nm7xdf",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-01-07T02:53:04.168Z"
+  },
+  {
+    "id": "cmlg3t7lm00ezputyvdg0ewno",
+    "dealId": "cmlg3t7km00exputym2xjziy1",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-10-19T13:52:11.143Z"
+  },
+  {
+    "id": "cmlg3t7mm00f1putyy3bar17d",
+    "dealId": "cmlg3t7km00exputym2xjziy1",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-12-11T01:30:13.633Z"
+  },
+  {
+    "id": "cmlg3t7no00f3puty39fo159b",
+    "dealId": "cmlg3t7km00exputym2xjziy1",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-12-23T07:41:47.433Z"
+  },
+  {
+    "id": "cmlg3t7ou00f5putyn88fedbp",
+    "dealId": "cmlg3t7km00exputym2xjziy1",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-11-09T05:00:36.599Z"
+  },
+  {
+    "id": "cmlg3t7qu00f9puty79k2i6os",
+    "dealId": "cmlg3t7pt00f7putyyvjsb2th",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-02-03T20:07:03.498Z"
+  },
+  {
+    "id": "cmlg3t7rt00fbputylbfvwpuq",
+    "dealId": "cmlg3t7pt00f7putyyvjsb2th",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-01-15T17:18:08.756Z"
+  },
+  {
+    "id": "cmlg3t7sr00fdputyaflctenu",
+    "dealId": "cmlg3t7pt00f7putyyvjsb2th",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-11-14T07:48:04.317Z"
+  },
+  {
+    "id": "cmlg3t7tq00ffputy3vle0op0",
+    "dealId": "cmlg3t7pt00f7putyyvjsb2th",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2026-01-08T08:11:57.707Z"
+  },
+  {
+    "id": "cmlg3t7vs00fjputy1mjielzl",
+    "dealId": "cmlg3t7us00fhputye8c0vr39",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-01-26T19:26:50.158Z"
+  },
+  {
+    "id": "cmlg3t7wp00flputyymtjxwzw",
+    "dealId": "cmlg3t7us00fhputye8c0vr39",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2026-02-04T05:43:20.672Z"
+  },
+  {
+    "id": "cmlg3t7xq00fnputypkce59v6",
+    "dealId": "cmlg3t7us00fhputye8c0vr39",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-15T18:44:49.275Z"
+  },
+  {
+    "id": "cmlg3t7zr00frputyzoq2davw",
+    "dealId": "cmlg3t7yq00fpputyvc7syzq8",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-11-12T18:30:30.939Z"
+  },
+  {
+    "id": "cmlg3t80r00ftputy3g2wkq4b",
+    "dealId": "cmlg3t7yq00fpputyvc7syzq8",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-11-25T17:50:02.689Z"
+  },
+  {
+    "id": "cmlg3t81q00fvputyh5tc2yjs",
+    "dealId": "cmlg3t7yq00fpputyvc7syzq8",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-02-10T02:41:35.711Z"
+  },
+  {
+    "id": "cmlg3t82m00fxputyq5lpp4uc",
+    "dealId": "cmlg3t7yq00fpputyvc7syzq8",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2025-10-14T05:55:17.799Z"
+  },
+  {
+    "id": "cmlg3t83l00fzputyncb8uku7",
+    "dealId": "cmlg3t7yq00fpputyvc7syzq8",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-01-02T16:30:43.577Z"
+  },
+  {
+    "id": "cmlg3t85g00g3puty36skqt9l",
+    "dealId": "cmlg3t84j00g1putyqeq52kuh",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-01-21T06:56:14.819Z"
+  },
+  {
+    "id": "cmlg3t86d00g5putyhyvblk8j",
+    "dealId": "cmlg3t84j00g1putyqeq52kuh",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-12-27T17:34:56.177Z"
+  },
+  {
+    "id": "cmlg3t88c00g9putyrv6p67p1",
+    "dealId": "cmlg3t87c00g7putyjsftsv0j",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2026-02-05T19:13:39.820Z"
+  },
+  {
+    "id": "cmlg3t89900gbputyamt6gluu",
+    "dealId": "cmlg3t87c00g7putyjsftsv0j",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2026-02-03T02:22:22.571Z"
+  },
+  {
+    "id": "cmlg3t8a700gdputywm4u1rwp",
+    "dealId": "cmlg3t87c00g7putyjsftsv0j",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-02-09T22:18:05.746Z"
+  },
+  {
+    "id": "cmlg3t8b400gfputykru8jinb",
+    "dealId": "cmlg3t87c00g7putyjsftsv0j",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-02-02T05:46:47.295Z"
+  },
+  {
+    "id": "cmlg3t8c200ghputymr6sx6vh",
+    "dealId": "cmlg3t87c00g7putyjsftsv0j",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-02-05T21:33:37.995Z"
+  },
+  {
+    "id": "cmlg3t8e500glputyjr10n34k",
+    "dealId": "cmlg3t8d600gjputyr2xfskwp",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2026-01-03T09:30:14.222Z"
+  },
+  {
+    "id": "cmlg3t8f100gnputyggyytxkv",
+    "dealId": "cmlg3t8d600gjputyr2xfskwp",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2026-01-16T22:13:14.994Z"
+  },
+  {
+    "id": "cmlg3t8gb00gpputy46xul0su",
+    "dealId": "cmlg3t8d600gjputyr2xfskwp",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-02-06T20:38:22.471Z"
+  },
+  {
+    "id": "cmlg3t8h800grputyab8cjmry",
+    "dealId": "cmlg3t8d600gjputyr2xfskwp",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-01-30T23:05:39.881Z"
+  },
+  {
+    "id": "cmlg3t8i700gtputy26t0jpcd",
+    "dealId": "cmlg3t8d600gjputyr2xfskwp",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-12-05T12:01:29.830Z"
+  },
+  {
+    "id": "cmlg3t8k600gxputymk8f2gh1",
+    "dealId": "cmlg3t8j800gvputy9tyk9qnd",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-01-29T06:45:20.265Z"
+  },
+  {
+    "id": "cmlg3t8l400gzputyy4jx3lm3",
+    "dealId": "cmlg3t8j800gvputy9tyk9qnd",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-02-09T17:09:03.769Z"
+  },
+  {
+    "id": "cmlg3t8m500h1putys7c6gy82",
+    "dealId": "cmlg3t8j800gvputy9tyk9qnd",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-11-28T10:06:38.736Z"
+  },
+  {
+    "id": "cmlg3t8n200h3putyjlecwjoi",
+    "dealId": "cmlg3t8j800gvputy9tyk9qnd",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-02-08T17:35:18.458Z"
+  },
+  {
+    "id": "cmlg3t8o200h5puty31wgfznh",
+    "dealId": "cmlg3t8j800gvputy9tyk9qnd",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-12-04T07:58:35.312Z"
+  },
+  {
+    "id": "cmlg3t8q200h9puty199bfozp",
+    "dealId": "cmlg3t8p400h7putyfqjhj0ts",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-10-24T10:07:45.842Z"
+  },
+  {
+    "id": "cmlg3t8r300hbputy1xr1awn5",
+    "dealId": "cmlg3t8p400h7putyfqjhj0ts",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-10-23T08:17:47.218Z"
+  },
+  {
+    "id": "cmlg3t8s500hdputy36711gfd",
+    "dealId": "cmlg3t8p400h7putyfqjhj0ts",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-11-02T06:45:39.098Z"
+  },
+  {
+    "id": "cmlg3t8t500hfputy8corasks",
+    "dealId": "cmlg3t8p400h7putyfqjhj0ts",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-02-04T14:23:28.922Z"
+  },
+  {
+    "id": "cmlg3t8u300hhputywkdpqm78",
+    "dealId": "cmlg3t8p400h7putyfqjhj0ts",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-01-29T09:22:47.771Z"
+  },
+  {
+    "id": "cmlg3t8w600hlputy7syn6kwd",
+    "dealId": "cmlg3t8v200hjputyc6337onp",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-11-11T22:36:08.547Z"
+  },
+  {
+    "id": "cmlg3t8x600hnputydhtp8m8x",
+    "dealId": "cmlg3t8v200hjputyc6337onp",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-12-05T03:21:57.996Z"
+  },
+  {
+    "id": "cmlg3t8y300hpputyha2y1enm",
+    "dealId": "cmlg3t8v200hjputyc6337onp",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-01-16T20:29:10.748Z"
+  },
+  {
+    "id": "cmlg3t8z000hrputyu7abvvdx",
+    "dealId": "cmlg3t8v200hjputyc6337onp",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-10-09T13:51:09.124Z"
+  },
+  {
+    "id": "cmlg3t8zz00htputyttdprnpt",
+    "dealId": "cmlg3t8v200hjputyc6337onp",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-11-29T14:14:52.983Z"
+  },
+  {
+    "id": "cmlg3t92100hxputyoj7j8gp2",
+    "dealId": "cmlg3t90z00hvputy49ubb2so",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2026-01-26T17:20:16.651Z"
+  },
+  {
+    "id": "cmlg3t93500hzputym0fqk8vh",
+    "dealId": "cmlg3t90z00hvputy49ubb2so",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-01-23T14:38:17.929Z"
+  },
+  {
+    "id": "cmlg3t95300i3putygc4ww7xw",
+    "dealId": "cmlg3t94500i1putyn1balpoo",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2025-12-18T04:01:59.694Z"
+  },
+  {
+    "id": "cmlg3t96000i5putysjyfvtjq",
+    "dealId": "cmlg3t94500i1putyn1balpoo",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-02-05T20:17:35.759Z"
+  },
+  {
+    "id": "cmlg3t96z00i7puty0zyy6yro",
+    "dealId": "cmlg3t94500i1putyn1balpoo",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2025-12-27T04:15:13.700Z"
+  },
+  {
+    "id": "cmlg3t97v00i9putyov997o6k",
+    "dealId": "cmlg3t94500i1putyn1balpoo",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2026-02-01T03:39:03.409Z"
+  },
+  {
+    "id": "cmlg3t9a000idputyvrkpm8bj",
+    "dealId": "cmlg3t98u00ibputy4vw9hw3g",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-02-04T22:51:26.173Z"
+  },
+  {
+    "id": "cmlg3t9az00ifputync2t0760",
+    "dealId": "cmlg3t98u00ibputy4vw9hw3g",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2025-10-23T19:28:13.263Z"
+  },
+  {
+    "id": "cmlg3t9by00ihputyytwxt0ud",
+    "dealId": "cmlg3t98u00ibputy4vw9hw3g",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-12-20T16:45:36.303Z"
+  },
+  {
+    "id": "cmlg3t9cv00ijputyxer0e0t4",
+    "dealId": "cmlg3t98u00ibputy4vw9hw3g",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-12-15T23:19:26.815Z"
+  },
+  {
+    "id": "cmlg3t9du00ilputyy2q7pyp0",
+    "dealId": "cmlg3t98u00ibputy4vw9hw3g",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2026-01-31T22:27:31.775Z"
+  },
+  {
+    "id": "cmlg3t9fs00ipputytxqwpm59",
+    "dealId": "cmlg3t9et00inputynvlm1oev",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-02-09T21:31:11.772Z"
+  },
+  {
+    "id": "cmlg3t9gt00irputybg9xabkp",
+    "dealId": "cmlg3t9et00inputynvlm1oev",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-01-24T06:17:14.787Z"
+  },
+  {
+    "id": "cmlg3t9hs00itputy6m8fqojo",
+    "dealId": "cmlg3t9et00inputynvlm1oev",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-02-04T01:34:23.064Z"
+  },
+  {
+    "id": "cmlg3t9iq00ivputy7zxydkpl",
+    "dealId": "cmlg3t9et00inputynvlm1oev",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2026-02-03T13:31:42.764Z"
+  },
+  {
+    "id": "cmlg3t9jt00ixputytrb685wn",
+    "dealId": "cmlg3t9et00inputynvlm1oev",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-01-22T07:54:07.552Z"
+  },
+  {
+    "id": "cmlg3t9kr00izputym2a3z33b",
+    "dealId": "cmlg3t9et00inputynvlm1oev",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-01-28T01:36:21.657Z"
+  },
+  {
+    "id": "cmlg3t9mn00j3puty5c82wzft",
+    "dealId": "cmlg3t9ln00j1puty9k0pfqgq",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-01-06T01:49:36.951Z"
+  },
+  {
+    "id": "cmlg3t9nw00j5putya4gr4mcs",
+    "dealId": "cmlg3t9ln00j1puty9k0pfqgq",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-26T10:19:14.598Z"
+  },
+  {
+    "id": "cmlg3t9ow00j7putya056cts4",
+    "dealId": "cmlg3t9ln00j1puty9k0pfqgq",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-12-26T20:19:51.251Z"
+  },
+  {
+    "id": "cmlg3t9pu00j9putyoofeqyxj",
+    "dealId": "cmlg3t9ln00j1puty9k0pfqgq",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-12-27T06:08:31.003Z"
+  },
+  {
+    "id": "cmlg3t9qs00jbputy9kzvz6lq",
+    "dealId": "cmlg3t9ln00j1puty9k0pfqgq",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-12-30T07:34:50.288Z"
+  },
+  {
+    "id": "cmlg3t9rs00jdputynqutijrx",
+    "dealId": "cmlg3t9ln00j1puty9k0pfqgq",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-01-19T16:23:43.214Z"
+  },
+  {
+    "id": "cmlg3t9u000jhputy6ury7xo7",
+    "dealId": "cmlg3t9t000jfputycg4unncb",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2025-12-11T21:07:50.474Z"
+  },
+  {
+    "id": "cmlg3t9v200jjputyxvy4zkf2",
+    "dealId": "cmlg3t9t000jfputycg4unncb",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2026-02-03T06:34:56.722Z"
+  },
+  {
+    "id": "cmlg3t9w300jlputyl4uu8j3c",
+    "dealId": "cmlg3t9t000jfputycg4unncb",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-12-31T08:56:12.805Z"
+  },
+  {
+    "id": "cmlg3t9x600jnputymz4khl3m",
+    "dealId": "cmlg3t9t000jfputycg4unncb",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-12-13T01:17:54.037Z"
+  },
+  {
+    "id": "cmlg3t9y700jpputy5axovkfe",
+    "dealId": "cmlg3t9t000jfputycg4unncb",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-12-26T00:23:48.363Z"
+  },
+  {
+    "id": "cmlg3t9z700jrputyjw7y9m8a",
+    "dealId": "cmlg3t9t000jfputycg4unncb",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-12-07T03:57:09.993Z"
+  },
+  {
+    "id": "cmlg3ta1a00jvputydkpy5f8q",
+    "dealId": "cmlg3ta0900jtputydgx3fi6c",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-12-10T02:12:39.586Z"
+  },
+  {
+    "id": "cmlg3ta2500jxputy11x66a53",
+    "dealId": "cmlg3ta0900jtputydgx3fi6c",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2026-01-06T10:00:11.058Z"
+  },
+  {
+    "id": "cmlg3ta3700jzputyo2czmmuo",
+    "dealId": "cmlg3ta0900jtputydgx3fi6c",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-11-16T22:51:10.746Z"
+  },
+  {
+    "id": "cmlg3ta4900k1putyjw6cqsrm",
+    "dealId": "cmlg3ta0900jtputydgx3fi6c",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2025-12-26T23:01:50.931Z"
+  },
+  {
+    "id": "cmlg3ta6500k5puty90793qar",
+    "dealId": "cmlg3ta5500k3putybj5xgjo7",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2025-12-28T04:35:43.166Z"
+  },
+  {
+    "id": "cmlg3ta7100k7puty8dmyoxtg",
+    "dealId": "cmlg3ta5500k3putybj5xgjo7",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-10-19T18:39:16.437Z"
+  },
+  {
+    "id": "cmlg3ta8400k9putyvoyjgvt1",
+    "dealId": "cmlg3ta5500k3putybj5xgjo7",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2026-01-11T12:59:13.325Z"
+  },
+  {
+    "id": "cmlg3ta9700kbputyrjs3b631",
+    "dealId": "cmlg3ta5500k3putybj5xgjo7",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2026-01-25T06:25:37.322Z"
+  },
+  {
+    "id": "cmlg3tabd00kfputyg6fb6urk",
+    "dealId": "cmlg3taa800kdputypmcgxxg5",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-10-12T19:55:27.170Z"
+  },
+  {
+    "id": "cmlg3tacd00khputypz5cpnau",
+    "dealId": "cmlg3taa800kdputypmcgxxg5",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2025-12-03T22:03:32.109Z"
+  },
+  {
+    "id": "cmlg3tadc00kjputypr8uzvr0",
+    "dealId": "cmlg3taa800kdputypmcgxxg5",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-10-03T16:23:12.744Z"
+  },
+  {
+    "id": "cmlg3tafc00knputyhnthqpmb",
+    "dealId": "cmlg3taee00klputywxu8ooya",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-28T13:13:11.432Z"
+  },
+  {
+    "id": "cmlg3taga00kpputy3619glob",
+    "dealId": "cmlg3taee00klputywxu8ooya",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-11-08T19:11:53.330Z"
+  },
+  {
+    "id": "cmlg3tahh00krputyo4rvszk5",
+    "dealId": "cmlg3taee00klputywxu8ooya",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-12-14T21:36:48.787Z"
+  },
+  {
+    "id": "cmlg3taif00ktputy5acze1hw",
+    "dealId": "cmlg3taee00klputywxu8ooya",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2025-12-12T07:39:06.964Z"
+  },
+  {
+    "id": "cmlg3tajf00kvputym94xt3ku",
+    "dealId": "cmlg3taee00klputywxu8ooya",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Appointment confirmed",
+    "metadata": null,
+    "createdAt": "2025-12-22T12:17:31.342Z"
+  },
+  {
+    "id": "cmlg3takf00kxputys25ojur8",
+    "dealId": "cmlg3taee00klputywxu8ooya",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Treatment started",
+    "metadata": null,
+    "createdAt": "2025-10-22T02:00:40.131Z"
+  },
+  {
+    "id": "cmlg3tamb00l1puty0t1d2yow",
+    "dealId": "cmlg3talc00kzputy5sk5k9ss",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-12-28T04:08:41.303Z"
+  },
+  {
+    "id": "cmlg3tana00l3puty9yyjeapd",
+    "dealId": "cmlg3talc00kzputy5sk5k9ss",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2026-02-01T18:37:40.466Z"
+  },
+  {
+    "id": "cmlg3tao800l5putyqmu3c6o7",
+    "dealId": "cmlg3talc00kzputy5sk5k9ss",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Progress check completed",
+    "metadata": null,
+    "createdAt": "2026-01-13T11:19:53.571Z"
+  },
+  {
+    "id": "cmlg3taq900l7putyyqtebdaz",
+    "dealId": "cmlg3talc00kzputy5sk5k9ss",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-19T04:38:29.715Z"
+  },
+  {
+    "id": "cmlg3tar600l9putytz01k16f",
+    "dealId": "cmlg3talc00kzputy5sk5k9ss",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2026-02-06T02:31:47.344Z"
+  },
+  {
+    "id": "cmlg3tat800ldputyxnn7it97",
+    "dealId": "cmlg3tas400lbputyeq6gsc50",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2025-11-30T11:57:19.169Z"
+  },
+  {
+    "id": "cmlg3taub00lfputyi3puztw9",
+    "dealId": "cmlg3tas400lbputyeq6gsc50",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "CALL",
+    "description": "Initial consultation completed",
+    "metadata": null,
+    "createdAt": "2025-11-07T15:28:23.850Z"
+  },
+  {
+    "id": "cmlg3tawk00ljputy4uz4k3n8",
+    "dealId": "cmlg3tavd00lhputyhco0m1so",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Contract signed",
+    "metadata": null,
+    "createdAt": "2025-11-14T00:17:22.478Z"
+  },
+  {
+    "id": "cmlg3taxh00llputys2eg63v7",
+    "dealId": "cmlg3tavd00lhputyhco0m1so",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "TASK_COMPLETED",
+    "description": "Treatment plan presented",
+    "metadata": null,
+    "createdAt": "2026-01-25T20:00:39.632Z"
+  },
+  {
+    "id": "cmlg3taye00lnputygzfdy81g",
+    "dealId": "cmlg3tavd00lhputyhco0m1so",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "STAGE_CHANGED",
+    "description": "Contract sent",
+    "metadata": null,
+    "createdAt": "2026-02-03T20:05:41.568Z"
+  },
+  {
+    "id": "cmlg3tazb00lpputymelwjwcg",
+    "dealId": "cmlg3tavd00lhputyhco0m1so",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "EMAIL",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2026-02-10T01:01:54.924Z"
+  },
+  {
+    "id": "cmlg3tb0700lrputyh8va6ms5",
+    "dealId": "cmlg3tavd00lhputyhco0m1so",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Follow-up call scheduled",
+    "metadata": null,
+    "createdAt": "2025-12-17T12:45:02.518Z"
+  },
+  {
+    "id": "cmlg3tb2800lvputyo0plm6kj",
+    "dealId": "cmlg3tb1900ltputymbd7kuc2",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "NOTE",
+    "description": "Payment plan discussed",
+    "metadata": null,
+    "createdAt": "2026-01-21T03:15:51.166Z"
+  },
+  {
+    "id": "cmlg3tb3500lxputypfw5y4lm",
+    "dealId": "cmlg3tb1900ltputymbd7kuc2",
+    "userId": "cmlagc8ix0000pudsvthbeckm",
+    "type": "MEETING",
+    "description": "Payment received",
+    "metadata": null,
+    "createdAt": "2026-01-21T03:06:30.927Z"
+  }
+]

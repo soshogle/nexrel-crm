@@ -1,0 +1,34 @@
+[
+  {
+    "id": "cml7ob6dj0001lh04ivcb1ltc",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "name": "Birthday Call & Webinar Invite",
+    "description": "Automates birthday calls and sends webinar invitations with personalized touches.",
+    "status": "ACTIVE",
+    "triggerType": "TIME_BASED",
+    "triggerConfig": {
+      "type": "birthday",
+      "field": "birthday"
+    },
+    "createdAt": "2026-02-04T06:55:34.661Z",
+    "updatedAt": "2026-02-04T06:55:34.661Z",
+    "metadata": null,
+    "scheduledDate": null
+  },
+  {
+    "id": "cml7yjydx001vpugjge8cgu21",
+    "userId": "cml7yilt20000puy5mgn7oxqq",
+    "name": "Suivi post-examen",
+    "description": "Workflow automatique pour suivre les patients après leur examen",
+    "status": "ACTIVE",
+    "triggerType": "TIME_BASED",
+    "triggerConfig": {
+      "time": "09:00",
+      "schedule": "daily"
+    },
+    "createdAt": "2026-02-04T11:42:20.373Z",
+    "updatedAt": "2026-02-04T11:42:20.373Z",
+    "metadata": null,
+    "scheduledDate": null
+  }
+]

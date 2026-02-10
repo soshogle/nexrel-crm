@@ -1,0 +1,206 @@
+[
+  {
+    "id": "cmkyrx76o0003l404iir0tkug",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "employeeId": "cmkyrx7670001l4040gol8fqo",
+    "workflowId": null,
+    "jobType": "lead_enrichment",
+    "priority": "MEDIUM",
+    "status": "COMPLETED",
+    "input": {
+      "website": "nike.com",
+      "industry": "RETAIL",
+      "businessName": "nike"
+    },
+    "output": {
+      "enrichedData": {
+        "keyPeople": [],
+        "leadScore": 50,
+        "recentNews": [],
+        "companyInfo": {
+          "name": "nike",
+          "_error": "LLM API error: 400 - {\"success\": false, \"error\": \"You have no remaining credits to use the LLM apis.\"}",
+          "website": "nike.com",
+          "industry": "RETAIL",
+          "description": "Research failed: LLM API error: 400 - {\"success\": false, \"error\": \"You have no remaining credits to use the LLM apis.\"}",
+          "foundedYear": "Unknown",
+          "headquarters": "Unknown"
+        },
+        "contactInfo": {},
+        "businessMetrics": {},
+        "recommendedApproach": "Standard outreach approach"
+      }
+    },
+    "error": null,
+    "progress": 100,
+    "startedAt": "2026-01-29T01:26:45.448Z",
+    "completedAt": "2026-01-29T01:27:02.700Z",
+    "estimatedTime": 180,
+    "actualTime": 17,
+    "retryCount": 0,
+    "maxRetries": 3,
+    "createdAt": "2026-01-29T01:26:45.408Z",
+    "updatedAt": "2026-01-29T01:27:02.702Z"
+  },
+  {
+    "id": "cml5cyl8y0007k004wr5ym18i",
+    "userId": "cmkta2iry0000xwvtkce01tvl",
+    "employeeId": "cmkyrx7670001l4040gol8fqo",
+    "workflowId": null,
+    "jobType": "lead_enrichment",
+    "priority": "MEDIUM",
+    "status": "COMPLETED",
+    "input": {
+      "website": "nike.com",
+      "industry": "RETAIL",
+      "businessName": "nike"
+    },
+    "output": {
+      "enrichedData": {
+        "keyPeople": [
+          {
+            "name": "John Donahoe",
+            "email": "john.donahoe@nike.com",
+            "title": "President and CEO",
+            "source": "🔍 Google Search (Real-Time 2026)",
+            "linkedIn": null,
+            "confidence": 80,
+            "emailAlternatives": [
+              "johndonahoe@nike.com",
+              "jdonahoe@nike.com",
+              "john_donahoe@nike.com",
+              "john@nike.com",
+              "donahoe.john@nike.com"
+            ]
+          },
+          {
+            "name": "Matthew Friend",
+            "email": "matthew.friend@nike.com",
+            "title": "Chief Financial Officer",
+            "source": "🔍 Google Search (Real-Time 2026)",
+            "linkedIn": null,
+            "confidence": 80,
+            "emailAlternatives": [
+              "matthewfriend@nike.com",
+              "mfriend@nike.com",
+              "matthew_friend@nike.com",
+              "matthew@nike.com",
+              "friend.matthew@nike.com"
+            ]
+          },
+          {
+            "name": "Heidi O'Neill",
+            "email": "heidi.o'neill@nike.com",
+            "title": "President of Consumer and Marketplace",
+            "source": "🔍 Google Search (Real-Time 2026)",
+            "linkedIn": null,
+            "confidence": 80,
+            "emailAlternatives": [
+              "heidio'neill@nike.com",
+              "ho'neill@nike.com",
+              "heidi_o'neill@nike.com",
+              "heidi@nike.com",
+              "o'neill.heidi@nike.com"
+            ]
+          },
+          {
+            "name": "Michael Spillane",
+            "email": "michael.spillane@nike.com",
+            "title": "President of Product and Merchandising",
+            "source": "🔍 Google Search (Real-Time 2026)",
+            "linkedIn": null,
+            "confidence": 80,
+            "emailAlternatives": [
+              "michaelspillane@nike.com",
+              "mspillane@nike.com",
+              "michael_spillane@nike.com",
+              "michael@nike.com",
+              "spillane.michael@nike.com"
+            ]
+          },
+          {
+            "name": "Katrina McGhee",
+            "email": "katrina.mcghee@nike.com",
+            "title": "Chief Marketing Officer",
+            "source": "🔍 Google Search (Real-Time 2026)",
+            "linkedIn": null,
+            "confidence": 80,
+            "emailAlternatives": [
+              "katrinamcghee@nike.com",
+              "kmcghee@nike.com",
+              "katrina_mcghee@nike.com",
+              "katrina@nike.com",
+              "mcghee.katrina@nike.com"
+            ]
+          }
+        ],
+        "leadScore": 85,
+        "recentNews": [
+          {
+            "url": "https://www.businessinsider.com/nike-launches-sustainability-initiative-2023-9",
+            "date": "2023-09-15",
+            "title": "Nike Launches New Sustainability Initiative",
+            "source": "Business Insider"
+          },
+          {
+            "url": "https://www.reuters.com/business/nike-reports-strong-q2-earnings-2023-9-28",
+            "date": "2023-09-28",
+            "title": "Nike Reports Strong Q2 Earnings Amidst Market Challenges",
+            "source": "Reuters"
+          },
+          {
+            "url": "https://hypebeast.com/2023/10/nike-local-artists-collaboration-collection",
+            "date": "2023-10-05",
+            "title": "Nike Collaborates with Local Artists for New Collection",
+            "source": "Hypebeast"
+          },
+          {
+            "url": "https://www.adweek.com/brand-marketing/nike-gen-z-advertising-campaign-2023-8-20",
+            "date": "2023-08-20",
+            "title": "Nike's New Advertising Campaign Targets Gen Z",
+            "source": "Adweek"
+          },
+          {
+            "url": "https://www.cnbc.com/2023/07/10/nike-expands-direct-to-consumer-strategy.html",
+            "date": "2023-07-10",
+            "title": "Nike Expands Direct-to-Consumer Strategy",
+            "source": "CNBC"
+          }
+        ],
+        "companyInfo": {
+          "name": "Nike, Inc.",
+          "website": "nike.com",
+          "industry": "Retail",
+          "description": "Nike, Inc. is a global leader in athletic footwear, apparel, and equipment, known for its innovative products and marketing strategies. The company designs, develops, and sells a wide range of sports-related products and is recognized for its iconic branding and sponsorship of top athletes and teams.",
+          "foundedYear": "1964",
+          "headquarters": "Beaverton, Oregon, USA"
+        },
+        "contactInfo": {
+          "email": "john.donahoe@nike.com",
+          "phone": null,
+          "socialMedia": {
+            "twitter": "https://twitter.com/Nike",
+            "facebook": "https://www.facebook.com/nike",
+            "linkedin": "https://www.linkedin.com/company/nike"
+          }
+        },
+        "businessMetrics": {
+          "companySize": "Enterprise",
+          "employeeCount": "75,000+",
+          "estimatedRevenue": "$40B+"
+        },
+        "recommendedApproach": "To engage Nike effectively, focus on their commitment to innovation and sustainability. Highlight how your solutions can enhance their product offerings or improve operational efficiencies, particularly in their direct-to-consumer strategy."
+      }
+    },
+    "error": null,
+    "progress": 100,
+    "startedAt": "2026-02-02T16:02:19.329Z",
+    "completedAt": "2026-02-02T16:03:02.836Z",
+    "estimatedTime": 180,
+    "actualTime": 43,
+    "retryCount": 0,
+    "maxRetries": 3,
+    "createdAt": "2026-02-02T16:02:19.282Z",
+    "updatedAt": "2026-02-02T16:03:02.837Z"
+  }
+]
