@@ -13,7 +13,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
 import { cn } from '@/lib/utils';
 import { 
   Brain, 
@@ -100,11 +99,28 @@ export default function BusinessAIPage() {
   const [crmAgentId, setCrmAgentId] = useState<string | null>(null);
   const [agentLoading, setAgentLoading] = useState(true);
   
-  // Visualization state for voice agent queries
+  // Visualization state for voice agent queries (updated via events from global agent)
   const [crmStatistics, setCrmStatistics] = useState<any>(null);
   const [showVisualizations, setShowVisualizations] = useState(false);
   const [conversationMessages, setConversationMessages] = useState<any[]>([]);
-  const [lastStatsCheck, setLastStatsCheck] = useState<number>(0);
+  
+  // Listen for visualization updates from global AI Brain voice agent
+  useEffect(() => {
+    const handleVisualizationUpdate = (event: CustomEvent) => {
+      console.log('📊 [AI Brain Page] Received visualization update:', event.detail);
+      if (event.detail?.statistics) {
+        setCrmStatistics(event.detail.statistics);
+        setShowVisualizations(true);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('ai-brain-visualization-update', handleVisualizationUpdate as EventListener);
+      return () => {
+        window.removeEventListener('ai-brain-visualization-update', handleVisualizationUpdate as EventListener);
+      };
+    }
+  }, []);
   
   // Analytical Dashboard Mode State
   const [comprehensiveData, setComprehensiveData] = useState<ComprehensiveBrainData | null>(null);
@@ -120,83 +136,13 @@ export default function BusinessAIPage() {
     if (session) {
       if (mode === 'voice') {
         loadBusinessData();
-        loadCrmAgent();
+        // No longer need to load agent here - it's handled globally
+        setAgentLoading(false);
       } else {
         loadAnalyticalDashboardData();
       }
     }
   }, [session, mode]);
-
-  const loadCrmAgent = async () => {
-    try {
-      setAgentLoading(true);
-      console.log('🔄 Loading CRM voice agent...');
-      const response = await fetch('/api/crm-voice-agent');
-      const data = await response.json();
-      
-      console.log('📥 CRM voice agent API response:', data);
-      
-      if (data.success && data.agentId) {
-        setCrmAgentId(data.agentId);
-        console.log('✅ CRM voice agent loaded:', data.agentId, 'created:', data.created);
-      } else {
-        console.error('❌ Failed to load CRM agent:', {
-          error: data.error,
-          details: data.details,
-          success: data.success,
-          agentId: data.agentId,
-        });
-        // Show error to user
-        if (data.error) {
-          console.error('Error details:', data.error);
-        }
-      }
-    } catch (error: any) {
-      console.error('❌ Failed to load CRM agent (network error):', error);
-      console.error('Error stack:', error?.stack);
-    } finally {
-      setAgentLoading(false);
-    }
-  };
-
-  const fetchCrmStatistics = async () => {
-    try {
-      console.log('📊 Fetching CRM statistics...');
-      const response = await fetch('/api/crm-voice-agent/functions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          function_name: 'get_statistics',
-          parameters: {},
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Failed to fetch statistics:', response.status, errorText);
-        toast.error('Failed to fetch CRM statistics');
-        return;
-      }
-      
-      const data = await response.json();
-      console.log('📥 Statistics response:', data);
-      
-      if (data.success && data.statistics) {
-        setCrmStatistics(data.statistics);
-        setShowVisualizations(true);
-        toast.success('Statistics loaded successfully');
-      } else if (data.error) {
-        console.error('❌ Statistics error:', data.error);
-        toast.error(data.error || 'Failed to load statistics');
-      } else {
-        console.error('❌ Unexpected response format:', data);
-        toast.error('Unexpected response format');
-      }
-    } catch (error: any) {
-      console.error('❌ Failed to fetch CRM statistics:', error);
-      toast.error('Failed to fetch CRM statistics: ' + error.message);
-    }
-  };
 
   const loadBusinessData = async () => {
     try {
@@ -370,67 +316,9 @@ export default function BusinessAIPage() {
 
           {/* Voice Assistant Mode */}
           <TabsContent value="voice" className="space-y-6 mt-6">
-            {/* ElevenLabs Voice Agent - Matches landing page exactly (no Card wrapper) */}
-            {!agentLoading && crmAgentId && (
-              <div className="relative w-full space-y-4">
-                <ElevenLabsAgent 
-                  agentId={crmAgentId}
-                  autoStart={false}
-                  onAudioLevel={(level) => {
-                    // Audio level callback for visualization
-                  }}
-                  onAgentSpeakingChange={(isSpeaking) => {
-                    // Speaking state callback
-                  }}
-                  onMessage={(message) => {
-                    // Real-time message monitoring for automatic visualization
-                    const now = Date.now();
-                    const timeSinceLastCheck = now - lastStatsCheck;
-                    
-                    // Throttle checks to avoid too many API calls (max once per 3 seconds)
-                    if (timeSinceLastCheck < 3000) {
-                      return;
-                    }
-                    
-                    // Check if agent message contains statistics-related keywords
-                    if (message.role === 'agent' && message.content) {
-                      const content = message.content.toLowerCase();
-                      const statsKeywords = [
-                        'statistic', 'statistics', 'stats', 'data', 'revenue', 'leads', 'deals',
-                        'campaigns', 'contacts', 'total', 'overview', 'summary', 'report',
-                        'show', 'display', 'here are', 'you have', 'your crm', 'business performance'
-                      ];
-                      
-                      const hasStatsKeyword = statsKeywords.some(keyword => content.includes(keyword));
-                      
-                      // Also check for numbers that might indicate statistics
-                      const hasNumbers = /\d+/.test(message.content);
-                      
-                      if (hasStatsKeyword || (hasNumbers && (content.includes('lead') || content.includes('deal') || content.includes('revenue')))) {
-                        console.log('📊 Detected statistics query in agent message, fetching data...');
-                        setLastStatsCheck(now);
-                        fetchCrmStatistics();
-                      }
-                    }
-                    
-                    // Update conversation messages
-                    setConversationMessages(prev => [...prev, message]);
-                  }}
-                  onConversationEnd={(transcript, audioBlob) => {
-                    console.log('Conversation ended:', transcript);
-                    setConversationMessages(transcript);
-                  }}
-                />
-              </div>
-            )}
-
-            {agentLoading && (
-              <Card className="border-2 border-purple-200/50 shadow-xl bg-white/80 backdrop-blur-sm">
-                <CardContent className="p-12 flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-                </CardContent>
-              </Card>
-            )}
+            {/* Note: AI Brain Voice Agent is rendered globally in dashboard-wrapper.tsx */}
+            {/* It persists across page navigation and displays inline on this page */}
+            {/* Visualizations will appear below when the agent queries statistics */}
 
             {/* CRM Statistics Visualizations - Displayed when agent queries data */}
             {showVisualizations && crmStatistics && (
