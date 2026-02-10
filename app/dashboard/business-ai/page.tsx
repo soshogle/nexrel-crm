@@ -160,6 +160,7 @@ export default function BusinessAIPage() {
 
   const fetchCrmStatistics = async () => {
     try {
+      console.log('📊 Fetching CRM statistics...');
       const response = await fetch('/api/crm-voice-agent/functions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -169,14 +170,30 @@ export default function BusinessAIPage() {
         }),
       });
       
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Failed to fetch statistics:', response.status, errorText);
+        toast.error('Failed to fetch CRM statistics');
+        return;
+      }
+      
       const data = await response.json();
+      console.log('📥 Statistics response:', data);
       
       if (data.success && data.statistics) {
         setCrmStatistics(data.statistics);
         setShowVisualizations(true);
+        toast.success('Statistics loaded successfully');
+      } else if (data.error) {
+        console.error('❌ Statistics error:', data.error);
+        toast.error(data.error || 'Failed to load statistics');
+      } else {
+        console.error('❌ Unexpected response format:', data);
+        toast.error('Unexpected response format');
       }
     } catch (error: any) {
-      console.error('Failed to fetch CRM statistics:', error);
+      console.error('❌ Failed to fetch CRM statistics:', error);
+      toast.error('Failed to fetch CRM statistics: ' + error.message);
     }
   };
 
