@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ElevenLabsAgent } from "@/components/landing/soshogle/elevenlabs-agent";
+import { ChatMarkdown } from "@/components/dashboard/chat-markdown";
 
 interface Message {
   role: "user" | "assistant";
@@ -399,7 +400,11 @@ export function AIChatAssistant() {
                               <span className="text-xs font-medium">{message.file.name}</span>
                             </div>
                           )}
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                          {message.role === "assistant" ? (
+                            <ChatMarkdown content={message.content} />
+                          ) : (
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                          )}
                           {message.navigateTo && message.role === "assistant" && (
                             <Button
                               variant="default"

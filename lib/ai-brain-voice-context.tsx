@@ -208,10 +208,9 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      const statsKeywords = ['statistic', 'statistics', 'revenue', 'total', 'overview', 'summary', 'business performance'];
+      const statsKeywords = ['statistic', 'statistics', 'stats', 'revenue', 'total', 'overview', 'summary', 'business performance', 'sales', 'leads', 'deals', 'pipeline'];
       const hasStatsKeyword = statsKeywords.some(k => content.includes(k));
-      const hasNumbers = /\d+/.test(message.content);
-      if (hasStatsKeyword && hasNumbers && !wantsVisualization) {
+      if (hasStatsKeyword && !wantsVisualization) {
         console.log('📊 [AI Brain Voice Context] General stats query, navigating to AI Brain for overview');
         lastStatsCheckRef.current = now;
         navigateTo('/dashboard/business-ai?mode=voice');
