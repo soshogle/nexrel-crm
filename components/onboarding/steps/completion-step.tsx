@@ -92,7 +92,7 @@ export function CompletionStep({
               Add Your First Lead
             </Button>
           </Link>
-          <Link href="/dashboard/campaigns">
+          <Link href="/dashboard/ai-automations">
             <Button variant="outline" className="w-full justify-start gap-2">
               <ExternalLink className="h-4 w-4" />
               Create a Campaign

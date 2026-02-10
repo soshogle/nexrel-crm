@@ -13,6 +13,7 @@ import { WorkflowTemplatesGallery } from './workflow-templates-gallery';
 import { ExecutionModeSelector } from './execution-mode-selector';
 import { AudiencePanel, AudienceConfig } from './audience-panel';
 import { CampaignSettingsPanel, CampaignSettings } from './campaign-settings-panel';
+import { EnrollmentPanel } from './enrollment-panel';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
 import { Industry } from '@prisma/client';
 import { Button } from '@/components/ui/button';
@@ -56,10 +57,13 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   const [newTaskType, setNewTaskType] = useState<string>('CREATE_TASK');
   const [showTemplateGallery, setShowTemplateGallery] = useState(!initialWorkflowId);
   
-  // Campaign mode state
-  const [executionMode, setExecutionMode] = useState<'WORKFLOW' | 'CAMPAIGN'>('WORKFLOW');
+  // Execution mode state (Workflow, Campaign, or Drip)
+  const [executionMode, setExecutionMode] = useState<'WORKFLOW' | 'CAMPAIGN' | 'DRIP'>('WORKFLOW');
   const [audience, setAudience] = useState<AudienceConfig | null>(null);
   const [campaignSettings, setCampaignSettings] = useState<CampaignSettings | null>(null);
+  // Drip mode state
+  const [enrollmentMode, setEnrollmentMode] = useState<boolean>(false);
+  const [enrollmentTriggers, setEnrollmentTriggers] = useState<any[]>([]);
   
   const industryConfig = getIndustryConfig(industry);
   
@@ -91,11 +95,15 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
         
         // Transform DB templates to match WorkflowTemplate interface
         const transformedTemplates = dbTemplates.map((t: any) => {
-          // Load campaign mode settings if they exist
+          // Load execution mode settings if they exist
           if (t.executionMode === 'CAMPAIGN') {
             setExecutionMode('CAMPAIGN');
             if (t.audience) setAudience(t.audience);
             if (t.campaignSettings) setCampaignSettings(t.campaignSettings);
+          } else if (t.executionMode === 'DRIP' || t.enrollmentMode) {
+            setExecutionMode('DRIP');
+            setEnrollmentMode(true);
+            if (t.enrollmentTriggers) setEnrollmentTriggers(t.enrollmentTriggers);
           }
           
           return {
@@ -201,13 +209,19 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
           executionMode,
           audience,
           campaignSettings,
+          enrollmentMode: executionMode === 'DRIP' ? true : false,
+          enrollmentTriggers: executionMode === 'DRIP' ? enrollmentTriggers : null,
         }),
       });
       
       if (res.ok) {
         const data = await res.json();
         setWorkflow(data.workflow);
-        toast.success(executionMode === 'CAMPAIGN' ? 'Campaign saved successfully' : 'Workflow saved successfully');
+        const successMessage = 
+          executionMode === 'CAMPAIGN' ? 'Campaign saved successfully' :
+          executionMode === 'DRIP' ? 'Drip campaign saved successfully' :
+          'Workflow saved successfully';
+        toast.success(successMessage);
         fetchWorkflows(); // Refresh list
       } else {
         throw new Error('Failed to save');
@@ -343,12 +357,16 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
                 mode={executionMode}
                 onModeChange={(mode) => {
                   setExecutionMode(mode);
-                  // Reset campaign settings when switching to workflow mode
+                  // Reset settings when switching modes
                   if (mode === 'WORKFLOW') {
                     setAudience(null);
                     setCampaignSettings(null);
-                  } else {
+                    setEnrollmentMode(false);
+                    setEnrollmentTriggers([]);
+                  } else if (mode === 'CAMPAIGN') {
                     // Initialize campaign settings when switching to campaign mode
+                    setEnrollmentMode(false);
+                    setEnrollmentTriggers([]);
                     if (!campaignSettings) {
                       setCampaignSettings({
                         frequency: 'ONE_TIME',
@@ -367,6 +385,14 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
                           hasEmail: false,
                         },
                       });
+                    }
+                  } else if (mode === 'DRIP') {
+                    // Initialize drip/enrollment mode settings
+                    setEnrollmentMode(true);
+                    setAudience(null);
+                    setCampaignSettings(null);
+                    if (enrollmentTriggers.length === 0) {
+                      setEnrollmentTriggers([]);
                     }
                   }
                 }}
@@ -507,6 +533,18 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
                     settings={campaignSettings}
                     onSettingsChange={setCampaignSettings}
                     executionMode={executionMode}
+                  />
+                </div>
+              )}
+              
+              {/* Enrollment Panel - Only show when Drip Mode is enabled */}
+              {executionMode === 'DRIP' && (
+                <div className="space-y-4 mt-6">
+                  <EnrollmentPanel
+                    enrollmentMode={enrollmentMode}
+                    enrollmentTriggers={enrollmentTriggers}
+                    onEnrollmentModeChange={setEnrollmentMode}
+                    onEnrollmentTriggersChange={setEnrollmentTriggers}
                   />
                 </div>
               )}

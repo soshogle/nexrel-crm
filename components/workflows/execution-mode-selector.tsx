@@ -15,11 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Workflow, Users } from 'lucide-react';
+import { Workflow, Users, Clock } from 'lucide-react';
 
 interface ExecutionModeSelectorProps {
-  mode: 'WORKFLOW' | 'CAMPAIGN';
-  onModeChange: (mode: 'WORKFLOW' | 'CAMPAIGN') => void;
+  mode: 'WORKFLOW' | 'CAMPAIGN' | 'DRIP';
+  onModeChange: (mode: 'WORKFLOW' | 'CAMPAIGN' | 'DRIP') => void;
 }
 
 export function ExecutionModeSelector({
@@ -46,11 +46,22 @@ export function ExecutionModeSelector({
               <span>Campaign</span>
             </div>
           </SelectItem>
+          <SelectItem value="DRIP">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span>Drip</span>
+            </div>
+          </SelectItem>
         </SelectContent>
       </Select>
       {mode === 'CAMPAIGN' && (
         <Badge variant="outline" className="border-purple-300 text-purple-700">
           Batch Mode
+        </Badge>
+      )}
+      {mode === 'DRIP' && (
+        <Badge variant="outline" className="border-purple-300 text-purple-700">
+          Enrollment Mode
         </Badge>
       )}
     </div>

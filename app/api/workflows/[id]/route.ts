@@ -66,6 +66,8 @@ export async function GET(
       executionMode: (workflow as any).executionMode || 'WORKFLOW',
       audience: (workflow as any).audience || null,
       campaignSettings: (workflow as any).campaignSettings || null,
+      enrollmentMode: (workflow as any).enrollmentMode || false,
+      enrollmentTriggers: (workflow as any).enrollmentTriggers || null,
       tasks: workflow.tasks.map(t => ({
         id: t.id,
         name: t.name,
@@ -126,7 +128,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, isActive, tasks, executionMode, audience, campaignSettings } = body;
+    const { name, description, isActive, tasks, executionMode, audience, campaignSettings, enrollmentMode, enrollmentTriggers } = body;
 
     // Update workflow
     const updateData: any = {};
@@ -136,6 +138,8 @@ export async function PUT(
     if (executionMode !== undefined) updateData.executionMode = executionMode;
     if (audience !== undefined) updateData.audience = audience;
     if (campaignSettings !== undefined) updateData.campaignSettings = campaignSettings;
+    if (enrollmentMode !== undefined) updateData.enrollmentMode = enrollmentMode;
+    if (enrollmentTriggers !== undefined) updateData.enrollmentTriggers = enrollmentTriggers;
 
     // If tasks are provided, update them
     if (tasks && Array.isArray(tasks)) {
@@ -180,6 +184,9 @@ export async function PUT(
       description: workflow.description || '',
       workflowType: workflow.type,
       industry: workflow.industry,
+      executionMode: (workflow as any).executionMode || 'WORKFLOW',
+      enrollmentMode: (workflow as any).enrollmentMode || false,
+      enrollmentTriggers: (workflow as any).enrollmentTriggers || null,
       tasks: workflow.tasks.map(t => ({
         id: t.id,
         name: t.name,

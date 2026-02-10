@@ -68,6 +68,8 @@ export async function GET(request: NextRequest) {
       executionMode: (w as any).executionMode || 'WORKFLOW',
       audience: (w as any).audience || null,
       campaignSettings: (w as any).campaignSettings || null,
+      enrollmentMode: (w as any).enrollmentMode || false,
+      enrollmentTriggers: (w as any).enrollmentTriggers || null,
       tasks: w.tasks.map(t => ({
         id: t.id,
         name: t.name,
@@ -138,7 +140,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, type, description, fromTemplate, tasks, executionMode, audience, campaignSettings } = body;
+    const { name, type, description, fromTemplate, tasks, executionMode, audience, campaignSettings, enrollmentMode, enrollmentTriggers } = body;
 
     // If creating from a template
     if (fromTemplate) {
@@ -163,6 +165,8 @@ export async function POST(request: NextRequest) {
           executionMode: executionMode || 'WORKFLOW',
           audience: audience || null,
           campaignSettings: campaignSettings || null,
+          enrollmentMode: enrollmentMode || false,
+          enrollmentTriggers: enrollmentTriggers || null,
           tasks: {
             create: template.tasks.map((task, index) => ({
               name: task.name,
@@ -198,6 +202,8 @@ export async function POST(request: NextRequest) {
           executionMode: (workflow as any).executionMode || 'WORKFLOW',
           audience: (workflow as any).audience || null,
           campaignSettings: (workflow as any).campaignSettings || null,
+          enrollmentMode: (workflow as any).enrollmentMode || false,
+          enrollmentTriggers: (workflow as any).enrollmentTriggers || null,
           tasks: workflow.tasks.map(t => ({
             id: t.id,
             name: t.name,
@@ -240,6 +246,8 @@ export async function POST(request: NextRequest) {
         executionMode: executionMode || 'WORKFLOW',
         audience: audience || null,
         campaignSettings: campaignSettings || null,
+        enrollmentMode: enrollmentMode || false,
+        enrollmentTriggers: enrollmentTriggers || null,
         tasks: tasks ? {
           create: tasks.map((task: any, index: number) => ({
             name: task.name as string,
@@ -272,6 +280,9 @@ export async function POST(request: NextRequest) {
         description: workflow.description,
         workflowType: workflow.type,
         industry: workflow.industry,
+        executionMode: (workflow as any).executionMode || 'WORKFLOW',
+        enrollmentMode: (workflow as any).enrollmentMode || false,
+        enrollmentTriggers: (workflow as any).enrollmentTriggers || null,
         tasks: workflow.tasks.map(t => ({
           id: t.id,
           name: t.name,
