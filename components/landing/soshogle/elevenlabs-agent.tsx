@@ -49,6 +49,14 @@ export function ElevenLabsAgent({
   const audioStreamRef = useRef<MediaStream | null>(null);
 
   const startConversation = async () => {
+    console.log('🚀 startConversation called', { agentId, isConnected, isLoading, status });
+    
+    if (!agentId) {
+      console.error('❌ No agentId provided');
+      setError('Agent ID is missing. Please wait for the agent to load.');
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     setStatus("connecting");
@@ -60,11 +68,22 @@ export function ElevenLabsAgent({
       console.log('🎤 Requesting microphone access...');
       let micStream: MediaStream;
       try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('getUserMedia is not supported in this browser');
+        }
         micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioStreamRef.current = micStream;
-        console.log('✅ Microphone access granted');
+        console.log('✅ Microphone access granted', { 
+          tracks: micStream.getTracks().length,
+          trackStates: micStream.getTracks().map(t => ({ id: t.id, enabled: t.enabled, readyState: t.readyState }))
+        });
       } catch (micError: any) {
         console.error('❌ Microphone access denied:', micError);
+        console.error('Error details:', {
+          name: micError.name,
+          message: micError.message,
+          stack: micError.stack
+        });
         setIsLoading(false);
         setStatus("idle");
         
@@ -96,9 +115,11 @@ export function ElevenLabsAgent({
       }
 
       if (!agentId || agentId.trim() === "") {
+        console.error('❌ Agent ID is missing or empty');
         throw new Error("Agent ID is required for WebRTC connection");
       }
 
+      console.log('🔑 Getting conversation token for agent:', agentId.trim());
       let conversationToken: string | null = null;
       try {
         const tokenResponse = await fetch("/api/elevenlabs/conversation-token", {
@@ -106,13 +127,17 @@ export function ElevenLabsAgent({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ agentId: agentId.trim() }),
         });
+        console.log('📥 Token response status:', tokenResponse.status);
         if (!tokenResponse.ok) {
           const errorText = await tokenResponse.text();
+          console.error('❌ Token request failed:', errorText);
           throw new Error(errorText || "Failed to get conversation token");
         }
         const tokenBody = await tokenResponse.json();
         conversationToken = tokenBody?.token || null;
+        console.log('✅ Got conversation token:', conversationToken ? 'Token received' : 'No token');
       } catch (tokenError: any) {
+        console.error('❌ Token error:', tokenError);
         const message = tokenError?.message || "Voice AI token unavailable";
         setError(message);
         setIsLoading(false);
@@ -238,21 +263,33 @@ export function ElevenLabsAgent({
         });
       };
 
+      console.log('🔌 Starting WebRTC session...');
       try {
         conversationRef.current = await startWebrtcSession();
+        console.log('✅ WebRTC session started successfully');
       } catch (sessionError: any) {
+        console.error('❌ WebRTC session failed:', sessionError);
         const message = sessionError?.message || "";
         if (message.includes("Failed to fetch") || message.includes("signal")) {
+          console.log('🔄 Falling back to WebSocket...');
           try {
             conversationRef.current = await startWebsocketSession();
+            console.log('✅ WebSocket session started successfully');
           } catch (fallbackError: any) {
-            console.error("ElevenLabs fallback error:", fallbackError);
+            console.error("❌ ElevenLabs fallback error:", fallbackError);
             cleanupMedia();
-            throw fallbackError;
+            setError(`Connection failed: ${fallbackError.message || 'Unknown error'}`);
+            setIsLoading(false);
+            setStatus("idle");
+            return;
           }
         } else {
+          console.error('❌ Session error:', sessionError);
           cleanupMedia();
-          throw sessionError;
+          setError(`Connection failed: ${sessionError.message || 'Unknown error'}`);
+          setIsLoading(false);
+          setStatus("idle");
+          return;
         }
       }
 
