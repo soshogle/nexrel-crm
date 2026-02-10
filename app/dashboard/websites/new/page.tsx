@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Loader2, Globe, Sparkles, Wand2, ShoppingCart, Briefcase, Code, Palette, Zap } from 'lucide-react';
+import { ArrowLeft, Loader2, Globe, Sparkles, Wand2, ShoppingCart, Briefcase, Code, Palette, Zap, ExternalLink, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -161,6 +162,8 @@ export default function NewWebsitePage() {
   const [enableBlog, setEnableBlog] = useState(false);
   const [blogHasCTA, setBlogHasCTA] = useState(true);
   const [templateHasBlog, setTemplateHasBlog] = useState(false);
+  const [hoveredTemplateId, setHoveredTemplateId] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Check for stored Google tokens on mount
   useEffect(() => {
@@ -262,6 +265,31 @@ export default function NewWebsitePage() {
       setTemplateHasBlog(false);
       setEnableBlog(true); // Enable by default if we can't determine
     }
+  };
+
+  // Map template names to their source URLs for preview
+  const templateSourceUrls: Record<string, string> = {
+    'Zebracat - AI Video Creation': 'https://www.zebracat.ai/',
+    'Clay - GTM Data Platform': 'https://www.clay.com/',
+    'Starcloud - Space Data Centers': 'https://www.starcloud.com/',
+    'NeoCultural Couture - Fashion Innovation': 'https://www.neoculturalcouture.com/',
+    'Little Lagniappe - Baby Food Subscription': 'https://www.little-lagniappe.com/',
+  };
+
+  const handleTemplateHover = (templateId: string, templateName: string) => {
+    const url = templateSourceUrls[templateName];
+    if (url) {
+      setHoveredTemplateId(templateId);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleTemplateLeave = () => {
+    // Delay hiding to allow clicking on preview
+    setTimeout(() => {
+      setHoveredTemplateId(null);
+      setPreviewUrl(null);
+    }, 200);
   };
 
   const loadTemplates = async () => {
@@ -656,59 +684,139 @@ export default function NewWebsitePage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4 mt-2">
-                  {templates.map((template) => (
-                    <Card
-                      key={template.id}
-                      className={`cursor-pointer transition-all ${
-                        selectedTemplateId === template.id
-                          ? 'ring-2 ring-primary'
-                          : 'hover:shadow-md'
-                      }`}
-                      onClick={() => {
-                        setSelectedTemplateId(template.id);
-                        checkTemplateForBlog(template);
-                      }}
-                    >
-                      <CardContent className="p-4">
-                        <div className="w-full h-32 rounded mb-2 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center overflow-hidden">
-                          {template.previewImage ? (
-                            <img
-                              src={template.previewImage}
-                              alt={template.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                // Fallback to placeholder if image fails to load
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                const parent = target.parentElement;
-                                if (parent && !parent.querySelector('.image-placeholder')) {
-                                  const placeholder = document.createElement('div');
-                                  placeholder.className = 'image-placeholder w-full h-full flex items-center justify-center text-purple-400';
-                                  placeholder.innerHTML = '<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
-                                  parent.appendChild(placeholder);
-                                }
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-purple-400">
-                              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                              </svg>
+                  {templates.map((template) => {
+                    const sourceUrl = templateSourceUrls[template.name];
+                    const isHovered = hoveredTemplateId === template.id;
+                    
+                    return (
+                      <div
+                        key={template.id}
+                        className="relative"
+                        onMouseEnter={() => sourceUrl && handleTemplateHover(template.id, template.name)}
+                        onMouseLeave={handleTemplateLeave}
+                      >
+                        <Card
+                          className={`cursor-pointer transition-all duration-300 ${
+                            selectedTemplateId === template.id
+                              ? 'ring-2 ring-primary shadow-lg'
+                              : 'hover:shadow-lg'
+                          } ${isHovered ? 'ring-2 ring-blue-400 z-50' : ''}`}
+                          style={{
+                            transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+                            zIndex: isHovered ? 50 : 1,
+                          }}
+                          onClick={() => {
+                            setSelectedTemplateId(template.id);
+                            checkTemplateForBlog(template);
+                          }}
+                        >
+                          <CardContent className="p-4">
+                            <div className="relative w-full rounded-lg mb-3 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center overflow-hidden shadow-md border border-gray-200 transition-all duration-300"
+                              style={{ height: isHovered ? '400px' : '160px' }}
+                            >
+                              {isHovered && previewUrl ? (
+                                <div className="w-full h-full relative">
+                                  <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+                                    <a
+                                      href={previewUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-white transition-colors"
+                                      onClick={(e) => e.stopPropagation()}
+                                      title="Open in new tab"
+                                    >
+                                      <ExternalLink className="w-4 h-4 text-blue-600" />
+                                    </a>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setHoveredTemplateId(null);
+                                        setPreviewUrl(null);
+                                      }}
+                                      className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-md hover:bg-white transition-colors"
+                                      title="Close preview"
+                                    >
+                                      <X className="w-4 h-4 text-gray-600" />
+                                    </button>
+                                  </div>
+                                  <iframe
+                                    src={previewUrl}
+                                    className="w-full h-full border-0 rounded-lg"
+                                    title={`Live preview of ${template.name}`}
+                                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                                    loading="lazy"
+                                    style={{ pointerEvents: 'auto' }}
+                                  />
+                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/20 to-transparent h-12 pointer-events-none" />
+                                </div>
+                              ) : (
+                                <>
+                                  {template.previewImage ? (
+                                    <img
+                                      src={template.previewImage}
+                                      alt={template.name}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                      onError={(e) => {
+                                        // Fallback to placeholder if image fails to load
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent && !parent.querySelector('.image-placeholder')) {
+                                          const placeholder = document.createElement('div');
+                                          placeholder.className = 'image-placeholder w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-200 to-blue-200';
+                                          placeholder.innerHTML = '<svg class="w-16 h-16 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
+                                          parent.appendChild(placeholder);
+                                        }
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-200 to-blue-200 text-purple-500">
+                                      <Globe className="w-16 h-16 mb-2 opacity-50" />
+                                      <span className="text-xs font-medium opacity-70">Preview</span>
+                                    </div>
+                                  )}
+                                  {sourceUrl && (
+                                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full p-1.5 shadow-md">
+                                      <ExternalLink className="w-3 h-3 text-blue-600" />
+                                    </div>
+                                  )}
+                                </>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <h4 className="font-semibold text-sm">{template.name}</h4>
-                        {template.description && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {template.description}
-                          </p>
-                        )}
-                        {template.isDefault && (
-                          <span className="text-xs text-primary mt-1 block">Default</span>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                            <h4 className="font-semibold text-sm text-gray-900">{template.name}</h4>
+                            {template.category && (
+                              <span className="inline-block text-xs text-purple-600 font-medium mt-1 mb-1">
+                                {template.category}
+                              </span>
+                            )}
+                            {template.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {template.description}
+                              </p>
+                            )}
+                            {template.isDefault && (
+                              <Badge variant="outline" className="mt-2 text-xs border-primary text-primary">
+                                Default Template
+                              </Badge>
+                            )}
+                            {sourceUrl && !isHovered && (
+                              <div className="mt-2 text-xs text-blue-600 flex items-center gap-1">
+                                <Globe className="w-3 h-3" />
+                                <span>Hover to preview live site</span>
+                              </div>
+                            )}
+                            {isHovered && sourceUrl && (
+                              <div className="mt-2 text-xs text-green-600 flex items-center gap-1 font-medium">
+                                <Globe className="w-3 h-3" />
+                                <span>Live preview active</span>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
