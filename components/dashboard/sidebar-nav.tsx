@@ -50,6 +50,7 @@ import {
   Stethoscope,
   ClipboardList,
   Globe,
+  Sparkles,
 } from 'lucide-react';
 
 // Parent Portal items - what parents see when they log in

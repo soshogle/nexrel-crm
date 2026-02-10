@@ -53,47 +53,47 @@ export default function AppointmentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-black">
       <div className="container mx-auto py-6 space-y-6">
-        {/* Monday.com Style Header */}
+        {/* Soshogle Style Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <h1 className="text-4xl font-bold gradient-text flex items-center gap-3">
+              <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-purple-500/20">
                 <Calendar className="h-6 w-6 text-white" />
               </div>
               Appointments
             </h1>
-            <p className="text-purple-200 mt-1">Manage your schedule and appointments</p>
+            <p className="text-purple-300/70 mt-2 text-sm">Manage your schedule and appointments</p>
           </div>
           {isAdmin && (
-            <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+            <Button className="gradient-primary hover:opacity-90 text-white shadow-lg shadow-purple-500/30">
               <Plus className="h-4 w-4 mr-2" />
               New Appointment
             </Button>
           )}
         </div>
 
-        {/* Monday.com Style Tabs */}
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader className="border-b border-slate-700 pb-0">
+        {/* Soshogle Style Tabs */}
+        <Card className="glass-effect border-purple-500/20 shadow-xl">
+          <CardHeader className="border-b border-purple-500/20 pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-white">All Appointments</CardTitle>
-                <CardDescription className="text-slate-400">{appointments.length} appointments</CardDescription>
+                <CardTitle className="text-white text-xl">All Appointments</CardTitle>
+                <CardDescription className="text-purple-300/60">{appointments.length} appointments</CardDescription>
               </div>
               <Tabs value={view} onValueChange={(v: any) => setView(v)}>
-                <TabsList className="bg-slate-700/50">
-                  <TabsTrigger value="board" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-slate-300">
+                <TabsList className="bg-black/40 border border-purple-500/20">
+                  <TabsTrigger value="board" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300/70 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
                     📋 Board
                   </TabsTrigger>
-                  <TabsTrigger value="list" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-slate-300">
+                  <TabsTrigger value="list" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300/70 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
                     <List className="h-4 w-4 mr-1" /> List
                   </TabsTrigger>
-                  <TabsTrigger value="calendar" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-slate-300">
+                  <TabsTrigger value="calendar" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300/70 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
                     <Calendar className="h-4 w-4 mr-1" /> Calendar
                   </TabsTrigger>
-                  <TabsTrigger value="analytics" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-slate-300">
+                  <TabsTrigger value="analytics" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300/70 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
                     <BarChart3 className="h-4 w-4 mr-1" /> Analytics
                   </TabsTrigger>
                 </TabsList>
@@ -110,19 +110,19 @@ export default function AppointmentsPage() {
             ) : view === 'list' ? (
               <div className="space-y-2">
                 {appointments.length === 0 ? (
-                  <div className="text-center py-12 text-slate-400">No appointments</div>
+                  <div className="text-center py-12 text-purple-300/50">No appointments</div>
                 ) : (
                   appointments.map(apt => (
-                    <div key={apt.id} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg border border-slate-600 hover:border-purple-500 transition-colors">
+                    <div key={apt.id} className="flex items-center justify-between p-4 glass-effect rounded-lg border-purple-500/20 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 transition-all">
                       <div>
                         <p className="font-medium text-white">{apt.title}</p>
-                        <p className="text-sm text-slate-400">{new Date(apt.startTime).toLocaleString()}</p>
+                        <p className="text-sm text-purple-300/60">{new Date(apt.startTime).toLocaleString()}</p>
                       </div>
                       <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        apt.status === 'CONFIRMED' ? 'bg-green-500/20 text-green-400' :
-                        apt.status === 'SCHEDULED' ? 'bg-blue-500/20 text-blue-400' :
-                        apt.status === 'COMPLETED' ? 'bg-gray-500/20 text-gray-400' :
-                        'bg-red-500/20 text-red-400'
+                        apt.status === 'CONFIRMED' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                        apt.status === 'SCHEDULED' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                        apt.status === 'COMPLETED' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
+                        'bg-red-500/20 text-red-400 border border-red-500/30'
                       }`}>
                         {apt.status}
                       </div>
@@ -133,8 +133,8 @@ export default function AppointmentsPage() {
             ) : view === 'calendar' ? (
               <div className="text-center py-12">
                 <Calendar className="h-16 w-16 mx-auto text-purple-400 mb-4" />
-                <p className="text-slate-400">Calendar view</p>
-                <Button variant="outline" className="mt-4 border-purple-500 text-purple-400" asChild>
+                <p className="text-purple-300/60">Calendar view</p>
+                <Button variant="outline" className="mt-4 border-purple-500/40 text-purple-300 hover:border-purple-500 hover:text-purple-400 hover:bg-purple-500/10" asChild>
                   <Link href="/dashboard/calendar">Open Full Calendar</Link>
                 </Button>
               </div>
@@ -142,43 +142,43 @@ export default function AppointmentsPage() {
               /* Analytics View */
               <div className="space-y-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-5">
+                  <div className="gradient-primary rounded-xl p-5 shadow-lg shadow-purple-500/20">
                     <div className="text-3xl font-bold text-white">{stats.scheduled}</div>
-                    <div className="text-blue-200 text-sm">Scheduled</div>
+                    <div className="text-purple-100 text-sm">Scheduled</div>
                   </div>
-                  <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-5">
+                  <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl p-5 shadow-lg shadow-green-500/20">
                     <div className="text-3xl font-bold text-white">{stats.confirmed}</div>
-                    <div className="text-green-200 text-sm">Confirmed</div>
+                    <div className="text-green-100 text-sm">Confirmed</div>
                   </div>
-                  <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-5">
+                  <div className="gradient-primary rounded-xl p-5 shadow-lg shadow-purple-500/20">
                     <div className="text-3xl font-bold text-white">{stats.completed}</div>
-                    <div className="text-purple-200 text-sm">Completed</div>
+                    <div className="text-purple-100 text-sm">Completed</div>
                   </div>
-                  <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-xl p-5">
+                  <div className="bg-gradient-to-br from-red-500 to-rose-500 rounded-xl p-5 shadow-lg shadow-red-500/20">
                     <div className="text-3xl font-bold text-white">{stats.cancelled}</div>
-                    <div className="text-red-200 text-sm">Cancelled</div>
+                    <div className="text-red-100 text-sm">Cancelled</div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-slate-700/30 rounded-xl p-6 border border-slate-600">
+                  <div className="glass-effect rounded-xl p-6 border-purple-500/20">
                     <h3 className="text-lg font-semibold text-white mb-4">Completion Rate</h3>
                     <div className="flex items-center gap-4">
-                      <div className="text-4xl font-bold text-green-400">
+                      <div className="text-4xl font-bold gradient-text">
                         {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
                       </div>
-                      <div className="flex-1 h-4 bg-slate-600 rounded-full overflow-hidden">
+                      <div className="flex-1 h-4 bg-black/40 rounded-full overflow-hidden border border-purple-500/20">
                         <div 
-                          className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full"
+                          className="h-full gradient-primary rounded-full"
                           style={{ width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%` }}
                         />
                       </div>
                     </div>
                   </div>
-                  <div className="bg-slate-700/30 rounded-xl p-6 border border-slate-600">
+                  <div className="glass-effect rounded-xl p-6 border-purple-500/20">
                     <h3 className="text-lg font-semibold text-white mb-4">This Week</h3>
-                    <div className="text-4xl font-bold text-purple-400">{stats.thisWeek}</div>
-                    <div className="text-slate-400 text-sm">appointments scheduled</div>
+                    <div className="text-4xl font-bold gradient-text">{stats.thisWeek}</div>
+                    <div className="text-purple-300/60 text-sm">appointments scheduled</div>
                   </div>
                 </div>
               </div>
