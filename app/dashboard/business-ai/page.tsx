@@ -321,6 +321,98 @@ export default function BusinessAIPage() {
           </div>
         </div>
 
+        {/* CRM Statistics Visualizations - Display right under header */}
+        {showVisualizations && crmStatistics && (
+          <Card 
+            data-visualization-section
+            className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-purple-50/30 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-500"
+          >
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-purple-600" />
+                CRM Statistics Visualization
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowVisualizations(false);
+                  setCrmStatistics(null);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Key Metrics Cards */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-4 bg-white/50 rounded-lg border border-purple-200">
+                    <p className="text-sm text-gray-600 mb-1">Total Leads</p>
+                    <p className="text-3xl font-bold text-purple-600">{crmStatistics.totalLeads}</p>
+                  </div>
+                  <div className="text-center p-4 bg-white/50 rounded-lg border border-green-200">
+                    <p className="text-sm text-gray-600 mb-1">Open Deals</p>
+                    <p className="text-3xl font-bold text-green-600">{crmStatistics.openDeals}</p>
+                  </div>
+                  <div className="text-center p-4 bg-white/50 rounded-lg border border-blue-200">
+                    <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
+                    <p className="text-2xl font-bold text-blue-600">${crmStatistics.totalRevenue?.toLocaleString() || 0}</p>
+                  </div>
+                  <div className="text-center p-4 bg-white/50 rounded-lg border border-orange-200">
+                    <p className="text-sm text-gray-600 mb-1">Campaigns</p>
+                    <p className="text-3xl font-bold text-orange-600">{crmStatistics.totalCampaigns}</p>
+                  </div>
+                </div>
+
+                {/* CRM Metrics Bar Chart */}
+                <div className="bg-white/50 rounded-lg p-4 border border-purple-200">
+                  <h4 className="text-sm font-semibold mb-4">CRM Metrics Overview</h4>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={[
+                      { name: 'Leads', value: crmStatistics.totalLeads },
+                      { name: 'Deals', value: crmStatistics.totalDeals },
+                      { name: 'Open Deals', value: crmStatistics.openDeals },
+                      { name: 'Campaigns', value: crmStatistics.totalCampaigns },
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#8b5cf6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Recent Leads List */}
+                {crmStatistics.recentLeads && crmStatistics.recentLeads.length > 0 && (
+                  <Card className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-blue-50/30 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-blue-600" />
+                        Recent Leads
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {crmStatistics.recentLeads.slice(0, 5).map((lead: any, index: number) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-white/50 rounded-lg">
+                            <div>
+                              <p className="font-semibold text-sm">{lead.name}</p>
+                              <p className="text-xs text-gray-500">{lead.status}</p>
+                            </div>
+                            <Badge variant="outline">{new Date(lead.createdAt).toLocaleDateString()}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Mode Tabs */}
         <Tabs value={mode} onValueChange={(value) => setMode(value as 'voice' | 'dashboard')} className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-2 bg-white/80 backdrop-blur-sm border-purple-200">
@@ -338,98 +430,6 @@ export default function BusinessAIPage() {
           <TabsContent value="voice" className="space-y-6 mt-6">
             {/* AI Brain Voice Agent - Rendered directly on this page for proper display */}
             <AIBrainVoiceAgentInline />
-
-            {/* CRM Statistics Visualizations - Displayed when agent queries data */}
-            {showVisualizations && crmStatistics && (
-              <Card 
-                data-visualization-section
-                className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-purple-50/30 backdrop-blur-sm mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
-              >
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-purple-600" />
-                    CRM Statistics Visualization
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowVisualizations(false);
-                      setCrmStatistics(null);
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Key Metrics Cards */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-4 bg-white/50 rounded-lg border border-purple-200">
-                        <p className="text-sm text-gray-600 mb-1">Total Leads</p>
-                        <p className="text-3xl font-bold text-purple-600">{crmStatistics.totalLeads}</p>
-                      </div>
-                      <div className="text-center p-4 bg-white/50 rounded-lg border border-green-200">
-                        <p className="text-sm text-gray-600 mb-1">Open Deals</p>
-                        <p className="text-3xl font-bold text-green-600">{crmStatistics.openDeals}</p>
-                      </div>
-                      <div className="text-center p-4 bg-white/50 rounded-lg border border-blue-200">
-                        <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
-                        <p className="text-2xl font-bold text-blue-600">${crmStatistics.totalRevenue?.toLocaleString() || 0}</p>
-                      </div>
-                      <div className="text-center p-4 bg-white/50 rounded-lg border border-orange-200">
-                        <p className="text-sm text-gray-600 mb-1">Campaigns</p>
-                        <p className="text-3xl font-bold text-orange-600">{crmStatistics.totalCampaigns}</p>
-                      </div>
-                    </div>
-
-                    {/* CRM Metrics Bar Chart */}
-                    <div className="bg-white/50 rounded-lg p-4 border border-purple-200">
-                      <h4 className="text-sm font-semibold mb-4">CRM Metrics Overview</h4>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={[
-                          { name: 'Leads', value: crmStatistics.totalLeads },
-                          { name: 'Deals', value: crmStatistics.totalDeals },
-                          { name: 'Open Deals', value: crmStatistics.openDeals },
-                          { name: 'Campaigns', value: crmStatistics.totalCampaigns },
-                        ]}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip />
-                          <Bar dataKey="value" fill="#8b5cf6" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    {/* Recent Leads List */}
-                    {crmStatistics.recentLeads && crmStatistics.recentLeads.length > 0 && (
-                      <Card className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-blue-50/30 backdrop-blur-sm">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Activity className="h-5 w-5 text-blue-600" />
-                            Recent Leads
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            {crmStatistics.recentLeads.slice(0, 5).map((lead: any, index: number) => (
-                              <div key={index} className="flex items-center justify-between p-2 bg-white/50 rounded-lg">
-                                <div>
-                                  <p className="font-semibold text-sm">{lead.name}</p>
-                                  <p className="text-xs text-gray-500">{lead.status}</p>
-                                </div>
-                                <Badge variant="outline">{new Date(lead.createdAt).toLocaleDateString()}</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Health Score Card */}
             {healthScore && (

@@ -777,65 +777,65 @@ async function deleteDuplicateContacts(userId: string, params: any) {
 }
 
 async function getStatistics(userId: string) {
-  const [
-    totalLeads,
-    totalDeals,
-    totalCampaigns,
-    totalAppointments,
-    totalWorkflows,
-  ] = await Promise.all([
-    prisma.lead.count({ where: { userId } }),
-    prisma.deal.count({ where: { userId } }),
-    prisma.campaign.count({ where: { userId } }),
-    prisma.bookingAppointment.count({ where: { userId } }),
-    prisma.workflow.count({ where: { userId } }),
-  ]);
+  try {
+    const [leads, deals, contacts, campaigns] = await Promise.all([
+      prisma.lead.count({ where: { userId } }),
+      prisma.deal.count({ where: { userId } }),
+      prisma.lead.count({ where: { userId } }), // Contacts are leads
+      prisma.campaign.count({ where: { userId } }),
+    ]);
 
-  const [
-    newLeads,
-    qualifiedLeads,
-  ] = await Promise.all([
-    prisma.lead.count({ where: { userId, status: "NEW" } }),
-    prisma.lead.count({ where: { userId, status: "QUALIFIED" } }),
-  ]);
+    // Get open deals (deals without actualCloseDate)
+    const allDeals = await prisma.deal.findMany({
+      where: { userId },
+      select: { 
+        value: true,
+        actualCloseDate: true,
+      },
+    });
+    
+    const openDeals = allDeals.filter(deal => deal.actualCloseDate === null);
+    const totalRevenue = openDeals.reduce((sum, deal) => sum + (deal.value || 0), 0);
 
-  // Get won deals by finding stages named "Won"
-  const wonStages = await prisma.pipelineStage.findMany({
-    where: {
-      pipeline: { userId },
-      name: { contains: "Won", mode: "insensitive" },
-    },
-    select: { id: true },
-  });
+    const recentLeads = await prisma.lead.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: { 
+        businessName: true,
+        contactPerson: true,
+        status: true, 
+        createdAt: true 
+      },
+    });
 
-  const wonStageIds = wonStages.map((s) => s.id);
-
-  const wonDeals = await prisma.deal.count({
-    where: { userId, stageId: { in: wonStageIds } },
-  });
-
-  const totalDealValue = await prisma.deal.aggregate({
-    where: { userId, stageId: { in: wonStageIds } },
-    _sum: { value: true },
-  });
-
-  return {
-    overview: {
-      totalLeads,
-      totalDeals,
-      totalCampaigns,
-      totalAppointments,
-      totalWorkflows,
-    },
-    leads: {
-      new: newLeads,
-      qualified: qualifiedLeads,
-    },
-    deals: {
-      won: wonDeals,
-      totalRevenue: (totalDealValue._sum?.value ?? 0),
-    },
-  };
+    // Return format matching CRM voice agent functions route
+    return {
+      success: true,
+      statistics: {
+        totalLeads: leads,
+        totalDeals: deals,
+        totalContacts: contacts,
+        totalCampaigns: campaigns,
+        openDeals: openDeals.length,
+        totalRevenue: totalRevenue,
+        recentLeads: recentLeads.map(lead => ({
+          name: lead.contactPerson || lead.businessName || 'Unknown',
+          status: lead.status,
+          createdAt: lead.createdAt.toISOString(),
+        })),
+      },
+      message: `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns.`,
+      // Flag to trigger visualization
+      triggerVisualization: true,
+    };
+  } catch (error: any) {
+    console.error('Error getting statistics:', error);
+    return { 
+      error: 'Failed to get statistics', 
+      details: error.message 
+    };
+  }
 }
 
 async function getRecentActivity(userId: string, params: any) {

@@ -1143,11 +1143,24 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       console.log("⚠️ [Chat] No action result or result missing");
     }
 
+    // Check if get_statistics was called and trigger visualization
+    let shouldTriggerVisualization = false;
+    if (actionResult?.action === "get_statistics" && actionResult?.result?.statistics) {
+      shouldTriggerVisualization = true;
+      console.log("📊 [Chat] get_statistics called - will trigger visualization");
+      // Auto-navigate to AI Brain page for visualizations
+      if (!navigationUrl) {
+        navigationUrl = "/dashboard/business-ai?mode=voice";
+        console.log("🧭 [Chat] Auto-navigating to AI Brain page for visualizations");
+      }
+    }
+    
     // Final logging before response
     console.log("═══════════════════════════════════════════════════════");
     console.log("📤 [Chat] FINAL RESPONSE:");
     console.log("  - Navigation URL:", navigationUrl || "NULL (NOT SET)");
     console.log("  - Action result:", actionResult ? "Present" : "NULL (NOT SET)");
+    console.log("  - Trigger visualization:", shouldTriggerVisualization);
     if (actionResult) {
       console.log("  - Action result action:", actionResult.action);
       console.log("  - Action result has result:", !!actionResult.result);
@@ -1163,6 +1176,10 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       action: actionResult,
       navigateTo: navigationUrl,
       timestamp: new Date().toISOString(),
+      ...(shouldTriggerVisualization && {
+        triggerVisualization: true,
+        statistics: actionResult.result.statistics,
+      }),
       ...(suggestions && {
         suggestions: {
           ...suggestions,
