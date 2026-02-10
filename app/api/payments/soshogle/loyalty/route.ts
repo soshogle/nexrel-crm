@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
     const customer = await soshoglePay.getCustomer(session.user.id);
     if (!customer) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+      return NextResponse.json({ success: true, loyaltyPoints: [] });
     }
 
     const loyaltyPoints = await prisma.soshogleLoyaltyPoints.findMany({
@@ -50,7 +50,10 @@ export async function POST(req: NextRequest) {
 
     const customer = await soshoglePay.getCustomer(session.user.id);
     if (!customer) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Please set up payments first' },
+        { status: 400 }
+      );
     }
 
     const body = await req.json();

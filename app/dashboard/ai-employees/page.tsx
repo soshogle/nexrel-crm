@@ -617,6 +617,20 @@ export default function AIEmployeesPage() {
           setActiveResearchJobId(null);
           setActiveResearchJob(null);
           fetchJobs();
+
+          if (status === 'COMPLETED' && job.output) {
+            const jobForDialog = {
+              ...job,
+              employee: job.employee || { name: 'Lead Researcher', type: 'LEAD_RESEARCHER' },
+              createdAt: typeof job.createdAt === 'string' ? job.createdAt : job.createdAt?.toISOString?.(),
+              completedAt: job.completedAt ? (typeof job.completedAt === 'string' ? job.completedAt : job.completedAt?.toISOString?.()) : undefined,
+            };
+            setSelectedJob(jobForDialog as AIJob);
+            setShowResultsDialog(true);
+            toast.success('Research complete! View results below.');
+          } else if (status === 'FAILED') {
+            toast.error('Research failed. Check Monitor Jobs for details.');
+          }
         }
       } catch (e) {
         console.error('Failed to poll research job:', e);
@@ -1597,10 +1611,10 @@ export default function AIEmployeesPage() {
               {selectedJob && getEmployeeIcon(selectedJob.employee.type)}
               {selectedJob?.employee.name} - Results
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription suppressHydrationWarning>
               {selectedJob?.jobType.replace(/_/g, ' ')} • 
               {selectedJob?.status === 'COMPLETED' ? ' Completed' : ' Failed'} on{' '}
-              {selectedJob?.completedAt && new Date(selectedJob.completedAt).toLocaleString()}
+              {selectedJob?.completedAt && (typeof selectedJob.completedAt === 'string' ? new Date(selectedJob.completedAt).toLocaleString() : String(selectedJob.completedAt))}
             </DialogDescription>
           </DialogHeader>
           

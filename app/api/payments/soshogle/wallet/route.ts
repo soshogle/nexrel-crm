@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
 
     const customer = await soshoglePay.getCustomer(session.user.id);
     if (!customer) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+      return NextResponse.json({
+        success: true,
+        wallet: { balance: 0, currency: 'USD' },
+      });
     }
 
     const wallet = await soshoglePay.getOrCreateWallet(customer.id);
@@ -46,7 +49,10 @@ export async function POST(req: NextRequest) {
 
     const customer = await soshoglePay.getCustomer(session.user.id);
     if (!customer) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Please set up payments first' },
+        { status: 400 }
+      );
     }
 
     const wallet = await soshoglePay.getOrCreateWallet(customer.id);
