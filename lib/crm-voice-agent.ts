@@ -115,7 +115,7 @@ export class CrmVoiceAgentService {
         },
         tts: {
           voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
-          model_id: 'eleven_turbo_v2_5',
+          model_id: language !== 'en' ? 'eleven_turbo_v2_5' : 'eleven_turbo_v2', // English requires v2, non-English requires v2_5
         },
         turn: {
           mode: 'turn',
