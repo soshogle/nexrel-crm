@@ -68,6 +68,19 @@ export class WebsiteBuilder {
     // Deep clone the template structure
     const customized = JSON.parse(JSON.stringify(templateStructure));
 
+    // Check if template has blog page
+    const hasBlog = customized.pages?.some((page: any) => 
+      page.id === 'blog' || 
+      page.path === '/blog' || 
+      page.name?.toLowerCase().includes('blog')
+    );
+
+    // Add blog page if requested and template doesn't have it
+    if (answers.blog?.enabled && !hasBlog) {
+      customized.pages = customized.pages || [];
+      customized.pages.push(this.createBlogPage(answers));
+    }
+
     // Replace placeholders with user data
     customized.pages = customized.pages.map((page: any) => ({
       ...page,
@@ -77,6 +90,31 @@ export class WebsiteBuilder {
         props: this.customizeComponentProps(component.props, answers),
       })),
     }));
+
+    // Add CTA to existing blog pages if requested
+    if (answers.blog?.includeCTA && hasBlog) {
+      customized.pages = customized.pages.map((page: any) => {
+        if (page.id === 'blog' || page.path === '/blog' || page.name?.toLowerCase().includes('blog')) {
+          // Check if CTA already exists
+          const hasCTA = page.components?.some((comp: any) => comp.type === 'CTASection');
+          if (!hasCTA) {
+            page.components = page.components || [];
+            page.components.push({
+              id: 'blog-cta',
+              type: 'CTASection',
+              props: {
+                title: answers.blog.ctaText || 'Ready to Get Started?',
+                description: `Contact ${answers.businessName} today to learn more`,
+                ctaText: answers.blog.ctaText || 'Contact Us',
+                ctaLink: answers.blog.ctaLink || '/contact',
+                variant: 'primary',
+              },
+            });
+          }
+        }
+        return page;
+      });
+    }
 
     // Customize global styles if needed
     if (answers.brandColor) {
@@ -157,6 +195,11 @@ export class WebsiteBuilder {
       pages.push(this.createServicesPage(answers));
     }
     
+    // Blog page (if enabled)
+    if (answers.blog?.enabled) {
+      pages.push(this.createBlogPage(answers));
+    }
+    
     // About page
     pages.push(this.createAboutPage(answers));
     
@@ -183,6 +226,11 @@ export class WebsiteBuilder {
     // Products page
     if (answers.products && answers.products.length > 0) {
       pages.push(this.createProductsPage(answers));
+    }
+    
+    // Blog page (if enabled)
+    if (answers.blog?.enabled) {
+      pages.push(this.createBlogPage(answers));
     }
     
     // About page
@@ -394,6 +442,62 @@ export class WebsiteBuilder {
       seo: {
         title: `About Us - ${answers.businessName}`,
         description: `Learn more about ${answers.businessName}`,
+      },
+    };
+  }
+
+  /**
+   * Create blog page
+   */
+  private createBlogPage(answers: QuestionnaireAnswers): WebsitePage {
+    const components: Component[] = [];
+    
+    components.push({
+      id: 'blog-header',
+      type: 'PageHeader',
+      props: {
+        title: 'Blog',
+        description: `Latest news and insights from ${answers.businessName}`,
+      },
+    });
+    
+    // Blog posts grid/list
+    components.push({
+      id: 'blog-posts',
+      type: 'BlogPostsGrid',
+      props: {
+        posts: [], // Empty initially, will be populated by user
+        showExcerpt: true,
+        showDate: true,
+        showAuthor: false,
+        postsPerPage: 6,
+      },
+    });
+    
+    // CTA section if enabled
+    if (answers.blog?.includeCTA) {
+      components.push({
+        id: 'blog-cta',
+        type: 'CTASection',
+        props: {
+          title: answers.blog.ctaText || 'Ready to Get Started?',
+          description: `Contact ${answers.businessName} today to learn more`,
+          ctaText: answers.blog.ctaText || 'Contact Us',
+          ctaLink: answers.blog.ctaLink || '/contact',
+          variant: 'primary',
+        },
+      });
+    }
+    
+    return {
+      id: 'blog',
+      name: 'Blog',
+      path: '/blog',
+      components,
+      seo: {
+        title: `Blog - ${answers.businessName}`,
+        description: `Read the latest articles, news, and insights from ${answers.businessName}`,
+        keywords: ['blog', 'news', 'articles', answers.businessName],
       },
     };
   }

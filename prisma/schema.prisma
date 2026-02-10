@@ -108,7 +108,7 @@ model User {
   parentRole                  Boolean                      @default(false)
   subdomain                   String?                      @unique
   language                    String?                      @default("en")
-  crmVoiceAgentId             String?                      // ElevenLabs agent ID for CRM voice assistant
+  crmVoiceAgentId             String? // ElevenLabs agent ID for CRM voice assistant
   workflowExecutions          AIWorkflowExecution[]        @relation("UserWorkflowExecutions")
   workflowInstances           AIWorkflowInstance[]         @relation("UserWorkflowInstances")
   accounts                    Account[]
@@ -374,7 +374,7 @@ model Lead {
   // Generic Multi-Industry Workflow Relations
   workflowInstances       WorkflowInstance[]       @relation("LeadWorkflowInstances")
   // Website Orders Relations
-  websiteOrders          WebsiteOrder[]
+  websiteOrders           WebsiteOrder[]
 
   @@index([userId])
   @@index([status])
@@ -598,17 +598,17 @@ model Referral {
 }
 
 model VoiceAgent {
-  id                      String                        @id @default(cuid())
+  id                      String           @id @default(cuid())
   userId                  String
   name                    String
   description             String?
-  type                    VoiceAgentType                @default(INBOUND)
-  status                  VoiceAgentStatus              @default(TESTING)
+  type                    VoiceAgentType   @default(INBOUND)
+  status                  VoiceAgentStatus @default(TESTING)
   twilioPhoneNumber       String?
-  twilioAccountId         String?                       // Which Twilio account owns this number
-  backupPhoneNumber       String?                       // Backup number if failover occurred
+  twilioAccountId         String? // Which Twilio account owns this number
+  backupPhoneNumber       String? // Backup number if failover occurred
   lastHealthCheck         DateTime?
-  healthStatus            String?                       // HEALTHY, DEGRADED, FAILED
+  healthStatus            String? // HEALTHY, DEGRADED, FAILED
   businessName            String
   businessIndustry        String?
   knowledgeBase           String?
@@ -616,49 +616,49 @@ model VoiceAgent {
   greetingMessage         String?
   voiceId                 String?
   elevenLabsAgentId       String?
-  stability               Float?                        @default(0.5)
-  similarityBoost         Float?                        @default(0.75)
-  style                   Float?                        @default(0.0)
-  useSpeakerBoost         Boolean?                      @default(true)
-  ttsModel                String?                       @default("eleven_turbo_v2")
-  outputFormat            String?                       @default("pcm_16000")
-  llmModel                String?                       @default("gpt-4")
-  temperature             Float?                        @default(0.7)
-  maxTokens               Int?                          @default(500)
+  stability               Float?           @default(0.5)
+  similarityBoost         Float?           @default(0.75)
+  style                   Float?           @default(0.0)
+  useSpeakerBoost         Boolean?         @default(true)
+  ttsModel                String?          @default("eleven_turbo_v2")
+  outputFormat            String?          @default("pcm_16000")
+  llmModel                String?          @default("gpt-4")
+  temperature             Float?           @default(0.7)
+  maxTokens               Int?             @default(500)
   firstMessage            String?
   systemPrompt            String?
-  maxCallDuration         Int?                          @default(600)
-  enableInterruptions     Boolean?                      @default(true)
-  responseDelay           Int?                          @default(100)
+  maxCallDuration         Int?             @default(600)
+  enableInterruptions     Boolean?         @default(true)
+  responseDelay           Int?             @default(100)
   pronunciationDict       String?
-  language                String?                       @default("en")
+  language                String?          @default("en")
   googleCalendarId        String?
   availableHours          String?
-  appointmentDuration     Int?                          @default(30)
+  appointmentDuration     Int?             @default(30)
   transferPhone           String?
-  enableVoicemail         Boolean?                      @default(false)
+  enableVoicemail         Boolean?         @default(false)
   voicemailMessage        String?
   webhookUrl              String?
   customData              String?
-  createdAt               DateTime                      @default(now())
-  updatedAt               DateTime                      @updatedAt
-  enableCallRecording     Boolean?                      @default(true)
-  enableTranscription     Boolean?                      @default(true)
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  enableCallRecording     Boolean?         @default(true)
+  enableTranscription     Boolean?         @default(true)
   recordingEmailAddress   String?
-  sendRecordingEmail      Boolean?                      @default(false)
+  sendRecordingEmail      Boolean?         @default(false)
   elevenLabsPhoneNumberId String?
-  enableReservations      Boolean?                      @default(false)
+  enableReservations      Boolean?         @default(false)
   inboundGreeting         String?
   outboundGreeting        String?
 
   // Relations
-  twilioAccount TwilioAccount? @relation(fields: [twilioAccountId], references: [id], onDelete: SetNull)
-  callLogs                CallLog[]
-  campaigns               Campaign[]
-  outboundCalls           OutboundCall[]
-  user                    User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  knowledgeBaseFiles      VoiceAgentKnowledgeBaseFile[] @relation("VoiceAgentKnowledgeFiles")
-  usageRecords            VoiceUsage[]
+  twilioAccount      TwilioAccount?                @relation(fields: [twilioAccountId], references: [id], onDelete: SetNull)
+  callLogs           CallLog[]
+  campaigns          Campaign[]
+  outboundCalls      OutboundCall[]
+  user               User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  knowledgeBaseFiles VoiceAgentKnowledgeBaseFile[] @relation("VoiceAgentKnowledgeFiles")
+  usageRecords       VoiceUsage[]
 
   @@index([userId])
   @@index([status])
@@ -2011,21 +2011,21 @@ model Storefront {
 }
 
 model Order {
-  id                   String        @id @default(cuid())
+  id                   String         @id @default(cuid())
   userId               String
-  orderNumber          String        @unique
+  orderNumber          String         @unique
   customerName         String
   customerEmail        String
   customerPhone        String?
   shippingAddress      Json?
   billingAddress       Json?
-  status               OrderStatus   @default(PENDING)
-  paymentStatus        PaymentStatus @default(PENDING)
+  status               OrderStatus    @default(PENDING)
+  paymentStatus        PaymentStatus  @default(PENDING)
   paymentMethod        String?
   subtotal             Int
-  tax                  Int           @default(0)
-  shipping             Int           @default(0)
-  discount             Int           @default(0)
+  tax                  Int            @default(0)
+  shipping             Int            @default(0)
+  discount             Int            @default(0)
   total                Int
   notes                String?
   trackingNumber       String?
@@ -2033,9 +2033,9 @@ model Order {
   fulfilledAt          DateTime?
   canceledAt           DateTime?
   cancelReason         String?
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
-  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   items                OrderItem[]
   reservationPreOrders Reservation[]
   websiteOrders        WebsiteOrder[]
@@ -9171,7 +9171,14 @@ model Website {
   elevenLabsAgentId      String?
   integrationsConfig     Json    @default("{}") // Active integrations config
   googleAnalyticsId      String? // Google Analytics tracking ID (UA-XXXXX or G-XXXXX)
-  facebookPixelId         String? // Facebook Pixel ID
+  facebookPixelId        String? // Facebook Pixel ID
+
+  // Google Search Console OAuth (for SEO automation)
+  googleSearchConsoleAccessToken  String? // Encrypted OAuth access token
+  googleSearchConsoleRefreshToken String? // Encrypted OAuth refresh token
+  googleSearchConsoleTokenExpiry  DateTime? // Token expiration time
+  googleSearchConsoleSiteUrl      String? // Verified site URL in Search Console
+  googleSearchConsoleVerified     Boolean   @default(false) // Whether site is verified
 
   // Resources (separate per website)
   githubRepoUrl       String?
@@ -9299,13 +9306,13 @@ model WebsiteTemplate {
 
 // WebsiteProduct - Links products to websites for e-commerce
 model WebsiteProduct {
-  id          String   @id @default(cuid())
-  websiteId   String
-  productId   String
-  displayOrder Int?    // Order in which product appears on website
-  isVisible   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  websiteId    String
+  productId    String
+  displayOrder Int? // Order in which product appears on website
+  isVisible    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -9317,14 +9324,14 @@ model WebsiteProduct {
 
 // WebsiteOrder - Links orders to websites
 model WebsiteOrder {
-  id          String   @id @default(cuid())
-  websiteId   String
-  orderId     String
-  customerId  String?  // Lead ID
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  websiteId  String
+  orderId    String
+  customerId String? // Lead ID
+  createdAt  DateTime @default(now())
 
-  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  website  Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   customer Lead?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   @@unique([websiteId, orderId])
@@ -9335,14 +9342,14 @@ model WebsiteOrder {
 
 // WebsiteStockSettings - Stock management settings per website
 model WebsiteStockSettings {
-  id                String   @id @default(cuid())
-  websiteId         String   @unique
-  lowStockThreshold Int      @default(10)
-  outOfStockAction  String   @default("HIDE") // HIDE, SHOW_OUT_OF_STOCK, PRE_ORDER
-  syncInventory     Boolean  @default(true)
-  autoHideOutOfStock Boolean @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  websiteId          String   @unique
+  lowStockThreshold  Int      @default(10)
+  outOfStockAction   String   @default("HIDE") // HIDE, SHOW_OUT_OF_STOCK, PRE_ORDER
+  syncInventory      Boolean  @default(true)
+  autoHideOutOfStock Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
 
@@ -9355,25 +9362,25 @@ model WebsiteStockSettings {
 
 // Twilio Account Management - Multiple accounts for failover
 model TwilioAccount {
-  id            String   @id @default(cuid())
-  name          String   // e.g., "Primary", "Backup 1"
-  accountSid    String   @unique
-  authToken     String   // Encrypted
-  isPrimary     Boolean  @default(false)
-  isActive      Boolean  @default(true)
-  status        String   @default("ACTIVE") // ACTIVE, SUSPENDED, FAILED
-  lastHealthCheck DateTime?
-  healthStatus  String?  // HEALTHY, DEGRADED, FAILED
-  phoneNumbersCount Int  @default(0)
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String    @id @default(cuid())
+  name              String // e.g., "Primary", "Backup 1"
+  accountSid        String    @unique
+  authToken         String // Encrypted
+  isPrimary         Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  status            String    @default("ACTIVE") // ACTIVE, SUSPENDED, FAILED
+  lastHealthCheck   DateTime?
+  healthStatus      String? // HEALTHY, DEGRADED, FAILED
+  phoneNumbersCount Int       @default(0)
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   // Relations
-  voiceAgents       VoiceAgent[]
-  healthChecks      TwilioHealthCheck[]
-  failoverEventsFrom TwilioFailoverEvent[] @relation("FailoverFromAccount")
-  failoverEventsTo   TwilioFailoverEvent[] @relation("FailoverToAccount")
+  voiceAgents        VoiceAgent[]
+  healthChecks       TwilioHealthCheck[]
+  failoverEventsFrom TwilioFailoverEvent[]     @relation("FailoverFromAccount")
+  failoverEventsTo   TwilioFailoverEvent[]     @relation("FailoverToAccount")
   backupPhoneNumbers TwilioBackupPhoneNumber[]
 
   @@index([isPrimary])
@@ -9384,9 +9391,9 @@ model TwilioAccount {
 
 // Failover Events & Logging
 enum TwilioFailoverTriggerType {
-  CRITICAL  // Account hacked, suspended - immediate failover
-  DEGRADED  // Multiple agents failing - approval window
-  MANUAL    // Admin manually triggered
+  CRITICAL // Account hacked, suspended - immediate failover
+  DEGRADED // Multiple agents failing - approval window
+  MANUAL // Admin manually triggered
 }
 
 enum TwilioFailoverStatus {
@@ -9399,16 +9406,16 @@ enum TwilioFailoverStatus {
 }
 
 model TwilioFailoverEvent {
-  id                      String   @id @default(cuid())
+  id                      String                    @id @default(cuid())
   triggerType             TwilioFailoverTriggerType
-  detectedAt              DateTime @default(now())
+  detectedAt              DateTime                  @default(now())
   approvalWindowStarted   DateTime?
   approvedAt              DateTime?
-  approvedBy              String?  // User ID or 'AUTO'
-  status                  TwilioFailoverStatus @default(PENDING_APPROVAL)
+  approvedBy              String? // User ID or 'AUTO'
+  status                  TwilioFailoverStatus      @default(PENDING_APPROVAL)
   affectedAgentsCount     Int
   totalActiveAgentsCount  Int
-  testResultsDuringWindow Json?    // Store test results during approval window
+  testResultsDuringWindow Json? // Store test results during approval window
   failoverExecutedAt      DateTime?
   rollbackAt              DateTime?
   rollbackBy              String?
@@ -9444,13 +9451,13 @@ enum TwilioHealthCheckStatus {
 }
 
 model TwilioHealthCheck {
-  id            String   @id @default(cuid())
+  id              String                  @id @default(cuid())
   twilioAccountId String
-  checkType     TwilioHealthCheckType
-  status        TwilioHealthCheckStatus
-  details       Json?    // Store detailed results
-  responseTime  Int?     // Milliseconds
-  checkedAt     DateTime @default(now())
+  checkType       TwilioHealthCheckType
+  status          TwilioHealthCheckStatus
+  details         Json? // Store detailed results
+  responseTime    Int? // Milliseconds
+  checkedAt       DateTime                @default(now())
 
   // Relations
   twilioAccount TwilioAccount @relation(fields: [twilioAccountId], references: [id], onDelete: Cascade)
@@ -9463,14 +9470,14 @@ model TwilioHealthCheck {
 
 // Backup Phone Number Pool
 model TwilioBackupPhoneNumber {
-  id              String   @id @default(cuid())
-  twilioAccountId String
-  phoneNumber     String   @unique
-  countryCode     String
-  isAssigned      Boolean  @default(false)
+  id                String    @id @default(cuid())
+  twilioAccountId   String
+  phoneNumber       String    @unique
+  countryCode       String
+  isAssigned        Boolean   @default(false)
   assignedToAgentId String?
-  assignedAt      DateTime?
-  createdAt       DateTime @default(now())
+  assignedAt        DateTime?
+  createdAt         DateTime  @default(now())
 
   // Relations
   twilioAccount TwilioAccount @relation(fields: [twilioAccountId], references: [id], onDelete: Cascade)

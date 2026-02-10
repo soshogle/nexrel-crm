@@ -15,7 +15,13 @@
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage",
-    "test:watch": "vitest watch"
+    "test:watch": "vitest watch",
+    "migrate": "tsx scripts/migrate-with-backup.ts",
+    "migrate:dev": "tsx scripts/migrate-with-backup.ts dev",
+    "migrate:deploy": "tsx scripts/migrate-with-backup.ts deploy",
+    "migrate:reset": "tsx scripts/migrate-with-backup.ts reset",
+    "backup": "tsx scripts/backup-database.ts",
+    "migrate:create": "npx prisma migrate dev --create-only"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/seed.ts"
