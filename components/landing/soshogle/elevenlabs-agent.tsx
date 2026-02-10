@@ -412,30 +412,8 @@ export function ElevenLabsAgent({
     console.log('Conversation stopped successfully');
   };
 
-  // Auto-start conversation if autoStart prop is true
-  // But only after user interaction (browsers require user gesture for getUserMedia)
-  useEffect(() => {
-    if (autoStart && agentId && !isConnected && !isLoading && status === 'idle') {
-      // Create a one-time click handler to start conversation
-      // This ensures getUserMedia is called after user interaction
-      const handleAutoStart = () => {
-        startConversation();
-        // Remove listener after first use
-        document.removeEventListener('click', handleAutoStart);
-        document.removeEventListener('touchstart', handleAutoStart);
-      };
-      
-      // Listen for any user interaction
-      document.addEventListener('click', handleAutoStart, { once: true });
-      document.addEventListener('touchstart', handleAutoStart, { once: true });
-      
-      return () => {
-        document.removeEventListener('click', handleAutoStart);
-        document.removeEventListener('touchstart', handleAutoStart);
-      };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoStart, agentId, isConnected, isLoading, status]);
+  // Note: autoStart prop is ignored - user must always click button to start
+  // This ensures getUserMedia is called with proper user interaction (browser requirement)
 
   useEffect(() => {
     return () => {
