@@ -300,10 +300,19 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
     return [
       {
         name: 'get_statistics',
-        description: 'Get comprehensive CRM statistics including total revenue, active leads, open deals, contacts, and business health metrics. Use this when the user asks about their CRM stats, business performance, or wants to see data.',
+        description: 'Get comprehensive CRM statistics and generate graphs/charts. Use this when the user asks for graphs, charts, visualizations, sales data, revenue comparisons, sales over time, monthly sales, or any statistics. This automatically creates visualizations displayed on the AI Brain page. Supports time-based queries like "last 7 months" or "compare with previous year".',
         parameters: {
           type: 'object',
-          properties: {},
+          properties: {
+            period: {
+              type: 'string',
+              description: 'Time period for statistics. Examples: "last_7_months", "last_year", "last_30_days", "all_time"',
+            },
+            compareWith: {
+              type: 'string',
+              description: 'Compare with previous period. Examples: "previous_year", "previous_period"',
+            },
+          },
         },
         server_url: serverUrl,
       },

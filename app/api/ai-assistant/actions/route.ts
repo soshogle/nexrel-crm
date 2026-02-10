@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
         break;
 
       case AVAILABLE_ACTIONS.GET_STATISTICS:
-        result = await getStatistics(user.id);
+        result = await getStatistics(user.id, parameters);
         break;
 
       case AVAILABLE_ACTIONS.GET_RECENT_ACTIVITY:
@@ -776,29 +776,123 @@ async function deleteDuplicateContacts(userId: string, params: any) {
   };
 }
 
-async function getStatistics(userId: string) {
+async function getStatistics(userId: string, params: any = {}) {
   try {
+    const { period = 'all_time', compareWith } = params;
+    
+    // Calculate date ranges based on period
+    const now = new Date();
+    let startDate: Date | null = null;
+    let compareStartDate: Date | null = null;
+    let compareEndDate: Date | null = null;
+    
+    if (period === 'last_7_months') {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 7, 1);
+      if (compareWith === 'previous_year' || compareWith === 'previous_period') {
+        compareStartDate = new Date(now.getFullYear() - 1, now.getMonth() - 7, 1);
+        compareEndDate = new Date(now.getFullYear() - 1, now.getMonth(), 0);
+      }
+    } else if (period === 'last_year') {
+      startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+    } else if (period === 'last_30_days') {
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Build where clauses
+    const whereClause: any = { userId };
+    const compareWhereClause: any = { userId };
+    
+    if (startDate) {
+      whereClause.createdAt = { gte: startDate };
+    }
+    
+    if (compareStartDate && compareEndDate) {
+      compareWhereClause.createdAt = { gte: compareStartDate, lte: compareEndDate };
+    }
+
     const [leads, deals, contacts, campaigns] = await Promise.all([
-      prisma.lead.count({ where: { userId } }),
-      prisma.deal.count({ where: { userId } }),
-      prisma.lead.count({ where: { userId } }), // Contacts are leads
-      prisma.campaign.count({ where: { userId } }),
+      prisma.lead.count({ where: whereClause }),
+      prisma.deal.count({ where: whereClause }),
+      prisma.lead.count({ where: whereClause }), // Contacts are leads
+      prisma.campaign.count({ where: whereClause }),
     ]);
 
-    // Get open deals (deals without actualCloseDate)
+    // Get all deals with dates for time-series analysis
     const allDeals = await prisma.deal.findMany({
-      where: { userId },
+      where: whereClause,
       select: { 
         value: true,
         actualCloseDate: true,
+        createdAt: true,
+        expectedCloseDate: true,
       },
     });
     
     const openDeals = allDeals.filter(deal => deal.actualCloseDate === null);
     const totalRevenue = openDeals.reduce((sum, deal) => sum + (deal.value || 0), 0);
+    
+    // Calculate revenue by month for the last 7 months
+    const monthlyRevenue: Record<string, number> = {};
+    const monthlyDeals: Record<string, number> = {};
+    
+    for (let i = 6; i >= 0; i--) {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`;
+      monthlyRevenue[monthKey] = 0;
+      monthlyDeals[monthKey] = 0;
+    }
+    
+    // Calculate revenue and deals by month
+    allDeals.forEach(deal => {
+      const dealDate = deal.actualCloseDate || deal.createdAt || deal.expectedCloseDate;
+      if (dealDate) {
+        const date = new Date(dealDate);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (monthlyRevenue.hasOwnProperty(monthKey)) {
+          monthlyRevenue[monthKey] += deal.value || 0;
+          monthlyDeals[monthKey] += 1;
+        }
+      }
+    });
+    
+    // Get comparison data if requested
+    let comparisonData: any = null;
+    if (compareStartDate && compareEndDate) {
+      const compareDeals = await prisma.deal.findMany({
+        where: compareWhereClause,
+        select: { 
+          value: true,
+          actualCloseDate: true,
+          createdAt: true,
+        },
+      });
+      
+      const compareMonthlyRevenue: Record<string, number> = {};
+      for (let i = 6; i >= 0; i--) {
+        const monthDate = new Date(now.getFullYear() - 1, now.getMonth() - i, 1);
+        const monthKey = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`;
+        compareMonthlyRevenue[monthKey] = 0;
+      }
+      
+      compareDeals.forEach(deal => {
+        const dealDate = deal.actualCloseDate || deal.createdAt;
+        if (dealDate) {
+          const date = new Date(dealDate);
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          if (compareMonthlyRevenue.hasOwnProperty(monthKey)) {
+            compareMonthlyRevenue[monthKey] += deal.value || 0;
+          }
+        }
+      });
+      
+      comparisonData = {
+        monthlyRevenue: compareMonthlyRevenue,
+        totalRevenue: compareDeals.reduce((sum, deal) => sum + (deal.value || 0), 0),
+      };
+    }
 
     const recentLeads = await prisma.lead.findMany({
-      where: { userId },
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
       take: 5,
       select: { 
@@ -819,6 +913,9 @@ async function getStatistics(userId: string) {
         totalCampaigns: campaigns,
         openDeals: openDeals.length,
         totalRevenue: totalRevenue,
+        monthlyRevenue,
+        monthlyDeals,
+        comparisonData,
         recentLeads: recentLeads.map(lead => ({
           name: lead.contactPerson || lead.businessName || 'Unknown',
           status: lead.status,

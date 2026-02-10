@@ -365,24 +365,53 @@ export default function BusinessAIPage() {
                   </div>
                 </div>
 
-                {/* CRM Metrics Bar Chart */}
-                <div className="bg-white/50 rounded-lg p-4 border border-purple-200">
-                  <h4 className="text-sm font-semibold mb-4">CRM Metrics Overview</h4>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={[
-                      { name: 'Leads', value: crmStatistics.totalLeads },
-                      { name: 'Deals', value: crmStatistics.totalDeals },
-                      { name: 'Open Deals', value: crmStatistics.openDeals },
-                      { name: 'Campaigns', value: crmStatistics.totalCampaigns },
-                    ]}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="value" fill="#8b5cf6" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                {/* Monthly Revenue Chart or CRM Metrics Bar Chart */}
+                {crmStatistics.monthlyRevenue ? (
+                  <div className="bg-white/50 rounded-lg p-4 border border-purple-200">
+                    <h4 className="text-sm font-semibold mb-4">
+                      {crmStatistics.comparisonData ? 'Sales Comparison (Last 7 Months)' : 'Monthly Revenue (Last 7 Months)'}
+                    </h4>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <BarChart 
+                        data={Object.entries(crmStatistics.monthlyRevenue).map(([month, revenue]) => ({
+                          month: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                          current: revenue as number,
+                          ...(crmStatistics.comparisonData?.monthlyRevenue && {
+                            previous: crmStatistics.comparisonData.monthlyRevenue[month] || 0,
+                          }),
+                        }))}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip formatter={(value: any) => `$${Number(value).toLocaleString()}`} />
+                        <Legend />
+                        <Bar dataKey="current" fill="#8b5cf6" name="Current Period" />
+                        {crmStatistics.comparisonData && (
+                          <Bar dataKey="previous" fill="#a78bfa" name="Previous Period" />
+                        )}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="bg-white/50 rounded-lg p-4 border border-purple-200">
+                    <h4 className="text-sm font-semibold mb-4">CRM Metrics Overview</h4>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={[
+                        { name: 'Leads', value: crmStatistics.totalLeads },
+                        { name: 'Deals', value: crmStatistics.totalDeals },
+                        { name: 'Open Deals', value: crmStatistics.openDeals },
+                        { name: 'Campaigns', value: crmStatistics.totalCampaigns },
+                      ]}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#8b5cf6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
 
                 {/* Recent Leads List */}
                 {crmStatistics.recentLeads && crmStatistics.recentLeads.length > 0 && (
