@@ -51,8 +51,14 @@ export function VoiceAIAgent({
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initialize speech recognition
+  // Initialize speech recognition - Only if not on business-ai page (which uses ElevenLabsAgent)
   useEffect(() => {
+    // Don't initialize if we're on the business-ai page (it uses ElevenLabsAgent instead)
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/dashboard/business-ai')) {
+      console.log('⚠️ VoiceAIAgent: Skipping speech recognition initialization on business-ai page');
+      return;
+    }
+
     if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
       const SpeechRecognition = (window as any).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
@@ -66,9 +72,12 @@ export function VoiceAIAgent({
       };
 
       recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setState('idle');
-        setIsListening(false);
+        // Only log errors, don't show them if we're on business-ai page
+        if (!window.location.pathname.includes('/dashboard/business-ai')) {
+          console.error('Speech recognition error:', event.error);
+          setState('idle');
+          setIsListening(false);
+        }
       };
 
       recognitionRef.current.onend = () => {
