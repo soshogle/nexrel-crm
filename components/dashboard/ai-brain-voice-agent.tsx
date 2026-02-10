@@ -7,6 +7,7 @@
 
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
 import { usePathname } from 'next/navigation';
 import { useAIBrainVoice } from '@/lib/ai-brain-voice-context';
@@ -25,20 +26,49 @@ export function AIBrainVoiceAgent() {
 
   const isAIBrainPage = pathname?.includes('/dashboard/business-ai') || pathname?.includes('/dashboard/ai-brain');
   
-  // Always render when conversation is active (for persistence)
+  // Check localStorage for persisted conversation state
+  const [persistedActive, setPersistedActive] = useState(false);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem('ai-brain-voice-agent-state');
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          setPersistedActive(state.conversationActive || false);
+        } catch (e) {
+          console.error('Failed to load persisted state:', e);
+        }
+      }
+    }
+  }, []);
+
+  // Always render when conversation is active OR persisted as active (for persistence)
   // On AI Brain page, this will be hidden and inline component takes over
   // On other pages, this shows as floating widget
-  const shouldShow = conversationActive;
+  const shouldShow = conversationActive || persistedActive;
 
   const handleAgentSpeakingChange = (speaking: boolean) => {
-    setConversationActive(speaking);
+    console.log('🎤 [AI Brain Voice Global] Agent speaking change:', speaking);
+    // When speaking starts, mark as active
+    // When speaking stops, don't immediately mark as inactive - connection might just be paused
+    if (speaking) {
+      setConversationActive(true);
+      // Update persisted state
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('ai-brain-voice-agent-state', JSON.stringify({
+          conversationActive: true,
+        }));
+        setPersistedActive(true);
+      }
+    }
+    // Don't set to false when speaking stops - connection might still be active
   };
 
   const handleConversationEnd = (transcript: any[], audioBlob?: Blob) => {
     console.log('🛑 [AI Brain Voice] Conversation ended:', transcript);
-    // Only set to false if this is an explicit end (not just unmounting)
-    // The conversation state will persist in localStorage for reconnection
-    // Don't immediately set to false - let user explicitly stop via button
+    // Don't set to false immediately - keep state active for reconnection
+    // Only clear if user explicitly stops via button
   };
 
   // Don't render if loading or error
@@ -51,7 +81,7 @@ export function AIBrainVoiceAgent() {
     return null;
   }
 
-  // Only render globally when conversation is active and NOT on AI Brain page
+  // Only render globally when conversation is active (or persisted) and NOT on AI Brain page
   if (!shouldShow) {
     return null;
   }

@@ -105,13 +105,32 @@ export default function BusinessAIPage() {
   const [showVisualizations, setShowVisualizations] = useState(false);
   const [conversationMessages, setConversationMessages] = useState<any[]>([]);
   
+  // Debug: Log when statistics change
+  useEffect(() => {
+    if (crmStatistics) {
+      console.log('📊 [AI Brain Page] CRM Statistics updated:', crmStatistics);
+      console.log('📊 [AI Brain Page] Show visualizations:', showVisualizations);
+    }
+  }, [crmStatistics, showVisualizations]);
+  
   // Listen for visualization updates from global AI Brain voice agent
   useEffect(() => {
     const handleVisualizationUpdate = (event: CustomEvent) => {
       console.log('📊 [AI Brain Page] Received visualization update:', event.detail);
+      console.log('📊 [AI Brain Page] Statistics data:', event.detail?.statistics);
       if (event.detail?.statistics) {
+        console.log('✅ [AI Brain Page] Setting statistics and showing visualizations');
         setCrmStatistics(event.detail.statistics);
         setShowVisualizations(true);
+        // Force scroll to visualizations
+        setTimeout(() => {
+          const visualizationElement = document.querySelector('[data-visualization-section]');
+          if (visualizationElement) {
+            visualizationElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      } else {
+        console.warn('⚠️ [AI Brain Page] Event received but no statistics in detail:', event.detail);
       }
     };
 
@@ -322,7 +341,10 @@ export default function BusinessAIPage() {
 
             {/* CRM Statistics Visualizations - Displayed when agent queries data */}
             {showVisualizations && crmStatistics && (
-              <Card className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-purple-50/30 backdrop-blur-sm mt-6">
+              <Card 
+                data-visualization-section
+                className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-purple-50/30 backdrop-blur-sm mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+              >
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="h-5 w-5 text-purple-600" />

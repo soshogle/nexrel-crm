@@ -130,13 +130,15 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
       if (data.success && data.statistics) {
         // Dispatch custom event to notify AI Brain page to show visualizations
         if (typeof window !== 'undefined') {
-          console.log('📊 [AI Brain Voice Context] Dispatching visualization event with statistics:', data.statistics);
-          window.dispatchEvent(new CustomEvent(VISUALIZATION_EVENT, {
+          console.log('📊 [AI Brain Voice Context] Dispatching visualization event with statistics:', JSON.stringify(data.statistics, null, 2));
+          const event = new CustomEvent(VISUALIZATION_EVENT, {
             detail: {
               statistics: data.statistics,
               show: true,
             },
-          }));
+          });
+          window.dispatchEvent(event);
+          console.log('✅ [AI Brain Voice Context] Event dispatched:', event.type, event.detail);
         }
       } else if (data.error) {
         console.error('❌ [AI Brain Voice Context] Statistics API returned error:', data.error);
