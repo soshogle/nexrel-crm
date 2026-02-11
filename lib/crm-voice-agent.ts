@@ -243,8 +243,16 @@ Available functions:
 - create_deal: Create a new deal
 - search_contacts: Search for contacts by name, email, or company
 - get_recent_activity: Get recent CRM activity
+- list_voice_agents: List user's voice AI agents. USE when user asks "which agents do I have" or to confirm agent choice before calling.
+- make_outbound_call: Call a single contact. USE when user says "call [contact] and [explain/discuss] [topic]" - e.g. "call John and explain our new promo", "call contact Be about the discount". If user specifies an agent ("use Sarah"), pass voiceAgentName. Otherwise system picks the best agent.
+- call_leads: Call multiple leads. USE when user says "call all my leads from today", "call today's leads and give them 10% off", "call all new leads and explain the promo". Use period: "today" for leads created today. If user specifies an agent, pass voiceAgentName.
+- send_sms: Text a single contact. USE when user says "text [contact] and [message]", "send SMS to [contact]", "message [contact]". E.g. "text John about our new promo".
+- send_email: Email a single contact. USE when user says "email [contact] about [topic]", "send email to [contact]". E.g. "email John about our new promo".
+- sms_leads: Text multiple leads. USE when user says "text all my leads from today", "SMS today's leads with [message]". Use period: "today" for leads created today.
+- email_leads: Email multiple leads. USE when user says "email all my leads from today", "send email to today's leads about [topic]". Use period: "today" for leads created today.
 
 IMPORTANT: When users ask "how many new leads today" or "show me my leads" → use list_leads (navigates to contacts page). When users ask for graphs, charts, or sales trends → use get_statistics (shows visualizations on AI Brain). Do not use get_statistics for simple lead/deal counts.
+For calling: "call John and tell him about the promo" → make_outbound_call. "call all leads from today with 10% off" → call_leads. If user has a preference for which agent ("use Sarah"), pass voiceAgentName. If unsure, use list_voice_agents and ask which agent they want.
 
 Remember: You're speaking, not typing. Keep it brief and natural. When reporting statistics, speak clearly and highlight the most important numbers.
 `;
@@ -434,6 +442,176 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
               description: 'Maximum number of results (optional, default 10)',
             },
           },
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'list_voice_agents',
+        description: 'List the user\'s voice AI agents/employees. Use when user asks which agents they have, or to confirm which agent to use before making calls.',
+        parameters: { type: 'object', properties: {} },
+        server_url: serverUrl,
+      },
+      {
+        name: 'make_outbound_call',
+        description: 'Call a single contact with a specific purpose. Use when user says "call [contact] and [explain/discuss/tell them about] [purpose]". E.g. "call John and explain our new promo", "call contact Be about the discount". If user specifies an agent ("use Sarah"), pass voiceAgentName.',
+        parameters: {
+          type: 'object',
+          properties: {
+            contactName: { type: 'string', description: 'Name of contact to call (required)' },
+            phoneNumber: { type: 'string', description: 'Phone number (optional if contact exists)' },
+            purpose: { type: 'string', description: 'What to discuss - e.g. new promo, 10% discount (required)' },
+            notes: { type: 'string', description: 'Talking points or script for the call (optional)' },
+            voiceAgentName: { type: 'string', description: 'Which agent to use if user has a preference (optional)' },
+            immediate: { type: 'boolean', description: 'Call now (true) or schedule (false). Default true.' },
+          },
+          required: ['contactName', 'purpose'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'call_leads',
+        description: 'Call multiple leads that match criteria. Use when user says "call all my leads from today", "call today\'s leads and give them 10% off product B", "call all new leads and explain the promo". System auto-selects best agent for the task unless user specifies one.',
+        parameters: {
+          type: 'object',
+          properties: {
+            purpose: { type: 'string', description: 'What to tell them - e.g. 10% off product B, new promo (required)' },
+            notes: { type: 'string', description: 'Talking points (optional)' },
+            period: {
+              type: 'string',
+              description: 'Which leads: "today" (created today), "yesterday", "last_7_days", "last_30_days"',
+              enum: ['today', 'yesterday', 'last_7_days', 'last_30_days'],
+            },
+            status: { type: 'string', description: 'Filter by lead status (optional)' },
+            limit: { type: 'number', description: 'Max leads to call (default 50)' },
+            voiceAgentName: { type: 'string', description: 'Which agent to use if user has a preference (optional)' },
+          },
+          required: ['purpose'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'draft_sms',
+        description: 'Draft an SMS to show the user before sending. ALWAYS use first when user asks to text a contact. Creates draft and asks "Should I send it now or schedule it for later?" Do NOT send until user confirms.',
+        parameters: {
+          type: 'object',
+          properties: {
+            contactName: { type: 'string', description: 'Name of contact to text (required)' },
+            message: { type: 'string', description: 'SMS message content (required)' },
+            phoneNumber: { type: 'string', description: 'Phone number (optional if contact exists)' },
+          },
+          required: ['contactName', 'message'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'send_sms',
+        description: 'Send SMS immediately. Use ONLY when user explicitly confirmed ("yes send it", "send it now"). Do NOT use for initial requests - use draft_sms first.',
+        parameters: {
+          type: 'object',
+          properties: {
+            contactName: { type: 'string', description: 'Name of contact to text (required)' },
+            message: { type: 'string', description: 'SMS message content (required)' },
+            phoneNumber: { type: 'string', description: 'Phone number (optional if contact exists)' },
+          },
+          required: ['contactName', 'message'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'schedule_sms',
+        description: 'Schedule SMS for later. Use when user says "schedule it", "send it tomorrow", "text them at 9am". Requires scheduledFor (ISO date).',
+        parameters: {
+          type: 'object',
+          properties: {
+            contactName: { type: 'string', description: 'Name of contact (required)' },
+            message: { type: 'string', description: 'SMS message (required)' },
+            scheduledFor: { type: 'string', description: 'ISO date/time when to send' },
+          },
+          required: ['contactName', 'message', 'scheduledFor'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'draft_email',
+        description: 'Draft an email to show the user before sending. ALWAYS use first when user asks to email a contact. Creates draft and asks "Should I send it now or schedule it for later?" Do NOT send until user confirms.',
+        parameters: {
+          type: 'object',
+          properties: {
+            contactName: { type: 'string', description: 'Name of contact to email (required)' },
+            subject: { type: 'string', description: 'Email subject (required)' },
+            body: { type: 'string', description: 'Email body content (required)' },
+            email: { type: 'string', description: 'Email address (optional if contact exists)' },
+          },
+          required: ['contactName', 'subject', 'body'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'send_email',
+        description: 'Send email immediately. Use ONLY when user explicitly confirmed ("yes send it", "send it now"). Do NOT use for initial requests - use draft_email first.',
+        parameters: {
+          type: 'object',
+          properties: {
+            contactName: { type: 'string', description: 'Name of contact to email (required)' },
+            subject: { type: 'string', description: 'Email subject (required)' },
+            body: { type: 'string', description: 'Email body content (required)' },
+            email: { type: 'string', description: 'Email address (optional if contact exists)' },
+          },
+          required: ['contactName', 'subject', 'body'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'schedule_email',
+        description: 'Schedule email for later. Use when user says "schedule it", "send it tomorrow", "send at 9am". Requires scheduledFor (ISO date).',
+        parameters: {
+          type: 'object',
+          properties: {
+            contactName: { type: 'string', description: 'Name of contact (required)' },
+            subject: { type: 'string', description: 'Email subject (required)' },
+            body: { type: 'string', description: 'Email body (required)' },
+            scheduledFor: { type: 'string', description: 'ISO date/time when to send' },
+          },
+          required: ['contactName', 'subject', 'body', 'scheduledFor'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'sms_leads',
+        description: 'Send SMS to multiple leads by criteria. Use when user says "text all my leads from today", "SMS today\'s leads with [message]", "send SMS to all new leads". Use period: "today" for leads created today.',
+        parameters: {
+          type: 'object',
+          properties: {
+            message: { type: 'string', description: 'SMS message content (required). Use {name} for personalization.' },
+            period: {
+              type: 'string',
+              description: 'Which leads: today, yesterday, last_7_days, last_30_days',
+              enum: ['today', 'yesterday', 'last_7_days', 'last_30_days'],
+            },
+            status: { type: 'string', description: 'Filter by lead status (optional)' },
+            limit: { type: 'number', description: 'Max leads (default 50)' },
+          },
+          required: ['message'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'email_leads',
+        description: 'Send email to multiple leads by criteria. Use when user says "email all my leads from today", "send email to today\'s leads about [topic]", "email all new leads". Use period: "today" for leads created today.',
+        parameters: {
+          type: 'object',
+          properties: {
+            subject: { type: 'string', description: 'Email subject (required)' },
+            message: { type: 'string', description: 'Email body content (required). Use {name} for personalization.' },
+            period: {
+              type: 'string',
+              description: 'Which leads: today, yesterday, last_7_days, last_30_days',
+              enum: ['today', 'yesterday', 'last_7_days', 'last_30_days'],
+            },
+            status: { type: 'string', description: 'Filter by lead status (optional)' },
+            limit: { type: 'number', description: 'Max leads (default 50)' },
+          },
+          required: ['subject', 'message'],
         },
         server_url: serverUrl,
       },

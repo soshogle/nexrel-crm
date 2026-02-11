@@ -661,7 +661,7 @@ export default function BusinessAIPage() {
           <TabsList className="grid w-full max-w-md grid-cols-2 bg-white/80 backdrop-blur-sm border-purple-200">
             <TabsTrigger value="voice" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <Mic className="h-4 w-4" />
-              Voice Assistant
+              Forecasts
             </TabsTrigger>
             <TabsTrigger value="dashboard" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <BarChart3 className="h-4 w-4" />

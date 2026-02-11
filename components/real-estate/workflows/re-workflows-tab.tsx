@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { WorkflowBuilder } from './workflow-builder';
 import { HITLApprovalPanel } from './hitl-approval-panel';
 import { WorkflowInstanceMonitor } from './workflow-instance-monitor';
@@ -29,10 +30,22 @@ import {
 } from 'lucide-react';
 
 export function REWorkflowsTab() {
+  const searchParams = useSearchParams();
   const [showBuilder, setShowBuilder] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState('overview');
   const [workflows, setWorkflows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (searchParams?.get('openBuilder') === '1') {
+      setShowBuilder(true);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('openBuilder');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchWorkflows();

@@ -401,8 +401,38 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
     {
       type: "function",
       function: {
+        name: "add_workflow_task",
+        description: "Add a task/step to an existing workflow that the user is currently editing. Use when the user says things like 'add a trigger when lead is created', 'add a step to send email', 'add an action to call them', 'add a delay of 2 days'. Requires workflowId from context (active workflow draft).",
+        parameters: {
+          type: "object",
+          properties: {
+            workflowId: {
+              type: "string",
+              description: "The workflow ID to add the task to (from active workflow draft context - REQUIRED when user is editing a workflow)",
+            },
+            name: {
+              type: "string",
+              description: "Task name (required). E.g. 'Send welcome email', 'Call on birthday', '2-day delay'",
+            },
+            taskType: {
+              type: "string",
+              description: "Task type - TRIGGER for enrollment/start triggers, or action type like EMAIL, SMS, VOICE_CALL, DELAY, CUSTOM",
+              enum: ["TRIGGER", "EMAIL", "SMS", "VOICE_CALL", "DELAY", "CREATE_TASK", "CUSTOM"],
+            },
+            description: {
+              type: "string",
+              description: "Optional task description",
+            },
+          },
+          required: ["workflowId", "name"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
         name: "make_outbound_call",
-        description: "Schedule or immediately initiate an outbound call to a contact using a voice AI agent. Use this when the user wants to call someone or schedule a call.",
+        description: "Call a single contact with a specific purpose. Use when user says 'call [contact] and [explain/discuss] [topic]' - e.g. 'call John and explain our new promo', 'call contact Be about the discount'. If user specifies an agent ('use Sarah'), pass voiceAgentName. Otherwise system auto-selects the best agent for the task.",
         parameters: {
           type: "object",
           properties: {
@@ -416,19 +446,19 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
             },
             purpose: {
               type: "string",
-              description: "Purpose of the call - what the call is about (required)",
+              description: "What to discuss - e.g. new promo, 10% discount (required)",
             },
             notes: {
               type: "string",
-              description: "Call script or talking points - what the voice AI should discuss during the call (optional but recommended)",
+              description: "Call script or talking points (optional but recommended)",
             },
             voiceAgentId: {
               type: "string",
-              description: "Voice agent ID to use (optional - will use default active agent if not provided)",
+              description: "Voice agent ID to use (optional - auto-selects best agent if not provided)",
             },
             voiceAgentName: {
               type: "string",
-              description: "Voice agent name to use (optional - will use default active agent if not provided)",
+              description: "Voice agent name to use if user has a preference, e.g. 'use Sarah' (optional)",
             },
             immediate: {
               type: "boolean",
@@ -436,7 +466,7 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
             },
             scheduledFor: {
               type: "string",
-              description: "When to schedule the call (ISO date string, e.g., '2026-02-05T10:00:00'). Required if immediate is false.",
+              description: "When to schedule the call (ISO date string). Required if immediate is false.",
             },
             leadId: {
               type: "string",
@@ -444,6 +474,186 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
             },
           },
           required: ["contactName", "purpose"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "call_leads",
+        description: "Call multiple leads that match criteria. Use when user says 'call all my leads from today', 'call today's leads and give them 10% off product B', 'call all new leads and explain the promo'. System auto-selects the best agent unless user specifies one. Use list_voice_agents first if user asks which agent to use.",
+        parameters: {
+          type: "object",
+          properties: {
+            purpose: {
+              type: "string",
+              description: "What to tell them - e.g. 10% off product B, new promo (required)",
+            },
+            notes: {
+              type: "string",
+              description: "Talking points for the call (optional)",
+            },
+            period: {
+              type: "string",
+              description: "Which leads: 'today' (created today), 'yesterday', 'last_7_days', 'last_30_days'",
+              enum: ["today", "yesterday", "last_7_days", "last_30_days"],
+            },
+            status: {
+              type: "string",
+              description: "Filter by lead status (optional)",
+            },
+            limit: {
+              type: "number",
+              description: "Max leads to call (default 50)",
+            },
+            voiceAgentName: {
+              type: "string",
+              description: "Which agent to use if user has a preference (optional)",
+            },
+          },
+          required: ["purpose"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "draft_sms",
+        description: "Draft an SMS to show the user before sending. ALWAYS use first when user asks to text a contact. Creates draft and displays on screen. Do NOT send until user confirms. After drafting, ask: 'Should I send it now or schedule it for later?'",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Name of contact to text (required)" },
+            message: { type: "string", description: "SMS message content (required)" },
+            phoneNumber: { type: "string", description: "Phone number (optional if contact exists)" },
+          },
+          required: ["contactName", "message"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "send_sms",
+        description: "Send SMS immediately. Use ONLY when user has explicitly confirmed ('yes send it', 'send it now'). Do NOT use for initial requests - use draft_sms first.",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Name of contact to text (required)" },
+            message: { type: "string", description: "SMS message content (required)" },
+            phoneNumber: { type: "string", description: "Phone number (optional if contact exists)" },
+          },
+          required: ["contactName", "message"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "schedule_sms",
+        description: "Schedule SMS for later. Use when user says 'schedule it', 'send it tomorrow', 'text them at 9am'. Requires scheduledFor (ISO date).",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Name of contact (required)" },
+            message: { type: "string", description: "SMS message (required)" },
+            scheduledFor: { type: "string", description: "ISO date/time when to send" },
+          },
+          required: ["contactName", "message", "scheduledFor"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "draft_email",
+        description: "Draft an email to show the user before sending. ALWAYS use this first when user asks to email a contact. Generates the email and displays it on screen. Do NOT send until user confirms. After drafting, ask: 'Should I send it now or schedule it for later?'",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Name of contact to email (required)" },
+            subject: { type: "string", description: "Email subject (required)" },
+            body: { type: "string", description: "Email body content (required)" },
+            email: { type: "string", description: "Email address (optional if contact exists)" },
+          },
+          required: ["contactName", "subject", "body"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "send_email",
+        description: "Send an email immediately. Use ONLY when user has explicitly confirmed (e.g. 'yes send it', 'send it now'). Do NOT use for initial email requests - use draft_email first.",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Name of contact to email (required)" },
+            subject: { type: "string", description: "Email subject (required)" },
+            body: { type: "string", description: "Email body content (required)" },
+            email: { type: "string", description: "Email address (optional if contact exists)" },
+          },
+          required: ["contactName", "subject", "body"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "schedule_email",
+        description: "Schedule an email to be sent at a later time. Use when user says 'schedule it for later', 'send it tomorrow', 'send it at 9am', etc. Creates a workflow to send at the requested time.",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Name of contact (required)" },
+            subject: { type: "string", description: "Email subject (required)" },
+            body: { type: "string", description: "Email body (required)" },
+            scheduledFor: { type: "string", description: "ISO date/time when to send (e.g. 2026-02-12T09:00:00)" },
+          },
+          required: ["contactName", "subject", "body", "scheduledFor"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "sms_leads",
+        description: "Send SMS to multiple leads by criteria. Use when user says 'text all my leads from today', 'SMS today's leads with [message]', 'send SMS to all new leads'. Use period: 'today' for leads created today.",
+        parameters: {
+          type: "object",
+          properties: {
+            message: { type: "string", description: "SMS message content (required). Use {name} for personalization." },
+            period: {
+              type: "string",
+              description: "Which leads: today, yesterday, last_7_days, last_30_days",
+              enum: ["today", "yesterday", "last_7_days", "last_30_days"],
+            },
+            status: { type: "string", description: "Filter by lead status (optional)" },
+            limit: { type: "number", description: "Max leads (default 50)" },
+          },
+          required: ["message"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "email_leads",
+        description: "Send email to multiple leads by criteria. Use when user says 'email all my leads from today', 'send email to today's leads about [topic]', 'email all new leads'. Use period: 'today' for leads created today.",
+        parameters: {
+          type: "object",
+          properties: {
+            subject: { type: "string", description: "Email subject (required)" },
+            message: { type: "string", description: "Email body content (required). Use {name} for personalization." },
+            period: {
+              type: "string",
+              description: "Which leads: today, yesterday, last_7_days, last_30_days",
+              enum: ["today", "yesterday", "last_7_days", "last_30_days"],
+            },
+            status: { type: "string", description: "Filter by lead status (optional)" },
+            limit: { type: "number", description: "Max leads (default 50)" },
+          },
+          required: ["subject", "message"],
         },
       },
     },
@@ -502,7 +712,17 @@ export function mapFunctionToAction(functionName: string): string {
     debug_voice_agent: "debug_voice_agent",
     fix_voice_agent: "fix_voice_agent",
     create_workflow: "create_workflow",
+    add_workflow_task: "add_workflow_task",
     make_outbound_call: "make_outbound_call",
+    call_leads: "call_leads",
+    draft_sms: "draft_sms",
+    send_sms: "send_sms",
+    schedule_sms: "schedule_sms",
+    draft_email: "draft_email",
+    send_email: "send_email",
+    schedule_email: "schedule_email",
+    sms_leads: "sms_leads",
+    email_leads: "email_leads",
     navigate_to: "navigate_to", // Special case - handled differently
   };
   return mapping[functionName] || functionName;
@@ -553,7 +773,20 @@ export function getNavigationUrlForAction(
     case "setup_twilio":
       return "/dashboard/settings";
     case "create_workflow":
+    case "add_workflow_task":
       return "/dashboard/workflows";
+    case "make_outbound_call":
+    case "call_leads":
+      return "/dashboard/voice-agents";
+    case "draft_sms":
+    case "send_sms":
+    case "schedule_sms":
+    case "send_email":
+    case "draft_email":
+    case "schedule_email":
+    case "sms_leads":
+    case "email_leads":
+      return "/dashboard/messages";
     case "delete_duplicate_contacts":
       return "/dashboard/contacts";
     default:

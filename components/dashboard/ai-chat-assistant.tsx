@@ -27,6 +27,8 @@ import {
 import { toast } from "sonner";
 import { ElevenLabsAgent } from "@/components/landing/soshogle/elevenlabs-agent";
 import { ChatMarkdown } from "@/components/dashboard/chat-markdown";
+import { EmailPreviewCard, type EmailDraft } from "@/components/dashboard/email-preview-card";
+import { SmsPreviewCard, type SmsDraft } from "@/components/dashboard/sms-preview-card";
 
 interface Message {
   role: "user" | "assistant";
@@ -37,6 +39,8 @@ interface Message {
     type: string;
   };
   navigateTo?: string;
+  emailDraft?: EmailDraft;
+  smsDraft?: SmsDraft;
 }
 
 export function AIChatAssistant() {
@@ -187,6 +191,28 @@ export function AIChatAssistant() {
     }
     setIsLoading(true);
 
+    // Phase 2: Create draft first, then navigate when user says "create workflow" or "create campaign"
+    const lower = currentInput.toLowerCase();
+    if (/\b(create|set up|build)\b.*\bworkflow\b|\bworkflow\b.*\b(create|set up|build)\b/.test(lower)) {
+      fetch('/api/workflows/draft', { method: 'POST' })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          const draftId = data?.workflow?.id;
+          if (draftId && typeof window !== 'undefined') {
+            sessionStorage.setItem('activeWorkflowDraftId', draftId);
+          }
+          router.push(draftId ? `/dashboard/workflows?openBuilder=1&draftId=${draftId}` : '/dashboard/workflows?openBuilder=1');
+          toast.success('Opening workflow builder...');
+        })
+        .catch(() => {
+          router.push('/dashboard/workflows?openBuilder=1');
+          toast.success('Opening workflow builder...');
+        });
+    } else if (/\b(create|set up|build)\b.*\bcampaign\b|\bcampaign\b.*\b(create|set up|build)\b/.test(lower)) {
+      router.push('/dashboard/campaigns/email-drip/create');
+      toast.success('Opening campaign creator...');
+    }
+
     try {
       // If there's a file, handle file upload separately
       if (currentFile) {
@@ -194,6 +220,8 @@ export function AIChatAssistant() {
         formData.append('file', currentFile);
         formData.append('message', currentInput);
         formData.append('conversationHistory', JSON.stringify(messages.slice(-10)));
+        const activeDraftId = typeof window !== 'undefined' ? sessionStorage.getItem('activeWorkflowDraftId') : null;
+        if (activeDraftId) formData.append('context', JSON.stringify({ activeWorkflowDraftId: activeDraftId }));
 
         const response = await fetch("/api/ai-assistant/chat", {
           method: "POST",
@@ -228,12 +256,14 @@ export function AIChatAssistant() {
         }
       } else {
         // Regular text message
+        const activeDraftId = typeof window !== 'undefined' ? sessionStorage.getItem('activeWorkflowDraftId') : null;
         const response = await fetch("/api/ai-assistant/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: currentInput,
             conversationHistory: messages.slice(-10),
+            ...(activeDraftId && { context: { activeWorkflowDraftId: activeDraftId } }),
           }),
         });
 
@@ -249,6 +279,8 @@ export function AIChatAssistant() {
           content: data.reply,
           timestamp: new Date(),
           navigateTo: data.navigateTo,
+          ...(data.emailDraft && { emailDraft: data.emailDraft }),
+          ...(data.smsDraft && { smsDraft: data.smsDraft }),
         };
 
         setMessages((prev) => [...prev, assistantMessage]);
@@ -405,7 +437,93 @@ export function AIChatAssistant() {
                           ) : (
                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                           )}
-                          {message.navigateTo && message.role === "assistant" && (
+                          {message.emailDraft && message.role === "assistant" && (
+                            <EmailPreviewCard
+                              draft={message.emailDraft}
+                              onSend={async () => {
+                                const res = await fetch("/api/ai-assistant/confirm-email", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ action: "send", draft: message.emailDraft }),
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error);
+                                toast.success(data.message);
+                                setMessages((prev) =>
+                                  prev.map((m, i) =>
+                                    i === index
+                                      ? { ...m, emailDraft: undefined, content: `✓ ${data.message}` }
+                                      : m
+                                  )
+                                );
+                              }}
+                              onSchedule={async (scheduledFor) => {
+                                const res = await fetch("/api/ai-assistant/confirm-email", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    action: "schedule",
+                                    draft: message.emailDraft,
+                                    scheduledFor,
+                                  }),
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error);
+                                toast.success(data.message);
+                                setMessages((prev) =>
+                                  prev.map((m, i) =>
+                                    i === index
+                                      ? { ...m, emailDraft: undefined, content: `✓ ${data.message}` }
+                                      : m
+                                  )
+                                );
+                              }}
+                            />
+                          )}
+                          {message.smsDraft && message.role === "assistant" && (
+                            <SmsPreviewCard
+                              draft={message.smsDraft}
+                              onSend={async () => {
+                                const res = await fetch("/api/ai-assistant/confirm-sms", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ action: "send", draft: message.smsDraft }),
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error);
+                                toast.success(data.message);
+                                setMessages((prev) =>
+                                  prev.map((m, i) =>
+                                    i === index
+                                      ? { ...m, smsDraft: undefined, content: `✓ ${data.message}` }
+                                      : m
+                                  )
+                                );
+                              }}
+                              onSchedule={async (scheduledFor) => {
+                                const res = await fetch("/api/ai-assistant/confirm-sms", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    action: "schedule",
+                                    draft: message.smsDraft,
+                                    scheduledFor,
+                                  }),
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error);
+                                toast.success(data.message);
+                                setMessages((prev) =>
+                                  prev.map((m, i) =>
+                                    i === index
+                                      ? { ...m, smsDraft: undefined, content: `✓ ${data.message}` }
+                                      : m
+                                  )
+                                );
+                              }}
+                            />
+                          )}
+                          {message.navigateTo && message.role === "assistant" && !message.emailDraft && !message.smsDraft && (
                             <Button
                               variant="default"
                               size="sm"

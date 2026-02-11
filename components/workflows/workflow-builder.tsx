@@ -71,23 +71,86 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   
   const industryConfig = getIndustryConfig(industry);
   
+  // Transform API response to WorkflowTemplate shape
+  const transformWorkflow = (t: any) => ({
+    id: t.id,
+    name: t.name,
+    description: t.description || '',
+    workflowType: t.workflowType || t.type || 'CUSTOM',
+    industry: t.industry || industry,
+    tasks: (t.tasks || []).map((task: any) => ({
+      id: task.id,
+      name: task.name,
+      description: task.description || '',
+      taskType: task.taskType,
+      assignedAgentId: null,
+      assignedAgentName: null,
+      agentColor: '#6B7280',
+      displayOrder: task.displayOrder || 0,
+      isHITL: task.isHITL || false,
+      delayMinutes: task.delayValue || 0,
+      delayUnit: task.delayUnit || 'MINUTES',
+      parentTaskId: null,
+      branchCondition: null,
+    })),
+    isDefault: t.isDefault || false,
+    createdAt: t.createdAt || new Date().toISOString(),
+    updatedAt: t.updatedAt || new Date().toISOString(),
+  });
+
+  const fetchSingleWorkflow = async (id: string) => {
+    const res = await fetch(`/api/workflows/${id}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.workflow ? transformWorkflow(data.workflow) : null;
+  };
+
   // Fetch workflows on mount
   useEffect(() => {
     fetchWorkflows();
   }, [industry]);
-  
-  // Load initial workflow or show template gallery
+
+  // Phase 2: Load draft by ID when initialWorkflowId is set
   useEffect(() => {
-    if (workflows.length > 0 && !workflow && !showTemplateGallery) {
-      if (initialWorkflowId) {
-        const found = workflows.find(w => w.id === initialWorkflowId);
-        if (found) {
-          setWorkflow(found);
-          setShowTemplateGallery(false);
-        }
+    if (!initialWorkflowId || workflow || showTemplateGallery) return;
+    const load = async () => {
+      let found = workflows.find((w) => w.id === initialWorkflowId);
+      if (!found) {
+        found = (await fetchSingleWorkflow(initialWorkflowId)) || undefined;
       }
-    }
+      if (found) {
+        setWorkflow(found);
+        setShowTemplateGallery(false);
+      }
+    };
+    load();
   }, [workflows, initialWorkflowId, workflow, showTemplateGallery]);
+
+  // Phase 2: Set active draft in sessionStorage for AI assistant context
+  useEffect(() => {
+    if (typeof window === 'undefined' || !initialWorkflowId) return;
+    sessionStorage.setItem('activeWorkflowDraftId', initialWorkflowId);
+    return () => {
+      sessionStorage.removeItem('activeWorkflowDraftId');
+    };
+  }, [initialWorkflowId]);
+
+  // Phase 2: Poll for draft updates when AI adds tasks via API
+  useEffect(() => {
+    if (!initialWorkflowId || !workflow || workflow.id !== initialWorkflowId) return;
+    const interval = setInterval(async () => {
+      const updated = await fetchSingleWorkflow(initialWorkflowId);
+      if (updated) {
+        setWorkflow((prev) => {
+          if (!prev || prev.id !== initialWorkflowId) return prev;
+          const prevTaskIds = (prev.tasks || []).map((t) => t.id).sort().join(',');
+          const newTaskIds = (updated.tasks || []).map((t) => t.id).sort().join(',');
+          return prevTaskIds !== newTaskIds ? updated : prev;
+        });
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [initialWorkflowId, workflow?.id]);
   
   const fetchWorkflows = async () => {
     try {
@@ -97,47 +160,22 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
         const data = await res.json();
         const dbTemplates = data.workflows || [];
         
-        // Transform DB templates to match WorkflowTemplate interface
-        const transformedTemplates = dbTemplates.map((t: any) => {
-          // Load execution mode settings if they exist
-          if (t.executionMode === 'CAMPAIGN') {
+        // Load execution mode from first workflow if present
+        const first = dbTemplates[0];
+        if (first) {
+          if (first.executionMode === 'CAMPAIGN') {
             setExecutionMode('CAMPAIGN');
-            if (t.audience) setAudience(t.audience);
-            if (t.campaignSettings) setCampaignSettings(t.campaignSettings);
-          } else if (t.executionMode === 'DRIP' || t.enrollmentMode) {
+            if (first.audience) setAudience(first.audience);
+            if (first.campaignSettings) setCampaignSettings(first.campaignSettings);
+          } else if (first.executionMode === 'DRIP' || first.enrollmentMode) {
             setExecutionMode('DRIP');
             setEnrollmentMode(true);
-            if (t.enrollmentTriggers) setEnrollmentTriggers(t.enrollmentTriggers);
-            if (t.enableAbTesting) setEnableAbTesting(true);
-            if (t.abTestConfig) setAbTestConfig(t.abTestConfig);
+            if (first.enrollmentTriggers) setEnrollmentTriggers(first.enrollmentTriggers);
+            if (first.enableAbTesting) setEnableAbTesting(true);
+            if (first.abTestConfig) setAbTestConfig(first.abTestConfig);
           }
-          
-          return {
-            id: t.id,
-            name: t.name,
-            description: t.description || '',
-            workflowType: t.type || 'CUSTOM',
-            industry: t.industry || industry,
-            tasks: (t.tasks || []).map((task: any) => ({
-              id: task.id,
-              name: task.name,
-              description: task.description || '',
-              taskType: task.taskType,
-              assignedAgentId: null,
-              assignedAgentName: null,
-              agentColor: '#6B7280',
-              displayOrder: task.displayOrder || 0,
-              isHITL: task.isHITL || false,
-              delayMinutes: task.delayValue || 0,
-              delayUnit: task.delayUnit || 'MINUTES',
-              parentTaskId: null,
-              branchCondition: null,
-            })),
-            isDefault: t.isDefault || false,
-            createdAt: t.createdAt || new Date().toISOString(),
-            updatedAt: t.updatedAt || new Date().toISOString(),
-          };
-        });
+        }
+        const transformedTemplates = dbTemplates.map((t: any) => transformWorkflow(t));
         
         setWorkflows(transformedTemplates);
       }
