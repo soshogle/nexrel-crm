@@ -5,9 +5,5 @@
   "crons": [
     {"path": "/api/cron/twilio-health-monitor", "schedule": "*/2 * * * *"},
     {"path": "/api/cron/blog-generator", "schedule": "0 9,15 * * *"}
-  ],
-  "redirects": [
-    {"source": "/:path*", "has": [{"type": "host", "value": "www.soshogle.com"}], "destination": "https://www.nexrel.soshogle.com/:path*", "permanent": true},
-    {"source": "/:path*", "has": [{"type": "host", "value": "soshogle.com"}], "destination": "https://www.nexrel.soshogle.com/:path*", "permanent": true}
   ]
 }
