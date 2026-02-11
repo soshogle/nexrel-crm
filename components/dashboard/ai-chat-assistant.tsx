@@ -202,6 +202,11 @@ export function AIChatAssistant() {
         workflowDraftId = draftData?.workflow?.id || null;
         if (workflowDraftId && typeof window !== 'undefined') {
           sessionStorage.setItem('activeWorkflowDraftId', workflowDraftId);
+          fetch('/api/workflows/active-draft', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ draftId: workflowDraftId }),
+          }).catch(() => {});
         }
         // Navigate immediately so user sees builder while AI adds tasks (builder polls every 3s)
         router.push(workflowDraftId ? `/dashboard/workflows?openBuilder=1&draftId=${workflowDraftId}` : '/dashboard/workflows?openBuilder=1');

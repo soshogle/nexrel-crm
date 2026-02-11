@@ -275,18 +275,20 @@ export function ElevenLabsAgent({
         });
       };
 
-      console.log('🔌 Starting WebRTC session...');
+      // Try WebSocket first - WebRTC/LiveKit path has been causing "v1 RTC path not found"
+      // and error_type crashes. WebSocket is more stable for browser conversations.
+      console.log('🔌 Starting WebSocket session (primary for stability)...');
       try {
-        conversationRef.current = await startWebrtcSession();
-        console.log('✅ WebRTC session started successfully');
+        conversationRef.current = await startWebsocketSession();
+        console.log('✅ WebSocket session started successfully');
       } catch (sessionError: any) {
-        console.error('❌ WebRTC session failed:', sessionError);
+        console.error('❌ WebSocket session failed:', sessionError);
         const message = sessionError?.message || "";
-        if (message.includes("Failed to fetch") || message.includes("signal")) {
-          console.log('🔄 Falling back to WebSocket...');
+        if (message.includes("Failed to fetch") || message.includes("signal") || message.includes("WebSocket")) {
+          console.log('🔄 Falling back to WebRTC...');
           try {
-            conversationRef.current = await startWebsocketSession();
-            console.log('✅ WebSocket session started successfully');
+            conversationRef.current = await startWebrtcSession();
+            console.log('✅ WebRTC session started successfully');
           } catch (fallbackError: any) {
             console.error("❌ ElevenLabs fallback error:", fallbackError);
             cleanupMedia();
