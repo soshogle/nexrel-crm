@@ -11,6 +11,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { parseChartIntent, getDynamicChartData } from '@/lib/crm-chart-intent';
 import { parseScenarioIntent, calculateScenario } from '@/lib/crm-scenario-predictor';
+import { makeOutboundCall, makeBulkOutboundCalls } from '@/lib/outbound-call-service';
+import { sendSMS, sendEmail, sendSMSToLeads, sendEmailToLeads } from '@/lib/messaging-service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -71,6 +73,50 @@ export async function POST(req: NextRequest) {
 
       case 'predict_scenario':
         result = await predictScenario(userId, parameters || {});
+        break;
+
+      case 'make_outbound_call':
+        result = await handleMakeOutboundCall(userId, parameters || {});
+        break;
+
+      case 'call_leads':
+        result = await handleCallLeads(userId, parameters || {});
+        break;
+
+      case 'list_voice_agents':
+        result = await handleListVoiceAgents(userId);
+        break;
+
+      case 'draft_sms':
+        result = await handleDraftSMS(userId, parameters || {});
+        break;
+
+      case 'send_sms':
+        result = await handleSendSMS(userId, parameters || {});
+        break;
+
+      case 'schedule_sms':
+        result = await handleScheduleSMS(userId, parameters || {});
+        break;
+
+      case 'draft_email':
+        result = await handleDraftEmail(userId, parameters || {});
+        break;
+
+      case 'send_email':
+        result = await handleSendEmail(userId, parameters || {});
+        break;
+
+      case 'schedule_email':
+        result = await handleScheduleEmail(userId, parameters || {});
+        break;
+
+      case 'sms_leads':
+        result = await handleSMSLeads(userId, parameters || {});
+        break;
+
+      case 'email_leads':
+        result = await handleEmailLeads(userId, parameters || {});
         break;
 
       default:
@@ -615,4 +661,256 @@ async function predictScenario(userId: string, params: any) {
     console.error('Error predicting scenario:', error);
     return { error: 'Failed to predict scenario', details: error.message };
   }
+}
+
+/**
+ * Make outbound call to a single contact (voice + chat)
+ */
+async function handleMakeOutboundCall(userId: string, params: any) {
+  const { contactName, phoneNumber, purpose, notes, voiceAgentId, voiceAgentName, immediate = true, scheduledFor } = params;
+  if (!contactName || !purpose) {
+    return { error: 'contactName and purpose are required' };
+  }
+  const result = await makeOutboundCall({
+    userId,
+    contactName,
+    phoneNumber,
+    purpose,
+    notes,
+    voiceAgentId,
+    voiceAgentName,
+    immediate,
+    scheduledFor,
+  });
+  if (!result.success) {
+    return { error: result.error };
+  }
+  return {
+    success: true,
+    message: result.message || `Calling ${contactName} now`,
+    navigateTo: '/dashboard/voice-agents',
+  };
+}
+
+/**
+ * Call multiple leads by criteria (bulk calls)
+ */
+async function handleCallLeads(userId: string, params: any) {
+  const { purpose, notes, voiceAgentId, voiceAgentName, period, status, limit = 50 } = params;
+  if (!purpose) {
+    return { error: 'purpose is required' };
+  }
+  const result = await makeBulkOutboundCalls({
+    userId,
+    criteria: { period: period || 'today', status, limit },
+    purpose,
+    notes,
+    voiceAgentId,
+    voiceAgentName,
+    immediate: true,
+  });
+  if (!result.success && result.scheduled === 0) {
+    return { error: result.error || 'No calls could be initiated' };
+  }
+  return {
+    success: true,
+    message: result.message || `Initiated ${result.scheduled} calls`,
+    scheduled: result.scheduled,
+    failed: result.failed,
+    navigateTo: '/dashboard/voice-agents',
+  };
+}
+
+/**
+ * List user's voice agents for selection/confirmation
+ */
+async function handleListVoiceAgents(userId: string) {
+  const agents = await prisma.voiceAgent.findMany({
+    where: {
+      userId,
+      status: 'ACTIVE',
+      elevenLabsAgentId: { not: null },
+    },
+    select: { id: true, name: true, description: true },
+  });
+  return {
+    success: true,
+    agents: agents.map((a) => ({ id: a.id, name: a.name, description: a.description })),
+    message: agents.length === 0
+      ? 'No voice agents configured'
+      : `You have ${agents.length} agent${agents.length !== 1 ? 's' : ''}: ${agents.map((a) => a.name).join(', ')}`,
+  };
+}
+
+async function handleDraftSMS(userId: string, params: any) {
+  const { contactName, message, phoneNumber } = params;
+  if (!contactName || !message) return { error: 'contactName and message are required' };
+  const lead = await prisma.lead.findFirst({
+    where: {
+      userId,
+      OR: [
+        { contactPerson: { contains: contactName, mode: 'insensitive' } },
+        { businessName: { contains: contactName, mode: 'insensitive' } },
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  const toPhone = phoneNumber || lead?.phone;
+  if (!toPhone) return { error: `Contact "${contactName}" not found or has no phone number.` };
+  return {
+    success: true,
+    message: "I've drafted an SMS for you to review. Should I send it now or schedule it for later?",
+    smsDraft: {
+      contactName: lead?.contactPerson || lead?.businessName || contactName,
+      to: toPhone,
+      message,
+      leadId: lead?.id,
+    },
+    navigateTo: '/dashboard/messages',
+  };
+}
+
+async function handleSendSMS(userId: string, params: any) {
+  const { contactName, message, phoneNumber } = params;
+  if (!contactName || !message) return { error: 'contactName and message are required' };
+  const result = await sendSMS({ userId, contactName, message, phoneNumber });
+  if (!result.success) return { error: result.error };
+  return { success: true, message: result.message, navigateTo: '/dashboard/messages' };
+}
+
+async function handleScheduleSMS(userId: string, params: any) {
+  const { contactName, message, scheduledFor } = params;
+  if (!contactName || !message || !scheduledFor) {
+    return { error: 'contactName, message, and scheduledFor are required' };
+  }
+  const lead = await prisma.lead.findFirst({
+    where: {
+      userId,
+      OR: [
+        { contactPerson: { contains: contactName, mode: 'insensitive' } },
+        { businessName: { contains: contactName, mode: 'insensitive' } },
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!lead?.phone) return { error: `Contact "${contactName}" not found or has no phone number.` };
+  const scheduledDate = new Date(scheduledFor);
+  if (scheduledDate <= new Date()) return { error: 'Scheduled time must be in the future.' };
+  await prisma.scheduledSms.create({
+    data: {
+      userId,
+      leadId: lead.id,
+      toPhone: lead.phone,
+      toName: lead.contactPerson || lead.businessName,
+      message,
+      scheduledFor: scheduledDate,
+      status: 'PENDING',
+    },
+  });
+  return {
+    success: true,
+    message: `SMS scheduled to ${contactName} for ${scheduledDate.toLocaleString()}`,
+    navigateTo: '/dashboard/messages',
+  };
+}
+
+async function handleDraftEmail(userId: string, params: any) {
+  const { contactName, subject, body, email } = params;
+  if (!contactName || !subject || !body) return { error: 'contactName, subject, and body are required' };
+  const lead = await prisma.lead.findFirst({
+    where: {
+      userId,
+      OR: [
+        { contactPerson: { contains: contactName, mode: 'insensitive' } },
+        { businessName: { contains: contactName, mode: 'insensitive' } },
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  const toEmail = email || lead?.email;
+  if (!toEmail) return { error: `Contact "${contactName}" not found or has no email.` };
+  return {
+    success: true,
+    message: "I've drafted an email for you to review. Should I send it now or schedule it for later?",
+    emailDraft: {
+      contactName: lead?.contactPerson || lead?.businessName || contactName,
+      to: toEmail,
+      subject,
+      body,
+      leadId: lead?.id,
+    },
+    navigateTo: '/dashboard/messages',
+  };
+}
+
+async function handleSendEmail(userId: string, params: any) {
+  const { contactName, subject, body, email } = params;
+  if (!contactName || !subject || !body) return { error: 'contactName, subject, and body are required' };
+  const result = await sendEmail({ userId, contactName, subject, body, email });
+  if (!result.success) return { error: result.error };
+  return { success: true, message: result.message, navigateTo: '/dashboard/messages' };
+}
+
+async function handleScheduleEmail(userId: string, params: any) {
+  const { contactName, subject, body, scheduledFor } = params;
+  if (!contactName || !subject || !body || !scheduledFor) {
+    return { error: 'contactName, subject, body, and scheduledFor are required' };
+  }
+  const lead = await prisma.lead.findFirst({
+    where: {
+      userId,
+      OR: [
+        { contactPerson: { contains: contactName, mode: 'insensitive' } },
+        { businessName: { contains: contactName, mode: 'insensitive' } },
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!lead?.email) return { error: `Contact "${contactName}" not found or has no email.` };
+  const scheduledDate = new Date(scheduledFor);
+  if (scheduledDate <= new Date()) return { error: 'Scheduled time must be in the future.' };
+  await prisma.scheduledEmail.create({
+    data: {
+      userId,
+      leadId: lead.id,
+      toEmail: lead.email,
+      toName: lead.contactPerson || lead.businessName,
+      subject,
+      body,
+      scheduledFor: scheduledDate,
+      status: 'PENDING',
+    },
+  });
+  return {
+    success: true,
+    message: `Email scheduled to ${contactName} for ${scheduledDate.toLocaleString()}`,
+    navigateTo: '/dashboard/messages',
+  };
+}
+
+async function handleSMSLeads(userId: string, params: any) {
+  const { message, period, status, limit } = params;
+  if (!message) return { error: 'message is required' };
+  const result = await sendSMSToLeads({
+    userId,
+    purpose: message,
+    message,
+    criteria: { period: period || 'today', status, limit },
+  });
+  if (!result.success && result.sent === 0) return { error: result.error };
+  return { success: true, message: result.message, sent: result.sent, failed: result.failed, navigateTo: '/dashboard/messages' };
+}
+
+async function handleEmailLeads(userId: string, params: any) {
+  const { subject, message, period, status, limit } = params;
+  if (!subject || !message) return { error: 'subject and message are required' };
+  const result = await sendEmailToLeads({
+    userId,
+    purpose: subject,
+    message,
+    subject,
+    criteria: { period: period || 'today', status, limit },
+  });
+  if (!result.success && result.sent === 0) return { error: result.error };
+  return { success: true, message: result.message, sent: result.sent, failed: result.failed, navigateTo: '/dashboard/messages' };
 }

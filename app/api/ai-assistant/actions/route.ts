@@ -24,6 +24,7 @@ const AVAILABLE_ACTIONS = {
   CONFIGURE_AUTO_REPLY: "configure_auto_reply",
   CREATE_WORKFLOW: "create_workflow",
   CREATE_SMART_WORKFLOW: "create_smart_workflow",
+  ADD_WORKFLOW_TASK: "add_workflow_task",
   CREATE_APPOINTMENT: "create_appointment",
   
   // Voice Agent Debugging & Management
@@ -34,6 +35,7 @@ const AVAILABLE_ACTIONS = {
   UPDATE_VOICE_AGENT: "update_voice_agent",
   ASSIGN_PHONE_TO_VOICE_AGENT: "assign_phone_to_voice_agent",
   MAKE_OUTBOUND_CALL: "make_outbound_call",
+  CALL_LEADS: "call_leads",
   
   // CRM Operations
   CREATE_LEAD: "create_lead",
@@ -48,6 +50,14 @@ const AVAILABLE_ACTIONS = {
   GET_CAMPAIGN_DETAILS: "get_campaign_details",
   LIST_CAMPAIGNS: "list_campaigns",
   SEARCH_CONTACTS: "search_contacts",
+  DRAFT_SMS: "draft_sms",
+  SEND_SMS: "send_sms",
+  SCHEDULE_SMS: "schedule_sms",
+  DRAFT_EMAIL: "draft_email",
+  SEND_EMAIL: "send_email",
+  SCHEDULE_EMAIL: "schedule_email",
+  SMS_LEADS: "sms_leads",
+  EMAIL_LEADS: "email_leads",
   DELETE_DUPLICATE_CONTACTS: "delete_duplicate_contacts",
   GET_STATISTICS: "get_statistics",
   GET_RECENT_ACTIVITY: "get_recent_activity",
@@ -150,12 +160,20 @@ export async function POST(req: NextRequest) {
         result = await createWorkflow(user.id, parameters);
         break;
 
+      case AVAILABLE_ACTIONS.ADD_WORKFLOW_TASK:
+        result = await addWorkflowTask(user.id, parameters);
+        break;
+
       case AVAILABLE_ACTIONS.CREATE_APPOINTMENT:
         result = await createAppointment(user.id, parameters);
         break;
 
       case AVAILABLE_ACTIONS.MAKE_OUTBOUND_CALL:
-        result = await makeOutboundCall(user.id, parameters);
+        result = await makeOutboundCallAction(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CALL_LEADS:
+        result = await callLeadsAction(user.id, parameters);
         break;
 
       // CRM Operations
@@ -205,6 +223,38 @@ export async function POST(req: NextRequest) {
 
       case AVAILABLE_ACTIONS.SEARCH_CONTACTS:
         result = await searchContacts(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.DRAFT_SMS:
+        result = await draftSMSAction(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.SEND_SMS:
+        result = await sendSMSAction(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.SCHEDULE_SMS:
+        result = await scheduleSMSAction(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.DRAFT_EMAIL:
+        result = await draftEmailAction(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.SEND_EMAIL:
+        result = await sendEmailAction(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.SCHEDULE_EMAIL:
+        result = await scheduleEmailAction(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.SMS_LEADS:
+        result = await smsLeadsAction(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.EMAIL_LEADS:
+        result = await emailLeadsAction(user.id, parameters);
         break;
 
       case AVAILABLE_ACTIONS.DELETE_DUPLICATE_CONTACTS:
@@ -1297,6 +1347,44 @@ async function configureAutoReply(userId: string, params: any) {
   };
 }
 
+async function addWorkflowTask(userId: string, params: any) {
+  const { workflowId, name, taskType = 'CUSTOM', description = '' } = params;
+  if (!workflowId || !name) {
+    return { success: false, error: 'workflowId and name are required' };
+  }
+  const existing = await prisma.workflowTemplate.findFirst({
+    where: { id: workflowId, userId },
+    include: { tasks: { orderBy: { displayOrder: 'asc' } } },
+  });
+  if (!existing) {
+    return { success: false, error: 'Workflow not found' };
+  }
+  const maxOrder = existing.tasks.length > 0
+    ? Math.max(...existing.tasks.map((t) => t.displayOrder))
+    : 0;
+  const task = await prisma.workflowTask.create({
+    data: {
+      templateId: workflowId,
+      name,
+      description: description || '',
+      taskType: taskType || 'CUSTOM',
+      assignedAgentType: null,
+      delayValue: 0,
+      delayUnit: 'MINUTES',
+      isHITL: false,
+      isOptional: false,
+      position: { row: Math.floor(maxOrder / 3), col: maxOrder % 3 },
+      displayOrder: maxOrder + 1,
+      actionConfig: { actions: [] },
+    },
+  });
+  return {
+    success: true,
+    message: `Task "${name}" added to workflow`,
+    task: { id: task.id, name: task.name, taskType: task.taskType },
+  };
+}
+
 async function createWorkflow(userId: string, params: any) {
   const { description, goal, keywords, autoReply, trigger, actions } = params;
 
@@ -1925,210 +2013,278 @@ async function assignPhoneToVoiceAgent(userId: string, params: any) {
 
 
 // ========================================
-// Outbound Call Functions
+// Outbound Call Functions (shared with CRM voice agent)
 // ========================================
 
-async function makeOutboundCall(userId: string, params: any) {
-  const {
-    contactName,
-    phoneNumber,
-    purpose,
-    notes,
-    voiceAgentId,
-    voiceAgentName,
-    immediate = true,
-    scheduledFor,
-    leadId,
-  } = params;
-
-  if (!contactName || !purpose) {
-    throw new Error("Contact name and call purpose are required");
-  }
-
-  let finalPhoneNumber = phoneNumber;
-  let finalLeadId = leadId;
-
-  // If phone number not provided, try to find contact by name
-  if (!finalPhoneNumber) {
-    const lead = await prisma.lead.findFirst({
-      where: {
-        userId,
-        OR: [
-          { contactPerson: { contains: contactName, mode: "insensitive" } },
-          { businessName: { contains: contactName, mode: "insensitive" } },
-        ],
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (lead) {
-      finalPhoneNumber = lead.phone || null;
-      finalLeadId = lead.id;
-    } else {
-      throw new Error(
-        `Contact "${contactName}" not found. Please provide a phone number or ensure the contact exists.`
-      );
-    }
-  }
-
-  if (!finalPhoneNumber) {
-    throw new Error(
-      `No phone number found for "${contactName}". Please provide a phone number.`
-    );
-  }
-
-  // Find voice agent
-  let agentId = voiceAgentId;
-  if (!agentId && voiceAgentName) {
-    const agentByName = await prisma.voiceAgent.findFirst({
-      where: {
-        userId,
-        name: { contains: voiceAgentName, mode: "insensitive" },
-        status: "ACTIVE",
-      },
-    });
-    if (agentByName) {
-      agentId = agentByName.id;
-    }
-  }
-
-  // If still no agent, use default active agent
-  if (!agentId) {
-    const defaultAgent = await prisma.voiceAgent.findFirst({
-      where: {
-        userId,
-        status: "ACTIVE",
-        elevenLabsAgentId: { not: null },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (!defaultAgent) {
-      throw new Error(
-        "No active voice agent found. Please create and configure a voice agent first."
-      );
-    }
-    agentId = defaultAgent.id;
-  }
-
-  // Get voice agent details
-  const voiceAgent = await prisma.voiceAgent.findUnique({
-    where: { id: agentId },
+async function makeOutboundCallAction(userId: string, params: any) {
+  const { makeOutboundCall } = await import("@/lib/outbound-call-service");
+  const result = await makeOutboundCall({
+    userId,
+    contactName: params.contactName,
+    phoneNumber: params.phoneNumber,
+    purpose: params.purpose,
+    notes: params.notes,
+    voiceAgentId: params.voiceAgentId,
+    voiceAgentName: params.voiceAgentName,
+    leadId: params.leadId,
+    immediate: params.immediate !== false,
+    scheduledFor: params.scheduledFor,
   });
-
-  if (!voiceAgent) {
-    throw new Error("Voice agent not found");
+  if (!result.success) {
+    throw new Error(result.error || "Failed to initiate call");
   }
+  return {
+    message: result.message || `✓ Call initiated to ${params.contactName}`,
+    outboundCall: result.outboundCall
+      ? {
+          id: result.outboundCall.id,
+          name: result.outboundCall.name,
+          phoneNumber: result.outboundCall.phoneNumber,
+          status: result.outboundCall.status,
+          scheduledFor: result.outboundCall.scheduledFor,
+        }
+      : undefined,
+  };
+}
 
-  if (!voiceAgent.elevenLabsAgentId) {
-    throw new Error(
-      "Voice agent is not configured properly. Please complete the voice AI setup."
-    );
+async function callLeadsAction(userId: string, params: any) {
+  const { makeBulkOutboundCalls } = await import("@/lib/outbound-call-service");
+  const result = await makeBulkOutboundCalls({
+    userId,
+    criteria: params.period || params.status
+      ? {
+          period: params.period || "today",
+          status: params.status,
+          limit: params.limit || 50,
+        }
+      : undefined,
+    purpose: params.purpose,
+    notes: params.notes,
+    voiceAgentId: params.voiceAgentId,
+    voiceAgentName: params.voiceAgentName,
+    immediate: true,
+  });
+  if (!result.success && result.scheduled === 0) {
+    throw new Error(result.error || "No calls could be initiated");
   }
+  return {
+    message: result.message || `✓ Initiated ${result.scheduled} call(s)`,
+    scheduled: result.scheduled,
+    failed: result.failed,
+  };
+}
 
-  // Validate agent exists in ElevenLabs
-  const { elevenLabsProvisioning } = await import("@/lib/elevenlabs-provisioning");
-  const validation = await elevenLabsProvisioning.validateAgentSetup(
-    voiceAgent.elevenLabsAgentId,
-    userId
-  );
-
-  if (!validation.valid) {
-    throw new Error(
-      `Voice agent not found in ElevenLabs: ${validation.error}. Please reconfigure the agent.`
-    );
+async function draftSMSAction(userId: string, params: any) {
+  const { prisma } = await import("@/lib/db");
+  const { contactName, message, phoneNumber } = params;
+  if (!contactName || !message) {
+    throw new Error("contactName and message are required");
   }
-
-  // Validate scheduledFor if not immediate
-  if (!immediate && !scheduledFor) {
-    throw new Error(
-      "If immediate is false, scheduledFor date/time is required"
-    );
+  const lead = await prisma.lead.findFirst({
+    where: {
+      userId,
+      OR: [
+        { contactPerson: { contains: contactName, mode: "insensitive" } },
+        { businessName: { contains: contactName, mode: "insensitive" } },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  const toPhone = phoneNumber || lead?.phone;
+  if (!toPhone) {
+    throw new Error(`Contact "${contactName}" not found or has no phone number.`);
   }
+  return {
+    message: `I've drafted an SMS for you to review. Should I send it now or schedule it for later?`,
+    smsDraft: {
+      contactName: lead?.contactPerson || lead?.businessName || contactName,
+      to: toPhone,
+      message,
+      leadId: lead?.id,
+    },
+  };
+}
 
-  // Create outbound call record
-  const outboundCall = await prisma.outboundCall.create({
+async function sendSMSAction(userId: string, params: any) {
+  const { sendSMS } = await import("@/lib/messaging-service");
+  const result = await sendSMS({
+    userId,
+    contactName: params.contactName,
+    message: params.message,
+    phoneNumber: params.phoneNumber,
+    leadId: params.leadId,
+  });
+  if (!result.success) throw new Error(result.error);
+  return { message: result.message || `✓ SMS sent to ${params.contactName}` };
+}
+
+async function scheduleSMSAction(userId: string, params: any) {
+  const { prisma } = await import("@/lib/db");
+  const { contactName, message, scheduledFor } = params;
+  if (!contactName || !message || !scheduledFor) {
+    throw new Error("contactName, message, and scheduledFor are required");
+  }
+  const lead = await prisma.lead.findFirst({
+    where: {
+      userId,
+      OR: [
+        { contactPerson: { contains: contactName, mode: "insensitive" } },
+        { businessName: { contains: contactName, mode: "insensitive" } },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!lead?.phone) {
+    throw new Error(`Contact "${contactName}" not found or has no phone number.`);
+  }
+  const scheduledDate = new Date(scheduledFor);
+  if (scheduledDate <= new Date()) {
+    throw new Error("Scheduled time must be in the future.");
+  }
+  await prisma.scheduledSms.create({
     data: {
       userId,
-      voiceAgentId: agentId,
-      leadId: finalLeadId,
-      name: contactName,
-      phoneNumber: finalPhoneNumber,
-      status: immediate ? "IN_PROGRESS" : "SCHEDULED",
-      scheduledFor: scheduledFor ? new Date(scheduledFor) : undefined,
-      purpose: purpose,
-      notes: notes || null,
-    },
-    include: {
-      voiceAgent: true,
+      leadId: lead.id,
+      toPhone: lead.phone,
+      toName: lead.contactPerson || lead.businessName,
+      message,
+      scheduledFor: scheduledDate,
+      status: "PENDING",
     },
   });
-
-  // If immediate, initiate the call
-  if (immediate) {
-    try {
-      const { elevenLabsService } = await import("@/lib/elevenlabs");
-      const callResult = await elevenLabsService.initiatePhoneCall(
-        voiceAgent.elevenLabsAgentId,
-        finalPhoneNumber
-      );
-
-      // Create call log
-      const callLog = await prisma.callLog.create({
-        data: {
-          userId,
-          voiceAgentId: agentId,
-          leadId: finalLeadId,
-          direction: "OUTBOUND",
-          status: "INITIATED",
-          fromNumber: voiceAgent.twilioPhoneNumber || "System",
-          toNumber: finalPhoneNumber,
-          elevenLabsConversationId:
-            callResult.conversation_id ||
-            callResult.call_id ||
-            callResult.id ||
-            undefined,
-        },
-      });
-
-      // Update outbound call
-      await prisma.outboundCall.update({
-        where: { id: outboundCall.id },
-        data: {
-          status: "IN_PROGRESS",
-          callLogId: callLog.id,
-          attemptCount: 1,
-          lastAttemptAt: new Date(),
-        },
-      });
-    } catch (callError: any) {
-      console.error("Error initiating call:", callError);
-      // Update status to failed but don't throw - the record is created
-      await prisma.outboundCall.update({
-        where: { id: outboundCall.id },
-        data: {
-          status: "FAILED",
-        },
-      });
-      throw new Error(
-        `Call record created but failed to initiate: ${callError.message}`
-      );
-    }
-  }
-
-  const statusMessage = immediate
-    ? "Call initiated successfully"
-    : `Call scheduled for ${scheduledFor ? new Date(scheduledFor).toLocaleString() : "later"}`;
-
   return {
-    message: `✓ ${statusMessage} to ${contactName} at ${finalPhoneNumber}.\n\nPurpose: ${purpose}${notes ? `\n\nTalking Points:\n${notes}` : ""}`,
-    outboundCall: {
-      id: outboundCall.id,
-      name: contactName,
-      phoneNumber: finalPhoneNumber,
-      status: outboundCall.status,
-      scheduledFor: outboundCall.scheduledFor,
+    message: `✓ SMS scheduled to ${contactName} for ${scheduledDate.toLocaleString()}`,
+  };
+}
+
+async function draftEmailAction(userId: string, params: any) {
+  const { prisma } = await import("@/lib/db");
+  const { contactName, subject, body, email } = params;
+  if (!contactName || !subject || !body) {
+    throw new Error("contactName, subject, and body are required");
+  }
+  const lead = await prisma.lead.findFirst({
+    where: {
+      userId,
+      OR: [
+        { contactPerson: { contains: contactName, mode: "insensitive" } },
+        { businessName: { contains: contactName, mode: "insensitive" } },
+      ],
     },
+    orderBy: { createdAt: "desc" },
+  });
+  const toEmail = email || lead?.email;
+  if (!toEmail) {
+    throw new Error(`Contact "${contactName}" not found or has no email.`);
+  }
+  return {
+    message: `I've drafted an email for you to review. Should I send it now or schedule it for later?`,
+    emailDraft: {
+      contactName: lead?.contactPerson || lead?.businessName || contactName,
+      to: toEmail,
+      subject,
+      body,
+      leadId: lead?.id,
+    },
+  };
+}
+
+async function sendEmailAction(userId: string, params: any) {
+  const { sendEmail } = await import("@/lib/messaging-service");
+  const result = await sendEmail({
+    userId,
+    contactName: params.contactName,
+    subject: params.subject,
+    body: params.body,
+    email: params.email,
+    leadId: params.leadId,
+  });
+  if (!result.success) throw new Error(result.error);
+  return { message: result.message || `✓ Email sent to ${params.contactName}` };
+}
+
+async function scheduleEmailAction(userId: string, params: any) {
+  const { prisma } = await import("@/lib/db");
+  const { contactName, subject, body, scheduledFor } = params;
+  if (!contactName || !subject || !body || !scheduledFor) {
+    throw new Error("contactName, subject, body, and scheduledFor are required");
+  }
+  const lead = await prisma.lead.findFirst({
+    where: {
+      userId,
+      OR: [
+        { contactPerson: { contains: contactName, mode: "insensitive" } },
+        { businessName: { contains: contactName, mode: "insensitive" } },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!lead?.email) {
+    throw new Error(`Contact "${contactName}" not found or has no email.`);
+  }
+  const scheduledDate = new Date(scheduledFor);
+  if (scheduledDate <= new Date()) {
+    throw new Error("Scheduled time must be in the future.");
+  }
+  await prisma.scheduledEmail.create({
+    data: {
+      userId,
+      leadId: lead.id,
+      toEmail: lead.email,
+      toName: lead.contactPerson || lead.businessName,
+      subject,
+      body,
+      scheduledFor: scheduledDate,
+      status: "PENDING",
+    },
+  });
+  return {
+    message: `✓ Email scheduled to ${contactName} for ${scheduledDate.toLocaleString()}`,
+  };
+}
+
+async function smsLeadsAction(userId: string, params: any) {
+  const { sendSMSToLeads } = await import("@/lib/messaging-service");
+  const result = await sendSMSToLeads({
+    userId,
+    purpose: params.purpose || params.message,
+    message: params.message,
+    criteria: {
+      period: params.period || "today",
+      status: params.status,
+      limit: params.limit || 50,
+    },
+  });
+  if (!result.success && result.sent === 0) {
+    throw new Error(result.error || "No SMS could be sent");
+  }
+  return {
+    message: result.message || `✓ Sent ${result.sent} SMS`,
+    sent: result.sent,
+    failed: result.failed,
+  };
+}
+
+async function emailLeadsAction(userId: string, params: any) {
+  const { sendEmailToLeads } = await import("@/lib/messaging-service");
+  const result = await sendEmailToLeads({
+    userId,
+    purpose: params.purpose || params.subject,
+    message: params.message,
+    subject: params.subject,
+    criteria: {
+      period: params.period || "today",
+      status: params.status,
+      limit: params.limit || 50,
+    },
+  });
+  if (!result.success && result.sent === 0) {
+    throw new Error(result.error || "No emails could be sent");
+  }
+  return {
+    message: result.message || `✓ Sent ${result.sent} emails`,
+    sent: result.sent,
+    failed: result.failed,
   };
 }
 

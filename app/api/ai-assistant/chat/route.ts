@@ -93,9 +93,15 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         conversationHistory = [];
       }
-      
+      const contextString = formData.get("context") as string;
+      let context: Record<string, any> = {};
+      try {
+        context = contextString ? JSON.parse(contextString) : {};
+      } catch (e) {
+        context = {};
+      }
       // Store request body for fallback detection
-      requestBody = { message, conversationHistory };
+      requestBody = { message, conversationHistory, context };
 
       // If there's a file, process the import immediately
       if (uploadedFile) {
@@ -158,6 +164,7 @@ export async function POST(req: NextRequest) {
       message = requestBody.message;
       conversationHistory = requestBody.conversationHistory || [];
     }
+    const context = requestBody?.context || {};
 
     if (!message || !message.trim()) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
@@ -333,6 +340,8 @@ ${(() => {
     return `- Current Date & Time: ${now.toLocaleString('en-US', { timeZone: 'UTC' })} UTC`;
   }
 })()}
+
+${context?.activeWorkflowDraftId ? `\n**ACTIVE WORKFLOW DRAFT:** The user is currently editing workflow ID: ${context.activeWorkflowDraftId}. When they ask to add a step, trigger, or action to the workflow, use add_workflow_task with workflowId: "${context.activeWorkflowDraftId}".\n` : ''}
 
 Current CRM Statistics:
 - Total Contacts/Leads: ${userStats.contacts}
@@ -596,8 +605,17 @@ You have access to FUNCTIONS that can actually execute actions. When a user asks
 - list_voice_agents - List all voice agents
 - debug_voice_agent - Debug a voice agent (required: name)
 - fix_voice_agent - Fix a voice agent (required: name)
-- make_outbound_call - Make or schedule a call to a contact using a voice AI agent (required: contactName, purpose; optional: phoneNumber, notes, voiceAgentName, immediate, scheduledFor)
+- make_outbound_call - Call a single contact with a purpose (required: contactName, purpose). E.g. "call John and explain our new promo". Use voiceAgentName if user specifies agent preference.
+- call_leads - Call multiple leads by criteria (required: purpose). E.g. "call all my leads from today and give them 10% off product B". Use period: "today" for leads created today. System auto-selects best agent unless user specifies.
+- send_sms - Text a single contact (required: contactName, message). E.g. "text John about our new promo", "send SMS to contact Be with the discount code".
+- draft_sms - ALWAYS use first when user asks to text someone. Creates draft to show on screen. Do NOT send until user confirms. After drafting, ask "Should I send it now or schedule it for later?"
+- draft_email - ALWAYS use first when user asks to email someone. Creates draft to show on screen. Do NOT send until user confirms. After drafting, ask "Should I send it now or schedule it for later?"
+- send_email - Send immediately. Use ONLY when user confirmed ("yes send it", "send it now"). Do NOT use for initial requests.
+- schedule_email - Schedule for later. Use when user says "schedule it", "send tomorrow", "send at 9am". Requires scheduledFor (ISO date).
+- sms_leads - Text multiple leads by criteria (required: message). E.g. "text all my leads from today with our promo", "SMS today's leads with 10% off".
+- email_leads - Email multiple leads by criteria (required: subject, message). E.g. "email all my leads from today about our new product", "send email to today's leads with the promo details".
 - create_workflow - Create complex automation workflows with multiple steps, timing, and personalization (required: description). Can handle birthday triggers, voice calls, email/SMS sequences, delays (weeks/days/hours), and personalized messages. Example: "Create a workflow that calls contacts on their birthday with personalized message, waits a week, invites to webinar, emails invitation, SMS link, reminds day before and 2 hours before"
+- add_workflow_task - Add a task/step to the workflow the user is currently editing (required: workflowId from context, name). Use when user says "add a trigger when lead is created", "add a step to send email", "add an action to call them", "add a delay of 2 days"
 - delete_duplicate_contacts - Find and delete duplicate contacts from the contacts list. Identifies duplicates based on email, phone, or business name and removes them, keeping the oldest contact. Use when user asks to remove duplicates or clean up duplicate contacts.
 - navigate_to - Navigate to a page (required: path)
 
@@ -945,7 +963,11 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
             },
             body: JSON.stringify({
               action: action,
-              parameters: { ...functionArgs, ...(action === "get_statistics" && { chartIntent: message }) },
+              parameters: {
+                ...functionArgs,
+                ...(action === "get_statistics" && { chartIntent: message }),
+                ...(action === "add_workflow_task" && context?.activeWorkflowDraftId && !functionArgs?.workflowId && { workflowId: context.activeWorkflowDraftId }),
+              },
               userId: user.id,
             }),
           });
@@ -1176,6 +1198,12 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       action: actionResult,
       navigateTo: navigationUrl,
       timestamp: new Date().toISOString(),
+      ...(actionResult?.action === "draft_email" && actionResult?.result?.emailDraft && {
+        emailDraft: actionResult.result.emailDraft,
+      }),
+      ...(actionResult?.action === "draft_sms" && actionResult?.result?.smsDraft && {
+        smsDraft: actionResult.result.smsDraft,
+      }),
       ...(shouldTriggerVisualization && {
         triggerVisualization: true,
         statistics: actionResult.result.statistics,

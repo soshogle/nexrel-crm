@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { WorkflowBuilder } from './workflow-builder';
 import { ScheduledWorkflowsList } from './scheduled-workflows-list';
 import { WorkflowsList } from './workflows-list';
@@ -36,12 +37,35 @@ interface IndustryWorkflowsTabProps {
 }
 
 export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
+  const searchParams = useSearchParams();
   const [showBuilder, setShowBuilder] = useState(false);
+  const [draftId, setDraftId] = useState<string | undefined>(undefined);
   const [activeSubTab, setActiveSubTab] = useState('overview');
   const [workflows, setWorkflows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const industryConfig = getIndustryConfig(industry);
+
+  // Phase 1+2: Auto-open builder when navigating from voice/chat "create workflow"
+  useEffect(() => {
+    if (searchParams?.get('openBuilder') === '1') {
+      setShowBuilder(true);
+      const did = searchParams?.get('draftId') || undefined;
+      if (did) {
+        setDraftId(did);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('activeWorkflowDraftId', did);
+        }
+      }
+      // Clear params for cleaner URL
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('openBuilder');
+        url.searchParams.delete('draftId');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      }
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchWorkflows();
@@ -118,12 +142,19 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
             <GitBranch className="w-6 h-6 text-purple-600" />
             Workflow Builder
           </h2>
-          <Button variant="outline" onClick={() => setShowBuilder(false)} className="border-purple-200 text-gray-700 hover:bg-purple-50">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowBuilder(false);
+              if (typeof window !== 'undefined') sessionStorage.removeItem('activeWorkflowDraftId');
+            }}
+            className="border-purple-200 text-gray-700 hover:bg-purple-50"
+          >
             Back to Overview
           </Button>
         </div>
         <div className="flex-1 bg-white rounded-xl overflow-hidden">
-          <WorkflowBuilder industry={industry} />
+          <WorkflowBuilder industry={industry} initialWorkflowId={draftId} />
         </div>
       </div>
     );

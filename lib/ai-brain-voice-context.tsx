@@ -176,6 +176,31 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
 
     if (message.role === 'agent' && message.content) {
       const content = message.content.toLowerCase();
+      // Phase 1: Create workflow/campaign - navigate immediately and open builder
+      const createWorkflowMatch = /\b(create|creating|set up|build)\b.*\bworkflow\b|\bworkflow\b.*\b(create|creating|set up|build)\b/.test(content);
+      const createCampaignMatch = /\b(create|creating|set up|build)\b.*\bcampaign\b|\bcampaign\b.*\b(create|creating|set up|build)\b/.test(content);
+      if (createWorkflowMatch) {
+        console.log('📋 [AI Brain Voice Context] Detected create workflow intent, creating draft and opening builder');
+        lastStatsCheckRef.current = now;
+        fetch('/api/workflows/draft', { method: 'POST' })
+          .then((r) => r.ok ? r.json() : null)
+          .then((data) => {
+            const draftId = data?.workflow?.id;
+            if (draftId && typeof window !== 'undefined') {
+              sessionStorage.setItem('activeWorkflowDraftId', draftId);
+            }
+            navigateTo(draftId ? `/dashboard/workflows?openBuilder=1&draftId=${draftId}` : '/dashboard/workflows?openBuilder=1');
+          })
+          .catch(() => navigateTo('/dashboard/workflows?openBuilder=1'));
+        return;
+      }
+      if (createCampaignMatch) {
+        console.log('📧 [AI Brain Voice Context] Detected create campaign intent, opening builder');
+        lastStatsCheckRef.current = now;
+        navigateTo('/dashboard/campaigns/email-drip/create');
+        return;
+      }
+
       const visualizationKeywords = ['chart', 'graph', 'visualization', 'visualize', 'trend', 'over time', 'monthly', 'revenue comparison', 'sales over'];
       const wantsVisualization = visualizationKeywords.some(k => content.includes(k));
 
