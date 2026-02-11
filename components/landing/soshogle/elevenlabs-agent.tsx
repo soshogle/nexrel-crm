@@ -125,59 +125,13 @@ export function ElevenLabsAgent({
         throw new Error("Agent ID is required for WebRTC connection");
       }
 
-      console.log('🔑 Getting conversation token for agent:', agentId.trim());
-      let conversationToken: string | null = null;
-      try {
-        const tokenResponse = await fetch("/api/elevenlabs/conversation-token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ agentId: agentId.trim() }),
-        });
-        console.log('📥 Token response status:', tokenResponse.status);
-        if (!tokenResponse.ok) {
-          const errorText = await tokenResponse.text();
-          console.error('❌ Token request failed:', errorText);
-          throw new Error(errorText || "Failed to get conversation token");
-        }
-        const tokenBody = await tokenResponse.json();
-        conversationToken = tokenBody?.token || null;
-        console.log('✅ Got conversation token:', conversationToken ? 'Token received' : 'No token');
-      } catch (tokenError: any) {
-        console.error('❌ Token error:', tokenError);
-        const message = tokenError?.message || "Voice AI token unavailable";
-        setError(message);
-        setIsLoading(false);
-        setStatus("idle");
-        return;
-      }
-
-      if (!conversationToken) {
-        setError("Voice AI token unavailable");
-        setIsLoading(false);
-        setStatus("idle");
-        return;
-      }
-      const resolvedToken = conversationToken;
-
-      const cleanupMedia = () => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-          try {
-            mediaRecorderRef.current.stop();
-          } catch (e) {
-            console.error("Error stopping media recorder:", e);
-          }
-        }
-        mediaRecorderRef.current = null;
-
-        if (audioStreamRef.current) {
-          audioStreamRef.current.getTracks().forEach((track) => track.stop());
-          audioStreamRef.current = null;
-        }
-      };
-
-      const sessionOptions = {
-        conversationToken: resolvedToken,
-        ...(dynamicVariables && { config: { dynamic_variables: dynamicVariables } }),
+      // Match tmp-soshogle-website: use agentId directly, no token (public agent)
+      // @elevenlabs/client 0.11.0 - same setup as working soshogle website
+      console.log('🔌 Starting ElevenLabs session with agentId (public agent)...');
+      conversationRef.current = await Conversation.startSession({
+        agentId: agentId.trim(),
+        connectionType: "webrtc",
+        ...(dynamicVariables && { dynamicVariables }),
         onConnect: () => {
           setIsConnected(true);
           setIsLoading(false);
@@ -233,8 +187,6 @@ export function ElevenLabsAgent({
               timestamp: Date.now(),
             };
             conversationMessagesRef.current.push(conversationMessage);
-            
-            // Call onMessage callback for real-time message handling
             if (onMessage) {
               onMessage(conversationMessage);
             }
@@ -259,25 +211,7 @@ export function ElevenLabsAgent({
             }
           }
         },
-      };
-
-      // WebSocket only - WebRTC/LiveKit path causes "v1 RTC path not found" and
-      // error_type crashes in the SDK. WebSocket avoids LiveKit entirely.
-      console.log('🔌 Starting WebSocket session...');
-      try {
-        conversationRef.current = await (Conversation as any).startSession({
-          ...sessionOptions,
-          connectionType: "websocket",
-        });
-        console.log('✅ WebSocket session started successfully');
-      } catch (sessionError: any) {
-        console.error('❌ WebSocket session failed:', sessionError);
-        cleanupMedia();
-        setError(`Connection failed: ${sessionError?.message || 'Unknown error'}. Try refreshing the page.`);
-        setIsLoading(false);
-        setStatus("idle");
-        return;
-      }
+      });
 
       // Set up audio context for analysis
       audioContextRef.current = new AudioContext();
