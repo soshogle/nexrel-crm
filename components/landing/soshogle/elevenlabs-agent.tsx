@@ -54,6 +54,8 @@ export function ElevenLabsAgent({
   const audioStreamRef = useRef<MediaStream | null>(null);
 
   const startConversation = async () => {
+    // If you see this in console, the new signed-URL flow is deployed (WebSocket, not LiveKit)
+    console.log("✅ [Landing Voice] Using signed URL + WebSocket (bypasses LiveKit error_type crash)");
     setIsLoading(true);
     setError(null);
     setStatus("connecting");
