@@ -101,24 +101,33 @@ export async function GET(request: NextRequest) {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const googleRedirectUri = nextAuthUrl ? `${nextAuthUrl}/api/auth/callback/google` : null;
+  const isPlaceholder = !googleClientId || !googleClientSecret || 
+    googleClientId === 'placeholder' || googleClientSecret === 'placeholder';
+  const hasValidFormat = googleClientId?.endsWith('.apps.googleusercontent.com') && 
+    (googleClientSecret?.startsWith('GOCSPX-') || (googleClientSecret?.length ?? 0) > 20);
+  
   results.checks.push({
     name: 'GOOGLE_CLIENT_ID',
     status: googleClientId ? 'present' : 'missing',
-    preview: googleClientId ? `${googleClientId.substring(0, 20)}...` : null,
+    preview: googleClientId ? `${googleClientId.substring(0, 25)}...` : null,
+    looksValid: googleClientId?.endsWith('.apps.googleusercontent.com') ?? false,
   });
   results.checks.push({
     name: 'GOOGLE_CLIENT_SECRET',
     status: googleClientSecret ? 'present' : 'missing',
     preview: googleClientSecret ? `${googleClientSecret.substring(0, 10)}...` : null,
+    looksValid: googleClientSecret?.startsWith('GOCSPX-') ?? false,
   });
-  if (!googleClientId || !googleClientSecret) {
-    results.errors.push('GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET missing - Sign in with Google will fail');
+  if (isPlaceholder) {
+    results.errors.push('GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is missing or still "placeholder" - add real credentials in Vercel');
+  } else if (!hasValidFormat) {
+    results.errors.push('Credentials may be wrong format - Client ID should end with .apps.googleusercontent.com, Secret should start with GOCSPX-');
   } else {
     results.checks.push({
       name: 'Google OAuth Redirect URI',
       status: 'configured',
       value: googleRedirectUri,
-      instruction: 'Add this EXACT URL to Google Cloud Console → OAuth client → Authorized redirect URIs',
+      instruction: 'This EXACT URL must be in Google Cloud Console → OAuth client → Authorized redirect URIs',
     });
   }
 
