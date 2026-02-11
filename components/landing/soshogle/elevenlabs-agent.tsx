@@ -80,13 +80,21 @@ export function ElevenLabsAgent({
       }
 
       if (!agentId || agentId.trim() === "") {
-        throw new Error("Agent ID is required for WebRTC connection");
+        throw new Error("Agent ID is required");
       }
 
-      // Exact match to tmp-soshogle-website (home website that works)
+      // Signed URL + WebSocket connects to api.elevenlabs.io - bypasses LiveKit (error_type crash)
+      const urlRes = await fetch(`/api/elevenlabs/signed-url?agentId=${encodeURIComponent(agentId.trim())}`);
+      if (!urlRes.ok) {
+        const err = await urlRes.json().catch(() => ({ error: "Failed to get connection" }));
+        throw new Error(err.error || "Failed to connect");
+      }
+      const { signedUrl } = await urlRes.json();
+      if (!signedUrl) throw new Error("No connection URL");
+
       conversationRef.current = await Conversation.startSession({
-        agentId: agentId.trim(),
-        connectionType: "webrtc",
+        signedUrl,
+        connectionType: "websocket",
         ...(dynamicVariables && { dynamicVariables }),
         onConnect: () => {
           setIsConnected(true);
