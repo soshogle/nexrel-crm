@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { GeometricShapes } from "./geometric-shapes";
@@ -19,11 +19,11 @@ interface ElevenLabsAgentProps {
   onAudioLevel?: (level: number) => void;
   onConversationEnd?: (transcript: ConversationMessage[], audioBlob?: Blob) => void;
   onAgentSpeakingChange?: (isSpeaking: boolean) => void;
-  onMessage?: (message: ConversationMessage) => void; // Real-time message callback
+  onMessage?: (message: ConversationMessage) => void;
   dynamicVariables?: Record<string, string>;
-  autoStart?: boolean; // Auto-start conversation when component mounts
-  compactMode?: boolean; // Hide intro text - show only Start button (for pages that already have chat)
-  hideWhenIdle?: boolean; // Hide entire pre-connection UI when not connected (e.g. when voice is in chat widget)
+  autoStart?: boolean;
+  compactMode?: boolean;
+  hideWhenIdle?: boolean;
 }
 
 type AgentStatus = "idle" | "connecting" | "listening" | "speaking" | "processing";
@@ -35,7 +35,6 @@ export function ElevenLabsAgent({
   onAgentSpeakingChange,
   onMessage,
   dynamicVariables,
-  autoStart = false,
   compactMode = false,
   hideWhenIdle = false,
 }: ElevenLabsAgentProps) {
@@ -55,82 +54,39 @@ export function ElevenLabsAgent({
   const audioStreamRef = useRef<MediaStream | null>(null);
 
   const startConversation = async () => {
-    console.log('🚀 startConversation called', { agentId, isConnected, isLoading, status });
-    
-    if (!agentId) {
-      console.error('❌ No agentId provided');
-      setError('Agent ID is missing. Please wait for the agent to load.');
-      return;
-    }
-    
     setIsLoading(true);
     setError(null);
     setStatus("connecting");
 
     try {
       conversationMessagesRef.current = [];
-      
-      // Request microphone access first (like Docpen does)
-      console.log('🎤 Requesting microphone access...');
-      let micStream: MediaStream;
-      try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error('getUserMedia is not supported in this browser');
-        }
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioStreamRef.current = micStream;
-        console.log('✅ Microphone access granted', { 
-          tracks: micStream.getTracks().length,
-          trackStates: micStream.getTracks().map(t => ({ id: t.id, enabled: t.enabled, readyState: t.readyState }))
-        });
-      } catch (micError: any) {
-        console.error('❌ Microphone access denied:', micError);
-        console.error('Error details:', {
-          name: micError.name,
-          message: micError.message,
-          stack: micError.stack
-        });
-        setIsLoading(false);
-        setStatus("idle");
-        
-        if (micError.name === 'NotAllowedError' || micError.name === 'PermissionDeniedError') {
-          setError('Microphone access denied. Please allow microphone permissions in your browser settings and try again.');
-        } else if (micError.name === 'NotFoundError') {
-          setError('No microphone found. Please connect a microphone and try again.');
-        } else {
-          setError(`Microphone error: ${micError.message || 'Unknown error'}`);
-        }
-        return;
-      }
+
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStreamRef.current = micStream;
 
       audioChunksRef.current = [];
       try {
         mediaRecorderRef.current = new MediaRecorder(micStream, {
           mimeType: "audio/webm;codecs=opus",
         });
-
         mediaRecorderRef.current.ondataavailable = (event) => {
           if (event.data.size > 0) {
             audioChunksRef.current.push(event.data);
           }
         };
-
         mediaRecorderRef.current.start(1000);
       } catch (recorderError) {
         console.error("MediaRecorder setup failed:", recorderError);
       }
 
       if (!agentId || agentId.trim() === "") {
-        console.error('❌ Agent ID is missing or empty');
         throw new Error("Agent ID is required for WebRTC connection");
       }
 
-      // WebSocket avoids LiveKit - WebRTC causes "v1 RTC path not found" and error_type crash
-      // Use agentId directly for public agents (no token needed)
-      console.log('🔌 Starting WebSocket session with agentId...');
+      // Exact match to tmp-soshogle-website (home website that works)
       conversationRef.current = await Conversation.startSession({
         agentId: agentId.trim(),
-        connectionType: "websocket",
+        connectionType: "webrtc",
         ...(dynamicVariables && { dynamicVariables }),
         onConnect: () => {
           setIsConnected(true);
@@ -171,108 +127,52 @@ export function ElevenLabsAgent({
         },
         onError: (error: any) => {
           console.error("ElevenLabs error:", error);
-          const message =
-            error?.message ||
-            error?.error ||
-            "Could not establish signal connection. Please try again.";
-          setError(message);
+          setError("Connection error. Please try again.");
           setIsLoading(false);
           setStatus("idle");
         },
         onMessage: (message: any) => {
           if (message.message) {
-            const conversationMessage: ConversationMessage = {
+            const msg: ConversationMessage = {
               role: message.source === "ai" ? "agent" : "user",
               content: message.message,
               timestamp: Date.now(),
             };
-            conversationMessagesRef.current.push(conversationMessage);
-            if (onMessage) {
-              onMessage(conversationMessage);
-            }
+            conversationMessagesRef.current.push(msg);
+            if (onMessage) onMessage(msg);
           }
         },
         onModeChange: (mode: any) => {
           if (mode.mode === "speaking") {
             setIsAgentSpeaking(true);
             setStatus("speaking");
-            if (onAgentSpeakingChange) {
-              onAgentSpeakingChange(true);
-            }
+            if (onAgentSpeakingChange) onAgentSpeakingChange(true);
           } else if (mode.mode === "listening") {
             setIsAgentSpeaking(false);
             setStatus("listening");
-            if (onAgentSpeakingChange) {
-              onAgentSpeakingChange(false);
-            }
+            if (onAgentSpeakingChange) onAgentSpeakingChange(false);
             setAudioLevel(0);
-            if (onAudioLevel) {
-              onAudioLevel(0);
-            }
+            if (onAudioLevel) onAudioLevel(0);
           }
         },
       });
 
-      // Set up audio context for analysis
       audioContextRef.current = new AudioContext();
-      
-      // Resume audio context if suspended (browser requirement)
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
-        console.log('🔊 Audio context resumed');
-      }
-      
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
 
-      // Connect audio element for analysis and ensure playback works
-      // The ElevenLabs SDK creates audio elements automatically for WebRTC
-      // IMPORTANT: Use only elements not yet connected - createMediaElementSource can only be called once per element
-      const connectAudioElement = () => {
-        try {
-          const candidates = document.querySelectorAll('audio');
-          let audioElement: HTMLAudioElement | null = null;
-          for (const el of candidates) {
-            if ((el as HTMLAudioElement).dataset.audioSourceConnected !== 'true') {
-              audioElement = el as HTMLAudioElement;
-              break;
-            }
-          }
-          audioElement = audioElement || (document.querySelector("#elevenlabs-audio-output") as HTMLAudioElement);
-
-          if (audioElement && audioContextRef.current && analyserRef.current) {
-            try {
-              // Skip if already connected (prevents InvalidStateError on reconnect)
-              if (audioElement.dataset.audioSourceConnected === 'true') return;
-
-              audioElement.volume = 1.0;
-              audioElement.muted = false;
-              audioElement.play().catch((e) => {
-                console.log("Audio play() called (may fail if no audio yet):", e);
-              });
-
-              const source = audioContextRef.current.createMediaElementSource(audioElement);
-              source.connect(analyserRef.current);
-              analyserRef.current.connect(audioContextRef.current.destination);
-              audioElement.dataset.audioSourceConnected = 'true';
-              console.log("✅ Audio element connected for analysis and playback");
-            } catch (e: any) {
-              if (e?.name !== 'InvalidStateError' && e?.message && !e.message.includes('already')) {
-                console.log("Could not connect to audio element:", e);
-              }
-            }
-          } else {
-            setTimeout(connectAudioElement, 200);
-          }
-        } catch (e) {
-          console.log("Error connecting audio element:", e);
+      try {
+        const audioElement = document.querySelector("audio");
+        if (audioElement && audioContextRef.current && analyserRef.current) {
+          const source = audioContextRef.current.createMediaElementSource(audioElement);
+          source.connect(analyserRef.current);
+          analyserRef.current.connect(audioContextRef.current.destination);
         }
-      };
+      } catch (e) {
+        console.log("Could not connect to audio element:", e);
+      }
 
-      // Start connecting audio element (SDK may create it asynchronously)
-      connectAudioElement();
-
-      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      const dataArray = new Uint8Array(analyserRef.current!.frequencyBinCount);
 
       const updateAudioLevel = () => {
         if (analyserRef.current && isAgentSpeaking) {
@@ -280,20 +180,17 @@ export function ElevenLabsAgent({
           const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
           const normalized = Math.min(average / 128, 1);
           setAudioLevel(normalized);
-          if (onAudioLevel) {
-            onAudioLevel(normalized);
-          }
+          if (onAudioLevel) onAudioLevel(normalized);
         } else if (!isAgentSpeaking) {
           setAudioLevel(0);
-          if (onAudioLevel) {
-            onAudioLevel(0);
-          }
+          if (onAudioLevel) onAudioLevel(0);
         }
         animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
       };
 
       updateAudioLevel();
     } catch (err: any) {
+      console.error("Error starting conversation:", err);
       if (err.name === "NotAllowedError") {
         setError("Microphone access denied. Please grant permission and try again.");
       } else {
@@ -303,98 +200,45 @@ export function ElevenLabsAgent({
     }
   };
 
-  const stopConversation = useCallback(() => {
-    console.log('🛑 stopConversation called, current status:', status);
-    
-    // Stop animation frame immediately
+  const stopConversation = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
     }
-
-    // Stop media recorder - handle all states
-    if (mediaRecorderRef.current) {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       try {
-        console.log('🛑 Stopping media recorder, state:', mediaRecorderRef.current.state);
-        if (mediaRecorderRef.current.state === "recording" || mediaRecorderRef.current.state === "paused") {
-          mediaRecorderRef.current.stop();
-        }
-        mediaRecorderRef.current = null;
+        mediaRecorderRef.current.stop();
       } catch (e) {
-        console.error("❌ Error stopping media recorder:", e);
-        mediaRecorderRef.current = null;
+        console.error("Error stopping media recorder:", e);
       }
     }
-
-    // Stop all audio stream tracks immediately
+    mediaRecorderRef.current = null;
     if (audioStreamRef.current) {
-      try {
-        console.log('🛑 Stopping audio stream tracks');
-        audioStreamRef.current.getTracks().forEach((track) => {
-          track.stop();
-          track.enabled = false;
-        });
-      } catch (e) {
-        console.error("❌ Error stopping audio tracks:", e);
-      }
+      audioStreamRef.current.getTracks().forEach((track) => track.stop());
       audioStreamRef.current = null;
     }
-
-    // End conversation session
     if (conversationRef.current) {
       try {
-        console.log('🛑 Ending conversation session');
         conversationRef.current.endSession();
       } catch (e) {
-        console.error("❌ Error ending session:", e);
+        console.error("Error ending session:", e);
       }
       conversationRef.current = null;
     }
-
-    // Close audio context
     if (audioContextRef.current) {
-      try {
-        if (audioContextRef.current.state !== 'closed') {
-          console.log('🛑 Closing audio context');
-          audioContextRef.current.close();
-        }
-      } catch (e) {
-        console.error("❌ Error closing audio context:", e);
-      }
+      audioContextRef.current.close();
       audioContextRef.current = null;
     }
-
-    // Reset analyser ref
-    analyserRef.current = null;
-
-    // Reset state immediately
     setIsConnected(false);
     setIsAgentSpeaking(false);
-    setIsLoading(false);
-    setStatus("idle");
     setAudioLevel(0);
-    setError(null);
-    
-    if (onAudioLevel) {
-      onAudioLevel(0);
-    }
-    if (onAgentSpeakingChange) {
-      onAgentSpeakingChange(false);
-    }
-    
-    console.log('✅ Conversation stopped successfully');
-  }, [status, onAudioLevel, onAgentSpeakingChange]);
-
-  // Note: autoStart prop is ignored - user must always click button to start
-  // This ensures getUserMedia is called with proper user interaction (browser requirement)
+    if (onAudioLevel) onAudioLevel(0);
+    if (onAgentSpeakingChange) onAgentSpeakingChange(false);
+  };
 
   useEffect(() => {
-    return () => {
-      stopConversation();
-    };
+    return () => stopConversation();
   }, []);
 
-  // When hideWhenIdle and idle, render nothing to avoid empty space
   if (hideWhenIdle && !isConnected && !isLoading) {
     return <div className="hidden" aria-hidden="true" />;
   }
@@ -411,30 +255,20 @@ export function ElevenLabsAgent({
               </p>
             </div>
           )}
-
-          <Button 
+          <Button
             size={compactMode ? "default" : "lg"}
-            onClick={startConversation} 
+            onClick={startConversation}
             className="bg-primary hover:bg-primary/90 gap-2"
             disabled={!agentId}
           >
             <Mic className="w-5 h-5" />
             Start Conversation
           </Button>
-
-          {!agentId && (
-            <p className="text-sm text-muted-foreground">Loading agent...</p>
-          )}
-
+          {!agentId && <p className="text-sm text-muted-foreground">Loading agent...</p>}
           {error && (
             <div className="space-y-2">
               <p className="text-destructive text-sm font-semibold">Error:</p>
               <p className="text-destructive text-sm">{error}</p>
-              {error.includes('Microphone') && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Please allow microphone access in your browser settings and try again.
-                </p>
-              )}
             </div>
           )}
         </div>
@@ -451,21 +285,11 @@ export function ElevenLabsAgent({
         <div className="w-full space-y-6">
           <div className="relative w-full h-[400px] md:h-[500px] rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-black border border-gray-800">
             <GeometricShapes audioLevel={audioLevel} isAgentSpeaking={isAgentSpeaking} />
-
             <div className="absolute top-6 left-6 flex items-center gap-2 bg-gray-900/80 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-700">
               <img src={APP_LOGO} alt="Soshogle" className="h-6 w-6" />
               <span className="text-sm font-semibold text-white">Soshogle AI</span>
             </div>
-            
-            {/* Hidden audio element for ElevenLabs SDK */}
-            <audio 
-              id="elevenlabs-audio-output" 
-              autoPlay 
-              playsInline
-              style={{ display: 'none' }}
-            />
           </div>
-
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center gap-3">
               {status === "connecting" && (
@@ -500,7 +324,6 @@ export function ElevenLabsAgent({
                 </>
               )}
             </div>
-
             <Button size="lg" variant="outline" onClick={stopConversation} className="gap-2">
               <MicOff className="w-5 h-5" />
               End Conversation
