@@ -191,23 +191,25 @@ export function AIChatAssistant() {
     }
     setIsLoading(true);
 
-    // Phase 2: Create draft first, then navigate when user says "create workflow" or "create campaign"
+    // Phase 2: Create draft first when user says "create workflow", then pass draftId to AI so it adds tasks live
     const lower = currentInput.toLowerCase();
-    if (/\b(create|set up|build)\b.*\bworkflow\b|\bworkflow\b.*\b(create|set up|build)\b/.test(lower)) {
-      fetch('/api/workflows/draft', { method: 'POST' })
-        .then((r) => r.ok ? r.json() : null)
-        .then((data) => {
-          const draftId = data?.workflow?.id;
-          if (draftId && typeof window !== 'undefined') {
-            sessionStorage.setItem('activeWorkflowDraftId', draftId);
-          }
-          router.push(draftId ? `/dashboard/workflows?openBuilder=1&draftId=${draftId}` : '/dashboard/workflows?openBuilder=1');
-          toast.success('Opening workflow builder...');
-        })
-        .catch(() => {
-          router.push('/dashboard/workflows?openBuilder=1');
-          toast.success('Opening workflow builder...');
-        });
+    let workflowDraftId: string | null = null;
+    const isWorkflowCreate = /\b(create|set up|build)\b.*\bworkflow\b|\bworkflow\b.*\b(create|set up|build)\b/.test(lower);
+    if (isWorkflowCreate) {
+      try {
+        const draftRes = await fetch('/api/workflows/draft', { method: 'POST' });
+        const draftData = draftRes.ok ? await draftRes.json() : null;
+        workflowDraftId = draftData?.workflow?.id || null;
+        if (workflowDraftId && typeof window !== 'undefined') {
+          sessionStorage.setItem('activeWorkflowDraftId', workflowDraftId);
+        }
+        // Navigate immediately so user sees builder while AI adds tasks (builder polls every 3s)
+        router.push(workflowDraftId ? `/dashboard/workflows?openBuilder=1&draftId=${workflowDraftId}` : '/dashboard/workflows?openBuilder=1');
+        toast.success('Opening workflow builder... I\'ll add the tasks as we go.');
+      } catch {
+        router.push('/dashboard/workflows?openBuilder=1');
+        toast.success('Opening workflow builder...');
+      }
     } else if (/\b(create|set up|build)\b.*\bcampaign\b|\bcampaign\b.*\b(create|set up|build)\b/.test(lower)) {
       router.push('/dashboard/campaigns/email-drip/create');
       toast.success('Opening campaign creator...');
@@ -220,7 +222,7 @@ export function AIChatAssistant() {
         formData.append('file', currentFile);
         formData.append('message', currentInput);
         formData.append('conversationHistory', JSON.stringify(messages.slice(-10)));
-        const activeDraftId = typeof window !== 'undefined' ? sessionStorage.getItem('activeWorkflowDraftId') : null;
+        const activeDraftId = workflowDraftId || (typeof window !== 'undefined' ? sessionStorage.getItem('activeWorkflowDraftId') : null);
         if (activeDraftId) formData.append('context', JSON.stringify({ activeWorkflowDraftId: activeDraftId }));
 
         const response = await fetch("/api/ai-assistant/chat", {
@@ -255,8 +257,8 @@ export function AIChatAssistant() {
           }, 1500);
         }
       } else {
-        // Regular text message
-        const activeDraftId = typeof window !== 'undefined' ? sessionStorage.getItem('activeWorkflowDraftId') : null;
+        // Regular text message - pass workflowDraftId when we just created a draft so AI adds tasks
+        const activeDraftId = workflowDraftId || (typeof window !== 'undefined' ? sessionStorage.getItem('activeWorkflowDraftId') : null);
         const response = await fetch("/api/ai-assistant/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -304,8 +306,8 @@ export function AIChatAssistant() {
           });
         }
 
-        // Handle navigation if present
-        if (data.navigateTo) {
+        // Handle navigation if present (skip if we already navigated for workflow create)
+        if (data.navigateTo && !isWorkflowCreate) {
           if (data.triggerVisualization) {
             toast.success("Taking you to AI Brain page to view visualizations...", {
               icon: <ArrowRight className="h-4 w-4" />,

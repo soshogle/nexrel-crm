@@ -341,7 +341,7 @@ ${(() => {
   }
 })()}
 
-${context?.activeWorkflowDraftId ? `\n**ACTIVE WORKFLOW DRAFT:** The user is currently editing workflow ID: ${context.activeWorkflowDraftId}. When they ask to add a step, trigger, or action to the workflow, use add_workflow_task with workflowId: "${context.activeWorkflowDraftId}".\n` : ''}
+${context?.activeWorkflowDraftId ? `\n**ACTIVE WORKFLOW DRAFT (CRITICAL):** A workflow draft is already open (ID: ${context.activeWorkflowDraftId}). The user was just navigated to the workflow builder. You MUST use add_workflow_task for EACH step/task they describe - do NOT use create_workflow. Parse their description and call add_workflow_task multiple times (once per step). Example: "create workflow that sends email, waits 2 days, then calls" → call add_workflow_task(name="Send email", taskType="EMAIL"), then add_workflow_task(name="2 day delay", taskType="DELAY"), then add_workflow_task(name="Call contact", taskType="VOICE_CALL"). Use workflowId: "${context.activeWorkflowDraftId}" for every add_workflow_task call.\n` : ''}
 
 Current CRM Statistics:
 - Total Contacts/Leads: ${userStats.contacts}
