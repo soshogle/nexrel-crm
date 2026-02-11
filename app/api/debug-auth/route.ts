@@ -97,7 +97,32 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Check 5: Test user lookup
+  // Check 5: Google OAuth config (for Sign in with Google)
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const googleRedirectUri = nextAuthUrl ? `${nextAuthUrl}/api/auth/callback/google` : null;
+  results.checks.push({
+    name: 'GOOGLE_CLIENT_ID',
+    status: googleClientId ? 'present' : 'missing',
+    preview: googleClientId ? `${googleClientId.substring(0, 20)}...` : null,
+  });
+  results.checks.push({
+    name: 'GOOGLE_CLIENT_SECRET',
+    status: googleClientSecret ? 'present' : 'missing',
+    preview: googleClientSecret ? `${googleClientSecret.substring(0, 10)}...` : null,
+  });
+  if (!googleClientId || !googleClientSecret) {
+    results.errors.push('GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET missing - Sign in with Google will fail');
+  } else {
+    results.checks.push({
+      name: 'Google OAuth Redirect URI',
+      status: 'configured',
+      value: googleRedirectUri,
+      instruction: 'Add this EXACT URL to Google Cloud Console → OAuth client → Authorized redirect URIs',
+    });
+  }
+
+  // Check 6: Test user lookup
   if (dbConnected) {
     try {
       const user = await prisma.user.findUnique({

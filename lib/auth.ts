@@ -6,16 +6,20 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 
+// Only enable Google OAuth when credentials are configured (avoids "invalid_client" errors)
+const googleProvider =
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        allowDangerousEmailAccountLinking: true,
+      })
+    : null
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || 'placeholder-google-client-id',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'placeholder-google-client-secret',
-      // Enable account linking for users with verified emails
-      // This allows users who signed up with email/password to link their Google account
-      allowDangerousEmailAccountLinking: true,
-    }),
+    ...(googleProvider ? [googleProvider] : []),
     CredentialsProvider({
       name: 'credentials',
       credentials: {
