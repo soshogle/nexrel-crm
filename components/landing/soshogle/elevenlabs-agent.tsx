@@ -125,12 +125,12 @@ export function ElevenLabsAgent({
         throw new Error("Agent ID is required for WebRTC connection");
       }
 
-      // Match tmp-soshogle-website: use agentId directly, no token (public agent)
-      // @elevenlabs/client 0.11.0 - same setup as working soshogle website
-      console.log('🔌 Starting ElevenLabs session with agentId (public agent)...');
+      // WebSocket avoids LiveKit - WebRTC causes "v1 RTC path not found" and error_type crash
+      // Use agentId directly for public agents (no token needed)
+      console.log('🔌 Starting WebSocket session with agentId...');
       conversationRef.current = await Conversation.startSession({
         agentId: agentId.trim(),
-        connectionType: "webrtc",
+        connectionType: "websocket",
         ...(dynamicVariables && { dynamicVariables }),
         onConnect: () => {
           setIsConnected(true);
