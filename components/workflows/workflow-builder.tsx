@@ -126,13 +126,16 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
     load();
   }, [workflows, initialWorkflowId, workflow, showTemplateGallery]);
 
-  // Phase 2: Set active draft in sessionStorage for AI assistant context
+  // Phase 2: Set active draft in sessionStorage and server for voice/chat context
+  // Don't clear on unmount - only clear when user explicitly clicks "Back to Overview" (preserves draft for "take me back")
   useEffect(() => {
     if (typeof window === 'undefined' || !initialWorkflowId) return;
     sessionStorage.setItem('activeWorkflowDraftId', initialWorkflowId);
-    return () => {
-      sessionStorage.removeItem('activeWorkflowDraftId');
-    };
+    fetch('/api/workflows/active-draft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ draftId: initialWorkflowId }),
+    }).catch(() => {});
   }, [initialWorkflowId]);
 
   // Phase 2: Poll for draft updates when AI adds tasks via API (every 2s for live feel)

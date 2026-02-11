@@ -250,8 +250,10 @@ Available functions:
 - send_email: Email a single contact. USE when user says "email [contact] about [topic]", "send email to [contact]". E.g. "email John about our new promo".
 - sms_leads: Text multiple leads. USE when user says "text all my leads from today", "SMS today's leads with [message]". Use period: "today" for leads created today.
 - email_leads: Email multiple leads. USE when user says "email all my leads from today", "send email to today's leads about [topic]". Use period: "today" for leads created today.
+- add_workflow_task: Add a step to the workflow. USE when user describes a step: "add send email", "add call them", "add 2 day delay", "add trigger when lead created". Call for EACH step. workflowId is auto-filled from active draft.
 
 IMPORTANT: When users ask "how many new leads today" or "show me my leads" → use list_leads (navigates to contacts page). When users ask for graphs, charts, or sales trends → use get_statistics (shows visualizations on AI Brain). Do not use get_statistics for simple lead/deal counts.
+For workflows: when user says "create workflow", acknowledge and say you've opened the builder (client opens it). Then for each step ("add email", "add delay", "add call") → add_workflow_task.
 For calling: "call John and tell him about the promo" → make_outbound_call. "call all leads from today with 10% off" → call_leads. If user has a preference for which agent ("use Sarah"), pass voiceAgentName. If unsure, use list_voice_agents and ask which agent they want.
 
 Remember: You're speaking, not typing. Keep it brief and natural. When reporting statistics, speak clearly and highlight the most important numbers.
@@ -612,6 +614,24 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
             limit: { type: 'number', description: 'Max leads (default 50)' },
           },
           required: ['subject', 'message'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'add_workflow_task',
+        description: 'Add a task/step to the workflow the user is currently building. Use when user describes a step: "add send email", "add a step to call them", "add 2 day delay", "add trigger when lead created". Call for EACH step. workflowId is auto-filled from active draft.',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Task name (required). E.g. "Send welcome email", "Call contact", "2 day delay"' },
+            taskType: {
+              type: 'string',
+              description: 'Task type - TRIGGER, EMAIL, SMS, VOICE_CALL, DELAY, or CUSTOM',
+              enum: ['TRIGGER', 'EMAIL', 'SMS', 'VOICE_CALL', 'DELAY', 'CREATE_TASK', 'CUSTOM'],
+            },
+            workflowId: { type: 'string', description: 'Workflow ID (optional - uses active draft if not provided)' },
+          },
+          required: ['name'],
         },
         server_url: serverUrl,
       },

@@ -169,25 +169,58 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
     }
   }, [router]);
 
-  const handleMessage = useCallback((message: any) => {
+  const handleMessage = useCallback(async (message: any) => {
     const now = Date.now();
     const timeSinceLastCheck = now - lastStatsCheckRef.current;
     if (timeSinceLastCheck < 3000) return;
 
+    const activeDraftId = typeof window !== 'undefined' ? sessionStorage.getItem('activeWorkflowDraftId') : null;
+    const isOnWorkflowBuilder = typeof window !== 'undefined' && window.location.pathname.includes('/workflows') && window.location.search.includes('openBuilder=1');
+
     if (message.role === 'agent' && message.content) {
       const content = message.content.toLowerCase();
+      // Back to workflow builder - user asked to go back
+      const backToWorkflowMatch = /\b(workflow\s*builder|back\s*to\s*workflow|take\s*me\s*back|take\s*you\s*back|taking\s*you\s*back|go\s*back\s*to\s*workflow|workflow\s*page)\b/.test(content);
+      if (backToWorkflowMatch) {
+        console.log('📋 [AI Brain Voice Context] Detected back to workflow builder, navigating');
+        lastStatsCheckRef.current = now;
+        let draftId = activeDraftId;
+        if (!draftId) {
+          try {
+            const r = await fetch('/api/workflows/active-draft');
+            const d = r.ok ? await r.json() : null;
+            draftId = d?.draftId || null;
+          } catch {
+            // ignore
+          }
+        }
+        navigateTo(draftId ? `/dashboard/workflows?openBuilder=1&draftId=${draftId}` : '/dashboard/workflows?openBuilder=1');
+        return;
+      }
+
       // Phase 1: Create workflow/campaign - navigate immediately and open builder
-      const createWorkflowMatch = /\b(create|creating|set up|build)\b.*\bworkflow\b|\bworkflow\b.*\b(create|creating|set up|build)\b/.test(content);
+      const createWorkflowMatch = /\b(create|creating|set up|build|opened)\b.*\bworkflow\b|\bworkflow\b.*\b(create|creating|set up|build|opened)\b/.test(content);
       const createCampaignMatch = /\b(create|creating|set up|build)\b.*\bcampaign\b|\bcampaign\b.*\b(create|creating|set up|build)\b/.test(content);
       if (createWorkflowMatch) {
-        console.log('📋 [AI Brain Voice Context] Detected create workflow intent, creating draft and opening builder');
         lastStatsCheckRef.current = now;
+        const existingDraftId = activeDraftId;
+        if (existingDraftId) {
+          console.log('📋 [AI Brain Voice Context] Already have draft, navigating to builder');
+          navigateTo(`/dashboard/workflows?openBuilder=1&draftId=${existingDraftId}`);
+          return;
+        }
+        console.log('📋 [AI Brain Voice Context] Detected create workflow intent, creating draft and opening builder');
         fetch('/api/workflows/draft', { method: 'POST' })
           .then((r) => r.ok ? r.json() : null)
-          .then((data) => {
+          .then(async (data) => {
             const draftId = data?.workflow?.id;
             if (draftId && typeof window !== 'undefined') {
               sessionStorage.setItem('activeWorkflowDraftId', draftId);
+              await fetch('/api/workflows/active-draft', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ draftId }),
+              });
             }
             navigateTo(draftId ? `/dashboard/workflows?openBuilder=1&draftId=${draftId}` : '/dashboard/workflows?openBuilder=1');
           })
@@ -212,25 +245,28 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      if (content.includes('lead') || content.includes('contact')) {
-        console.log('📋 [AI Brain Voice Context] Detected leads/contacts query, navigating to contacts');
-        lastStatsCheckRef.current = now;
-        navigateTo('/dashboard/contacts');
-        return;
-      }
+      // Don't navigate away from workflow builder when user mentions contacts (e.g. "add step to email contacts")
+      if (!isOnWorkflowBuilder && !activeDraftId) {
+        if (content.includes('lead') || content.includes('contact')) {
+          console.log('📋 [AI Brain Voice Context] Detected leads/contacts query, navigating to contacts');
+          lastStatsCheckRef.current = now;
+          navigateTo('/dashboard/contacts');
+          return;
+        }
 
-      if (content.includes('deal') || content.includes('pipeline')) {
-        console.log('💼 [AI Brain Voice Context] Detected deals query, navigating to pipeline');
-        lastStatsCheckRef.current = now;
-        navigateTo('/dashboard/pipeline');
-        return;
-      }
+        if (content.includes('deal') || content.includes('pipeline')) {
+          console.log('💼 [AI Brain Voice Context] Detected deals query, navigating to pipeline');
+          lastStatsCheckRef.current = now;
+          navigateTo('/dashboard/pipeline');
+          return;
+        }
 
-      if (content.includes('campaign')) {
-        console.log('📧 [AI Brain Voice Context] Detected campaigns query, navigating to campaigns');
-        lastStatsCheckRef.current = now;
-        navigateTo('/dashboard/campaigns');
-        return;
+        if (content.includes('campaign')) {
+          console.log('📧 [AI Brain Voice Context] Detected campaigns query, navigating to campaigns');
+          lastStatsCheckRef.current = now;
+          navigateTo('/dashboard/campaigns');
+          return;
+        }
       }
 
       const scenarioKeywords = ['what if', 'what would happen', 'predict', 'project', 'simulate', 'if i convert', 'if i get'];
@@ -238,7 +274,7 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
 
       const statsKeywords = ['statistic', 'statistics', 'stats', 'revenue', 'total', 'overview', 'summary', 'business performance', 'sales', 'leads', 'deals', 'pipeline'];
       const hasStatsKeyword = statsKeywords.some(k => content.includes(k));
-      if ((hasStatsKeyword || wantsScenario) && !wantsVisualization) {
+      if ((hasStatsKeyword || wantsScenario) && !wantsVisualization && !isOnWorkflowBuilder) {
         console.log('📊 [AI Brain Voice Context] General stats query, navigating to AI Brain for overview');
         lastStatsCheckRef.current = now;
         navigateTo('/dashboard/business-ai?mode=voice');

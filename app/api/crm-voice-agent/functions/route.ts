@@ -119,6 +119,10 @@ export async function POST(req: NextRequest) {
         result = await handleEmailLeads(userId, parameters || {});
         break;
 
+      case 'add_workflow_task':
+        result = await handleAddWorkflowTask(userId, parameters || {});
+        break;
+
       default:
         result = { error: `Unknown function: ${function_name}` };
     }
@@ -913,4 +917,47 @@ async function handleEmailLeads(userId: string, params: any) {
   });
   if (!result.success && result.sent === 0) return { error: result.error };
   return { success: true, message: result.message, sent: result.sent, failed: result.failed, navigateTo: '/dashboard/messages' };
+}
+
+async function handleAddWorkflowTask(userId: string, params: any) {
+  const { workflowId: paramWorkflowId, name, taskType = 'CUSTOM', description = '' } = params;
+  let workflowId = paramWorkflowId;
+  if (!workflowId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { activeWorkflowDraftId: true },
+    });
+    workflowId = user?.activeWorkflowDraftId || undefined;
+  }
+  if (!workflowId || !name) {
+    return { error: 'No active workflow. Say "create workflow" first to start a new one, or provide workflowId.' };
+  }
+  const existing = await prisma.workflowTemplate.findFirst({
+    where: { id: workflowId, userId },
+    include: { tasks: { orderBy: { displayOrder: 'asc' } } },
+  });
+  if (!existing) return { error: 'Workflow not found' };
+  const maxOrder = existing.tasks.length > 0 ? Math.max(...existing.tasks.map((t) => t.displayOrder)) : 0;
+  const task = await prisma.workflowTask.create({
+    data: {
+      templateId: workflowId,
+      name,
+      description: description || '',
+      taskType: taskType || 'CUSTOM',
+      assignedAgentType: null,
+      delayValue: 0,
+      delayUnit: 'MINUTES',
+      isHITL: false,
+      isOptional: false,
+      position: { row: Math.floor(maxOrder / 3), col: maxOrder % 3 },
+      displayOrder: maxOrder + 1,
+      actionConfig: { actions: [] },
+    },
+  });
+  return {
+    success: true,
+    message: `Added "${name}" to the workflow. What's the next step?`,
+    task: { id: task.id, name: task.name, taskType: task.taskType },
+    navigateTo: '/dashboard/workflows',
+  };
 }
