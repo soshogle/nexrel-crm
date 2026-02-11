@@ -112,6 +112,7 @@ model User {
   subdomain                   String?                      @unique
   language                    String?                      @default("en")
   crmVoiceAgentId             String? // ElevenLabs agent ID for CRM voice assistant
+  activeWorkflowDraftId       String? // Active workflow draft for voice/chat (cleared when leaving builder)
   workflowExecutions          AIWorkflowExecution[]        @relation("UserWorkflowExecutions")
   workflowInstances           AIWorkflowInstance[]         @relation("UserWorkflowInstances")
   accounts                    Account[]

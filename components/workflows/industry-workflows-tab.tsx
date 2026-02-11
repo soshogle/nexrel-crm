@@ -146,7 +146,14 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
             variant="outline"
             onClick={() => {
               setShowBuilder(false);
-              if (typeof window !== 'undefined') sessionStorage.removeItem('activeWorkflowDraftId');
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('activeWorkflowDraftId');
+                fetch('/api/workflows/active-draft', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ draftId: null }),
+                }).catch(() => {});
+              }
             }}
             className="border-purple-200 text-gray-700 hover:bg-purple-50"
           >
