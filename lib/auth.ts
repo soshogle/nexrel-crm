@@ -6,20 +6,15 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 
-// Only enable Google OAuth when credentials are configured (avoids "invalid_client" errors)
-const googleProvider =
-  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-    ? GoogleProvider({
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        allowDangerousEmailAccountLinking: true,
-      })
-    : null
-
+// Always register Google provider so the button shows. Uses env vars when set.
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    ...(googleProvider ? [googleProvider] : []),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || 'placeholder',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'placeholder',
+      allowDangerousEmailAccountLinking: true,
+    }),
     CredentialsProvider({
       name: 'credentials',
       credentials: {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { signIn, getProviders } from 'next-auth/react'
+import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -17,12 +17,7 @@ export function SignInForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState('')
-  const [googleEnabled, setGoogleEnabled] = useState(false)
   const router = useRouter()
-
-  useEffect(() => {
-    getProviders().then((providers) => setGoogleEnabled(Boolean(providers?.google)))
-  }, [])
 
   // Clear any impersonation data when signin form loads
   // This ensures clean state when user logs out and logs back in
@@ -161,9 +156,8 @@ export function SignInForm() {
               </p>
             </div>
 
-            {/* Google Sign In - Only shown when configured */}
-            {googleEnabled && (
-              <Button
+            {/* Google Sign In */}
+            <Button
                 type="button"
                 variant="outline"
                 className="w-full mb-6 h-12 bg-gray-800 border-gray-700 hover:bg-gray-700 transition-colors text-white"
@@ -199,16 +193,13 @@ export function SignInForm() {
                   </>
                 )}
               </Button>
-            )}
 
             <div className="relative mb-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-700"></div>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-gray-900 px-2 text-gray-400">
-                  {googleEnabled ? 'Or continue with email' : 'Sign in with email'}
-                </span>
+                <span className="bg-gray-900 px-2 text-gray-400">Or continue with email</span>
               </div>
             </div>
 
@@ -237,7 +228,12 @@ export function SignInForm() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-300">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-300">Password</Label>
+                  <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
