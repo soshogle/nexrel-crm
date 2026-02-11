@@ -261,50 +261,22 @@ export function ElevenLabsAgent({
         },
       };
 
-      const startWebrtcSession = async () => {
-        return Conversation.startSession({
-          ...sessionOptions,
-          connectionType: "webrtc",
-        });
-      };
-
-      const startWebsocketSession = async () => {
-        return (Conversation as any).startSession({
+      // WebSocket only - WebRTC/LiveKit path causes "v1 RTC path not found" and
+      // error_type crashes in the SDK. WebSocket avoids LiveKit entirely.
+      console.log('🔌 Starting WebSocket session...');
+      try {
+        conversationRef.current = await (Conversation as any).startSession({
           ...sessionOptions,
           connectionType: "websocket",
         });
-      };
-
-      // Try WebSocket first - WebRTC/LiveKit path has been causing "v1 RTC path not found"
-      // and error_type crashes. WebSocket is more stable for browser conversations.
-      console.log('🔌 Starting WebSocket session (primary for stability)...');
-      try {
-        conversationRef.current = await startWebsocketSession();
         console.log('✅ WebSocket session started successfully');
       } catch (sessionError: any) {
         console.error('❌ WebSocket session failed:', sessionError);
-        const message = sessionError?.message || "";
-        if (message.includes("Failed to fetch") || message.includes("signal") || message.includes("WebSocket")) {
-          console.log('🔄 Falling back to WebRTC...');
-          try {
-            conversationRef.current = await startWebrtcSession();
-            console.log('✅ WebRTC session started successfully');
-          } catch (fallbackError: any) {
-            console.error("❌ ElevenLabs fallback error:", fallbackError);
-            cleanupMedia();
-            setError(`Connection failed: ${fallbackError.message || 'Unknown error'}`);
-            setIsLoading(false);
-            setStatus("idle");
-            return;
-          }
-        } else {
-          console.error('❌ Session error:', sessionError);
-          cleanupMedia();
-          setError(`Connection failed: ${sessionError.message || 'Unknown error'}`);
-          setIsLoading(false);
-          setStatus("idle");
-          return;
-        }
+        cleanupMedia();
+        setError(`Connection failed: ${sessionError?.message || 'Unknown error'}. Try refreshing the page.`);
+        setIsLoading(false);
+        setStatus("idle");
+        return;
       }
 
       // Set up audio context for analysis
