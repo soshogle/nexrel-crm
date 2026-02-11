@@ -140,8 +140,21 @@ export function TestimonialsCarousel() {
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-24 h-24 flex items-center justify-center bg-white rounded-xl p-3">
-                <img src={currentCase.logo} alt={`${currentCase.company} logo`} className="w-full h-full object-contain" />
+              <div className="w-24 h-24 flex items-center justify-center bg-white rounded-xl p-3 relative">
+                <img
+                  src={currentCase.logo}
+                  alt={`${currentCase.company} logo`}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const t = e.target as HTMLImageElement;
+                    t.style.display = "none";
+                    const fallback = t.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.classList.remove("hidden");
+                  }}
+                />
+                <div className="hidden absolute inset-0 text-2xl font-bold text-muted-foreground flex items-center justify-center">
+                  {currentCase.company.slice(0, 2)}
+                </div>
               </div>
               <div>
                 <h3 className="text-2xl font-bold">{currentCase.company}</h3>
