@@ -135,7 +135,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
     };
   }, [initialWorkflowId]);
 
-  // Phase 2: Poll for draft updates when AI adds tasks via API
+  // Phase 2: Poll for draft updates when AI adds tasks via API (every 2s for live feel)
   useEffect(() => {
     if (!initialWorkflowId || !workflow || workflow.id !== initialWorkflowId) return;
     const interval = setInterval(async () => {
@@ -148,7 +148,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
           return prevTaskIds !== newTaskIds ? updated : prev;
         });
       }
-    }, 3000);
+    }, 2000);
     return () => clearInterval(interval);
   }, [initialWorkflowId, workflow?.id]);
   
