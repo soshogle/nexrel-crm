@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useLandingLanguage } from "@/hooks/use-landing-language";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +33,7 @@ const DEMO_AGENT_ID =
   "agent_0301kap49d2afq5vp04v0r6p5k6q";
 
 export function DemoModal({ isOpen, onClose }: DemoModalProps) {
+  const preferredLanguage = useLandingLanguage();
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -191,6 +193,7 @@ export function DemoModal({ isOpen, onClose }: DemoModalProps) {
                 website_url: formData.websiteUrl || "https://example.com",
                 user_name: formData.fullName || "Visitor",
                 industry: formData.industry || "your industry",
+                preferred_language: preferredLanguage,
               }}
             />
           </div>

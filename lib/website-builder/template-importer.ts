@@ -32,7 +32,7 @@ export class WebsiteTemplateImporter {
     // Extract preview image (first large image or logo)
     const previewImage = this.extractPreviewImage(scrapedData);
 
-    // Save as template
+    // Save as template (previewUrl = source URL for live iframe preview)
     const template = await prisma.websiteTemplate.create({
       data: {
         name,
@@ -40,6 +40,7 @@ export class WebsiteTemplateImporter {
         category: category || 'Imported',
         description: description || `Template imported from ${url}`,
         previewImage,
+        previewUrl: url,
         structure: templateStructure,
         isDefault: false,
       },

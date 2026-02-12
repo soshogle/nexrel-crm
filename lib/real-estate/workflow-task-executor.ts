@@ -94,39 +94,62 @@ async function executeVoiceCall(
   let elevenLabsAgentId: string | null = null;
   let voiceOverride: { agent?: { language?: string }; tts?: { voice_id?: string; stability?: number; speed?: number; similarity_boost?: number } } | undefined;
 
-  if (actionConfig?.assignedAIEmployeeId) {
-    const aiEmployee = await prisma.userAIEmployee.findFirst({
-      where: {
-        id: actionConfig.assignedAIEmployeeId,
-        userId: instance.userId,
-        isActive: true,
-      },
-    });
-    if (aiEmployee?.voiceAgentId) {
-      const voiceAgent = await prisma.voiceAgent.findFirst({
+    if (actionConfig?.assignedAIEmployeeId) {
+      const aiEmployee = await prisma.userAIEmployee.findFirst({
         where: {
-          id: aiEmployee.voiceAgentId,
+          id: actionConfig.assignedAIEmployeeId,
           userId: instance.userId,
-          elevenLabsAgentId: { not: null },
+          isActive: true,
         },
       });
-      if (voiceAgent?.elevenLabsAgentId) {
-        elevenLabsAgentId = voiceAgent.elevenLabsAgentId;
-        const vc = aiEmployee.voiceConfig as { voiceId?: string; language?: string; stability?: number; speed?: number; similarityBoost?: number } | null;
-        if (vc && Object.keys(vc).length > 0) {
-          voiceOverride = {};
-          if (vc.language) voiceOverride.agent = { language: vc.language };
-          if (vc.voiceId || vc.stability != null || vc.speed != null || vc.similarityBoost != null) {
-            voiceOverride.tts = {};
-            if (vc.voiceId) voiceOverride.tts.voice_id = vc.voiceId;
-            if (vc.stability != null) voiceOverride.tts.stability = vc.stability;
-            if (vc.speed != null) voiceOverride.tts.speed = vc.speed;
-            if (vc.similarityBoost != null) voiceOverride.tts.similarity_boost = vc.similarityBoost;
+      if (aiEmployee?.voiceAgentId) {
+        const voiceAgent = await prisma.voiceAgent.findFirst({
+          where: {
+            id: aiEmployee.voiceAgentId,
+            userId: instance.userId,
+            elevenLabsAgentId: { not: null },
+          },
+        });
+        if (voiceAgent?.elevenLabsAgentId) {
+          elevenLabsAgentId = voiceAgent.elevenLabsAgentId;
+          // Build per-call override: task voiceLanguage > AI employee voiceConfig
+          const vc = aiEmployee.voiceConfig as { voiceId?: string; language?: string; stability?: number; speed?: number; similarityBoost?: number } | null;
+          const taskLang = actionConfig?.voiceLanguage;
+          const employeeLang = vc?.language;
+          const lang = taskLang || employeeLang;
+          if (lang || (vc && Object.keys(vc).length > 0)) {
+            voiceOverride = {};
+            if (lang) voiceOverride.agent = { language: lang };
+            if (vc && (vc.voiceId || vc.stability != null || vc.speed != null || vc.similarityBoost != null)) {
+              voiceOverride.tts = voiceOverride.tts || {};
+              if (vc.voiceId) voiceOverride.tts.voice_id = vc.voiceId;
+              if (vc.stability != null) voiceOverride.tts.stability = vc.stability;
+              if (vc.speed != null) voiceOverride.tts.speed = vc.speed;
+              if (vc.similarityBoost != null) voiceOverride.tts.similarity_boost = vc.similarityBoost;
+            }
           }
         }
       }
     }
-  }
+
+    // Per-task language override when no AI employee (RE industry agent)
+    if (!voiceOverride?.agent?.language && actionConfig?.voiceLanguage) {
+      voiceOverride = voiceOverride || {};
+      voiceOverride.agent = { ...voiceOverride.agent, language: actionConfig.voiceLanguage };
+    }
+
+    // Fallback to user language when no override yet
+    if (!voiceOverride?.agent?.language) {
+      const user = await prisma.user.findUnique({
+        where: { id: instance.userId },
+        select: { language: true },
+      });
+      const userLang = user?.language || 'en';
+      if (userLang !== 'en') {
+        voiceOverride = voiceOverride || {};
+        voiceOverride.agent = { ...voiceOverride.agent, language: userLang };
+      }
+    }
 
   if (!elevenLabsAgentId && task.assignedAgentType) {
     // Lazy provision: create agent on first use if not yet provisioned

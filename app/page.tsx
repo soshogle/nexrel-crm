@@ -16,6 +16,7 @@ import { PricingSection } from "@/components/landing/soshogle/pricing-section";
 import { BlogSection } from "@/components/landing/soshogle/blog-section";
 import { ElevenLabsAgent } from "@/components/landing/soshogle/elevenlabs-agent";
 import { GeometricShapes } from "@/components/landing/soshogle/geometric-shapes";
+import { useLandingLanguage } from "@/hooks/use-landing-language";
 
 interface LandingLead {
   id: string;
@@ -190,6 +191,7 @@ function HomePage() {
   const heroAgentId =
     process.env.NEXT_PUBLIC_ELEVENLABS_DEMO_AGENT_ID ||
     "agent_0301kap49d2afq5vp04v0r6p5k6q";
+  const preferredLanguage = useLandingLanguage();
 
   const scrollToPricing = () => {
     const section = document.getElementById("pricing");
@@ -343,6 +345,7 @@ function HomePage() {
                       website_url: "https://www.soshogle.com",
                       user_name: "Visitor",
                       industry: "Technology",
+                      preferred_language: preferredLanguage,
                     }}
                   />
                   <button
@@ -424,7 +427,10 @@ function HomePage() {
             ))}
           </div>
           <div className="mt-12">
-            <ElevenLabsAgent agentId={homeAgentId} />
+            <ElevenLabsAgent
+              agentId={homeAgentId}
+              dynamicVariables={{ preferred_language: preferredLanguage }}
+            />
           </div>
         </div>
       </section>

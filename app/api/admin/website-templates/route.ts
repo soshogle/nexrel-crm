@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         type: true,
         category: true,
         previewImage: true,
+        previewUrl: true,
         description: true,
         isDefault: true,
         createdAt: true,

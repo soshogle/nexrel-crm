@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Trash2, Save, Shield, Clock, GitBranch, BarChart3, ChevronDown, ChevronUp, Beaker } from 'lucide-react';
+import { X, Trash2, Save, Shield, Clock, GitBranch, BarChart3, ChevronDown, ChevronUp, Beaker, Globe } from 'lucide-react';
+import { VOICE_LANGUAGES } from '@/lib/voice-languages';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -303,6 +304,43 @@ export function TaskEditorPanel({
             </SelectContent>
           </Select>
         </div>
+
+        {/* Voice Call Language - when voice call is selected and agent assigned */}
+        {selectedActions.includes('voice_call') && (editedTask.assignedAIEmployeeId || editedTask.assignedAgentId) && (
+          <Card className="p-4 border-purple-200 bg-purple-50/50">
+            <div className="flex items-center gap-2 mb-2">
+              <Globe className="w-4 h-4 text-purple-600" />
+              <Label className="text-sm font-semibold">Voice Call Language</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Override language for this task. Leave as Default to use the AI employee&apos;s setting.
+            </p>
+            <Select
+              value={(editedTask as any).actionConfig?.voiceLanguage || ''}
+              onValueChange={(value) => {
+                const currentActionConfig = (editedTask as any).actionConfig || {};
+                setEditedTask({
+                  ...editedTask,
+                  ...(editedTask as any),
+                  actionConfig: {
+                    ...currentActionConfig,
+                    voiceLanguage: value || undefined,
+                  },
+                } as WorkflowTask);
+              }}
+            >
+              <SelectTrigger className="border-purple-200">
+                <SelectValue placeholder="Default (use employee setting)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Default</SelectItem>
+                {VOICE_LANGUAGES.map((l) => (
+                  <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Card>
+        )}
         
         {/* Delay Settings */}
         <Card className="p-4 border-purple-200 bg-purple-50/50">

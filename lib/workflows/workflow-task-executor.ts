@@ -219,13 +219,16 @@ async function executeVoiceCall(
         });
         if (voiceAgent?.elevenLabsAgentId) {
           agentId = voiceAgent.elevenLabsAgentId;
-          // Build per-call override from AI employee voiceConfig
+          // Build per-call override: task voiceLanguage > AI employee voiceConfig
           const vc = aiEmployee.voiceConfig as { voiceId?: string; language?: string; stability?: number; speed?: number; similarityBoost?: number } | null;
-          if (vc && Object.keys(vc).length > 0) {
+          const taskLang = actionConfig?.voiceLanguage;
+          const employeeLang = vc?.language;
+          const lang = taskLang || employeeLang;
+          if (lang || (vc && Object.keys(vc).length > 0)) {
             voiceOverride = {};
-            if (vc.language) voiceOverride.agent = { language: vc.language };
-            if (vc.voiceId || vc.stability != null || vc.speed != null || vc.similarityBoost != null) {
-              voiceOverride.tts = {};
+            if (lang) voiceOverride.agent = { language: lang };
+            if (vc && (vc.voiceId || vc.stability != null || vc.speed != null || vc.similarityBoost != null)) {
+              voiceOverride.tts = voiceOverride.tts || {};
               if (vc.voiceId) voiceOverride.tts.voice_id = vc.voiceId;
               if (vc.stability != null) voiceOverride.tts.stability = vc.stability;
               if (vc.speed != null) voiceOverride.tts.speed = vc.speed;
@@ -233,6 +236,25 @@ async function executeVoiceCall(
             }
           }
         }
+      }
+    }
+
+    // Per-task language override when no AI employee (industry agent or default)
+    if (!voiceOverride?.agent?.language && actionConfig?.voiceLanguage) {
+      voiceOverride = voiceOverride || {};
+      voiceOverride.agent = { ...voiceOverride.agent, language: actionConfig.voiceLanguage };
+    }
+
+    // Fallback to user language when no override yet
+    if (!voiceOverride?.agent?.language) {
+      const user = await prisma.user.findUnique({
+        where: { id: instance.userId },
+        select: { language: true },
+      });
+      const userLang = user?.language || 'en';
+      if (userLang !== 'en') {
+        voiceOverride = voiceOverride || {};
+        voiceOverride.agent = { ...voiceOverride.agent, language: userLang };
       }
     }
 
