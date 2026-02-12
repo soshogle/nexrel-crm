@@ -21,6 +21,7 @@
     "migrate:deploy": "tsx scripts/migrate-with-backup.ts deploy",
     "migrate:reset": "tsx scripts/migrate-with-backup.ts reset",
     "backup": "tsx scripts/backup-database.ts",
+    "restore": "tsx scripts/backup/import-database.mjs",
     "migrate:create": "npx prisma migrate dev --create-only",
     "verify:elevenlabs-overrides": "tsx scripts/verify-elevenlabs-call-overrides.ts",
     "verify:elevenlabs-quick": "tsx scripts/verify-elevenlabs-quick-test.ts",
