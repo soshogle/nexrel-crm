@@ -169,6 +169,8 @@ export default function NewWebsitePage() {
   const [templateHasBlog, setTemplateHasBlog] = useState(false);
   const [hoveredTemplateId, setHoveredTemplateId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [hoveredRebuildTemplateId, setHoveredRebuildTemplateId] = useState<string | null>(null);
+  const [rebuildPreviewUrl, setRebuildPreviewUrl] = useState<string | null>(null);
 
   // One website per profile: redirect if user already has a website
   useEffect(() => {
@@ -304,7 +306,7 @@ export default function NewWebsitePage() {
     }
   };
 
-  // Map template names to their source URLs for preview
+  // Fallback URLs when template.previewUrl not in DB (legacy)
   const templateSourceUrls: Record<string, string> = {
     'Zebracat - AI Video Creation': 'https://www.zebracat.ai/',
     'Clay - GTM Data Platform': 'https://www.clay.com/',
@@ -313,19 +315,36 @@ export default function NewWebsitePage() {
     'Little Lagniappe - Baby Food Subscription': 'https://www.little-lagniappe.com/',
   };
 
-  const handleTemplateHover = (templateId: string, templateName: string) => {
-    const url = templateSourceUrls[templateName];
+  const getTemplatePreviewUrl = (tpl: { previewUrl?: string | null; name: string }) =>
+    tpl.previewUrl || templateSourceUrls[tpl.name] || null;
+
+  const handleTemplateHover = (templateId: string, tpl: { previewUrl?: string | null; name: string }) => {
+    const url = getTemplatePreviewUrl(tpl);
     if (url) {
       setHoveredTemplateId(templateId);
       setPreviewUrl(url);
     }
   };
 
+  const handleRebuildTemplateHover = (templateId: string, tpl: { previewUrl?: string | null; name: string }) => {
+    const url = getTemplatePreviewUrl(tpl);
+    if (url) {
+      setHoveredRebuildTemplateId(templateId);
+      setRebuildPreviewUrl(url);
+    }
+  };
+
   const handleTemplateLeave = () => {
-    // Delay hiding to allow clicking on preview
     setTimeout(() => {
       setHoveredTemplateId(null);
       setPreviewUrl(null);
+    }, 200);
+  };
+
+  const handleRebuildTemplateLeave = () => {
+    setTimeout(() => {
+      setHoveredRebuildTemplateId(null);
+      setRebuildPreviewUrl(null);
     }, 200);
   };
 
@@ -686,23 +705,54 @@ export default function NewWebsitePage() {
                     Loading templates...
                   </div>
                 ) : rebuildTemplates.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                    {rebuildTemplates.map((tpl) => (
-                      <Card
-                        key={tpl.id}
-                        className={`cursor-pointer transition-all ${
-                          rebuildSelectedTemplateId === tpl.id ? 'ring-2 ring-primary' : 'hover:border-primary/50'
-                        }`}
-                        onClick={() => setRebuildSelectedTemplateId(tpl.id)}
-                      >
-                        <CardContent className="p-3">
-                          <div className="font-medium text-sm truncate">{tpl.name}</div>
-                          {tpl.isDefault && (
-                            <Badge variant="secondary" className="mt-1 text-xs">Default</Badge>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
+                  <div className="grid grid-cols-2 gap-3">
+                    {rebuildTemplates.map((tpl) => {
+                      const hasPreview = getTemplatePreviewUrl(tpl);
+                      const isHovered = hoveredRebuildTemplateId === tpl.id;
+                      return (
+                        <div
+                          key={tpl.id}
+                          className="relative"
+                          onMouseEnter={() => hasPreview && handleRebuildTemplateHover(tpl.id, tpl)}
+                          onMouseLeave={handleRebuildTemplateLeave}
+                        >
+                          <Card
+                            className={`cursor-pointer transition-all ${
+                              rebuildSelectedTemplateId === tpl.id ? 'ring-2 ring-primary' : 'hover:border-primary/50'
+                            } ${isHovered ? 'ring-2 ring-blue-400 z-50' : ''}`}
+                            style={{ transform: isHovered ? 'scale(1.02)' : 'scale(1)' }}
+                            onClick={() => setRebuildSelectedTemplateId(tpl.id)}
+                          >
+                            <CardContent className="p-3">
+                              <div className="relative rounded-md overflow-hidden bg-muted/50 mb-2 flex items-center justify-center" style={{ height: hasPreview ? 100 : 40 }}>
+                                {isHovered && rebuildPreviewUrl ? (
+                                  <iframe
+                                    src={rebuildPreviewUrl}
+                                    className="w-full h-full min-h-[200px] border-0 rounded"
+                                    title={`Preview: ${tpl.name}`}
+                                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                                  />
+                                ) : tpl.previewImage ? (
+                                  <img src={tpl.previewImage} alt={tpl.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <Globe className="w-6 h-6 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="font-medium text-sm truncate">{tpl.name}</div>
+                              {tpl.category && (
+                                <span className="text-xs text-primary font-medium">{tpl.category}</span>
+                              )}
+                              {tpl.isDefault && (
+                                <Badge variant="secondary" className="mt-1 text-xs">Default</Badge>
+                              )}
+                              {hasPreview && !isHovered && (
+                                <p className="text-xs text-muted-foreground mt-1">Hover to preview</p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground py-2">
@@ -835,14 +885,14 @@ export default function NewWebsitePage() {
               ) : (
                 <div className="grid grid-cols-2 gap-4 mt-2">
                   {templates.map((template) => {
-                    const sourceUrl = templateSourceUrls[template.name];
+                    const sourceUrl = getTemplatePreviewUrl(template);
                     const isHovered = hoveredTemplateId === template.id;
                     
                     return (
                       <div
                         key={template.id}
                         className="relative"
-                        onMouseEnter={() => sourceUrl && handleTemplateHover(template.id, template.name)}
+                        onMouseEnter={() => getTemplatePreviewUrl(template) && handleTemplateHover(template.id, template)}
                         onMouseLeave={handleTemplateLeave}
                       >
                         <Card

@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Trash2, Save, Shield, Clock, User, GitBranch, Settings } from 'lucide-react';
+import { X, Trash2, Save, Shield, Clock, User, GitBranch, Settings, Globe } from 'lucide-react';
+import { VOICE_LANGUAGES } from '@/lib/voice-languages';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 
@@ -323,6 +324,43 @@ export function TaskEditorPanel({
             </SelectContent>
           </Select>
         </div>
+
+        {/* Voice Call Language - when voice call is selected and agent assigned */}
+        {selectedActions.includes('voice_call') && (editedTask.assignedAIEmployeeId || editedTask.assignedAgentId) && (
+          <Card className="p-4 bg-gradient-to-br from-purple-50 to-white border-2 border-purple-200">
+            <div className="flex items-center gap-2 mb-2">
+              <Globe className="w-4 h-4 text-purple-600" />
+              <Label className="text-sm font-semibold text-gray-900">Voice Call Language</Label>
+            </div>
+            <p className="text-xs text-gray-600 mb-2">
+              Override language for this task. Leave as Default to use the AI employee&apos;s setting.
+            </p>
+            <Select
+              value={(editedTask as any).actionConfig?.voiceLanguage || ''}
+              onValueChange={(value) => {
+                const currentActionConfig = (editedTask as any).actionConfig || {};
+                setEditedTask({
+                  ...editedTask,
+                  ...(editedTask as any),
+                  actionConfig: {
+                    ...currentActionConfig,
+                    voiceLanguage: value || undefined,
+                  },
+                } as WorkflowTask);
+              }}
+            >
+              <SelectTrigger className="bg-white border-purple-200 text-gray-900">
+                <SelectValue placeholder="Default (use employee setting)" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-purple-200">
+                <SelectItem value="">Default</SelectItem>
+                {VOICE_LANGUAGES.map((l) => (
+                  <SelectItem key={l.value} value={l.value} className="text-gray-900">{l.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Card>
+        )}
         
         {/* HITL Gate Toggle */}
         <Card className="p-4 bg-gradient-to-br from-amber-50 to-white border-2 border-amber-200">

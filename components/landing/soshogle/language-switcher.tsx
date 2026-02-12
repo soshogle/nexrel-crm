@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Globe } from "lucide-react";
+import { LANDING_LANGUAGE_CHANGE_EVENT } from "@/hooks/use-landing-language";
 
 const languages = [
   { code: "en", name: "English", flag: "🇺🇸" },
@@ -33,6 +34,7 @@ export function LanguageSwitcher() {
     const next = languages.find((lang) => lang.code === langCode) || languages[0];
     setLanguage(next);
     localStorage.setItem("soshogle_language", next.code);
+    window.dispatchEvent(new CustomEvent(LANDING_LANGUAGE_CHANGE_EVENT, { detail: { code: next.code } }));
   };
 
   return (

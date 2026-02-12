@@ -9560,6 +9560,7 @@ model WebsiteTemplate {
   type         WebsiteTemplateType
   category     String?
   previewImage String?
+  previewUrl   String? // Live demo URL for iframe preview (e.g. source site)
   structure    Json // Template structure
   description  String?
   isDefault    Boolean             @default(false)
