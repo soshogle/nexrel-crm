@@ -18,6 +18,9 @@ import { toast } from 'sonner';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
 import { StockDashboard } from '@/components/websites/stock-dashboard';
 import { AnalyticsSettings } from '@/components/websites/analytics-settings';
+import { SectionEditor } from '@/components/website-builder/section-editor';
+import { GlobalStylesEditor } from '@/components/website-builder/global-styles-editor';
+import { WebsiteFilesManager } from '@/components/website-builder/website-files-manager';
 
 interface Website {
   id: string;
@@ -34,6 +37,7 @@ interface Website {
   pendingChanges?: any;
   createdAt: string;
   updatedAt: string;
+  builds?: { error?: string | null }[];
 }
 
 interface PendingChange {
@@ -292,8 +296,20 @@ export default function WebsiteEditorPage() {
     );
   }
 
+  const buildError = website.status === 'FAILED' && website.builds?.[0]?.error;
+
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {buildError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <p className="font-semibold">Build failed</p>
+            <p className="mt-1 text-sm break-words">{buildError}</p>
+            <p className="mt-2 text-xs opacity-90">You can delete this website and try again, or contact support if the error persists.</p>
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/websites">
@@ -345,22 +361,99 @@ export default function WebsiteEditorPage() {
         </TabsList>
 
         <TabsContent value="editor" className="space-y-4">
+          <GlobalStylesEditor
+            styles={website.structure?.globalStyles}
+            onSave={async (styles) => {
+              const res = await fetch(`/api/websites/${website.id}/structure`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'global_styles', globalStyles: styles }),
+              });
+              if (!res.ok) throw new Error((await res.json()).error);
+              await fetchWebsite();
+            }}
+          />
+          <WebsiteFilesManager websiteId={website.id} />
           <Card>
             <CardHeader>
               <CardTitle>Website Structure</CardTitle>
               <CardDescription>
-                Edit your website structure and content
+                Drag to reorder, edit layout, replace images, or use AI Chat
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Visual editor coming soon. Use the AI Chat tab to modify your website.
-                </p>
-                <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs">
-                  {JSON.stringify(website.structure, null, 2)}
-                </pre>
-              </div>
+              <SectionEditor
+                websiteId={website.id}
+                pagePath="/"
+                components={website.structure?.pages?.[0]?.components || []}
+                onReorder={async (from, to) => {
+                  const res = await fetch('/api/ai-assistant/actions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'reorder_section',
+                      parameters: { websiteId: website.id, fromIndex: from, toIndex: to, pagePath: '/' },
+                    }),
+                  });
+                  if (!res.ok) throw new Error((await res.json()).error);
+                  await fetchWebsite();
+                }}
+                onDelete={async (sectionType) => {
+                  const res = await fetch('/api/ai-assistant/actions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'delete_section',
+                      parameters: { websiteId: website.id, sectionType, pagePath: '/' },
+                    }),
+                  });
+                  if (!res.ok) throw new Error((await res.json()).error);
+                  await fetchWebsite();
+                }}
+                onUpdateImage={async (sectionType, imageUrl, alt) => {
+                  const res = await fetch('/api/ai-assistant/actions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'add_website_image',
+                      parameters: { websiteId: website.id, sectionType, imageUrl, alt, pagePath: '/' },
+                    }),
+                  });
+                  if (!res.ok) throw new Error((await res.json()).error);
+                  await fetchWebsite();
+                }}
+                onUpdateLayout={async (sectionType, layout) => {
+                  const res = await fetch(`/api/websites/${website.id}/structure`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      type: 'section_layout',
+                      sectionType,
+                      layout: {
+                        padding: layout.padding,
+                        margin: layout.margin,
+                        alignment: layout.alignment,
+                        visibility: layout.visibility,
+                      },
+                    }),
+                  });
+                  if (!res.ok) throw new Error((await res.json()).error);
+                  await fetchWebsite();
+                }}
+                onUpdateProps={async (sectionType, props) => {
+                  const res = await fetch(`/api/websites/${website.id}/structure`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      type: 'section_props',
+                      sectionType,
+                      props,
+                    }),
+                  });
+                  if (!res.ok) throw new Error((await res.json()).error);
+                  await fetchWebsite();
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>

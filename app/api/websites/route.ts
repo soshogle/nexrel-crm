@@ -28,13 +28,24 @@ export async function GET(request: NextRequest) {
         createdAt: true,
         updatedAt: true,
         publishedAt: true,
+        builds: {
+          orderBy: { startedAt: 'desc' },
+          take: 1,
+          select: { error: true },
+        },
       },
     });
 
     // One website per profile: can only create new if user has no website yet
     const canCreateNew = websites.length === 0;
 
-    return NextResponse.json({ websites, canCreateNew });
+    // Attach buildError for FAILED websites (omit builds from response)
+    const websitesWithError = websites.map(({ builds, ...w }) => ({
+      ...w,
+      buildError: w.status === 'FAILED' && builds?.[0]?.error ? builds[0].error : null,
+    }));
+
+    return NextResponse.json({ websites: websitesWithError, canCreateNew });
   } catch (error: any) {
     console.error('Error fetching websites:', error);
     return NextResponse.json(

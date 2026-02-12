@@ -11,6 +11,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
+import { logDocpenAudit, DOCPEN_AUDIT_EVENTS } from '@/lib/docpen/audit-log';
 
 
 export const dynamic = 'force-dynamic';
@@ -149,6 +150,7 @@ export async function POST(request: NextRequest) {
     console.log('[Docpen Audit]', sanitizeForLogging(
       createAuditLogEntry('create', 'session', docpenSession.id, session.user.id, request)
     ));
+    await logDocpenAudit(docpenSession.id, DOCPEN_AUDIT_EVENTS.SESSION_CREATED);
 
     return NextResponse.json({ session: docpenSession }, { status: 201 });
   } catch (error) {

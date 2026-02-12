@@ -53,7 +53,10 @@ interface Agent {
 
 const PROFESSION_LABELS: Record<string, string> = {
   GENERAL_PRACTICE: 'General Practice',
+  DENTIST: 'Dentistry',
   DENTAL: 'Dental',
+  ORTHODONTIC: 'Orthodontics',
+  OPTOMETRIST: 'Optometry',
   OPTOMETRY: 'Optometry',
   DERMATOLOGY: 'Dermatology',
   CARDIOLOGY: 'Cardiology',

@@ -1,0 +1,70 @@
+/**
+ * Dental (DENTIST) Industry AI Employee Configurations
+ * Specialized for dental practices: appointments, recall, treatment, billing
+ */
+
+import { DentistAIEmployeeType } from '@prisma/client';
+import type { IndustryEmployeeConfig } from '../types';
+
+export const DENTAL_EMPLOYEE_CONFIGS: Record<DentistAIEmployeeType, IndustryEmployeeConfig> = {
+  APPOINTMENT_SCHEDULER: {
+    type: 'APPOINTMENT_SCHEDULER',
+    name: 'Sarah',
+    title: 'Appointment Coordinator',
+    description: 'Schedules and confirms dental appointments',
+    fullDescription: 'Handles new patient scheduling, appointment confirmations, and rescheduling. Sends reminders and manages the practice calendar.',
+    capabilities: ['Appointment booking', 'Confirmations', 'Rescheduling', 'Reminders', 'No-show follow-up'],
+    voiceEnabled: true,
+    defaultPriority: 'HIGH',
+    category: 'scheduling',
+    color: 'from-blue-500 to-cyan-500',
+    bgColor: 'bg-blue-500/10',
+    borderColor: 'border-blue-500/30',
+    icon: 'Calendar',
+  },
+  PATIENT_COORDINATOR: {
+    type: 'PATIENT_COORDINATOR',
+    name: 'Michael',
+    title: 'Patient Coordinator',
+    description: 'New patient intake and coordination',
+    fullDescription: 'Guides new patients through intake, collects health history, explains first-visit process, and coordinates with clinical staff.',
+    capabilities: ['Intake coordination', 'Health history', 'First-visit prep', 'Insurance pre-verification', 'Patient orientation'],
+    voiceEnabled: true,
+    defaultPriority: 'HIGH',
+    category: 'intake',
+    color: 'from-green-500 to-emerald-500',
+    bgColor: 'bg-green-500/10',
+    borderColor: 'border-green-500/30',
+    icon: 'Users',
+  },
+  TREATMENT_COORDINATOR: {
+    type: 'TREATMENT_COORDINATOR',
+    name: 'Jennifer',
+    title: 'Treatment Coordinator',
+    description: 'Treatment plan follow-up and scheduling',
+    fullDescription: 'Follows up on treatment plans, answers questions about procedures, schedules treatment appointments, and helps patients move forward with care.',
+    capabilities: ['Treatment plan follow-up', 'Procedure questions', 'Treatment scheduling', 'Consent coordination', 'Pre-op instructions'],
+    voiceEnabled: true,
+    defaultPriority: 'MEDIUM',
+    category: 'treatment',
+    color: 'from-purple-500 to-violet-500',
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/30',
+    icon: 'FileText',
+  },
+  BILLING_SPECIALIST: {
+    type: 'BILLING_SPECIALIST',
+    name: 'Emily',
+    title: 'Billing Specialist',
+    description: 'Insurance and payment coordination',
+    fullDescription: 'Handles insurance verification, payment arrangements, and billing questions. Coordinates with insurance companies and explains coverage to patients.',
+    capabilities: ['Insurance verification', 'Payment plans', 'Billing questions', 'Claims assistance', 'Financial arrangements'],
+    voiceEnabled: true,
+    defaultPriority: 'MEDIUM',
+    category: 'billing',
+    color: 'from-amber-500 to-yellow-500',
+    bgColor: 'bg-amber-500/10',
+    borderColor: 'border-amber-500/30',
+    icon: 'CreditCard',
+  },
+};

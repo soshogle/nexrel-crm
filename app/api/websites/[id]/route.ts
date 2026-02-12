@@ -31,7 +31,7 @@ export async function GET(
         },
         include: {
           builds: {
-            orderBy: { createdAt: 'desc' },
+            orderBy: { startedAt: 'desc' },
             take: 1,
           },
           websiteIntegrations: true,
@@ -101,7 +101,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name, structure, seoData, voiceAIEnabled, voiceAIConfig } = body;
+    const { name, structure, seoData, voiceAIEnabled, voiceAIConfig, status } = body;
 
     const website = await prisma.website.update({
       where: {
@@ -114,6 +114,7 @@ export async function PATCH(
         ...(seoData && { seoData }),
         ...(voiceAIEnabled !== undefined && { voiceAIEnabled }),
         ...(voiceAIConfig && { voiceAIConfig }),
+        ...(status && ['BUILDING', 'READY', 'PUBLISHED', 'FAILED'].includes(status) && { status }),
       },
     });
 

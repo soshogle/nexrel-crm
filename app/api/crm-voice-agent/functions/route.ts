@@ -175,6 +175,29 @@ export async function POST(req: NextRequest) {
       case 'create_website':
       case 'list_websites':
       case 'modify_website':
+      case 'get_website_structure':
+      case 'update_hero':
+      case 'add_section':
+      case 'update_section_content':
+      case 'add_cta':
+        result = await proxyToActionsAPI(function_name, parameters || {}, userId, req);
+        break;
+
+      case 'add_lead_tag':
+      case 'update_lead_status':
+      case 'list_notes':
+      case 'get_pipeline_stages':
+      case 'assign_deal_to_lead':
+      case 'reschedule_task':
+      case 'reorder_section':
+      case 'delete_section':
+      case 'list_website_media':
+      case 'add_website_image':
+      case 'get_follow_up_priority':
+      case 'get_deal_risk_alerts':
+      case 'bulk_update_lead_status':
+      case 'bulk_add_tag':
+      case 'export_pipeline_csv':
         result = await proxyToActionsAPI(function_name, parameters || {}, userId, req);
         break;
 

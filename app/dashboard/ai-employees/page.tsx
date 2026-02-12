@@ -55,6 +55,8 @@ import {
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { RealEstateAIEmployees } from '@/components/ai-employees/real-estate-employees';
+import { IndustryAIEmployees } from '@/components/ai-employees/industry-ai-employees';
+import { hasIndustryAIEmployees } from '@/lib/industry-ai-employees/registry';
 import { REWorkflowsTab } from '@/components/real-estate/workflows/re-workflows-tab';
 // Generic Multi-Industry Workflow Tabs
 import { IndustryWorkflowsTab } from '@/components/workflows/industry-workflows-tab';
@@ -602,11 +604,12 @@ export default function AIEmployeesPage() {
   const userIndustry = (session?.user as any)?.industry;
   const isRealEstateUser = userIndustry === 'REAL_ESTATE';
   const hasWorkflowSystem = userIndustry && userIndustry !== 'REAL_ESTATE' && getIndustryConfig(userIndustry) !== null;
+  const hasIndustryTeam = hasIndustryAIEmployees(userIndustry);
 
   // Tab parameter from URL
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const defaultTab = tabParam && ['trigger', 'ai-team', 're-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'trigger';
+  const defaultTab = tabParam && ['trigger', 'ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'trigger';
 
   useEffect(() => {
     fetchJobs();
@@ -1335,7 +1338,9 @@ export default function AIEmployeesPage() {
 
       <Tabs defaultValue={defaultTab} className="space-y-6">
         <TabsList className={`grid w-full ${
+          isRealEstateUser && hasIndustryTeam ? 'grid-cols-7' :
           isRealEstateUser ? 'grid-cols-6' : 
+          hasIndustryTeam ? 'grid-cols-6' :
           hasWorkflowSystem ? 'grid-cols-5' : 
           'grid-cols-4'
         }`}>
@@ -1347,6 +1352,14 @@ export default function AIEmployeesPage() {
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
             >
               RE Team
+            </TabsTrigger>
+          )}
+          {hasIndustryTeam && (
+            <TabsTrigger 
+              value="industry-team"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+            >
+              {userIndustry === 'DENTIST' ? 'Dental Team' : 'Industry Team'}
             </TabsTrigger>
           )}
           {(isRealEstateUser || hasWorkflowSystem) && (
@@ -1819,6 +1832,13 @@ export default function AIEmployeesPage() {
         {isRealEstateUser && (
           <TabsContent value="re-team" className="space-y-4">
             <RealEstateAIEmployees />
+          </TabsContent>
+        )}
+
+        {/* Industry Team Tab - Dental, Medical, etc. */}
+        {hasIndustryTeam && userIndustry && (
+          <TabsContent value="industry-team" className="space-y-4">
+            <IndustryAIEmployees industry={userIndustry} />
           </TabsContent>
         )}
 

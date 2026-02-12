@@ -343,6 +343,10 @@ ${(() => {
 
 ${context?.activeWorkflowDraftId ? `\n**ACTIVE WORKFLOW DRAFT (CRITICAL):** A workflow draft is already open (ID: ${context.activeWorkflowDraftId}). The user was just navigated to the workflow builder. You MUST use add_workflow_task for EACH step/task they describe - do NOT use create_workflow. Parse their description and call add_workflow_task multiple times (once per step). Example: "create workflow that sends email, waits 2 days, then calls" → call add_workflow_task(name="Send email", taskType="EMAIL"), then add_workflow_task(name="2 day delay", taskType="DELAY"), then add_workflow_task(name="Call contact", taskType="VOICE_CALL"). Use workflowId: "${context.activeWorkflowDraftId}" for every add_workflow_task call.\n` : ''}
 ${context?.screenContext ? `\n**WHAT THE USER SEES ON SCREEN:** ${context.screenContext}\nUse this to understand what they're looking at and provide relevant help. Reference specific elements they see when explaining.\n` : ''}
+${context?.currentPath ? `\n**CURRENT PAGE:** ${context.currentPath}\n` : ''}
+${context?.activeWebsiteId ? `\n**USER IS EDITING WEBSITE:** websiteId="${context.activeWebsiteId}" - Use for modify_website, get_website_structure, update_hero, add_section, update_section_content, add_cta, reorder_section, delete_section, list_website_media, add_website_image. When they say "change the hero" or "update the about section", use update_hero or modify_website with websiteId: "${context.activeWebsiteId}".\n` : ''}
+${context?.activeLeadId ? `\n**USER IS VIEWING CONTACT:** leadId="${context.activeLeadId}" - Use for add_note, create_deal, add_lead_tag, update_lead_status, list_notes, or contact-specific actions.\n` : ''}
+${context?.activeDealId ? `\n**USER IS VIEWING DEAL:** dealId="${context.activeDealId}" - Use for add_note, update_deal_stage, list_notes, assign_deal_to_lead, or deal-specific actions.\n` : ''}
 
 Current CRM Statistics:
 - Total Contacts/Leads: ${userStats.contacts}
@@ -591,6 +595,10 @@ Examples:
 
 You have access to FUNCTIONS that can actually execute actions. When a user asks you to do something, you MUST call the appropriate function. Do NOT just acknowledge - actually call the function!
 
+**AGENT MODE:** You can perform MULTIPLE actions in sequence. After each action completes, you receive the result and can call another function if needed. Examples: "clone example.com and take me there" → clone_website then navigate_to; "create contact John and add a deal" → create_lead then create_deal. Use context (activeWebsiteId, currentPath) - when user is editing a website, use modify_website with that websiteId.
+
+**MULTI-STEP (AGENT MODE):** You can chain multiple actions. After each action, you receive the result and can call another function (e.g. "clone example.com and take me there" → clone_website, then navigate_to). Use context (activeWebsiteId, currentPath) - when user is on a website editor, use that websiteId for modify_website.
+
 **AVAILABLE FUNCTIONS:**
 - create_lead - Create a new contact/lead (required: name, optional: email, phone, company)
 - create_deal - Create a new deal (required: title, optional: value, leadId)
@@ -635,6 +643,35 @@ You have access to FUNCTIONS that can actually execute actions. When a user asks
 - create_website - Create new website from template (optional: name, templateType SERVICE/PRODUCT, businessDescription). Use when user says "create a website", "build a site for my business".
 - list_websites - List user's websites. Use when user says "show my websites", "how many sites do I have".
 - modify_website - Modify website content via AI (required: websiteId, message). Use when user says "change the hero text", "update the about section". When user is editing a site, websiteId may be in context.
+- get_website_structure - Get website pages and sections before making changes. Use when user says "what sections does my site have?", "show me the structure".
+- update_hero - Update hero section directly (websiteId, optional: title, subtitle, ctaText, ctaLink). Use for "change hero title", "update headline".
+- add_section - Add section (websiteId, sectionType: CTASection/TextSection/AboutSection/ContactForm/ImageSection/ServicesGrid/ProductsGrid, optional: pagePath, title, content, ctaText, ctaLink).
+- update_section_content - Update section by type (websiteId, sectionType, optional: title, content, ctaText, ctaLink, pagePath).
+- add_cta - Add or update CTA section (websiteId, ctaText, ctaLink, optional: title, description, pagePath).
+- add_lead_tag - Add tag to contact (tag, optional: leadId, contactName). Use for "tag John as VIP".
+- update_lead_status - Update contact status (status: NEW/CONTACTED/RESPONDED/QUALIFIED/CONVERTED/LOST, optional: leadId, contactName).
+- list_notes - List notes for contact or deal (contactName or dealTitle, optional: leadId, dealId, limit).
+- get_pipeline_stages - List pipeline stages (optional: pipelineName).
+- assign_deal_to_lead - Link deal to contact (dealTitle + contactName, or dealId + leadId).
+- reschedule_task - Change task due date (dueDate YYYY-MM-DD, optional: taskId, taskTitle).
+- reorder_section - Reorder sections (websiteId, fromIndex, toIndex, pagePath).
+- delete_section - Remove section (websiteId, sectionType, pagePath).
+- list_website_media - List media library (websiteId, optional: type).
+- add_website_image - Add image to section (websiteId, sectionType, imageUrl, optional: alt).
+- list_email_templates - List email templates (optional: category).
+- list_sms_templates - List SMS templates (optional: category).
+- get_custom_report - Custom report/chart (query: e.g. "leads by source", "revenue by month").
+- make_it_look_like - Analyze reference URL and suggest style changes (websiteId, referenceUrl).
+- suggest_hero_variants - A/B test hero variants (websiteId).
+- check_website_accessibility - Accessibility audit (websiteId).
+- create_scheduled_report - Schedule weekly/daily report emails.
+- do_everything_for_contact - Composite: note, deal, follow-up for contact (contactName).
+- log_email_to_contact - Log email to contact record (contactName/leadId, subject, body).
+- get_follow_up_priority - Who to call today (optional: limit, sortBy).
+- get_deal_risk_alerts - Stale deals needing attention (optional: staleDays, limit).
+- bulk_update_lead_status - Bulk status update (toStatus, optional: fromStatus, limit).
+- bulk_add_tag - Add tag to multiple leads (tag, optional: status, period, limit).
+- export_pipeline_csv - Export to CSV (type: leads/deals, optional: limit).
 - navigate_to - Navigate to any page (required: path). Path must start with /dashboard or /onboarding. Examples: /dashboard/settings, /dashboard/reports, /dashboard/calendar, /dashboard/real-estate, /dashboard/websites, etc.
 
 **HOW IT WORKS:**
@@ -917,22 +954,29 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     }
     console.log("═══════════════════════════════════════════════════════");
 
-    // If the model wants to call functions, execute them
-    if (toolCalls.length > 0) {
-      console.log("🔧 [Chat] Executing", toolCalls.length, "function call(s)");
+    // AGENT LOOP: Execute tool calls, then loop until AI returns final response (max 5 iterations)
+    const MAX_AGENT_ITERATIONS = 5;
+    let agentIteration = 0;
+    let currentMessages = [...conversationMessages];
+    let currentToolCalls = toolCalls;
+    let currentContent = content;
+
+    while (currentToolCalls.length > 0 && agentIteration < MAX_AGENT_ITERATIONS) {
+      agentIteration++;
+      console.log(`🔧 [Chat] Agent iteration ${agentIteration}/${MAX_AGENT_ITERATIONS}, executing ${currentToolCalls.length} function call(s)`);
 
       // Add assistant message with tool_calls to conversation
-      conversationMessages.push({
+      currentMessages.push({
         role: "assistant",
-        content: content,
-        tool_calls: toolCalls,
+        content: currentContent || null,
+        tool_calls: currentToolCalls,
       });
 
       // Execute each function call
       const toolResults: any[] = [];
       let lastActionResult: any = null;
 
-      for (const toolCall of toolCalls) {
+      for (const toolCall of currentToolCalls) {
         const functionName = toolCall.function.name;
         let functionArgs;
         try {
@@ -990,6 +1034,9 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
                 ...functionArgs,
                 ...(action === "get_statistics" && { chartIntent: message }),
                 ...(action === "add_workflow_task" && context?.activeWorkflowDraftId && !functionArgs?.workflowId && { workflowId: context.activeWorkflowDraftId }),
+                ...((action === "modify_website" || action === "get_website_structure" || action === "update_hero" || action === "add_section" || action === "update_section_content" || action === "add_cta" || action === "reorder_section" || action === "delete_section" || action === "list_website_media" || action === "add_website_image" || action === "make_it_look_like" || action === "suggest_hero_variants" || action === "check_website_accessibility") && context?.activeWebsiteId && !functionArgs?.websiteId && { websiteId: context.activeWebsiteId }),
+                ...((action === "add_lead_tag" || action === "update_lead_status" || action === "list_notes") && context?.activeLeadId && !functionArgs?.leadId && !functionArgs?.contactName && { leadId: context.activeLeadId }),
+                ...((action === "list_notes" || action === "assign_deal_to_lead") && context?.activeDealId && !functionArgs?.dealId && !functionArgs?.dealTitle && { dealId: context.activeDealId }),
               },
               userId: user.id,
             }),
@@ -1061,9 +1108,9 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       }
 
       // Add tool results to conversation
-      conversationMessages.push(...toolResults);
+      currentMessages.push(...toolResults);
 
-      // Make a follow-up call to OpenAI with the function results
+      // Make follow-up call to OpenAI - AI may request more actions (agent loop)
       console.log("🔄 [Chat] Making follow-up call with function results");
 
       const followUpResponse = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -1074,7 +1121,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
         },
         body: JSON.stringify({
           model: "gpt-4o-mini",
-          messages: conversationMessages,
+          messages: currentMessages,
           tools: functions,
           tool_choice: "auto",
           temperature: 0.7,
@@ -1085,34 +1132,36 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       if (!followUpResponse.ok) {
         const errorText = await followUpResponse.text();
         console.error("Follow-up AI service error:", followUpResponse.status, errorText);
-        // Still set actionResult even if follow-up fails
         actionResult = lastActionResult;
-        // Generate a basic success message if we have an action result
-        if (actionResult && actionResult.action === "create_lead") {
-          const result = actionResult.result;
-          const leadName = result?.lead?.contactPerson || result?.lead?.businessName || 'Contact';
-          finalReply = `✓ Contact "${leadName}" created successfully! Taking you to your Contacts page...`;
-        } else {
-          finalReply = "I executed the action, but encountered an error generating the response. Please check if the action completed successfully.";
-        }
-      } else {
-        const followUpData = await followUpResponse.json();
-        const followUpMessage = followUpData.choices?.[0]?.message;
-        finalReply = followUpMessage?.content || "Action completed successfully!";
-        actionResult = lastActionResult;
-        
-        // Log action result for debugging
-        console.log("✅ [Chat] Action result set:", {
-          action: actionResult?.action,
-          hasResult: !!actionResult?.result,
-          navigationUrl,
-        });
+        finalReply = actionResult?.result?.message || "I executed the action but had trouble generating a response. Please check if it completed successfully.";
+        break;
       }
-    } else {
-      // No function calls - just return the content
-      console.log("⚠️ [Chat] NO FUNCTION CALLS DETECTED - Model returned text only");
-      console.log("  - This might mean the model didn't recognize the action request");
-      console.log("  - User message was:", message?.substring(0, 100));
+
+      const followUpData = await followUpResponse.json();
+      const followUpMessage = followUpData.choices?.[0]?.message;
+      const nextToolCalls = followUpMessage?.tool_calls || [];
+      const nextContent = followUpMessage?.content || "";
+
+      if (nextToolCalls.length > 0) {
+        currentToolCalls = nextToolCalls;
+        currentContent = nextContent;
+        actionResult = lastActionResult;
+        console.log(`🔄 [Chat] AI requested ${nextToolCalls.length} more action(s) - continuing agent loop`);
+      } else {
+        finalReply = nextContent || "Action completed successfully!";
+        actionResult = lastActionResult;
+        console.log("✅ [Chat] Agent loop complete - no more tool calls");
+        break;
+      }
+    }
+
+    if (currentToolCalls.length > 0 && agentIteration >= MAX_AGENT_ITERATIONS) {
+      console.log("⚠️ [Chat] Agent loop hit max iterations - returning current state");
+      if (!finalReply) finalReply = "I've completed several steps. Is there anything else you'd like me to do?";
+    }
+
+    if (currentToolCalls.length === 0 && agentIteration === 0) {
+      // No function calls in initial response - use content as reply
       finalReply = content || "I'm here to help! Could you please rephrase your question?";
     }
 

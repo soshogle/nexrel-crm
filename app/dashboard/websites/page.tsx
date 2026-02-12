@@ -31,6 +31,7 @@ interface Website {
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
+  buildError?: string | null;
 }
 
 export default function WebsitesPage() {
@@ -68,7 +69,7 @@ export default function WebsitesPage() {
     }
   };
 
-  const getStatusBadge = (status: string, progress: number) => {
+  const getStatusBadge = (status: string, progress: number, buildError?: string | null) => {
     if (status === 'BUILDING') {
       return (
         <Badge variant="outline" className="flex items-center gap-2">
@@ -84,7 +85,11 @@ export default function WebsitesPage() {
       return <Badge variant="default" className="bg-green-600">Published</Badge>;
     }
     if (status === 'FAILED') {
-      return <Badge variant="destructive">Failed</Badge>;
+      return (
+        <Badge variant="destructive" title={buildError || undefined}>
+          Failed
+        </Badge>
+      );
     }
     return <Badge variant="secondary">{status}</Badge>;
   };
@@ -208,10 +213,16 @@ export default function WebsitesPage() {
                       {getTypeLabel(website.type)}
                     </CardDescription>
                   </div>
-                  {getStatusBadge(website.status, website.buildProgress)}
+                  {getStatusBadge(website.status, website.buildProgress, website.buildError)}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {website.status === 'FAILED' && website.buildError && (
+                  <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm">
+                    <p className="font-medium text-destructive mb-1">Build failed</p>
+                    <p className="text-muted-foreground break-words">{website.buildError}</p>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Voice AI</span>
                   {website.voiceAIEnabled ? (

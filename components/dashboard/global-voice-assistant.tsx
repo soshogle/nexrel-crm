@@ -11,7 +11,7 @@ import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent'
 import { useAIBrainVoice } from '@/lib/ai-brain-voice-context';
 import { Button } from '@/components/ui/button';
 import { getWebsiteBuilderContext, getWebsiteBuilderContextSummary } from '@/lib/website-builder-context';
-import { extractScreenContext } from '@/lib/screen-context-extractor';
+import { extractScreenContext, getPageContext } from '@/lib/screen-context-extractor';
 
 function getActiveWorkflowDraftId(): string | null {
   if (typeof window === 'undefined') return null;
@@ -219,6 +219,10 @@ export function GlobalVoiceAssistant() {
                   dynamicVariables={{
                     company_name: 'Your CRM',
                     user_name: 'User',
+                    ...(typeof window !== 'undefined' && (() => {
+                      const pc = getPageContext();
+                      return pc.path ? { current_path: pc.path } : {};
+                    })(),
                     ...(activeWorkflowDraftId && {
                       active_workflow_draft_id: activeWorkflowDraftId,
                       in_workflow_builder: 'true',
@@ -229,6 +233,14 @@ export function GlobalVoiceAssistant() {
                       website_builder_step: websiteBuilderContext?.step || '',
                       website_builder_context: getWebsiteBuilderContextSummary(),
                     }),
+                    ...(typeof window !== 'undefined' && (() => {
+                      const pc = getPageContext();
+                      const extra: Record<string, string> = {};
+                      if (pc.activeWebsiteId && !websiteBuilderContext?.activeWebsiteId) extra.active_website_id = pc.activeWebsiteId;
+                      if (pc.activeLeadId) extra.active_lead_id = pc.activeLeadId;
+                      if (pc.activeDealId) extra.active_deal_id = pc.activeDealId;
+                      return extra;
+                    })(),
                     ...(screenContext && {
                       visible_screen_content: screenContext,
                     }),

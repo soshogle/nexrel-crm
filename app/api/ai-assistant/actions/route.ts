@@ -103,6 +103,37 @@ const AVAILABLE_ACTIONS = {
   CREATE_WEBSITE: "create_website",
   LIST_WEBSITES: "list_websites",
   MODIFY_WEBSITE: "modify_website",
+  GET_WEBSITE_STRUCTURE: "get_website_structure",
+  UPDATE_HERO: "update_hero",
+  ADD_SECTION: "add_section",
+  UPDATE_SECTION_CONTENT: "update_section_content",
+  ADD_CTA: "add_cta",
+  ADD_LEAD_TAG: "add_lead_tag",
+  UPDATE_LEAD_STATUS: "update_lead_status",
+  LIST_NOTES: "list_notes",
+  GET_PIPELINE_STAGES: "get_pipeline_stages",
+  ASSIGN_DEAL_TO_LEAD: "assign_deal_to_lead",
+  RESCHEDULE_TASK: "reschedule_task",
+  REORDER_SECTION: "reorder_section",
+  DELETE_SECTION: "delete_section",
+  LIST_WEBSITE_MEDIA: "list_website_media",
+  ADD_WEBSITE_IMAGE: "add_website_image",
+  LIST_EMAIL_TEMPLATES: "list_email_templates",
+  LIST_SMS_TEMPLATES: "list_sms_templates",
+  GET_CUSTOM_REPORT: "get_custom_report",
+  MAKE_IT_LOOK_LIKE: "make_it_look_like",
+  SUGGEST_HERO_VARIANTS: "suggest_hero_variants",
+  CHECK_WEBSITE_ACCESSIBILITY: "check_website_accessibility",
+  CREATE_SCHEDULED_REPORT: "create_scheduled_report",
+  DO_EVERYTHING_FOR_CONTACT: "do_everything_for_contact",
+  LOG_EMAIL_TO_CONTACT: "log_email_to_contact",
+  SUMMARIZE_CALL: "summarize_call",
+  GET_SMART_REPLIES: "get_smart_replies",
+  GET_FOLLOW_UP_PRIORITY: "get_follow_up_priority",
+  GET_DEAL_RISK_ALERTS: "get_deal_risk_alerts",
+  BULK_UPDATE_LEAD_STATUS: "bulk_update_lead_status",
+  BULK_ADD_TAG: "bulk_add_tag",
+  EXPORT_PIPELINE_CSV: "export_pipeline_csv",
 };
 
 export async function POST(req: NextRequest) {
@@ -450,6 +481,130 @@ export async function POST(req: NextRequest) {
 
       case AVAILABLE_ACTIONS.MODIFY_WEBSITE:
         result = await modifyWebsite(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.GET_WEBSITE_STRUCTURE:
+        result = await getWebsiteStructure(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.UPDATE_HERO:
+        result = await updateHero(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.ADD_SECTION:
+        result = await addSection(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.UPDATE_SECTION_CONTENT:
+        result = await updateSectionContent(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.ADD_CTA:
+        result = await addCTA(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.ADD_LEAD_TAG:
+        result = await addLeadTag(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.UPDATE_LEAD_STATUS:
+        result = await updateLeadStatus(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.LIST_NOTES:
+        result = await listNotes(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.GET_PIPELINE_STAGES:
+        result = await getPipelineStages(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.ASSIGN_DEAL_TO_LEAD:
+        result = await assignDealToLead(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.RESCHEDULE_TASK:
+        result = await rescheduleTask(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.REORDER_SECTION:
+        result = await reorderSection(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.DELETE_SECTION:
+        result = await deleteSection(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.LIST_WEBSITE_MEDIA:
+        result = await listWebsiteMedia(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.ADD_WEBSITE_IMAGE:
+        result = await addWebsiteImage(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.LIST_EMAIL_TEMPLATES:
+        result = await listEmailTemplates(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.LIST_SMS_TEMPLATES:
+        result = await listSMSTemplates(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.GET_CUSTOM_REPORT:
+        result = await getCustomReport(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.MAKE_IT_LOOK_LIKE:
+        result = await makeItLookLike(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.SUGGEST_HERO_VARIANTS:
+        result = await suggestHeroVariants(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CHECK_WEBSITE_ACCESSIBILITY:
+        result = await checkWebsiteAccessibility(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CREATE_SCHEDULED_REPORT:
+        result = await createScheduledReport(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.DO_EVERYTHING_FOR_CONTACT:
+        result = await doEverythingForContact(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.LOG_EMAIL_TO_CONTACT:
+        result = await logEmailToContact(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.SUMMARIZE_CALL:
+        result = await summarizeCall(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.GET_SMART_REPLIES:
+        result = await getSmartReplies(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.GET_FOLLOW_UP_PRIORITY:
+        result = await getFollowUpPriority(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.GET_DEAL_RISK_ALERTS:
+        result = await getDealRiskAlerts(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.BULK_UPDATE_LEAD_STATUS:
+        result = await bulkUpdateLeadStatus(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.BULK_ADD_TAG:
+        result = await bulkAddTag(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.EXPORT_PIPELINE_CSV:
+        result = await exportPipelineCsv(user.id, parameters);
         break;
 
       default:
@@ -1313,6 +1468,720 @@ async function addNote(userId: string, params: any) {
     leadId: lead.id,
     type: "contact",
   };
+}
+
+async function addLeadTag(userId: string, params: any) {
+  const { leadId, contactName, tag } = params;
+  if (!tag?.trim()) throw new Error("Tag is required");
+
+  let lead;
+  if (leadId) {
+    lead = await prisma.lead.findFirst({ where: { id: leadId, userId } });
+  } else if (contactName) {
+    lead = await prisma.lead.findFirst({
+      where: {
+        userId,
+        OR: [
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+          { businessName: { contains: contactName, mode: "insensitive" } },
+        ],
+      },
+    });
+  }
+  if (!lead) throw new Error(contactName ? `Contact "${contactName}" not found` : "Lead ID or contact name is required");
+
+  const tags = Array.isArray(lead.tags) ? [...(lead.tags as string[])] : [];
+  const tagValue = tag.trim();
+  if (!tags.includes(tagValue)) tags.push(tagValue);
+
+  await prisma.lead.update({
+    where: { id: lead.id },
+    data: { tags: tags as any },
+  });
+
+  return {
+    message: `✓ Tag "${tagValue}" added to ${lead.contactPerson || lead.businessName}`,
+    leadId: lead.id,
+    tags,
+  };
+}
+
+async function updateLeadStatus(userId: string, params: any) {
+  const { leadId, contactName, status } = params;
+  if (!status) throw new Error("Status is required");
+  const validStatuses = ["NEW", "CONTACTED", "RESPONDED", "QUALIFIED", "CONVERTED", "LOST"];
+  if (!validStatuses.includes(status)) throw new Error(`Invalid status. Use: ${validStatuses.join(", ")}`);
+
+  let lead;
+  if (leadId) {
+    lead = await prisma.lead.findFirst({ where: { id: leadId, userId } });
+  } else if (contactName) {
+    lead = await prisma.lead.findFirst({
+      where: {
+        userId,
+        OR: [
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+          { businessName: { contains: contactName, mode: "insensitive" } },
+        ],
+      },
+    });
+  }
+  if (!lead) throw new Error(contactName ? `Contact "${contactName}" not found` : "Lead ID or contact name is required");
+
+  await prisma.lead.update({
+    where: { id: lead.id },
+    data: { status: status as any },
+  });
+
+  return {
+    message: `✓ ${lead.contactPerson || lead.businessName} status updated to ${status}`,
+    leadId: lead.id,
+    status,
+  };
+}
+
+async function listNotes(userId: string, params: any) {
+  const { contactName, dealTitle, leadId, dealId, limit = 10 } = params;
+
+  if (dealId || dealTitle) {
+    let deal;
+    if (dealId) {
+      deal = await prisma.deal.findFirst({
+        where: { id: dealId, userId },
+        include: { activities: { where: { type: "NOTE" }, orderBy: { createdAt: "desc" }, take: Math.min(limit, 50) } },
+      });
+    } else {
+      deal = await prisma.deal.findFirst({
+        where: { userId, title: { contains: dealTitle, mode: "insensitive" } },
+        include: { activities: { where: { type: "NOTE" }, orderBy: { createdAt: "desc" }, take: Math.min(limit, 50) } },
+      });
+    }
+    if (!deal) throw new Error(`Deal "${dealTitle || dealId}" not found`);
+
+    const notes = deal.activities.map((a) => ({ content: a.description, createdAt: a.createdAt, type: "deal" }));
+    return {
+      message: `Found ${notes.length} note(s) for deal "${deal.title}"`,
+      notes,
+      dealId: deal.id,
+    };
+  }
+
+  let lead;
+  if (leadId) {
+    lead = await prisma.lead.findFirst({
+      where: { id: leadId, userId },
+      include: { notes: { orderBy: { createdAt: "desc" }, take: Math.min(limit, 50) } },
+    });
+  } else if (contactName) {
+    lead = await prisma.lead.findFirst({
+      where: {
+        userId,
+        OR: [
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+          { businessName: { contains: contactName, mode: "insensitive" } },
+        ],
+      },
+      include: { notes: { orderBy: { createdAt: "desc" }, take: Math.min(limit, 50) } },
+    });
+  }
+  if (!lead) throw new Error(contactName ? `Contact "${contactName}" not found` : "Lead ID or contact name is required");
+
+  const notes = lead.notes.map((n) => ({ content: n.content, createdAt: n.createdAt, type: "contact" }));
+  return {
+    message: `Found ${notes.length} note(s) for ${lead.contactPerson || lead.businessName}`,
+    notes,
+    leadId: lead.id,
+  };
+}
+
+async function getPipelineStages(userId: string, params: any) {
+  const { pipelineName } = params;
+
+  let pipeline;
+  if (pipelineName) {
+    pipeline = await prisma.pipeline.findFirst({
+      where: { userId, name: { contains: pipelineName, mode: "insensitive" } },
+      include: { stages: { orderBy: { displayOrder: "asc" } } },
+    });
+  } else {
+    pipeline = await prisma.pipeline.findFirst({
+      where: { userId, isDefault: true },
+      include: { stages: { orderBy: { displayOrder: "asc" } } },
+    });
+    if (!pipeline) {
+      pipeline = await prisma.pipeline.findFirst({
+        where: { userId },
+        include: { stages: { orderBy: { displayOrder: "asc" } } },
+      });
+    }
+  }
+
+  if (!pipeline) throw new Error("No pipeline found");
+
+  const stages = pipeline.stages.map((s) => ({ id: s.id, name: s.name, probability: s.probability, displayOrder: s.displayOrder }));
+  return {
+    message: `Pipeline "${pipeline.name}" has ${stages.length} stage(s)`,
+    pipeline: { id: pipeline.id, name: pipeline.name },
+    stages,
+  };
+}
+
+async function assignDealToLead(userId: string, params: any) {
+  const { dealId, dealTitle, leadId, contactName } = params;
+
+  let deal;
+  if (dealId) {
+    deal = await prisma.deal.findFirst({ where: { id: dealId, userId } });
+  } else if (dealTitle) {
+    deal = await prisma.deal.findFirst({
+      where: { userId, title: { contains: dealTitle, mode: "insensitive" } },
+    });
+  }
+  if (!deal) throw new Error(`Deal "${dealTitle || dealId}" not found`);
+
+  let lead;
+  if (leadId) {
+    lead = await prisma.lead.findFirst({ where: { id: leadId, userId } });
+  } else if (contactName) {
+    lead = await prisma.lead.findFirst({
+      where: {
+        userId,
+        OR: [
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+          { businessName: { contains: contactName, mode: "insensitive" } },
+        ],
+      },
+    });
+  }
+  if (!lead) throw new Error(contactName ? `Contact "${contactName}" not found` : "Lead ID or contact name is required");
+
+  await prisma.deal.update({
+    where: { id: deal.id },
+    data: { leadId: lead.id },
+  });
+
+  return {
+    message: `✓ Deal "${deal.title}" linked to ${lead.contactPerson || lead.businessName}`,
+    dealId: deal.id,
+    leadId: lead.id,
+  };
+}
+
+async function rescheduleTask(userId: string, params: any) {
+  const { taskId, taskTitle, dueDate } = params;
+  if (!dueDate) throw new Error("New due date is required (YYYY-MM-DD)");
+
+  let task;
+  if (taskId) {
+    task = await prisma.task.findFirst({ where: { id: taskId, userId } });
+  } else if (taskTitle) {
+    task = await prisma.task.findFirst({
+      where: {
+        userId,
+        title: { contains: taskTitle, mode: "insensitive" },
+        status: { notIn: ["COMPLETED", "CANCELLED"] },
+      },
+    });
+  }
+  if (!task) throw new Error(taskId ? "Task not found" : `No matching task found for "${taskTitle}"`);
+
+  const newDueDate = new Date(dueDate);
+  if (isNaN(newDueDate.getTime())) throw new Error("Invalid date format. Use YYYY-MM-DD");
+
+  await prisma.task.update({
+    where: { id: task.id },
+    data: { dueDate: newDueDate },
+  });
+
+  await prisma.taskActivity.create({
+    data: {
+      taskId: task.id,
+      userId,
+      action: "UPDATED",
+      oldValue: task.dueDate?.toISOString() || "",
+      newValue: newDueDate.toISOString(),
+    },
+  });
+
+  return {
+    message: `✓ Task "${task.title}" rescheduled to ${newDueDate.toLocaleDateString()}`,
+    task: { id: task.id, title: task.title, dueDate: newDueDate },
+  };
+}
+
+async function reorderSection(userId: string, params: any) {
+  const { websiteId, pagePath = "/", fromIndex, toIndex } = params;
+  if (!websiteId || fromIndex === undefined || toIndex === undefined) {
+    throw new Error("websiteId, fromIndex, and toIndex are required");
+  }
+
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+
+  const { reorderSections } = await import("@/lib/website-builder/granular-tools");
+  const newStructure = reorderSections(website.structure as any, pagePath, fromIndex, toIndex);
+  await prisma.website.update({
+    where: { id: websiteId },
+    data: { structure: newStructure },
+  });
+  return { message: `✓ Section reordered.`, websiteId, navigateTo: `/dashboard/websites/${websiteId}` };
+}
+
+async function deleteSection(userId: string, params: any) {
+  const { websiteId, sectionType, pagePath = "/" } = params;
+  if (!websiteId || !sectionType) throw new Error("websiteId and sectionType are required");
+
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+
+  const { deleteSection: deleteSectionTool } = await import("@/lib/website-builder/granular-tools");
+  const newStructure = deleteSectionTool(website.structure as any, { pagePath, sectionType });
+  await prisma.website.update({
+    where: { id: websiteId },
+    data: { structure: newStructure },
+  });
+  return { message: `✓ Removed ${sectionType}.`, websiteId, navigateTo: `/dashboard/websites/${websiteId}` };
+}
+
+async function listWebsiteMedia(userId: string, params: any) {
+  const { websiteId, type } = params;
+  if (!websiteId) throw new Error("websiteId is required");
+
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+
+  const media = await prisma.websiteMedia.findMany({
+    where: { websiteId, ...(type && { type }) },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+  return {
+    message: `Found ${media.length} media item(s).`,
+    media,
+    websiteId,
+  };
+}
+
+async function addWebsiteImage(userId: string, params: any) {
+  const { websiteId, sectionType, imageUrl, alt, pagePath = "/" } = params;
+  if (!websiteId || !sectionType || !imageUrl) {
+    throw new Error("websiteId, sectionType, and imageUrl are required");
+  }
+
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+
+  const { findSection, applyStructureChange } = await import("@/lib/website-builder/granular-tools");
+  const section = findSection(website.structure as any, { pagePath, sectionType });
+  if (!section) throw new Error(`Section "${sectionType}" not found`);
+
+  const path = `pages[${section.pageIndex}].components[${section.compIndex}].props`;
+  const updates: Record<string, string> = { imageUrl };
+  if (alt) updates.alt = alt;
+  const newStructure = applyStructureChange(website.structure as any, { type: "update", path, data: updates });
+  await prisma.website.update({
+    where: { id: websiteId },
+    data: { structure: newStructure },
+  });
+  return { message: `✓ Image added to ${sectionType}.`, websiteId, navigateTo: `/dashboard/websites/${websiteId}` };
+}
+
+async function listEmailTemplates(userId: string, params: any) {
+  const { category } = params;
+  const templates = await prisma.emailTemplate.findMany({
+    where: { userId, ...(category && { category }) },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, subject: true, category: true, isDefault: true },
+  });
+  return {
+    message: `Found ${templates.length} email template(s).`,
+    templates: templates.map((t) => ({ id: t.id, name: t.name, subject: t.subject, category: t.category, isDefault: t.isDefault })),
+  };
+}
+
+async function listSMSTemplates(userId: string, params: any) {
+  const { category } = params;
+  const templates = await prisma.sMSTemplate.findMany({
+    where: { userId, ...(category && { category }) },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, message: true, category: true, isDefault: true },
+  });
+  return {
+    message: `Found ${templates.length} SMS template(s).`,
+    templates: templates.map((t) => ({ id: t.id, name: t.name, message: t.message, category: t.category, isDefault: t.isDefault })),
+  };
+}
+
+async function getCustomReport(userId: string, params: any) {
+  const { query, period } = params;
+  const { parseChartIntent, getDynamicChartData } = await import("@/lib/crm-chart-intent");
+  const text = query || "leads by status";
+  const intent = parseChartIntent(text);
+  if (!intent) {
+    return { message: "Could not parse report query. Try: 'leads by source', 'revenue by month', 'deals by stage'.", data: [] };
+  }
+  const data = await getDynamicChartData(userId, intent.dimension);
+  return {
+    message: `Custom report: ${intent.dimension}. Chart type: ${intent.chartType}.`,
+    dimension: intent.dimension,
+    chartType: intent.chartType,
+    data,
+  };
+}
+
+async function makeItLookLike(userId: string, params: any) {
+  const { websiteId, referenceUrl } = params;
+  if (!websiteId || !referenceUrl) {
+    throw new Error("websiteId and referenceUrl are required");
+  }
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+  const { analyzeReferenceAndSuggest } = await import("@/lib/website-builder/make-it-look-like-service");
+  const result = await analyzeReferenceAndSuggest(referenceUrl, website.structure, websiteId);
+  return {
+    message: `Analyzed ${referenceUrl}. Found ${result.suggestions.length} suggestion(s). Apply via AI Chat or Design tab.`,
+    suggestions: result.suggestions,
+    websiteId,
+  };
+}
+
+async function suggestHeroVariants(userId: string, params: any) {
+  const { websiteId } = params;
+  if (!websiteId) throw new Error("websiteId is required");
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+  const hero = (website.structure as any)?.pages?.[0]?.components?.find((c: any) => c.type === "Hero" || c.type === "HeroSection");
+  const current = hero?.props || {};
+  const variants = [
+    { name: "Bold CTA", changes: { ctaText: "Get Started Free", ctaStyle: "primary" } },
+    { name: "Softer ask", changes: { ctaText: "Learn More", ctaStyle: "secondary" } },
+    { name: "Urgency", changes: { ctaText: "Limited Time Offer", subtitle: (current.subtitle || "") + " Act now." } },
+  ];
+  return {
+    message: "A/B test suggestions for hero section. Use update_hero to apply.",
+    variants,
+    websiteId,
+  };
+}
+
+async function checkWebsiteAccessibility(userId: string, params: any) {
+  const { websiteId } = params;
+  if (!websiteId) throw new Error("websiteId is required");
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+  const { checkWebsiteAccessibility } = await import("@/lib/website-builder/accessibility-checker");
+  const issues = checkWebsiteAccessibility(website.structure);
+  return {
+    message: `Found ${issues.length} accessibility issue(s).`,
+    issues,
+    websiteId,
+  };
+}
+
+async function createScheduledReport(userId: string, params: any) {
+  const { reportType = "pipeline", frequency = "weekly", email } = params;
+  const userEmail = email || (await prisma.user.findUnique({ where: { id: userId }, select: { email: true } }))?.email;
+  if (!userEmail) throw new Error("Email required for scheduled reports");
+  // Store in user onboardingProgress or create DataExport - use existing mechanism
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { onboardingProgress: true } });
+  const progress = (user?.onboardingProgress as any) || {};
+  const scheduledReports = progress.scheduledReports || [];
+  scheduledReports.push({ reportType, frequency, email: userEmail, createdAt: new Date().toISOString() });
+  await prisma.user.update({
+    where: { id: userId },
+    data: { onboardingProgress: { ...progress, scheduledReports } },
+  });
+  return {
+    message: `Scheduled ${reportType} report (${frequency}) to ${userEmail}. Configure cron at /api/cron/scheduled-reports to send.`,
+    navigateTo: "/dashboard/reports",
+  };
+}
+
+async function doEverythingForContact(userId: string, params: any) {
+  const { contactName, actions } = params;
+  if (!contactName) throw new Error("contactName is required");
+  const lead = await prisma.lead.findFirst({
+    where: { userId, contactPerson: { contains: contactName, mode: "insensitive" } },
+    include: { deals: { take: 1 }, tasks: { where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, take: 1 } },
+  });
+  if (!lead) throw new Error(`Contact "${contactName}" not found`);
+  const actionsToRun = actions || ["add_note", "create_deal", "schedule_follow_up", "draft_email"];
+  const results: string[] = [];
+  if (actionsToRun.includes("add_note") || !actions) {
+    await prisma.note.create({
+      data: { userId, leadId: lead.id, content: `Composite action: prepared for ${contactName}.` },
+    });
+    results.push("Added note");
+  }
+  if ((actionsToRun.includes("create_deal") || !actions) && lead.deals.length === 0) {
+    const pipeline = await prisma.pipeline.findFirst({ where: { userId }, include: { stages: true } });
+    const firstStage = pipeline?.stages?.[0];
+    if (pipeline && firstStage) {
+      await prisma.deal.create({
+        data: { userId, leadId: lead.id, pipelineId: pipeline.id, stageId: firstStage.id, title: `${lead.contactPerson || lead.businessName} - New` },
+      });
+      results.push("Created deal");
+    }
+  }
+  if (actionsToRun.includes("schedule_follow_up") || !actions) {
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 3);
+    await prisma.task.create({
+      data: { userId, leadId: lead.id, title: `Follow up with ${lead.contactPerson || "contact"}`, dueDate, status: "TODO" },
+    });
+    results.push("Scheduled follow-up");
+  }
+  return {
+    message: `Completed for ${lead.contactPerson || lead.businessName}: ${results.join(", ")}.`,
+    leadId: lead.id,
+    actionsCompleted: results,
+    navigateTo: `/dashboard/contacts?id=${lead.id}`,
+  };
+}
+
+async function logEmailToContact(userId: string, params: any) {
+  const { contactName, subject, body, leadId } = params;
+  const lid = leadId || (contactName ? (await prisma.lead.findFirst({
+    where: { userId, contactPerson: { contains: contactName, mode: "insensitive" } },
+    select: { id: true },
+  }))?.id : null);
+  if (!lid) throw new Error("Contact not found. Provide contactName or leadId.");
+  await prisma.note.create({
+    data: {
+      userId,
+      leadId: lid,
+      content: `[Email logged] Subject: ${subject || "(no subject)"}\n\n${body || ""}`,
+    },
+  });
+  return {
+    message: "Email logged to contact.",
+    leadId: lid,
+    navigateTo: `/dashboard/contacts?id=${lid}`,
+  };
+}
+
+async function summarizeCall(userId: string, params: any) {
+  const { callLogId } = params;
+  if (!callLogId) throw new Error("callLogId is required");
+  const { summarizeCallAndAddNote } = await import("@/lib/call-summary-service");
+  const result = await summarizeCallAndAddNote(callLogId, userId);
+  return {
+    message: `Call summarized. ${result.noteId ? "Added as note to contact." : ""}`,
+    summary: result.summary,
+    actionItems: result.actionItems,
+    sentiment: result.sentiment,
+    noteId: result.noteId,
+    navigateTo: result.noteId ? "/dashboard/contacts" : null,
+  };
+}
+
+async function getSmartReplies(userId: string, params: any) {
+  const { leadId, context } = params;
+  const lead = leadId ? await prisma.lead.findFirst({
+    where: { id: leadId, userId },
+    include: { deals: { take: 1 }, notes: { take: 1, orderBy: { createdAt: "desc" } } },
+  }) : null;
+  const replies = [
+    { id: "follow_up", label: "Follow up", text: "Hi! Just following up on our conversation. Would love to connect soon." },
+    { id: "thank_you", label: "Thank you", text: "Thank you for your time today. I'll be in touch with next steps." },
+    { id: "meeting", label: "Schedule meeting", text: "Would you have 15 minutes this week for a quick call? I'd love to show you how we can help." },
+    { id: "documents", label: "Send documents", text: "I'm sending over the materials we discussed. Let me know if you have any questions." },
+    { id: "check_in", label: "Check in", text: "Hi! Wanted to check in and see how things are going. Any questions I can help with?" },
+  ];
+  return {
+    message: "Smart replies for common situations.",
+    replies,
+    leadName: lead?.contactPerson || lead?.businessName,
+  };
+}
+
+async function getFollowUpPriority(userId: string, params: any) {
+  const { limit = 10, sortBy = "lastContact" } = params;
+
+  const leads = await prisma.lead.findMany({
+    where: { userId },
+    include: {
+      deals: { include: { stage: true }, take: 1, orderBy: { updatedAt: "desc" } },
+      tasks: { where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, take: 1, orderBy: { dueDate: "asc" } },
+      notes: { take: 1, orderBy: { createdAt: "desc" } },
+    },
+    take: Math.min(limit * 2, 100),
+  });
+
+  const scored = leads.map((l) => {
+    const lastNote = l.notes[0];
+    const lastContact = lastNote?.createdAt;
+    const openDeal = l.deals[0];
+    const urgentTask = l.tasks.find((t) => t.dueDate && new Date(t.dueDate) <= new Date(Date.now() + 24 * 60 * 60 * 1000));
+    let score = 0;
+    if (urgentTask) score += 100;
+    if (openDeal?.stage?.name?.toLowerCase()?.includes("proposal")) score += 50;
+    if (!lastContact || (lastContact && (Date.now() - lastContact.getTime()) > 7 * 24 * 60 * 60 * 1000)) score += 30;
+    return { lead: l, score, lastContact, openDeal, urgentTask };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.slice(0, limit);
+
+  return {
+    message: `Here are your top ${top.length} follow-up priorities.`,
+    contacts: top.map((t) => ({
+      name: t.lead.contactPerson || t.lead.businessName,
+      leadId: t.lead.id,
+      lastContact: t.lastContact,
+      deal: t.openDeal?.title,
+      stage: t.openDeal?.stage?.name,
+      urgentTask: t.urgentTask?.title,
+    })),
+    navigateTo: "/dashboard/contacts",
+  };
+}
+
+async function getDealRiskAlerts(userId: string, params: any) {
+  const { staleDays = 7, limit = 10 } = params;
+  const cutoff = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000);
+
+  const deals = await prisma.deal.findMany({
+    where: {
+      userId,
+      status: "OPEN",
+      actualCloseDate: null,
+    },
+    include: {
+      stage: true,
+      lead: true,
+      activities: { take: 1, orderBy: { createdAt: "desc" } },
+    },
+    take: Math.min(limit * 3, 100),
+  });
+
+  const atRisk = deals
+    .filter((d) => {
+      const lastAct = d.activities[0];
+      return !lastAct || lastAct.createdAt < cutoff;
+    })
+    .slice(0, limit);
+
+  return {
+    message: `Found ${atRisk.length} deal(s) that may need attention.`,
+    deals: atRisk.map((d) => ({
+      id: d.id,
+      title: d.title,
+      value: d.value,
+      stage: d.stage?.name,
+      lead: d.lead?.contactPerson || d.lead?.businessName,
+      lastActivity: d.activities[0]?.createdAt,
+    })),
+    navigateTo: "/dashboard/pipeline",
+  };
+}
+
+async function bulkUpdateLeadStatus(userId: string, params: any) {
+  const { fromStatus, toStatus, limit = 100 } = params;
+  if (!toStatus) throw new Error("toStatus is required");
+
+  const where: any = { userId };
+  if (fromStatus) where.status = fromStatus;
+
+  const leads = await prisma.lead.findMany({
+    where,
+    take: Math.min(limit, 500),
+  });
+
+  await prisma.lead.updateMany({
+    where: { id: { in: leads.map((l) => l.id) } },
+    data: { status: toStatus as any },
+  });
+
+  return {
+    message: `✓ Updated ${leads.length} lead(s) to ${toStatus}.`,
+    count: leads.length,
+    navigateTo: "/dashboard/contacts",
+  };
+}
+
+async function bulkAddTag(userId: string, params: any) {
+  const { tag, status, period, limit = 100 } = params;
+  if (!tag?.trim()) throw new Error("tag is required");
+
+  const where: any = { userId };
+  if (status) where.status = status;
+  if (period) {
+    const now = new Date();
+    if (period === "today") where.createdAt = { gte: new Date(now.setHours(0, 0, 0, 0)) };
+    else if (period === "last_week") where.createdAt = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+    else if (period === "last_2_weeks") where.createdAt = { gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) };
+    else if (period === "last_month") where.createdAt = { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
+  }
+
+  const leads = await prisma.lead.findMany({
+    where,
+    take: Math.min(limit, 500),
+  });
+
+  let count = 0;
+  for (const lead of leads) {
+    const tags = Array.isArray(lead.tags) ? [...(lead.tags as string[])] : [];
+    if (!tags.includes(tag.trim())) {
+      tags.push(tag.trim());
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { tags: tags as any },
+      });
+      count++;
+    }
+  }
+
+  return {
+    message: `✓ Added tag "${tag}" to ${count} lead(s).`,
+    count,
+    navigateTo: "/dashboard/contacts",
+  };
+}
+
+async function exportPipelineCsv(userId: string, params: any) {
+  const { type = "deals", limit = 1000 } = params;
+
+  if (type === "leads") {
+    const leads = await prisma.lead.findMany({
+      where: { userId },
+      take: Math.min(limit, 5000),
+      select: { id: true, contactPerson: true, businessName: true, email: true, phone: true, status: true, createdAt: true },
+    });
+    const headers = ["ID", "Contact", "Company", "Email", "Phone", "Status", "Created"];
+    const rows = leads.map((l) => [l.id, l.contactPerson || "", l.businessName || "", l.email || "", l.phone || "", l.status || "", l.createdAt?.toISOString() || ""]);
+    const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+    return { message: `✓ Exported ${leads.length} leads.`, csv, filename: `leads-${Date.now()}.csv`, type: "leads", count: leads.length };
+  }
+
+  if (type === "deals" || type === "pipeline") {
+    const deals = await prisma.deal.findMany({
+      where: { userId },
+      take: Math.min(limit, 5000),
+      include: { lead: true, stage: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const headers = ["ID", "Title", "Value", "Stage", "Lead", "Status", "Created"];
+    const rows = deals.map((d) => [d.id, d.title, d.value || 0, d.stage?.name || "", d.lead?.contactPerson || d.lead?.businessName || "", d.status || "", d.createdAt?.toISOString() || ""]);
+    const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+    return { message: `✓ Exported ${deals.length} deals.`, csv, filename: `pipeline-${Date.now()}.csv`, type: "deals", count: deals.length };
+  }
+
+  throw new Error("type must be leads or deals");
 }
 
 async function updateDealStage(userId: string, params: any) {
@@ -3830,6 +4699,237 @@ async function modifyWebsite(userId: string, params: any) {
     message: hasPendingApproval
       ? `✅ Changes generated. Please review and approve them in the editor.`
       : `✅ Changes applied to ${website.name}.`,
+    websiteId,
+    navigateTo: `/dashboard/websites/${websiteId}`,
+  };
+}
+
+// ========================================
+// Granular Website Tools
+// ========================================
+
+async function getWebsiteStructure(userId: string, params: any) {
+  const { websiteId } = params;
+  if (!websiteId) throw new Error("websiteId is required");
+
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+
+  const { getWebsiteStructureSummary } = await import("@/lib/website-builder/granular-tools");
+  const summary = getWebsiteStructureSummary(website.structure as any);
+
+  return {
+    message: `Here's the structure of ${website.name}:`,
+    structure: summary,
+    websiteId,
+    navigateTo: `/dashboard/websites/${websiteId}`,
+  };
+}
+
+async function updateHero(userId: string, params: any) {
+  const { websiteId, title, subtitle, ctaText, ctaLink } = params;
+  if (!websiteId) throw new Error("websiteId is required");
+  if (!title && !subtitle && !ctaText && !ctaLink) {
+    throw new Error("At least one of title, subtitle, ctaText, ctaLink is required");
+  }
+
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+
+  const {
+    findHeroComponent,
+    applyStructureChange,
+  } = await import("@/lib/website-builder/granular-tools");
+
+  const hero = findHeroComponent(website.structure as any);
+  if (!hero) throw new Error("No hero section found on this website");
+
+  const updates: Record<string, string> = {};
+  if (title !== undefined) updates.title = title;
+  if (subtitle !== undefined) updates.subtitle = subtitle;
+  if (ctaText !== undefined) updates.ctaText = ctaText;
+  if (ctaLink !== undefined) updates.ctaLink = ctaLink;
+
+  const path = `pages[${hero.pageIndex}].components[${hero.compIndex}].props`;
+  const newStructure = applyStructureChange(website.structure as any, {
+    type: "update",
+    path,
+    data: updates,
+  });
+
+  await prisma.website.update({
+    where: { id: websiteId },
+    data: { structure: newStructure },
+  });
+
+  return {
+    message: `✅ Hero section updated.`,
+    websiteId,
+    navigateTo: `/dashboard/websites/${websiteId}`,
+  };
+}
+
+async function addSection(userId: string, params: any) {
+  const { websiteId, sectionType, pagePath = "/", title, content, ctaText, ctaLink } = params;
+  if (!websiteId || !sectionType) throw new Error("websiteId and sectionType are required");
+
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+
+  const structure = website.structure as any;
+  const pages = structure?.pages || [];
+  const pageIndex = pages.findIndex((p: any) => p.path === pagePath);
+  if (pageIndex < 0) throw new Error(`Page not found: ${pagePath}`);
+
+  const { applyStructureChange } = await import("@/lib/website-builder/granular-tools");
+
+  const componentTemplates: Record<string, any> = {
+    CTASection: { id: `cta-${Date.now()}`, type: "CTASection", props: { title: title || "Get in Touch", description: content || "Contact us today", ctaText: ctaText || "Contact Us", ctaLink: ctaLink || "/contact" } },
+    TextSection: { id: `text-${Date.now()}`, type: "TextSection", props: { title: title || "Section", content: content || "" } },
+    AboutSection: { id: `about-${Date.now()}`, type: "AboutSection", props: { title: title || "About Us", description: content || "", ctaText: ctaText || "Learn More", ctaLink: ctaLink || "/about" } },
+    ContactForm: { id: `form-${Date.now()}`, type: "ContactForm", props: { fields: [{ name: "name", type: "text", label: "Name", required: true }, { name: "email", type: "email", label: "Email", required: true }, { name: "message", type: "textarea", label: "Message", required: true }] } },
+    ImageSection: { id: `image-${Date.now()}`, type: "ImageSection", props: { title: title || "Image", imageUrl: "", alt: content || "" } },
+    ServicesGrid: { id: `services-${Date.now()}`, type: "ServicesGrid", props: { services: [], ctaText: ctaText || "View All", ctaLink: ctaLink || "/services" } },
+    ProductsGrid: { id: `products-${Date.now()}`, type: "ProductsGrid", props: { products: [], ctaText: ctaText || "View All", ctaLink: ctaLink || "/products" } },
+    PopupSection: { id: `popup-${Date.now()}`, type: "PopupSection", props: { title: title || "Special Offer", content: content || "Sign up now!", trigger: "onLoad", delaySeconds: 3, showForm: true } },
+    BookingWidget: { id: `booking-${Date.now()}`, type: "BookingWidget", props: { title: title || "Book Now", serviceTypes: [], duration: 60 } },
+    ChatWidget: { id: `chat-${Date.now()}`, type: "ChatWidget", props: { title: "Chat with us", position: "bottomRight" } },
+    VideoSection: { id: `video-${Date.now()}`, type: "VideoSection", props: { title: title || "Watch", videoUrl: "", videoType: "youtube", videoId: "" } },
+  };
+
+  const newComponent = componentTemplates[sectionType];
+  if (!newComponent) throw new Error(`Unknown section type: ${sectionType}`);
+
+  const newStructure = applyStructureChange(structure, {
+    type: "add",
+    path: `pages[${pageIndex}].components`,
+    data: newComponent,
+  });
+
+  await prisma.website.update({
+    where: { id: websiteId },
+    data: { structure: newStructure },
+  });
+
+  return {
+    message: `✅ Added ${sectionType} to ${pagePath}.`,
+    websiteId,
+    navigateTo: `/dashboard/websites/${websiteId}`,
+  };
+}
+
+async function updateSectionContent(userId: string, params: any) {
+  const { websiteId, sectionType, title, content, ctaText, ctaLink, pagePath = "/" } = params;
+  if (!websiteId || !sectionType) throw new Error("websiteId and sectionType are required");
+  if (!title && !content && !ctaText && !ctaLink) {
+    throw new Error("At least one of title, content, ctaText, ctaLink is required");
+  }
+
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+
+  const { findSection, applyStructureChange } = await import("@/lib/website-builder/granular-tools");
+
+  const section = findSection(website.structure as any, { pagePath, sectionType });
+  if (!section) throw new Error(`Section type "${sectionType}" not found on page ${pagePath}`);
+
+  const updates: Record<string, string> = {};
+  if (title !== undefined) updates.title = title;
+  if (content !== undefined) updates.description = updates.content = content;
+  if (ctaText !== undefined) updates.ctaText = ctaText;
+  if (ctaLink !== undefined) updates.ctaLink = ctaLink;
+
+  const path = `pages[${section.pageIndex}].components[${section.compIndex}].props`;
+  const newStructure = applyStructureChange(website.structure as any, {
+    type: "update",
+    path,
+    data: updates,
+  });
+
+  await prisma.website.update({
+    where: { id: websiteId },
+    data: { structure: newStructure },
+  });
+
+  return {
+    message: `✅ Updated ${sectionType} section.`,
+    websiteId,
+    navigateTo: `/dashboard/websites/${websiteId}`,
+  };
+}
+
+async function addCTA(userId: string, params: any) {
+  const { websiteId, title, description, ctaText, ctaLink, pagePath = "/" } = params;
+  if (!websiteId || !ctaText || !ctaLink) throw new Error("websiteId, ctaText, and ctaLink are required");
+
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) throw new Error("Website not found");
+
+  const { findCTAComponent, findSection, applyStructureChange } = await import("@/lib/website-builder/granular-tools");
+
+  const structure = website.structure as any;
+  const existingCTA = findCTAComponent(structure);
+
+  if (existingCTA) {
+    const updates: Record<string, string> = { ctaText, ctaLink };
+    if (title) updates.title = title;
+    if (description) updates.description = description;
+
+    const path = `pages[${existingCTA.pageIndex}].components[${existingCTA.compIndex}].props`;
+    const newStructure = applyStructureChange(structure, {
+      type: "update",
+      path,
+      data: updates,
+    });
+    await prisma.website.update({
+      where: { id: websiteId },
+      data: { structure: newStructure },
+    });
+    return {
+      message: `✅ Updated CTA section.`,
+      websiteId,
+      navigateTo: `/dashboard/websites/${websiteId}`,
+    };
+  }
+
+  const pages = structure?.pages || [];
+  const pageIndex = pages.findIndex((p: any) => p.path === pagePath);
+  if (pageIndex < 0) throw new Error(`Page not found: ${pagePath}`);
+
+  const newComponent = {
+    id: `cta-${Date.now()}`,
+    type: "CTASection",
+    props: {
+      title: title || "Get in Touch",
+      description: description || "Contact us today",
+      ctaText,
+      ctaLink,
+    },
+  };
+
+  const newStructure = applyStructureChange(structure, {
+    type: "add",
+    path: `pages[${pageIndex}].components`,
+    data: newComponent,
+  });
+
+  await prisma.website.update({
+    where: { id: websiteId },
+    data: { structure: newStructure },
+  });
+
+  return {
+    message: `✅ Added CTA section.`,
     websiteId,
     navigateTo: `/dashboard/websites/${websiteId}`,
   };

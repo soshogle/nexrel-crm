@@ -515,7 +515,7 @@ function EmailConnectionDialog({
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
 }) {
-  const [emailType, setEmailType] = useState<'gmail' | 'custom'>('gmail')
+  const [emailType, setEmailType] = useState<'gmail' | 'outlook' | 'custom'>('gmail')
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -562,6 +562,42 @@ function EmailConnectionDialog({
     }
   }
 
+  const handleOutlookOAuth = async () => {
+    try {
+      const response = await fetch('/api/messaging/connections/outlook/auth')
+      const { authUrl } = await response.json()
+      
+      const width = 600
+      const height = 700
+      const left = window.screen.width / 2 - width / 2
+      const top = window.screen.height / 2 - height / 2
+      
+      const popup = window.open(
+        authUrl,
+        'Outlook OAuth',
+        `width=${width},height=${height},left=${left},top=${top}`
+      )
+
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'outlook-oauth-success') {
+          toast.success('Outlook connected successfully!')
+          onSuccess()
+          popup?.close()
+          window.removeEventListener('message', handleMessage)
+        } else if (event.data?.type === 'outlook-oauth-error') {
+          toast.error('Failed to connect Outlook')
+          popup?.close()
+          window.removeEventListener('message', handleMessage)
+        }
+      }
+
+      window.addEventListener('message', handleMessage)
+    } catch (error) {
+      console.error('Outlook OAuth error:', error)
+      toast.error('Failed to initiate Outlook connection')
+    }
+  }
+
   const handleCustomEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -600,12 +636,13 @@ function EmailConnectionDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <Select value={emailType} onValueChange={(v) => setEmailType(v as 'gmail' | 'custom')}>
+          <Select value={emailType} onValueChange={(v) => setEmailType(v as 'gmail' | 'outlook' | 'custom')}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="gmail">Gmail (OAuth)</SelectItem>
+              <SelectItem value="outlook">Outlook / Microsoft 365 (OAuth)</SelectItem>
               <SelectItem value="custom">Custom SMTP/IMAP</SelectItem>
             </SelectContent>
           </Select>
@@ -617,7 +654,17 @@ function EmailConnectionDialog({
               </p>
               <Button onClick={handleGmailOAuth} className="w-full">
                 <Mail className="h-4 w-4 mr-2" />
-                Connect with Gmail
+                Connect Gmail
+              </Button>
+            </div>
+          ) : emailType === 'outlook' ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Connect your Outlook or Microsoft 365 account using secure OAuth.
+              </p>
+              <Button onClick={handleOutlookOAuth} className="w-full">
+                <Mail className="h-4 w-4 mr-2" />
+                Connect Outlook
               </Button>
             </div>
           ) : (

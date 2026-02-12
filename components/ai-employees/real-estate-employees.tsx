@@ -272,6 +272,7 @@ export function RealEstateAIEmployees() {
   const [isProvisioning, setIsProvisioning] = useState(false);
   const [provisioningProgress, setProvisioningProgress] = useState(0);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
+  const [testingAgentId, setTestingAgentId] = useState<string | null>(null);
 
   // Fetch provisioned agents on mount
   useEffect(() => {
@@ -331,6 +332,36 @@ export function RealEstateAIEmployees() {
     return provisionedAgents.find(a => a.employeeType === employeeId);
   };
 
+  const handleTestAgent = async (employeeId: string) => {
+    let agent = getProvisionedAgent(employeeId);
+    if (!agent) {
+      setTestingAgentId(employeeId);
+      try {
+        toast.loading('Setting up voice agent...', { id: 'test-agent' });
+        const res = await fetch('/api/real-estate/ai-employees/provision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ employeeTypes: [employeeId] }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.agents?.length) {
+          toast.success('Voice agent ready!', { id: 'test-agent' });
+          setProvisionedAgents(data.agents);
+          agent = data.agents.find((a: ProvisionedAgent) => a.employeeType === employeeId);
+        } else {
+          toast.error(data.error || 'Failed to set up agent', { id: 'test-agent' });
+        }
+      } catch (error) {
+        toast.error('Failed to set up agent', { id: 'test-agent' });
+      } finally {
+        setTestingAgentId(null);
+      }
+    }
+    if (agent?.id) {
+      window.location.href = `/dashboard/voice-agents/preview?agentId=${agent.id}`;
+    }
+  };
+
   // Filter employees by category
   const filteredEmployees = selectedCategory === 'all' 
     ? RE_AI_EMPLOYEES 
@@ -383,36 +414,16 @@ export function RealEstateAIEmployees() {
             <Mic className="w-3 h-3 mr-1" />
             {provisionedAgents.length} / 12 Voice Agents
           </Badge>
-          {provisionedAgents.length < 12 && (
-            <Button 
-              onClick={handleProvisionAll}
-              disabled={isProvisioning}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-            >
-              {isProvisioning ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating Agents...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Provision All Voice Agents
-                </>
-              )}
-            </Button>
-          )}
-          {provisionedAgents.length === 12 && (
-            <Button 
-              variant="outline"
-              onClick={handleProvisionAll}
-              disabled={isProvisioning}
-              className="border-slate-600 text-slate-300 hover:bg-slate-800"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isProvisioning ? 'animate-spin' : ''}`} />
-              Refresh Agents
-            </Button>
-          )}
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={handleProvisionAll}
+            disabled={isProvisioning}
+            className="border-slate-600 text-slate-300 hover:bg-slate-800"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isProvisioning ? 'animate-spin' : ''}`} />
+            {provisionedAgents.length < 12 ? 'Provision All' : 'Refresh'}
+          </Button>
         </div>
       </div>
 
@@ -582,51 +593,37 @@ export function RealEstateAIEmployees() {
                   <div className={`p-4 rounded-lg border ${
                     isAgentProvisioned(selectedEmployee.id) 
                       ? 'bg-green-500/10 border-green-500/30' 
-                      : 'bg-yellow-500/10 border-yellow-500/30'
+                      : 'bg-slate-800/50 border-slate-600'
                   }`}>
-                    {isAgentProvisioned(selectedEmployee.id) ? (
-                      <>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-green-400" />
-                            <span className="text-green-400 font-medium">Voice Agent Active</span>
-                          </div>
-                          <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
-                            {getProvisionedAgent(selectedEmployee.id)?.callCount || 0} calls
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-slate-400 mb-3">
-                          Voice AI agent configured with OACIQ compliance and multi-language support.
-                        </p>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-green-500/30 text-green-400 hover:bg-green-500/10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const agent = getProvisionedAgent(selectedEmployee.id);
-                              if (agent?.id) {
-                                window.location.href = `/dashboard/voice-agents/preview?agentId=${agent.id}`;
-                              }
-                            }}
-                          >
-                            <Settings className="w-3 h-3 mr-1" />
-                            Test Agent
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center gap-2 mb-2">
-                          <AlertCircle className="w-4 h-4 text-yellow-400" />
-                          <span className="text-yellow-400 font-medium">Voice Agent Not Provisioned</span>
-                        </div>
-                        <p className="text-sm text-slate-400 mb-3">
-                          Click "Provision All Voice Agents" above to create this Voice AI agent.
-                        </p>
-                      </>
-                    )}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {isAgentProvisioned(selectedEmployee.id) ? (
+                          <><CheckCircle2 className="w-4 h-4 text-green-400" /><span className="text-green-400 font-medium">Voice Agent Ready</span></>
+                        ) : (
+                          <><Mic className="w-4 h-4 text-slate-400" /><span className="text-slate-300 font-medium">Voice Agent</span></>
+                        )}
+                      </div>
+                      {isAgentProvisioned(selectedEmployee.id) && (
+                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+                          {getProvisionedAgent(selectedEmployee.id)?.callCount || 0} calls
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-400 mb-3">
+                      {isAgentProvisioned(selectedEmployee.id)
+                        ? 'Voice AI agent configured with OACIQ compliance and multi-language support.'
+                        : 'Click Test Agent to set up automatically on first use.'}
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                      onClick={(e) => { e.stopPropagation(); handleTestAgent(selectedEmployee.id); }}
+                      disabled={testingAgentId === selectedEmployee.id}
+                    >
+                      {testingAgentId === selectedEmployee.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Settings className="w-3 h-3 mr-1" />}
+                      Test Agent
+                    </Button>
                   </div>
                 )}
                 

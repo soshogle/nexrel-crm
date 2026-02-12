@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Search, Loader2 } from 'lucide-react';
+import { PreChartPanel } from './pre-chart-panel';
 import {
   Dialog,
   DialogContent,
@@ -34,11 +35,17 @@ interface Lead {
 
 interface NewSessionDialogProps {
   onSessionCreated?: (sessionId: string) => void;
+  defaultLeadId?: string;
+  defaultPatientName?: string;
+  defaultChiefComplaint?: string;
+  defaultProfession?: string;
+  defaultOpen?: boolean;
 }
 
 const PROFESSIONS = [
   { value: 'GENERAL_PRACTICE', label: 'General Practice / Family Medicine' },
   { value: 'DENTIST', label: 'Dentistry' },
+  { value: 'ORTHODONTIC', label: 'Orthodontics' },
   { value: 'OPTOMETRIST', label: 'Optometry' },
   { value: 'DERMATOLOGIST', label: 'Dermatology' },
   { value: 'CARDIOLOGIST', label: 'Cardiology' },
@@ -50,23 +57,44 @@ const PROFESSIONS = [
   { value: 'CUSTOM', label: 'Custom Specialty' },
 ];
 
-export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
+export function NewSessionDialog({
+  onSessionCreated,
+  defaultLeadId,
+  defaultPatientName,
+  defaultChiefComplaint,
+  defaultProfession,
+  defaultOpen = false,
+}: NewSessionDialogProps) {
   const tPlaceholders = useTranslations('placeholders');
   const tToasts = useTranslations('toasts.general');
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [isLoading, setIsLoading] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(defaultPatientName || '');
   const [isSearching, setIsSearching] = useState(false);
 
   const [formData, setFormData] = useState({
-    leadId: '',
-    patientName: '',
-    profession: 'GENERAL_PRACTICE',
+    leadId: defaultLeadId || '',
+    patientName: defaultPatientName || '',
+    profession: (defaultProfession as any) || 'GENERAL_PRACTICE',
     customProfession: '',
-    chiefComplaint: '',
+    chiefComplaint: defaultChiefComplaint || '',
     consultantName: '',
   });
+
+  useEffect(() => {
+    if (defaultOpen || defaultLeadId || defaultPatientName) {
+      setFormData((prev) => ({
+        ...prev,
+        leadId: defaultLeadId || prev.leadId,
+        patientName: defaultPatientName || prev.patientName,
+        chiefComplaint: defaultChiefComplaint ?? prev.chiefComplaint,
+        ...(defaultProfession && { profession: defaultProfession as any }),
+      }));
+      setSearchQuery(defaultPatientName || '');
+      if (defaultOpen) setOpen(true);
+    }
+  }, [defaultOpen, defaultLeadId, defaultPatientName, defaultChiefComplaint, defaultProfession]);
 
   useEffect(() => {
     if (searchQuery.length >= 2) {
@@ -337,6 +365,11 @@ export function NewSessionDialog({ onSessionCreated }: NewSessionDialogProps) {
               rows={2}
             />
           </div>
+
+          {/* Pre-Chart (when patient selected) */}
+          {formData.leadId && (
+            <PreChartPanel leadId={formData.leadId} />
+          )}
         </div>
 
         <DialogFooter>

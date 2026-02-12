@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, CheckCircle2, XCircle, AlertTriangle, Phone, Calendar, Mail, Bot } from 'lucide-react';
+import { RefreshCw, CheckCircle2, XCircle, AlertTriangle, Phone, Calendar, Mail, Bot, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function VoiceAIDiagnosticsPage() {
@@ -16,6 +16,7 @@ export default function VoiceAIDiagnosticsPage() {
   const router = useRouter();
   const [diagnostics, setDiagnostics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [summarizingId, setSummarizingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -48,6 +49,24 @@ export default function VoiceAIDiagnosticsPage() {
       toast.error('Failed to run diagnostics');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSummarize = async (callId: string) => {
+    setSummarizingId(callId);
+    try {
+      const res = await fetch(`/api/calls/${callId}/summarize`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || 'Call summarized and note added');
+        runDiagnostics();
+      } else {
+        toast.error(data.error || 'Failed to summarize');
+      }
+    } catch {
+      toast.error('Failed to summarize call');
+    } finally {
+      setSummarizingId(null);
     }
   };
 
@@ -260,9 +279,25 @@ export default function VoiceAIDiagnosticsPage() {
                       <div key={call.id} className="border rounded-lg p-3 space-y-1">
                         <div className="flex items-center justify-between">
                           <h4 className="font-semibold text-sm">{call.voiceAgent?.name || 'Unknown Agent'}</h4>
-                          <Badge variant={call.status === 'COMPLETED' ? 'default' : 'destructive'}>
-                            {call.status}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => handleSummarize(call.id)}
+                              disabled={!!summarizingId}
+                            >
+                              {summarizingId === call.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <FileText className="h-3 w-3 mr-1" />
+                              )}
+                              Summarize
+                            </Button>
+                            <Badge variant={call.status === 'COMPLETED' ? 'default' : 'destructive'}>
+                              {call.status}
+                            </Badge>
+                          </div>
                         </div>
                         <div className="text-xs text-muted-foreground space-y-0.5">
                           <div>From: {call.fromNumber}</div>

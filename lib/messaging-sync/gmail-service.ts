@@ -9,6 +9,11 @@ import { prisma } from '@/lib/db';
 
 const gmail = google.gmail('v1');
 
+function extractEmail(str: string): string | null {
+  const match = str.match(/<([^>]+)>/);
+  return match ? match[1].trim() : (str.includes('@') ? str.trim() : null);
+}
+
 interface GmailMessage {
   id: string;
   threadId: string;
@@ -182,8 +187,9 @@ export class GmailService {
         const parsed = this.parseMessage(gmailMessage);
 
         // Determine contact identifier (from or to depending on direction)
-        const contactEmail = parsed.isInbound ? parsed.from : parsed.to;
-        const contactName = contactEmail.split('<')[0].trim() || contactEmail;
+        const contactRaw = parsed.isInbound ? parsed.from : parsed.to;
+        const contactEmail = extractEmail(contactRaw) || contactRaw;
+        const contactName = contactRaw.split('<')[0].trim().replace(/^["']|["']$/g, '') || contactEmail;
 
         // Find or create conversation
         let conversation = await prisma.conversation.findUnique({
@@ -196,16 +202,50 @@ export class GmailService {
         });
 
         if (!conversation) {
+          // Try to link to existing Lead by email; if none, auto-create Lead for unknown addresses
+          let lead = await prisma.lead.findFirst({
+            where: { userId, email: contactEmail },
+            select: { id: true },
+          });
+
+          if (!lead && contactEmail && contactEmail.includes('@')) {
+            // Auto-create Lead for unknown email addresses (email sync creates contacts)
+            const newLead = await prisma.lead.create({
+              data: {
+                userId,
+                businessName: contactName || contactEmail,
+                contactPerson: contactName || undefined,
+                email: contactEmail,
+                source: 'email_sync',
+              },
+            });
+            lead = { id: newLead.id };
+          }
+
           conversation = await prisma.conversation.create({
             data: {
               userId,
               channelConnectionId,
+              leadId: lead?.id,
               contactName,
               contactIdentifier: contactEmail,
               status: 'ACTIVE',
               externalConversationId: gmailMessage.threadId,
             },
           });
+        } else if (!conversation.leadId) {
+          // Auto-link to Lead if not already linked
+          const lead = await prisma.lead.findFirst({
+            where: { userId, email: contactEmail },
+            select: { id: true },
+          });
+          if (lead) {
+            await prisma.conversation.update({
+              where: { id: conversation.id },
+              data: { leadId: lead.id },
+            });
+            conversation.leadId = lead.id;
+          }
         }
 
         // Check if message already exists

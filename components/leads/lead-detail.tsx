@@ -2,6 +2,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -31,7 +32,9 @@ import {
   MessageSquare,
   StickyNote,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  FileText,
+  Loader2
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { NotesSection } from '@/components/notes/notes-section'
@@ -39,6 +42,17 @@ import { MessagesSection } from '@/components/messages/messages-section'
 import { MakeCallDialog } from '@/components/voice-agents/make-call-dialog'
 import { RelationshipGraphView } from '@/app/components/relationship-graph-view'
 import { AIInsightsPanel } from '@/app/components/ai-insights-panel'
+import { LeadImagingSection } from './lead-imaging-section'
+
+interface CallLog {
+  id: string
+  fromNumber: string
+  duration?: number | null
+  createdAt: Date
+  transcription?: string | null
+  transcript?: string | null
+  voiceAgent?: { name: string } | null
+}
 
 interface Lead {
   id: string
@@ -73,6 +87,7 @@ interface Lead {
     createdAt: Date
     updatedAt: Date
   }>
+  callLogs?: CallLog[]
 }
 
 interface LeadDetailProps {
@@ -84,6 +99,7 @@ export function LeadDetail({ lead }: LeadDetailProps) {
   const [currentStatus, setCurrentStatus] = useState(lead.status)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [showCallDialog, setShowCallDialog] = useState(false)
+  const [summarizingId, setSummarizingId] = useState<string | null>(null)
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -145,6 +161,24 @@ export function LeadDetail({ lead }: LeadDetailProps) {
   const fullAddress = [lead.address, lead.city, lead.state, lead.zipCode, lead.country]
     .filter(Boolean)
     .join(', ')
+
+  const handleSummarize = async (callId: string) => {
+    setSummarizingId(callId)
+    try {
+      const res = await fetch(`/api/calls/${callId}/summarize`, { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(data.message || 'Call summarized and note added')
+        router.refresh()
+      } else {
+        toast.error(data.error || 'Failed to summarize')
+      }
+    } catch {
+      toast.error('Failed to summarize call')
+    } finally {
+      setSummarizingId(null)
+    }
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -329,6 +363,69 @@ export function LeadDetail({ lead }: LeadDetailProps) {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Call Logs Section */}
+          {lead.callLogs && lead.callLogs.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+            >
+              <Card className="bg-gray-900 border-gray-800">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Phone className="h-5 w-5 mr-2" />
+                    Call History
+                    <Badge variant="secondary" className="ml-2">
+                      {lead.callLogs.length}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Recent calls with this lead
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {lead.callLogs.map((call) => (
+                      <div key={call.id} className="border rounded-lg p-3 border-gray-700 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-white">
+                              {call.voiceAgent?.name || 'Voice AI'} • {call.fromNumber}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {format(new Date(call.createdAt), 'MMM d, yyyy h:mm a')}
+                              {call.duration != null && ` • ${Math.floor(call.duration / 60)}:${(call.duration % 60).toString().padStart(2, '0')}`}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => handleSummarize(call.id)}
+                            disabled={!!summarizingId}
+                          >
+                            {summarizingId === call.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <FileText className="h-3 w-3 mr-1" />
+                            )}
+                            Summarize
+                          </Button>
+                        </div>
+                        {(call.transcription || call.transcript) && (
+                          <p className="text-xs text-gray-400 line-clamp-2">{call.transcription || call.transcript}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Imaging (DICOM/X-Rays) - shown when lead has dental x-rays */}
+          <LeadImagingSection leadId={lead.id} />
         </div>
 
         {/* Right Column - Actions & Status */}

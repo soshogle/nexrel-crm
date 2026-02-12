@@ -40,6 +40,25 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Include Industry AI Employee agents (Dental, Medical, etc.) for preview
+    const industryAgents = await prisma.industryAIEmployeeAgent.findMany({
+      where: {
+        userId: user.id,
+        elevenLabsAgentId: { not: null },
+        status: 'active',
+      },
+    });
+
+    const industryAgentsForPreview = industryAgents.map((a) => ({
+      id: a.id,
+      name: a.name,
+      elevenLabsAgentId: a.elevenLabsAgentId,
+      _count: { callLogs: a.callCount, outboundCalls: 0, campaigns: 0 },
+      elevenLabsCallCount: a.callCount,
+      aiEmployeeCount: 0,
+      source: 'industry' as const,
+    }));
+
     // Get AI employee counts per agent
     const aiEmployeeCounts = await prisma.userAIEmployee.groupBy({
       by: ['voiceAgentId'],
@@ -112,7 +131,15 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json(enrichedAgents || []);
+    // Merge industry agents for unified preview dropdown
+    const allAgents = [
+      ...enrichedAgents,
+      ...industryAgentsForPreview.filter(
+        (ia) => ia.elevenLabsAgentId
+      ),
+    ];
+
+    return NextResponse.json(allAgents || []);
   } catch (error: any) {
     console.error('Error fetching voice agents:', error);
     console.error('Error details:', {
