@@ -57,10 +57,19 @@ export function REWorkflowsTab() {
 
   const fetchWorkflows = async () => {
     try {
-      const response = await fetch('/api/workflows');
+      const response = await fetch('/api/real-estate/workflows');
       if (response.ok) {
         const data = await response.json();
-        setWorkflows(data.workflows || []);
+        const templates = data.templates || [];
+        setWorkflows(templates.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          description: t.description || '',
+          status: t.isActive ? 'ACTIVE' : 'PAUSED',
+          completionCount: t._count?.instances ?? 0,
+        })));
+      } else {
+        toast.error('Failed to load workflows');
       }
     } catch (error) {
       console.error('Error fetching workflows:', error);
@@ -71,18 +80,20 @@ export function REWorkflowsTab() {
   };
 
   const toggleWorkflowStatus = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    const isActive = currentStatus !== 'ACTIVE';
     
     try {
-      const response = await fetch(`/api/workflows/${id}`, {
+      const response = await fetch(`/api/real-estate/workflows/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ isActive }),
       });
 
       if (response.ok) {
-        toast.success(`Workflow ${newStatus.toLowerCase()}`);
+        toast.success(`Workflow ${isActive ? 'activated' : 'paused'}`);
         fetchWorkflows();
+      } else {
+        toast.error('Failed to update workflow');
       }
     } catch (error) {
       toast.error('Failed to update workflow');
@@ -93,13 +104,16 @@ export function REWorkflowsTab() {
     if (!confirm('Are you sure you want to delete this workflow?')) return;
     
     try {
-      const response = await fetch(`/api/workflows/${id}`, {
+      const response = await fetch(`/api/real-estate/workflows/${id}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
         toast.success('Workflow deleted');
         fetchWorkflows();
+      } else {
+        const err = await response.json();
+        toast.error(err.error || 'Failed to delete workflow');
       }
     } catch (error) {
       toast.error('Failed to delete workflow');

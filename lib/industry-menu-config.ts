@@ -266,7 +266,11 @@ export function isMenuItemVisible(
     return CORE_MENU_ITEMS.includes(menuItemId);
   }
 
-  const allowedItems = INDUSTRY_MENU_CONFIG[industry];
+  const allowedItems = INDUSTRY_MENU_CONFIG[industry as Industry];
+  // Fallback to core items if industry not in config (e.g. new industry type)
+  if (!allowedItems) {
+    return CORE_MENU_ITEMS.includes(menuItemId);
+  }
   return allowedItems.includes(menuItemId);
 }
 

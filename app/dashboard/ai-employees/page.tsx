@@ -8,6 +8,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -924,7 +925,8 @@ export default function AIEmployeesPage() {
       const res = await fetch('/api/voice-agents');
       if (res.ok) {
         const data = await res.json();
-        setVoiceAgents(data.agents?.filter((a: any) => a.status === 'ACTIVE') || []);
+        const agents = Array.isArray(data) ? data : (data.agents || []);
+        setVoiceAgents(agents.filter((a: any) => a.status === 'ACTIVE'));
       }
     } catch (e) { console.error('Failed to fetch voice agents', e); }
   };
@@ -1450,10 +1452,18 @@ export default function AIEmployeesPage() {
                     Build your virtual workforce - AI professionals that can automate tasks and communicate via Voice AI
                   </CardDescription>
                 </div>
-                <Button onClick={() => setShowCreateAiEmployee(true)} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Hire AI Employee
-                </Button>
+                <div className="flex gap-2">
+                  <Button asChild variant="outline" className="gap-2">
+                    <Link href="/dashboard/voice-agents">
+                      <Phone className="h-4 w-4" />
+                      Create Voice AI Agent
+                    </Link>
+                  </Button>
+                  <Button onClick={() => setShowCreateAiEmployee(true)} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Hire AI Employee
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -1465,10 +1475,18 @@ export default function AIEmployeesPage() {
                     Hire AI employees to automate tasks. Choose from accountants, developers, copywriters, and more.
                     Each can be assigned a Voice AI agent for phone communications.
                   </p>
-                  <Button onClick={() => setShowCreateAiEmployee(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Hire Your First AI Employee
-                  </Button>
+                  <div className="flex gap-2 justify-center flex-wrap">
+                    <Button asChild variant="outline">
+                      <Link href="/dashboard/voice-agents">
+                        <Phone className="h-4 w-4 mr-2" />
+                        Create Voice AI Agent First
+                      </Link>
+                    </Button>
+                    <Button onClick={() => setShowCreateAiEmployee(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Hire Your First AI Employee
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -1508,6 +1526,11 @@ export default function AIEmployeesPage() {
                                 <option key={va.id} value={va.id}>📞 {va.name}</option>
                               ))}
                             </select>
+                            {voiceAgents.length === 0 && (
+                              <p className="text-xs text-amber-600 dark:text-amber-500">
+                                <a href="/dashboard/voice-agents" className="underline hover:no-underline">Create a Voice AI Agent</a> to enable phone calls
+                              </p>
+                            )}
                             {assignedVoiceAgent && (
                               <>
                                 <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
@@ -1697,9 +1720,17 @@ export default function AIEmployeesPage() {
                     <option key={va.id} value={va.id}>📞 {va.name}</option>
                   ))}
                 </select>
-                <p className="text-xs text-muted-foreground">
-                  Enable phone call capabilities for this AI employee
-                </p>
+                {voiceAgents.length === 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-500">
+                    No voice agents yet.{' '}
+                    <a href="/dashboard/voice-agents" className="underline hover:no-underline">Create your first Voice AI Agent</a>
+                  </p>
+                )}
+                {voiceAgents.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Enable phone call capabilities for this AI employee
+                  </p>
+                )}
               </div>
               
               {/* Voice Customization - shown when voice agent assigned */}

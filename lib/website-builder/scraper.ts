@@ -121,22 +121,82 @@ export class WebsiteScraper {
   }
 
   /**
-   * Fetch HTML content (with JavaScript rendering support)
+   * Fetch HTML content (with optional JavaScript rendering for SPAs)
+   * Uses Playwright when ENABLE_JS_SCRAPING=true for JS-rendered sites
    */
   private async fetchHTML(url: string): Promise<string> {
-    // For now, use simple fetch
-    // TODO: Add Puppeteer/Playwright for JavaScript rendering
+    const useJsRendering = process.env.ENABLE_JS_SCRAPING === 'true';
+
+    if (useJsRendering) {
+      try {
+        return await this.fetchHTMLWithPlaywright(url);
+      } catch (error: any) {
+        console.warn('Playwright fetch failed, falling back to simple fetch:', error.message);
+        return this.fetchHTMLSimple(url);
+      }
+    }
+
+    return this.fetchHTMLSimple(url);
+  }
+
+  /**
+   * Simple fetch - works for static HTML sites
+   */
+  private async fetchHTMLSimple(url: string): Promise<string> {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; WebsiteBuilder/1.0)',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       },
     });
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch website: ${response.statusText}`);
     }
-    
+
     return await response.text();
+  }
+
+  /**
+   * Fetch HTML using Playwright - renders JavaScript for SPAs and dynamic sites
+   */
+  private async fetchHTMLWithPlaywright(url: string): Promise<string> {
+    const { chromium } = await import('playwright');
+    let browser: any = null;
+
+    try {
+      browser = await chromium.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      });
+
+      const context = await browser.newContext({
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        viewport: { width: 1920, height: 1080 },
+        locale: 'en-US',
+        ignoreHTTPSErrors: true,
+      });
+
+      const page = await context.newPage();
+
+      // Navigate and wait for content to load
+      await page.goto(url, {
+        waitUntil: 'networkidle',
+        timeout: 30000,
+      });
+
+      // Wait for body to have meaningful content (handles slow SPAs)
+      await page.waitForLoadState('domcontentloaded');
+      await new Promise((r) => setTimeout(r, 2000)); // Allow client-side rendering
+
+      const html = await page.content();
+      await browser.close();
+      return html;
+    } catch (error) {
+      if (browser) {
+        await browser.close().catch(() => {});
+      }
+      throw error;
+    }
   }
 
   /**

@@ -184,10 +184,14 @@ async function processWebsiteBuild(
   }
 ) {
   try {
-    // Update progress
+    // Update progress (sync to Website so list page shows progress)
     await prisma.websiteBuild.update({
       where: { id: buildId },
       data: { progress: 10 },
+    });
+    await prisma.website.update({
+      where: { id: websiteId },
+      data: { buildProgress: 10 },
     });
 
     let structure: any;
@@ -200,11 +204,15 @@ async function processWebsiteBuild(
         where: { id: buildId },
         data: { progress: 20 },
       });
+      await prisma.website.update({
+        where: { id: websiteId },
+        data: { buildProgress: 20 },
+      });
 
       // Get user ID for image storage
       const website = await prisma.website.findUnique({
         where: { id: websiteId },
-        select: { userId: true },
+        select: { userId: true, name: true },
       });
 
       // Scrape website with image downloading enabled
@@ -217,14 +225,23 @@ async function processWebsiteBuild(
       );
       extractedData = scrapedData;
 
-      // Convert scraped data to website structure
-      structure = convertScrapedToStructure(scrapedData);
+      // If template selected, merge scraped content into template; otherwise use basic conversion
+      if (config.templateId) {
+        const questionnaireFromScraped = buildQuestionnaireFromScraped(scrapedData, website?.name);
+        structure = await websiteBuilder.buildFromTemplate(questionnaireFromScraped, config.templateId);
+      } else {
+        structure = convertScrapedToStructure(scrapedData);
+      }
       seoData = scrapedData.seo;
     } else {
       // Build from template
       await prisma.websiteBuild.update({
         where: { id: buildId },
         data: { progress: 30 },
+      });
+      await prisma.website.update({
+        where: { id: websiteId },
+        data: { buildProgress: 30 },
       });
 
       structure = await websiteBuilder.buildFromQuestionnaire(
@@ -240,6 +257,10 @@ async function processWebsiteBuild(
       where: { id: buildId },
       data: { progress: 50 },
     });
+    await prisma.website.update({
+      where: { id: websiteId },
+      data: { buildProgress: 50 },
+    });
 
     // Provision resources (GitHub, Neon, Vercel)
     const provisioningResult = await resourceProvisioning.provisionResources(
@@ -252,6 +273,10 @@ async function processWebsiteBuild(
     await prisma.websiteBuild.update({
       where: { id: buildId },
       data: { progress: 70 },
+    });
+    await prisma.website.update({
+      where: { id: websiteId },
+      data: { buildProgress: 70 },
     });
 
     // Create voice AI agent if enabled
@@ -275,6 +300,10 @@ async function processWebsiteBuild(
     await prisma.websiteBuild.update({
       where: { id: buildId },
       data: { progress: 85 },
+    });
+    await prisma.website.update({
+      where: { id: websiteId },
+      data: { buildProgress: 85 },
     });
 
     // Get website to access Google credentials
@@ -411,6 +440,10 @@ async function processWebsiteBuild(
       where: { id: buildId },
       data: { progress: 95 },
     });
+    await prisma.website.update({
+      where: { id: websiteId },
+      data: { buildProgress: 95 },
+    });
 
     // Update website with final data (including SEO files in seoData)
     const finalSeoData = {
@@ -453,7 +486,46 @@ async function processWebsiteBuild(
 }
 
 /**
- * Convert scraped data to website structure
+ * Build questionnaire answers from scraped website data for template merge
+ */
+function buildQuestionnaireFromScraped(scrapedData: any, defaultName?: string): any {
+  const seo = scrapedData.seo || {};
+  const metadata = scrapedData.metadata || {};
+  const forms = scrapedData.forms || [];
+
+  // Extract contact info from forms or metadata
+  let contactEmail = '';
+  let contactPhone = '';
+  for (const form of forms) {
+    for (const field of form.fields || []) {
+      if (field.type === 'email' && field.name) contactEmail = field.name;
+      if ((field.type === 'tel' || field.name?.toLowerCase().includes('phone')) && field.name) contactPhone = field.name;
+    }
+  }
+
+  return {
+    businessName: metadata.businessName || seo.title || defaultName || 'My Business',
+    businessDescription: seo.description || metadata.description || '',
+    contactInfo: {
+      email: contactEmail || metadata.email,
+      phone: contactPhone || metadata.phone,
+      address: metadata.address,
+    },
+    services: metadata.services || [],
+    products: scrapedData.products?.map((p: any) => ({
+      name: p.name,
+      description: p.description,
+      price: p.price,
+    })) || [],
+    legalEntityName: metadata.legalEntityName || metadata.businessName || seo.title,
+    legalJurisdiction: metadata.jurisdiction || 'United States',
+    brandColors: scrapedData.styles?.colors || [],
+    images: scrapedData.images?.map((img: any) => img.url) || [],
+  };
+}
+
+/**
+ * Convert scraped data to website structure (basic layout when no template)
  */
 function convertScrapedToStructure(scrapedData: any): any {
   // TODO: Implement conversion logic
