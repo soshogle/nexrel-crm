@@ -32,6 +32,7 @@ import {
 export function REWorkflowsTab() {
   const searchParams = useSearchParams();
   const [showBuilder, setShowBuilder] = useState(false);
+  const [draftId, setDraftId] = useState<string | undefined>(undefined);
   const [activeSubTab, setActiveSubTab] = useState('overview');
   const [workflows, setWorkflows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,11 +40,14 @@ export function REWorkflowsTab() {
   useEffect(() => {
     if (searchParams?.get('openBuilder') === '1') {
       setShowBuilder(true);
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('openBuilder');
-        window.history.replaceState({}, '', url.pathname + url.search);
+      const did = searchParams?.get('draftId') || undefined;
+      if (did) {
+        setDraftId(did);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('activeWorkflowDraftId', did);
+        }
       }
+      // Don't clear params - keeps user in builder mode
     }
   }, [searchParams]);
 
@@ -114,12 +118,31 @@ export function REWorkflowsTab() {
             <GitBranch className="w-6 h-6 text-purple-600" />
             Workflow Builder
           </h2>
-          <Button variant="outline" onClick={() => setShowBuilder(false)} className="border-purple-200 text-gray-700 hover:bg-purple-50">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowBuilder(false);
+              setDraftId(undefined);
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('activeWorkflowDraftId');
+                fetch('/api/workflows/active-draft', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ draftId: null }),
+                }).catch(() => {});
+                const url = new URL(window.location.href);
+                url.searchParams.delete('openBuilder');
+                url.searchParams.delete('draftId');
+                window.history.replaceState({}, '', url.pathname + (url.search || '') || url.pathname);
+              }
+            }}
+            className="border-purple-200 text-gray-700 hover:bg-purple-50"
+          >
             Back to Overview
           </Button>
         </div>
         <div className="flex-1 bg-white rounded-xl overflow-hidden">
-          <WorkflowBuilder />
+          <WorkflowBuilder initialWorkflowId={draftId} />
         </div>
       </div>
     );

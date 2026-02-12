@@ -41,8 +41,10 @@ export interface BusinessDataSnapshot {
     won: number;
     lost: number;
     totalValue: number;
+    openPipelineValue: number; // Value of open deals only (for forecasting)
     averageValue: number;
     byStage: Array<{ stageId: string; stageName: string; count: number; value: number }>;
+    openByStage: Array<{ stageId: string; stageName: string; count: number; value: number }>; // Open deals only
     winRate: number;
     averageSalesCycle: number; // days
     trend: 'up' | 'down' | 'stable';
@@ -352,9 +354,11 @@ export class BusinessDataPipeline {
     const lostDeals = deals.filter(d => d.lostReason);
 
     const totalValue = deals.reduce((sum, d) => sum + (d.value || 0), 0);
+    const openPipelineValue = openDeals.reduce((sum, d) => sum + (d.value || 0), 0);
     const averageValue = deals.length > 0 ? totalValue / deals.length : 0;
 
     const byStage = new Map<string, { stageId: string; stageName: string; count: number; value: number }>();
+    const openByStage = new Map<string, { stageId: string; stageName: string; count: number; value: number }>();
     deals.forEach(deal => {
       const existing = byStage.get(deal.stageId) || {
         stageId: deal.stageId,
@@ -365,6 +369,17 @@ export class BusinessDataPipeline {
       existing.count++;
       existing.value += deal.value || 0;
       byStage.set(deal.stageId, existing);
+    });
+    openDeals.forEach(deal => {
+      const existing = openByStage.get(deal.stageId) || {
+        stageId: deal.stageId,
+        stageName: deal.stage.name,
+        count: 0,
+        value: 0,
+      };
+      existing.count++;
+      existing.value += deal.value || 0;
+      openByStage.set(deal.stageId, existing);
     });
 
     const winRate = (wonDeals.length + lostDeals.length) > 0
@@ -398,8 +413,10 @@ export class BusinessDataPipeline {
       won: wonDeals.length,
       lost: lostDeals.length,
       totalValue,
+      openPipelineValue,
       averageValue,
       byStage: Array.from(byStage.values()),
+      openByStage: Array.from(openByStage.values()),
       winRate,
       averageSalesCycle,
       trend,

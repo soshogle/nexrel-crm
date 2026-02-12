@@ -467,9 +467,22 @@ async function createDeal(userId: string, params: any) {
 
 /**
  * List leads
+ * When user has active workflow draft, do NOT navigate - they're building a workflow and "contacts" means a step.
  */
 async function listLeads(userId: string, params: any) {
   try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { activeWorkflowDraftId: true },
+    });
+    if (user?.activeWorkflowDraftId) {
+      return {
+        success: true,
+        message: "Keeping you in the workflow builder. Did you mean to add a step? Say 'add step to email contacts' or 'add trigger when lead is created'.",
+        inWorkflowBuilder: true,
+      };
+    }
+
     const { status, limit = 10, period } = params;
 
     const now = new Date();
@@ -513,9 +526,22 @@ async function listLeads(userId: string, params: any) {
 
 /**
  * List deals
+ * When user has active workflow draft, do NOT navigate - they're building a workflow and "pipeline" means a step.
  */
 async function listDeals(userId: string, params: any) {
   try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { activeWorkflowDraftId: true },
+    });
+    if (user?.activeWorkflowDraftId) {
+      return {
+        success: true,
+        message: "Keeping you in the workflow builder. Did you mean to add a step? Say 'add step to move deal to next stage' or 'add trigger when deal is won'.",
+        inWorkflowBuilder: true,
+      };
+    }
+
     const { limit = 10 } = params;
 
     const deals = await prisma.deal.findMany({
@@ -545,9 +571,22 @@ async function listDeals(userId: string, params: any) {
 
 /**
  * Search contacts
+ * When user has active workflow draft, do NOT navigate - they're building a workflow.
  */
 async function searchContacts(userId: string, params: any) {
   try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { activeWorkflowDraftId: true },
+    });
+    if (user?.activeWorkflowDraftId) {
+      return {
+        success: true,
+        message: "Keeping you in the workflow builder. Did you mean to add a step involving contacts? Say 'add step to email contacts' or 'add trigger when contact is created'.",
+        inWorkflowBuilder: true,
+      };
+    }
+
     const { query } = params;
 
     if (!query) {

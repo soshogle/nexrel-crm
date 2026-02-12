@@ -47,6 +47,7 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
   const industryConfig = getIndustryConfig(industry);
 
   // Phase 1+2: Auto-open builder when navigating from voice/chat "create workflow"
+  // Keep openBuilder in URL so voice context knows we're in builder (avoids navigating away on "contacts"/"pipeline")
   useEffect(() => {
     if (searchParams?.get('openBuilder') === '1') {
       setShowBuilder(true);
@@ -57,13 +58,7 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
           sessionStorage.setItem('activeWorkflowDraftId', did);
         }
       }
-      // Clear params for cleaner URL
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('openBuilder');
-        url.searchParams.delete('draftId');
-        window.history.replaceState({}, '', url.pathname + url.search);
-      }
+      // Don't clear params - keeps user in builder mode, prevents voice from navigating away
     }
   }, [searchParams]);
 
@@ -153,6 +148,10 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ draftId: null }),
                 }).catch(() => {});
+                const url = new URL(window.location.href);
+                url.searchParams.delete('openBuilder');
+                url.searchParams.delete('draftId');
+                window.history.replaceState({}, '', url.pathname + (url.search || '') || url.pathname);
               }
             }}
             className="border-purple-200 text-gray-700 hover:bg-purple-50"

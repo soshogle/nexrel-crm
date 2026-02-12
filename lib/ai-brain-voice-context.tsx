@@ -175,7 +175,9 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
     if (timeSinceLastCheck < 3000) return;
 
     const activeDraftId = typeof window !== 'undefined' ? sessionStorage.getItem('activeWorkflowDraftId') : null;
-    const isOnWorkflowBuilder = typeof window !== 'undefined' && window.location.pathname.includes('/workflows') && window.location.search.includes('openBuilder=1');
+    const isOnWorkflowsPage = typeof window !== 'undefined' && window.location.pathname.includes('/workflows');
+    const isOnWorkflowBuilder = isOnWorkflowsPage && (typeof window !== 'undefined' && window.location.search.includes('openBuilder=1'));
+    const inWorkflowBuildingMode = !!activeDraftId || isOnWorkflowBuilder;
 
     if (message.role === 'agent' && message.content) {
       const content = message.content.toLowerCase();
@@ -245,8 +247,8 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      // Don't navigate away from workflow builder when user mentions contacts (e.g. "add step to email contacts")
-      if (!isOnWorkflowBuilder && !activeDraftId) {
+      // Don't navigate away from workflow builder when user mentions contacts/pipeline (e.g. "add step to email contacts")
+      if (!inWorkflowBuildingMode) {
         if (content.includes('lead') || content.includes('contact')) {
           console.log('📋 [AI Brain Voice Context] Detected leads/contacts query, navigating to contacts');
           lastStatsCheckRef.current = now;
@@ -274,7 +276,7 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
 
       const statsKeywords = ['statistic', 'statistics', 'stats', 'revenue', 'total', 'overview', 'summary', 'business performance', 'sales', 'leads', 'deals', 'pipeline'];
       const hasStatsKeyword = statsKeywords.some(k => content.includes(k));
-      if ((hasStatsKeyword || wantsScenario) && !wantsVisualization && !isOnWorkflowBuilder) {
+      if ((hasStatsKeyword || wantsScenario) && !wantsVisualization && !inWorkflowBuildingMode) {
         console.log('📊 [AI Brain Voice Context] General stats query, navigating to AI Brain for overview');
         lastStatsCheckRef.current = now;
         navigateTo('/dashboard/business-ai?mode=voice');

@@ -54,7 +54,7 @@ const INDUSTRIES: IndustryProblem[] = [
     industry: "Retail",
     problem: "Inventory and customer questions overwhelm staff",
     problemDescription:
-      "Staff spends time answering "is it in stock?" and "when does X arrive?" instead of selling. After hours, nobody answers at all.",
+      'Staff spends time answering "is it in stock?" and "when does X arrive?" instead of selling. After hours, nobody answers at all.',
     solutionKey: "ai_receptionist_knowledge",
   },
   {

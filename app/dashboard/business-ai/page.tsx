@@ -570,8 +570,8 @@ export default function BusinessAIPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
+                      <ResponsiveContainer width="100%" height={340}>
+                        <PieChart margin={{ top: 10, right: 10, bottom: 70, left: 10 }}>
                           <Pie
                             data={[
                               { name: 'Leads', value: crmStatistics.totalLeads },
@@ -616,7 +616,8 @@ export default function BusinessAIPage() {
                           />
                           <Legend 
                             verticalAlign="bottom" 
-                            height={36}
+                            height={56}
+                            wrapperStyle={{ paddingTop: 8 }}
                             formatter={(value) => (
                               <span className="text-sm text-gray-700">{value}</span>
                             )}
@@ -756,7 +757,7 @@ export default function BusinessAIPage() {
                     Predictions
                   </CardTitle>
                   <CardDescription>
-                    AI-powered forecasts based on current trends
+                    Statistical forecasts from your CRM data (regression, conversion rates)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -780,6 +781,11 @@ export default function BusinessAIPage() {
                           <p className="text-xs text-gray-600 mt-1">
                             {prediction.timeframe}
                           </p>
+                          {prediction.explanation && (
+                            <p className="text-xs text-gray-500 mt-2 italic border-t pt-2">
+                              {prediction.explanation}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
