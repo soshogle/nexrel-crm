@@ -1,9 +1,11 @@
 #!/usr/bin/env tsx
 /**
  * Reset Super Admin Password
- * 
- * This script resets the password for the super admin user.
- * Usage: npx tsx scripts/reset-super-admin-password.ts
+ *
+ * Usage:
+ *   npx tsx scripts/reset-super-admin-password.ts              # Uses default password
+ *   npx tsx scripts/reset-super-admin-password.ts "MyNewPass!123"  # Custom password
+ *   npx tsx scripts/reset-super-admin-password.ts "MyPass" "other@email.com"  # Custom email
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -14,8 +16,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🔐 Resetting Super Admin password...\n');
 
-  const email = 'superadmin@soshogle.com';
-  const newPassword = 'SuperAdmin@2024!'; // Change this after login
+  const email = process.argv[3] || 'superadmin@soshogle.com';
+  const newPassword = process.argv[2] || 'SuperAdmin@2024!';
 
   try {
     // Find the super admin user

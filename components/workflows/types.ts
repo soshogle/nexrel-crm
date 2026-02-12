@@ -14,6 +14,7 @@ export interface WorkflowTask {
   assignedAgentId: string | null;
   assignedAgentName: string | null;
   agentColor: string;
+  assignedAIEmployeeId?: string | null; // "Your AI Team" employee - used when assigned from AI Team tab
   displayOrder: number;
   isHITL: boolean;
   delayMinutes: number;

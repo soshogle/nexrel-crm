@@ -156,20 +156,30 @@ export async function POST(request: NextRequest) {
         isDefault: false,
         isActive: true,
         tasks: tasks ? {
-          create: tasks.map((task: Record<string, unknown>, index: number) => ({
-            name: task.name as string,
-            description: task.description as string || '',
-            taskType: task.taskType as string,
-            assignedAgentType: task.assignedAgentType as string || null,
-            delayValue: task.delayValue as number || 0,
-            delayUnit: task.delayUnit as string || 'MINUTES',
-            isHITL: task.isHITL as boolean || false,
-            isOptional: task.isOptional as boolean || false,
-            position: task.position as object || { angle: (index * 36) - 90, radius: 1 },
-            displayOrder: task.displayOrder as number || index + 1,
-            branchCondition: (task.branchCondition as object | undefined) ?? undefined,
-            actionConfig: task.actionConfig as object || { actions: [] }
-          }))
+          create: tasks.map((task: Record<string, unknown>, index: number) => {
+            const baseConfig = (task.actionConfig as object) || { actions: [] } as Record<string, unknown>;
+            const actionConfig = {
+              ...baseConfig,
+              assignedAgentId: task.assignedAgentId || null,
+              assignedAgentName: task.assignedAgentName || null,
+              agentColor: task.agentColor || '#6B7280',
+              assignedAIEmployeeId: task.assignedAIEmployeeId || null,
+            };
+            return {
+              name: task.name as string,
+              description: task.description as string || '',
+              taskType: task.taskType as string,
+              assignedAgentType: task.assignedAgentType as string || null,
+              delayValue: task.delayValue as number || 0,
+              delayUnit: task.delayUnit as string || 'MINUTES',
+              isHITL: task.isHITL as boolean || false,
+              isOptional: task.isOptional as boolean || false,
+              position: task.position as object || { angle: (index * 36) - 90, radius: 1 },
+              displayOrder: task.displayOrder as number || index + 1,
+              branchCondition: (task.branchCondition as object | undefined) ?? undefined,
+              actionConfig,
+            };
+          })
         } : undefined
       },
       include: {

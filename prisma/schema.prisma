@@ -54,6 +54,8 @@ model User {
   email                       String                       @unique
   emailVerified               DateTime?
   password                    String?
+  passwordResetToken          String?
+  passwordResetTokenExpiry    DateTime?
   image                       String?
   role                        UserRole                     @default(USER)
   agencyId                    String?
@@ -262,6 +264,7 @@ model User {
   socialMediaSettings         SocialMediaSettings[]        @relation("SocialMediaSettings")
   aiEmployees                 AIEmployee[]                 @relation("AIEmployees")
   aiJobs                      AIJob[]                      @relation("AIJobs")
+  userAIEmployees             UserAIEmployee[]             @relation("UserAIEmployees")
   docpenSessions              DocpenSession[]
   docpenVoiceAgents           DocpenVoiceAgent[]
   docpenKnowledgeBaseFiles    DocpenKnowledgeBaseFile[]
@@ -6390,7 +6393,27 @@ enum AIJobPriority {
   URGENT
 }
 
-// AI Employee - represents different types of AI workers
+// UserAIEmployee - "Your AI Team" user-configured employees (Accountant, Developer, etc.)
+// Used in workflow builder for assignable agents; persists to DB for Phase 1 integration
+// voiceConfig: per-call overrides { voiceId?, language?, stability?, speed?, similarityBoost? } for ElevenLabs
+model UserAIEmployee {
+  id           String    @id @default(cuid())
+  userId       String
+  profession   String    // e.g. "accountant", "developer", "virtual_receptionist"
+  customName   String
+  voiceAgentId String?
+  voiceConfig  Json?     // Per-call overrides: { voiceId, language, stability, speed, similarityBoost }
+  isActive     Boolean   @default(true)
+  capabilities Json?     // Optional: { voice: true, email: true } for future task-type filtering
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation("UserAIEmployees", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([profession])
+}
+
+// AI Employee - represents different types of AI workers (backend workflow orchestrator)
 model AIEmployee {
   id           String         @id @default(cuid())
   userId       String
@@ -9607,4 +9630,25 @@ model TwilioBackupPhoneNumber {
   @@index([twilioAccountId])
   @@index([isAssigned])
   @@index([assignedToAgentId])
+}
+
+// Landing page blog posts (auto-generated for social media)
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String   // Short summary for cards / social
+  content     String   @db.Text // Full markdown content
+  category    String   // e.g. "Healthcare", "E-commerce", "AI Automation Guide"
+  industry    String   // Industry this post targets
+  problemImage String? // AI-generated image URL (depicts the problem)
+  solutionImage String? // Screenshot URL (Nexrel/Soshogle AI product)
+  readTime    String   @default("5 min read")
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([publishedAt])
+  @@index([industry])
+  @@index([category])
 }

@@ -49,6 +49,7 @@ import {
   RefreshCw,
   ListTodo,
   Filter,
+  ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
@@ -68,6 +69,22 @@ import { TechnologyWorkflowsTab } from '@/components/technology/workflows/techno
 import { SportsClubWorkflowsTab } from '@/components/sports-club/workflows/sports-club-workflows-tab';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
 import { UnifiedMonitor } from '@/components/workflows/unified-monitor';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
+const VOICE_LANGUAGES = [
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'fr', label: 'French' },
+  { value: 'de', label: 'German' },
+  { value: 'it', label: 'Italian' },
+  { value: 'pt', label: 'Portuguese' },
+  { value: 'zh', label: 'Chinese' },
+  { value: 'ja', label: 'Japanese' },
+  { value: 'ko', label: 'Korean' },
+  { value: 'ar', label: 'Arabic' },
+  { value: 'ru', label: 'Russian' },
+  { value: 'hi', label: 'Hindi' },
+];
 
 // Full Task Manager Component - Imported from admin tasks page
 import CreateTaskDialog from '@/components/tasks/create-task-dialog';
@@ -561,6 +578,7 @@ export default function AIEmployeesPage() {
     profession: string;
     customName: string;
     voiceAgentId: string | null;
+    voiceConfig?: { voiceId?: string; language?: string; stability?: number; speed?: number; similarityBoost?: number } | null;
     isActive: boolean;
     createdAt: string;
   }>>([]);
@@ -571,7 +589,12 @@ export default function AIEmployeesPage() {
     profession: '',
     customName: '',
     voiceAgentId: '',
+    voiceConfig: null as { voiceId?: string; language?: string; stability?: number; speed?: number; similarityBoost?: number } | null,
   });
+  
+  // ElevenLabs voices for voice customization
+  const [elevenLabsVoices, setElevenLabsVoices] = useState<Array<{ voice_id: string; name: string; category?: string }>>([]);
+  const [loadingVoices, setLoadingVoices] = useState(false);
 
   // Session for industry check
   const { data: session } = useSession() || {};
@@ -589,12 +612,29 @@ export default function AIEmployeesPage() {
     fetchVoiceAgents();
     fetchAppointments();
     fetchTeamMembers();
-    loadAiTeam();
+    fetchAiTeam();
+    fetchElevenLabsVoices();
     const interval = setInterval(() => {
       fetchJobs(true);
     }, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  const fetchElevenLabsVoices = async () => {
+    setLoadingVoices(true);
+    try {
+      const res = await fetch('/api/elevenlabs/voices');
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data?.voices || []);
+        setElevenLabsVoices(list);
+      }
+    } catch {
+      setElevenLabsVoices([]);
+    } finally {
+      setLoadingVoices(false);
+    }
+  };
 
   // Poll active lead research job for live progress
   useEffect(() => {
@@ -642,63 +682,145 @@ export default function AIEmployeesPage() {
     return () => clearInterval(interval);
   }, [activeResearchJobId]);
 
-  // Load AI Team from localStorage
-  const loadAiTeam = () => {
+  // Fetch AI Team from API (with migration from localStorage if needed)
+  const fetchAiTeam = async () => {
     try {
-      const saved = localStorage.getItem('nexrel_ai_team');
-      if (saved) {
-        setAiTeam(JSON.parse(saved));
+      const res = await fetch('/api/ai-employees/user');
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
+      const employees = data.employees || [];
+      setAiTeam(employees);
+
+      // Migration: if API is empty but localStorage has data, migrate to API
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('nexrel_ai_team') : null;
+      if (employees.length === 0 && saved) {
+        try {
+          const localTeam = JSON.parse(saved);
+          if (Array.isArray(localTeam) && localTeam.length > 0) {
+            const migrated: Array<{ id: string; profession: string; customName: string; voiceAgentId: string | null; isActive: boolean; createdAt: string }> = [];
+            for (const emp of localTeam) {
+              const createRes = await fetch('/api/ai-employees/user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  profession: emp.profession,
+                  customName: emp.customName,
+                  voiceAgentId: emp.voiceAgentId || null,
+                }),
+              });
+              if (createRes.ok) {
+                const created = await createRes.json();
+                migrated.push(created.employee);
+              }
+            }
+            if (migrated.length > 0) {
+              setAiTeam(migrated);
+              localStorage.removeItem('nexrel_ai_team');
+              toast.success('AI Team migrated to cloud storage');
+            }
+          }
+        } catch (e) {
+          console.error('Migration from localStorage failed:', e);
+        }
       }
-    } catch (e) { console.error('Failed to load AI team', e); }
+    } catch (e) {
+      console.error('Failed to load AI team', e);
+    }
   };
-  
-  // Save AI Team to localStorage
-  const saveAiTeam = (team: typeof aiTeam) => {
-    try {
-      localStorage.setItem('nexrel_ai_team', JSON.stringify(team));
-      setAiTeam(team);
-    } catch (e) { console.error('Failed to save AI team', e); }
-  };
-  
+
   // Add new AI employee
-  const addAiEmployee = () => {
+  const addAiEmployee = async () => {
     if (!newAiEmployee.profession) {
       toast.error('Please select a profession');
       return;
     }
     const profession = AI_PROFESSIONS.find(p => p.id === newAiEmployee.profession);
     if (!profession) return;
-    
-    const employee = {
-      id: `ai_emp_${Date.now()}`,
-      profession: newAiEmployee.profession,
-      customName: newAiEmployee.customName || profession.name,
-      voiceAgentId: newAiEmployee.voiceAgentId || null,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
-    
-    saveAiTeam([...aiTeam, employee]);
-    setNewAiEmployee({ profession: '', customName: '', voiceAgentId: '' });
-    setShowCreateAiEmployee(false);
-    toast.success(`${employee.customName} added to your AI Team!`);
+    const customName = newAiEmployee.customName || profession.name;
+    try {
+      const res = await fetch('/api/ai-employees/user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profession: newAiEmployee.profession,
+          customName,
+          voiceAgentId: newAiEmployee.voiceAgentId || null,
+          voiceConfig: newAiEmployee.voiceConfig || null,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to add');
+      }
+      const data = await res.json();
+      setAiTeam((prev) => [...prev, data.employee]);
+      setNewAiEmployee({ profession: '', customName: '', voiceAgentId: '', voiceConfig: null });
+      setShowCreateAiEmployee(false);
+      toast.success(`${customName} added to your AI Team!`);
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to add AI Employee');
+    }
   };
-  
+
   // Remove AI employee
-  const removeAiEmployee = (id: string) => {
-    saveAiTeam(aiTeam.filter(e => e.id !== id));
-    toast.success('AI Employee removed');
+  const removeAiEmployee = async (id: string) => {
+    try {
+      const res = await fetch(`/api/ai-employees/user/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to remove');
+      setAiTeam((prev) => prev.filter((e) => e.id !== id));
+      toast.success('AI Employee removed');
+    } catch (e) {
+      toast.error('Failed to remove AI Employee');
+    }
   };
-  
+
   // Toggle AI employee active status
-  const toggleAiEmployee = (id: string) => {
-    saveAiTeam(aiTeam.map(e => e.id === id ? { ...e, isActive: !e.isActive } : e));
+  const toggleAiEmployee = async (id: string) => {
+    const emp = aiTeam.find((e) => e.id === id);
+    if (!emp) return;
+    try {
+      const res = await fetch(`/api/ai-employees/user/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !emp.isActive }),
+      });
+      if (!res.ok) throw new Error('Failed to update');
+      setAiTeam((prev) => prev.map((e) => (e.id === id ? { ...e, isActive: !e.isActive } : e)));
+    } catch (e) {
+      toast.error('Failed to update status');
+    }
   };
-  
+
   // Update AI employee voice agent
-  const updateAiEmployeeVoiceAgent = (id: string, voiceAgentId: string | null) => {
-    saveAiTeam(aiTeam.map(e => e.id === id ? { ...e, voiceAgentId } : e));
-    toast.success('Voice agent updated');
+  const updateAiEmployeeVoiceAgent = async (id: string, voiceAgentId: string | null) => {
+    try {
+      const res = await fetch(`/api/ai-employees/user/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voiceAgentId }),
+      });
+      if (!res.ok) throw new Error('Failed to update');
+      setAiTeam((prev) => prev.map((e) => (e.id === id ? { ...e, voiceAgentId } : e)));
+      toast.success('Voice agent updated');
+    } catch (e) {
+      toast.error('Failed to update voice agent');
+    }
+  };
+
+  // Update AI employee voice config (language, voice, etc.)
+  const updateAiEmployeeVoiceConfig = async (id: string, voiceConfig: { voiceId?: string; language?: string; stability?: number; speed?: number; similarityBoost?: number } | null) => {
+    try {
+      const res = await fetch(`/api/ai-employees/user/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voiceConfig }),
+      });
+      if (!res.ok) throw new Error('Failed to update');
+      setAiTeam((prev) => prev.map((e) => (e.id === id ? { ...e, voiceConfig } : e)));
+      toast.success('Voice settings updated');
+    } catch (e) {
+      toast.error('Failed to update voice settings');
+    }
   };
   
   // Get profession info
@@ -1387,10 +1509,58 @@ export default function AIEmployeesPage() {
                               ))}
                             </select>
                             {assignedVoiceAgent && (
-                              <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
-                                Can make/receive phone calls
-                              </p>
+                              <>
+                                <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  Can make/receive phone calls
+                                </p>
+                                <Collapsible>
+                                  <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-1">
+                                    <ChevronDown className="h-3 w-3" />
+                                    Voice customization
+                                  </CollapsibleTrigger>
+                                  <CollapsibleContent className="space-y-2 pt-2 mt-1 border-t">
+                                    <div>
+                                      <Label className="text-xs">Language</Label>
+                                      <select
+                                        value={employee.voiceConfig?.language || ''}
+                                        onChange={(e) => {
+                                          const lang = e.target.value || undefined;
+                                          updateAiEmployeeVoiceConfig(employee.id, { ...(employee.voiceConfig || {}), language: lang });
+                                        }}
+                                        className="w-full p-1.5 text-xs border rounded bg-background mt-0.5"
+                                      >
+                                        <option value="">Default</option>
+                                        {VOICE_LANGUAGES.map(l => (
+                                          <option key={l.value} value={l.value}>{l.label}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs">Voice</Label>
+                                      <select
+                                        value={employee.voiceConfig?.voiceId || ''}
+                                        onChange={(e) => {
+                                          const vid = e.target.value || undefined;
+                                          updateAiEmployeeVoiceConfig(employee.id, { ...(employee.voiceConfig || {}), voiceId: vid });
+                                        }}
+                                        className="w-full p-1.5 text-xs border rounded bg-background mt-0.5"
+                                      >
+                                        <option value="">Default</option>
+                                        {loadingVoices ? (
+                                          <option disabled>Loading...</option>
+                                        ) : (
+                                          elevenLabsVoices.map(v => (
+                                            <option key={v.voice_id} value={v.voice_id}>
+                                              {v.name} {v.category ? `(${v.category})` : ''}
+                                            </option>
+                                          ))
+                                        )}
+                                      </select>
+                                    </div>
+                                  </CollapsibleContent>
+                                </Collapsible>
+                              </>
                             )}
                           </div>
                           
@@ -1435,7 +1605,7 @@ export default function AIEmployeesPage() {
                     <button
                       key={prof.id}
                       onClick={() => {
-                        setNewAiEmployee({ profession: prof.id, customName: '', voiceAgentId: '' });
+                        setNewAiEmployee({ profession: prof.id, customName: '', voiceAgentId: '', voiceConfig: null });
                         setShowCreateAiEmployee(true);
                       }}
                       className="flex items-center gap-2 p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-all text-left"
@@ -1531,6 +1701,56 @@ export default function AIEmployeesPage() {
                   Enable phone call capabilities for this AI employee
                 </p>
               </div>
+              
+              {/* Voice Customization - shown when voice agent assigned */}
+              {newAiEmployee.voiceAgentId && (
+                <Collapsible defaultOpen>
+                  <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                    <ChevronDown className="h-4 w-4" />
+                    Voice customization (language, voice)
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 pt-3">
+                    <div className="space-y-2">
+                      <Label>Language</Label>
+                      <select
+                        value={newAiEmployee.voiceConfig?.language || ''}
+                        onChange={(e) => setNewAiEmployee({
+                          ...newAiEmployee,
+                          voiceConfig: { ...newAiEmployee.voiceConfig, language: e.target.value || undefined },
+                        })}
+                        className="w-full p-2 border rounded bg-background"
+                      >
+                        <option value="">Default (agent setting)</option>
+                        {VOICE_LANGUAGES.map(l => (
+                          <option key={l.value} value={l.value}>{l.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Voice</Label>
+                      <select
+                        value={newAiEmployee.voiceConfig?.voiceId || ''}
+                        onChange={(e) => setNewAiEmployee({
+                          ...newAiEmployee,
+                          voiceConfig: { ...newAiEmployee.voiceConfig, voiceId: e.target.value || undefined },
+                        })}
+                        className="w-full p-2 border rounded bg-background"
+                      >
+                        <option value="">Default (agent voice)</option>
+                        {loadingVoices ? (
+                          <option disabled>Loading...</option>
+                        ) : (
+                          elevenLabsVoices.map(v => (
+                            <option key={v.voice_id} value={v.voice_id}>
+                              {v.name} {v.category ? `(${v.category})` : ''}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
             </div>
             
             <div className="flex justify-end gap-2">

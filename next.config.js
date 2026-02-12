@@ -12,7 +12,15 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: { unoptimized: true },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
+    // Use polling in dev to avoid EMFILE "too many open files" on macOS
+    if (dev) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+        ignored: /node_modules/,
+      };
+    }
     // Make @azure/storage-blob optional - it's dynamically imported
     config.resolve.fallback = {
       ...config.resolve.fallback,

@@ -35,6 +35,14 @@ const TASK_TYPES = [
 
 const DELAY_UNITS = ['MINUTES', 'HOURS', 'DAYS'];
 
+interface AIEmployee {
+  id: string;
+  profession: string;
+  customName: string;
+  voiceAgentId: string | null;
+  isActive: boolean;
+}
+
 const BRANCH_OPERATORS = [
   { value: 'equals', label: 'Equals' },
   { value: 'not_equals', label: 'Not Equals' },
@@ -75,6 +83,14 @@ export function TaskEditorPanel({
   const [editedTask, setEditedTask] = useState<WorkflowTask | null>(task);
   const [showBranching, setShowBranching] = useState(false);
   const [selectedActions, setSelectedActions] = useState<string[]>([]);
+  const [aiEmployees, setAiEmployees] = useState<AIEmployee[]>([]);
+
+  useEffect(() => {
+    fetch('/api/ai-employees/user')
+      .then((res) => res.ok ? res.json() : { employees: [] })
+      .then((data) => setAiEmployees(data.employees || []))
+      .catch(() => setAiEmployees([]));
+  }, []);
   
   useEffect(() => {
     setEditedTask(task);
@@ -109,15 +125,43 @@ export function TaskEditorPanel({
     } as WorkflowTask);
   };
   
-  const handleAgentChange = (agentId: string) => {
-    const agent = RE_AGENTS.find(a => a.id === agentId);
+  const handleAgentChange = (value: string) => {
+    if (value === 'unassigned') {
+      setEditedTask({
+        ...editedTask,
+        assignedAgentId: null,
+        assignedAgentName: null,
+        agentColor: '#6B7280',
+        assignedAIEmployeeId: null,
+      });
+      return;
+    }
+    if (value.startsWith('ai_team:')) {
+      const employeeId = value.slice(8);
+      const employee = aiEmployees.find((e) => e.id === employeeId);
+      setEditedTask({
+        ...editedTask,
+        assignedAgentId: null,
+        assignedAgentName: employee?.customName || employee?.profession || null,
+        agentColor: '#8b5cf6',
+        assignedAIEmployeeId: employeeId,
+      });
+      return;
+    }
+    const agent = RE_AGENTS.find((a) => a.id === value);
     setEditedTask({
       ...editedTask,
-      assignedAgentId: agentId === 'unassigned' ? null : agentId,
+      assignedAgentId: value,
       assignedAgentName: agent?.name || null,
       agentColor: agent?.color || '#8b5cf6',
+      assignedAIEmployeeId: null,
     });
   };
+
+  const agentSelectValue =
+    editedTask.assignedAIEmployeeId
+      ? `ai_team:${editedTask.assignedAIEmployeeId}`
+      : (editedTask.assignedAgentId || 'unassigned');
   
   const handleBranchConditionChange = (field: string, value: any) => {
     const currentCondition = editedTask.branchCondition || { field: '', operator: 'equals', value: '' };
@@ -240,10 +284,7 @@ export function TaskEditorPanel({
             <User className="w-4 h-4 text-purple-600" />
             Assigned AI Agent
           </Label>
-          <Select
-            value={editedTask.assignedAgentId || 'unassigned'}
-            onValueChange={handleAgentChange}
-          >
+          <Select value={agentSelectValue} onValueChange={handleAgentChange}>
             <SelectTrigger className="bg-white border-purple-200 text-gray-900 focus:border-purple-500">
               <SelectValue />
             </SelectTrigger>
@@ -263,6 +304,22 @@ export function TaskEditorPanel({
                   </span>
                 </SelectItem>
               ))}
+              {aiEmployees.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1 pt-2">
+                    My AI Team
+                  </div>
+                  {aiEmployees.map((emp) => (
+                    <SelectItem key={emp.id} value={`ai_team:${emp.id}`} className="text-gray-900 hover:bg-purple-50">
+                      <span className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-purple-500" />
+                        <span className="font-medium">{emp.customName || emp.profession}</span>
+                        <span className="text-gray-500 text-xs">({emp.profession})</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>

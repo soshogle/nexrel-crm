@@ -88,8 +88,60 @@ async function executeVoiceCall(
   task: REWorkflowTask,
   instance: REWorkflowInstance
 ): Promise<TaskResult> {
-  if (!task.assignedAgentType) {
-    return { success: false, error: 'No agent assigned for voice call' };
+  const actionConfig = task.actionConfig as any;
+
+  // Resolve ElevenLabs agent and voice override: AI Team > RE industry agent
+  let elevenLabsAgentId: string | null = null;
+  let voiceOverride: { agent?: { language?: string }; tts?: { voice_id?: string; stability?: number; speed?: number; similarity_boost?: number } } | undefined;
+
+  if (actionConfig?.assignedAIEmployeeId) {
+    const aiEmployee = await prisma.userAIEmployee.findFirst({
+      where: {
+        id: actionConfig.assignedAIEmployeeId,
+        userId: instance.userId,
+        isActive: true,
+      },
+    });
+    if (aiEmployee?.voiceAgentId) {
+      const voiceAgent = await prisma.voiceAgent.findFirst({
+        where: {
+          id: aiEmployee.voiceAgentId,
+          userId: instance.userId,
+          elevenLabsAgentId: { not: null },
+        },
+      });
+      if (voiceAgent?.elevenLabsAgentId) {
+        elevenLabsAgentId = voiceAgent.elevenLabsAgentId;
+        const vc = aiEmployee.voiceConfig as { voiceId?: string; language?: string; stability?: number; speed?: number; similarityBoost?: number } | null;
+        if (vc && Object.keys(vc).length > 0) {
+          voiceOverride = {};
+          if (vc.language) voiceOverride.agent = { language: vc.language };
+          if (vc.voiceId || vc.stability != null || vc.speed != null || vc.similarityBoost != null) {
+            voiceOverride.tts = {};
+            if (vc.voiceId) voiceOverride.tts.voice_id = vc.voiceId;
+            if (vc.stability != null) voiceOverride.tts.stability = vc.stability;
+            if (vc.speed != null) voiceOverride.tts.speed = vc.speed;
+            if (vc.similarityBoost != null) voiceOverride.tts.similarity_boost = vc.similarityBoost;
+          }
+        }
+      }
+    }
+  }
+
+  if (!elevenLabsAgentId && task.assignedAgentType) {
+    const agent = await prisma.rEAIEmployeeAgent.findFirst({
+      where: {
+        userId: instance.userId,
+        employeeType: task.assignedAgentType,
+      },
+    });
+    if (agent?.elevenLabsAgentId) {
+      elevenLabsAgentId = agent.elevenLabsAgentId;
+    }
+  }
+
+  if (!elevenLabsAgentId) {
+    return { success: false, error: 'No agent assigned for voice call. Assign an AI Team member with a voice agent or set a RE industry agent.' };
   }
 
   // Get contact phone number
@@ -101,30 +153,12 @@ async function executeVoiceCall(
     return { success: false, error: 'No phone number available' };
   }
 
-  // Get AI employee agent
-  const agent = await prisma.rEAIEmployeeAgent.findFirst({
-    where: {
-      userId: instance.userId,
-      employeeType: task.assignedAgentType,
-    },
-  });
-
-  if (!agent) {
-    return { success: false, error: `AI employee ${task.assignedAgentType} not provisioned` };
-  }
-
-  if (!agent.elevenLabsAgentId) {
-    return { success: false, error: 'AI employee does not have ElevenLabs agent ID configured' };
-  }
-
   try {
-    // Import ElevenLabs service
     const { elevenLabsService } = await import('@/lib/elevenlabs');
-    
-    // Initiate phone call via ElevenLabs
     const callResult = await elevenLabsService.initiatePhoneCall(
-      agent.elevenLabsAgentId,
-      lead.phone
+      elevenLabsAgentId,
+      lead.phone,
+      voiceOverride
     );
 
     // Create call log
@@ -144,7 +178,7 @@ async function executeVoiceCall(
     return {
       success: true,
       data: {
-        agentType: task.assignedAgentType,
+        agentType: task.assignedAgentType || (actionConfig?.assignedAIEmployeeId ? 'AI_TEAM' : null),
         phoneNumber: lead.phone,
         callLogId: callLog.id,
         conversationId: callResult.conversation_id || callResult.call_id,

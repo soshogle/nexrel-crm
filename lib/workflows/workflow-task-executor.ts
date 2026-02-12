@@ -193,22 +193,62 @@ async function executeVoiceCall(
     return { success: false, error: 'No phone number available' };
   }
 
-  // For now, use ElevenLabs directly (can be extended to use industry-specific AI employees)
   try {
     const { elevenLabsService } = await import('@/lib/elevenlabs');
-    
-    // Get default agent ID or from task config
     const actionConfig = task.actionConfig as any;
-    const agentId = actionConfig?.elevenLabsAgentId || process.env.ELEVENLABS_DEFAULT_AGENT_ID;
-    
+
+    // Resolve ElevenLabs agent ID and voice override: AI Team > task config > env default
+    let agentId: string | null = null;
+    let voiceOverride: { agent?: { language?: string }; tts?: { voice_id?: string; stability?: number; speed?: number; similarity_boost?: number } } | undefined;
+
+    if (actionConfig?.assignedAIEmployeeId) {
+      const aiEmployee = await prisma.userAIEmployee.findFirst({
+        where: {
+          id: actionConfig.assignedAIEmployeeId,
+          userId: instance.userId,
+          isActive: true,
+        },
+      });
+      if (aiEmployee?.voiceAgentId) {
+        const voiceAgent = await prisma.voiceAgent.findFirst({
+          where: {
+            id: aiEmployee.voiceAgentId,
+            userId: instance.userId,
+            elevenLabsAgentId: { not: null },
+          },
+        });
+        if (voiceAgent?.elevenLabsAgentId) {
+          agentId = voiceAgent.elevenLabsAgentId;
+          // Build per-call override from AI employee voiceConfig
+          const vc = aiEmployee.voiceConfig as { voiceId?: string; language?: string; stability?: number; speed?: number; similarityBoost?: number } | null;
+          if (vc && Object.keys(vc).length > 0) {
+            voiceOverride = {};
+            if (vc.language) voiceOverride.agent = { language: vc.language };
+            if (vc.voiceId || vc.stability != null || vc.speed != null || vc.similarityBoost != null) {
+              voiceOverride.tts = {};
+              if (vc.voiceId) voiceOverride.tts.voice_id = vc.voiceId;
+              if (vc.stability != null) voiceOverride.tts.stability = vc.stability;
+              if (vc.speed != null) voiceOverride.tts.speed = vc.speed;
+              if (vc.similarityBoost != null) voiceOverride.tts.similarity_boost = vc.similarityBoost;
+            }
+          }
+        }
+      }
+    }
+
     if (!agentId) {
-      return { success: false, error: 'No ElevenLabs agent ID configured' };
+      agentId = actionConfig?.elevenLabsAgentId || process.env.ELEVENLABS_DEFAULT_AGENT_ID || null;
     }
     
-    // Initiate phone call via ElevenLabs
+    if (!agentId) {
+      return { success: false, error: 'No ElevenLabs agent ID configured. Assign a voice agent to your AI Team member or set a default agent.' };
+    }
+    
+    // Initiate phone call via ElevenLabs (with optional per-call voice override)
     const callResult = await elevenLabsService.initiatePhoneCall(
       agentId,
-      lead.phone
+      lead.phone,
+      voiceOverride
     );
 
     // Create call log
