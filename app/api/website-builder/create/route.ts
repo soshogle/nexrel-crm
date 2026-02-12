@@ -17,12 +17,22 @@ import { buildQuestionnaireFromUser } from '@/lib/website-builder/prefill-from-u
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const body = await request.json();
+    const internalSecret = request.headers.get('x-internal-secret');
+    const internalUserId = body._internalUserId;
+    const isInternalCall = internalSecret === process.env.NEXTAUTH_SECRET && internalUserId;
+
+    let userId: string;
+    if (isInternalCall) {
+      userId = internalUserId;
+    } else {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      userId = session.user.id;
     }
 
-    const body = await request.json();
     let {
       name,
       type, // 'REBUILT' | 'SERVICE_TEMPLATE' | 'PRODUCT_TEMPLATE'
@@ -42,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Pre-fill questionnaire from user/onboarding when building from template
     if ((type === 'SERVICE_TEMPLATE' || type === 'PRODUCT_TEMPLATE') && prefillFromUser && !questionnaireAnswers?.businessName) {
       const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
+        where: { id: userId },
         select: {
           name: true,
           email: true,
@@ -99,7 +109,7 @@ export async function POST(request: NextRequest) {
     // Create website record
     const website = await prisma.website.create({
       data: {
-        userId: session.user.id,
+        userId,
         name,
         type: type as any,
         sourceUrl: type === 'REBUILT' ? sourceUrl : null,

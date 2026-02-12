@@ -97,6 +97,12 @@ const AVAILABLE_ACTIONS = {
   // WhatsApp Operations
   SEND_WHATSAPP_MESSAGE: "send_whatsapp_message",
   GET_WHATSAPP_CONVERSATIONS: "get_whatsapp_conversations",
+
+  // Website Builder
+  CLONE_WEBSITE: "clone_website",
+  CREATE_WEBSITE: "create_website",
+  LIST_WEBSITES: "list_websites",
+  MODIFY_WEBSITE: "modify_website",
 };
 
 export async function POST(req: NextRequest) {
@@ -428,6 +434,22 @@ export async function POST(req: NextRequest) {
 
       case AVAILABLE_ACTIONS.GET_WHATSAPP_CONVERSATIONS:
         result = await getWhatsAppConversations(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CLONE_WEBSITE:
+        result = await cloneWebsite(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CREATE_WEBSITE:
+        result = await createWebsite(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.LIST_WEBSITES:
+        result = await listWebsites(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.MODIFY_WEBSITE:
+        result = await modifyWebsite(user.id, parameters);
         break;
 
       default:
@@ -2104,9 +2126,10 @@ async function getStatistics(userId: string, params: any = {}) {
 async function createReport(userId: string, params: any) {
   const { title, reportType = 'overview', period = 'all_time' } = params;
 
-  if (!title) {
-    throw new Error("Report title is required");
-  }
+  // Default title when voice agent or LLM omits it
+  const reportTitle = (typeof title === 'string' && title.trim()) 
+    ? title.trim() 
+    : `Report ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
   // Map report period to getStatistics period
   const statsPeriod = ['last_7_days', 'last_month'].includes(period) ? 'last_30_days' : period;
@@ -2184,7 +2207,7 @@ async function createReport(userId: string, params: any) {
   const report = await prisma.aiGeneratedReport.create({
     data: {
       userId,
-      title,
+      title: reportTitle,
       reportType: reportType || 'overview',
       content,
       period: period || null,
@@ -2192,7 +2215,8 @@ async function createReport(userId: string, params: any) {
   });
 
   return {
-    message: `Report "${title}" created successfully! I'll take you to the Reports page to view it.`,
+    message: `Report "${reportTitle}" created successfully! I'll take you to the Reports page to view it.`,
+    navigateTo: `/dashboard/reports?id=${report.id}`,
     report: {
       id: report.id,
       title: report.title,
@@ -3631,6 +3655,183 @@ async function syncContactToQuickBooks(userId: string, params: any) {
   return {
     message: '✅ Contact synced to QuickBooks successfully!',
     customerId: data.customerId
+  };
+}
+
+// ========================================
+// Website Builder Functions
+// ========================================
+
+function normalizeUrl(url: string): string {
+  let u = url.trim();
+  if (!u.startsWith("http://") && !u.startsWith("https://")) {
+    u = "https://" + u;
+  }
+  try {
+    new URL(u);
+    return u;
+  } catch {
+    throw new Error("Invalid URL. Please provide a valid website URL (e.g. example.com or https://example.com)");
+  }
+}
+
+async function cloneWebsite(userId: string, params: any) {
+  const { sourceUrl, name } = params;
+  if (!sourceUrl) {
+    throw new Error("Please provide the URL of the website to clone (e.g. example.com)");
+  }
+
+  const url = normalizeUrl(sourceUrl);
+  const websiteName = name || url.replace(/^https?:\/\//, "").replace(/\/$/, "").split("/")[0] || "Cloned Website";
+
+  const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  const internalSecret = process.env.NEXTAUTH_SECRET;
+
+  const response = await fetch(`${baseUrl}/api/website-builder/create`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(internalSecret && { "x-internal-secret": internalSecret }),
+    },
+    body: JSON.stringify({
+      name: websiteName,
+      type: "REBUILT",
+      sourceUrl: url,
+      templateType: "SERVICE",
+      enableVoiceAI: true,
+      _internalUserId: userId,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || "Failed to start website clone");
+  }
+
+  const data = await response.json();
+  const websiteId = data.website?.id;
+
+  return {
+    message: `✅ Started cloning ${url}. This usually takes a few minutes. I'll take you to the website editor.`,
+    websiteId,
+    navigateTo: websiteId ? `/dashboard/websites/${websiteId}` : "/dashboard/websites",
+  };
+}
+
+async function createWebsite(userId: string, params: any) {
+  const { name, templateType = "SERVICE", businessDescription, services, products } = params;
+  const websiteName = name || "New Website";
+
+  const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  const internalSecret = process.env.NEXTAUTH_SECRET;
+
+  const questionnaireAnswers = {
+    businessName: websiteName,
+    businessDescription: businessDescription || "",
+    services: services ? (Array.isArray(services) ? services : services.split(",").map((s: string) => s.trim())) : [],
+    products: products ? (Array.isArray(products) ? products : products.split(",").map((p: string) => p.trim())) : [],
+  };
+
+  const response = await fetch(`${baseUrl}/api/website-builder/create`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(internalSecret && { "x-internal-secret": internalSecret }),
+    },
+    body: JSON.stringify({
+      name: websiteName,
+      type: templateType === "PRODUCT" ? "PRODUCT_TEMPLATE" : "SERVICE_TEMPLATE",
+      templateType: templateType || "SERVICE",
+      questionnaireAnswers,
+      prefillFromUser: !businessDescription && !services && !products,
+      enableVoiceAI: true,
+      _internalUserId: userId,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || "Failed to create website");
+  }
+
+  const data = await response.json();
+  const websiteId = data.website?.id;
+
+  return {
+    message: `✅ Created website "${websiteName}". Building now—this may take a few minutes. Taking you to the editor.`,
+    websiteId,
+    navigateTo: websiteId ? `/dashboard/websites/${websiteId}` : "/dashboard/websites",
+  };
+}
+
+async function listWebsites(userId: string, params: any) {
+  const websites = await prisma.website.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      type: true,
+      buildProgress: true,
+      vercelDeploymentUrl: true,
+      createdAt: true,
+    },
+  });
+
+  return {
+    message: `You have ${websites.length} website${websites.length !== 1 ? "s" : ""}.`,
+    websites: websites.map((w) => ({
+      id: w.id,
+      name: w.name,
+      status: w.status,
+      type: w.type,
+      buildProgress: w.buildProgress,
+      url: w.vercelDeploymentUrl,
+    })),
+    navigateTo: "/dashboard/websites",
+  };
+}
+
+async function modifyWebsite(userId: string, params: any) {
+  const { websiteId, message } = params;
+  if (!websiteId || !message) {
+    throw new Error("websiteId and message are required. Describe the change you want (e.g. 'Change the hero title to Welcome')");
+  }
+
+  const website = await prisma.website.findFirst({
+    where: { id: websiteId, userId },
+  });
+  if (!website) {
+    throw new Error("Website not found");
+  }
+
+  const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  const internalSecret = process.env.NEXTAUTH_SECRET;
+
+  const response = await fetch(`${baseUrl}/api/website-builder/modify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(internalSecret && { "x-internal-secret": internalSecret }),
+    },
+    body: JSON.stringify({ websiteId, message, _internalUserId: userId }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || "Failed to apply changes");
+  }
+
+  const data = await response.json();
+  const hasPendingApproval = data.requiresApproval || data.changeApprovalId;
+
+  return {
+    message: hasPendingApproval
+      ? `✅ Changes generated. Please review and approve them in the editor.`
+      : `✅ Changes applied to ${website.name}.`,
+    websiteId,
+    navigateTo: `/dashboard/websites/${websiteId}`,
   };
 }
 

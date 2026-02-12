@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import {
   Plus,
   Phone,
   Users,
   TrendingUp,
-  PhoneOutgoing,
+  History,
   ShoppingCart,
   RefreshCw,
   BarChart3,
@@ -19,17 +20,15 @@ import {
   Power,
   Trash2,
   TestTube2,
-  X,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreateVoiceAgentDialog } from './create-voice-agent-dialog';
-import { ScheduleOutboundCallDialog } from './schedule-outbound-call-dialog';
 import PurchasePhoneNumberDialog from './purchase-phone-number-dialog';
 import { EditVoiceAgentDialog } from './edit-voice-agent-dialog';
 import { VoiceAIUsageDashboard } from '../voice-ai/usage-dashboard';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,10 +44,8 @@ export function VoiceAgentsPage() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const [agents, setAgents] = useState<any[]>([]);
-  const [outboundCalls, setOutboundCalls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showScheduleCallDialog, setShowScheduleCallDialog] = useState(false);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [initialPhoneNumber, setInitialPhoneNumber] = useState<string | undefined>(undefined);
   const [syncingPhones, setSyncingPhones] = useState(false);
@@ -59,13 +56,12 @@ export function VoiceAgentsPage() {
     totalAgents: 0,
     activeAgents: 0,
     totalCalls: 0,
-    outboundScheduled: 0,
-    outboundCompleted: 0,
   });
+
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
 
   useEffect(() => {
     fetchAgents();
-    fetchOutboundCalls();
   }, []);
 
   useEffect(() => {
@@ -96,30 +92,14 @@ export function VoiceAgentsPage() {
     }
   };
 
-  const fetchOutboundCalls = async () => {
-    try {
-      const res = await fetch('/api/outbound-calls');
-      const data = await res.json();
-      setOutboundCalls(data || []);
-    } catch (error) {
-      console.error('Error fetching outbound calls:', error);
-    }
-  };
-
   const fetchStats = async () => {
     try {
-      const [callsRes, outboundRes] = await Promise.all([
-        fetch('/api/calls'),
-        fetch('/api/outbound-calls'),
-      ]);
+      const callsRes = await fetch('/api/calls');
       const calls = await callsRes.json();
-      const outbound = await outboundRes.json();
       setStats({
         totalAgents: agents.length,
         activeAgents: agents.filter((a) => a.status === 'ACTIVE').length,
         totalCalls: calls?.length || 0,
-        outboundScheduled: outbound?.filter((c: any) => c.status === 'SCHEDULED').length || 0,
-        outboundCompleted: outbound?.filter((c: any) => c.status === 'COMPLETED').length || 0,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -129,12 +109,6 @@ export function VoiceAgentsPage() {
   const handleAgentCreated = () => {
     setShowCreateDialog(false);
     fetchAgents();
-  };
-
-  const handleCallScheduled = () => {
-    setShowScheduleCallDialog(false);
-    fetchOutboundCalls();
-    fetchStats();
   };
 
   const handleSyncPhoneNumbers = async () => {
@@ -173,7 +147,6 @@ export function VoiceAgentsPage() {
   };
 
   const canCreateMore = agents.length < VOICE_AGENT_LIMIT;
-  const userIndustry = (session?.user?.industry as string) || null;
 
   // Avatar URL - use ui-avatars for consistent placeholder
   const getAvatarUrl = (agent: any) => {
@@ -183,90 +156,107 @@ export function VoiceAgentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-        <div className="animate-spin h-10 w-10 border-2 border-blue-500 border-t-transparent rounded-full" />
+      <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 flex items-center justify-center">
+        <div className="animate-spin h-10 w-10 border-2 border-purple-500 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white">
-      {/* Subtle gradient orbs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px]" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-indigo-500/10 rounded-full blur-[80px]" />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50/50 via-white to-pink-50/50 relative overflow-hidden">
+      {/* Animated background effects - match AI Brain */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-400/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       <div className="relative z-10 p-8 space-y-8">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-4xl font-bold flex items-center gap-3">
-              <span className="text-gray-300">My</span>
-              <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-                Voice Agents
-              </span>
-            </h1>
-            <p className="text-gray-400 mt-1">
-              {agents.length} / {VOICE_AGENT_LIMIT} agents · Industry-geared prompts
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={handleVerifySetup} className="border-gray-600 text-gray-300 hover:bg-gray-800">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Verify
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleSyncPhoneNumbers} disabled={syncingPhones} className="border-gray-600 text-gray-300 hover:bg-gray-800">
-              <RefreshCw className={cn('w-4 h-4 mr-2', syncingPhones && 'animate-spin')} />
-              Sync Phones
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowPurchaseDialog(true)} className="border-gray-600 text-gray-300 hover:bg-gray-800">
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Buy Number
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowScheduleCallDialog(true)} className="border-gray-600 text-gray-300 hover:bg-gray-800">
-              <PhoneOutgoing className="w-4 h-4 mr-2" />
-              Schedule Call
-            </Button>
+        {/* Top-level tabs: My Voice Agents | Call History */}
+        <Tabs defaultValue="agents" className="w-full">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <TabsList className="bg-white/80 backdrop-blur-sm border-2 border-purple-200/50 shadow-sm">
+                <TabsTrigger value="agents" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white">
+                  <Users className="w-4 h-4 mr-2" />
+                  My Voice Agents
+                </TabsTrigger>
+              </TabsList>
+              <Link href="/dashboard/voice-agent">
+                <Button variant="outline" size="sm" className="gap-2 border-purple-200 text-gray-600 hover:text-purple-600 hover:bg-purple-50 hover:border-purple-300">
+                  <History className="w-4 h-4" />
+                  Call History
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
             {canCreateMore && (
-              <Button onClick={() => setShowCreateDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={() => setShowCreateDialog(true)} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Agent
               </Button>
             )}
           </div>
+
+          <TabsContent value="agents" className="mt-0">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-4xl font-bold flex items-center gap-3 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
+              <Phone className="h-10 w-10 text-purple-600" />
+              My Voice Agents
+            </h1>
+            <p className="text-gray-600 mt-2">
+              {agents.length} / {VOICE_AGENT_LIMIT} agents · Industry-geared prompts
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {isSuperAdmin && (
+              <>
+                <Button variant="outline" size="sm" onClick={handleVerifySetup} className="border-purple-200 bg-white/80 text-purple-700 hover:bg-purple-50">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Verify
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleSyncPhoneNumbers} disabled={syncingPhones} className="border-purple-200 bg-white/80 text-purple-700 hover:bg-purple-50">
+                  <RefreshCw className={cn('w-4 h-4 mr-2', syncingPhones && 'animate-spin')} />
+                  Sync Phones
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowPurchaseDialog(true)} className="border-purple-200 bg-white/80 text-purple-700 hover:bg-purple-50">
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Buy Number
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {[
-            { label: 'Total Agents', value: agents.length, icon: Users, color: 'blue' },
+            { label: 'Total Agents', value: agents.length, icon: Users, color: 'purple' },
             { label: 'Active', value: stats.activeAgents, icon: TrendingUp, color: 'green' },
-            { label: 'Total Calls', value: stats.totalCalls, icon: Phone, color: 'purple' },
-            { label: 'Scheduled', value: stats.outboundScheduled, icon: PhoneOutgoing, color: 'orange' },
+            { label: 'Total Calls', value: stats.totalCalls, icon: Phone, color: 'pink' },
           ].map(({ label, value, icon: Icon, color }) => (
             <div
               key={label}
-              className="p-4 rounded-xl border border-gray-700/50 bg-gray-900/50 backdrop-blur-sm"
+              className="p-4 rounded-xl border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">{label}</p>
-                  <p className="text-2xl font-bold mt-1">{value}</p>
+                  <p className="text-sm text-gray-600">{label}</p>
+                  <p className="text-2xl font-bold mt-1 text-gray-900">{value}</p>
                 </div>
                 <div className={cn(
                   'w-10 h-10 rounded-lg flex items-center justify-center',
-                  color === 'blue' && 'bg-blue-500/20',
-                  color === 'green' && 'bg-green-500/20',
                   color === 'purple' && 'bg-purple-500/20',
-                  color === 'orange' && 'bg-orange-500/20'
+                  color === 'green' && 'bg-green-500/20',
+                  color === 'pink' && 'bg-pink-500/20'
                 )}>
                   <Icon className={cn(
                     'w-5 h-5',
-                    color === 'blue' && 'text-blue-400',
-                    color === 'green' && 'text-green-400',
-                    color === 'purple' && 'text-purple-400',
-                    color === 'orange' && 'text-orange-400'
+                    color === 'purple' && 'text-purple-600',
+                    color === 'green' && 'text-green-600',
+                    color === 'pink' && 'text-pink-600'
                   )} />
                 </div>
               </div>
@@ -274,37 +264,32 @@ export function VoiceAgentsPage() {
           ))}
         </div>
 
-        {/* Main Content - Layout inspired by attached image */}
-        <Tabs defaultValue="agents" className="w-full">
-          <TabsList className="bg-gray-800/50 border border-gray-700">
-            <TabsTrigger value="agents" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+        {/* Inner tabs: Voice Agents list | Usage (super admin only) */}
+        <Tabs defaultValue="agents-list" className="w-full">
+          <TabsList className="bg-white/80 backdrop-blur-sm border-2 border-purple-200/50">
+            <TabsTrigger value="agents-list" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <Users className="w-4 h-4 mr-2" />
               Voice Agents
             </TabsTrigger>
-            <TabsTrigger value="outbound" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-              <PhoneOutgoing className="w-4 h-4 mr-2" />
-              Outbound Calls
-              {stats.outboundScheduled > 0 && (
-                <Badge className="ml-2 bg-blue-600/80">{stats.outboundScheduled}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="usage" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Usage
-            </TabsTrigger>
+            {isSuperAdmin && (
+              <TabsTrigger value="usage" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Usage
+              </TabsTrigger>
+            )}
           </TabsList>
 
-          <TabsContent value="agents" className="mt-6">
+          <TabsContent value="agents-list" className="mt-6">
             {agents.length === 0 ? (
-              <div className="text-center py-24 border-2 border-dashed border-gray-700 rounded-xl">
-                <div className="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-4">
-                  <Phone className="w-10 h-10 text-gray-500" />
+              <div className="text-center py-24 border-2 border-dashed border-purple-200 rounded-xl bg-white/50">
+                <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-4">
+                  <Phone className="w-10 h-10 text-purple-500" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">No Voice Agents Yet</h3>
-                <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                  Create your first agent to handle calls. Agents are created automatically when you add AI employees or workflows—or add one now.
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Voice Agents Yet</h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Create your first agent to handle calls. Agents are created automatically when you add AI employees or workflows—or add one now. Use Workflows to schedule outbound calls.
                 </p>
-                <Button onClick={() => setShowCreateDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => setShowCreateDialog(true)} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
                   <Plus className="w-4 h-4 mr-2" />
                   Create First Agent
                 </Button>
@@ -313,7 +298,7 @@ export function VoiceAgentsPage() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left: Agent list */}
                 <div className="space-y-3">
-                  <div className="text-sm font-medium text-gray-400 mb-4">Your Agents</div>
+                  <div className="text-sm font-medium text-gray-600 mb-4">Your Agents</div>
                   {agents.map((agent) => {
                     const isActive = agent.status === 'ACTIVE' && (agent.aiEmployeeCount > 0 || agent._count?.campaigns > 0 || agent._count?.callLogs > 0);
                     return (
@@ -323,8 +308,8 @@ export function VoiceAgentsPage() {
                         className={cn(
                           'w-full text-left p-3 rounded-xl border-2 transition-all flex items-center gap-3',
                           selectedAgent?.id === agent.id
-                            ? 'border-blue-500 bg-blue-500/10'
-                            : 'border-gray-700/50 bg-gray-800/30 hover:border-gray-600'
+                            ? 'border-purple-500 bg-purple-50 shadow-sm'
+                            : 'border-purple-200/50 bg-white/80 hover:border-purple-300 hover:bg-purple-50/50'
                         )}
                       >
                         {/* Switchboard-style status light - green flicker when in use, yellow when idle */}
@@ -344,7 +329,7 @@ export function VoiceAgentsPage() {
                           className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{agent.name}</p>
+                          <p className="font-medium truncate text-gray-900">{agent.name}</p>
                           <p className="text-xs text-gray-500 truncate">
                             {isActive ? 'In use' : 'Idle'}
                           </p>
@@ -354,11 +339,11 @@ export function VoiceAgentsPage() {
                   })}
                 </div>
 
-                {/* Center: Selected agent card (like Sara Davis card in image) */}
+                {/* Center: Selected agent card */}
                 <div className="lg:col-span-2">
                   {selectedAgent ? (
-                    <Card className="border-2 border-gray-700/50 bg-gray-900/60 backdrop-blur-sm overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent pointer-events-none" />
+                    <Card className="border-2 border-purple-200/50 bg-white/90 backdrop-blur-sm overflow-hidden shadow-sm">
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent pointer-events-none" />
                       <CardHeader className="relative">
                         <div className="flex items-start justify-between">
                           <div className="flex items-center gap-4">
@@ -366,7 +351,7 @@ export function VoiceAgentsPage() {
                               <img
                                 src={getAvatarUrl(selectedAgent)}
                                 alt={selectedAgent.name}
-                                className="w-16 h-16 rounded-full ring-2 ring-blue-500/30"
+                                className="w-16 h-16 rounded-full ring-2 ring-purple-500/30"
                               />
                               {(() => {
                                 const isActive = selectedAgent.status === 'ACTIVE' && (selectedAgent.aiEmployeeCount > 0 || selectedAgent._count?.campaigns > 0 || selectedAgent._count?.callLogs > 0);
@@ -383,8 +368,8 @@ export function VoiceAgentsPage() {
                               })()}
                             </div>
                             <div>
-                              <CardTitle className="text-2xl text-white">{selectedAgent.name}</CardTitle>
-                              <CardDescription className="text-gray-400">{selectedAgent.businessName}</CardDescription>
+                              <CardTitle className="text-2xl text-gray-900">{selectedAgent.name}</CardTitle>
+                              <CardDescription className="text-gray-600">{selectedAgent.businessName}</CardDescription>
                             </div>
                           </div>
                           <DropdownMenu>
@@ -393,7 +378,7 @@ export function VoiceAgentsPage() {
                                 <MoreVertical className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+                            <DropdownMenuContent align="end" className="bg-white border-purple-200">
                               <DropdownMenuItem onClick={() => { setEditingAgent(selectedAgent); setShowEditDialog(true); }}>
                                 <Pencil className="w-4 h-4 mr-2" />
                                 Edit
@@ -430,73 +415,73 @@ export function VoiceAgentsPage() {
                       </CardHeader>
                       <CardContent className="relative">
                         <Tabs defaultValue="profile" className="w-full">
-                          <TabsList className="bg-gray-800/50 border border-gray-700 mb-4">
-                            <TabsTrigger value="profile" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white">
+                          <TabsList className="bg-purple-50/50 border border-purple-200 mb-4">
+                            <TabsTrigger value="profile" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                               Profile
                             </TabsTrigger>
-                            <TabsTrigger value="connections" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white">
+                            <TabsTrigger value="connections" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                               Connections
                             </TabsTrigger>
-                            <TabsTrigger value="performance" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white">
+                            <TabsTrigger value="performance" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                               Performance
                             </TabsTrigger>
                           </TabsList>
                           <TabsContent value="profile" className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                              <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+                              <div className="p-3 rounded-lg bg-purple-50/50 border border-purple-200">
                                 <p className="text-xs text-gray-500">Type</p>
-                                <p className="font-medium">{selectedAgent.type}</p>
+                                <p className="font-medium text-gray-900">{selectedAgent.type}</p>
                               </div>
-                              <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+                              <div className="p-3 rounded-lg bg-purple-50/50 border border-purple-200">
                                 <p className="text-xs text-gray-500">Phone</p>
-                                <p className="font-medium">{selectedAgent.twilioPhoneNumber || '—'}</p>
+                                <p className="font-medium text-gray-900">{selectedAgent.twilioPhoneNumber || '—'}</p>
                               </div>
-                              <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700 col-span-2">
+                              <div className="p-3 rounded-lg bg-purple-50/50 border border-purple-200 col-span-2">
                                 <p className="text-xs text-gray-500">Description</p>
-                                <p className="font-medium">{selectedAgent.description || 'No description'}</p>
+                                <p className="font-medium text-gray-900">{selectedAgent.description || 'No description'}</p>
                               </div>
                             </div>
                           </TabsContent>
                           <TabsContent value="connections" className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                              <div className="p-4 rounded-xl border border-blue-500/30 bg-blue-500/5 flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                                  <Bot className="w-5 h-5 text-blue-400" />
-                                </div>
-                                <div>
-                                  <p className="font-medium">AI Employees</p>
-                                  <p className="text-2xl font-bold text-blue-400">{selectedAgent.aiEmployeeCount || 0}</p>
-                                </div>
-                              </div>
-                              <div className="p-4 rounded-xl border border-purple-500/30 bg-purple-500/5 flex items-center gap-3">
+                              <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/50 flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                                  <Megaphone className="w-5 h-5 text-purple-400" />
+                                  <Bot className="w-5 h-5 text-purple-600" />
                                 </div>
                                 <div>
-                                  <p className="font-medium">Campaigns</p>
-                                  <p className="text-2xl font-bold text-purple-400">{selectedAgent._count?.campaigns || 0}</p>
+                                  <p className="font-medium text-gray-900">AI Employees</p>
+                                  <p className="text-2xl font-bold text-purple-600">{selectedAgent.aiEmployeeCount || 0}</p>
                                 </div>
                               </div>
-                              <div className="p-4 rounded-xl border border-gray-600/50 bg-gray-800/30 flex items-center gap-3 col-span-2">
-                                <div className="w-10 h-10 rounded-lg bg-gray-600/30 flex items-center justify-center">
-                                  <Workflow className="w-5 h-5 text-gray-400" />
+                              <div className="p-4 rounded-xl border border-pink-200 bg-pink-50/50 flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center">
+                                  <Megaphone className="w-5 h-5 text-pink-600" />
                                 </div>
                                 <div>
-                                  <p className="font-medium">Workflows</p>
-                                  <p className="text-sm text-gray-500">Assign in workflow task editor</p>
+                                  <p className="font-medium text-gray-900">Campaigns</p>
+                                  <p className="text-2xl font-bold text-pink-600">{selectedAgent._count?.campaigns || 0}</p>
+                                </div>
+                              </div>
+                              <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30 flex items-center gap-3 col-span-2">
+                                <div className="w-10 h-10 rounded-lg bg-gray-400/30 flex items-center justify-center">
+                                  <Workflow className="w-5 h-5 text-gray-600" />
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-900">Workflows</p>
+                                  <p className="text-sm text-gray-500">Use &quot;Make Outbound Call&quot; task in workflow builder</p>
                                 </div>
                               </div>
                             </div>
                           </TabsContent>
                           <TabsContent value="performance" className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                              <div className="p-4 rounded-xl border border-gray-700 bg-gray-800/30">
+                              <div className="p-4 rounded-xl border border-purple-200 bg-white">
                                 <p className="text-sm text-gray-500">Total Calls</p>
-                                <p className="text-2xl font-bold">{selectedAgent._count?.callLogs || 0}</p>
+                                <p className="text-2xl font-bold text-gray-900">{selectedAgent._count?.callLogs || 0}</p>
                               </div>
-                              <div className="p-4 rounded-xl border border-gray-700 bg-gray-800/30">
+                              <div className="p-4 rounded-xl border border-purple-200 bg-white">
                                 <p className="text-sm text-gray-500">Outbound</p>
-                                <p className="text-2xl font-bold">{selectedAgent._count?.outboundCalls || 0}</p>
+                                <p className="text-2xl font-bold text-gray-900">{selectedAgent._count?.outboundCalls || 0}</p>
                               </div>
                             </div>
                           </TabsContent>
@@ -504,58 +489,13 @@ export function VoiceAgentsPage() {
                       </CardContent>
                     </Card>
                   ) : (
-                    <div className="flex items-center justify-center h-64 border-2 border-dashed border-gray-700 rounded-xl">
+                    <div className="flex items-center justify-center h-64 border-2 border-dashed border-purple-200 rounded-xl bg-white/50">
                       <p className="text-gray-500">Select an agent</p>
                     </div>
                   )}
                 </div>
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="outbound" className="mt-6">
-            <div className="p-6 rounded-xl border border-gray-700 bg-gray-900/50">
-              {outboundCalls.length === 0 ? (
-                <div className="text-center py-12">
-                  <PhoneOutgoing className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-white mb-2">No Outbound Calls</h3>
-                  <p className="text-gray-400 mb-4">Schedule your first outbound call</p>
-                  <Button onClick={() => setShowScheduleCallDialog(true)} className="bg-blue-600 hover:bg-blue-700">
-                    <PhoneOutgoing className="w-4 h-4 mr-2" />
-                    Schedule Call
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {outboundCalls.map((call: any) => (
-                    <div
-                      key={call.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-gray-700 bg-gray-800/30 hover:bg-gray-800/50"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold">{call.name}</h4>
-                          <Badge variant={call.status === 'COMPLETED' ? 'default' : 'secondary'}>{call.status}</Badge>
-                        </div>
-                        <p className="text-sm text-gray-400">{call.phoneNumber} • {call.voiceAgent?.name}</p>
-                      </div>
-                      {call.status === 'SCHEDULED' && (
-                        <Button
-                          size="sm"
-                          onClick={async () => {
-                            await fetch(`/api/outbound-calls/${call.id}/initiate`, { method: 'POST' });
-                            fetchOutboundCalls();
-                          }}
-                        >
-                          <Phone className="w-4 h-4 mr-2" />
-                          Call Now
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </TabsContent>
 
           <TabsContent value="usage" className="mt-6">
@@ -570,11 +510,6 @@ export function VoiceAgentsPage() {
         onOpenChange={setShowCreateDialog}
         onAgentCreated={handleAgentCreated}
         initialPhoneNumber={initialPhoneNumber}
-      />
-      <ScheduleOutboundCallDialog
-        open={showScheduleCallDialog}
-        onOpenChange={setShowScheduleCallDialog}
-        onCallScheduled={handleCallScheduled}
       />
       <PurchasePhoneNumberDialog
         open={showPurchaseDialog}

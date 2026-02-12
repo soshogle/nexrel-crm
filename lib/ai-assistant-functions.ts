@@ -1251,6 +1251,61 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
     {
       type: "function",
       function: {
+        name: "clone_website",
+        description: "Clone a website from an existing URL. Use when user says 'clone my website from example.com', 'clone example.com', 'rebuild my site from URL'. Requires sourceUrl.",
+        parameters: {
+          type: "object",
+          properties: {
+            sourceUrl: { type: "string", description: "URL of website to clone (e.g. example.com or https://example.com)" },
+            name: { type: "string", description: "Name for the new cloned website (optional)" },
+          },
+          required: ["sourceUrl"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_website",
+        description: "Create a new website from a template. Use when user says 'create a new website', 'build a website for my business', 'make me a service website'.",
+        parameters: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Website name (optional)" },
+            templateType: { type: "string", enum: ["SERVICE", "PRODUCT"], description: "SERVICE for service business, PRODUCT for store" },
+            businessDescription: { type: "string", description: "Brief business description (optional)" },
+            services: { type: "string", description: "Comma-separated services (optional)" },
+            products: { type: "string", description: "Comma-separated products (optional)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "list_websites",
+        description: "List the user's websites. Use when user says 'show my websites', 'how many websites do I have', 'list my sites'.",
+        parameters: { type: "object", properties: {} },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "modify_website",
+        description: "Modify website content via AI. Use when user says 'change the hero text to Welcome', 'update the about section', 'add a pricing section'. Requires websiteId and message.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID to modify (required)" },
+            message: { type: "string", description: "Description of the change (e.g. 'Change hero title to Welcome')" },
+          },
+          required: ["websiteId", "message"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
         name: "navigate_to",
         description: "Navigate the user to any page in the application. Use when the user wants to go somewhere (e.g. 'take me to settings', 'open reports', 'show my calendar'). Path must start with /dashboard or /onboarding.",
         parameters: {
@@ -1339,6 +1394,10 @@ export function mapFunctionToAction(functionName: string): string {
     schedule_email: "schedule_email",
     sms_leads: "sms_leads",
     email_leads: "email_leads",
+    clone_website: "clone_website",
+    create_website: "create_website",
+    list_websites: "list_websites",
+    modify_website: "modify_website",
     navigate_to: "navigate_to", // Special case - handled differently
   };
   return mapping[functionName] || functionName;
@@ -1443,6 +1502,13 @@ export function getNavigationUrlForAction(
       return result?.result?.leadId ? `/dashboard/contacts?id=${result.result.leadId}` : "/dashboard/contacts";
     case "create_bulk_tasks":
       return "/dashboard/tasks";
+    case "clone_website":
+    case "create_website":
+      return result?.navigateTo || (result?.websiteId ? `/dashboard/websites/${result.websiteId}` : "/dashboard/websites");
+    case "list_websites":
+      return "/dashboard/websites";
+    case "modify_website":
+      return result?.navigateTo || (result?.websiteId ? `/dashboard/websites/${result.websiteId}` : "/dashboard/websites");
     default:
       return null;
   }

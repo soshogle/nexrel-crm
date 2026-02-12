@@ -12,12 +12,22 @@ import { aiModificationService } from '@/lib/website-builder/ai-modification-ser
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const body = await request.json();
+    const internalSecret = request.headers.get('x-internal-secret');
+    const internalUserId = body._internalUserId;
+    const isInternalCall = internalSecret === process.env.NEXTAUTH_SECRET && internalUserId;
+
+    let userId: string;
+    if (isInternalCall) {
+      userId = internalUserId;
+    } else {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      userId = session.user.id;
     }
 
-    const body = await request.json();
     const { websiteId, message, imageUpload } = body; // imageUpload for image swapping
 
     if (!websiteId || !message) {
@@ -30,7 +40,7 @@ export async function POST(request: NextRequest) {
     const website = await prisma.website.findFirst({
       where: {
         id: websiteId,
-        userId: session.user.id,
+        userId,
       },
     });
 
@@ -48,7 +58,7 @@ export async function POST(request: NextRequest) {
       const tempResult = await aiModificationService.generateChanges({
         message,
         websiteStructure: website.structure as any,
-        userId: session.user.id,
+        userId,
         websiteId,
         extractedData: website.extractedData as any,
       });
@@ -62,7 +72,7 @@ export async function POST(request: NextRequest) {
           imagePathToReplace,
           imageBuffer,
           imageUpload.contentType || 'image/jpeg',
-          session.user.id,
+          userId,
           websiteId
         );
         
@@ -79,7 +89,7 @@ export async function POST(request: NextRequest) {
     const modificationResult = await aiModificationService.generateChanges({
       message: modificationMessage,
       websiteStructure: website.structure as any,
-      userId: session.user.id,
+      userId,
       websiteId,
       extractedData: website.extractedData as any,
     });
@@ -119,7 +129,7 @@ export async function POST(request: NextRequest) {
         changes: changes as any,
         preview: preview as any,
         status: 'PENDING',
-        requestedBy: session.user.id,
+        requestedBy: userId,
       },
     });
 

@@ -342,6 +342,7 @@ ${(() => {
 })()}
 
 ${context?.activeWorkflowDraftId ? `\n**ACTIVE WORKFLOW DRAFT (CRITICAL):** A workflow draft is already open (ID: ${context.activeWorkflowDraftId}). The user was just navigated to the workflow builder. You MUST use add_workflow_task for EACH step/task they describe - do NOT use create_workflow. Parse their description and call add_workflow_task multiple times (once per step). Example: "create workflow that sends email, waits 2 days, then calls" → call add_workflow_task(name="Send email", taskType="EMAIL"), then add_workflow_task(name="2 day delay", taskType="DELAY"), then add_workflow_task(name="Call contact", taskType="VOICE_CALL"). Use workflowId: "${context.activeWorkflowDraftId}" for every add_workflow_task call.\n` : ''}
+${context?.screenContext ? `\n**WHAT THE USER SEES ON SCREEN:** ${context.screenContext}\nUse this to understand what they're looking at and provide relevant help. Reference specific elements they see when explaining.\n` : ''}
 
 Current CRM Statistics:
 - Total Contacts/Leads: ${userStats.contacts}
@@ -630,6 +631,10 @@ You have access to FUNCTIONS that can actually execute actions. When a user asks
 - get_follow_up_suggestions - Get who to contact next (optional: period). Use when user says "who haven't I contacted in 2 weeks?", "what should I do with leads from last week?".
 - get_meeting_prep - Pre-call briefing (required: contactName). Use when user says "what should I know before my call with John?", "prep me for my meeting with Acme".
 - create_bulk_tasks - Create follow-up tasks for leads (required: taskTitle, optional: period, dueInDays). Use when user says "create follow-up tasks for all leads from this week", "add tasks for today's leads". Use {name} in taskTitle for contact name.
+- clone_website - Clone a website from URL (required: sourceUrl, optional: name). Use when user says "clone example.com", "clone my website from [URL]", "rebuild my site from a URL".
+- create_website - Create new website from template (optional: name, templateType SERVICE/PRODUCT, businessDescription). Use when user says "create a website", "build a site for my business".
+- list_websites - List user's websites. Use when user says "show my websites", "how many sites do I have".
+- modify_website - Modify website content via AI (required: websiteId, message). Use when user says "change the hero text", "update the about section". When user is editing a site, websiteId may be in context.
 - navigate_to - Navigate to any page (required: path). Path must start with /dashboard or /onboarding. Examples: /dashboard/settings, /dashboard/reports, /dashboard/calendar, /dashboard/real-estate, /dashboard/websites, etc.
 
 **HOW IT WORKS:**

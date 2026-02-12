@@ -269,6 +269,24 @@ export function AIBrainVoiceProvider({ children }: { children: React.ReactNode }
           navigateTo('/dashboard/campaigns');
           return;
         }
+
+        // Report created/generated - navigate to reports page
+        const reportKeywords = ['report created', 'created your report', 'report is ready', 'generated your report', 'report has been', 'take you to the reports', 'reports page', 'i\'ve created', 'i\'ll take you to the reports', 'view it on the reports', 'reports page to view'];
+        if (reportKeywords.some(k => content.includes(k))) {
+          console.log('📄 [AI Brain Voice Context] Detected report created, navigating to reports');
+          lastStatsCheckRef.current = now;
+          navigateTo('/dashboard/reports');
+          return;
+        }
+
+        // Website created/cloned - navigate to websites
+        const websiteKeywords = ['clone', 'cloning', 'website created', 'taking you to the website', 'taking you to your websites', 'website editor', 'i\'ll take you to the website', 'started cloning'];
+        if (websiteKeywords.some(k => content.includes(k))) {
+          console.log('🌐 [AI Brain Voice Context] Detected website action, navigating to websites');
+          lastStatsCheckRef.current = now;
+          navigateTo('/dashboard/websites');
+          return;
+        }
       }
 
       const scenarioKeywords = ['what if', 'what would happen', 'predict', 'project', 'simulate', 'if i convert', 'if i get'];
