@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
 import { useAIBrainVoice } from '@/lib/ai-brain-voice-context';
@@ -150,113 +150,106 @@ export function GlobalVoiceAssistant() {
     return null; // Don't show widget if there's an error
   }
 
-  return (
-    <div style={{ display: 'contents' }}>
-      {/* Floating Button - Show if closed OR if conversation is active but minimized */}
-      {(!isOpen || (isOpen && isMinimized && conversationActive)) && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <Button
-            onClick={() => {
-              setIsOpen(true);
-              setIsMinimized(false);
-            }}
-            size="lg"
-            className={`h-16 w-16 rounded-full shadow-lg ${
-              conversationActive 
-                ? 'bg-green-500 hover:bg-green-600 animate-pulse' 
-                : 'bg-primary hover:bg-primary/90'
-            }`}
-          >
-            <Mic className="h-6 w-6" />
-          </Button>
-        </div>
-      )}
-
-      {/* Voice Assistant Widget */}
-      {isOpen && (
-        <div className={`fixed ${isMinimized ? 'bottom-6 right-6' : 'bottom-6 right-6'} z-50`}>
-          <Card className={`${isMinimized ? 'w-80' : 'w-96'} shadow-2xl border-2`}>
-            <div className="p-4 border-b flex items-center justify-between bg-primary/5">
-              <div className="flex items-center gap-2">
-                <Mic className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold">CRM Voice Assistant</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsMinimized(!isMinimized)}
-                >
-                  {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (conversationActive) {
-                      // If conversation is active, just minimize instead of closing
-                      setIsMinimized(true);
-                    } else {
-                      setIsOpen(false);
-                      setIsMinimized(false);
-                    }
-                  }}
-                  disabled={conversationActive}
-                  title={conversationActive ? 'Conversation active - minimize instead' : 'Close'}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {!isMinimized && (
-              <div className="p-4">
-                <ElevenLabsAgent
-                  agentId={agentId}
-                  onMessage={handleMessage}
-                  onConversationEnd={handleConversationEnd}
-                  onAgentSpeakingChange={handleAgentSpeakingChange}
-                  dynamicVariables={{
-                    company_name: 'Your CRM',
-                    user_name: 'User',
-                    ...(typeof window !== 'undefined' && (() => {
-                      const pc = getPageContext();
-                      return pc.path ? { current_path: pc.path } : {};
-                    })(),
-                    ...(activeWorkflowDraftId && {
-                      active_workflow_draft_id: activeWorkflowDraftId,
-                      in_workflow_builder: 'true',
-                    }),
-                    ...(isOnWebsitesPage && {
-                      in_website_builder: 'true',
-                      active_website_id: websiteBuilderContext?.activeWebsiteId || '',
-                      website_builder_step: websiteBuilderContext?.step || '',
-                      website_builder_context: getWebsiteBuilderContextSummary(),
-                    }),
-                    ...(typeof window !== 'undefined' && (() => {
-                      const pc = getPageContext();
-                      const extra: Record<string, string> = {};
-                      if (pc.activeWebsiteId && !websiteBuilderContext?.activeWebsiteId) extra.active_website_id = pc.activeWebsiteId;
-                      if (pc.activeLeadId) extra.active_lead_id = pc.activeLeadId;
-                      if (pc.activeDealId) extra.active_deal_id = pc.activeDealId;
-                      return extra;
-                    })(),
-                    ...(screenContext && {
-                      visible_screen_content: screenContext,
-                    }),
-                  }}
-                />
-              </div>
-            )}
-
-            {isMinimized && (
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                Click to expand voice assistant
-              </div>
-            )}
-          </Card>
-        </div>
-      )}
-    </div>
+  // Use createElement to avoid SWC/JSX parsing issues on Vercel
+  const showButton = !isOpen || (isOpen && isMinimized && conversationActive);
+  return React.createElement(
+    React.Fragment,
+    null,
+    showButton &&
+      React.createElement(
+        'div',
+        { className: 'fixed bottom-6 right-6 z-50' },
+        React.createElement(Button, {
+          onClick: () => {
+            setIsOpen(true);
+            setIsMinimized(false);
+          },
+          size: 'lg',
+          className: conversationActive
+            ? 'h-16 w-16 rounded-full shadow-lg bg-green-500 hover:bg-green-600 animate-pulse'
+            : 'h-16 w-16 rounded-full shadow-lg bg-primary hover:bg-primary/90',
+          children: React.createElement(Mic, { className: 'h-6 w-6' }),
+        })
+      ),
+    isOpen &&
+      React.createElement(
+        'div',
+        { className: 'fixed bottom-6 right-6 z-50' },
+        React.createElement(
+          Card,
+          { className: `${isMinimized ? 'w-80' : 'w-96'} shadow-2xl border-2` },
+          React.createElement(
+            'div',
+            { className: 'p-4 border-b flex items-center justify-between bg-primary/5' },
+            React.createElement('div', { className: 'flex items-center gap-2' }, React.createElement(Mic, { className: 'h-5 w-5 text-primary' }), React.createElement('h3', { className: 'font-semibold' }, 'CRM Voice Assistant')),
+            React.createElement(
+              'div',
+              { className: 'flex items-center gap-2' },
+              React.createElement(Button, {
+                variant: 'ghost',
+                size: 'sm',
+                onClick: () => setIsMinimized(!isMinimized),
+                children: isMinimized ? React.createElement(Maximize2, { className: 'h-4 w-4' }) : React.createElement(Minimize2, { className: 'h-4 w-4' }),
+              }),
+              React.createElement(Button, {
+                variant: 'ghost',
+                size: 'sm',
+                onClick: () => {
+                  if (conversationActive) setIsMinimized(true);
+                  else {
+                    setIsOpen(false);
+                    setIsMinimized(false);
+                  }
+                },
+                disabled: conversationActive,
+                title: conversationActive ? 'Conversation active - minimize instead' : 'Close',
+                children: React.createElement(X, { className: 'h-4 w-4' }),
+              })
+            )
+          ),
+          !isMinimized &&
+            React.createElement(
+              'div',
+              { className: 'p-4' },
+              React.createElement(ElevenLabsAgent, {
+                agentId,
+                onMessage: handleMessage,
+                onConversationEnd: handleConversationEnd,
+                onAgentSpeakingChange: handleAgentSpeakingChange,
+                dynamicVariables: {
+                  company_name: 'Your CRM',
+                  user_name: 'User',
+                  ...(typeof window !== 'undefined' && (() => {
+                    const pc = getPageContext();
+                    return pc.path ? { current_path: pc.path } : {};
+                  })()),
+                  ...(activeWorkflowDraftId && {
+                    active_workflow_draft_id: activeWorkflowDraftId,
+                    in_workflow_builder: 'true',
+                  }),
+                  ...(isOnWebsitesPage && {
+                    in_website_builder: 'true',
+                    active_website_id: websiteBuilderContext?.activeWebsiteId || '',
+                    website_builder_step: websiteBuilderContext?.step || '',
+                    website_builder_context: getWebsiteBuilderContextSummary(),
+                  }),
+                  ...(typeof window !== 'undefined' && (() => {
+                    const pc = getPageContext();
+                    const extra: Record<string, string> = {};
+                    if (pc.activeWebsiteId && !websiteBuilderContext?.activeWebsiteId) extra.active_website_id = pc.activeWebsiteId;
+                    if (pc.activeLeadId) extra.active_lead_id = pc.activeLeadId;
+                    if (pc.activeDealId) extra.active_deal_id = pc.activeDealId;
+                    return extra;
+                  })()),
+                  ...(screenContext && {
+                    visible_screen_content: screenContext,
+                  }),
+                },
+              })
+            ),
+          isMinimized &&
+            React.createElement('div', { className: 'p-4 text-center text-sm text-muted-foreground' }, 'Click to expand voice assistant')
+        )
+      )
   );
 }
