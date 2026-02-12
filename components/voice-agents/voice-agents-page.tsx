@@ -8,7 +8,6 @@ import {
   Phone,
   Users,
   TrendingUp,
-  History,
   ShoppingCart,
   RefreshCw,
   BarChart3,
@@ -20,7 +19,7 @@ import {
   Power,
   Trash2,
   TestTube2,
-  ChevronRight,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,8 +56,6 @@ export function VoiceAgentsPage() {
     activeAgents: 0,
     totalCalls: 0,
   });
-
-  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
 
   useEffect(() => {
     fetchAgents();
@@ -147,6 +144,8 @@ export function VoiceAgentsPage() {
   };
 
   const canCreateMore = agents.length < VOICE_AGENT_LIMIT;
+  const userIndustry = (session?.user?.industry as string) || null;
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN' || (session?.user?.isImpersonating && session?.user?.superAdminId);
 
   // Avatar URL - use ui-avatars for consistent placeholder
   const getAvatarUrl = (agent: any) => {
@@ -172,60 +171,41 @@ export function VoiceAgentsPage() {
       </div>
 
       <div className="relative z-10 p-8 space-y-8">
-        {/* Top-level tabs: My Voice Agents | Call History */}
-        <Tabs defaultValue="agents" className="w-full">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <TabsList className="bg-white/80 backdrop-blur-sm border-2 border-purple-200/50 shadow-sm">
-                <TabsTrigger value="agents" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white">
-                  <Users className="w-4 h-4 mr-2" />
-                  My Voice Agents
-                </TabsTrigger>
-              </TabsList>
-              <Link href="/dashboard/voice-agent">
-                <Button variant="outline" size="sm" className="gap-2 border-purple-200 text-gray-600 hover:text-purple-600 hover:bg-purple-50 hover:border-purple-300">
-                  <History className="w-4 h-4" />
-                  Call History
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-            {canCreateMore && (
-              <Button onClick={() => setShowCreateDialog(true)} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Agent
-              </Button>
-            )}
-          </div>
-
-          <TabsContent value="agents" className="mt-0">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-4xl font-bold flex items-center gap-3 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
-              <Phone className="h-10 w-10 text-purple-600" />
-              My Voice Agents
+            <h1 className="text-4xl font-bold flex items-center gap-3">
+              <span className="text-gray-700">My</span>
+              <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
+                Voice Agents
+              </span>
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 mt-1">
               {agents.length} / {VOICE_AGENT_LIMIT} agents · Industry-geared prompts
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {isSuperAdmin && (
               <>
-                <Button variant="outline" size="sm" onClick={handleVerifySetup} className="border-purple-200 bg-white/80 text-purple-700 hover:bg-purple-50">
+                <Button variant="outline" size="sm" onClick={handleVerifySetup} className="border-purple-200 text-gray-700 hover:bg-purple-50">
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Verify
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleSyncPhoneNumbers} disabled={syncingPhones} className="border-purple-200 bg-white/80 text-purple-700 hover:bg-purple-50">
+                <Button variant="outline" size="sm" onClick={handleSyncPhoneNumbers} disabled={syncingPhones} className="border-purple-200 text-gray-700 hover:bg-purple-50">
                   <RefreshCw className={cn('w-4 h-4 mr-2', syncingPhones && 'animate-spin')} />
                   Sync Phones
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setShowPurchaseDialog(true)} className="border-purple-200 bg-white/80 text-purple-700 hover:bg-purple-50">
+                <Button variant="outline" size="sm" onClick={() => setShowPurchaseDialog(true)} className="border-purple-200 text-gray-700 hover:bg-purple-50">
                   <ShoppingCart className="w-4 h-4 mr-2" />
                   Buy Number
                 </Button>
               </>
+            )}
+            {canCreateMore && (
+              <Button onClick={() => setShowCreateDialog(true)} className="bg-purple-600 hover:bg-purple-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Agent
+              </Button>
             )}
           </div>
         </div>
@@ -239,7 +219,7 @@ export function VoiceAgentsPage() {
           ].map(({ label, value, icon: Icon, color }) => (
             <div
               key={label}
-              className="p-4 rounded-xl border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm"
+              className="p-4 rounded-xl border border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -254,9 +234,9 @@ export function VoiceAgentsPage() {
                 )}>
                   <Icon className={cn(
                     'w-5 h-5',
-                    color === 'purple' && 'text-purple-600',
-                    color === 'green' && 'text-green-600',
-                    color === 'pink' && 'text-pink-600'
+                    color === 'purple' && 'text-purple-500',
+                    color === 'green' && 'text-green-500',
+                    color === 'pink' && 'text-pink-500'
                   )} />
                 </div>
               </div>
@@ -264,13 +244,21 @@ export function VoiceAgentsPage() {
           ))}
         </div>
 
-        {/* Inner tabs: Voice Agents list | Usage (super admin only) */}
-        <Tabs defaultValue="agents-list" className="w-full">
-          <TabsList className="bg-white/80 backdrop-blur-sm border-2 border-purple-200/50">
-            <TabsTrigger value="agents-list" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+        {/* Main Content */}
+        <Tabs defaultValue="agents" className="w-full">
+          <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
+            <TabsTrigger value="agents" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <Users className="w-4 h-4 mr-2" />
-              Voice Agents
+              My Voice Agents
             </TabsTrigger>
+            <Link
+              href="/dashboard/voice-agent"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-purple-50 hover:text-purple-600 transition-colors"
+            >
+              <Phone className="w-4 h-4" />
+              Call History
+              <ExternalLink className="w-3 h-3" />
+            </Link>
             {isSuperAdmin && (
               <TabsTrigger value="usage" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                 <BarChart3 className="w-4 h-4 mr-2" />
@@ -279,7 +267,7 @@ export function VoiceAgentsPage() {
             )}
           </TabsList>
 
-          <TabsContent value="agents-list" className="mt-6">
+          <TabsContent value="agents" className="mt-6">
             {agents.length === 0 ? (
               <div className="text-center py-24 border-2 border-dashed border-purple-200 rounded-xl bg-white/50">
                 <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-4">
@@ -287,9 +275,9 @@ export function VoiceAgentsPage() {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No Voice Agents Yet</h3>
                 <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                  Create your first agent to handle calls. Agents are created automatically when you add AI employees or workflows—or add one now. Use Workflows to schedule outbound calls.
+                  Create your first agent to handle calls. Agents are created automatically when you add AI employees or workflows—or add one now.
                 </p>
-                <Button onClick={() => setShowCreateDialog(true)} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white">
+                <Button onClick={() => setShowCreateDialog(true)} className="bg-purple-600 hover:bg-purple-700">
                   <Plus className="w-4 h-4 mr-2" />
                   Create First Agent
                 </Button>
@@ -308,8 +296,8 @@ export function VoiceAgentsPage() {
                         className={cn(
                           'w-full text-left p-3 rounded-xl border-2 transition-all flex items-center gap-3',
                           selectedAgent?.id === agent.id
-                            ? 'border-purple-500 bg-purple-50 shadow-sm'
-                            : 'border-purple-200/50 bg-white/80 hover:border-purple-300 hover:bg-purple-50/50'
+                            ? 'border-purple-500 bg-purple-50'
+                            : 'border-purple-200 bg-white/80 hover:border-purple-300'
                         )}
                       >
                         {/* Switchboard-style status light - green flicker when in use, yellow when idle */}
@@ -339,10 +327,10 @@ export function VoiceAgentsPage() {
                   })}
                 </div>
 
-                {/* Center: Selected agent card */}
+                {/* Center: Selected agent card (like Sara Davis card in image) */}
                 <div className="lg:col-span-2">
                   {selectedAgent ? (
-                    <Card className="border-2 border-purple-200/50 bg-white/90 backdrop-blur-sm overflow-hidden shadow-sm">
+                    <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm overflow-hidden shadow-sm">
                       <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-transparent pointer-events-none" />
                       <CardHeader className="relative">
                         <div className="flex items-start justify-between">
@@ -415,7 +403,7 @@ export function VoiceAgentsPage() {
                       </CardHeader>
                       <CardContent className="relative">
                         <Tabs defaultValue="profile" className="w-full">
-                          <TabsList className="bg-purple-50/50 border border-purple-200 mb-4">
+                          <TabsList className="bg-white/80 border border-purple-200 mb-4">
                             <TabsTrigger value="profile" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                               Profile
                             </TabsTrigger>
@@ -446,7 +434,7 @@ export function VoiceAgentsPage() {
                             <div className="grid grid-cols-2 gap-4">
                               <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/50 flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                                  <Bot className="w-5 h-5 text-purple-600" />
+                                  <Bot className="w-5 h-5 text-purple-500" />
                                 </div>
                                 <div>
                                   <p className="font-medium text-gray-900">AI Employees</p>
@@ -455,7 +443,7 @@ export function VoiceAgentsPage() {
                               </div>
                               <div className="p-4 rounded-xl border border-pink-200 bg-pink-50/50 flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center">
-                                  <Megaphone className="w-5 h-5 text-pink-600" />
+                                  <Megaphone className="w-5 h-5 text-pink-500" />
                                 </div>
                                 <div>
                                   <p className="font-medium text-gray-900">Campaigns</p>
@@ -463,23 +451,23 @@ export function VoiceAgentsPage() {
                                 </div>
                               </div>
                               <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30 flex items-center gap-3 col-span-2">
-                                <div className="w-10 h-10 rounded-lg bg-gray-400/30 flex items-center justify-center">
-                                  <Workflow className="w-5 h-5 text-gray-600" />
+                                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                                  <Workflow className="w-5 h-5 text-purple-500" />
                                 </div>
                                 <div>
                                   <p className="font-medium text-gray-900">Workflows</p>
-                                  <p className="text-sm text-gray-500">Use &quot;Make Outbound Call&quot; task in workflow builder</p>
+                                  <p className="text-sm text-gray-500">Assign in workflow task editor</p>
                                 </div>
                               </div>
                             </div>
                           </TabsContent>
                           <TabsContent value="performance" className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                              <div className="p-4 rounded-xl border border-purple-200 bg-white">
+                              <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30">
                                 <p className="text-sm text-gray-500">Total Calls</p>
                                 <p className="text-2xl font-bold text-gray-900">{selectedAgent._count?.callLogs || 0}</p>
                               </div>
-                              <div className="p-4 rounded-xl border border-purple-200 bg-white">
+                              <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30">
                                 <p className="text-sm text-gray-500">Outbound</p>
                                 <p className="text-2xl font-bold text-gray-900">{selectedAgent._count?.outboundCalls || 0}</p>
                               </div>
@@ -498,9 +486,11 @@ export function VoiceAgentsPage() {
             )}
           </TabsContent>
 
+          {isSuperAdmin && (
           <TabsContent value="usage" className="mt-6">
             <VoiceAIUsageDashboard />
           </TabsContent>
+          )}
         </Tabs>
       </div>
 
