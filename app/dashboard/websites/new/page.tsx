@@ -170,6 +170,24 @@ export default function NewWebsitePage() {
   const [hoveredTemplateId, setHoveredTemplateId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  // One website per profile: redirect if user already has a website
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const res = await fetch('/api/websites');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.canCreateNew === false || (data.websites?.length ?? 0) >= 1) {
+            router.replace('/dashboard/websites');
+          }
+        }
+      } catch (e) {
+        console.error('Failed to check website limit:', e);
+      }
+    };
+    if (session) check();
+  }, [session, router]);
+
   // Sync website builder context so voice/chat AI can follow along
   useEffect(() => {
     setWebsiteBuilderContext({

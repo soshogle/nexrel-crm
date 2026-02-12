@@ -21,10 +21,15 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const productIds = searchParams.get('productIds')?.split(',').filter(Boolean);
 
-    const predictions = await predictiveRestockingService.predictRestockingNeeds(
-      params.id,
-      productIds
-    );
+    let predictions: any[] = [];
+    try {
+      predictions = await predictiveRestockingService.predictRestockingNeeds(
+        params.id,
+        productIds
+      );
+    } catch (e) {
+      console.warn('predictRestockingNeeds failed:', e);
+    }
 
     return NextResponse.json({
       success: true,

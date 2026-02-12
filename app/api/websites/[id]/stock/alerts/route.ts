@@ -30,31 +30,36 @@ export async function GET(
     }
 
     // Get products needing restock
-    const productsNeedingRestock = await websiteStockSyncService.getProductsNeedingRestock(
-      params.id
-    );
+    let productsNeedingRestock: any[] = [];
+    try {
+      productsNeedingRestock = await websiteStockSyncService.getProductsNeedingRestock(
+        params.id
+      );
+    } catch (e) {
+      console.warn('getProductsNeedingRestock failed:', e);
+    }
 
     // Get recent low stock alerts (from tasks)
-    const alertTasks = await prisma.task.findMany({
-      where: {
-        userId: session.user.id,
-        metadata: {
-          path: ['type'],
-          equals: 'LOW_STOCK_ALERT',
+    let alertTasks: any[] = [];
+    try {
+      const allAlerts = await prisma.task.findMany({
+        where: {
+          userId: session.user.id,
+          status: { in: ['PENDING', 'IN_PROGRESS'] },
         },
-        metadata: {
-          path: ['websiteId'],
-          equals: params.id,
-        },
-        status: {
-          in: ['PENDING', 'IN_PROGRESS'],
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 50,
-    });
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      });
+      alertTasks = allAlerts.filter(
+        (t) =>
+          t.metadata &&
+          typeof t.metadata === 'object' &&
+          (t.metadata as any).type === 'LOW_STOCK_ALERT' &&
+          (t.metadata as any).websiteId === params.id
+      );
+    } catch (e) {
+      console.warn('Failed to fetch alert tasks:', e);
+    }
 
     return NextResponse.json({
       success: true,
