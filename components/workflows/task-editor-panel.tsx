@@ -38,6 +38,14 @@ interface TaskEditorPanelProps {
 
 const DELAY_UNITS = ['MINUTES', 'HOURS', 'DAYS'];
 
+interface AIEmployee {
+  id: string;
+  profession: string;
+  customName: string;
+  voiceAgentId: string | null;
+  isActive: boolean;
+}
+
 const BRANCH_OPERATORS = [
   { value: 'equals', label: 'Equals' },
   { value: 'not_equals', label: 'Not Equals' },
@@ -81,8 +89,17 @@ export function TaskEditorPanel({
   const [showCampaignOptions, setShowCampaignOptions] = useState(false);
   const [showEnhancedTiming, setShowEnhancedTiming] = useState(false);
   const [skipConditions, setSkipConditions] = useState<any[]>([]);
+  const [aiEmployees, setAiEmployees] = useState<AIEmployee[]>([]);
   
   const industryConfig = getIndustryConfig(industry);
+
+  // Fetch user's AI Team
+  useEffect(() => {
+    fetch('/api/ai-employees/user')
+      .then((res) => res.ok ? res.json() : { employees: [] })
+      .then((data) => setAiEmployees(data.employees || []))
+      .catch(() => setAiEmployees([]));
+  }, []);
   
   useEffect(() => {
     setEditedTask(task);
@@ -130,15 +147,43 @@ export function TaskEditorPanel({
     } as WorkflowTask);
   };
   
-  const handleAgentChange = (agentId: string) => {
-    const agent = industryConfig.aiAgents.find(a => a.id === agentId);
+  const handleAgentChange = (value: string) => {
+    if (value === 'unassigned') {
+      setEditedTask({
+        ...editedTask,
+        assignedAgentId: null,
+        assignedAgentName: null,
+        agentColor: '#6B7280',
+        assignedAIEmployeeId: null,
+      });
+      return;
+    }
+    if (value.startsWith('ai_team:')) {
+      const employeeId = value.slice(8);
+      const employee = aiEmployees.find((e) => e.id === employeeId);
+      setEditedTask({
+        ...editedTask,
+        assignedAgentId: null,
+        assignedAgentName: employee?.customName || employee?.profession || null,
+        agentColor: '#8b5cf6',
+        assignedAIEmployeeId: employeeId,
+      });
+      return;
+    }
+    const agent = industryConfig.aiAgents.find((a) => a.id === value);
     setEditedTask({
       ...editedTask,
-      assignedAgentId: agentId === 'unassigned' ? null : agentId,
+      assignedAgentId: value,
       assignedAgentName: agent?.name || null,
       agentColor: agent?.color || '#8b5cf6',
+      assignedAIEmployeeId: null,
     });
   };
+
+  const agentSelectValue =
+    editedTask.assignedAIEmployeeId
+      ? `ai_team:${editedTask.assignedAIEmployeeId}`
+      : (editedTask.assignedAgentId || 'unassigned');
   
   const handleBranchConditionChange = (field: string, value: any) => {
     const currentCondition = editedTask.branchCondition || { field: '', operator: 'equals', value: '' };
@@ -221,10 +266,7 @@ export function TaskEditorPanel({
         {/* AI Agent Assignment */}
         <div className="space-y-2">
           <Label>Assign AI Agent</Label>
-          <Select
-            value={editedTask.assignedAgentId || 'unassigned'}
-            onValueChange={handleAgentChange}
-          >
+          <Select value={agentSelectValue} onValueChange={handleAgentChange}>
             <SelectTrigger className="border-purple-200">
               <SelectValue />
             </SelectTrigger>
@@ -233,8 +275,8 @@ export function TaskEditorPanel({
               {industryConfig.aiAgents.map((agent) => (
                 <SelectItem key={agent.id} value={agent.id}>
                   <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
+                    <div
+                      className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: agent.color }}
                     />
                     <span>{agent.name}</span>
@@ -242,6 +284,22 @@ export function TaskEditorPanel({
                   </div>
                 </SelectItem>
               ))}
+              {aiEmployees.length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1 pt-2">
+                    My AI Team
+                  </div>
+                  {aiEmployees.map((emp) => (
+                    <SelectItem key={emp.id} value={`ai_team:${emp.id}`}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-purple-500" />
+                        <span>{emp.customName || emp.profession}</span>
+                        <span className="text-xs text-gray-500">- {emp.profession}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>

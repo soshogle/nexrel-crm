@@ -32,6 +32,7 @@ export function MobileNav({ onBookDemo, onTryDemo, onOpenRoi }: MobileNavProps) 
           <a href="#ai-staff" className="text-sm hover:text-primary transition-colors">AI Staff</a>
           <a href="#nexrel" className="text-sm hover:text-primary transition-colors">Nexrel</a>
           <a href="#pricing" className="text-sm hover:text-primary transition-colors">Pricing</a>
+          <a href="/blog" className="text-sm hover:text-primary transition-colors">Blog</a>
           <a href="/about" className="text-sm hover:text-primary transition-colors">About</a>
           <a href="#contact" className="text-sm hover:text-primary transition-colors">Contact</a>
           <button
@@ -109,6 +110,13 @@ export function MobileNav({ onBookDemo, onTryDemo, onOpenRoi }: MobileNavProps) 
               onClick={closeMenu}
             >
               Pricing
+            </a>
+            <a
+              href="/blog"
+              className="text-lg py-3 hover:text-primary transition-colors border-b border-white/10"
+              onClick={closeMenu}
+            >
+              Blog
             </a>
             <a
               href="/about"

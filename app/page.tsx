@@ -798,6 +798,9 @@ function HomePage() {
                 <Link href="#ai-staff" className="block hover:text-white">
                   AI Sales
                 </Link>
+                <Link href="/blog" className="block hover:text-white">
+                  Blog
+                </Link>
               </div>
             </div>
             <div>

@@ -33,6 +33,21 @@ interface ConversationConfig {
   };
 }
 
+/** Per-call overrides for voice, language, etc. Requires agent to have overrides enabled in Security settings. */
+export interface ConversationConfigOverride {
+  agent?: {
+    language?: string;
+    prompt?: { prompt?: string; llm?: string };
+    first_message?: string;
+  };
+  tts?: {
+    voice_id?: string;
+    stability?: number;
+    speed?: number;
+    similarity_boost?: number;
+  };
+}
+
 export class ElevenLabsService {
   private apiKey: string;
   private baseUrl = 'https://api.elevenlabs.io/v1';
@@ -227,7 +242,17 @@ export class ElevenLabsService {
     return signedUrl;
   }
 
-  async initiatePhoneCall(agentId: string, phoneNumber: string) {
+  /**
+   * Initiate a phone call.
+   * @param agentId - ElevenLabs agent ID
+   * @param phoneNumber - E.164 format
+   * @param override - Optional per-call overrides (voice, language, etc.). Agent must have overrides enabled in ElevenLabs Security settings.
+   */
+  async initiatePhoneCall(
+    agentId: string,
+    phoneNumber: string,
+    override?: ConversationConfigOverride
+  ) {
     if (!this.apiKey) {
       throw new Error('ElevenLabs API key not configured');
     }
@@ -266,15 +291,20 @@ export class ElevenLabsService {
       phoneNumber: formattedPhone,
     });
 
+    const body: Record<string, unknown> = {
+      phone_number: formattedPhone,
+    };
+    if (override && Object.keys(override).length > 0) {
+      body.conversation_config_override = override;
+    }
+
     const response = await fetch(`${this.baseUrl}/convai/agents/${agentId}/call`, {
       method: 'POST',
       headers: {
         'xi-api-key': this.apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        phone_number: formattedPhone,
-      }),
+      body: JSON.stringify(body),
     });
 
     console.log('📋 [ElevenLabs] Call API response status:', response.status);

@@ -21,7 +21,10 @@
     "migrate:deploy": "tsx scripts/migrate-with-backup.ts deploy",
     "migrate:reset": "tsx scripts/migrate-with-backup.ts reset",
     "backup": "tsx scripts/backup-database.ts",
-    "migrate:create": "npx prisma migrate dev --create-only"
+    "migrate:create": "npx prisma migrate dev --create-only",
+    "verify:elevenlabs-overrides": "tsx scripts/verify-elevenlabs-call-overrides.ts",
+    "verify:elevenlabs-quick": "tsx scripts/verify-elevenlabs-quick-test.ts",
+    "clear-stale-voice-agent": "tsx scripts/clear-stale-crm-voice-agent.ts"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/seed.ts"
@@ -157,6 +160,7 @@
     "react-hot-toast": "2.4.1",
     "react-intersection-observer": "9.8.0",
     "react-is": "18.3.1",
+    "react-markdown": "^10.1.0",
     "react-plotly.js": "2.6.0",
     "react-resizable-panels": "2.1.3",
     "react-select": "5.8.0",

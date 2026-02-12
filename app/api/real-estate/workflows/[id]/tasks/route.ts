@@ -115,6 +115,15 @@ export async function POST(
       order = (maxOrder._max.displayOrder || 0) + 1;
     }
 
+    const baseConfig = (actionConfig as object) || { actions: [] } as Record<string, unknown>;
+    const finalActionConfig = {
+      ...baseConfig,
+      assignedAgentId: body.assignedAgentId || null,
+      assignedAgentName: body.assignedAgentName || null,
+      agentColor: body.agentColor || '#6B7280',
+      assignedAIEmployeeId: body.assignedAIEmployeeId || null,
+    };
+
     const task = await prisma.rEWorkflowTask.create({
       data: {
         templateId: params.id,
@@ -130,7 +139,7 @@ export async function POST(
         displayOrder: order,
         parentTaskId: parentTaskId || null,
         branchCondition: branchCondition ?? undefined,
-        actionConfig: actionConfig || { actions: [] }
+        actionConfig: finalActionConfig
       }
     });
 
@@ -224,23 +233,39 @@ export async function PATCH(
       );
     }
 
+    const baseConfig = ((existingTask as any).actionConfig as object) || { actions: [] } as Record<string, unknown>;
+    const hasAssignment = updateData.assignedAgentId !== undefined || updateData.assignedAgentName !== undefined ||
+      updateData.agentColor !== undefined || updateData.assignedAIEmployeeId !== undefined;
+    const finalActionConfig = hasAssignment
+      ? {
+          ...baseConfig,
+          assignedAgentId: updateData.assignedAgentId ?? (baseConfig as any).assignedAgentId ?? null,
+          assignedAgentName: updateData.assignedAgentName ?? (baseConfig as any).assignedAgentName ?? null,
+          agentColor: updateData.agentColor ?? (baseConfig as any).agentColor ?? '#6B7280',
+          assignedAIEmployeeId: updateData.assignedAIEmployeeId ?? (baseConfig as any).assignedAIEmployeeId ?? null,
+        }
+      : undefined;
+
+    const updatePayload: Record<string, unknown> = {
+      ...(updateData.name !== undefined && { name: updateData.name }),
+      ...(updateData.description !== undefined && { description: updateData.description }),
+      ...(updateData.taskType !== undefined && { taskType: updateData.taskType }),
+      ...(updateData.assignedAgentType !== undefined && { assignedAgentType: updateData.assignedAgentType }),
+      ...(updateData.delayValue !== undefined && { delayValue: updateData.delayValue }),
+      ...(updateData.delayUnit !== undefined && { delayUnit: updateData.delayUnit }),
+      ...(updateData.isHITL !== undefined && { isHITL: updateData.isHITL }),
+      ...(updateData.isOptional !== undefined && { isOptional: updateData.isOptional }),
+      ...(updateData.position !== undefined && { position: updateData.position }),
+      ...(updateData.displayOrder !== undefined && { displayOrder: updateData.displayOrder }),
+      ...(updateData.parentTaskId !== undefined && { parentTaskId: updateData.parentTaskId }),
+      ...(updateData.branchCondition !== undefined && { branchCondition: updateData.branchCondition }),
+      ...(finalActionConfig && { actionConfig: finalActionConfig }),
+      ...(updateData.actionConfig !== undefined && !hasAssignment && { actionConfig: updateData.actionConfig }),
+    };
+
     const task = await prisma.rEWorkflowTask.update({
       where: { id: taskId },
-      data: {
-        ...(updateData.name !== undefined && { name: updateData.name }),
-        ...(updateData.description !== undefined && { description: updateData.description }),
-        ...(updateData.taskType !== undefined && { taskType: updateData.taskType }),
-        ...(updateData.assignedAgentType !== undefined && { assignedAgentType: updateData.assignedAgentType }),
-        ...(updateData.delayValue !== undefined && { delayValue: updateData.delayValue }),
-        ...(updateData.delayUnit !== undefined && { delayUnit: updateData.delayUnit }),
-        ...(updateData.isHITL !== undefined && { isHITL: updateData.isHITL }),
-        ...(updateData.isOptional !== undefined && { isOptional: updateData.isOptional }),
-        ...(updateData.position !== undefined && { position: updateData.position }),
-        ...(updateData.displayOrder !== undefined && { displayOrder: updateData.displayOrder }),
-        ...(updateData.parentTaskId !== undefined && { parentTaskId: updateData.parentTaskId }),
-        ...(updateData.branchCondition !== undefined && { branchCondition: updateData.branchCondition }),
-        ...(updateData.actionConfig !== undefined && { actionConfig: updateData.actionConfig })
-      }
+      data: updatePayload as any
     });
 
     return NextResponse.json({
