@@ -228,6 +228,7 @@ Communication style:
 When users ask "how many leads" or "show my contacts" → use list_leads (takes them to contacts page).
 When users ask "how many deals" → use list_deals (takes them to pipeline).
 When users ask for charts, graphs, or sales trends → use get_statistics (shows visualizations on AI Brain).
+When users ask to "generate a report", "create a sales report", "build a report for last month", "give me a leads report" → use create_report. The report will be saved and displayed on the Reports page.
 
 When users ask you to do something:
 1. Acknowledge the request
@@ -239,6 +240,7 @@ Available functions:
 - list_leads: List contacts/leads. USE THIS when user asks "how many leads", "how many new leads today", "show my contacts", "show my leads", or wants to see the list of contacts. Use period: "today" for leads created today.
 - list_deals: List deals in the pipeline. USE THIS when user asks "how many deals", "show my deals", or wants to see the pipeline.
 - get_statistics: Get comprehensive CRM statistics (revenue, charts, graphs). USE THIS only when user asks for charts, graphs, visualizations, sales over time, revenue comparison, or monthly trends.
+- create_report: Create and save a report to the Reports page. USE when user says "generate a report", "create a sales report", "build a report for last month", "give me a leads report". Report is saved and visible on Reports page.
 - create_lead: Create a new contact/lead
 - create_deal: Create a new deal
 - search_contacts: Search for contacts by name, email, or company
@@ -335,6 +337,30 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
               description: 'Compare with previous period. Examples: "previous_year", "previous_period"',
             },
           },
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'create_report',
+        description: 'Create and save a report to the Reports page. Use when user says "generate a report", "create a sales report", "build a report for last month", "give me a leads report". The report will be saved and displayed on the Reports page.',
+        parameters: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: 'Report title (required). E.g. "Sales Report Q1", "Leads Overview"',
+            },
+            reportType: {
+              type: 'string',
+              description: 'Type of report',
+              enum: ['sales', 'leads', 'revenue', 'overview', 'custom'],
+            },
+            period: {
+              type: 'string',
+              description: 'Time period. Examples: "last_7_days", "last_month", "all_time"',
+            },
+          },
+          required: ['title'],
         },
         server_url: serverUrl,
       },

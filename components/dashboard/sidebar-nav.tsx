@@ -103,7 +103,7 @@ const merchantItems = [
   },
   {
     id: 'voice-agents' as MenuItemId,
-    title: 'Voice AI Agents',
+    title: 'My Voice Agents',
     href: '/dashboard/voice-agents',
     icon: Phone,
   },
@@ -476,6 +476,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       'ecommerce': 'ecommerce',
       'ai-automations': 'aiAutomations',
       'workflows': 'workflows',
+      'reports': 'reports',
       'reviews': 'reviews',
       'referrals': 'referrals',
       'real-estate-dashboard': 'realEstateHub',

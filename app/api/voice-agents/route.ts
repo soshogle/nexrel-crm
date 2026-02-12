@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
 import { generateReservationSystemPrompt } from '@/lib/voice-reservation-helper';
+import { VOICE_AGENT_LIMIT } from '@/lib/voice-agent-templates';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -33,10 +34,24 @@ export async function GET(request: NextRequest) {
           select: {
             callLogs: true,
             outboundCalls: true,
+            campaigns: true,
           },
         },
       },
     });
+
+    // Get AI employee counts per agent
+    const aiEmployeeCounts = await prisma.userAIEmployee.groupBy({
+      by: ['voiceAgentId'],
+      where: {
+        userId: user.id,
+        voiceAgentId: { not: null },
+      },
+      _count: { voiceAgentId: true },
+    });
+    const aiCountByAgent = Object.fromEntries(
+      aiEmployeeCounts.map((r) => [r.voiceAgentId, r._count.voiceAgentId])
+    );
 
     // Fetch call counts from ElevenLabs for each agent
     const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
@@ -89,10 +104,10 @@ export async function GET(request: NextRequest) {
           ...agent,
           _count: {
             ...agent._count,
-            // Use the larger of the two counts to ensure we don't miss any calls
             callLogs: Math.max(agent._count.callLogs, elevenLabsCallCount),
           },
-          elevenLabsCallCount, // Keep separate for debugging
+          elevenLabsCallCount,
+          aiEmployeeCount: aiCountByAgent[agent.id] || 0,
         };
       })
     );
@@ -133,6 +148,18 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ User found:', user.id);
+
+    // Enforce 12-agent limit (super admins bypass)
+    const isSuperAdmin = user.role === 'SUPER_ADMIN';
+    if (!isSuperAdmin) {
+      const existingCount = await prisma.voiceAgent.count({ where: { userId: user.id } });
+      if (existingCount >= VOICE_AGENT_LIMIT) {
+        return NextResponse.json(
+          { error: `Voice agent limit reached. Maximum ${VOICE_AGENT_LIMIT} agents per account.` },
+          { status: 403 }
+        );
+      }
+    }
 
     const body = await request.json();
     console.log('📦 Request body:', JSON.stringify(body, null, 2));

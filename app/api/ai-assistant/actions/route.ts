@@ -2122,6 +2122,35 @@ async function createReport(userId: string, params: any) {
   }
 
   const stats = statsResult.statistics;
+
+  // Fetch voice agent usage stats for business owner
+  const voiceAgents = await prisma.voiceAgent.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      _count: {
+        select: { callLogs: true, campaigns: true },
+      },
+    },
+  });
+  const aiEmployeeCounts = await prisma.userAIEmployee.groupBy({
+    by: ['voiceAgentId'],
+    where: { userId, voiceAgentId: { not: null } },
+    _count: { voiceAgentId: true },
+  });
+  const aiCountByAgent = Object.fromEntries(
+    aiEmployeeCounts.map((r) => [r.voiceAgentId!, r._count.voiceAgentId])
+  );
+  const agentStats = voiceAgents.map((a) => ({
+    name: a.name,
+    totalCalls: a._count.callLogs,
+    campaigns: a._count.campaigns,
+    aiEmployees: aiCountByAgent[a.id] || 0,
+    totalUsage: a._count.callLogs + a._count.campaigns * 10 + (aiCountByAgent[a.id] || 0) * 5, // Weighted score for "most used"
+  })).sort((a, b) => b.totalUsage - a.totalUsage);
+
   const content: any = {
     summary: statsResult.message || `Report generated for ${period}. You have ${stats.totalLeads} leads, ${stats.totalDeals} deals, ${stats.openDeals} open deals worth $${(stats.totalRevenue || 0).toLocaleString()}, and ${stats.totalCampaigns} campaigns.`,
     metrics: {
@@ -2132,6 +2161,10 @@ async function createReport(userId: string, params: any) {
       total_campaigns: stats.totalCampaigns,
     },
   };
+
+  if (agentStats.length > 0) {
+    content.agentStats = agentStats;
+  }
 
   if (stats.dynamicCharts && stats.dynamicCharts.length > 0) {
     content.charts = stats.dynamicCharts.map((c: any) => ({

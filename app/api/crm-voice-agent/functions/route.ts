@@ -166,6 +166,11 @@ export async function POST(req: NextRequest) {
         result = await proxyToActionsAPI(function_name, parameters || {}, userId, req);
         break;
 
+      case 'create_report':
+      case 'navigate_to':
+        result = await proxyToActionsAPI(function_name, parameters || {}, userId, req);
+        break;
+
       default:
         result = { error: `Unknown function: ${function_name}` };
     }
