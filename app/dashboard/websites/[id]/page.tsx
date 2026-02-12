@@ -66,6 +66,7 @@ export default function WebsiteEditorPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
   const [activeTab, setActiveTab] = useState('editor');
+  const [editorMode, setEditorMode] = useState<'simple' | 'advanced'>('simple');
 
   useEffect(() => {
     if (session && params.id) {
@@ -73,6 +74,13 @@ export default function WebsiteEditorPage() {
       fetchPendingChanges();
     }
   }, [session, params.id]);
+
+  // Poll for progress when building
+  useEffect(() => {
+    if (!params.id || website?.status !== 'BUILDING') return;
+    const interval = setInterval(fetchWebsite, 5000);
+    return () => clearInterval(interval);
+  }, [params.id, website?.status]);
 
   // Sync website builder context so voice/chat AI sees what user sees
   useEffect(() => {
@@ -297,9 +305,29 @@ export default function WebsiteEditorPage() {
   }
 
   const buildError = website.status === 'FAILED' && website.builds?.[0]?.error;
+  const isBuilding = website.status === 'BUILDING';
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {isBuilding && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Building your website...</span>
+              <span className="text-sm text-muted-foreground">{website.buildProgress}%</span>
+            </div>
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-500"
+                style={{ width: `${website.buildProgress}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              This usually takes 2–5 minutes. You can stay on this page — it will update automatically.
+            </p>
+          </CardContent>
+        </Card>
+      )}
       {buildError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -376,13 +404,24 @@ export default function WebsiteEditorPage() {
           <WebsiteFilesManager websiteId={website.id} />
           <Card>
             <CardHeader>
-              <CardTitle>Website Structure</CardTitle>
-              <CardDescription>
-                Drag to reorder, edit layout, replace images, or use AI Chat
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Page Sections</CardTitle>
+                  <CardDescription>
+                    Drag sections to reorder. Click an image to replace, or use AI Chat to add or change content.
+                  </CardDescription>
+                </div>
+                <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v)} className="w-auto">
+                  <TabsList className="h-8">
+                    <TabsTrigger value="simple" className="text-xs">Simple</TabsTrigger>
+                    <TabsTrigger value="advanced" className="text-xs">Advanced</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
             </CardHeader>
             <CardContent>
               <SectionEditor
+                compactMode={editorMode === 'simple'}
                 websiteId={website.id}
                 pagePath="/"
                 components={website.structure?.pages?.[0]?.components || []}

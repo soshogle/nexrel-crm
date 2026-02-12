@@ -33,29 +33,16 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
     if (status === 'authenticated' && !sessionChecked && mounted) {
       setSessionChecked(true) // Prevent future runs
       
-      console.log('🔄 Dashboard mounted - checking session once...')
       
       // Check localStorage for impersonation data
       const hasLocalStorageData = typeof window !== 'undefined' && 
         window.localStorage.getItem('impersonationToken');
       
       if (hasLocalStorageData) {
-        console.log('📋 Found impersonation data in localStorage, refreshing session...')
         // Only update if we have impersonation data
-        update({ trigger: 'checkImpersonation' }).then(async (updatedSession) => {
-          console.log('✅ Session refreshed:', {
-            hasSession: !!updatedSession,
-            userId: updatedSession?.user?.id,
-            userName: updatedSession?.user?.name,
-            isImpersonating: updatedSession?.user?.isImpersonating,
-            superAdminId: updatedSession?.user?.superAdminId,
-            superAdminName: updatedSession?.user?.superAdminName,
-          })
-        }).catch(err => {
+        update({ trigger: 'checkImpersonation' }).catch(err => {
           console.error('❌ Session refresh failed:', err)
         })
-      } else {
-        console.log('✅ No impersonation data - using current session')
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

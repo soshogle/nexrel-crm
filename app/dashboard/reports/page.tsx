@@ -157,7 +157,7 @@ export default function ReportsPage() {
                   idx % 3 === 2 && 'border-pink-200/50 bg-gradient-to-br from-white/90 to-pink-50/30'
                 )}
               >
-                <p className="text-sm text-gray-600 capitalize mb-1">{key.replace(/_/g, ' ')}</p>
+                <p className="text-sm text-gray-600 capitalize mb-1">{(key ?? '').toString().replace(/_/g, ' ')}</p>
                 <p className="text-2xl font-bold text-purple-600">
                   {typeof value === 'number' ? value.toLocaleString() : String(value)}
                 </p>

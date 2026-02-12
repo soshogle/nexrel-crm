@@ -63,7 +63,7 @@ export async function middleware(request: NextRequest) {
       "img-src 'self' data: blob: https: http:",
       "worker-src 'self' blob:",
       "connect-src 'self' https://accounts.google.com https://api.elevenlabs.io wss://api.elevenlabs.io https://livekit.rtc.elevenlabs.io wss://livekit.rtc.elevenlabs.io https://api.twilio.com https://api.stripe.com https://api.square.com https://api.paypal.com https://*.abacusai.app wss://*.abacusai.app https://cloudflareinsights.com https://*.cloudflareinsights.com",
-      "frame-src 'self' blob: https://accounts.google.com https://www.paypal.com https://js.stripe.com https://hooks.stripe.com https://vercel.com https://*.vercel.app https://*.soshogle.com",
+      "frame-src 'self' blob: https://accounts.google.com https://www.paypal.com https://js.stripe.com https://hooks.stripe.com https://*.stripe.com https://vercel.com https://*.vercel.app https://*.soshogle.com https://calendly.com https://*.calendly.com https://www.youtube.com https://*.youtube.com https://youtube.com https://player.vimeo.com https://*.vimeo.com https://*.elevenlabs.io https://elevenlabs.io https://*.vapi.ai https://vapi.ai",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
