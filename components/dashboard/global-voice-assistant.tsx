@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
 import { useAIBrainVoice } from '@/lib/ai-brain-voice-context';
@@ -151,7 +151,7 @@ export function GlobalVoiceAssistant() {
   }
 
   return (
-    <React.Fragment>
+    <div style={{ display: 'contents' }}>
       {/* Floating Button - Show if closed OR if conversation is active but minimized */}
       {(!isOpen || (isOpen && isMinimized && conversationActive)) && (
         <div className="fixed bottom-6 right-6 z-50">
@@ -257,6 +257,6 @@ export function GlobalVoiceAssistant() {
           </Card>
         </div>
       )}
-    </React.Fragment>
+    </div>
   );
 }
