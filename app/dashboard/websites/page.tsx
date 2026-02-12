@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { setWebsiteBuilderContext } from '@/lib/website-builder-context';
 import { useSession } from 'next-auth/react';
 import { Plus, Globe, Settings, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,10 @@ export default function WebsitesPage() {
       fetchWebsites();
     }
   }, [session]);
+
+  useEffect(() => {
+    setWebsiteBuilderContext({ page: 'list' });
+  }, []);
 
   const fetchWebsites = async () => {
     try {

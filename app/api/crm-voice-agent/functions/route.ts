@@ -171,6 +171,13 @@ export async function POST(req: NextRequest) {
         result = await proxyToActionsAPI(function_name, parameters || {}, userId, req);
         break;
 
+      case 'clone_website':
+      case 'create_website':
+      case 'list_websites':
+      case 'modify_website':
+        result = await proxyToActionsAPI(function_name, parameters || {}, userId, req);
+        break;
+
       default:
         result = { error: `Unknown function: ${function_name}` };
     }

@@ -151,12 +151,6 @@ const merchantItems = [
     icon: MessageSquare,
   },
   {
-    id: 'voice-agent' as MenuItemId,
-    title: 'Call History',
-    href: '/dashboard/voice-agent',
-    icon: Phone,
-  },
-  {
     id: 'calendar' as MenuItemId,
     title: 'Appointments',
     href: '/dashboard/calendar',

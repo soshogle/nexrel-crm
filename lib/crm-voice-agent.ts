@@ -265,10 +265,16 @@ Available functions:
 - get_follow_up_suggestions: Get who to contact. USE when user says "who haven't I contacted in 2 weeks?", "who should I follow up with?". Use period: last_week, last_2_weeks, last_month.
 - get_meeting_prep: Pre-call briefing. USE when user says "what should I know before my call with John?", "prep me for my meeting with Acme". Requires contactName.
 - create_bulk_tasks: Create tasks for leads. USE when user says "create follow-up tasks for all leads from this week", "add tasks for today's leads". Use taskTitle with {name} for contact name, period: today/last_week/last_2_weeks.
+- clone_website: Clone a site from URL. USE when user says "clone example.com", "clone my website from [URL]". Requires sourceUrl.
+- create_website: Create new site from template. USE when user says "create a website", "build a site for my business". Optional name, templateType, businessDescription.
+- list_websites: List user's websites. USE when user says "show my websites", "how many sites do I have".
+- modify_website: Change website content via AI. USE when user says "change the hero text", "update the about section". Requires websiteId (use active_website_id when editing) and message.
 
 IMPORTANT: When users ask "how many new leads today" or "show me my leads" → use list_leads (navigates to contacts page). When users ask for graphs, charts, or sales trends → use get_statistics (shows visualizations on AI Brain). Do not use get_statistics for simple lead/deal counts.
 For workflows: when user says "create workflow", acknowledge and say you've opened the builder (client opens it). Then for each step ("add email", "add delay", "add call") → add_workflow_task.
 WORKFLOW BUILDER MODE: When in_workflow_builder dynamic variable is "true" (user has active workflow draft), the user is building a workflow. Do NOT use list_leads, list_deals, or search_contacts. Only use add_workflow_task. When user says "contacts", "pipeline", "leads" in this context, they mean workflow steps (e.g. "when lead created" = trigger, "email contacts" = email step, "add step for pipeline" = deal stage step). Use add_workflow_task for each step they describe.
+WEBSITE BUILDER MODE: When in_website_builder dynamic variable is "true" (user is on websites page), prefer website functions: clone_website, create_website, list_websites, modify_website. When active_website_id is set, the user is editing that site—use it for modify_website. When website_builder_context is set, use it to understand what the user sees (e.g. "choosing clone or template", "in clone mode with URL X", "editing website Y"). Follow along with what they see and help them through the build.
+SCREEN CONTEXT: When visible_screen_content dynamic variable is provided, it describes the visible text on the user's screen (headings, labels, form fields, buttons). Use it to understand what they're looking at and provide relevant help. Reference specific elements they see when explaining.
 For calling: "call John and tell him about the promo" → make_outbound_call. "call all leads from today with 10% off" → call_leads. If user has a preference for which agent ("use Sarah"), pass voiceAgentName. If unsure, use list_voice_agents and ask which agent they want.
 
 Remember: You're speaking, not typing. Keep it brief and natural. When reporting statistics, speak clearly and highlight the most important numbers.
@@ -820,6 +826,53 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
             dueInDays: { type: 'number', description: 'Days from now for due date (default 1)' },
           },
           required: ['taskTitle'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'clone_website',
+        description: 'Clone a website from an existing URL. Use when user says "clone my website from example.com", "clone example.com", "rebuild my site from a URL". Requires sourceUrl. Optional name for the new site.',
+        parameters: {
+          type: 'object',
+          properties: {
+            sourceUrl: { type: 'string', description: 'URL of website to clone (required). E.g. "example.com" or "https://example.com"' },
+            name: { type: 'string', description: 'Name for the new cloned website (optional)' },
+          },
+          required: ['sourceUrl'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'create_website',
+        description: 'Create a new website from a template. Use when user says "create a new website", "build a website for my plumbing business", "make me a service website". Optional: name, templateType (SERVICE or PRODUCT), businessDescription, services, products.',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Website name (optional, defaults to New Website)' },
+            templateType: { type: 'string', enum: ['SERVICE', 'PRODUCT'], description: 'SERVICE for service business, PRODUCT for store/ecommerce' },
+            businessDescription: { type: 'string', description: 'Brief business description (optional)' },
+            services: { type: 'string', description: 'Comma-separated services (optional)' },
+            products: { type: 'string', description: 'Comma-separated products (optional)' },
+          },
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'list_websites',
+        description: 'List the user\'s websites. Use when user says "show my websites", "how many websites do I have", "list my sites".',
+        parameters: { type: 'object', properties: {} },
+        server_url: serverUrl,
+      },
+      {
+        name: 'modify_website',
+        description: 'Modify website content via AI. Use when user says "change the hero text to Welcome", "update the about section", "add a pricing section". Requires websiteId (from active_website_id when editing) and message describing the change.',
+        parameters: {
+          type: 'object',
+          properties: {
+            websiteId: { type: 'string', description: 'Website ID to modify (required). Use active_website_id from context when user is editing a site.' },
+            message: { type: 'string', description: 'Description of the change (required). E.g. "Change the hero title to Welcome to Acme"' },
+          },
+          required: ['websiteId', 'message'],
         },
         server_url: serverUrl,
       },

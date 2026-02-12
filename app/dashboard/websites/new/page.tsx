@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { setWebsiteBuilderContext } from '@/lib/website-builder-context';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ArrowLeft, Loader2, Globe, Sparkles, Wand2, ShoppingCart, Briefcase, Code, Palette, Zap, ExternalLink, X } from 'lucide-react';
@@ -168,6 +169,20 @@ export default function NewWebsitePage() {
   const [templateHasBlog, setTemplateHasBlog] = useState(false);
   const [hoveredTemplateId, setHoveredTemplateId] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Sync website builder context so voice/chat AI can follow along
+  useEffect(() => {
+    setWebsiteBuilderContext({
+      page: 'new',
+      step,
+      rebuildUrl: step === 'rebuild' ? rebuildUrl : undefined,
+      rebuildName: step === 'rebuild' ? rebuildName : undefined,
+      websiteName: step === 'new' ? websiteName : undefined,
+      templateType: step === 'new' ? templateType : undefined,
+      buildProgress: loading ? 0 : undefined,
+    });
+    return () => { /* keep context on unmount for navigation */ };
+  }, [step, rebuildUrl, rebuildName, websiteName, templateType, loading]);
 
   // Check for stored Google tokens on mount
   useEffect(() => {

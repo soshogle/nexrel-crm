@@ -27,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { ElevenLabsAgent } from "@/components/landing/soshogle/elevenlabs-agent";
 import { ChatMarkdown } from "@/components/dashboard/chat-markdown";
+import { extractScreenContext } from "@/lib/screen-context-extractor";
 import { EmailPreviewCard, type EmailDraft } from "@/components/dashboard/email-preview-card";
 import { SmsPreviewCard, type SmsDraft } from "@/components/dashboard/sms-preview-card";
 
@@ -228,7 +229,11 @@ export function AIChatAssistant() {
         formData.append('message', currentInput);
         formData.append('conversationHistory', JSON.stringify(messages.slice(-10)));
         const activeDraftId = workflowDraftId || (typeof window !== 'undefined' ? sessionStorage.getItem('activeWorkflowDraftId') : null);
-        if (activeDraftId) formData.append('context', JSON.stringify({ activeWorkflowDraftId: activeDraftId }));
+        const screenContext = typeof window !== 'undefined' ? extractScreenContext() : '';
+        const context: Record<string, any> = {};
+        if (activeDraftId) context.activeWorkflowDraftId = activeDraftId;
+        if (screenContext) context.screenContext = screenContext;
+        if (Object.keys(context).length > 0) formData.append('context', JSON.stringify(context));
 
         const response = await fetch("/api/ai-assistant/chat", {
           method: "POST",
@@ -264,13 +269,17 @@ export function AIChatAssistant() {
       } else {
         // Regular text message - pass workflowDraftId when we just created a draft so AI adds tasks
         const activeDraftId = workflowDraftId || (typeof window !== 'undefined' ? sessionStorage.getItem('activeWorkflowDraftId') : null);
+        const screenContext = typeof window !== 'undefined' ? extractScreenContext() : '';
+        const context: Record<string, any> = {};
+        if (activeDraftId) context.activeWorkflowDraftId = activeDraftId;
+        if (screenContext) context.screenContext = screenContext;
         const response = await fetch("/api/ai-assistant/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: currentInput,
             conversationHistory: messages.slice(-10),
-            ...(activeDraftId && { context: { activeWorkflowDraftId: activeDraftId } }),
+            ...(Object.keys(context).length > 0 && { context }),
           }),
         });
 

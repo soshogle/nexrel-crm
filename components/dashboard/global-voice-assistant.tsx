@@ -6,9 +6,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
 import { useAIBrainVoice } from '@/lib/ai-brain-voice-context';
 import { Button } from '@/components/ui/button';
+import { getWebsiteBuilderContext, getWebsiteBuilderContextSummary } from '@/lib/website-builder-context';
+import { extractScreenContext } from '@/lib/screen-context-extractor';
 
 function getActiveWorkflowDraftId(): string | null {
   if (typeof window === 'undefined') return null;
@@ -21,10 +24,13 @@ import { toast } from 'sonner';
 const STORAGE_KEY = 'crm-voice-assistant-state';
 
 export function GlobalVoiceAssistant() {
+  const pathname = usePathname();
   const { handleMessage } = useAIBrainVoice();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [activeWorkflowDraftId, setActiveWorkflowDraftId] = useState<string | null>(null);
+  const [websiteBuilderContext, setWebsiteBuilderContextState] = useState<ReturnType<typeof getWebsiteBuilderContext>>(null);
+  const [screenContext, setScreenContext] = useState('');
   const [agentId, setAgentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +78,33 @@ export function GlobalVoiceAssistant() {
     }, 1000);
     return () => clearInterval(interval);
   }, [isOpen]);
+
+  // Pass website builder context so voice agent sees what user sees and can help with build
+  const isOnWebsitesPage = pathname?.startsWith('/dashboard/websites');
+  useEffect(() => {
+    if (isOnWebsitesPage) {
+      setWebsiteBuilderContextState(getWebsiteBuilderContext());
+      const interval = setInterval(() => {
+        setWebsiteBuilderContextState(getWebsiteBuilderContext());
+      }, 500);
+      return () => clearInterval(interval);
+    } else {
+      setWebsiteBuilderContextState(null);
+    }
+  }, [isOnWebsitesPage, pathname]);
+
+  // Extract visible screen content so voice agent can "see" what user sees (when widget is open)
+  useEffect(() => {
+    if (isOpen && !isMinimized) {
+      setScreenContext(extractScreenContext());
+      const interval = setInterval(() => {
+        setScreenContext(extractScreenContext());
+      }, 2000);
+      return () => clearInterval(interval);
+    } else {
+      setScreenContext('');
+    }
+  }, [isOpen, isMinimized]);
 
   const fetchAgent = async () => {
     try {
@@ -189,6 +222,15 @@ export function GlobalVoiceAssistant() {
                     ...(activeWorkflowDraftId && {
                       active_workflow_draft_id: activeWorkflowDraftId,
                       in_workflow_builder: 'true',
+                    }),
+                    ...(isOnWebsitesPage && {
+                      in_website_builder: 'true',
+                      active_website_id: websiteBuilderContext?.activeWebsiteId || '',
+                      website_builder_step: websiteBuilderContext?.step || '',
+                      website_builder_context: getWebsiteBuilderContextSummary(),
+                    }),
+                    ...(screenContext && {
+                      visible_screen_content: screenContext,
                     }),
                   }}
                 />

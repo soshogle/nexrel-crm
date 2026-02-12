@@ -17,29 +17,74 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-      include: {
-        builds: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
+    const websiteId = params.id;
+    if (!websiteId) {
+      return NextResponse.json({ error: 'Website ID is required' }, { status: 400 });
+    }
+
+    let website;
+    try {
+      website = await prisma.website.findFirst({
+        where: {
+          id: websiteId,
+          userId: session.user.id,
         },
-        websiteIntegrations: true,
-      },
-    });
+        include: {
+          builds: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+          websiteIntegrations: true,
+        },
+      });
+    } catch (queryError: any) {
+      console.error('[Website GET] Prisma query error:', queryError);
+      // Fallback: try without includes (can fail if structure/json is corrupted)
+      try {
+        website = await prisma.website.findFirst({
+          where: { id: websiteId, userId: session.user.id },
+        });
+        if (website) {
+          (website as any).builds = [];
+          (website as any).websiteIntegrations = [];
+        }
+      } catch (fallbackError: any) {
+        console.error('[Website GET] Fallback query also failed:', fallbackError);
+        throw queryError;
+      }
+    }
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ website });
+    try {
+      return NextResponse.json({ website });
+    } catch (serializeError: any) {
+      console.error('[Website GET] JSON serialization failed:', serializeError);
+      // Return minimal payload if full serialization fails (e.g. huge/corrupt structure)
+      const safe = {
+        id: website.id,
+        name: website.name,
+        status: website.status,
+        type: website.type,
+        userId: website.userId,
+        structure: {},
+        seoData: {},
+        builds: (website as any).builds ?? [],
+        websiteIntegrations: (website as any).websiteIntegrations ?? [],
+      };
+      return NextResponse.json({ website: safe });
+    }
   } catch (error: any) {
-    console.error('Error fetching website:', error);
+    console.error('[Website GET] Error fetching website:', error);
+    const message = error?.message || 'Failed to fetch website';
+    const code = error?.code;
     return NextResponse.json(
-      { error: 'Failed to fetch website' },
+      {
+        error: message,
+        ...(process.env.NODE_ENV === 'development' && { details: code, stack: error?.stack }),
+      },
       { status: 500 }
     );
   }

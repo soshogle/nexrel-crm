@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { setWebsiteBuilderContext } from '@/lib/website-builder-context';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ArrowLeft, Globe, Settings, Loader2, MessageSquare, Eye, Check, X, Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
@@ -68,6 +69,18 @@ export default function WebsiteEditorPage() {
       fetchPendingChanges();
     }
   }, [session, params.id]);
+
+  // Sync website builder context so voice/chat AI sees what user sees
+  useEffect(() => {
+    if (params.id) {
+      setWebsiteBuilderContext({
+        page: 'editor',
+        activeWebsiteId: params.id as string,
+        activeWebsiteName: website?.name,
+        activeTab,
+      });
+    }
+  }, [params.id, website?.name, activeTab]);
 
   const fetchWebsite = async () => {
     try {
