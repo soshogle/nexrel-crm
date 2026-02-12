@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { ensureUserHasVoiceAgent } from '@/lib/ensure-voice-agent';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -51,6 +52,15 @@ export async function POST(request: NextRequest) {
       where: { id: session.user.id },
       data: updateData,
     });
+
+    // When onboarding completes, ensure user has a default voice agent for AI employees/campaigns
+    if (updateData.onboardingCompleted === true) {
+      try {
+        await ensureUserHasVoiceAgent(session.user.id);
+      } catch (err) {
+        console.warn('[UPDATE-STEP] Could not create default voice agent:', err);
+      }
+    }
 
     console.log('[UPDATE-STEP] User updated successfully');
     return NextResponse.json({ success: true, user });

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { ensureUserHasVoiceAgent } from '@/lib/ensure-voice-agent';
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,13 +51,26 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { profession, customName, voiceAgentId, voiceConfig } = body;
+    let { profession, customName, voiceAgentId, voiceConfig } = body;
 
     if (!profession || !customName) {
       return NextResponse.json(
         { error: 'profession and customName are required' },
         { status: 400 }
       );
+    }
+
+    // If no voice agent assigned, ensure user has one and auto-assign
+    if (!voiceAgentId) {
+      try {
+        const { agentId } = await ensureUserHasVoiceAgent(session.user.id, {
+          templateId: 'general_assistant',
+          preferredName: `${customName} Voice`,
+        });
+        voiceAgentId = agentId;
+      } catch (err) {
+        console.warn('[API] Could not ensure voice agent:', err);
+      }
     }
 
     const employee = await prisma.userAIEmployee.create({

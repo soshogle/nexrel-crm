@@ -27,6 +27,7 @@ export interface ReportForExport {
     summary?: string;
     metrics?: Record<string, number | string>;
     charts?: Array<{ title: string; data?: Array<{ name: string; value: number }> }>;
+    agentStats?: Array<{ name: string; totalCalls: number; campaigns: number; aiEmployees: number }>;
   };
 }
 
@@ -52,6 +53,16 @@ export function exportReportToExcel(report: ReportForExport): void {
     ];
     const wsMetrics = XLSX.utils.aoa_to_sheet(metricsData);
     XLSX.utils.book_append_sheet(wb, wsMetrics, 'Metrics');
+  }
+
+  // Voice Agent Stats sheet
+  if (report.content.agentStats && report.content.agentStats.length > 0) {
+    const agentData = [
+      ['Rank', 'Agent', 'Total Calls', 'Campaigns', 'AI Employees'],
+      ...report.content.agentStats.map((a, i) => [i + 1, a.name, a.totalCalls, a.campaigns, a.aiEmployees]),
+    ];
+    const wsAgents = XLSX.utils.aoa_to_sheet(agentData);
+    XLSX.utils.book_append_sheet(wb, wsAgents, 'Voice Agents');
   }
 
   // Charts as sheets
@@ -103,6 +114,22 @@ export function exportReportToPDF(report: ReportForExport): void {
     y += 10;
   }
 
+  if (report.content.agentStats && report.content.agentStats.length > 0) {
+    if (y > 240) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.setFontSize(12);
+    doc.text('Voice Agent Usage', 20, y);
+    y += 8;
+    doc.setFontSize(10);
+    report.content.agentStats.forEach((a, i) => {
+      doc.text(`${i + 1}. ${a.name}: ${a.totalCalls} calls, ${a.campaigns} campaigns, ${a.aiEmployees} AI employees`, 25, y);
+      y += 6;
+    });
+    y += 10;
+  }
+
   report.content.charts?.forEach((chart) => {
     if (chart.data && chart.data.length > 0) {
       if (y > 250) {
@@ -148,6 +175,52 @@ export async function exportReportToWord(report: ReportForExport): Promise<void>
     children.push(
       new Paragraph({
         children: [new TextRun({ text: report.content.summary, size: 24 })],
+        spacing: { after: 400 },
+      })
+    );
+  }
+
+  if (report.content.agentStats && report.content.agentStats.length > 0) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Voice Agent Usage', bold: true, size: 28 })],
+        heading: HeadingLevel.HEADING_1,
+        spacing: { after: 200 },
+      })
+    );
+    const agentRows = [
+      new TableRow({
+        children: [
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Rank', bold: true })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Agent', bold: true })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Calls', bold: true })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Campaigns', bold: true })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'AI Employees', bold: true })] })] }),
+        ],
+      }),
+      ...report.content.agentStats.map(
+        (a, i) =>
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(i + 1) })] })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: a.name })] })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(a.totalCalls) })] })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(a.campaigns) })] })] }),
+              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(a.aiEmployees) })] })] }),
+            ],
+          })
+      ),
+    ];
+    children.push(
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: agentRows,
+        borders: {
+          top: { style: BorderStyle.SINGLE },
+          bottom: { style: BorderStyle.SINGLE },
+          left: { style: BorderStyle.SINGLE },
+          right: { style: BorderStyle.SINGLE },
+        },
         spacing: { after: 400 },
       })
     );
