@@ -102,6 +102,12 @@ const merchantItems = [
     icon: Bot,
   },
   {
+    id: 'voice-agents' as MenuItemId,
+    title: 'Voice AI Agents',
+    href: '/dashboard/voice-agents',
+    icon: Phone,
+  },
+  {
     id: 'docpen' as MenuItemId,
     title: 'AI Docpen',
     href: '/dashboard/docpen',
@@ -146,7 +152,7 @@ const merchantItems = [
   },
   {
     id: 'voice-agent' as MenuItemId,
-    title: 'Voice Agent',
+    title: 'Call History',
     href: '/dashboard/voice-agent',
     icon: Phone,
   },
@@ -333,13 +339,6 @@ const merchantItems = [
 // Admin items - Secure section requiring re-authentication
 // These pages control sensitive business operations and staff management
 const adminItems = [
-  {
-    id: 'voice-agents' as MenuItemId,
-    title: 'Voice AI Agents',
-    href: '/dashboard/voice-agents',
-    icon: Phone,
-    requiresSuperAdmin: true, // Only SUPER_ADMIN can access
-  },
   {
     id: 'voice-agent-preview' as MenuItemId,
     title: 'Test Voice Agent',

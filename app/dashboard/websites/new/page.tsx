@@ -140,6 +140,10 @@ export default function NewWebsitePage() {
   // Rebuild form state
   const [rebuildUrl, setRebuildUrl] = useState('');
   const [rebuildName, setRebuildName] = useState('');
+  const [rebuildTemplateType, setRebuildTemplateType] = useState<'SERVICE' | 'PRODUCT'>('SERVICE');
+  const [rebuildTemplates, setRebuildTemplates] = useState<any[]>([]);
+  const [rebuildSelectedTemplateId, setRebuildSelectedTemplateId] = useState<string>('');
+  const [loadingRebuildTemplates, setLoadingRebuildTemplates] = useState(false);
 
   // New website form state
   const [websiteName, setWebsiteName] = useState('');
@@ -318,7 +322,31 @@ export default function NewWebsitePage() {
 
   const handleInitialChoice = (choice: 'rebuild' | 'new') => {
     setStep(choice);
+    if (choice === 'rebuild') {
+      loadRebuildTemplates();
+    }
   };
+
+  const loadRebuildTemplates = async () => {
+    setLoadingRebuildTemplates(true);
+    try {
+      const response = await fetch(`/api/admin/website-templates?type=${rebuildTemplateType}`);
+      if (response.ok) {
+        const data = await response.json();
+        const templates = data.templates || [];
+        setRebuildTemplates(templates);
+        const defaultTpl = templates.find((t: any) => t.isDefault) || templates[0];
+        if (defaultTpl) {
+          setRebuildSelectedTemplateId(defaultTpl.id);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load rebuild templates:', error);
+    } finally {
+      setLoadingRebuildTemplates(false);
+    }
+  };
+
 
   const handleRebuild = async () => {
     if (!rebuildUrl || !rebuildName) {
@@ -335,6 +363,8 @@ export default function NewWebsitePage() {
           name: rebuildName,
           type: 'REBUILT',
           sourceUrl: rebuildUrl,
+          templateType: rebuildTemplateType,
+          templateId: rebuildSelectedTemplateId || undefined,
           enableVoiceAI,
         }),
       });
@@ -559,6 +589,93 @@ export default function NewWebsitePage() {
                   placeholder="https://example.com"
                   className="mt-1"
                 />
+              </div>
+
+              {/* Rebuild template selection */}
+              <div>
+                <Label className="text-base font-medium">Design Template</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Choose a template design. Your scraped content will be placed into this layout for you to approve or modify with the AI editor.
+                </p>
+                <div className="flex gap-2 mb-2">
+                  <Button
+                    type="button"
+                    variant={rebuildTemplateType === 'SERVICE' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={async () => {
+                      setRebuildTemplateType('SERVICE');
+                      setLoadingRebuildTemplates(true);
+                      try {
+                        const r = await fetch('/api/admin/website-templates?type=SERVICE');
+                        if (r.ok) {
+                          const d = await r.json();
+                          const tpls = d.templates || [];
+                          setRebuildTemplates(tpls);
+                          const def = tpls.find((t: any) => t.isDefault) || tpls[0];
+                          setRebuildSelectedTemplateId(def?.id || '');
+                        }
+                      } finally {
+                        setLoadingRebuildTemplates(false);
+                      }
+                    }}
+                  >
+                    <Briefcase className="h-4 w-4 mr-1" />
+                    Service
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={rebuildTemplateType === 'PRODUCT' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={async () => {
+                      setRebuildTemplateType('PRODUCT');
+                      setLoadingRebuildTemplates(true);
+                      try {
+                        const r = await fetch('/api/admin/website-templates?type=PRODUCT');
+                        if (r.ok) {
+                          const d = await r.json();
+                          const tpls = d.templates || [];
+                          setRebuildTemplates(tpls);
+                          const def = tpls.find((t: any) => t.isDefault) || tpls[0];
+                          setRebuildSelectedTemplateId(def?.id || '');
+                        }
+                      } finally {
+                        setLoadingRebuildTemplates(false);
+                      }
+                    }}
+                  >
+                    <ShoppingCart className="h-4 w-4 mr-1" />
+                    Product
+                  </Button>
+                </div>
+                {loadingRebuildTemplates ? (
+                  <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading templates...
+                  </div>
+                ) : rebuildTemplates.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                    {rebuildTemplates.map((tpl) => (
+                      <Card
+                        key={tpl.id}
+                        className={`cursor-pointer transition-all ${
+                          rebuildSelectedTemplateId === tpl.id ? 'ring-2 ring-primary' : 'hover:border-primary/50'
+                        }`}
+                        onClick={() => setRebuildSelectedTemplateId(tpl.id)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="font-medium text-sm truncate">{tpl.name}</div>
+                          {tpl.isDefault && (
+                            <Badge variant="secondary" className="mt-1 text-xs">Default</Badge>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-2">
+                    No templates available. Content will use a basic layout.
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center space-x-2">
