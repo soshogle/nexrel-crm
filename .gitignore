@@ -1,6 +1,5 @@
-# Backup connection strings (contains sensitive credentials)
-backups/*connection*.txt
-backups/*credentials*.txt
+# Backup data (sensitive, large - keep locally only)
+backups/
 *.backup
 *.bak
 node_modules
