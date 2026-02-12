@@ -132,7 +132,8 @@ export default function BillingUpgradeCard() {
             <div>
               <h4 className="font-medium mb-2">Your Features:</h4>
               <ul className="space-y-2">
-                {Object.entries(subscription.plan.features).map(([key, value]) => {
+                {Object.entries(subscription.plan?.features ?? {}).map(([key, value]) => {
+                  const label = (key ?? '').toString().replace(/([A-Z])/g, ' $1').toLowerCase();
                   if (typeof value === 'boolean') {
                     return (
                       <li key={key} className="flex items-center gap-2">
@@ -142,7 +143,7 @@ export default function BillingUpgradeCard() {
                           <X className="h-4 w-4 text-red-600" />
                         )}
                         <span className="text-sm capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                          {label}
                         </span>
                       </li>
                     );
@@ -151,7 +152,7 @@ export default function BillingUpgradeCard() {
                     <li key={key} className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
                       <span className="text-sm capitalize">
-                        {key.replace(/([A-Z])/g, ' $1').toLowerCase()}: {value === -1 ? 'Unlimited' : value}
+                        {label}: {value === -1 ? 'Unlimited' : value}
                       </span>
                     </li>
                   );

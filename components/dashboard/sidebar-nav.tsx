@@ -528,27 +528,10 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   // Get user industry directly from session (already populated in auth.ts)
   const userIndustry = (session?.user?.industry as Industry) || null;
 
-  // Debug: Log industry for troubleshooting
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      console.log('🔍 Sidebar - User industry check:', {
-        userId: session.user.id,
-        industry: session.user.industry,
-        email: session.user.email,
-        hasIndustry: !!session.user.industry,
-      });
-    }
-  }, [status, session]);
-
   // Refresh session if industry is missing but user is authenticated
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.id && !userIndustry) {
-      console.log('⚠️ Industry missing from session, attempting refresh...');
-      update().then(() => {
-        console.log('✅ Session refreshed');
-      }).catch((err) => {
-        console.error('❌ Failed to refresh session:', err);
-      });
+      update().catch(() => {});
     }
   }, [status, session, userIndustry, update]);
 
@@ -605,36 +588,29 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   }, [session?.user?.id, isLoadingRole]); // Only depend on user ID to prevent repeated calls
 
   const handleLogout = async () => {
-    console.log('🚪 Logout initiated');
-    
     // First, end any active impersonation sessions on the server
     try {
       const sessionToken = localStorage.getItem('impersonationToken');
       
       if (sessionToken) {
-        console.log('📡 Ending impersonation session before logout');
         await fetch(`/api/platform-admin/impersonate?sessionToken=${sessionToken}`, {
           method: 'DELETE',
         });
       }
       
-      // Also call the end-all endpoint to be extra sure
-      console.log('📡 Calling end-all to terminate any active sessions');
       await fetch('/api/platform-admin/impersonate/end-all', {
         method: 'POST',
       });
     } catch (error) {
-      console.error('⚠️ Error ending impersonation during logout:', error);
+      // Impersonation cleanup failed - continue with logout
       // Continue with logout even if this fails
     }
     
     // Clear any impersonation data from localStorage
-    console.log('🧹 Clearing localStorage');
     localStorage.removeItem('impersonationToken');
     localStorage.removeItem('impersonatedUserId');
     localStorage.removeItem('impersonatedUserName');
-    
-    console.log('👋 Signing out');
+
     // Sign out and redirect to signin page
     await signOut({ callbackUrl: '/auth/signin', redirect: true });
   };

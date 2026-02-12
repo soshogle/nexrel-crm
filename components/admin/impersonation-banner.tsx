@@ -12,31 +12,6 @@ export function ImpersonationBanner() {
   const router = useRouter();
   const { data: session, status, update } = useSession();
 
-  // Debug logging
-  useEffect(() => {
-    const impersonationCheck = {
-      status,
-      hasSession: !!session,
-      userId: session?.user?.id,
-      userName: session?.user?.name,
-      isImpersonating: session?.user?.isImpersonating,
-      superAdminId: session?.user?.superAdminId,
-      superAdminName: session?.user?.superAdminName,
-      willShowBanner: status === 'authenticated' && session?.user?.isImpersonating === true,
-    };
-    console.log('🎨 ImpersonationBanner - Session state:', impersonationCheck);
-    
-    if (impersonationCheck.willShowBanner) {
-      console.log('✅ BANNER SHOULD BE VISIBLE NOW!');
-    } else {
-      console.log('❌ Banner will NOT show - Reason:', {
-        statusNotAuth: status !== 'authenticated',
-        noSession: !session,
-        noImpersonatingFlag: !session?.user?.isImpersonating,
-      });
-    }
-  }, [session, status]);
-
   // Automatically check and redirect if impersonation has expired
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.isImpersonating) {

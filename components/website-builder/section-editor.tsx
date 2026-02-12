@@ -42,6 +42,8 @@ interface SectionEditorProps {
   onUpdateImage: (sectionType: string, imageUrl: string, alt?: string) => Promise<void>;
   onUpdateLayout?: (sectionType: string, layout: any) => Promise<void>;
   onUpdateProps?: (sectionType: string, props: Record<string, any>) => Promise<void>;
+  /** When true, only show reorder + delete (beginner-friendly). Hover to see "More" for image/layout. */
+  compactMode?: boolean;
 }
 
 function SortableSectionCard({
@@ -183,6 +185,7 @@ export function SectionEditor({
   onUpdateImage,
   onUpdateLayout,
   onUpdateProps,
+  compactMode = false,
 }: SectionEditorProps) {
   const [moveIndex, setMoveIndex] = useState<number | null>(null);
   const [mediaPickerFor, setMediaPickerFor] = useState<string | null>(null);
@@ -232,6 +235,19 @@ export function SectionEditor({
 
   const imageProps = ['imageUrl', 'backgroundImage', 'src'];
 
+  if (components.length === 0) {
+    return (
+      <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted/30 p-12 text-center">
+        <p className="text-muted-foreground mb-2">
+          No sections yet. Your website structure will appear here once the build completes.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          <strong>Tip:</strong> Use the AI Chat tab to add sections, or wait for the build to finish (progress bar above).
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -255,8 +271,8 @@ export function SectionEditor({
                 onConfigClick={() => setConfigEditorFor({ type: comp.type, comp })}
                 hasImageProp={!!hasImageProp}
                 moveIndex={moveIndex}
-                hasLayoutEditor={!!onUpdateLayout}
-                hasConfigEditor={hasConfigEditor}
+                hasLayoutEditor={!compactMode && !!onUpdateLayout}
+                hasConfigEditor={!compactMode && hasConfigEditor}
               />
             );
           })}
