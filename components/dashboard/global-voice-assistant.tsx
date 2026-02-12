@@ -9,6 +9,11 @@ import { useState, useEffect, useRef } from 'react';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
 import { useAIBrainVoice } from '@/lib/ai-brain-voice-context';
 import { Button } from '@/components/ui/button';
+
+function getActiveWorkflowDraftId(): string | null {
+  if (typeof window === 'undefined') return null;
+  return sessionStorage.getItem('activeWorkflowDraftId');
+}
 import { Card } from '@/components/ui/card';
 import { Mic, MicOff, X, Minimize2, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,6 +24,7 @@ export function GlobalVoiceAssistant() {
   const { handleMessage } = useAIBrainVoice();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [activeWorkflowDraftId, setActiveWorkflowDraftId] = useState<string | null>(null);
   const [agentId, setAgentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,9 +61,17 @@ export function GlobalVoiceAssistant() {
   }, [isOpen, isMinimized, conversationActive]);
 
   useEffect(() => {
-    // Get or create CRM voice agent
     fetchAgent();
   }, []);
+
+  // Pass active workflow draft to voice agent so it prefers add_workflow_task over list_leads/list_deals
+  useEffect(() => {
+    setActiveWorkflowDraftId(getActiveWorkflowDraftId());
+    const interval = setInterval(() => {
+      setActiveWorkflowDraftId(getActiveWorkflowDraftId());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isOpen]);
 
   const fetchAgent = async () => {
     try {
@@ -172,6 +186,10 @@ export function GlobalVoiceAssistant() {
                   dynamicVariables={{
                     company_name: 'Your CRM',
                     user_name: 'User',
+                    ...(activeWorkflowDraftId && {
+                      active_workflow_draft_id: activeWorkflowDraftId,
+                      in_workflow_builder: 'true',
+                    }),
                   }}
                 />
               </div>

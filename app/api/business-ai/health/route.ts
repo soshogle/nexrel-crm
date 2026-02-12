@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { businessDataPipeline } from '@/lib/business-ai/data-pipeline';
 import { businessAnalyticsEngine } from '@/lib/business-ai/analytics-engine';
+import { addExplanations } from '@/lib/business-ai/prediction-explainer';
 import { prisma } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
 
       healthScore = businessAnalyticsEngine.calculateHealthScore(businessData);
       predictions = businessAnalyticsEngine.generatePredictions(businessData);
+      predictions = await addExplanations(predictions as any, businessData);
       insights = businessAnalyticsEngine.generateInsights(businessData);
 
       // If pipeline returned zeros but we have CRM data (leads/deals), use fallback for meaningful scores

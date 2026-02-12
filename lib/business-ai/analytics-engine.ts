@@ -1,9 +1,11 @@
 /**
  * Business AI Analytics Engine
- * Calculates metrics, predictions, and insights
+ * Calculates metrics, predictions, and insights.
+ * Predictions use statistical models (lib/business-ai/predictive-models.ts), not LLM.
  */
 
 import { BusinessDataSnapshot } from './data-pipeline';
+import { generatePredictions as generateStatisticalPredictions } from './predictive-models';
 
 export interface BusinessHealthScore {
   overall: number; // 0-100
@@ -31,6 +33,7 @@ export interface Prediction {
   confidence: number; // 0-100
   timeframe: string;
   factors: string[];
+  explanation?: string; // LLM-generated human-readable explanation
 }
 
 export interface Insight {
@@ -262,66 +265,20 @@ export class BusinessAnalyticsEngine {
   }
 
   /**
-   * Generate predictions
+   * Generate predictions using statistical models (linear regression, Wilson score, stage-weighted).
+   * See lib/business-ai/predictive-models.ts for implementation.
    */
   generatePredictions(data: BusinessDataSnapshot): Prediction[] {
-    const predictions: Prediction[] = [];
-
-    // Revenue prediction
-    const revenueGrowth = data.revenue.growthRate;
-    const currentRevenue = data.revenue.thisMonth;
-    const predictedRevenue = currentRevenue * (1 + revenueGrowth / 100);
-
-    predictions.push({
-      metric: 'revenue',
-      currentValue: currentRevenue,
-      predictedValue: predictedRevenue,
-      confidence: Math.min(95, Math.max(60, 80 + revenueGrowth)),
-      timeframe: 'next month',
-      factors: [
-        `Current growth rate: ${revenueGrowth.toFixed(1)}%`,
-        `Pipeline value: $${data.deals.totalValue.toFixed(2)}`,
-        `Average deal value: $${data.deals.averageValue.toFixed(2)}`,
-      ],
-    });
-
-    // Lead conversion prediction
-    const avgConversionRate = data.leads.conversionRate;
-    const newLeads = data.leads.new;
-    const predictedConversions = (newLeads * avgConversionRate) / 100;
-
-    predictions.push({
-      metric: 'leadConversions',
-      currentValue: data.leads.converted,
-      predictedValue: predictedConversions,
-      confidence: 75,
-      timeframe: 'next 30 days',
-      factors: [
-        `Current conversion rate: ${avgConversionRate.toFixed(1)}%`,
-        `New leads this period: ${newLeads}`,
-        `Average lead score: ${data.leads.averageScore.toFixed(1)}`,
-      ],
-    });
-
-    // Deal closure prediction
-    const openDealsValue = data.deals.open;
-    const winRate = data.deals.winRate;
-    const predictedWonValue = (openDealsValue * winRate) / 100;
-
-    predictions.push({
-      metric: 'dealValue',
-      currentValue: data.deals.totalValue,
-      predictedValue: predictedWonValue,
-      confidence: Math.min(90, Math.max(50, winRate)),
-      timeframe: 'next 30 days',
-      factors: [
-        `Current win rate: ${winRate.toFixed(1)}%`,
-        `Open deals: ${data.deals.open}`,
-        `Average sales cycle: ${data.deals.averageSalesCycle.toFixed(1)} days`,
-      ],
-    });
-
-    return predictions;
+    const predictions = generateStatisticalPredictions(data);
+    return predictions.map((p) => ({
+      metric: p.metric,
+      currentValue: p.currentValue,
+      predictedValue: p.predictedValue,
+      confidence: p.confidence,
+      timeframe: p.timeframe,
+      factors: p.factors,
+      explanation: p.explanation,
+    }));
   }
 
   /**
