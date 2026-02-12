@@ -44,9 +44,13 @@ export async function GET(request: NextRequest) {
           include: {
             deals: { take: 1, include: { stage: true } },
             notes: { take: 3, orderBy: { createdAt: 'desc' } },
-            tasks: { where: { status: { notIn: ['COMPLETED', 'CANCELLED'] } }, take: 1, orderBy: { dueDate: 'asc' } },
+            tasks: {
+              where: { status: { notIn: ['COMPLETED', 'CANCELLED'] } },
+              take: 1,
+              orderBy: { dueDate: 'asc' },
+            },
           },
-        } })
+        })
       : null;
 
     const baseReplies = [
