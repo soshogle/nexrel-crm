@@ -270,6 +270,7 @@ model User {
   aiGeneratedReports          AiGeneratedReport[]          @relation("UserAiGeneratedReports")
   docpenSessions              DocpenSession[]
   docpenVoiceAgents           DocpenVoiceAgent[]
+  ehrScheduleSnapshots        EhrScheduleSnapshot[]
   docpenKnowledgeBaseFiles    DocpenKnowledgeBaseFile[]
   feedbackCollections         FeedbackCollection[]
   // Real Estate Industry Relations
@@ -439,6 +440,21 @@ model ApiKey {
 
   @@unique([userId, service, keyName])
   @@index([userId])
+}
+
+model EhrScheduleSnapshot {
+  id            String   @id @default(cuid())
+  userId        String
+  clinicId      String?
+  ehrType       String   // dentrix, dentitek, etc.
+  captureDate   DateTime // Date the schedule is for
+  snapshotAt    DateTime @default(now())
+  availability  Json     // { slots: ["09:00", "10:30", ...], booked: [{time, patient}], dateRange }
+  source        String   @default("screenshot") // "screenshot" | "dom"
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, captureDate])
 }
 
 model Campaign {

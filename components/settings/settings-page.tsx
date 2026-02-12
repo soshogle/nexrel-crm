@@ -25,6 +25,7 @@ import { WhatsAppSettings } from '@/components/settings/whatsapp-settings'
 import MetaSettings from '@/components/settings/meta-settings'
 import LanguageSelector from '@/components/settings/language-selector'
 import BillingUpgradeCard from '@/components/dashboard/billing-upgrade-card'
+import { EHRBridgeSettings } from '@/components/settings/ehr-bridge-settings'
 import { 
   User, 
   Key, 
@@ -48,7 +49,8 @@ import {
   Languages,
   Shield,
   Instagram,
-  Share2
+  Share2,
+  Plug
 } from 'lucide-react'
 
 interface SettingsPageProps {
@@ -217,6 +219,7 @@ export function SettingsPage({ session }: SettingsPageProps) {
     { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
     { id: 'quickbooks', label: 'QuickBooks', icon: DollarSign },
     { id: 'knowledge-base', label: 'Knowledge Base', icon: Book },
+    { id: 'ehr-bridge', label: 'EHR Bridge', icon: Plug },
     { id: 'auto-reply', label: 'AI Auto-Reply', icon: Bot },
     { id: 'language', label: t('language'), icon: Languages },
     { id: 'permissions', label: t('permissions'), icon: Shield },
@@ -661,6 +664,10 @@ export function SettingsPage({ session }: SettingsPageProps) {
 
           {activeSection === 'permissions' && (
             <PermissionsManager />
+          )}
+
+          {activeSection === 'ehr-bridge' && (
+            <EHRBridgeSettings />
           )}
         </div>
       </div>

@@ -1,0 +1,64 @@
+{
+  "manifest_version": 3,
+  "name": "Nexrel EHR Bridge",
+  "version": "1.0.0",
+  "description": "Push Docpen notes and CRM data to browser-based EHRs. Sync patient data when read API is available.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "alarms",
+    "cookies"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://localhost:*/*",
+    "http://127.0.0.1:*/*",
+    "http://*/*"
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "48": "assets/icon-48.png",
+      "128": "assets/icon-128.png"
+    },
+    "default_title": "Nexrel EHR Bridge"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*/*",
+        "http://localhost:*/*",
+        "http://127.0.0.1:*/*",
+        "http://*/*"
+      ],
+      "js": [
+        "content/ehr-detector.js",
+        "content/ehr-reader.js",
+        "content/ehr-schedule-sync.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*/*",
+        "http://localhost:*/*",
+        "http://127.0.0.1:*/*",
+        "http://*/*"
+      ],
+      "js": [
+        "content/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "assets/icon-16.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  }
+}
