@@ -251,6 +251,18 @@ Available functions:
 - sms_leads: Text multiple leads. USE when user says "text all my leads from today", "SMS today's leads with [message]". Use period: "today" for leads created today.
 - email_leads: Email multiple leads. USE when user says "email all my leads from today", "send email to today's leads about [topic]". Use period: "today" for leads created today.
 - add_workflow_task: Add a step to the workflow. USE when user describes a step: "add send email", "add call them", "add 2 day delay", "add trigger when lead created". Call for EACH step. workflowId is auto-filled from active draft.
+- create_task: Create a task. USE when user says "remind me to follow up with John tomorrow", "create a task to call back Acme Corp". Requires title, optional dueDate/description.
+- list_tasks: List tasks. USE when user says "show my overdue tasks", "what's due today?", "my tasks". Use overdue: true for overdue.
+- complete_task: Mark task done. USE when user says "mark X as done", "complete the task". Use taskTitle to match.
+- add_note: Add note to contact or deal. USE when user says "add a note to John: interested in enterprise", "log note on Acme deal: sent proposal Tuesday". Requires content, contactName or dealTitle.
+- update_deal_stage: Move deal in pipeline. USE when user says "move Acme deal to Negotiation", "mark Big Corp deal as won". Requires dealTitle, stageName.
+- create_invoice: Create invoice. USE when user says "send invoice to John for $500". Requires contactName, amount.
+- list_overdue_invoices: List overdue invoices. USE when user says "show unpaid invoices", "what's overdue?".
+- get_daily_briefing: Get daily summary. USE when user says "what do I need to focus on today?", "morning digest", "what should I prioritize?".
+- update_deal: Update deal value or close date. USE when user says "update Acme deal to $15,000", "set close date to March 15". Requires dealTitle, optional value/expectedCloseDate.
+- get_follow_up_suggestions: Get who to contact. USE when user says "who haven't I contacted in 2 weeks?", "who should I follow up with?". Use period: last_week, last_2_weeks, last_month.
+- get_meeting_prep: Pre-call briefing. USE when user says "what should I know before my call with John?", "prep me for my meeting with Acme". Requires contactName.
+- create_bulk_tasks: Create tasks for leads. USE when user says "create follow-up tasks for all leads from this week", "add tasks for today's leads". Use taskTitle with {name} for contact name, period: today/last_week/last_2_weeks.
 
 IMPORTANT: When users ask "how many new leads today" or "show me my leads" → use list_leads (navigates to contacts page). When users ask for graphs, charts, or sales trends → use get_statistics (shows visualizations on AI Brain). Do not use get_statistics for simple lead/deal counts.
 For workflows: when user says "create workflow", acknowledge and say you've opened the builder (client opens it). Then for each step ("add email", "add delay", "add call") → add_workflow_task.
@@ -633,6 +645,155 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
             workflowId: { type: 'string', description: 'Workflow ID (optional - uses active draft if not provided)' },
           },
           required: ['name'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'create_task',
+        description: 'Create a CRM task. Use when user says "remind me to follow up with John tomorrow", "create a task to call back Acme Corp".',
+        parameters: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', description: 'Task title (required)' },
+            description: { type: 'string', description: 'Task description (optional)' },
+            dueDate: { type: 'string', description: 'Due date YYYY-MM-DD (optional)' },
+            priority: { type: 'string', enum: ['LOW', 'MEDIUM', 'HIGH'], description: 'Priority (optional)' },
+          },
+          required: ['title'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'list_tasks',
+        description: 'List tasks. Use when user says "show my overdue tasks", "what\'s due today?", "my tasks".',
+        parameters: {
+          type: 'object',
+          properties: {
+            overdue: { type: 'boolean', description: 'Show only overdue tasks (optional)' },
+            limit: { type: 'number', description: 'Max results (default 20)' },
+          },
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'complete_task',
+        description: 'Mark a task as done. Use when user says "mark X as done", "complete the task".',
+        parameters: {
+          type: 'object',
+          properties: {
+            taskId: { type: 'string', description: 'Task ID (optional)' },
+            taskTitle: { type: 'string', description: 'Task title to match (use if taskId not known)' },
+          },
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'add_note',
+        description: 'Add a note to a contact or deal. Use when user says "add a note to John: interested in enterprise", "log note on Acme deal: sent proposal Tuesday".',
+        parameters: {
+          type: 'object',
+          properties: {
+            contactName: { type: 'string', description: 'Contact name (for contact notes)' },
+            dealTitle: { type: 'string', description: 'Deal title (for deal notes)' },
+            content: { type: 'string', description: 'Note content (required)' },
+          },
+          required: ['content'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'update_deal_stage',
+        description: 'Move a deal to a pipeline stage. Use when user says "move Acme deal to Negotiation", "mark Big Corp deal as won".',
+        parameters: {
+          type: 'object',
+          properties: {
+            dealTitle: { type: 'string', description: 'Deal title (required)' },
+            stageName: { type: 'string', description: 'Target stage: Negotiation, Won, Lost, Proposal (required)' },
+          },
+          required: ['dealTitle', 'stageName'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'create_invoice',
+        description: 'Create an invoice. Use when user says "send invoice to John for $500", "create invoice for Acme deal".',
+        parameters: {
+          type: 'object',
+          properties: {
+            contactName: { type: 'string', description: 'Customer name (required)' },
+            amount: { type: 'number', description: 'Amount in dollars (required)' },
+            description: { type: 'string', description: 'Line item description (optional)' },
+          },
+          required: ['contactName', 'amount'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'list_overdue_invoices',
+        description: 'List unpaid/overdue invoices. Use when user says "show unpaid invoices", "what\'s overdue?".',
+        parameters: {
+          type: 'object',
+          properties: {
+            limit: { type: 'number', description: 'Max results (default 20)' },
+          },
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'get_daily_briefing',
+        description: 'Get daily summary. Use when user says "what do I need to focus on today?", "morning digest", "what should I prioritize?".',
+        parameters: { type: 'object', properties: {} },
+        server_url: serverUrl,
+      },
+      {
+        name: 'update_deal',
+        description: 'Update deal value or close date. Use when user says "update Acme deal to $15,000", "set close date to March 15".',
+        parameters: {
+          type: 'object',
+          properties: {
+            dealTitle: { type: 'string', description: 'Deal title (required)' },
+            value: { type: 'number', description: 'New value in dollars (optional)' },
+            expectedCloseDate: { type: 'string', description: 'Close date YYYY-MM-DD (optional)' },
+          },
+          required: ['dealTitle'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'get_follow_up_suggestions',
+        description: 'Get who to contact next. Use when user says "who haven\'t I contacted in 2 weeks?", "who should I follow up with?".',
+        parameters: {
+          type: 'object',
+          properties: {
+            period: { type: 'string', enum: ['last_week', 'last_2_weeks', 'last_month'], description: 'Time period' },
+            limit: { type: 'number', description: 'Max suggestions (default 10)' },
+          },
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'get_meeting_prep',
+        description: 'Pre-call briefing. Use when user says "what should I know before my call with John?", "prep me for my meeting with Acme".',
+        parameters: {
+          type: 'object',
+          properties: {
+            contactName: { type: 'string', description: 'Contact name (required)' },
+          },
+          required: ['contactName'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'create_bulk_tasks',
+        description: 'Create follow-up tasks for leads. Use when user says "create follow-up tasks for all leads from this week", "add tasks for today\'s leads".',
+        parameters: {
+          type: 'object',
+          properties: {
+            taskTitle: { type: 'string', description: 'Task title, use {name} for contact name (required)' },
+            period: { type: 'string', enum: ['today', 'last_week', 'last_2_weeks'], description: 'Which leads' },
+            dueInDays: { type: 'number', description: 'Days from now for due date (default 1)' },
+          },
+          required: ['taskTitle'],
         },
         server_url: serverUrl,
       },

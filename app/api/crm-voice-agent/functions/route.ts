@@ -17,6 +17,28 @@ import { sendSMS, sendEmail, sendSMSToLeads, sendEmailToLeads } from '@/lib/mess
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+async function proxyToActionsAPI(
+  action: string,
+  parameters: any,
+  userId: string,
+  req: NextRequest
+): Promise<any> {
+  const baseUrl = process.env.NEXTAUTH_URL
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    || 'http://localhost:3000';
+  const url = `${baseUrl}/api/ai-assistant/actions`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, parameters, userId }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    return { error: data.error || 'Action failed' };
+  }
+  return data.result || data;
+}
+
 /**
  * Handle function calls from ElevenLabs CRM voice agent
  */
@@ -121,6 +143,27 @@ export async function POST(req: NextRequest) {
 
       case 'add_workflow_task':
         result = await handleAddWorkflowTask(userId, parameters || {});
+        break;
+
+      case 'create_task':
+      case 'list_tasks':
+      case 'complete_task':
+      case 'add_note':
+      case 'update_deal_stage':
+      case 'create_invoice':
+      case 'list_overdue_invoices':
+        result = await proxyToActionsAPI(function_name, parameters || {}, userId, req);
+        break;
+
+      case 'get_daily_briefing':
+      case 'update_deal':
+      case 'get_follow_up_suggestions':
+        result = await proxyToActionsAPI(function_name, parameters || {}, userId, req);
+        break;
+
+      case 'get_meeting_prep':
+      case 'create_bulk_tasks':
+        result = await proxyToActionsAPI(function_name, parameters || {}, userId, req);
         break;
 
       default:

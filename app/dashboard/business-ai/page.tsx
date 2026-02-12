@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ import {
   Sparkles,
   ChevronRight,
   X,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ComprehensiveBrainData } from '@/lib/ai-brain-enhanced-service';
@@ -88,8 +89,10 @@ interface WorkflowRecommendation {
 export default function BusinessAIPage() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<'voice' | 'dashboard'>(() => {
+  const router = useRouter();
+  const [mode, setMode] = useState<'voice' | 'dashboard' | 'reports'>(() => {
     const modeParam = searchParams?.get('mode');
+    if (modeParam === 'reports') return 'reports';
     return modeParam === 'dashboard' ? 'dashboard' : 'voice';
   });
   
@@ -151,6 +154,13 @@ export default function BusinessAIPage() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchParams?.get('mode') === 'reports') {
+      router.push('/dashboard/reports');
+      return;
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (session) {
@@ -658,8 +668,14 @@ export default function BusinessAIPage() {
         )}
 
         {/* Mode Tabs */}
-        <Tabs value={mode} onValueChange={(value) => setMode(value as 'voice' | 'dashboard')} className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2 bg-white/80 backdrop-blur-sm border-purple-200">
+        <Tabs value={mode} onValueChange={(value) => {
+          if (value === 'reports') {
+            router.push('/dashboard/reports');
+            return;
+          }
+          setMode(value as 'voice' | 'dashboard');
+        }} className="w-full">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3 bg-white/80 backdrop-blur-sm border-purple-200">
             <TabsTrigger value="voice" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <Mic className="h-4 w-4" />
               Forecasts
@@ -667,6 +683,10 @@ export default function BusinessAIPage() {
             <TabsTrigger value="dashboard" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <BarChart3 className="h-4 w-4" />
               Analytical Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+              <FileText className="h-4 w-4" />
+              Reports
             </TabsTrigger>
           </TabsList>
 

@@ -105,6 +105,56 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
     {
       type: "function",
       function: {
+        name: "update_lead",
+        description: "Update a contact/lead. Use when user says 'change John's email to X', 'update contact status', 'edit lead phone number'.",
+        parameters: {
+          type: "object",
+          properties: {
+            leadId: { type: "string", description: "Lead ID (optional if contactName provided)" },
+            contactName: { type: "string", description: "Contact name to find (optional if leadId provided)" },
+            email: { type: "string", description: "New email (optional)" },
+            phone: { type: "string", description: "New phone (optional)" },
+            status: { type: "string", enum: ["NEW", "CONTACTED", "QUALIFIED", "CONVERTED", "LOST"], description: "New status (optional)" },
+            company: { type: "string", description: "New company name (optional)" },
+            name: { type: "string", description: "New contact person name (optional)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_lead_details",
+        description: "Get full details for a contact. Use when user says 'show me John's details', 'what do we know about Acme Corp?', 'tell me about this lead'. Returns notes, tasks, deal history.",
+        parameters: {
+          type: "object",
+          properties: {
+            leadId: { type: "string", description: "Lead ID (optional if contactName provided)" },
+            contactName: { type: "string", description: "Contact or company name (optional if leadId provided)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "delete_lead",
+        description: "Delete or archive a contact. Use when user says 'delete this lead', 'remove John from contacts', 'archive Acme Corp'.",
+        parameters: {
+          type: "object",
+          properties: {
+            leadId: { type: "string", description: "Lead ID (optional if contactName provided)" },
+            contactName: { type: "string", description: "Contact name to delete (optional if leadId provided)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
         name: "list_deals",
         description: "List deals in the sales pipeline",
         parameters: {
@@ -115,6 +165,67 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
               description: "Maximum number of results (optional, default 10)",
             },
           },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_deal_details",
+        description: "Get full details for a deal. Use when user says 'show me the Acme deal', 'what are the details of this deal?'.",
+        parameters: {
+          type: "object",
+          properties: {
+            dealId: { type: "string", description: "Deal ID (optional if dealTitle provided)" },
+            dealTitle: { type: "string", description: "Deal title/name (optional if dealId provided)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "delete_deal",
+        description: "Delete or archive a deal. Use when user says 'delete this deal', 'remove the Acme deal'.",
+        parameters: {
+          type: "object",
+          properties: {
+            dealId: { type: "string", description: "Deal ID (optional if dealTitle provided)" },
+            dealTitle: { type: "string", description: "Deal title to delete (optional if dealId provided)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_pipeline",
+        description: "Create a new sales pipeline. Use when user says 'create a pipeline for X', 'add a new pipeline'.",
+        parameters: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "Pipeline name (required)" },
+            description: { type: "string", description: "Pipeline description (optional)" },
+          },
+          required: ["name"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_pipeline_stage",
+        description: "Add a stage to a pipeline. Use when user says 'add a stage to pipeline X', 'create a stage called Negotiation'.",
+        parameters: {
+          type: "object",
+          properties: {
+            pipelineName: { type: "string", description: "Pipeline name (required)" },
+            stageName: { type: "string", description: "Stage name (required)" },
+            probability: { type: "number", description: "Win probability 0-100 (optional)" },
+          },
+          required: ["pipelineName", "stageName"],
         },
       },
     },
@@ -148,6 +259,262 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
               description: "Confirmation to proceed with deletion (optional, defaults to true)",
             },
           },
+        },
+      },
+    },
+    // Task Management
+    {
+      type: "function",
+      function: {
+        name: "create_task",
+        description: "Create a CRM task/to-do. Use when user says 'remind me to follow up with John tomorrow', 'create a task to call back Acme Corp', 'add a task for...'",
+        parameters: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Task title (required)" },
+            description: { type: "string", description: "Task description (optional)" },
+            dueDate: { type: "string", description: "Due date in ISO format YYYY-MM-DD (optional)" },
+            leadId: { type: "string", description: "Associate with contact/lead (optional)" },
+            dealId: { type: "string", description: "Associate with deal (optional)" },
+            priority: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"], description: "Task priority (optional)" },
+          },
+          required: ["title"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "list_tasks",
+        description: "List tasks. Use when user says 'show my overdue tasks', 'what's due today?', 'my tasks', 'list tasks'",
+        parameters: {
+          type: "object",
+          properties: {
+            status: { type: "string", enum: ["TODO", "IN_PROGRESS", "COMPLETED", "CANCELLED"], description: "Filter by status (optional)" },
+            overdue: { type: "boolean", description: "Show only overdue tasks (optional)" },
+            limit: { type: "number", description: "Max results (default 20)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "complete_task",
+        description: "Mark a task as done. Use when user says 'mark X as done', 'complete the task', 'I finished the follow up'",
+        parameters: {
+          type: "object",
+          properties: {
+            taskId: { type: "string", description: "Task ID (required if known)" },
+            taskTitle: { type: "string", description: "Task title to match (use if taskId not known - will search by title)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_task",
+        description: "Update a task. Use when user says 'change task due date', 'edit task title', 'update task priority'.",
+        parameters: {
+          type: "object",
+          properties: {
+            taskId: { type: "string", description: "Task ID (optional if taskTitle provided)" },
+            taskTitle: { type: "string", description: "Task title to find (optional if taskId provided)" },
+            title: { type: "string", description: "New title (optional)" },
+            dueDate: { type: "string", description: "New due date YYYY-MM-DD (optional)" },
+            priority: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"], description: "New priority (optional)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "cancel_task",
+        description: "Cancel a task. Use when user says 'cancel this task', 'don't need this task anymore'.",
+        parameters: {
+          type: "object",
+          properties: {
+            taskId: { type: "string", description: "Task ID (optional if taskTitle provided)" },
+            taskTitle: { type: "string", description: "Task title to cancel (optional if taskId provided)" },
+          },
+          required: [],
+        },
+      },
+    },
+    // Notes
+    {
+      type: "function",
+      function: {
+        name: "add_note",
+        description: "Add a note to a contact or deal. Use when user says 'add a note to John Smith: interested in enterprise plan', 'log a note on the Acme deal: sent proposal Tuesday'",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Contact/lead name (use for contact notes)" },
+            dealTitle: { type: "string", description: "Deal title (use for deal notes)" },
+            content: { type: "string", description: "Note content (required)" },
+            leadId: { type: "string", description: "Lead ID if known (optional)" },
+            dealId: { type: "string", description: "Deal ID if known (optional)" },
+          },
+          required: ["content"],
+        },
+      },
+    },
+    // Deal stage
+    {
+      type: "function",
+      function: {
+        name: "update_deal_stage",
+        description: "Move a deal to a different pipeline stage. Use when user says 'move Acme deal to Negotiation', 'mark the Big Corp deal as won'",
+        parameters: {
+          type: "object",
+          properties: {
+            dealTitle: { type: "string", description: "Deal title/name (required)" },
+            stageName: { type: "string", description: "Target stage name: e.g. Negotiation, Won, Lost, Proposal (required)" },
+            dealId: { type: "string", description: "Deal ID if known (optional)" },
+          },
+          required: ["dealTitle", "stageName"],
+        },
+      },
+    },
+    // Invoices
+    {
+      type: "function",
+      function: {
+        name: "create_invoice",
+        description: "Create an invoice for a contact. Use when user says 'send an invoice to John for $500', 'create invoice for the Acme deal'",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Customer/contact name (required)" },
+            amount: { type: "number", description: "Total amount in dollars (required)" },
+            description: { type: "string", description: "Line item description (optional, e.g. 'Consulting services')" },
+            leadId: { type: "string", description: "Lead ID if known (optional)" },
+            dealId: { type: "string", description: "Deal ID if known (optional)" },
+            dueDate: { type: "string", description: "Due date YYYY-MM-DD (optional)" },
+          },
+          required: ["contactName", "amount"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "list_overdue_invoices",
+        description: "List unpaid/overdue invoices. Use when user says 'show unpaid invoices', 'what invoices are overdue?'",
+        parameters: {
+          type: "object",
+          properties: {
+            limit: { type: "number", description: "Max results (default 20)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_invoice_status",
+        description: "Update invoice status. Use when user says 'mark invoice as paid', 'mark invoice #X as paid', 'void this invoice'.",
+        parameters: {
+          type: "object",
+          properties: {
+            invoiceId: { type: "string", description: "Invoice ID (optional if invoiceNumber provided)" },
+            invoiceNumber: { type: "string", description: "Invoice number e.g. INV-xxx (optional if invoiceId provided)" },
+            status: { type: "string", enum: ["DRAFT", "SENT", "VIEWED", "PAID", "OVERDUE", "CANCELLED", "REFUNDED"], description: "New status (required)" },
+          },
+          required: ["status"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "send_invoice",
+        description: "Send an invoice to the customer. Use when user says 'send invoice to John', 'email the invoice'.",
+        parameters: {
+          type: "object",
+          properties: {
+            invoiceId: { type: "string", description: "Invoice ID (optional if invoiceNumber provided)" },
+            invoiceNumber: { type: "string", description: "Invoice number (optional if invoiceId provided)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_daily_briefing",
+        description: "Get a daily summary of what to focus on. Use when user says 'what do I need to focus on today?', 'give me my morning digest', 'what should I prioritize?' Returns overdue tasks, today's appointments, hot deals, new leads, unpaid invoices.",
+        parameters: { type: "object", properties: {} },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_deal",
+        description: "Update deal value or expected close date. Use when user says 'update the Acme deal value to $15,000', 'set expected close date to March 15'",
+        parameters: {
+          type: "object",
+          properties: {
+            dealTitle: { type: "string", description: "Deal title (required)" },
+            value: { type: "number", description: "New deal value in dollars (optional)" },
+            expectedCloseDate: { type: "string", description: "Expected close date YYYY-MM-DD (optional)" },
+            dealId: { type: "string", description: "Deal ID if known (optional)" },
+          },
+          required: ["dealTitle"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_follow_up_suggestions",
+        description: "Get suggestions for who to contact next. Use when user says 'what should I do with my leads from last week?', 'who haven\'t I contacted in 2 weeks?', 'who should I follow up with?'",
+        parameters: {
+          type: "object",
+          properties: {
+            period: { type: "string", enum: ["last_week", "last_2_weeks", "last_month"], description: "Time period" },
+            limit: { type: "number", description: "Max suggestions (default 10)" },
+          },
+        },
+      },
+    },
+    // Phase 3: Meeting prep, bulk actions
+    {
+      type: "function",
+      function: {
+        name: "get_meeting_prep",
+        description: "Get a pre-call briefing for a contact. Use when user says 'what should I know before my call with John?', 'prep me for my meeting with Acme'. Returns recent notes, deal history, last contact, tasks.",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Contact/lead name (required)" },
+          },
+          required: ["contactName"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_bulk_tasks",
+        description: "Create follow-up tasks for multiple leads. Use when user says 'create follow-up tasks for all leads from this week', 'add tasks for today\'s leads'",
+        parameters: {
+          type: "object",
+          properties: {
+            taskTitle: { type: "string", description: "Task title template, use {name} for contact name (required)" },
+            period: {
+              type: "string",
+              description: "Which leads: today, last_week, last_2_weeks",
+              enum: ["today", "last_week", "last_2_weeks"],
+            },
+            dueInDays: { type: "number", description: "Days from now for due date (default 1)" },
+          },
+          required: ["taskTitle"],
         },
       },
     },
@@ -192,6 +559,38 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
     {
       type: "function",
       function: {
+        name: "update_campaign",
+        description: "Update a campaign. Use when user says 'edit campaign X', 'change campaign name', 'update campaign status'.",
+        parameters: {
+          type: "object",
+          properties: {
+            campaignId: { type: "string", description: "Campaign ID (optional if campaignName provided)" },
+            campaignName: { type: "string", description: "Campaign name (optional if campaignId provided)" },
+            name: { type: "string", description: "New campaign name (optional)" },
+            status: { type: "string", description: "New status: DRAFT, ACTIVE, PAUSED, COMPLETED (optional)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_campaign_details",
+        description: "Get full details for a campaign. Use when user says 'show my campaign details', 'what's in the X campaign?'.",
+        parameters: {
+          type: "object",
+          properties: {
+            campaignId: { type: "string", description: "Campaign ID (optional if campaignName provided)" },
+            campaignName: { type: "string", description: "Campaign name (optional if campaignId provided)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
         name: "get_statistics",
         description: "Get CRM statistics, sales data, graphs/charts, and 'what if' scenario predictions. Use when user asks for: graphs, charts, visualizations, sales data, revenue comparisons, statistics, OR 'what if' scenarios (e.g. 'what if I convert 10 more leads?', 'what if I get 50 more leads?', 'what if conversion rate improved 5%?'). Displays results on AI Brain page.",
         parameters: {
@@ -206,6 +605,33 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
               description: "Compare with previous period (optional). Examples: 'previous_year', 'previous_period'",
             },
           },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_report",
+        description: "Create and save an AI-generated report. Use when user says 'generate a report', 'create a sales report', 'build a report for last month', 'give me a leads report', 'create a revenue report'. The report will be saved and displayed on the Reports page.",
+        parameters: {
+          type: "object",
+          properties: {
+            title: {
+              type: "string",
+              description: "Report title (required). E.g. 'Sales Report - February 2026', 'Leads Overview'",
+            },
+            reportType: {
+              type: "string",
+              description: "Type of report",
+              enum: ["sales", "leads", "revenue", "overview", "custom"],
+            },
+            period: {
+              type: "string",
+              description: "Time period for the report (optional)",
+              enum: ["last_7_days", "last_30_days", "last_month", "last_7_months", "last_year", "all_time"],
+            },
+          },
+          required: ["title"],
         },
       },
     },
@@ -246,6 +672,60 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
         },
       },
     },
+    {
+      type: "function",
+      function: {
+        name: "list_appointments",
+        description: "List appointments. Use when user says 'show my appointments', 'what's on my calendar?', 'list today's appointments'.",
+        parameters: {
+          type: "object",
+          properties: {
+            date: { type: "string", description: "Filter by date YYYY-MM-DD (optional)" },
+            limit: { type: "number", description: "Max results (default 20)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_appointment",
+        description: "Reschedule or update an appointment. Use when user says 'reschedule appointment', 'change appointment time'.",
+        parameters: {
+          type: "object",
+          properties: {
+            appointmentId: { type: "string", description: "Appointment ID (optional if customerName + date provided)" },
+            customerName: { type: "string", description: "Customer name to find (optional)" },
+            date: { type: "string", description: "New date YYYY-MM-DD (optional)" },
+            time: { type: "string", description: "New time HH:MM (optional)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "cancel_appointment",
+        description: "Cancel an appointment. Use when user says 'cancel this appointment', 'cancel meeting with John'.",
+        parameters: {
+          type: "object",
+          properties: {
+            appointmentId: { type: "string", description: "Appointment ID (optional if customerName provided)" },
+            customerName: { type: "string", description: "Customer name (optional if appointmentId provided)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "import_contacts",
+        description: "Import contacts from CSV. Use when user says 'import contacts', 'I want to import a CSV'. Navigates to the import page.",
+        parameters: { type: "object", properties: {} },
+      },
+    },
     // Setup & Configuration
     {
       type: "function",
@@ -271,6 +751,36 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
     {
       type: "function",
       function: {
+        name: "setup_square",
+        description: "Configure Square payment processor",
+        parameters: {
+          type: "object",
+          properties: {
+            applicationId: { type: "string", description: "Square Application ID" },
+            accessToken: { type: "string", description: "Square Access Token" },
+          },
+          required: ["applicationId", "accessToken"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "setup_paypal",
+        description: "Configure PayPal payment processor",
+        parameters: {
+          type: "object",
+          properties: {
+            clientId: { type: "string", description: "PayPal Client ID" },
+            clientSecret: { type: "string", description: "PayPal Client Secret" },
+          },
+          required: ["clientId", "clientSecret"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
         name: "setup_twilio",
         description: "Configure Twilio for SMS and voice calls",
         parameters: {
@@ -290,6 +800,45 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
             },
           },
           required: ["accountSid", "authToken", "phoneNumber"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "setup_quickbooks",
+        description: "Connect QuickBooks. Use when user says 'connect QuickBooks', 'setup QuickBooks'.",
+        parameters: { type: "object", properties: {} },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "setup_whatsapp",
+        description: "Configure WhatsApp Business. Use when user says 'setup WhatsApp', 'connect WhatsApp'.",
+        parameters: {
+          type: "object",
+          properties: {
+            accountSid: { type: "string", description: "Twilio Account SID (optional)" },
+            authToken: { type: "string", description: "Auth Token (optional)" },
+            phoneNumber: { type: "string", description: "WhatsApp-enabled number (optional)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_company_profile",
+        description: "Update company profile. Use when user says 'update my company name', 'change business phone', 'update company profile'.",
+        parameters: {
+          type: "object",
+          properties: {
+            companyName: { type: "string", description: "Company name (optional)" },
+            name: { type: "string", description: "Company/contact name (optional)" },
+            phone: { type: "string", description: "Phone number (optional)" },
+            website: { type: "string", description: "Website URL (optional)" },
+          },
         },
       },
     },
@@ -371,6 +920,48 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
             },
           },
         },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_voice_agent",
+        description: "Update a voice agent. Use when user says 'change greeting', 'update agent name', 'set different voice'.",
+        parameters: {
+          type: "object",
+          properties: {
+            agentId: { type: "string", description: "Agent ID (optional if name provided)" },
+            name: { type: "string", description: "Agent name to find (optional if agentId provided)" },
+            greetingMessage: { type: "string", description: "New greeting message (optional)" },
+            voiceId: { type: "string", description: "New voice ID (optional)" },
+            businessName: { type: "string", description: "New business name (optional)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "assign_phone_to_voice_agent",
+        description: "Assign a phone number to a voice agent. Use when user says 'assign this number to Sarah', 'connect phone to agent'.",
+        parameters: {
+          type: "object",
+          properties: {
+            agentId: { type: "string", description: "Agent ID (optional if name provided)" },
+            name: { type: "string", description: "Agent name (optional if agentId provided)" },
+            phoneNumber: { type: "string", description: "Phone number to assign (required)" },
+          },
+          required: ["phoneNumber"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "purchase_twilio_number",
+        description: "Start the process to purchase a Twilio phone number. Use when user says 'buy a phone number', 'I need a new number', 'purchase Twilio number'.",
+        parameters: { type: "object", properties: {} },
       },
     },
     {
@@ -661,26 +1252,13 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
       type: "function",
       function: {
         name: "navigate_to",
-        description: "Navigate the user to a specific page in the application. Use this when the user wants to go somewhere or after completing an action.",
+        description: "Navigate the user to any page in the application. Use when the user wants to go somewhere (e.g. 'take me to settings', 'open reports', 'show my calendar'). Path must start with /dashboard or /onboarding.",
         parameters: {
           type: "object",
           properties: {
             path: {
               type: "string",
-              description: "The path to navigate to (e.g., /dashboard/contacts, /dashboard/pipeline)",
-              enum: [
-                "/dashboard/contacts",
-                "/dashboard/pipeline",
-                "/dashboard/campaigns",
-                "/dashboard/calendar",
-                "/dashboard/analytics",
-                "/dashboard/messages",
-                "/dashboard/workflows",
-                "/dashboard/voice-agents",
-                "/dashboard/settings",
-                "/dashboard/team",
-                "/onboarding",
-              ],
+              description: "Full path to navigate to. Examples: /dashboard, /dashboard/contacts, /dashboard/pipeline, /dashboard/calendar, /dashboard/settings, /dashboard/business-ai, /dashboard/analytics, /dashboard/workflows, /dashboard/voice-agents, /dashboard/team, /dashboard/reports, /dashboard/leads, /dashboard/messages, /dashboard/campaigns, /dashboard/payments, /dashboard/ecommerce, /dashboard/websites, /dashboard/real-estate, /dashboard/dental/clinical, /dashboard/tasks, /dashboard/soshogle, /dashboard/referrals, /dashboard/widgets, /dashboard/billing, /onboarding. Add ?id=xxx for specific record (e.g. /dashboard/contacts?id=abc).",
             },
           },
           required: ["path"],
@@ -696,21 +1274,59 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
 export function mapFunctionToAction(functionName: string): string {
   const mapping: Record<string, string> = {
     create_lead: "create_lead",
+    update_lead: "update_lead",
+    get_lead_details: "get_lead_details",
+    delete_lead: "delete_lead",
     create_deal: "create_deal",
     list_leads: "list_leads",
     list_deals: "list_deals",
+    get_deal_details: "get_deal_details",
+    delete_deal: "delete_deal",
+    create_pipeline: "create_pipeline",
+    create_pipeline_stage: "create_pipeline_stage",
     search_contacts: "search_contacts",
     delete_duplicate_contacts: "delete_duplicate_contacts",
+    create_task: "create_task",
+    list_tasks: "list_tasks",
+    complete_task: "complete_task",
+    update_task: "update_task",
+    cancel_task: "cancel_task",
+    add_note: "add_note",
+    update_deal_stage: "update_deal_stage",
+    create_invoice: "create_invoice",
+    list_overdue_invoices: "list_overdue_invoices",
+    update_invoice_status: "update_invoice_status",
+    send_invoice: "send_invoice",
+    get_daily_briefing: "get_daily_briefing",
+    update_deal: "update_deal",
+    get_follow_up_suggestions: "get_follow_up_suggestions",
+    get_meeting_prep: "get_meeting_prep",
+    create_bulk_tasks: "create_bulk_tasks",
     create_campaign: "create_campaign",
     list_campaigns: "list_campaigns",
+    update_campaign: "update_campaign",
+    get_campaign_details: "get_campaign_details",
     get_statistics: "get_statistics",
+    create_report: "create_report",
     create_appointment: "create_appointment",
+    list_appointments: "list_appointments",
+    update_appointment: "update_appointment",
+    cancel_appointment: "cancel_appointment",
+    import_contacts: "import_contacts",
     setup_stripe: "setup_stripe",
+    setup_square: "setup_square",
+    setup_paypal: "setup_paypal",
     setup_twilio: "setup_twilio",
+    setup_quickbooks: "setup_quickbooks",
+    setup_whatsapp: "setup_whatsapp",
+    update_company_profile: "update_profile",
     create_voice_agent: "create_voice_agent",
     list_voice_agents: "list_voice_agents",
     debug_voice_agent: "debug_voice_agent",
     fix_voice_agent: "fix_voice_agent",
+    update_voice_agent: "update_voice_agent",
+    assign_phone_to_voice_agent: "assign_phone_to_voice_agent",
+    purchase_twilio_number: "purchase_twilio_number",
     create_workflow: "create_workflow",
     add_workflow_task: "add_workflow_task",
     make_outbound_call: "make_outbound_call",
@@ -789,6 +1405,44 @@ export function getNavigationUrlForAction(
       return "/dashboard/messages";
     case "delete_duplicate_contacts":
       return "/dashboard/contacts";
+    case "create_task":
+    case "list_tasks":
+    case "complete_task":
+      return "/dashboard/tasks";
+    case "add_note":
+      return result?.result?.leadId ? `/dashboard/contacts?id=${result.result.leadId}` : result?.result?.dealId ? `/dashboard/pipeline?id=${result.result.dealId}` : "/dashboard/contacts";
+    case "update_deal_stage":
+      return result?.result?.deal?.id ? `/dashboard/pipeline?id=${result.result.deal.id}` : "/dashboard/pipeline";
+    case "create_invoice":
+    case "list_overdue_invoices":
+      return "/dashboard/payments";
+    case "get_daily_briefing":
+      return "/dashboard";
+    case "update_deal":
+      return result?.result?.deal?.id ? `/dashboard/pipeline?id=${result.result.deal.id}` : "/dashboard/pipeline";
+    case "get_follow_up_suggestions":
+      return "/dashboard/contacts";
+    case "create_report":
+      const reportId = result?.result?.report?.id;
+      return reportId ? `/dashboard/reports?id=${reportId}` : "/dashboard/reports";
+    case "get_lead_details":
+      return result?.result?.lead?.id ? `/dashboard/contacts?id=${result.result.lead.id}` : "/dashboard/contacts";
+    case "get_deal_details":
+      return result?.result?.deal?.id ? `/dashboard/pipeline?id=${result.result.deal.id}` : "/dashboard/pipeline";
+    case "create_pipeline":
+      return result?.result?.pipeline?.id ? `/dashboard/pipeline?pipelineId=${result.result.pipeline.id}` : "/dashboard/pipeline";
+    case "get_campaign_details":
+      return result?.result?.campaign?.id ? `/dashboard/campaigns?id=${result.result.campaign.id}` : "/dashboard/campaigns";
+    case "purchase_twilio_number":
+      return "/dashboard/voice-agents";
+    case "list_appointments":
+      return "/dashboard/calendar";
+    case "import_contacts":
+      return result?.result?.navigateTo || "/dashboard/contacts";
+    case "get_meeting_prep":
+      return result?.result?.leadId ? `/dashboard/contacts?id=${result.result.leadId}` : "/dashboard/contacts";
+    case "create_bulk_tasks":
+      return "/dashboard/tasks";
     default:
       return null;
   }
