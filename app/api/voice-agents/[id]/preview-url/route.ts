@@ -23,28 +23,52 @@ export async function GET(
       );
     }
 
-    // Fetch the voice agent from the database
-    const voiceAgent = await prisma.voiceAgent.findUnique({
+    // Fetch the voice agent from the database (VoiceAgent or IndustryAIEmployeeAgent)
+    let voiceAgent = await prisma.voiceAgent.findUnique({
       where: { id: params.id },
     });
 
-    if (!voiceAgent) {
+    let elevenLabsAgentId: string | null = null;
+    let agentName: string = '';
+
+    if (voiceAgent) {
+      elevenLabsAgentId = voiceAgent.elevenLabsAgentId;
+      agentName = voiceAgent.name;
+    } else {
+      // Fallback: check IndustryAIEmployeeAgent (e.g. Dental, Medical AI employees)
+      const industryAgent = await prisma.industryAIEmployeeAgent.findUnique({
+        where: { id: params.id },
+      });
+      if (industryAgent) {
+        if (industryAgent.userId !== session.user.id) {
+          return NextResponse.json(
+            { error: 'Unauthorized access to this voice agent' },
+            { status: 403 }
+          );
+        }
+        elevenLabsAgentId = industryAgent.elevenLabsAgentId;
+        agentName = industryAgent.name;
+      }
+    }
+
+    if (!voiceAgent && !elevenLabsAgentId) {
       return NextResponse.json(
         { error: 'Voice agent not found' },
         { status: 404 }
       );
     }
 
-    // Verify ownership
-    if (voiceAgent.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized access to this voice agent' },
-        { status: 403 }
-      );
+    if (voiceAgent) {
+      // Verify ownership for VoiceAgent
+      if (voiceAgent.userId !== session.user.id) {
+        return NextResponse.json(
+          { error: 'Unauthorized access to this voice agent' },
+          { status: 403 }
+        );
+      }
     }
 
-    // Verify the agent has an ElevenLabs Agent ID
-    if (!voiceAgent.elevenLabsAgentId) {
+    if (!elevenLabsAgentId) {
       return NextResponse.json(
         { error: 'Voice agent is not configured. Please run auto-configuration first.' },
         { status: 400 }
@@ -64,7 +88,7 @@ export async function GET(
 
     // Fetch the signed WebSocket URL from ElevenLabs
     const elevenLabsResponse = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${voiceAgent.elevenLabsAgentId}`,
+      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${elevenLabsAgentId}`,
       {
         method: 'GET',
         headers: {
@@ -96,13 +120,13 @@ export async function GET(
       );
     }
 
-    console.log('✅ Successfully fetched preview URL for agent:', voiceAgent.elevenLabsAgentId);
+    console.log('✅ Successfully fetched preview URL for agent:', elevenLabsAgentId);
 
     return NextResponse.json({
       success: true,
       signedUrl: data.signed_url,
-      agentId: voiceAgent.elevenLabsAgentId,
-      agentName: voiceAgent.name,
+      agentId: elevenLabsAgentId,
+      agentName,
     });
 
   } catch (error: any) {

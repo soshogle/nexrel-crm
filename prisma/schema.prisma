@@ -68,9 +68,9 @@ model User {
   phone                       String?
   timezone                    String?                      @default("America/New_York")
   website                     String?
-  legalEntityName             String?   // Legal name for contracts, privacy policy, terms (e.g. "Acme Inc.")
-  legalJurisdiction           String?   // Country/region for legal pages (e.g. "United States", "California")
-  companyLogoUrl              String?   // Company logo URL (from onboarding upload; used in CRM and website)
+  legalEntityName             String? // Legal name for contracts, privacy policy, terms (e.g. "Acme Inc.")
+  legalJurisdiction           String? // Country/region for legal pages (e.g. "United States", "California")
+  companyLogoUrl              String? // Company logo URL (from onboarding upload; used in CRM and website)
   averageDealValue            Float?
   businessCategory            String?
   businessHours               String?
@@ -161,6 +161,8 @@ model User {
   ecommerceWidgets            EcommerceWidget[]
   elevenLabsApiKeys           ElevenLabsApiKey[]           @relation("ElevenLabsApiKeys")
   emailCampaigns              EmailCampaign[]
+  emailTemplates             EmailTemplate[]
+  smsTemplates               SMSTemplate[]
   scheduledEmails             ScheduledEmail[]
   scheduledSms                ScheduledSms[]
   fraudAlerts                 FraudAlert[]
@@ -285,6 +287,7 @@ model User {
   reExpiredAssignedListings   REExpiredListing[]           @relation("REExpiredAssignedUser")
   reAIEmployeeExecutions      REAIEmployeeExecution[]      @relation("REAIEmployeeExecutionUser")
   reAIEmployeeAgents          REAIEmployeeAgent[]          @relation("REAIEmployeeAgentUser")
+  industryAIEmployeeAgents    IndustryAIEmployeeAgent[]    @relation("IndustryAIEmployeeAgentUser")
   // Real Estate Workflow Relations
   reWorkflowTemplates         REWorkflowTemplate[]         @relation("UserREWorkflowTemplates")
   reWorkflowInstances         REWorkflowInstance[]         @relation("UserREWorkflowInstances")
@@ -302,92 +305,92 @@ model User {
 }
 
 model Lead {
-  id                      String                   @id @default(cuid())
-  userId                  String
-  businessName            String
-  contactPerson           String?
-  email                   String?
-  phone                   String?
-  website                 String?
-  address                 String?
-  city                    String?
-  state                   String?
-  zipCode                 String?
-  country                 String?
-  businessCategory        String?
-  googlePlaceId           String?
-  rating                  Float?
-  status                  LeadStatus               @default(NEW)
-  source                  String                   @default("manual")
-  tags                    Json?                    @default("[]")
-  contactType             String?
-  lastContactedAt         DateTime?
-  dateOfBirth             DateTime? // Birthday for contact person
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
+  id                          String                       @id @default(cuid())
+  userId                      String
+  businessName                String
+  contactPerson               String?
+  email                       String?
+  phone                       String?
+  website                     String?
+  address                     String?
+  city                        String?
+  state                       String?
+  zipCode                     String?
+  country                     String?
+  businessCategory            String?
+  googlePlaceId               String?
+  rating                      Float?
+  status                      LeadStatus                   @default(NEW)
+  source                      String                       @default("manual")
+  tags                        Json?                        @default("[]")
+  contactType                 String?
+  lastContactedAt             DateTime?
+  dateOfBirth                 DateTime? // Birthday for contact person
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime                     @updatedAt
   // AI Lead Generation System fields
-  enrichedData            Json? // Company research, decision-makers, email, etc.
-  lastEnrichedAt          DateTime? // Last time data was enriched
-  leadScore               Int? // 0-100 weighted score
-  engagementHistory       Json? // Email opens, SMS replies, call history
-  nextAction              String? // call, email, sms, manual_followup, etc.
-  nextActionDate          DateTime? // When to execute next action
-  validationScore         Int? // Data quality score 0-100
-  validationErrors        Json? // Array of validation errors
-  qualityFlag             String? // low_quality, high_quality, etc.
-  mergeHistory            Json? // Track lead merges for deduplication
-  contactAppointments     BookingAppointment[]     @relation("contact_appointments")
-  leadAppointments        BookingAppointment[]     @relation("lead_appointments")
-  callLogs                CallLog[]
-  campaignLeads           CampaignLead[]
-  conversations           Conversation[]
-  deals                   Deal[]
-  emailCampaignDeals      EmailCampaignDeal[]
-  invoices                Invoice[]
-  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages                Message[]
-  notes                   Note[]
-  outboundCalls           OutboundCall[]
-  payments                Payment[]
-  referralConverted       Referral[]               @relation("ConvertedFromReferral")
-  referralsMade           Referral[]               @relation("ReferrerLeads")
-  reviews                 Review[]
-  feedbackCollections     FeedbackCollection[]
-  smsCampaignDeals        SmsCampaignDeal[]
-  smsEnrollments          SmsEnrollment[]
-  scheduledEmails         ScheduledEmail[]
-  scheduledSms            ScheduledSms[]
-  tasks                   Task[]
-  docpenSessions          DocpenSession[]
+  enrichedData                Json? // Company research, decision-makers, email, etc.
+  lastEnrichedAt              DateTime? // Last time data was enriched
+  leadScore                   Int? // 0-100 weighted score
+  engagementHistory           Json? // Email opens, SMS replies, call history
+  nextAction                  String? // call, email, sms, manual_followup, etc.
+  nextActionDate              DateTime? // When to execute next action
+  validationScore             Int? // Data quality score 0-100
+  validationErrors            Json? // Array of validation errors
+  qualityFlag                 String? // low_quality, high_quality, etc.
+  mergeHistory                Json? // Track lead merges for deduplication
+  contactAppointments         BookingAppointment[]         @relation("contact_appointments")
+  leadAppointments            BookingAppointment[]         @relation("lead_appointments")
+  callLogs                    CallLog[]
+  campaignLeads               CampaignLead[]
+  conversations               Conversation[]
+  deals                       Deal[]
+  emailCampaignDeals          EmailCampaignDeal[]
+  invoices                    Invoice[]
+  user                        User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages                    Message[]
+  notes                       Note[]
+  outboundCalls               OutboundCall[]
+  payments                    Payment[]
+  referralConverted           Referral[]                   @relation("ConvertedFromReferral")
+  referralsMade               Referral[]                   @relation("ReferrerLeads")
+  reviews                     Review[]
+  feedbackCollections         FeedbackCollection[]
+  smsCampaignDeals            SmsCampaignDeal[]
+  smsEnrollments              SmsEnrollment[]
+  scheduledEmails             ScheduledEmail[]
+  scheduledSms                ScheduledSms[]
+  tasks                       Task[]
+  docpenSessions              DocpenSession[]
   // Real Estate Industry Relations
-  rePropertySeller        REProperty[]             @relation("REPropertySeller")
-  reFsboConvertedLead     REFSBOListing[]          @relation("REFSBOConvertedLead")
+  rePropertySeller            REProperty[]                 @relation("REPropertySeller")
+  reFsboConvertedLead         REFSBOListing[]              @relation("REFSBOConvertedLead")
   // Dental Industry Relations
-  familyGroupId           String? // For family grouping (links to same familyGroupId)
-  dentalHistory           Json? // Dental history, allergies, medications, etc.
-  insuranceInfo           Json? // Insurance provider, policy number, coverage, etc.
-  dentalOdontograms       DentalOdontogram[]
-  dentalPeriodontalCharts DentalPeriodontalChart[]
-  dentalTreatmentPlans    DentalTreatmentPlan[]
-  dentalProcedures        DentalProcedure[]
-  dentalFormResponses     DentalFormResponse[]
-  dentalXRays             DentalXRay[]
-  dentalLabOrders         DentalLabOrder[]
-  dentalInsuranceClaims   DentalInsuranceClaim[]
-  patientDocuments        PatientDocument[]        @relation("PatientDocuments")
-  documentConsents        DocumentConsent[]
-  dataAccessRequests      DataAccessRequest[]
-  reTransactions          RETransaction[]          @relation("RETransactionLead")
-  reBuyerCriteria         REBuyerCriteria?         @relation("REBuyerCriteriaLead")
-  reExpiredConvertedLead  REExpiredListing[]       @relation("REExpiredConvertedLead")
+  familyGroupId               String? // For family grouping (links to same familyGroupId)
+  dentalHistory               Json? // Dental history, allergies, medications, etc.
+  insuranceInfo               Json? // Insurance provider, policy number, coverage, etc.
+  dentalOdontograms           DentalOdontogram[]
+  dentalPeriodontalCharts     DentalPeriodontalChart[]
+  dentalTreatmentPlans        DentalTreatmentPlan[]
+  dentalProcedures            DentalProcedure[]
+  dentalFormResponses         DentalFormResponse[]
+  dentalXRays                 DentalXRay[]
+  dentalLabOrders             DentalLabOrder[]
+  dentalInsuranceClaims       DentalInsuranceClaim[]
+  patientDocuments            PatientDocument[]            @relation("PatientDocuments")
+  documentConsents            DocumentConsent[]
+  dataAccessRequests          DataAccessRequest[]
+  reTransactions              RETransaction[]              @relation("RETransactionLead")
+  reBuyerCriteria             REBuyerCriteria?             @relation("REBuyerCriteriaLead")
+  reExpiredConvertedLead      REExpiredListing[]           @relation("REExpiredConvertedLead")
   // Real Estate Workflow Relations
-  reWorkflowInstances     REWorkflowInstance[]     @relation("LeadREWorkflowInstances")
+  reWorkflowInstances         REWorkflowInstance[]         @relation("LeadREWorkflowInstances")
   // Generic Multi-Industry Workflow Relations
   workflowInstances           WorkflowInstance[]           @relation("LeadWorkflowInstances")
   workflowEnrollments         WorkflowEnrollment[]         @relation("LeadWorkflowEnrollments")
   workflowTemplateEnrollments WorkflowTemplateEnrollment[] @relation("LeadWorkflowTemplateEnrollments")
   // Website Orders Relations
-  websiteOrders           WebsiteOrder[]
+  websiteOrders               WebsiteOrder[]
 
   @@index([userId])
   @@index([status])
@@ -1151,20 +1154,20 @@ model EmailCampaignDeal {
 
 // AI-drafted emails pending user approval - send now or schedule for later
 model ScheduledEmail {
-  id             String    @id @default(cuid())
-  userId         String
-  leadId         String
-  toEmail        String
-  toName         String?
-  subject        String
-  body           String    @db.Text
-  scheduledFor   DateTime  // When to send (now = immediate, future = scheduled)
-  status         String    @default("PENDING") // PENDING, SENT, CANCELLED
-  sentAt         DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lead           Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  userId       String
+  leadId       String
+  toEmail      String
+  toName       String?
+  subject      String
+  body         String    @db.Text
+  scheduledFor DateTime // When to send (now = immediate, future = scheduled)
+  status       String    @default("PENDING") // PENDING, SENT, CANCELLED
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -1173,23 +1176,61 @@ model ScheduledEmail {
 
 // AI-drafted SMS pending user approval - send now or schedule for later
 model ScheduledSms {
-  id             String    @id @default(cuid())
-  userId         String
-  leadId         String
-  toPhone        String
-  toName         String?
-  message        String    @db.Text
-  scheduledFor   DateTime
-  status         String    @default("PENDING") // PENDING, SENT, CANCELLED
-  sentAt         DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lead           Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  userId       String
+  leadId       String
+  toPhone      String
+  toName       String?
+  message      String    @db.Text
+  scheduledFor DateTime
+  status       String    @default("PENDING") // PENDING, SENT, CANCELLED
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead         Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
   @@index([scheduledFor])
+}
+
+// Reusable email templates (for campaigns, workflows, AI drafting)
+model EmailTemplate {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  subject     String
+  body        String   @db.Text
+  bodyHtml    String?  @db.Text
+  variables   Json?    // e.g. ["firstName", "companyName"] for AI personalization
+  category    String?  // welcome, follow_up, invoice, etc.
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([category])
+}
+
+// Reusable SMS templates (for campaigns, workflows, AI drafting)
+model SMSTemplate {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  message     String   @db.Text
+  variables   Json?    // e.g. ["firstName", "companyName"]
+  category    String?  // welcome, reminder, appointment, etc.
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([category])
 }
 
 model SmsCampaign {
@@ -1996,16 +2037,35 @@ model Product {
   tags            String[]
   metaTitle       String?
   metaDescription String?
+  productType     String           @default("PHYSICAL") // PHYSICAL, DIGITAL
+  downloadUrl     String?          // For digital: file URL
+  accessCodeTemplate String?       // For digital: e.g. "COURSE-{code}" - codes stored in ProductAccessCode
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   orders          OrderItem[]
   category        ProductCategory? @relation(fields: [categoryId], references: [id])
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   websiteProducts WebsiteProduct[]
+  accessCodes     ProductAccessCode[]
 
   @@index([userId])
   @@index([categoryId])
   @@index([active])
+  @@index([productType])
+}
+
+model ProductAccessCode {
+  id          String   @id @default(cuid())
+  productId   String
+  code        String   @unique
+  orderId     String?
+  redeemedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([code])
 }
 
 model ProductCategory {
@@ -4511,14 +4571,14 @@ model AIWorkflowExecution {
 
 // AI-generated reports from the conversational assistant
 model AiGeneratedReport {
-  id          String   @id @default(cuid())
-  userId      String
-  title       String
-  reportType  String   // sales, leads, revenue, overview, custom
-  content     Json     // Chart data, tables, summary text
-  period      String?  // last_7_days, last_month, etc.
-  createdAt   DateTime @default(now())
-  user        User     @relation("UserAiGeneratedReports", fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  title      String
+  reportType String // sales, leads, revenue, overview, custom
+  content    Json // Chart data, tables, summary text
+  period     String? // last_7_days, last_month, etc.
+  createdAt  DateTime @default(now())
+  user       User     @relation("UserAiGeneratedReports", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
@@ -6413,17 +6473,17 @@ enum AIJobPriority {
 // Used in workflow builder for assignable agents; persists to DB for Phase 1 integration
 // voiceConfig: per-call overrides { voiceId?, language?, stability?, speed?, similarityBoost? } for ElevenLabs
 model UserAIEmployee {
-  id           String    @id @default(cuid())
+  id           String   @id @default(cuid())
   userId       String
-  profession   String    // e.g. "accountant", "developer", "virtual_receptionist"
+  profession   String // e.g. "accountant", "developer", "virtual_receptionist"
   customName   String
   voiceAgentId String?
-  voiceConfig  Json?     // Per-call overrides: { voiceId, language, stability, speed, similarityBoost }
-  isActive     Boolean   @default(true)
-  capabilities Json?     // Optional: { voice: true, email: true } for future task-type filtering
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  user         User      @relation("UserAIEmployees", fields: [userId], references: [id], onDelete: Cascade)
+  voiceConfig  Json? // Per-call overrides: { voiceId, language, stability, speed, similarityBoost }
+  isActive     Boolean  @default(true)
+  capabilities Json? // Optional: { voice: true, email: true } for future task-type filtering
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation("UserAIEmployees", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([profession])
@@ -6502,6 +6562,7 @@ model AIJobLog {
 enum DocpenProfession {
   GENERAL_PRACTICE
   DENTIST
+  ORTHODONTIC
   OPTOMETRIST
   DERMATOLOGIST
   CARDIOLOGIST
@@ -6578,11 +6639,26 @@ model DocpenSession {
   transcriptions   DocpenTranscription[]
   soapNotes        DocpenSOAPNote[]
   assistantQueries DocpenAssistantQuery[]
+  auditLogs        DocpenSessionAuditLog[]
 
   @@index([userId])
   @@index([leadId])
   @@index([status])
   @@index([sessionDate])
+}
+
+// Audit log for Docpen workflow (review → sign → export)
+model DocpenSessionAuditLog {
+  id        String   @id @default(cuid())
+  sessionId String
+  event     String   // session_created, recording_started, soap_generated, reviewed, signed, exported
+  metadata  Json?    // { exportedMethod?: "copy"|"pdf"|"webhook", ... }
+  createdAt DateTime @default(now())
+
+  session DocpenSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([event])
 }
 
 // Individual transcription segments with speaker identification
@@ -6639,6 +6715,9 @@ model DocpenSOAPNote {
   // Review workflow
   isCurrentVersion Boolean @default(true)
   editedByUser     Boolean @default(false)
+
+  // DICOM auto-link: X-rays matched by tooth numbers in SOAP
+  linkedXrayIds String[] @default([])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -7464,6 +7543,31 @@ model REAIEmployeeAgent {
   @@index([elevenLabsAgentId])
 }
 
+// Industry AI Employee Voice Agents (Dental, Medical, Restaurant, etc.)
+// Generic model for non-RE industries - RE uses REAIEmployeeAgent
+model IndustryAIEmployeeAgent {
+  id                String    @id @default(cuid())
+  userId            String
+  industry          Industry
+  employeeType      String // e.g. DENTIST: "APPOINTMENT_SCHEDULER", MEDICAL: "PATIENT_COORDINATOR"
+  name              String
+  elevenLabsAgentId String
+  twilioPhoneNumber String?
+  voiceId           String?
+  status            String    @default("active")
+  lastUsedAt        DateTime?
+  callCount         Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation("IndustryAIEmployeeAgentUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, industry, employeeType])
+  @@index([userId])
+  @@index([industry])
+  @@index([elevenLabsAgentId])
+}
+
 // ==========================================
 // WHITE-LABEL VOICE AI PLATFORM ENUMS
 // ==========================================
@@ -8155,35 +8259,35 @@ model WorkflowTemplate {
   updatedAt   DateTime     @updatedAt
 
   // Campaign mode fields (added in previous migration)
-  executionMode     String?  // WORKFLOW, CAMPAIGN, DRIP
-  audience          Json?
-  campaignSettings  Json?
-  analytics         Json?
-  totalRecipients   Int      @default(0)
-  sentCount         Int      @default(0)
-  deliveredCount    Int      @default(0)
-  openedCount       Int      @default(0)
-  clickedCount      Int      @default(0)
-  repliedCount      Int      @default(0)
-  failedCount       Int      @default(0)
-  openRate          Float?
-  clickRate          Float?
-  deliveryRate       Float?
-  replyRate          Float?
+  executionMode    String? // WORKFLOW, CAMPAIGN, DRIP
+  audience         Json?
+  campaignSettings Json?
+  analytics        Json?
+  totalRecipients  Int     @default(0)
+  sentCount        Int     @default(0)
+  deliveredCount   Int     @default(0)
+  openedCount      Int     @default(0)
+  clickedCount     Int     @default(0)
+  repliedCount     Int     @default(0)
+  failedCount      Int     @default(0)
+  openRate         Float?
+  clickRate        Float?
+  deliveryRate     Float?
+  replyRate        Float?
 
   // Enrollment mode fields (Phase 1 - Drip Campaigns)
-  enrollmentMode     Boolean  @default(false)
+  enrollmentMode     Boolean @default(false)
   enrollmentTriggers Json?
 
   // Phase 3: A/B Testing fields
-  enableAbTesting    Boolean  @default(false)
-  abTestConfig       Json?    // {splitPercentage: 50, testType: "subject" | "content" | "timing"}
+  enableAbTesting Boolean @default(false)
+  abTestConfig    Json? // {splitPercentage: 50, testType: "subject" | "content" | "timing"}
 
   // Relations
-  user         User                @relation("UserWorkflowTemplates", fields: [userId], references: [id], onDelete: Cascade)
-  tasks        WorkflowTask[]              @relation("WorkflowTemplateTasks")
-  instances    WorkflowInstance[]          @relation("WorkflowTemplateInstances")
-  enrollments  WorkflowTemplateEnrollment[] @relation("WorkflowTemplateEnrollments")
+  user        User                         @relation("UserWorkflowTemplates", fields: [userId], references: [id], onDelete: Cascade)
+  tasks       WorkflowTask[]               @relation("WorkflowTemplateTasks")
+  instances   WorkflowInstance[]           @relation("WorkflowTemplateInstances")
+  enrollments WorkflowTemplateEnrollment[] @relation("WorkflowTemplateEnrollments")
 
   @@index([userId])
   @@index([industry])
@@ -8214,15 +8318,15 @@ model WorkflowTask {
   updatedAt         DateTime @updatedAt
 
   // Phase 2: Enhanced timing options for drip campaigns
-  delayDays         Int      @default(0) // Days delay (for granular control)
-  delayHours        Int      @default(0) // Hours delay (for granular control)
-  preferredSendTime String?  // Preferred time of day to send (HH:MM format, e.g., "09:00")
-  skipConditions    Json?   // Conditions to skip this task (e.g., [{"field": "status", "operator": "equals", "value": "converted"}])
+  delayDays         Int     @default(0) // Days delay (for granular control)
+  delayHours        Int     @default(0) // Hours delay (for granular control)
+  preferredSendTime String? // Preferred time of day to send (HH:MM format, e.g., "09:00")
+  skipConditions    Json? // Conditions to skip this task (e.g., [{"field": "status", "operator": "equals", "value": "converted"}])
 
   // Phase 3: A/B Testing fields
-  isAbTestVariant    Boolean  @default(false) // True if this task is an A/B test variant
-  abTestGroup        String?  // 'A' or 'B' - which test group this variant belongs to
-  variantOf          String?  // ID of the original task this variant is based on
+  isAbTestVariant Boolean @default(false) // True if this task is an A/B test variant
+  abTestGroup     String? // 'A' or 'B' - which test group this variant belongs to
+  variantOf       String? // ID of the original task this variant is based on
 
   // Relations
   template   WorkflowTemplate @relation("WorkflowTemplateTasks", fields: [templateId], references: [id], onDelete: Cascade)
@@ -9368,6 +9472,7 @@ model Website {
   websiteProducts     WebsiteProduct[]
   websiteOrders       WebsiteOrder[]
   stockSettings       WebsiteStockSettings?
+  media               WebsiteMedia[]
 
   @@index([userId])
   @@index([status])
@@ -9517,6 +9622,30 @@ model WebsiteStockSettings {
   @@index([websiteId])
 }
 
+// WebsiteMedia - Media library per website (images, videos, files)
+model WebsiteMedia {
+  id          String   @id @default(cuid())
+  websiteId   String
+  url         String
+  path        String
+  filename    String
+  mimeType    String
+  size        Int
+  type        String   // IMAGE, VIDEO, FILE
+  width       Int?
+  height      Int?
+  alt         String?
+  thumbnailUrl String?
+  optimizedUrl String?
+  metadata    Json?    // { duration for video, pageCount for PDF, etc. }
+  createdAt   DateTime @default(now())
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId])
+  @@index([type])
+}
+
 // ==========================================
 // TWILIO FAILOVER SYSTEM
 // ==========================================
@@ -9650,19 +9779,19 @@ model TwilioBackupPhoneNumber {
 
 // Landing page blog posts (auto-generated for social media)
 model BlogPost {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  excerpt     String   // Short summary for cards / social
-  content     String   @db.Text // Full markdown content
-  category    String   // e.g. "Healthcare", "E-commerce", "AI Automation Guide"
-  industry    String   // Industry this post targets
-  problemImage String? // AI-generated image URL (depicts the problem)
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  title         String
+  excerpt       String // Short summary for cards / social
+  content       String   @db.Text // Full markdown content
+  category      String // e.g. "Healthcare", "E-commerce", "AI Automation Guide"
+  industry      String // Industry this post targets
+  problemImage  String? // AI-generated image URL (depicts the problem)
   solutionImage String? // Screenshot URL (Nexrel/Soshogle AI product)
-  readTime    String   @default("5 min read")
-  publishedAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  readTime      String   @default("5 min read")
+  publishedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([publishedAt])
   @@index([industry])

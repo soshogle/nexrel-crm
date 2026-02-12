@@ -11,6 +11,8 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { generateSOAPNote, regenerateSection } from '@/lib/docpen/soap-generator';
 import { sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
+import { findMatchingXrays } from '@/lib/docpen/soap-xray-linker';
+import { logDocpenAudit, DOCPEN_AUDIT_EVENTS } from '@/lib/docpen/audit-log';
 
 
 export const dynamic = 'force-dynamic';
@@ -197,10 +199,40 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // DICOM auto-link: match tooth numbers in SOAP to X-rays
+    if (docpenSession.leadId) {
+      try {
+        const xrays = await prisma.dentalXRay.findMany({
+          where: { leadId: docpenSession.leadId, userId: session.user.id },
+          select: { id: true, teethIncluded: true },
+        });
+        const soapText = [
+          soapNote.subjective,
+          soapNote.objective,
+          soapNote.assessment,
+          soapNote.plan,
+          soapNote.additionalNotes,
+        ]
+          .filter(Boolean)
+          .join(' ');
+        const linkedIds = findMatchingXrays(soapText, xrays);
+        if (linkedIds.length > 0) {
+          await prisma.docpenSOAPNote.update({
+            where: { id: savedNote.id },
+            data: { linkedXrayIds: linkedIds },
+          });
+          (savedNote as any).linkedXrayIds = linkedIds;
+        }
+      } catch (linkErr) {
+        console.warn('[Docpen SOAP] X-ray auto-link failed:', linkErr);
+      }
+    }
+
     // Log audit entry
     console.log('[Docpen Audit]', sanitizeForLogging(
       createAuditLogEntry('create', 'soap_note', savedNote.id, session.user.id, request)
     ));
+    await logDocpenAudit(sessionId, DOCPEN_AUDIT_EVENTS.SOAP_GENERATED);
 
     return NextResponse.json({ soapNote: savedNote });
   } catch (error) {

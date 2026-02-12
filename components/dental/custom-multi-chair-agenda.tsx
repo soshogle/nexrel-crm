@@ -6,7 +6,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Mic } from 'lucide-react';
 
 interface Appointment {
   chair: string;
@@ -14,6 +17,8 @@ interface Appointment {
   patient: string;
   procedure: string;
   color: string;
+  leadId?: string;
+  status?: string;
 }
 
 interface CustomMultiChairAgendaProps {
@@ -21,7 +26,18 @@ interface CustomMultiChairAgendaProps {
 }
 
 export function CustomMultiChairAgenda({ appointments: propAppointments }: CustomMultiChairAgendaProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'ortho' | 'hygiene' | 'restorative'>('ortho');
+
+  const handleStartVisit = (apt: Appointment) => {
+    if (apt.leadId) {
+      const params = new URLSearchParams();
+      params.set('leadId', apt.leadId);
+      if (apt.patient) params.set('patientName', apt.patient);
+      params.set('from', 'clinical');
+      router.push(`/dashboard/docpen?${params.toString()}`);
+    }
+  };
 
   const defaultAppointments: Appointment[] = [
     { chair: 'Chair 1', time: '9:00 AM - 10:00 AM', patient: 'Emily White', procedure: 'Ortho Adjustment', color: 'bg-blue-100 border-blue-400' },
@@ -111,9 +127,27 @@ export function CustomMultiChairAgenda({ appointments: propAppointments }: Custo
                 ${apt.color}
               `}
             >
-              <div className="text-[11px] font-bold text-gray-900">{apt.chair}</div>
-              <div className="text-[10px] text-gray-700">{apt.time}</div>
-              <div className="text-[10px] text-gray-600">● {apt.patient}</div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] font-bold text-gray-900">{apt.chair}</div>
+                  <div className="text-[10px] text-gray-700">{apt.time}</div>
+                  <div className="text-[10px] text-gray-600">● {apt.patient}</div>
+                </div>
+                {apt.leadId && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-[10px] text-purple-600 hover:text-purple-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStartVisit(apt);
+                    }}
+                  >
+                    <Mic className="h-3 w-3 mr-1" />
+                    Start Visit
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         ))}

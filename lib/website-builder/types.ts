@@ -32,6 +32,8 @@ export interface Component {
   type: string;
   props: Record<string, any>;
   children?: Component[];
+  layout?: SectionLayout;
+  animation?: { type: 'fade' | 'slideUp' | 'slideLeft' | 'slideRight' | 'zoom'; delay?: number };
 }
 
 export interface SEOData {
@@ -56,9 +58,37 @@ export interface GlobalStyles {
   fonts: {
     heading: string;
     body: string;
+    headingFallback?: string;
+    bodyFallback?: string;
+    fontPairing?: string; // Preset name: 'modern', 'classic', 'minimal', etc.
   };
   spacing: {
     unit: number;
+    sectionPadding?: { mobile: number; tablet: number; desktop: number };
+  };
+  breakpoints?: {
+    mobile: number;
+    tablet: number;
+    desktop: number;
+  };
+  animations?: {
+    enabled: boolean;
+    entrance?: 'none' | 'fade' | 'slideUp' | 'slideLeft' | 'slideRight' | 'zoom';
+    duration?: number; // ms
+    stagger?: boolean;
+  };
+}
+
+/** Per-section layout: padding, margins, alignment, visibility per breakpoint */
+export interface SectionLayout {
+  padding?: { top?: number; right?: number; bottom?: number; left?: number };
+  margin?: { top?: number; right?: number; bottom?: number; left?: number };
+  alignment?: 'left' | 'center' | 'right' | 'stretch';
+  maxWidth?: number;
+  visibility?: {
+    mobile?: boolean;
+    tablet?: boolean;
+    desktop?: boolean;
   };
 }
 
@@ -132,6 +162,17 @@ export interface FormField {
   type: string;
   label?: string;
   required?: boolean;
+  placeholder?: string;
+  options?: { value: string; label: string }[];
+  conditional?: { field: string; operator: 'equals' | 'notEmpty' | 'contains'; value: string };
+  step?: number; // For multi-step forms
+}
+
+export interface FormConfig {
+  fields: FormField[];
+  steps?: { id: string; title: string; fieldIds: string[] }[];
+  submitAction?: 'webhook' | 'email' | 'createLead';
+  leadMapping?: Record<string, string>; // formFieldName -> leadField
 }
 
 export interface ScrapedProduct {

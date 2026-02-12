@@ -42,6 +42,7 @@ import {
   File,
   PenTool,
 } from 'lucide-react';
+import { AIVisitNotesCard } from '@/components/dental/ai-visit-notes-card';
 
 // Clinical Notes Editor Component
 function ClinicalNotesEditor({ leadId }: { leadId: string }) {
@@ -519,8 +520,8 @@ function ClinicalDashboardPageContent() {
         </div>
       </div>
 
-      {/* MIDDLE ROW - 3 Equal Columns */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      {/* MIDDLE ROW - 4 Equal Columns */}
+      <div className="grid grid-cols-4 gap-4 mb-4">
         {/* 4. Periodontal Charting */}
         <Card 
           className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-lg cursor-pointer hover:shadow-xl transition-all"
@@ -608,6 +609,13 @@ function ClinicalDashboardPageContent() {
             )}
           </CardContent>
         </Card>
+
+        {/* 7. AI Visit Notes */}
+        <AIVisitNotesCard
+          leadId={selectedLeadId}
+          patientName={selectedLeadId ? (leads.find((l) => l.id === selectedLeadId)?.contactPerson || undefined) : undefined}
+          chiefComplaint={undefined}
+        />
       </div>
 
       {/* BOTTOM ROW - Document Upload */}
@@ -859,7 +867,26 @@ function ClinicalDashboardPageContent() {
         title="Clinical Notes"
       >
         {selectedLeadId ? (
-          <ClinicalNotesEditor leadId={selectedLeadId} />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const params = new URLSearchParams();
+                  params.set('leadId', selectedLeadId);
+                  const patientName = leads.find((l) => l.id === selectedLeadId)?.contactPerson || leads.find((l) => l.id === selectedLeadId)?.businessName;
+                  if (patientName) params.set('patientName', patientName);
+                  params.set('from', 'clinical');
+                  window.location.href = `/dashboard/docpen?${params.toString()}`;
+                }}
+              >
+                <Brain className="h-4 w-4 mr-2" />
+                Open in Docpen
+              </Button>
+            </div>
+            <ClinicalNotesEditor leadId={selectedLeadId} />
+          </div>
         ) : (
           <div className="text-center py-16 text-gray-400">Select a patient</div>
         )}

@@ -236,6 +236,23 @@ async function executeVoiceCall(
       }
     }
 
+    // Industry AI Employee (assignedAgentType) - lazy provision on first use
+    const assignedType = task.assignedAgentType || actionConfig?.assignedAgentType;
+    if (!agentId && assignedType && instance.industry) {
+      const { hasIndustryAIEmployees } = await import('@/lib/industry-ai-employees/registry');
+      if (hasIndustryAIEmployees(instance.industry)) {
+        const { ensureIndustryAgentProvisioned } = await import('@/lib/ai-employee-lazy-provision');
+        const industryAgent = await ensureIndustryAgentProvisioned(
+          instance.userId,
+          instance.industry,
+          assignedType
+        );
+        if (industryAgent?.elevenLabsAgentId) {
+          agentId = industryAgent.elevenLabsAgentId;
+        }
+      }
+    }
+
     if (!agentId) {
       agentId = actionConfig?.elevenLabsAgentId || process.env.ELEVENLABS_DEFAULT_AGENT_ID || null;
     }

@@ -12,6 +12,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { generateSignatureHash, sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
+import { logDocpenAudit, DOCPEN_AUDIT_EVENTS } from '@/lib/docpen/audit-log';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -138,6 +139,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       console.log('[Docpen Audit - SIGN]', sanitizeForLogging(
         createAuditLogEntry('sign', 'session', id, session.user.id, request)
       ));
+      await logDocpenAudit(id, DOCPEN_AUDIT_EVENTS.SIGNED, { signedBy });
     }
     // Handle status update
     else if (status) {

@@ -20,7 +20,10 @@ import {
   Trash2,
   TestTube2,
   ExternalLink,
+  FileText,
+  Loader2,
 } from 'lucide-react';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,6 +59,9 @@ export function VoiceAgentsPage() {
     activeAgents: 0,
     totalCalls: 0,
   });
+  const [recentCalls, setRecentCalls] = useState<any[]>([]);
+  const [loadingCalls, setLoadingCalls] = useState(false);
+  const [summarizingId, setSummarizingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAgents();
@@ -66,6 +72,19 @@ export function VoiceAgentsPage() {
       fetchStats();
     }
   }, [agents]);
+
+  useEffect(() => {
+    if (selectedAgent?.id) {
+      setLoadingCalls(true);
+      fetch(`/api/calls?voiceAgentId=${selectedAgent.id}&limit=10`)
+        .then((r) => r.json())
+        .then((c) => setRecentCalls(Array.isArray(c) ? c : []))
+        .catch(() => setRecentCalls([]))
+        .finally(() => setLoadingCalls(false));
+    } else {
+      setRecentCalls([]);
+    }
+  }, [selectedAgent?.id]);
 
   useEffect(() => {
     const action = searchParams?.get('action');
@@ -140,6 +159,28 @@ export function VoiceAgentsPage() {
       }
     } catch (e: any) {
       toast.error(e.message || 'Verification failed', { id: toastId });
+    }
+  };
+
+  const handleSummarize = async (callId: string) => {
+    setSummarizingId(callId);
+    try {
+      const res = await fetch(`/api/calls/${callId}/summarize`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || 'Call summarized and note added');
+        if (selectedAgent?.id) {
+          fetch(`/api/calls?voiceAgentId=${selectedAgent.id}&limit=10`)
+            .then((r) => r.json())
+            .then((c) => setRecentCalls(Array.isArray(c) ? c : []));
+        }
+      } else {
+        toast.error(data.error || 'Failed to summarize');
+      }
+    } catch {
+      toast.error('Failed to summarize call');
+    } finally {
+      setSummarizingId(null);
     }
   };
 
@@ -471,6 +512,44 @@ export function VoiceAgentsPage() {
                                 <p className="text-sm text-gray-500">Outbound</p>
                                 <p className="text-2xl font-bold text-gray-900">{selectedAgent._count?.outboundCalls || 0}</p>
                               </div>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-700 mb-2">Recent Calls</p>
+                              {loadingCalls ? (
+                                <p className="text-sm text-gray-500">Loading...</p>
+                              ) : recentCalls.length === 0 ? (
+                                <p className="text-sm text-gray-500">No recent calls</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {recentCalls.map((call) => (
+                                    <div key={call.id} className="flex items-center justify-between p-2 rounded-lg border border-purple-200 bg-white/50">
+                                      <div>
+                                        <p className="text-sm font-medium text-gray-900">
+                                          {call.lead?.contactPerson || call.lead?.businessName || call.fromNumber}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          {format(new Date(call.createdAt), 'MMM d, h:mm a')}
+                                          {call.duration != null && ` • ${Math.floor(call.duration / 60)}:${(call.duration % 60).toString().padStart(2, '0')}`}
+                                        </p>
+                                      </div>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 text-xs"
+                                        onClick={() => handleSummarize(call.id)}
+                                        disabled={!!summarizingId}
+                                      >
+                                        {summarizingId === call.id ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                          <FileText className="h-3 w-3 mr-1" />
+                                        )}
+                                        Summarize
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </TabsContent>
                         </Tabs>

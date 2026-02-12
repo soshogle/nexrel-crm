@@ -6,7 +6,9 @@
 
 import { prisma } from '@/lib/db';
 import { GmailService } from './gmail-service';
+import { OutlookService } from './outlook-service';
 import { TwilioService } from './twilio-service';
+import { syncLogger } from './sync-logger';
 
 export class MessageSyncOrchestrator {
   /**
@@ -29,7 +31,7 @@ export class MessageSyncOrchestrator {
         },
       });
 
-      console.log(`Starting sync for user ${userId}, found ${connections.length} connections`);
+      syncLogger.info(userId, 'ALL', `Starting sync, found ${connections.length} connections`, { connectionCount: connections.length });
 
       for (const connection of connections) {
         try {
@@ -37,7 +39,9 @@ export class MessageSyncOrchestrator {
 
           switch (connection.channelType) {
             case 'EMAIL':
-              synced = await this.syncGmail(connection, userId);
+              synced = (connection.providerType || '').toLowerCase() === 'outlook'
+                ? await this.syncOutlook(connection, userId)
+                : await this.syncGmail(connection, userId);
               break;
             case 'SMS':
               synced = await this.syncTwilio(connection, userId);
@@ -59,10 +63,17 @@ export class MessageSyncOrchestrator {
           }
 
           totalSynced += synced;
-          console.log(`Synced ${synced} messages for ${connection.channelType} - ${connection.displayName}`);
+          syncLogger.info(userId, connection.channelType, `Synced ${synced} messages`, {
+            synced,
+            displayName: connection.displayName,
+            providerType: connection.providerType,
+          });
         } catch (error: any) {
           const errorMsg = `Error syncing ${connection.channelType}: ${error.message}`;
-          console.error(errorMsg);
+          syncLogger.error(userId, connection.channelType, errorMsg, error.message, {
+            connectionId: connection.id,
+            providerType: connection.providerType,
+          });
           errors.push(errorMsg);
 
           // Update connection error status
@@ -81,6 +92,23 @@ export class MessageSyncOrchestrator {
       console.error('Error in sync orchestrator:', error);
       throw error;
     }
+  }
+
+  /**
+   * Sync Outlook messages
+   */
+  private static async syncOutlook(
+    connection: any,
+    userId: string
+  ): Promise<number> {
+    if (!connection.accessToken) {
+      throw new Error('No access token for Outlook connection');
+    }
+    const outlookService = new OutlookService(
+      connection.accessToken,
+      connection.refreshToken
+    );
+    return await outlookService.syncToDatabase(connection.id, userId);
   }
 
   /**

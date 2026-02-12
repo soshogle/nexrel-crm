@@ -83,6 +83,10 @@ export default function DocpenPage() {
   const { data: session, status: sessionStatus } = useSession();
   const tToasts = useTranslations('toasts.general');
   const sessionIdParam = searchParams.get('session');
+  const leadIdParam = searchParams.get('leadId');
+  const patientNameParam = searchParams.get('patientName');
+  const chiefComplaintParam = searchParams.get('chiefComplaint');
+  const fromParam = searchParams.get('from');
 
   const [activeView, setActiveView] = useState<'list' | 'session'>(sessionIdParam ? 'session' : 'list');
   const [activeSession, setActiveSession] = useState<Session | null>(null);
@@ -290,7 +294,14 @@ export default function DocpenPage() {
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
               </Button>
-              <NewSessionDialog onSessionCreated={handleSessionCreated} />
+              <NewSessionDialog
+                onSessionCreated={handleSessionCreated}
+                defaultLeadId={leadIdParam || undefined}
+                defaultPatientName={patientNameParam || undefined}
+                defaultChiefComplaint={chiefComplaintParam || undefined}
+                defaultProfession={fromParam === 'clinical' ? 'DENTIST' : undefined}
+                defaultOpen={!!(leadIdParam || patientNameParam)}
+              />
             </>
           )}
         </div>
@@ -439,6 +450,13 @@ export default function DocpenPage() {
                 <SOAPNoteEditor
                   sessionId={activeSession.id}
                   soapNote={currentSOAPNote}
+                  sessionContext={{
+                    patientName: activeSession.patientName || activeSession.lead?.contactPerson,
+                    sessionDate: activeSession.sessionDate,
+                    chiefComplaint: activeSession.chiefComplaint,
+                    consultantName: activeSession.consultantName,
+                    profession: activeSession.profession,
+                  }}
                   readOnly={activeSession.status === 'SIGNED'}
                   onUpdate={(note) => {
                     setActiveSession(prev => prev ? {

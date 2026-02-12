@@ -29,6 +29,11 @@ export default async function LeadDetailPage({
       messages: {
         orderBy: { createdAt: 'desc' }
       },
+      callLogs: {
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        include: { voiceAgent: { select: { name: true } } },
+      },
     }
   })
 

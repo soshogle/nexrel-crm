@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { FileText, RefreshCw, Edit3, Check, X, Loader2, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, RefreshCw, Edit3, Check, X, Loader2, Sparkles, Copy, Download } from 'lucide-react';
+import { formatNoteForEHR, generatePDF } from '@/lib/docpen/ehr-export';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/accordion';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { CodeSuggestions } from './code-suggestions';
 
 interface SOAPNote {
   id: string;
@@ -27,14 +29,25 @@ interface SOAPNote {
   processingTime?: number;
   isCurrentVersion: boolean;
   editedByUser: boolean;
+  linkedXrayIds?: string[];
+}
+
+interface SessionContext {
+  patientName?: string;
+  sessionDate?: string;
+  chiefComplaint?: string;
+  consultantName?: string;
+  profession?: string;
 }
 
 interface SOAPNoteEditorProps {
   sessionId: string;
   soapNote: SOAPNote | null;
+  sessionContext?: SessionContext;
   readOnly?: boolean;
   onUpdate?: (note: SOAPNote) => void;
   onGenerate?: () => void;
+  onExported?: () => void;
 }
 
 type SectionKey = 'subjective' | 'objective' | 'assessment' | 'plan' | 'additionalNotes';
@@ -42,9 +55,11 @@ type SectionKey = 'subjective' | 'objective' | 'assessment' | 'plan' | 'addition
 export function SOAPNoteEditor({
   sessionId,
   soapNote,
+  sessionContext,
   readOnly = false,
   onUpdate,
   onGenerate,
+  onExported,
 }: SOAPNoteEditorProps) {
   const t = useTranslations('toasts.docpen');
   const tCommon = useTranslations('common');
@@ -135,6 +150,51 @@ export function SOAPNoteEditor({
     }
   };
 
+  const handleCopyForEHR = async () => {
+    if (!soapNote) return;
+    const text = formatNoteForEHR(soapNote, {
+      ...sessionContext,
+      sessionDate: sessionContext?.sessionDate
+        ? new Date(sessionContext.sessionDate).toLocaleDateString()
+        : undefined,
+    });
+    try {
+      await navigator.clipboard.writeText(text);
+      fetch(`/api/docpen/sessions/${sessionId}/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logExport: true, method: 'copy' }),
+      }).catch(() => {});
+      toast.success('Copied to clipboard – paste into your EHR');
+      onExported?.();
+    } catch {
+      toast.error('Failed to copy');
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    if (!soapNote) return;
+    const blob = generatePDF(soapNote, {
+      ...sessionContext,
+      sessionDate: sessionContext?.sessionDate
+        ? new Date(sessionContext.sessionDate).toLocaleDateString()
+        : undefined,
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `docpen-note-${sessionContext?.patientName || 'visit'}-${new Date().toISOString().slice(0, 10)}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+    fetch(`/api/docpen/sessions/${sessionId}/export`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ logExport: true, method: 'pdf' }),
+    }).catch(() => {});
+    toast.success('PDF downloaded');
+    onExported?.();
+  };
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
@@ -193,6 +253,14 @@ export function SOAPNoteEditor({
             SOAP Note
           </CardTitle>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleCopyForEHR} title="Copy for EHR">
+              <Copy className="h-4 w-4 mr-1" />
+              Copy for EHR
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownloadPDF} title="Download PDF">
+              <Download className="h-4 w-4 mr-1" />
+              PDF
+            </Button>
             <Badge variant="outline">Version {soapNote.version}</Badge>
             {soapNote.editedByUser && (
               <Badge variant="secondary">Edited</Badge>
@@ -216,7 +284,14 @@ export function SOAPNoteEditor({
               <AccordionContent>
                 <div className="pl-5">
                   <p className="text-xs text-muted-foreground mb-3">{description}</p>
-                  
+                  {(key === 'assessment' || key === 'plan') && (soapNote.assessment || soapNote.plan) && (
+                    <div className="mb-3">
+                      <CodeSuggestions
+                        noteText={[soapNote.subjective, soapNote.objective, soapNote.assessment, soapNote.plan].filter(Boolean).join(' ')}
+                        profession={sessionContext?.profession}
+                      />
+                    </div>
+                  )}
                   {editingSection === key ? (
                     <div className="space-y-2">
                       <Textarea
@@ -273,11 +348,18 @@ export function SOAPNoteEditor({
           ))}
         </Accordion>
 
-        {soapNote.processingTime && (
-          <p className="text-xs text-muted-foreground mt-4">
-            Generated in {(soapNote.processingTime / 1000).toFixed(2)}s
-          </p>
-        )}
+        <div className="flex items-center gap-4 mt-4">
+          {soapNote.processingTime && (
+            <p className="text-xs text-muted-foreground">
+              Generated in {(soapNote.processingTime / 1000).toFixed(2)}s
+            </p>
+          )}
+          {soapNote.linkedXrayIds && soapNote.linkedXrayIds.length > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              {soapNote.linkedXrayIds.length} X-ray{soapNote.linkedXrayIds.length !== 1 ? 's' : ''} linked
+            </Badge>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

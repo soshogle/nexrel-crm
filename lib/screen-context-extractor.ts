@@ -4,6 +4,23 @@
  */
 
 const MAX_LENGTH = 800; // Keep concise for voice agent variable limits
+
+/** Get current page context for AI (path, active resource IDs) */
+export function getPageContext(): { path: string; pathname: string; activeWebsiteId?: string; activeLeadId?: string; activeDealId?: string } {
+  if (typeof window === 'undefined') return { path: '', pathname: '' };
+  const path = window.location.pathname || '';
+  const params = new URLSearchParams(window.location.search || '');
+  const websiteIdMatch = path.match(/\/dashboard\/websites\/([^/]+)/);
+  const onContacts = path.includes('/dashboard/contacts');
+  const onPipeline = path.includes('/dashboard/pipeline');
+  return {
+    path,
+    pathname: path,
+    activeWebsiteId: websiteIdMatch?.[1] || undefined,
+    activeLeadId: onContacts ? (params.get('id') || undefined) : undefined,
+    activeDealId: onPipeline ? (params.get('id') || undefined) : undefined,
+  };
+}
 const SKIP_SELECTORS = [
   'script', 'style', 'noscript', 'svg', 'path',
   '[aria-hidden="true"]', '[role="presentation"]',

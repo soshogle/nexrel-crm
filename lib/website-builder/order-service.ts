@@ -180,7 +180,7 @@ export class WebsiteOrderService {
     } = params;
 
     // Start transaction
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // 1. Create or update Lead
       const lead = await this.createOrUpdateLead(userId, customer, websiteId, total);
 
@@ -337,7 +337,98 @@ export class WebsiteOrderService {
       }
     }
 
+    // Digital product fulfillment: assign access codes, send download email
+    this.fulfillDigitalProducts({
+      orderId: result.order.id,
+      orderNumber: result.order.orderNumber,
+      customerEmail: customer.email,
+      customerName: customer.name,
+      items,
+      userId,
+    }).catch((err) => console.error('Digital fulfillment error:', err));
+
     return result;
+  }
+
+  /**
+   * Fulfill digital products: assign access codes, email download links
+   */
+  private async fulfillDigitalProducts(params: {
+    orderId: string;
+    orderNumber: string;
+    customerEmail: string;
+    customerName: string;
+    items: OrderItemData[];
+    userId: string;
+  }) {
+    const { orderId, orderNumber, customerEmail, customerName, items, userId } = params;
+
+    const digitalItems: Array<{ productId: string; productName: string; quantity: number; url?: string; codes?: string[] }> = [];
+
+    for (const item of items) {
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+        select: { productType: true, downloadUrl: true, accessCodeTemplate: true },
+      });
+
+      if (product?.productType !== 'DIGITAL') continue;
+
+      const entry: { productId: string; productName: string; quantity: number; url?: string; codes?: string[] } = {
+        productId: item.productId,
+        productName: item.name,
+        quantity: item.quantity,
+      };
+
+      if (product.downloadUrl) {
+        entry.url = product.downloadUrl;
+      }
+
+      if (product.accessCodeTemplate) {
+        const codes = await prisma.productAccessCode.findMany({
+          where: {
+            productId: item.productId,
+            redeemedAt: null,
+          },
+          take: item.quantity,
+        });
+
+        if (codes.length >= item.quantity) {
+          const codeStrings = codes.map((c) => c.code);
+          await prisma.productAccessCode.updateMany({
+            where: { id: { in: codes.map((c) => c.id) } },
+            data: { orderId, redeemedAt: new Date() },
+          });
+          entry.codes = codeStrings;
+        }
+      }
+
+      digitalItems.push(entry);
+    }
+
+    if (digitalItems.length === 0) return;
+
+    const { sendEmail } = await import('@/lib/email');
+    const lines = digitalItems.flatMap((d) => {
+      const parts: string[] = [`${d.productName}:`];
+      if (d.url) parts.push(`Download: ${d.url}`);
+      if (d.codes?.length) parts.push(`Access code(s): ${d.codes.join(', ')}`);
+      return parts;
+    });
+
+    const html = `
+      <p>Hi ${customerName},</p>
+      <p>Thank you for your order (${orderNumber}). Here are your digital products:</p>
+      <ul>${digitalItems.map((d) => `<li><strong>${d.productName}</strong>${d.url ? `<br><a href="${d.url}">Download</a>` : ''}${d.codes?.length ? `<br>Access codes: ${d.codes.join(', ')}` : ''}</li>`).join('')}</ul>
+      <p>If you have any questions, please reply to this email.</p>
+    `;
+
+    await sendEmail({
+      to: customerEmail,
+      subject: `Your order ${orderNumber} - Digital delivery`,
+      html,
+      text: lines.join('\n'),
+      userId,
+    });
   }
 
   /**

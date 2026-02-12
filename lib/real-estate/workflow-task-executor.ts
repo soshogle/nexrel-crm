@@ -129,12 +129,9 @@ async function executeVoiceCall(
   }
 
   if (!elevenLabsAgentId && task.assignedAgentType) {
-    const agent = await prisma.rEAIEmployeeAgent.findFirst({
-      where: {
-        userId: instance.userId,
-        employeeType: task.assignedAgentType,
-      },
-    });
+    // Lazy provision: create agent on first use if not yet provisioned
+    const { ensureREAgentProvisioned } = await import('@/lib/ai-employee-lazy-provision');
+    const agent = await ensureREAgentProvisioned(instance.userId, task.assignedAgentType as any);
     if (agent?.elevenLabsAgentId) {
       elevenLabsAgentId = agent.elevenLabsAgentId;
     }

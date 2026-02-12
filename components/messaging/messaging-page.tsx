@@ -225,8 +225,7 @@ export function MessagingPage() {
       
       if (response.ok) {
         toast.success('Messages synced successfully');
-        // Refresh the conversation list
-        window.location.reload();
+        setRefreshKey((prev) => prev + 1);
       } else {
         toast.error('Failed to sync messages');
       }

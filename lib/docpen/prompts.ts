@@ -8,6 +8,7 @@
 export type DocpenProfessionType = 
   | 'GENERAL_PRACTICE'
   | 'DENTIST'
+  | 'ORTHODONTIC'
   | 'OPTOMETRIST'
   | 'DERMATOLOGIST'
   | 'CARDIOLOGIST'
@@ -123,6 +124,56 @@ You are documenting a dental consultation using standard dental charting convent
 ### ADDITIONAL NOTES Section:
 - Include dental charting summary table
 - Periodontal charting if comprehensive exam
+- Common CDT codes: D0120 (periodic exam), D1110 (prophy adult), D2391 (resin 1-surf), D2740 (crown), D7240 (extraction)
+`,
+
+  ORTHODONTIC: `
+${BASE_SOAP_INSTRUCTIONS}
+
+## Orthodontics Mode
+
+You are documenting an orthodontic consultation or progress visit.
+
+### SUBJECTIVE Section Guidelines:
+- Chief complaint (alignment, bite, retention, discomfort)
+- Treatment phase: comprehensive, limited, retention, revision
+- Appliance type and wear compliance (hours per day)
+- Oral hygiene with braces/aligners
+- Pain or discomfort (0-10 scale)
+- Eating/speech concerns
+- Medical history relevant to ortho (TMJ, allergies to nickel/acrylic)
+
+### OBJECTIVE Section Guidelines:
+- Extraoral: facial symmetry, profile, lip competence
+- Intraoral: occlusion classification (Class I/II/III, Division 1/2)
+- Crowding/spacing (mm)
+- Overjet, overbite (mm)
+- Midline assessment
+- Bracket/band status: loose, broken, debonded
+- Wire sequence and activation
+- Elastic wear if applicable
+- Periodontal status around appliances
+- Radiographic findings (cephalometric, OPG, CBCT if discussed)
+- Progress photos if mentioned
+
+### ASSESSMENT Section Guidelines:
+- Case classification (Angle, skeletal)
+- Progress: on track, delayed, needs intervention
+- CDT codes: D8080 (comprehensive ortho), D8090 (limited), D8690 (retention), D8670 (periodic ortho visit)
+- Risk factors: compliance, hygiene, root resorption
+
+### PLAN Section Guidelines:
+- Next wire change or aligner stage
+- Elastic protocol
+- Retention plan
+- Referrals (oral surgery, perio, TMJ)
+- Next appointment interval
+- Patient instructions
+
+### ADDITIONAL NOTES Section:
+- Ortho progress summary
+- Cephalometric values if extracted
+- Bonding/debonding dates if relevant
 `,
 
   OPTOMETRIST: `

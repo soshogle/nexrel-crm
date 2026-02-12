@@ -363,6 +363,406 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
         },
       },
     },
+    {
+      type: "function",
+      function: {
+        name: "add_lead_tag",
+        description: "Add a tag to a contact. Use when user says 'tag John as VIP', 'add tag high-priority to Acme Corp', 'label this lead as hot'.",
+        parameters: {
+          type: "object",
+          properties: {
+            leadId: { type: "string", description: "Lead ID (optional if contactName provided)" },
+            contactName: { type: "string", description: "Contact/company name (optional if leadId provided)" },
+            tag: { type: "string", description: "Tag to add (e.g. VIP, high-priority, hot)" },
+          },
+          required: ["tag"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_lead_status",
+        description: "Update contact status. Use when user says 'mark John as contacted', 'change Acme status to qualified', 'update lead status to converted'.",
+        parameters: {
+          type: "object",
+          properties: {
+            leadId: { type: "string", description: "Lead ID (optional if contactName provided)" },
+            contactName: { type: "string", description: "Contact/company name (optional if leadId provided)" },
+            status: {
+              type: "string",
+              enum: ["NEW", "CONTACTED", "RESPONDED", "QUALIFIED", "CONVERTED", "LOST"],
+              description: "New status (required)",
+            },
+          },
+          required: ["status"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "list_notes",
+        description: "List notes for a contact or deal. Use when user says 'show me notes for John', 'what notes do we have on the Acme deal?', 'list notes for this contact'.",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Contact/lead name (for contact notes)" },
+            dealTitle: { type: "string", description: "Deal title (for deal notes)" },
+            leadId: { type: "string", description: "Lead ID if known (optional)" },
+            dealId: { type: "string", description: "Deal ID if known (optional)" },
+            limit: { type: "number", description: "Max notes to return (default 10)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_pipeline_stages",
+        description: "List pipeline stages. Use when user says 'what stages are in my pipeline?', 'show pipeline stages', 'list deal stages'.",
+        parameters: {
+          type: "object",
+          properties: {
+            pipelineName: { type: "string", description: "Pipeline name (optional, uses default if not specified)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "assign_deal_to_lead",
+        description: "Link a deal to a contact. Use when user says 'assign Acme deal to John Smith', 'link this deal to the Acme contact', 'associate deal with contact'.",
+        parameters: {
+          type: "object",
+          properties: {
+            dealId: { type: "string", description: "Deal ID (optional if dealTitle provided)" },
+            dealTitle: { type: "string", description: "Deal title (optional if dealId provided)" },
+            leadId: { type: "string", description: "Lead ID (optional if contactName provided)" },
+            contactName: { type: "string", description: "Contact name to link (optional if leadId provided)" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "reschedule_task",
+        description: "Change task due date. Use when user says 'reschedule follow up with John to tomorrow', 'move task to next week', 'change due date to Friday'.",
+        parameters: {
+          type: "object",
+          properties: {
+            taskId: { type: "string", description: "Task ID (optional if taskTitle provided)" },
+            taskTitle: { type: "string", description: "Task title to find (optional if taskId provided)" },
+            dueDate: { type: "string", description: "New due date YYYY-MM-DD (required)" },
+          },
+          required: ["dueDate"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "reorder_section",
+        description: "Reorder sections on a page. Use when user says 'move the about section above the hero', 'reorder sections', 'swap section 1 and 2'.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+            pagePath: { type: "string", description: "Page path (default '/')" },
+            fromIndex: { type: "number", description: "Current section index (0-based)" },
+            toIndex: { type: "number", description: "Target index" },
+          },
+          required: ["websiteId", "fromIndex", "toIndex"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "delete_section",
+        description: "Remove a section from a page. Use when user says 'delete the about section', 'remove the CTA'.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+            sectionType: { type: "string", description: "Section type to delete (e.g. AboutSection, CTASection)" },
+            pagePath: { type: "string", description: "Page path (default '/')" },
+          },
+          required: ["websiteId", "sectionType"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "list_website_media",
+        description: "List media in website library (images, videos, files). Use when user says 'show my website images', 'list media library'.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+            type: { type: "string", enum: ["IMAGE", "VIDEO", "FILE"], description: "Filter by type (optional)" },
+          },
+          required: ["websiteId"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "add_website_image",
+        description: "Add/update image in a section from media library. Use when user says 'add image X to hero', 'use the team photo in about section'.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+            sectionType: { type: "string", description: "Section to update (Hero, ImageSection, etc.)" },
+            imageUrl: { type: "string", description: "Image URL from media library (required)" },
+            alt: { type: "string", description: "Alt text (optional)" },
+            pagePath: { type: "string", description: "Page path (default '/')" },
+          },
+          required: ["websiteId", "sectionType", "imageUrl"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "list_email_templates",
+        description: "List reusable email templates. Use when user says 'show my email templates', 'list email templates', 'what templates do I have?'.",
+        parameters: {
+          type: "object",
+          properties: {
+            category: { type: "string", description: "Filter by category (optional)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "list_sms_templates",
+        description: "List reusable SMS templates. Use when user says 'show my SMS templates', 'list text templates', 'what SMS templates do I have?'.",
+        parameters: {
+          type: "object",
+          properties: {
+            category: { type: "string", description: "Filter by category (optional)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_custom_report",
+        description: "Get custom report data (charts, metrics). Use when user says 'leads by source', 'revenue by month', 'deals by stage', 'show me a pie chart of leads by status'.",
+        parameters: {
+          type: "object",
+          properties: {
+            query: { type: "string", description: "Natural language report query (e.g. 'leads by source', 'revenue by month')" },
+            period: { type: "string", description: "Time period (optional)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "make_it_look_like",
+        description: "Analyze a reference website and suggest changes to make user's site look like it. Use when user says 'make it look like X', 'copy the style of example.com'.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+            referenceUrl: { type: "string", description: "URL of reference site to analyze (required)" },
+          },
+          required: ["websiteId", "referenceUrl"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "suggest_hero_variants",
+        description: "Suggest A/B test variants for hero section. Use when user says 'suggest hero variants', 'A/B test the hero', 'give me alternative CTAs'.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+          },
+          required: ["websiteId"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "check_website_accessibility",
+        description: "Check website for accessibility issues (contrast, alt text, headings). Use when user says 'check accessibility', 'run a11y check', 'audit my site'.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+          },
+          required: ["websiteId"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "create_scheduled_report",
+        description: "Schedule weekly/daily pipeline or sales report via email. Use when user says 'email me a weekly pipeline summary', 'schedule report', 'send me reports every Monday'.",
+        parameters: {
+          type: "object",
+          properties: {
+            reportType: { type: "string", enum: ["pipeline", "sales", "leads"], description: "Report type" },
+            frequency: { type: "string", enum: ["daily", "weekly", "monthly"], description: "how often" },
+            email: { type: "string", description: "Email to send to (optional, uses user email)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "do_everything_for_contact",
+        description: "Composite action: create deal, add note, schedule follow-up, draft email for a contact in one flow. Use when user says 'do everything for John', 'prepare for call with Acme', 'set up John for a demo'.",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Contact/lead name (required)" },
+            actions: { type: "array", items: { type: "string" }, description: "Optional: specific actions to run" },
+          },
+          required: ["contactName"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "log_email_to_contact",
+        description: "Log an email thread or message to a contact's record. Use when user says 'log this email to John', 'attach this email to Acme', 'save email to contact'.",
+        parameters: {
+          type: "object",
+          properties: {
+            contactName: { type: "string", description: "Contact name" },
+            leadId: { type: "string", description: "Lead ID if known" },
+            subject: { type: "string", description: "Email subject" },
+            body: { type: "string", description: "Email body/content" },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "summarize_call",
+        description: "Summarize a call transcript and add as note to contact. Use when user says 'summarize this call', 'add call summary to contact', 'meeting summary'.",
+        parameters: {
+          type: "object",
+          properties: {
+            callLogId: { type: "string", description: "Call log ID (required)" },
+          },
+          required: ["callLogId"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_smart_replies",
+        description: "Get one-click contextual reply suggestions for common situations. Use when user says 'smart replies', 'suggest a reply', 'quick reply for John'.",
+        parameters: {
+          type: "object",
+          properties: {
+            leadId: { type: "string", description: "Lead/contact ID for context" },
+            context: { type: "string", description: "Context (e.g. follow_up, thank_you, meeting)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_follow_up_priority",
+        description: "Get prioritized list of who to follow up with. Use when user says 'who should I call today?', 'who needs follow-up?', 'prioritize my contacts'.",
+        parameters: {
+          type: "object",
+          properties: {
+            limit: { type: "number", description: "Max results (default 10)" },
+            sortBy: { type: "string", enum: ["lastContact", "dealStage", "taskUrgency"], description: "Sort priority" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_deal_risk_alerts",
+        description: "Get deals at risk (stale, no activity, long in stage). Use when user says 'which deals need attention?', 'stale deals', 'deal risk'.",
+        parameters: {
+          type: "object",
+          properties: {
+            staleDays: { type: "number", description: "Days without activity (default 7)" },
+            limit: { type: "number", description: "Max results (default 10)" },
+          },
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "bulk_update_lead_status",
+        description: "Update status for multiple leads. Use when user says 'mark all Qualified leads as Contacted', 'bulk update status'.",
+        parameters: {
+          type: "object",
+          properties: {
+            fromStatus: { type: "string", enum: ["NEW", "CONTACTED", "RESPONDED", "QUALIFIED", "CONVERTED", "LOST"], description: "Current status" },
+            toStatus: { type: "string", enum: ["NEW", "CONTACTED", "RESPONDED", "QUALIFIED", "CONVERTED", "LOST"], description: "New status (required)" },
+            limit: { type: "number", description: "Max leads (default 100)" },
+          },
+          required: ["toStatus"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "bulk_add_tag",
+        description: "Add tag to multiple leads. Use when user says 'tag all leads from last week as hot', 'add VIP tag to all Qualified leads'.",
+        parameters: {
+          type: "object",
+          properties: {
+            tag: { type: "string", description: "Tag to add (required)" },
+            status: { type: "string", description: "Filter by status (optional)" },
+            period: { type: "string", enum: ["today", "last_week", "last_2_weeks", "last_month"], description: "Filter by created period (optional)" },
+            limit: { type: "number", description: "Max leads (default 100)" },
+          },
+          required: ["tag"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "export_pipeline_csv",
+        description: "Export pipeline or contacts to CSV. Use when user says 'export my pipeline', 'download contacts as CSV', 'export to CSV'.",
+        parameters: {
+          type: "object",
+          properties: {
+            type: { type: "string", enum: ["leads", "deals", "pipeline"], description: "What to export" },
+            limit: { type: "number", description: "Max rows (default 1000)" },
+          },
+          required: ["type"],
+        },
+      },
+    },
     // Deal stage
     {
       type: "function",
@@ -1306,6 +1706,104 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
     {
       type: "function",
       function: {
+        name: "get_website_structure",
+        description: "Get website structure (pages, sections, component types). Use when user says 'what sections does my site have?', 'show me the structure', 'what's on the home page?' before making changes.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+          },
+          required: ["websiteId"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_hero",
+        description: "Update the hero section (main headline area). Use when user says 'change hero title to X', 'update the headline', 'change hero CTA button'.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+            title: { type: "string", description: "Hero headline/title (optional)" },
+            subtitle: { type: "string", description: "Hero subheading (optional)" },
+            ctaText: { type: "string", description: "CTA button text (optional)" },
+            ctaLink: { type: "string", description: "CTA button link/path (optional)" },
+          },
+          required: ["websiteId"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "add_section",
+        description: "Add a new section to a page. Use when user says 'add a pricing section', 'add a testimonials section', 'add contact form'.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+            sectionType: {
+              type: "string",
+              enum: ["CTASection", "TextSection", "AboutSection", "ContactForm", "ImageSection", "VideoSection", "ServicesGrid", "ProductsGrid", "PopupSection", "BookingWidget", "ChatWidget"],
+              description: "Type of section to add",
+            },
+            pagePath: { type: "string", description: "Page path (e.g. '/' for home, '/services'). Default: '/'" },
+            title: { type: "string", description: "Section title (optional)" },
+            content: { type: "string", description: "Section content/description (optional)" },
+            ctaText: { type: "string", description: "CTA button text if section has CTA (optional)" },
+            ctaLink: { type: "string", description: "CTA button link (optional)" },
+          },
+          required: ["websiteId", "sectionType"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "update_section_content",
+        description: "Update content of a specific section. Use when user says 'change the about section text', 'update the contact CTA', 'edit the services section'.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+            sectionType: {
+              type: "string",
+              description: "Section type to find (e.g. AboutSection, CTASection, TextSection)",
+            },
+            title: { type: "string", description: "New title (optional)" },
+            content: { type: "string", description: "New content/description (optional)" },
+            ctaText: { type: "string", description: "New CTA button text (optional)" },
+            ctaLink: { type: "string", description: "New CTA link (optional)" },
+            pagePath: { type: "string", description: "Page path if not home (default '/')" },
+          },
+          required: ["websiteId", "sectionType"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "add_cta",
+        description: "Add a CTA (call-to-action) section or update existing CTA. Use when user says 'add a CTA to contact us', 'add a sign up button section', 'change the CTA to Get Quote'.",
+        parameters: {
+          type: "object",
+          properties: {
+            websiteId: { type: "string", description: "Website ID (required)" },
+            title: { type: "string", description: "CTA section title (e.g. 'Get Started Today')" },
+            description: { type: "string", description: "CTA description text (optional)" },
+            ctaText: { type: "string", description: "Button text (e.g. 'Contact Us', 'Get Quote')" },
+            ctaLink: { type: "string", description: "Button link/path (e.g. '/contact', '/signup')" },
+            pagePath: { type: "string", description: "Page to add to (default '/')" },
+          },
+          required: ["websiteId", "ctaText", "ctaLink"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
         name: "navigate_to",
         description: "Navigate the user to any page in the application. Use when the user wants to go somewhere (e.g. 'take me to settings', 'open reports', 'show my calendar'). Path must start with /dashboard or /onboarding.",
         parameters: {
@@ -1398,6 +1896,37 @@ export function mapFunctionToAction(functionName: string): string {
     create_website: "create_website",
     list_websites: "list_websites",
     modify_website: "modify_website",
+    get_website_structure: "get_website_structure",
+    update_hero: "update_hero",
+    add_section: "add_section",
+    update_section_content: "update_section_content",
+    add_cta: "add_cta",
+    add_lead_tag: "add_lead_tag",
+    update_lead_status: "update_lead_status",
+    list_notes: "list_notes",
+    get_pipeline_stages: "get_pipeline_stages",
+    assign_deal_to_lead: "assign_deal_to_lead",
+    reschedule_task: "reschedule_task",
+    reorder_section: "reorder_section",
+    delete_section: "delete_section",
+    list_website_media: "list_website_media",
+    add_website_image: "add_website_image",
+    list_email_templates: "list_email_templates",
+    list_sms_templates: "list_sms_templates",
+    get_custom_report: "get_custom_report",
+    make_it_look_like: "make_it_look_like",
+    suggest_hero_variants: "suggest_hero_variants",
+    check_website_accessibility: "check_website_accessibility",
+    create_scheduled_report: "create_scheduled_report",
+    do_everything_for_contact: "do_everything_for_contact",
+    log_email_to_contact: "log_email_to_contact",
+    summarize_call: "summarize_call",
+    get_smart_replies: "get_smart_replies",
+    get_follow_up_priority: "get_follow_up_priority",
+    get_deal_risk_alerts: "get_deal_risk_alerts",
+    bulk_update_lead_status: "bulk_update_lead_status",
+    bulk_add_tag: "bulk_add_tag",
+    export_pipeline_csv: "export_pipeline_csv",
     navigate_to: "navigate_to", // Special case - handled differently
   };
   return mapping[functionName] || functionName;
@@ -1508,7 +2037,36 @@ export function getNavigationUrlForAction(
     case "list_websites":
       return "/dashboard/websites";
     case "modify_website":
+    case "get_website_structure":
+    case "update_hero":
+    case "add_section":
+    case "update_section_content":
+    case "add_cta":
       return result?.navigateTo || (result?.websiteId ? `/dashboard/websites/${result.websiteId}` : "/dashboard/websites");
+    case "add_lead_tag":
+    case "update_lead_status":
+    case "list_notes":
+      return result?.result?.leadId ? `/dashboard/contacts?id=${result.result.leadId}` : "/dashboard/contacts";
+    case "assign_deal_to_lead":
+      return result?.result?.dealId ? `/dashboard/pipeline?id=${result.result.dealId}` : "/dashboard/pipeline";
+    case "reschedule_task":
+      return "/dashboard/tasks";
+    case "get_pipeline_stages":
+      return "/dashboard/pipeline";
+    case "reorder_section":
+    case "delete_section":
+    case "list_website_media":
+    case "add_website_image":
+      return result?.result?.websiteId ? `/dashboard/websites/${result.result.websiteId}` : "/dashboard/websites";
+    case "get_follow_up_priority":
+      return "/dashboard/contacts";
+    case "get_deal_risk_alerts":
+      return "/dashboard/pipeline";
+    case "bulk_update_lead_status":
+    case "bulk_add_tag":
+      return "/dashboard/contacts";
+    case "export_pipeline_csv":
+      return result?.result?.type === "leads" ? "/dashboard/contacts" : "/dashboard/pipeline";
     default:
       return null;
   }

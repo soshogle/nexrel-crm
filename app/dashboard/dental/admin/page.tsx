@@ -45,6 +45,7 @@ import {
   Search,
   TrendingUp,
   Server,
+  Mic,
 } from 'lucide-react';
 
 export default function AdministrativeDashboardPage() {
@@ -303,6 +304,8 @@ export default function AdministrativeDashboardPage() {
     patient: leads.find((l) => l.id === apt.leadId)?.contactPerson || apt.customerName || 'Unknown',
     procedure: apt.title || apt.procedure || 'Appointment',
     color: 'bg-blue-100 border-blue-300', // Default color
+    leadId: apt.leadId,
+    status: apt.status,
   }));
 
   // Display claims
@@ -621,20 +624,41 @@ export default function AdministrativeDashboardPage() {
             onCancel={() => setShowUpdateInfo(false)}
           />
         ) : (
-          <RedesignedCheckIn
-            patientName={selectedLeadId ? leads.find(l => l.id === selectedLeadId)?.contactPerson || 'Patient' : 'John Smith'}
-            onCheckIn={() => {
-              toast.success('Patient checked in successfully');
-              setOpenModal(null);
-            }}
-            onUpdateInfo={() => {
-              if (!selectedLeadId) {
-                toast.error('Please select a patient first');
-                return;
-              }
-              setShowUpdateInfo(true);
-            }}
-          />
+          <div className="space-y-4">
+            {selectedLeadId && (
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const params = new URLSearchParams();
+                    params.set('leadId', selectedLeadId);
+                    const patientName = leads.find((l) => l.id === selectedLeadId)?.contactPerson;
+                    if (patientName) params.set('patientName', patientName);
+                    params.set('from', 'clinical');
+                    window.location.href = `/dashboard/docpen?${params.toString()}`;
+                  }}
+                >
+                  <Mic className="h-4 w-4 mr-2" />
+                  Start Visit in Docpen
+                </Button>
+              </div>
+            )}
+            <RedesignedCheckIn
+              patientName={selectedLeadId ? leads.find(l => l.id === selectedLeadId)?.contactPerson || 'Patient' : 'John Smith'}
+              onCheckIn={() => {
+                toast.success('Patient checked in successfully');
+                setOpenModal(null);
+              }}
+              onUpdateInfo={() => {
+                if (!selectedLeadId) {
+                  toast.error('Please select a patient first');
+                  return;
+                }
+                setShowUpdateInfo(true);
+              }}
+            />
+          </div>
         )}
       </CardModal>
 

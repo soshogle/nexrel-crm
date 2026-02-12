@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, Phone, Video, MoreVertical, Check, CheckCheck } from 'lucide-react';
+import { Send, Paperclip, Phone, Video, MoreVertical, Check, CheckCheck, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -46,6 +46,9 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
+  const [smartReplies, setSmartReplies] = useState<{ id: string; label: string; text: string }[]>([]);
+  const [showSmartReplies, setShowSmartReplies] = useState(false);
+  const [loadingReplies, setLoadingReplies] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +149,33 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const fetchSmartReplies = async () => {
+    if (smartReplies.length > 0) {
+      setShowSmartReplies((v) => !v);
+      return;
+    }
+    setLoadingReplies(true);
+    try {
+      const res = await fetch(`/api/smart-replies?conversationId=${conversationId}`);
+      const data = await res.json();
+      if (res.ok && data.replies) {
+        setSmartReplies(data.replies);
+        setShowSmartReplies(true);
+      } else {
+        toast.error('Could not load smart replies');
+      }
+    } catch {
+      toast.error('Could not load smart replies');
+    } finally {
+      setLoadingReplies(false);
+    }
+  };
+
+  const useSmartReply = (text: string) => {
+    setNewMessage((prev) => (prev ? `${prev}\n\n${text}` : text));
+    setShowSmartReplies(false);
   };
 
   const getInitials = (name: string) => {
@@ -306,7 +336,39 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
 
       {/* Input */}
       <div className="p-4 border-t border-border bg-card">
+        {showSmartReplies && smartReplies.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {smartReplies.map((r) => (
+              <Button
+                key={r.id}
+                variant="outline"
+                size="sm"
+                className="h-auto py-1.5 px-2 text-xs"
+                onClick={() => useSmartReply(r.text)}
+              >
+                {r.label}
+              </Button>
+            ))}
+            <Button variant="ghost" size="sm" className="h-auto py-1.5 px-2 text-xs" onClick={() => setShowSmartReplies(false)}>
+              Close
+            </Button>
+          </div>
+        )}
         <div className="flex items-end gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={fetchSmartReplies}
+            disabled={loadingReplies}
+            title="Smart replies"
+          >
+            {loadingReplies ? (
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            ) : (
+              <Sparkles className="h-5 w-5" />
+            )}
+          </Button>
           <Button variant="ghost" size="icon" className="shrink-0">
             <Paperclip className="h-5 w-5" />
           </Button>
