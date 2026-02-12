@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nexrel EHR Desktop Bridge</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #0f172a; color: #e2e8f0; }
+    h1 { font-size: 1.25rem; margin: 0 0 16px; }
+    .card { background: #1e293b; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    label { display: block; margin-bottom: 4px; font-size: 0.875rem; color: #94a3b8; }
+    input, select, button { padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; }
+    input { width: 100%; max-width: 400px; }
+    button { cursor: pointer; margin-right: 8px; margin-top: 8px; }
+    button.primary { background: #2563eb; border-color: #2563eb; }
+    button:hover { opacity: 0.9; }
+    .sources { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+    .source { cursor: pointer; border: 2px solid transparent; border-radius: 8px; padding: 4px; transition: border-color 0.2s; }
+    .source:hover, .source.selected { border-color: #2563eb; }
+    .source img { display: block; border-radius: 4px; width: 160px; height: 90px; object-fit: cover; }
+    .source span { display: block; font-size: 0.75rem; margin-top: 4px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+    .log { font-family: monospace; font-size: 0.75rem; background: #0f172a; padding: 12px; border-radius: 6px; max-height: 120px; overflow-y: auto; margin-top: 8px; }
+    .status { font-size: 0.875rem; color: #94a3b8; margin-top: 8px; }
+    .error { color: #f87171; }
+    .success { color: #4ade80; }
+  </style>
+</head>
+<body>
+  <h1>Nexrel EHR Desktop Bridge</h1>
+  <p class="status">For on-premise or desktop EHRs: capture screen, send to Vision API, and optionally run RPA actions.</p>
+
+  <div class="card">
+    <label>API Token (from Nexrel CRM → Settings → EHR Bridge)</label>
+    <input type="password" id="token" placeholder="ehr_xxxx..." />
+    <label style="margin-top: 8px;">EHR Type</label>
+    <select id="ehrType">
+      <option value="generic">Generic</option>
+      <option value="dentrix">Dentrix</option>
+      <option value="dentrix_ascend">Dentrix Ascend</option>
+      <option value="eaglesoft">Eaglesoft</option>
+      <option value="opendental">Open Dental</option>
+      <option value="dentitek">Dentitek</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size: 1rem; margin: 0 0 12px;">1. Select window</h2>
+    <button id="refreshBtn">Refresh sources</button>
+    <div id="sources" class="sources"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size: 1rem; margin: 0 0 12px;">2. Capture and send</h2>
+    <button id="captureBtn" class="primary" disabled>Capture & send to Nexrel</button>
+    <div id="captureStatus" class="status"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size: 1rem; margin: 0 0 12px;">3. RPA export</h2>
+    <p style="font-size: 0.875rem; color: #94a3b8; margin: 0 0 8px;">Export pending actions as JSON for UiPath, Automation Anywhere, or custom RPA.</p>
+    <button id="exportBtn">Export RPA actions</button>
+    <div id="exportStatus" class="status"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size: 1rem; margin: 0 0 12px;">Log</h2>
+    <div id="log" class="log"></div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

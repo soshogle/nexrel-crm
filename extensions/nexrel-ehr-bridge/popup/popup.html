@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexrel EHR Bridge</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="header">
+    <div class="logo-wrap">
+      <img src="../assets/icon-48.png" alt="Nexrel" class="logo" />
+      <span class="title">EHR Bridge</span>
+    </div>
+  </header>
+
+  <main class="main">
+    <div id="error-message" class="error-message hidden"></div>
+    <section id="ehr-status" class="card status-card hidden">
+      <div class="status-dot"></div>
+      <div class="status-text">
+        <span id="ehr-name">No EHR detected</span>
+        <span id="ehr-ready" class="muted">Open an EHR tab to push</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Push to EHR</h3>
+      <button id="btn-push-latest" class="btn btn-primary" disabled>
+        Push Latest Note
+      </button>
+      <div id="notes-list" class="notes-list"></div>
+      <a id="link-open-nexrel" href="#" target="_blank" class="link-muted">View all in Nexrel →</a>
+    </section>
+
+    <section id="sync-section" class="card">
+      <h3>Sync from EHR</h3>
+      <p class="muted text-sm">Extract patient data from the current page into Nexrel CRM</p>
+      <button id="btn-read-page" class="btn btn-outline">Read from This Page</button>
+      <p id="sync-result" class="sync-result hidden"></p>
+    </section>
+
+    <section id="schedule-section" class="card">
+      <h3>Schedule (No API Fallback)</h3>
+      <p class="muted text-sm">Screenshot schedule → AI extracts availability → Voice AI uses it</p>
+      <button id="btn-capture-schedule" class="btn btn-outline">Capture Schedule</button>
+      <p id="capture-result" class="sync-result hidden"></p>
+      <div id="pending-section" class="pending-section hidden">
+        <h4 class="text-sm font-medium mt-2">Pending to Push</h4>
+        <div id="pending-list" class="pending-list"></div>
+        <button id="btn-push-pending" class="btn btn-outline btn-sm mt-2">Push to EHR</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Quick Actions</h3>
+      <div class="btn-group">
+        <a id="link-docpen" href="#" target="_blank" class="btn btn-outline">Open Docpen</a>
+        <a id="link-crm" href="#" target="_blank" class="btn btn-outline">Open CRM</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div id="auth-section">
+      <div id="auth-connected" class="hidden">
+        <span id="user-email" class="muted text-sm"></span>
+        <button id="btn-logout" class="btn-link">Log out</button>
+      </div>
+      <div id="auth-disconnected">
+        <button id="btn-connect" class="btn btn-outline btn-sm">Connect to Nexrel</button>
+      </div>
+    </div>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

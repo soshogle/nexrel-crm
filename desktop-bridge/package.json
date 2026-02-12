@@ -1,0 +1,25 @@
+{
+  "name": "nexrel-desktop-bridge",
+  "version": "1.0.0",
+  "description": "Desktop bridge for non-cloud EHRs: screen capture, Vision/OCR, and RPA-style input injection",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win"
+  },
+  "dependencies": {
+    "electron": "^28.0.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.nexrel.desktop-bridge",
+    "productName": "Nexrel EHR Desktop Bridge",
+    "directories": { "output": "dist" },
+    "mac": { "category": "public.app-category.medical", "target": ["dmg", "zip"] },
+    "win": { "target": ["nsis", "portable"] }
+  }
+}
