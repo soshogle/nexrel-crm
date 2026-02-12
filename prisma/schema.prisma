@@ -265,6 +265,7 @@ model User {
   aiEmployees                 AIEmployee[]                 @relation("AIEmployees")
   aiJobs                      AIJob[]                      @relation("AIJobs")
   userAIEmployees             UserAIEmployee[]             @relation("UserAIEmployees")
+  aiGeneratedReports          AiGeneratedReport[]          @relation("UserAiGeneratedReports")
   docpenSessions              DocpenSession[]
   docpenVoiceAgents           DocpenVoiceAgent[]
   docpenKnowledgeBaseFiles    DocpenKnowledgeBaseFile[]
@@ -4506,6 +4507,21 @@ model AIWorkflowExecution {
   @@index([instanceId])
   @@index([status])
   @@index([startedAt])
+}
+
+// AI-generated reports from the conversational assistant
+model AiGeneratedReport {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  reportType  String   // sales, leads, revenue, overview, custom
+  content     Json     // Chart data, tables, summary text
+  period      String?  // last_7_days, last_month, etc.
+  createdAt   DateTime @default(now())
+  user        User     @relation("UserAiGeneratedReports", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model WorkflowOptimization {

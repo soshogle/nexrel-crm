@@ -26,6 +26,9 @@ const AVAILABLE_ACTIONS = {
   CREATE_SMART_WORKFLOW: "create_smart_workflow",
   ADD_WORKFLOW_TASK: "add_workflow_task",
   CREATE_APPOINTMENT: "create_appointment",
+  LIST_APPOINTMENTS: "list_appointments",
+  UPDATE_APPOINTMENT: "update_appointment",
+  CANCEL_APPOINTMENT: "cancel_appointment",
   
   // Voice Agent Debugging & Management
   DEBUG_VOICE_AGENT: "debug_voice_agent",
@@ -41,12 +44,17 @@ const AVAILABLE_ACTIONS = {
   CREATE_LEAD: "create_lead",
   UPDATE_LEAD: "update_lead",
   GET_LEAD_DETAILS: "get_lead_details",
+  DELETE_LEAD: "delete_lead",
   LIST_LEADS: "list_leads",
   CREATE_DEAL: "create_deal",
   UPDATE_DEAL: "update_deal",
   GET_DEAL_DETAILS: "get_deal_details",
+  DELETE_DEAL: "delete_deal",
+  CREATE_PIPELINE: "create_pipeline",
+  CREATE_PIPELINE_STAGE: "create_pipeline_stage",
   LIST_DEALS: "list_deals",
   CREATE_CAMPAIGN: "create_campaign",
+  UPDATE_CAMPAIGN: "update_campaign",
   GET_CAMPAIGN_DETAILS: "get_campaign_details",
   LIST_CAMPAIGNS: "list_campaigns",
   SEARCH_CONTACTS: "search_contacts",
@@ -59,7 +67,24 @@ const AVAILABLE_ACTIONS = {
   SMS_LEADS: "sms_leads",
   EMAIL_LEADS: "email_leads",
   DELETE_DUPLICATE_CONTACTS: "delete_duplicate_contacts",
+  CREATE_TASK: "create_task",
+  LIST_TASKS: "list_tasks",
+  COMPLETE_TASK: "complete_task",
+  UPDATE_TASK: "update_task",
+  CANCEL_TASK: "cancel_task",
+  ADD_NOTE: "add_note",
+  UPDATE_DEAL_STAGE: "update_deal_stage",
+  CREATE_INVOICE: "create_invoice",
+  LIST_OVERDUE_INVOICES: "list_overdue_invoices",
+  UPDATE_INVOICE_STATUS: "update_invoice_status",
+  SEND_INVOICE: "send_invoice",
+  GET_DAILY_BRIEFING: "get_daily_briefing",
+  UPDATE_DEAL: "update_deal",
+  GET_FOLLOW_UP_SUGGESTIONS: "get_follow_up_suggestions",
+  GET_MEETING_PREP: "get_meeting_prep",
+  CREATE_BULK_TASKS: "create_bulk_tasks",
   GET_STATISTICS: "get_statistics",
+  CREATE_REPORT: "create_report",
   GET_RECENT_ACTIVITY: "get_recent_activity",
   IMPORT_CONTACTS: "import_contacts",
   UPDATE_PROFILE: "update_profile",
@@ -77,26 +102,33 @@ const AVAILABLE_ACTIONS = {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: {
-        id: true,
-        language: true,
-      },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    const { action, parameters } = await req.json();
+    const { action, parameters, userId: bodyUserId } = await req.json();
 
     if (!action) {
       return NextResponse.json({ error: "Action is required" }, { status: 400 });
+    }
+
+    // Support server-side calls (e.g. from voice agent) with userId in body - skip session check
+    let user;
+    if (bodyUserId) {
+      user = await prisma.user.findUnique({
+        where: { id: bodyUserId },
+        select: { id: true, language: true },
+      });
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
+    } else {
+      if (!session?.user?.email) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true, language: true },
+      });
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
+      }
     }
 
     let result;
@@ -168,6 +200,18 @@ export async function POST(req: NextRequest) {
         result = await createAppointment(user.id, parameters);
         break;
 
+      case AVAILABLE_ACTIONS.LIST_APPOINTMENTS:
+        result = await listAppointments(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.UPDATE_APPOINTMENT:
+        result = await updateAppointment(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CANCEL_APPOINTMENT:
+        result = await cancelAppointment(user.id, parameters);
+        break;
+
       case AVAILABLE_ACTIONS.MAKE_OUTBOUND_CALL:
         result = await makeOutboundCallAction(user.id, parameters);
         break;
@@ -189,6 +233,10 @@ export async function POST(req: NextRequest) {
         result = await getLeadDetails(user.id, parameters);
         break;
 
+      case AVAILABLE_ACTIONS.DELETE_LEAD:
+        result = await deleteLead(user.id, parameters);
+        break;
+
       case AVAILABLE_ACTIONS.LIST_LEADS:
         result = await listLeads(user.id, parameters);
         break;
@@ -197,12 +245,20 @@ export async function POST(req: NextRequest) {
         result = await createDeal(user.id, parameters);
         break;
 
-      case AVAILABLE_ACTIONS.UPDATE_DEAL:
-        result = await updateDeal(user.id, parameters);
-        break;
-
       case AVAILABLE_ACTIONS.GET_DEAL_DETAILS:
         result = await getDealDetails(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.DELETE_DEAL:
+        result = await deleteDeal(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CREATE_PIPELINE:
+        result = await createPipeline(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CREATE_PIPELINE_STAGE:
+        result = await createPipelineStage(user.id, parameters);
         break;
 
       case AVAILABLE_ACTIONS.LIST_DEALS:
@@ -211,6 +267,10 @@ export async function POST(req: NextRequest) {
 
       case AVAILABLE_ACTIONS.CREATE_CAMPAIGN:
         result = await createCampaign(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.UPDATE_CAMPAIGN:
+        result = await updateCampaign(user.id, parameters);
         break;
 
       case AVAILABLE_ACTIONS.GET_CAMPAIGN_DETAILS:
@@ -223,6 +283,70 @@ export async function POST(req: NextRequest) {
 
       case AVAILABLE_ACTIONS.SEARCH_CONTACTS:
         result = await searchContacts(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CREATE_TASK:
+        result = await createTask(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.LIST_TASKS:
+        result = await listTasks(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.COMPLETE_TASK:
+        result = await completeTask(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.UPDATE_TASK:
+        result = await updateTask(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CANCEL_TASK:
+        result = await cancelTask(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.ADD_NOTE:
+        result = await addNote(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.UPDATE_DEAL_STAGE:
+        result = await updateDealStage(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CREATE_INVOICE:
+        result = await createInvoice(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.LIST_OVERDUE_INVOICES:
+        result = await listOverdueInvoices(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.UPDATE_INVOICE_STATUS:
+        result = await updateInvoiceStatus(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.SEND_INVOICE:
+        result = await sendInvoice(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.GET_DAILY_BRIEFING:
+        result = await getDailyBriefing(user.id);
+        break;
+
+      case AVAILABLE_ACTIONS.UPDATE_DEAL:
+        result = await updateDealOrByTitle(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.GET_FOLLOW_UP_SUGGESTIONS:
+        result = await getFollowUpSuggestions(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.GET_MEETING_PREP:
+        result = await getMeetingPrep(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CREATE_BULK_TASKS:
+        result = await createBulkTasks(user.id, parameters);
         break;
 
       case AVAILABLE_ACTIONS.DRAFT_SMS:
@@ -263,6 +387,10 @@ export async function POST(req: NextRequest) {
 
       case AVAILABLE_ACTIONS.GET_STATISTICS:
         result = await getStatistics(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CREATE_REPORT:
+        result = await createReport(user.id, parameters);
         break;
 
       case AVAILABLE_ACTIONS.GET_RECENT_ACTIVITY:
@@ -361,15 +489,36 @@ async function createLead(userId: string, params: any) {
 }
 
 async function updateLead(userId: string, params: any) {
-  const { leadId, ...updates } = params;
+  const { leadId, contactName, email, phone, status, company, name, ...rest } = params;
 
-  if (!leadId) {
-    throw new Error("Lead ID is required");
+  let targetLeadId = leadId;
+  if (!targetLeadId && contactName) {
+    const found = await prisma.lead.findFirst({
+      where: {
+        userId,
+        OR: [
+          { businessName: { contains: contactName, mode: "insensitive" } },
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+        ],
+      },
+    });
+    if (!found) throw new Error(`Lead "${contactName}" not found`);
+    targetLeadId = found.id;
   }
 
-  // Verify ownership
+  if (!targetLeadId) {
+    throw new Error("Lead ID or contact name is required");
+  }
+
+  const updates: any = { ...rest };
+  if (email !== undefined) updates.email = email;
+  if (phone !== undefined) updates.phone = phone;
+  if (status !== undefined) updates.status = status;
+  if (company !== undefined) updates.businessName = company;
+  if (name !== undefined) updates.contactPerson = name;
+
   const existingLead = await prisma.lead.findFirst({
-    where: { id: leadId, userId },
+    where: { id: targetLeadId, userId },
   });
 
   if (!existingLead) {
@@ -377,7 +526,7 @@ async function updateLead(userId: string, params: any) {
   }
 
   const lead = await prisma.lead.update({
-    where: { id: leadId },
+    where: { id: targetLeadId },
     data: updates,
   });
 
@@ -393,7 +542,8 @@ async function updateLead(userId: string, params: any) {
 }
 
 async function getLeadDetails(userId: string, params: any) {
-  const { leadId, name } = params;
+  const { leadId, name, contactName } = params;
+  const searchName = name || contactName;
 
   let lead;
 
@@ -401,26 +551,24 @@ async function getLeadDetails(userId: string, params: any) {
     lead = await prisma.lead.findFirst({
       where: { id: leadId, userId },
       include: {
-        notes: {
-          orderBy: { createdAt: "desc" },
-          take: 5,
-        },
+        notes: { orderBy: { createdAt: "desc" }, take: 5 },
+        deals: { include: { stage: true } },
+        tasks: { where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, take: 10 },
       },
     });
-  } else if (name) {
+  } else if (searchName) {
     lead = await prisma.lead.findFirst({
       where: {
         userId,
         OR: [
-          { businessName: { contains: name, mode: "insensitive" } },
-          { contactPerson: { contains: name, mode: "insensitive" } },
+          { businessName: { contains: searchName, mode: "insensitive" } },
+          { contactPerson: { contains: searchName, mode: "insensitive" } },
         ],
       },
       include: {
-        notes: {
-          orderBy: { createdAt: "desc" },
-          take: 5,
-        },
+        notes: { orderBy: { createdAt: "desc" }, take: 5 },
+        deals: { include: { stage: true } },
+        tasks: { where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, take: 10 },
       },
     });
   }
@@ -430,6 +578,7 @@ async function getLeadDetails(userId: string, params: any) {
   }
 
   return {
+    message: `Details for ${lead.contactPerson || lead.businessName}`,
     lead: {
       id: lead.id,
       businessName: lead.businessName,
@@ -438,8 +587,45 @@ async function getLeadDetails(userId: string, params: any) {
       phone: lead.phone,
       status: lead.status,
       notes: lead.notes,
+      deals: lead.deals?.map((d: any) => ({ id: d.id, title: d.title, value: d.value, stage: d.stage?.name })) || [],
+      tasks: lead.tasks?.map((t: any) => ({ id: t.id, title: t.title, dueDate: t.dueDate })) || [],
       createdAt: lead.createdAt,
     },
+  };
+}
+
+async function deleteLead(userId: string, params: any) {
+  const { leadId, contactName } = params;
+
+  let targetId = leadId;
+  if (!targetId && contactName) {
+    const found = await prisma.lead.findFirst({
+      where: {
+        userId,
+        OR: [
+          { businessName: { contains: contactName, mode: "insensitive" } },
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+        ],
+      },
+    });
+    if (!found) throw new Error(`Lead "${contactName}" not found`);
+    targetId = found.id;
+  }
+
+  if (!targetId) throw new Error("Lead ID or contact name is required");
+
+  const existing = await prisma.lead.findFirst({
+    where: { id: targetId, userId },
+  });
+  if (!existing) throw new Error("Lead not found");
+
+  await prisma.lead.delete({
+    where: { id: targetId },
+  });
+
+  return {
+    message: `Lead "${existing.contactPerson || existing.businessName}" deleted successfully.`,
+    leadId: targetId,
   };
 }
 
@@ -581,33 +767,105 @@ async function updateDeal(userId: string, params: any) {
 }
 
 async function getDealDetails(userId: string, params: any) {
-  const { dealId } = params;
+  const { dealId, dealTitle } = params;
 
-  if (!dealId) {
-    throw new Error("Deal ID is required");
+  let deal;
+  if (dealId) {
+    deal = await prisma.deal.findFirst({
+      where: { id: dealId, userId },
+      include: { lead: { select: { id: true, businessName: true, contactPerson: true, email: true, phone: true } }, stage: true },
+    });
+  } else if (dealTitle) {
+    deal = await prisma.deal.findFirst({
+      where: { userId, title: { contains: dealTitle, mode: "insensitive" } },
+      include: { lead: { select: { id: true, businessName: true, contactPerson: true, email: true, phone: true } }, stage: true },
+    });
   }
 
-  const deal = await prisma.deal.findFirst({
-    where: { id: dealId, userId },
-    include: {
-      lead: {
-        select: {
-          id: true,
-          businessName: true,
-          contactPerson: true,
-          email: true,
-          phone: true,
-        },
-      },
-      stage: true,
+  if (!deal) {
+    throw new Error(dealId || dealTitle ? "Deal not found" : "Deal ID or deal title is required");
+  }
+
+  return {
+    message: `Details for deal "${deal.title}"`,
+    deal,
+  };
+}
+
+async function deleteDeal(userId: string, params: any) {
+  const { dealId, dealTitle } = params;
+
+  let targetId = dealId;
+  if (!targetId && dealTitle) {
+    const found = await prisma.deal.findFirst({
+      where: { userId, title: { contains: dealTitle, mode: "insensitive" } },
+    });
+    if (!found) throw new Error(`Deal "${dealTitle}" not found`);
+    targetId = found.id;
+  }
+
+  if (!targetId) throw new Error("Deal ID or deal title is required");
+
+  const existing = await prisma.deal.findFirst({
+    where: { id: targetId, userId },
+  });
+  if (!existing) throw new Error("Deal not found");
+
+  await prisma.deal.delete({ where: { id: targetId } });
+
+  return {
+    message: `Deal "${existing.title}" deleted successfully.`,
+    dealId: targetId,
+  };
+}
+
+async function createPipeline(userId: string, params: any) {
+  const { name, description } = params;
+
+  if (!name) throw new Error("Pipeline name is required");
+
+  const pipeline = await prisma.pipeline.create({
+    data: {
+      userId,
+      name,
+      description: description || null,
+      isDefault: false,
     },
   });
 
-  if (!deal) {
-    throw new Error("Deal not found");
-  }
+  return {
+    message: `Pipeline "${name}" created successfully!`,
+    pipeline: { id: pipeline.id, name: pipeline.name },
+  };
+}
 
-  return { deal };
+async function createPipelineStage(userId: string, params: any) {
+  const { pipelineName, stageName, probability } = params;
+
+  if (!pipelineName || !stageName) throw new Error("Pipeline name and stage name are required");
+
+  const pipeline = await prisma.pipeline.findFirst({
+    where: { userId, name: { contains: pipelineName, mode: "insensitive" } },
+    include: { stages: { orderBy: { displayOrder: "asc" } } },
+  });
+
+  if (!pipeline) throw new Error(`Pipeline "${pipelineName}" not found`);
+
+  const maxOrder = pipeline.stages.length > 0 ? Math.max(...pipeline.stages.map((s) => s.displayOrder)) + 1 : 0;
+
+  const stage = await prisma.pipelineStage.create({
+    data: {
+      pipelineId: pipeline.id,
+      name: stageName,
+      displayOrder: maxOrder,
+      probability: probability ?? 50,
+    },
+  });
+
+  return {
+    message: `Stage "${stageName}" added to pipeline "${pipeline.name}"`,
+    stage: { id: stage.id, name: stage.name },
+  };
 }
 
 async function listDeals(userId: string, params: any) {
@@ -659,22 +917,63 @@ async function createCampaign(userId: string, params: any) {
   };
 }
 
-async function getCampaignDetails(userId: string, params: any) {
-  const { campaignId } = params;
+async function updateCampaign(userId: string, params: any) {
+  const { campaignId, campaignName, name, status } = params;
 
-  if (!campaignId) {
-    throw new Error("Campaign ID is required");
+  let campaign;
+  if (campaignId) {
+    campaign = await prisma.campaign.findFirst({
+      where: { id: campaignId, userId },
+    });
+  } else if (campaignName) {
+    campaign = await prisma.campaign.findFirst({
+      where: { userId, name: { contains: campaignName, mode: "insensitive" } },
+    });
   }
 
-  const campaign = await prisma.campaign.findFirst({
-    where: { id: campaignId, userId },
+  if (!campaign) throw new Error("Campaign not found");
+
+  const updates: any = {};
+  if (name !== undefined) updates.name = name;
+  if (status !== undefined) updates.status = status;
+
+  if (Object.keys(updates).length === 0) {
+    throw new Error("At least one field (name or status) is required to update");
+  }
+
+  const updated = await prisma.campaign.update({
+    where: { id: campaign.id },
+    data: updates,
   });
+
+  return {
+    message: `Campaign "${updated.name}" updated successfully!`,
+    campaign: { id: updated.id, name: updated.name, status: updated.status },
+  };
+}
+
+async function getCampaignDetails(userId: string, params: any) {
+  const { campaignId, campaignName } = params;
+
+  let campaign;
+  if (campaignId) {
+    campaign = await prisma.campaign.findFirst({
+      where: { id: campaignId, userId },
+    });
+  } else if (campaignName) {
+    campaign = await prisma.campaign.findFirst({
+      where: { userId, name: { contains: campaignName, mode: "insensitive" } },
+    });
+  }
 
   if (!campaign) {
     throw new Error("Campaign not found");
   }
 
-  return { campaign };
+  return {
+    message: `Details for campaign "${campaign.name}"`,
+    campaign,
+  };
 }
 
 async function listCampaigns(userId: string, params: any) {
@@ -729,6 +1028,777 @@ async function searchContacts(userId: string, params: any) {
     query,
     count: leads.length,
     contacts: leads,
+  };
+}
+
+async function createTask(userId: string, params: any) {
+  const { title, description, dueDate, leadId, dealId, priority } = params;
+
+  if (!title) {
+    throw new Error("Task title is required");
+  }
+
+  const task = await prisma.task.create({
+    data: {
+      userId,
+      title,
+      description: description || null,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      leadId: leadId || null,
+      dealId: dealId || null,
+      priority: (priority as any) || "MEDIUM",
+      status: "TODO",
+    },
+    include: {
+      lead: { select: { id: true, businessName: true, contactPerson: true } },
+      deal: { select: { id: true, title: true } },
+    },
+  });
+
+  await prisma.taskActivity.create({
+    data: {
+      taskId: task.id,
+      userId,
+      action: "CREATED",
+      newValue: "Task created",
+    },
+  });
+
+  return {
+    message: `✓ Task "${title}" created successfully!`,
+    task: {
+      id: task.id,
+      title: task.title,
+      dueDate: task.dueDate,
+      status: task.status,
+    },
+  };
+}
+
+async function listTasks(userId: string, params: any) {
+  const { status, overdue, limit = 20 } = params;
+
+  const where: any = { userId };
+  if (status) where.status = status;
+  if (overdue === true) {
+    where.dueDate = { lt: new Date() };
+    where.status = { notIn: ["COMPLETED", "CANCELLED"] };
+  }
+
+  const tasks = await prisma.task.findMany({
+    where,
+    take: Math.min(limit, 50),
+    orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+    include: {
+      lead: { select: { businessName: true, contactPerson: true } },
+      deal: { select: { title: true } },
+    },
+  });
+
+  return {
+    message: `Found ${tasks.length} task(s)`,
+    count: tasks.length,
+    tasks: tasks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      dueDate: t.dueDate,
+      lead: t.lead,
+      deal: t.deal,
+    })),
+  };
+}
+
+async function completeTask(userId: string, params: any) {
+  const { taskId, taskTitle } = params;
+
+  let task;
+  if (taskId) {
+    task = await prisma.task.findFirst({
+      where: { id: taskId, userId },
+    });
+  } else if (taskTitle) {
+    task = await prisma.task.findFirst({
+      where: {
+        userId,
+        title: { contains: taskTitle, mode: "insensitive" },
+        status: { notIn: ["COMPLETED", "CANCELLED"] },
+      },
+    });
+  }
+
+  if (!task) {
+    throw new Error(taskId ? "Task not found" : `No matching task found for "${taskTitle}"`);
+  }
+
+  await prisma.task.update({
+    where: { id: task.id },
+    data: { status: "COMPLETED", completedAt: new Date(), progressPercent: 100 },
+  });
+
+  await prisma.taskActivity.create({
+    data: {
+      taskId: task.id,
+      userId,
+      action: "STATUS_CHANGED",
+      oldValue: task.status,
+      newValue: "COMPLETED",
+    },
+  });
+
+  return {
+    message: `✓ Task "${task.title}" marked as complete!`,
+    task: { id: task.id, title: task.title },
+  };
+}
+
+async function updateTask(userId: string, params: any) {
+  const { taskId, taskTitle, title, dueDate, priority } = params;
+
+  let task;
+  if (taskId) {
+    task = await prisma.task.findFirst({
+      where: { id: taskId, userId },
+    });
+  } else if (taskTitle) {
+    task = await prisma.task.findFirst({
+      where: { userId, title: { contains: taskTitle, mode: "insensitive" } },
+    });
+  }
+
+  if (!task) throw new Error("Task not found");
+
+  const updates: any = {};
+  if (title !== undefined) updates.title = title;
+  if (dueDate !== undefined) updates.dueDate = new Date(dueDate);
+  if (priority !== undefined) updates.priority = priority;
+
+  if (Object.keys(updates).length === 0) {
+    throw new Error("At least one field (title, dueDate, or priority) is required to update");
+  }
+
+  const updated = await prisma.task.update({
+    where: { id: task.id },
+    data: updates,
+  });
+
+  return {
+    message: `Task "${updated.title}" updated successfully!`,
+    task: { id: updated.id, title: updated.title },
+  };
+}
+
+async function cancelTask(userId: string, params: any) {
+  const { taskId, taskTitle } = params;
+
+  let task;
+  if (taskId) {
+    task = await prisma.task.findFirst({
+      where: { id: taskId, userId },
+    });
+  } else if (taskTitle) {
+    task = await prisma.task.findFirst({
+      where: { userId, title: { contains: taskTitle, mode: "insensitive" } },
+    });
+  }
+
+  if (!task) throw new Error("Task not found");
+
+  await prisma.task.update({
+    where: { id: task.id },
+    data: { status: "CANCELLED" },
+  });
+
+  return {
+    message: `Task "${task.title}" cancelled.`,
+    taskId: task.id,
+  };
+}
+
+async function addNote(userId: string, params: any) {
+  const { contactName, dealTitle, content, leadId, dealId } = params;
+
+  if (!content || !content.trim()) {
+    throw new Error("Note content is required");
+  }
+
+  if (dealId || dealTitle) {
+    let deal;
+    if (dealId) {
+      deal = await prisma.deal.findFirst({
+        where: { id: dealId, userId },
+      });
+    } else {
+      deal = await prisma.deal.findFirst({
+        where: {
+          userId,
+          title: { contains: dealTitle, mode: "insensitive" },
+        },
+      });
+    }
+
+    if (!deal) {
+      throw new Error(`Deal "${dealTitle || dealId}" not found`);
+    }
+
+    await prisma.dealActivity.create({
+      data: {
+        dealId: deal.id,
+        userId,
+        type: "NOTE",
+        description: content.trim(),
+      },
+    });
+
+    return {
+      message: `✓ Note added to deal "${deal.title}"`,
+      dealId: deal.id,
+      type: "deal",
+    };
+  }
+
+  let lead;
+  if (leadId) {
+    lead = await prisma.lead.findFirst({
+      where: { id: leadId, userId },
+    });
+  } else if (contactName) {
+    lead = await prisma.lead.findFirst({
+      where: {
+        userId,
+        OR: [
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+          { businessName: { contains: contactName, mode: "insensitive" } },
+        ],
+      },
+    });
+  }
+
+  if (!lead) {
+    throw new Error(contactName ? `Contact "${contactName}" not found` : "Contact or lead ID is required");
+  }
+
+  await prisma.note.create({
+    data: {
+      leadId: lead.id,
+      userId,
+      content: content.trim(),
+    },
+  });
+
+  return {
+    message: `✓ Note added to contact ${lead.contactPerson || lead.businessName}`,
+    leadId: lead.id,
+    type: "contact",
+  };
+}
+
+async function updateDealStage(userId: string, params: any) {
+  const { dealTitle, stageName, dealId } = params;
+
+  let deal;
+  if (dealId) {
+    deal = await prisma.deal.findFirst({
+      where: { id: dealId, userId },
+      include: { stage: true, pipeline: true },
+    });
+  } else if (dealTitle) {
+    deal = await prisma.deal.findFirst({
+      where: {
+        userId,
+        title: { contains: dealTitle, mode: "insensitive" },
+      },
+      include: { stage: true, pipeline: true },
+    });
+  }
+
+  if (!deal) {
+    throw new Error(`Deal "${dealTitle || dealId}" not found`);
+  }
+
+  const stage = await prisma.pipelineStage.findFirst({
+    where: {
+      pipelineId: deal.pipelineId,
+      name: { contains: stageName, mode: "insensitive" },
+    },
+  });
+
+  if (!stage) {
+    const stages = await prisma.pipelineStage.findMany({
+      where: { pipelineId: deal.pipelineId },
+      orderBy: { displayOrder: "asc" },
+    });
+    throw new Error(
+      `Stage "${stageName}" not found. Available stages: ${stages.map((s) => s.name).join(", ")}`
+    );
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const updatedDeal = await prisma.deal.update({
+    where: { id: deal.id },
+    data: {
+      stageId: stage.id,
+      probability: stage.probability,
+    },
+    include: {
+      lead: true,
+      stage: true,
+    },
+  });
+
+  await prisma.dealActivity.create({
+    data: {
+      dealId: deal.id,
+      userId,
+      type: "STAGE_CHANGED",
+      description: `Deal moved from "${deal.stage.name}" to "${stage.name}"`,
+    },
+  });
+
+  try {
+    const { default: workflowEngine } = await import("@/lib/workflow-engine");
+    workflowEngine.triggerWorkflow(
+      "DEAL_STAGE_CHANGED",
+      {
+        userId,
+        dealId: deal.id,
+        leadId: updatedDeal.leadId || undefined,
+        variables: {
+          dealTitle: updatedDeal.title,
+          dealValue: updatedDeal.value,
+          businessName: updatedDeal.lead?.businessName,
+        },
+      },
+      { oldStageId: deal.stageId, newStageId: stage.id }
+    ).catch(() => {});
+  } catch {}
+
+  return {
+    message: `✓ Deal "${deal.title}" moved to "${stage.name}"`,
+    deal: {
+      id: updatedDeal.id,
+      title: updatedDeal.title,
+      stage: stage.name,
+      value: updatedDeal.value,
+    },
+  };
+}
+
+async function createInvoice(userId: string, params: any) {
+  const { contactName, amount, description, leadId, dealId, dueDate } = params;
+
+  if (!contactName || amount == null) {
+    throw new Error("Contact name and amount are required");
+  }
+
+  let lead;
+  if (leadId) {
+    lead = await prisma.lead.findFirst({
+      where: { id: leadId, userId },
+    });
+  } else {
+    lead = await prisma.lead.findFirst({
+      where: {
+        userId,
+        OR: [
+          { contactPerson: { contains: contactName, mode: "insensitive" } },
+          { businessName: { contains: contactName, mode: "insensitive" } },
+        ],
+      },
+    });
+  }
+
+  const customerName = lead?.contactPerson || lead?.businessName || contactName;
+  const customerEmail = lead?.email || "customer@example.com";
+  const customerPhone = lead?.phone || null;
+
+  const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+  const totalAmount = Number(amount);
+  const itemDesc = description || "Services";
+
+  const invoice = await prisma.invoice.create({
+    data: {
+      userId,
+      leadId: lead?.id || null,
+      dealId: dealId || null,
+      invoiceNumber,
+      customerName,
+      customerEmail,
+      customerPhone,
+      status: "DRAFT",
+      items: [{ description: itemDesc, quantity: 1, unitPrice: totalAmount, total: totalAmount }],
+      subtotal: totalAmount,
+      taxAmount: 0,
+      totalAmount,
+      paidAmount: 0,
+      currency: "USD",
+      dueDate: dueDate ? new Date(dueDate) : null,
+    },
+  });
+
+  return {
+    message: `✓ Invoice created for ${customerName} - $${totalAmount.toFixed(2)}`,
+    invoice: {
+      id: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      customerName,
+      totalAmount,
+      status: invoice.status,
+    },
+  };
+}
+
+async function listOverdueInvoices(userId: string, params: any) {
+  const { limit = 20 } = params;
+
+  const overdue = await prisma.invoice.findMany({
+    where: {
+      userId,
+      status: { notIn: ["PAID", "CANCELLED", "REFUNDED"] },
+      dueDate: { lt: new Date() },
+    },
+    take: Math.min(limit, 50),
+    orderBy: { dueDate: "asc" },
+  });
+
+  return {
+    message: overdue.length > 0 ? `You have ${overdue.length} overdue invoice(s)` : "No overdue invoices",
+    count: overdue.length,
+    invoices: overdue.map((inv) => ({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      customerName: inv.customerName,
+      totalAmount: inv.totalAmount,
+      dueDate: inv.dueDate,
+      status: inv.status,
+    })),
+  };
+}
+
+async function updateInvoiceStatus(userId: string, params: any) {
+  const { invoiceId, invoiceNumber, status } = params;
+
+  let invoice;
+  if (invoiceId) {
+    invoice = await prisma.invoice.findFirst({
+      where: { id: invoiceId, userId },
+    });
+  } else if (invoiceNumber) {
+    invoice = await prisma.invoice.findFirst({
+      where: { userId, invoiceNumber: { contains: invoiceNumber, mode: "insensitive" } },
+    });
+  }
+
+  if (!invoice) throw new Error("Invoice not found");
+
+  const updateData: any = { status: status as any };
+  if (status === "PAID") {
+    updateData.paidAmount = invoice.totalAmount;
+    updateData.paidAt = new Date();
+  }
+
+  const updated = await prisma.invoice.update({
+    where: { id: invoice.id },
+    data: updateData,
+  });
+
+  return {
+    message: `Invoice ${updated.invoiceNumber} marked as ${status}.`,
+    invoice: { id: updated.id, invoiceNumber: updated.invoiceNumber, status: updated.status },
+  };
+}
+
+async function sendInvoice(userId: string, params: any) {
+  const { invoiceId, invoiceNumber } = params;
+
+  let invoice;
+  if (invoiceId) {
+    invoice = await prisma.invoice.findFirst({
+      where: { id: invoiceId, userId },
+    });
+  } else if (invoiceNumber) {
+    invoice = await prisma.invoice.findFirst({
+      where: { userId, invoiceNumber: { contains: invoiceNumber, mode: "insensitive" } },
+    });
+  }
+
+  if (!invoice) throw new Error("Invoice not found");
+
+  await prisma.invoice.update({
+    where: { id: invoice.id },
+    data: { status: "SENT" as any, sentAt: new Date() },
+  });
+
+  return {
+    message: `Invoice ${invoice.invoiceNumber} marked as sent. The customer will receive it via email.`,
+    invoiceId: invoice.id,
+  };
+}
+
+async function getDailyBriefing(userId: string) {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart);
+  todayEnd.setDate(todayEnd.getDate() + 1);
+
+  const [overdueTasks, todayTasks, appointments, hotDeals, newLeads, overdueInvoices] = await Promise.all([
+    prisma.task.findMany({
+      where: {
+        userId,
+        status: { notIn: ["COMPLETED", "CANCELLED"] },
+        dueDate: { lt: todayStart },
+      },
+      take: 10,
+      orderBy: { dueDate: "asc" },
+      select: { id: true, title: true, dueDate: true },
+    }),
+    prisma.task.findMany({
+      where: {
+        userId,
+        status: { notIn: ["COMPLETED", "CANCELLED"] },
+        dueDate: { gte: todayStart, lt: todayEnd },
+      },
+      take: 10,
+      select: { id: true, title: true, dueDate: true },
+    }),
+    prisma.bookingAppointment.findMany({
+      where: {
+        userId,
+        appointmentDate: { gte: todayStart, lt: todayEnd },
+        status: "SCHEDULED",
+      },
+      take: 10,
+      select: { id: true, customerName: true, appointmentDate: true },
+    }),
+    prisma.deal.findMany({
+      where: { userId },
+      take: 5,
+      orderBy: { value: "desc" },
+      include: { stage: true, lead: true },
+    }),
+    prisma.lead.findMany({
+      where: {
+        userId,
+        createdAt: { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) },
+      },
+      take: 5,
+      select: { id: true, businessName: true, contactPerson: true, createdAt: true },
+    }),
+    prisma.invoice.findMany({
+      where: {
+        userId,
+        status: { notIn: ["PAID", "CANCELLED", "REFUNDED"] },
+        dueDate: { lt: todayStart },
+      },
+      take: 5,
+      select: { id: true, customerName: true, totalAmount: true, dueDate: true },
+    }),
+  ]);
+
+  const summary: string[] = [];
+  if (overdueTasks.length > 0) {
+    summary.push(`${overdueTasks.length} overdue task(s): ${overdueTasks.map((t) => t.title).join(", ")}`);
+  }
+  if (todayTasks.length > 0) {
+    summary.push(`${todayTasks.length} task(s) due today: ${todayTasks.map((t) => t.title).join(", ")}`);
+  }
+  if (appointments.length > 0) {
+    summary.push(`${appointments.length} appointment(s) today: ${appointments.map((a) => a.customerName).join(", ")}`);
+  }
+  if (overdueInvoices.length > 0) {
+    summary.push(`${overdueInvoices.length} overdue invoice(s): ${overdueInvoices.map((i) => `${i.customerName} ($${i.totalAmount})`).join(", ")}`);
+  }
+  if (newLeads.length > 0) {
+    summary.push(`${newLeads.length} new lead(s) this week: ${newLeads.map((l) => l.contactPerson || l.businessName).join(", ")}`);
+  }
+  if (hotDeals.length > 0) {
+    summary.push(`Top deals: ${hotDeals.map((d) => `${d.title} ($${d.value})`).join(", ")}`);
+  }
+  if (summary.length === 0) {
+    summary.push("No urgent items. Check your pipeline and tasks.");
+  }
+
+  return {
+    message: "Here's your daily briefing:",
+    summary,
+    overdueTasks,
+    todayTasks,
+    appointments,
+    hotDeals,
+    newLeads,
+    overdueInvoices,
+  };
+}
+
+async function updateDealOrByTitle(userId: string, params: any) {
+  const { dealId, dealTitle, value, expectedCloseDate, ...rest } = params;
+
+  let targetDealId = dealId;
+  if (!targetDealId && dealTitle) {
+    const deal = await prisma.deal.findFirst({
+      where: {
+        userId,
+        title: { contains: dealTitle, mode: "insensitive" },
+      },
+    });
+    if (!deal) {
+      throw new Error(`Deal "${dealTitle}" not found`);
+    }
+    targetDealId = deal.id;
+  }
+
+  if (!targetDealId) {
+    throw new Error("Deal ID or deal title is required");
+  }
+
+  const updates: any = { ...rest };
+  if (value != null) updates.value = value;
+  if (expectedCloseDate != null) updates.expectedCloseDate = new Date(expectedCloseDate);
+
+  return updateDeal(userId, { dealId: targetDealId, ...updates });
+}
+
+async function getFollowUpSuggestions(userId: string, params: any) {
+  const { period = "last_2_weeks", limit = 10 } = params;
+
+  const daysAgo = period === "last_week" ? 7 : period === "last_2_weeks" ? 14 : 30;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - daysAgo);
+
+  const leadsWithNotes = await prisma.lead.findMany({
+    where: { userId },
+    include: {
+      notes: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+    },
+  });
+
+  const noRecentContact = leadsWithNotes.filter((lead) => {
+    const lastNote = lead.notes[0];
+    if (!lastNote) return true;
+    return new Date(lastNote.createdAt) < cutoff;
+  });
+
+  const suggestions = noRecentContact.slice(0, limit).map((l) => ({
+    id: l.id,
+    name: l.contactPerson || l.businessName,
+    email: l.email,
+    lastContact: l.notes[0]?.createdAt,
+  }));
+
+  return {
+    message: suggestions.length > 0
+      ? `${suggestions.length} contact(s) you haven't reached out to in ${daysAgo} days`
+      : "All contacts have been contacted recently!",
+    suggestions,
+  };
+}
+
+async function getMeetingPrep(userId: string, params: any) {
+  const { contactName } = params;
+
+  if (!contactName) {
+    throw new Error("Contact name is required");
+  }
+
+  const lead = await prisma.lead.findFirst({
+    where: {
+      userId,
+      OR: [
+        { contactPerson: { contains: contactName, mode: "insensitive" } },
+        { businessName: { contains: contactName, mode: "insensitive" } },
+      ],
+    },
+    include: {
+      notes: { orderBy: { createdAt: "desc" }, take: 5 },
+      deals: {
+        include: { stage: true },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      },
+      tasks: {
+        where: { status: { notIn: ["COMPLETED", "CANCELLED"] } },
+        take: 5,
+      },
+    },
+  });
+
+  if (!lead) {
+    throw new Error(`Contact "${contactName}" not found`);
+  }
+
+  const lastNote = lead.notes[0];
+  const briefing = {
+    contact: {
+      id: lead.id,
+      name: lead.contactPerson || lead.businessName,
+      company: lead.businessName,
+      email: lead.email,
+      phone: lead.phone,
+    },
+    recentNotes: lead.notes.map((n) => ({ content: n.content, date: n.createdAt })),
+    deals: lead.deals.map((d) => ({ title: d.title, value: d.value, stage: d.stage?.name })),
+    openTasks: lead.tasks.map((t) => ({ title: t.title, dueDate: t.dueDate })),
+    lastContact: lastNote?.createdAt,
+  };
+
+  return {
+    message: `Here's your briefing for ${briefing.contact.name}:`,
+    leadId: lead.id,
+    ...briefing,
+  };
+}
+
+async function createBulkTasks(userId: string, params: any) {
+  const { taskTitle, period = "last_week", dueInDays = 1 } = params;
+
+  if (!taskTitle) {
+    throw new Error("Task title is required");
+  }
+
+  const now = new Date();
+  let startDate: Date;
+  if (period === "today") {
+    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (period === "last_week") {
+    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else {
+    startDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  }
+
+  const leads = await prisma.lead.findMany({
+    where: {
+      userId,
+      createdAt: { gte: startDate },
+    },
+    take: 50,
+  });
+
+  const dueDate = new Date(now);
+  dueDate.setDate(dueDate.getDate() + dueInDays);
+
+  const created = [];
+  for (const lead of leads) {
+    const title = taskTitle.replace(/\{name\}/g, lead.contactPerson || lead.businessName || "Contact");
+    const task = await prisma.task.create({
+      data: {
+        userId,
+        leadId: lead.id,
+        title,
+        dueDate,
+        status: "TODO",
+        priority: "MEDIUM",
+      },
+    });
+    created.push({ id: task.id, title, lead: lead.contactPerson || lead.businessName });
+  }
+
+  return {
+    message: `✓ Created ${created.length} task(s) for leads from ${period}`,
+    count: created.length,
+    tasks: created,
   };
 }
 
@@ -1031,6 +2101,74 @@ async function getStatistics(userId: string, params: any = {}) {
   }
 }
 
+async function createReport(userId: string, params: any) {
+  const { title, reportType = 'overview', period = 'all_time' } = params;
+
+  if (!title) {
+    throw new Error("Report title is required");
+  }
+
+  // Map report period to getStatistics period
+  const statsPeriod = ['last_7_days', 'last_month'].includes(period) ? 'last_30_days' : period;
+
+  // Fetch statistics to build report content
+  const statsResult = await getStatistics(userId, {
+    period: statsPeriod === 'all_time' ? undefined : statsPeriod,
+    chartIntent: 'full report',
+  });
+
+  if (!statsResult || statsResult.error) {
+    throw new Error(statsResult?.details || "Failed to fetch data for report");
+  }
+
+  const stats = statsResult.statistics;
+  const content: any = {
+    summary: statsResult.message || `Report generated for ${period}. You have ${stats.totalLeads} leads, ${stats.totalDeals} deals, ${stats.openDeals} open deals worth $${(stats.totalRevenue || 0).toLocaleString()}, and ${stats.totalCampaigns} campaigns.`,
+    metrics: {
+      total_leads: stats.totalLeads,
+      total_deals: stats.totalDeals,
+      open_deals: stats.openDeals,
+      total_revenue: stats.totalRevenue,
+      total_campaigns: stats.totalCampaigns,
+    },
+  };
+
+  if (stats.dynamicCharts && stats.dynamicCharts.length > 0) {
+    content.charts = stats.dynamicCharts.map((c: any) => ({
+      title: c.title,
+      data: c.data,
+    }));
+  } else if (stats.monthlyRevenue && Object.keys(stats.monthlyRevenue).length > 0) {
+    content.charts = [{
+      title: "Monthly Revenue",
+      data: Object.entries(stats.monthlyRevenue).map(([name, value]) => ({
+        name: new Date(name + '-01').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        value,
+      })),
+    }];
+  }
+
+  const report = await prisma.aiGeneratedReport.create({
+    data: {
+      userId,
+      title,
+      reportType: reportType || 'overview',
+      content,
+      period: period || null,
+    },
+  });
+
+  return {
+    message: `Report "${title}" created successfully! I'll take you to the Reports page to view it.`,
+    report: {
+      id: report.id,
+      title: report.title,
+      reportType: report.reportType,
+      createdAt: report.createdAt,
+    },
+  };
+}
+
 async function getRecentActivity(userId: string, params: any) {
   const { limit = 5 } = params;
 
@@ -1076,18 +2214,10 @@ async function getRecentActivity(userId: string, params: any) {
 }
 
 async function importContacts(userId: string, params: any) {
-  // This action doesn't actually import contacts, but provides guidance
-  // The actual import happens through the UI with CSV upload
-  
+  // Navigate to contacts page - user can use the Import button there
   return {
-    message: "Import contacts feature ready!",
-    instructions: [
-      "Go to the Contacts page using the sidebar",
-      "Click the 'Import Contacts' button at the top",
-      "Upload a CSV file with columns: name, email, phone, company",
-      "Review the preview and click 'Import' to complete",
-    ],
-    alternativeMethod: "You can also create contacts one by one by telling me: 'Create a lead for [Name] at [email]'",
+    message: "I'll take you to the Contacts page. Click the 'Import Contacts' button to upload a CSV with columns: name, email, phone, company. I can also create contacts one by one—just say 'Create a lead for [Name] at [email]'.",
+    navigateTo: "/dashboard/contacts",
   };
 }
 
@@ -1611,6 +2741,116 @@ async function createAppointment(userId: string, params: any) {
       "Add meeting notes or agenda",
       "Set up reminders",
     ],
+  };
+}
+
+async function listAppointments(userId: string, params: any) {
+  const { date, limit = 20 } = params;
+
+  const where: any = { userId };
+  if (date) {
+    const d = new Date(date);
+    const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    where.appointmentDate = { gte: start, lt: end };
+  }
+
+  const appointments = await prisma.bookingAppointment.findMany({
+    where,
+    take: Math.min(limit, 50),
+    orderBy: { appointmentDate: "asc" },
+  });
+
+  return {
+    message: `Found ${appointments.length} appointment(s)`,
+    count: appointments.length,
+    appointments: appointments.map((a) => ({
+      id: a.id,
+      customerName: a.customerName,
+      appointmentDate: a.appointmentDate,
+      duration: a.duration,
+      status: a.status,
+    })),
+  };
+}
+
+async function updateAppointment(userId: string, params: any) {
+  const { appointmentId, customerName, date, time } = params;
+
+  let appointment;
+  if (appointmentId) {
+    appointment = await prisma.bookingAppointment.findFirst({
+      where: { id: appointmentId, userId },
+    });
+  } else if (customerName) {
+    appointment = await prisma.bookingAppointment.findFirst({
+      where: {
+        userId,
+        customerName: { contains: customerName, mode: "insensitive" },
+        status: { not: "CANCELLED" },
+      },
+      orderBy: { appointmentDate: "desc" },
+    });
+  }
+
+  if (!appointment) throw new Error("Appointment not found");
+
+  const updates: any = {};
+  if (date && time) {
+    updates.appointmentDate = new Date(`${date}T${time}`);
+  } else if (date) {
+    const old = new Date(appointment.appointmentDate);
+    updates.appointmentDate = new Date(`${date}T${old.toTimeString().slice(0, 5)}`);
+  } else if (time) {
+    const old = new Date(appointment.appointmentDate);
+    updates.appointmentDate = new Date(`${old.toISOString().slice(0, 10)}T${time}`);
+  }
+
+  if (Object.keys(updates).length === 0) {
+    throw new Error("Provide date and/or time to reschedule");
+  }
+
+  const updated = await prisma.bookingAppointment.update({
+    where: { id: appointment.id },
+    data: updates,
+  });
+
+  return {
+    message: `Appointment with ${updated.customerName} rescheduled successfully.`,
+    appointment: { id: updated.id, appointmentDate: updated.appointmentDate },
+  };
+}
+
+async function cancelAppointment(userId: string, params: any) {
+  const { appointmentId, customerName } = params;
+
+  let appointment;
+  if (appointmentId) {
+    appointment = await prisma.bookingAppointment.findFirst({
+      where: { id: appointmentId, userId },
+    });
+  } else if (customerName) {
+    appointment = await prisma.bookingAppointment.findFirst({
+      where: {
+        userId,
+        customerName: { contains: customerName, mode: "insensitive" },
+        status: { not: "CANCELLED" },
+      },
+      orderBy: { appointmentDate: "desc" },
+    });
+  }
+
+  if (!appointment) throw new Error("Appointment not found");
+
+  await prisma.bookingAppointment.update({
+    where: { id: appointment.id },
+    data: { status: "CANCELLED" as any, cancelledAt: new Date() },
+  });
+
+  return {
+    message: `Appointment with ${appointment.customerName} cancelled.`,
+    appointmentId: appointment.id,
   };
 }
 

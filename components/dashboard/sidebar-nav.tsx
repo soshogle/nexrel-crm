@@ -261,6 +261,12 @@ const merchantItems = [
     icon: Workflow,
   },
   {
+    id: 'reports' as MenuItemId,
+    title: 'Reports',
+    href: '/dashboard/reports',
+    icon: TrendingUp,
+  },
+  {
     id: 'reviews' as MenuItemId,
     title: 'Reviews',
     href: '/dashboard/reviews',

@@ -599,6 +599,7 @@ You have access to FUNCTIONS that can actually execute actions. When a user asks
 - create_campaign - Create a marketing campaign (required: name)
 - create_appointment - Schedule an appointment (required: title, date, time)
 - get_statistics - Get CRM statistics and generate graphs/charts. **CRITICAL: ALWAYS use this function when users ask for graphs, charts, visualizations, sales data, revenue comparisons, sales over time, monthly sales, or any statistics. This automatically creates visualizations displayed on the AI Brain page. Examples: "show me a graph", "display sales chart", "compare sales", "sales in last 7 months" - ALL of these require calling get_statistics.**
+- create_report - Create and save a report to the Reports page. Use when user says "generate a report", "create a sales report", "build a report for last month", "give me a leads report". The report will be saved and displayed on the Reports page. Use title, reportType (sales/leads/revenue/overview/custom), and period (optional).
 - setup_stripe - Configure Stripe payment (required: publishableKey, secretKey)
 - setup_twilio - Configure Twilio (required: accountSid, authToken, phoneNumber)
 - create_voice_agent - Create a voice agent (required: name, optional: voiceId, prompt)
@@ -617,7 +618,19 @@ You have access to FUNCTIONS that can actually execute actions. When a user asks
 - create_workflow - Create complex automation workflows with multiple steps, timing, and personalization (required: description). Can handle birthday triggers, voice calls, email/SMS sequences, delays (weeks/days/hours), and personalized messages. Example: "Create a workflow that calls contacts on their birthday with personalized message, waits a week, invites to webinar, emails invitation, SMS link, reminds day before and 2 hours before"
 - add_workflow_task - Add a task/step to the workflow the user is currently editing (required: workflowId from context, name). Use when user says "add a trigger when lead is created", "add a step to send email", "add an action to call them", "add a delay of 2 days"
 - delete_duplicate_contacts - Find and delete duplicate contacts from the contacts list. Identifies duplicates based on email, phone, or business name and removes them, keeping the oldest contact. Use when user asks to remove duplicates or clean up duplicate contacts.
-- navigate_to - Navigate to a page (required: path)
+- create_task - Create a CRM task (required: title, optional: description, dueDate, leadId, dealId). Use when user says "remind me to follow up with John tomorrow", "create a task to call back Acme Corp".
+- list_tasks - List tasks (optional: status, overdue). Use when user says "show my overdue tasks", "what's due today?", "my tasks".
+- complete_task - Mark a task as done (required: taskId or taskTitle). Use when user says "mark Follow up with John as done", "complete the task".
+- add_note - Add a note to a contact or deal (required: content, contactName or dealTitle). Use when user says "add a note to John Smith: interested in enterprise plan", "log a note on the Acme deal: sent proposal Tuesday".
+- update_deal_stage - Move a deal to a pipeline stage (required: dealTitle, stageName). Use when user says "move Acme deal to Negotiation", "mark the Big Corp deal as won".
+- create_invoice - Create an invoice (required: contactName, amount). Use when user says "send an invoice to John for $500", "create invoice for the Acme deal".
+- list_overdue_invoices - List unpaid/overdue invoices. Use when user says "show unpaid invoices", "what invoices are overdue?".
+- get_daily_briefing - Get daily summary. Use when user says "what do I need to focus on today?", "morning digest", "what should I prioritize?". Returns overdue tasks, appointments, hot deals, new leads, unpaid invoices.
+- update_deal - Update deal value or close date (required: dealTitle, optional: value, expectedCloseDate). Use when user says "update Acme deal value to $15,000", "set expected close date to March 15".
+- get_follow_up_suggestions - Get who to contact next (optional: period). Use when user says "who haven't I contacted in 2 weeks?", "what should I do with leads from last week?".
+- get_meeting_prep - Pre-call briefing (required: contactName). Use when user says "what should I know before my call with John?", "prep me for my meeting with Acme".
+- create_bulk_tasks - Create follow-up tasks for leads (required: taskTitle, optional: period, dueInDays). Use when user says "create follow-up tasks for all leads from this week", "add tasks for today's leads". Use {name} in taskTitle for contact name.
+- navigate_to - Navigate to any page (required: path). Path must start with /dashboard or /onboarding. Examples: /dashboard/settings, /dashboard/reports, /dashboard/calendar, /dashboard/real-estate, /dashboard/websites, etc.
 
 **HOW IT WORKS:**
 1. When user asks to create a contact → Call create_lead function with the contact details
@@ -931,13 +944,18 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
 
         // Handle special navigate_to function separately
         if (functionName === "navigate_to") {
-          navigationUrl = functionArgs.path;
+          const { canUserNavigateToPath } = await import("@/lib/navigation-paths");
+          const canNavigate = canUserNavigateToPath(functionArgs.path, user.role);
+          navigationUrl = canNavigate ? functionArgs.path : null;
           toolResults.push({
-          tool_call_id: toolCall.id,
-          role: "tool",
-          name: functionName,
-          content: JSON.stringify({ success: true, message: "Navigation set" }),
-        });
+            tool_call_id: toolCall.id,
+            role: "tool",
+            name: functionName,
+            content: JSON.stringify({
+              success: canNavigate,
+              message: canNavigate ? "Navigation set" : "You don't have permission to access that page. Admin access is required for settings and admin sections.",
+            }),
+          });
           continue;
         }
 
