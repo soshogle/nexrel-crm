@@ -96,6 +96,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // One website per profile: reject if user already has any website
+    const existingCount = await prisma.website.count({
+      where: { userId },
+    });
+    if (existingCount >= 1) {
+      return NextResponse.json(
+        { error: 'You already have a website. You can modify it from the Websites page.' },
+        { status: 400 }
+      );
+    }
+
     // Process website build
     const buildConfig = {
       type,
@@ -145,17 +156,18 @@ export async function POST(request: NextRequest) {
     });
 
     // Start build process asynchronously
-    processWebsiteBuild(website.id, build.id, buildConfig).catch(error => {
+    processWebsiteBuild(website.id, build.id, buildConfig).catch(async (error) => {
       console.error('Website build failed:', error);
-      // Update build status to failed
-      prisma.websiteBuild.update({
-        where: { id: build.id },
-        data: { status: 'FAILED', error: error.message },
-      });
-      prisma.website.update({
-        where: { id: website.id },
-        data: { status: 'FAILED' },
-      });
+      await Promise.all([
+        prisma.websiteBuild.update({
+          where: { id: build.id },
+          data: { status: 'FAILED', error: error?.message || String(error) },
+        }),
+        prisma.website.update({
+          where: { id: website.id },
+          data: { status: 'FAILED', buildProgress: 0 },
+        }),
+      ]);
     });
 
     return NextResponse.json({
@@ -272,12 +284,17 @@ async function processWebsiteBuild(
       data: { buildProgress: 50 },
     });
 
-    // Provision resources (GitHub, Neon, Vercel)
-    const provisioningResult = await resourceProvisioning.provisionResources(
-      websiteId,
-      `website-${websiteId}`,
-      (await prisma.website.findUnique({ where: { id: websiteId } }))!.userId
-    );
+    // Provision resources (GitHub, Neon, Vercel) - with 3min timeout to avoid stuck builds
+    const provisioningResult = await Promise.race([
+      resourceProvisioning.provisionResources(
+        websiteId,
+        `website-${websiteId}`,
+        (await prisma.website.findUnique({ where: { id: websiteId } }))!.userId
+      ),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Provisioning timed out after 3 minutes')), 180000)
+      ),
+    ]);
 
     // Update progress
     await prisma.websiteBuild.update({
@@ -289,21 +306,29 @@ async function processWebsiteBuild(
       data: { buildProgress: 70 },
     });
 
-    // Create voice AI agent if enabled
+    // Create voice AI agent if enabled (with timeout to avoid stuck builds)
     let voiceAIConfig = null;
     if (config.enableVoiceAI) {
-      const website = await prisma.website.findUnique({ where: { id: websiteId } });
-      const businessInfo = config.questionnaireAnswers || {
-        businessName: website!.name,
-        businessDescription: '',
-      };
-      
-      voiceAIConfig = await websiteVoiceAI.createVoiceAIAgent(
-        websiteId,
-        website!.name,
-        website!.userId,
-        businessInfo
-      );
+      try {
+        const website = await prisma.website.findUnique({ where: { id: websiteId } });
+        const businessInfo = config.questionnaireAnswers || {
+          businessName: website!.name,
+          businessDescription: '',
+        };
+        voiceAIConfig = await Promise.race([
+          websiteVoiceAI.createVoiceAIAgent(
+            websiteId,
+            website!.name,
+            website!.userId,
+            businessInfo
+          ),
+          new Promise<null>((_, reject) =>
+            setTimeout(() => reject(new Error('Voice AI setup timed out')), 60000)
+          ),
+        ]);
+      } catch (e: any) {
+        console.warn('Voice AI agent creation failed (continuing without):', e?.message || e);
+      }
     }
 
     // Update progress

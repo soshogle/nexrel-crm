@@ -31,7 +31,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ websites });
+    // One website per profile: can only create new if user has no website yet
+    const canCreateNew = websites.length === 0;
+
+    return NextResponse.json({ websites, canCreateNew });
   } catch (error: any) {
     console.error('Error fetching websites:', error);
     return NextResponse.json(

@@ -51,12 +51,15 @@ export default function WebsitesPage() {
     setWebsiteBuilderContext({ page: 'list' });
   }, []);
 
+  const [canCreateNew, setCanCreateNew] = useState(true);
+
   const fetchWebsites = async () => {
     try {
       const response = await fetch('/api/websites');
       if (response.ok) {
         const data = await response.json();
         setWebsites(data.websites || []);
+        setCanCreateNew(data.canCreateNew !== false);
       }
     } catch (error) {
       console.error('Error fetching websites:', error);
@@ -169,8 +172,8 @@ export default function WebsitesPage() {
             Manage your websites and create new ones
           </p>
         </div>
-        <Link href="/dashboard/websites/new">
-          <Button>
+        <Link href={canCreateNew ? '/dashboard/websites/new' : '#'}>
+          <Button disabled={!canCreateNew} title={!canCreateNew ? 'You already have a website. Manage it from the list below.' : undefined}>
             <Plus className="h-4 w-4 mr-2" />
             Create Website
           </Button>
@@ -185,8 +188,8 @@ export default function WebsitesPage() {
             <p className="text-muted-foreground mb-4">
               Create your first website to get started
             </p>
-            <Link href="/dashboard/websites/new">
-              <Button>
+            <Link href={canCreateNew ? '/dashboard/websites/new' : '#'}>
+              <Button disabled={!canCreateNew} title={!canCreateNew ? 'You already have a website. Manage it from the list below.' : undefined}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Website
               </Button>
