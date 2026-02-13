@@ -39,17 +39,22 @@ function loadGoogleMapsScript(): Promise<void> {
       return;
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDBBXN9otEolVDPCQKYCJq8KwM-zH6HgVI';
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
-      console.error('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not set');
-      reject(new Error('Google Maps API key not configured'));
+      console.error('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY not set. Add it to .env for address autocomplete.');
+      reject(new Error('Google Maps API key not configured. Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to .env'));
       return;
     }
 
-    // Check if script is already loading
+    // Check if script is already in DOM (loading or loaded)
     const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
     if (existingScript) {
+      if ((window as any).google?.maps?.places) {
+        resolve();
+        return;
+      }
       existingScript.addEventListener('load', () => resolve());
+      existingScript.addEventListener('error', () => reject(new Error('Failed to load Google Maps')));
       return;
     }
 
