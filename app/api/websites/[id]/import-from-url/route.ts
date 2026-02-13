@@ -12,6 +12,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { websiteScraper } from '@/lib/website-builder/scraper';
 import { convertScrapedToComponents } from '@/lib/website-builder/convert-scraped-to-structure';
+import { downloadExternalImagesInStructure } from '@/lib/website-builder/download-external-images';
 
 function normalizeUrl(url: string): string {
   let u = url.trim();
@@ -88,9 +89,17 @@ async function processImportInBackground(
     }
     targetPage.components.push(...newComponents);
 
+    // Download any remaining external images to blob storage (one store for all owners)
+    let structureToSave = newStructure;
+    try {
+      structureToSave = await downloadExternalImagesInStructure(newStructure, userId, websiteId);
+    } catch (imgErr: any) {
+      console.warn('[Import from URL] Image download failed (using original URLs):', imgErr.message);
+    }
+
     await prisma.website.update({
       where: { id: websiteId },
-      data: { structure: newStructure },
+      data: { structure: structureToSave },
     });
 
     await prisma.websiteBuild.update({

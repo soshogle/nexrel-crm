@@ -21,6 +21,7 @@ import { AnalyticsSettings } from '@/components/websites/analytics-settings';
 import { SectionEditor } from '@/components/website-builder/section-editor';
 import { GlobalStylesEditor } from '@/components/website-builder/global-styles-editor';
 import { WebsiteFilesManager } from '@/components/website-builder/website-files-manager';
+import { StructurePreview } from '@/components/website-builder/structure-preview';
 import {
   Sheet,
   SheetContent,
@@ -993,6 +994,18 @@ export default function WebsiteEditorPage() {
                     className="w-full h-[600px] border rounded-lg"
                     title="Website Preview"
                   />
+                </div>
+              ) : website.structure?.pages?.[0]?.components?.length ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Local preview (no deployment yet). Build via Create New Website to deploy to Vercel.
+                  </p>
+                  <div className="border rounded-lg overflow-hidden max-h-[600px] overflow-y-auto">
+                    <StructurePreview
+                      components={website.structure.pages[0].components}
+                      globalStyles={website.structure.globalStyles}
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12">
