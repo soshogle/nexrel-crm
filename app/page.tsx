@@ -177,6 +177,9 @@ function HomePage() {
   const [audioLevel, setAudioLevel] = useState(0);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [showHeroAgent, setShowHeroAgent] = useState(false);
+  const [aiStaffAudioLevel, setAiStaffAudioLevel] = useState(0);
+  const [isAiStaffSpeaking, setIsAiStaffSpeaking] = useState(false);
+  const [showAiStaffAgent, setShowAiStaffAgent] = useState(false);
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
@@ -427,10 +430,45 @@ function HomePage() {
             ))}
           </div>
           <div className="mt-12">
-            <ElevenLabsAgent
-              agentId={homeAgentId}
-              dynamicVariables={{ preferred_language: preferredLanguage }}
-            />
+            {!showAiStaffAgent ? (
+              <div className="relative">
+                <div className="relative h-[300px] md:h-[400px] lg:h-[500px] rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 to-black border border-gray-800">
+                  <GeometricShapes audioLevel={aiStaffAudioLevel} isAgentSpeaking={isAiStaffSpeaking} />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                    <h3 className="text-2xl font-semibold text-white">Talk to Your AI Brain Assistant</h3>
+                    <p className="text-gray-400 max-w-md text-center text-sm">
+                      Click the button below to start a live conversation. Your browser will ask for microphone permission.
+                    </p>
+                    <button
+                      onClick={() => setShowAiStaffAgent(true)}
+                      className="group p-8 rounded-full bg-primary/10 hover:bg-primary/20 border-2 border-primary/30 hover:border-primary/50 transition-all hover:scale-110"
+                    >
+                      <svg className="w-16 h-16 md:w-20 md:h-20 text-primary animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="relative">
+                <ElevenLabsAgent
+                  agentId={heroAgentId}
+                  onAudioLevel={setAiStaffAudioLevel}
+                  onAgentSpeakingChange={setIsAiStaffSpeaking}
+                  onConversationEnd={() => undefined}
+                  dynamicVariables={{ preferred_language: preferredLanguage }}
+                />
+                <button
+                  onClick={() => setShowAiStaffAgent(false)}
+                  className="absolute top-4 right-4 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background transition-colors z-20"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>
