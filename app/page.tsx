@@ -326,7 +326,10 @@ function HomePage() {
                     <GeometricShapes audioLevel={audioLevel} isAgentSpeaking={isAgentSpeaking} />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <button
-                        onClick={() => setShowHeroAgent(true)}
+                        onClick={() => {
+                        setShowHeroAgent(true);
+                        setShowAiStaffAgent(false);
+                      }}
                         className="group p-8 rounded-full bg-primary/10 hover:bg-primary/20 border-2 border-primary/30 hover:border-primary/50 transition-all hover:scale-110"
                       >
                         <svg className="w-16 h-16 md:w-20 md:h-20 text-primary animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -352,7 +355,13 @@ function HomePage() {
                     }}
                   />
                   <button
-                    onClick={() => setShowHeroAgent(false)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setShowHeroAgent(false);
+                    }}
+                    type="button"
+                    aria-label="Close"
                     className="absolute top-4 right-4 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background transition-colors z-20"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -436,11 +445,12 @@ function HomePage() {
                   <GeometricShapes audioLevel={aiStaffAudioLevel} isAgentSpeaking={isAiStaffSpeaking} />
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                     <h3 className="text-2xl font-semibold text-white">Talk to Your AI Brain Assistant</h3>
-                    <p className="text-gray-400 max-w-md text-center text-sm">
-                      Click the button below to start a live conversation. Your browser will ask for microphone permission.
-                    </p>
                     <button
-                      onClick={() => setShowAiStaffAgent(true)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowAiStaffAgent(true);
+                        setShowHeroAgent(false);
+                      }}
                       className="group p-8 rounded-full bg-primary/10 hover:bg-primary/20 border-2 border-primary/30 hover:border-primary/50 transition-all hover:scale-110"
                     >
                       <svg className="w-16 h-16 md:w-20 md:h-20 text-primary animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -451,8 +461,9 @@ function HomePage() {
                 </div>
               </div>
             ) : (
-              <div className="relative">
+              <div className="relative min-h-[400px]">
                 <ElevenLabsAgent
+                  key="ai-staff-agent"
                   agentId={heroAgentId}
                   onAudioLevel={setAiStaffAudioLevel}
                   onAgentSpeakingChange={setIsAiStaffSpeaking}
@@ -460,8 +471,14 @@ function HomePage() {
                   dynamicVariables={{ preferred_language: preferredLanguage }}
                 />
                 <button
-                  onClick={() => setShowAiStaffAgent(false)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    setShowAiStaffAgent(false);
+                  }}
                   className="absolute top-4 right-4 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background transition-colors z-20"
+                  type="button"
+                  aria-label="Close"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
