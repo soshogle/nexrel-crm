@@ -32,7 +32,7 @@ export async function GET(
         include: {
           builds: {
             orderBy: { startedAt: 'desc' },
-            take: 1,
+            take: 3,
           },
           websiteIntegrations: true,
         },

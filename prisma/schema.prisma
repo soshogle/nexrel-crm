@@ -9571,17 +9571,18 @@ model WebsiteChangeApproval {
 
 // WebsiteTemplate - Pre-built templates
 model WebsiteTemplate {
-  id           String              @id @default(cuid())
-  name         String
-  type         WebsiteTemplateType
-  category     String?
-  previewImage String?
-  previewUrl   String? // Live demo URL for iframe preview (e.g. source site)
-  structure    Json // Template structure
-  description  String?
-  isDefault    Boolean             @default(false)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  id                 String              @id @default(cuid())
+  name               String
+  type               WebsiteTemplateType
+  category           String?
+  previewImage       String?
+  previewUrl         String? // Live demo URL for iframe preview (e.g. source site)
+  previewUrlBlocked  Boolean             @default(false) // True if previewUrl blocks scraping/iframe
+  structure          Json // Template structure
+  description        String?
+  isDefault          Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@index([type])
   @@index([category])

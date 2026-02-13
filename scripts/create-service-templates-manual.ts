@@ -9,6 +9,71 @@ import type { WebsiteStructure } from '@/lib/website-builder/types';
 
 const templates = [
   {
+    name: 'Simple Professional',
+    type: 'SERVICE' as const,
+    category: 'Fallback / No Scraping',
+    description: 'Clean, minimal template. No external preview URL — always works. Use when Import from URL fails.',
+    structure: {
+      pages: [
+        {
+          id: 'home',
+          name: 'Home',
+          path: '/',
+          components: [
+            {
+              id: 'hero',
+              type: 'Hero',
+              props: {
+                title: 'Welcome to Your Business',
+                subtitle: 'We deliver quality services tailored to your needs.',
+                ctaText: 'Get Started',
+                ctaLink: '#contact',
+              },
+            },
+            {
+              id: 'about',
+              type: 'AboutSection',
+              props: {
+                title: 'About Us',
+                description: 'We are a dedicated team committed to excellence. Our mission is to help you achieve your goals with professional service and personalized attention.',
+                ctaText: 'Learn More',
+                ctaLink: '/about',
+              },
+            },
+            {
+              id: 'cta',
+              type: 'CTASection',
+              props: {
+                title: 'Ready to Get Started?',
+                description: 'Contact us today for a free consultation.',
+                ctaText: 'Contact Us',
+                ctaLink: '#contact',
+              },
+            },
+            {
+              id: 'form',
+              type: 'ContactForm',
+              props: {
+                fields: [
+                  { name: 'name', type: 'text', label: 'Name', required: true },
+                  { name: 'email', type: 'email', label: 'Email', required: true },
+                  { name: 'message', type: 'textarea', label: 'Message', required: true },
+                ],
+              },
+            },
+          ],
+          seo: { title: 'Your Business', description: 'Professional services' },
+        },
+      ],
+      globalStyles: {
+        colors: { primary: '#2563EB', secondary: '#1E40AF', accent: '#3B82F6', background: '#FFFFFF', text: '#1F2937' },
+        fonts: { heading: 'Inter, sans-serif', body: 'Inter, sans-serif' },
+      },
+      navigation: { items: [{ label: 'Home', path: '/' }, { label: 'Contact', path: '#contact' }], style: 'horizontal' },
+      footer: { sections: [], copyright: '' },
+    },
+  },
+  {
     name: 'Zebracat - AI Video Creation',
     type: 'SERVICE' as const,
     category: 'SaaS / Tech',
