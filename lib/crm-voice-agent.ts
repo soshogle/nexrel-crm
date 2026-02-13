@@ -257,6 +257,8 @@ Available functions:
 - list_tasks: List tasks. USE when user says "show my overdue tasks", "what's due today?", "my tasks". Use overdue: true for overdue.
 - complete_task: Mark task done. USE when user says "mark X as done", "complete the task". Use taskTitle to match.
 - add_note: Add note to contact or deal. USE when user says "add a note to John: interested in enterprise", "log note on Acme deal: sent proposal Tuesday". Requires content, contactName or dealTitle.
+- create_appointment: Schedule an appointment. USE when user says "schedule meeting with John", "book appointment for Tuesday 2pm", "create appointment with Acme Corp". Requires customerName, customerEmail, date, time.
+- list_appointments: List appointments. USE when user says "show my appointments", "what's on my calendar?", "list today's appointments".
 - update_deal_stage: Move deal in pipeline. USE when user says "move Acme deal to Negotiation", "mark Big Corp deal as won". Requires dealTitle, stageName.
 - create_invoice: Create invoice. USE when user says "send invoice to John for $500". Requires contactName, amount.
 - list_overdue_invoices: List overdue invoices. USE when user says "show unpaid invoices", "what's overdue?".
@@ -731,6 +733,35 @@ Remember: You're speaking, not typing. Keep it brief and natural. When reporting
             content: { type: 'string', description: 'Note content (required)' },
           },
           required: ['content'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'create_appointment',
+        description: 'Schedule an appointment or meeting. Use when user says "schedule meeting with John", "book appointment for Tuesday 2pm", "create appointment with Acme Corp".',
+        parameters: {
+          type: 'object',
+          properties: {
+            customerName: { type: 'string', description: 'Customer or attendee name (required)' },
+            customerEmail: { type: 'string', description: 'Customer email (required)' },
+            customerPhone: { type: 'string', description: 'Customer phone (optional)' },
+            date: { type: 'string', description: 'Appointment date YYYY-MM-DD (required)' },
+            time: { type: 'string', description: 'Appointment time HH:MM (required)' },
+            duration: { type: 'number', description: 'Duration in minutes (optional, default 30)' },
+          },
+          required: ['customerName', 'customerEmail', 'date', 'time'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'list_appointments',
+        description: 'List appointments. Use when user says "show my appointments", "what\'s on my calendar?", "list today\'s appointments".',
+        parameters: {
+          type: 'object',
+          properties: {
+            date: { type: 'string', description: 'Filter by date YYYY-MM-DD (optional)' },
+            limit: { type: 'number', description: 'Max results (default 20)' },
+          },
         },
         server_url: serverUrl,
       },

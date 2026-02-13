@@ -171,6 +171,13 @@ export async function POST(req: NextRequest) {
         result = await proxyToActionsAPI(function_name, parameters || {}, userId, req);
         break;
 
+      case 'create_appointment':
+      case 'list_appointments':
+      case 'update_appointment':
+      case 'cancel_appointment':
+        result = await proxyToActionsAPI(function_name, parameters || {}, userId, req);
+        break;
+
       case 'clone_website':
       case 'create_website':
       case 'list_websites':
