@@ -321,7 +321,24 @@ export default function NewWebsitePage() {
     'NeoCultural Couture - Fashion',
     'Little Lagniappe - Baby Food Subscription',
     'Little Lagniappe - Baby Food',
+    'David Protein - Protein Bars',
+    'Vaara - Activewear',
   ]);
+  // Hostnames that block embedding (frame-ancestors 'self' or 'none') - skip iframe, use previewImage
+  const blockedPreviewHostnames = new Set([
+    'little-lagniappe.com', 'www.little-lagniappe.com',
+    'neoculturalcouture.com', 'www.neoculturalcouture.com',
+    'vaara.com', 'www.vaara.com',
+    'davidprotein.com', 'www.davidprotein.com',
+  ]);
+  const isPreviewUrlBlocked = (url: string | null) => {
+    if (!url) return false;
+    try {
+      return blockedPreviewHostnames.has(new URL(url).hostname);
+    } catch {
+      return false;
+    }
+  };
 
   const getTemplatePreviewUrl = (tpl: { previewUrl?: string | null; name: string }) =>
     tpl.previewUrl || templateSourceUrls[tpl.name] || null;
@@ -768,7 +785,7 @@ export default function NewWebsitePage() {
                           >
                             <CardContent className="p-3">
                               <div className="relative rounded-md overflow-hidden bg-muted/50 mb-2 flex items-center justify-center" style={{ height: hasPreview ? 100 : 40 }}>
-                                {isHovered && rebuildPreviewUrl ? (
+                                {isHovered && rebuildPreviewUrl && !isPreviewUrlBlocked(rebuildPreviewUrl) ? (
                                   <iframe
                                     src={rebuildPreviewUrl}
                                     className="w-full h-full min-h-[200px] border-0 rounded"
@@ -1105,7 +1122,7 @@ export default function NewWebsitePage() {
                             <div className="relative w-full rounded-lg mb-3 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center overflow-hidden shadow-md border border-gray-200 transition-all duration-300"
                               style={{ height: isHovered ? '400px' : '160px' }}
                             >
-                              {isHovered && previewUrl && !(template as { previewUrlBlocked?: boolean }).previewUrlBlocked && !knownBlockedPreviewTemplates.has(template.name) ? (
+                              {isHovered && previewUrl && !(template as { previewUrlBlocked?: boolean }).previewUrlBlocked && !knownBlockedPreviewTemplates.has(template.name) && !isPreviewUrlBlocked(previewUrl) ? (
                                 <div className="w-full h-full relative">
                                   <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
                                     <a

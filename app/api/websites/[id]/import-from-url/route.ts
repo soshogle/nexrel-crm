@@ -32,8 +32,8 @@ async function processImportInBackground(
 ) {
   try {
     const downloadImages = process.env.ENABLE_IMAGE_DOWNLOAD === 'true';
-    // Use Playwright for import - handles SPAs and sites with bot protection
-    const useJsRendering = true;
+    // Try simple fetch first (faster, works on Vercel). Scraper falls back to Playwright if blocked.
+    const useJsRendering = false;
     const scrapedData = await websiteScraper.scrapeWebsite(
       url,
       userId,
@@ -117,24 +117,34 @@ async function processImportInBackground(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const { id: websiteId } = typeof (params as any).then === 'function' ? await (params as Promise<{ id: string }>) : (params as { id: string });
+    if (!websiteId) {
+      return NextResponse.json({ error: 'Website ID is required' }, { status: 400 });
+    }
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const website = await prisma.website.findFirst({
-      where: { id: params.id, userId: session.user.id },
+      where: { id: websiteId, userId: session.user.id },
     });
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
-    const body = await request.json();
-    const { url, pagePath: reqPagePath } = body;
+    let body: { url?: string; pagePath?: string };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+    const { url, pagePath: reqPagePath } = body || {};
     const pagePath = reqPagePath ?? '/';
 
     if (!url || typeof url !== 'string') {
@@ -149,7 +159,7 @@ export async function POST(
     // Create build record for tracking
     const build = await prisma.websiteBuild.create({
       data: {
-        websiteId: params.id,
+        websiteId,
         buildType: 'UPDATE',
         status: 'IN_PROGRESS',
         progress: 0,
@@ -161,7 +171,7 @@ export async function POST(
     // Run import in background - waitUntil keeps serverless alive until it completes
     waitUntil(
       processImportInBackground(
-        params.id,
+        websiteId,
         build.id,
         normalizedUrl,
         pagePath,
