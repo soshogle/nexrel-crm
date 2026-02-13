@@ -410,6 +410,9 @@ export default function WebsiteEditorPage() {
                   <CardDescription>
                     Drag sections to reorder. Click an image to replace, or use AI Chat to add or change content.
                   </CardDescription>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <strong>Simple:</strong> Reorder and delete only. <strong>Advanced:</strong> Layout, image replace, and config per section.
+                  </p>
                 </div>
                 <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v)} className="w-auto">
                   <TabsList className="h-8">

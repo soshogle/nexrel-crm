@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -86,7 +86,7 @@ interface WorkflowRecommendation {
   priority: 'high' | 'medium' | 'low';
 }
 
-export default function BusinessAIPage() {
+function BusinessAIPageContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1218,5 +1218,19 @@ export default function BusinessAIPage() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+export default function BusinessAIPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="h-12 w-12 animate-spin text-purple-600" />
+        </div>
+      }
+    >
+      <BusinessAIPageContent />
+    </Suspense>
   );
 }

@@ -61,57 +61,68 @@ export function LogoStrip() {
     };
   }, []);
 
+  const logoContainerClass =
+    "flex-shrink-0 flex items-center justify-center transition-all duration-300 min-w-0";
+  const logoBoxClass =
+    "h-10 w-20 sm:h-12 sm:w-28 md:h-16 md:w-40 flex items-center justify-center";
+
   return (
-    <div className="w-full overflow-hidden bg-muted/30 py-8 border-y border-border/50">
+    <div className="w-full overflow-hidden bg-muted/30 py-6 sm:py-8 border-y border-border/50 px-2 sm:px-0">
       <div className="relative">
         <div
           ref={scrollRef}
-          className="flex gap-12 items-center will-change-transform"
+          className="flex items-center will-change-transform gap-4 sm:gap-8 md:gap-12"
           style={{ width: "fit-content" }}
         >
-          <div className="flex gap-12 items-center">
+          <div className="flex items-center gap-4 sm:gap-8 md:gap-12 flex-shrink-0">
             {logos.map((logo, index) => (
               <div
                 key={`logo-1-${index}`}
-                className="flex-shrink-0 h-16 w-40 flex items-center justify-center transition-all duration-300"
+                className={`${logoContainerClass} ${logoBoxClass}`}
                 style={{ filter: "brightness(1.4) contrast(1.2) saturate(1.1)" }}
               >
                 <img
                   src={logo.src}
                   alt={logo.alt}
-                  className="max-h-full max-w-full object-contain opacity-70 hover:opacity-100 transition-opacity"
+                  loading="lazy"
+                  decoding="async"
+                  className="max-h-full max-w-full w-full h-full object-contain opacity-70 hover:opacity-100 transition-opacity"
                 />
               </div>
             ))}
           </div>
 
-          <div className="flex gap-12 items-center">
+          <div className="flex items-center gap-4 sm:gap-8 md:gap-12 flex-shrink-0">
             {logos.map((logo, index) => (
               <div
                 key={`logo-2-${index}`}
-                className="flex-shrink-0 h-16 w-40 flex items-center justify-center transition-all duration-300"
+                className={`${logoContainerClass} ${logoBoxClass}`}
                 style={{ filter: "brightness(1.4) contrast(1.2) saturate(1.1)" }}
               >
                 <img
                   src={logo.src}
                   alt={logo.alt}
-                  className="max-h-full max-w-full object-contain opacity-70 hover:opacity-100 transition-opacity"
+                  loading="lazy"
+                  decoding="async"
+                  className="max-h-full max-w-full w-full h-full object-contain opacity-70 hover:opacity-100 transition-opacity"
                 />
               </div>
             ))}
           </div>
 
-          <div className="flex gap-12 items-center">
+          <div className="flex items-center gap-4 sm:gap-8 md:gap-12 flex-shrink-0">
             {logos.map((logo, index) => (
               <div
                 key={`logo-3-${index}`}
-                className="flex-shrink-0 h-16 w-40 flex items-center justify-center transition-all duration-300"
+                className={`${logoContainerClass} ${logoBoxClass}`}
                 style={{ filter: "brightness(1.4) contrast(1.2) saturate(1.1)" }}
               >
                 <img
                   src={logo.src}
                   alt={logo.alt}
-                  className="max-h-full max-w-full object-contain opacity-70 hover:opacity-100 transition-opacity"
+                  loading="lazy"
+                  decoding="async"
+                  className="max-h-full max-w-full w-full h-full object-contain opacity-70 hover:opacity-100 transition-opacity"
                 />
               </div>
             ))}
