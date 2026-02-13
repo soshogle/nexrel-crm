@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { setWebsiteBuilderContext } from '@/lib/website-builder-context';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Globe, Settings, Loader2, MessageSquare, Eye, Check, X, Upload, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Globe, Settings, Loader2, MessageSquare, Eye, Check, X, Upload, Image as ImageIcon, AlertCircle, BarChart3, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,13 @@ import { AnalyticsSettings } from '@/components/websites/analytics-settings';
 import { SectionEditor } from '@/components/website-builder/section-editor';
 import { GlobalStylesEditor } from '@/components/website-builder/global-styles-editor';
 import { WebsiteFilesManager } from '@/components/website-builder/website-files-manager';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 
 interface Website {
   id: string;
@@ -67,6 +74,7 @@ export default function WebsiteEditorPage() {
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
   const [activeTab, setActiveTab] = useState('editor');
   const [editorMode, setEditorMode] = useState<'simple' | 'advanced'>('simple');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (session && params.id) {
@@ -365,7 +373,7 @@ export default function WebsiteEditorPage() {
             </div>
           </div>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" onClick={() => setSettingsOpen(true)}>
           <Settings className="h-4 w-4 mr-2" />
           Settings
         </Button>
@@ -389,6 +397,15 @@ export default function WebsiteEditorPage() {
         </TabsList>
 
         <TabsContent value="editor" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Customize your website below. When ready, preview or publish.
+            </p>
+            <Button onClick={() => setActiveTab('preview')}>
+              <Eye className="h-4 w-4 mr-2" />
+              Preview Website
+            </Button>
+          </div>
           <GlobalStylesEditor
             styles={website.structure?.globalStyles}
             onSave={async (styles) => {
@@ -754,6 +771,65 @@ export default function WebsiteEditorPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <SheetContent className="sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Website Settings</SheetTitle>
+            <SheetDescription>
+              Quick actions and links for {website.name}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            {website.vercelDeploymentUrl && (
+              <a
+                href={website.vercelDeploymentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <Button variant="outline" className="w-full justify-start">
+                  <Globe className="h-4 w-4 mr-2" />
+                  View Live Website
+                </Button>
+              </a>
+            )}
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => {
+                setSettingsOpen(false);
+                setActiveTab('preview');
+              }}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Preview Website
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => {
+                setSettingsOpen(false);
+                setActiveTab('analytics');
+              }}
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => {
+                setSettingsOpen(false);
+                setActiveTab('stock');
+              }}
+            >
+              <Package className="h-4 w-4 mr-2" />
+              Stock & Inventory
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
