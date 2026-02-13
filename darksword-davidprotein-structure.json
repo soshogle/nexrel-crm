@@ -1,0 +1,235 @@
+{
+  "pages": [
+    {
+      "id": "home",
+      "path": "/",
+      "title": "Darksword Armory",
+      "name": "Home",
+      "components": [
+        {
+          "id": "hero",
+          "type": "Hero",
+          "props": {
+            "title": "Medieval Swords, Daggers and Armors Hand Forged and Battle Ready",
+            "subtitle": "Darksword Armory’s Battle Ready Medieval swords, daggers and medieval weapons are individually hand forged in Canada to look, feel and handle as the originals.",
+            "image": "https://www.darksword-armory.com/wp-content/uploads/2025/06/homehalbanner2.webp",
+            "imageUrl": "https://www.darksword-armory.com/wp-content/uploads/2025/06/homehalbanner2.webp",
+            "ctaText": "Shop Best Sellers",
+            "ctaLink": "#products",
+            "ctaSecondaryText": "Bundle & Save",
+            "ctaSecondaryLink": "#contact"
+          }
+        },
+        {
+          "id": "promo-banner",
+          "type": "CTASection",
+          "props": {
+            "title": "The most value.",
+            "description": "Buy 3 swords, get 1 free. Bundle Darksword.",
+            "ctaText": "Bundle & Save",
+            "ctaLink": "#contact",
+            "variant": "promo"
+          }
+        },
+        {
+          "id": "image-section",
+          "type": "ImageSection",
+          "props": {
+            "title": "Warriors deserve battle-ready steel.",
+            "description": " Darksword Armory has been creating finely made medieval weapons for the last 29 years.  The owner, Eyal Azerad, has travelled throughout the world to document and examine various sword and armor coll...",
+            "imageUrl": "https://www.darksword-armory.com/wp-content/uploads/2025/06/homehalbanner2.webp",
+            "image": "https://www.darksword-armory.com/wp-content/uploads/2025/06/homehalbanner2.webp",
+            "alt": "Hand-forged medieval weapons",
+            "layout": "image-left"
+          }
+        },
+        {
+          "id": "product-tiers",
+          "type": "ServicesGrid",
+          "props": {
+            "title": "Designed for disciplined results.",
+            "services": [
+              {
+                "name": "Elite Series",
+                "description": "Damascus steel swords. Premium craftsmanship for collectors and enthusiasts.",
+                "image": "https://www.darksword-armory.com/wp-content/uploads/2025/06/elite1-2.webp"
+              },
+              {
+                "name": "Herald Series",
+                "description": "Battle-ready medieval weapons. Faithful to historical weight, balance and feel.",
+                "image": "https://www.darksword-armory.com/wp-content/uploads/2025/06/elite4.webp"
+              }
+            ],
+            "ctaText": "Shop All",
+            "ctaLink": "#products"
+          }
+        },
+        {
+          "id": "products",
+          "type": "ProductsGrid",
+          "props": {
+            "title": "Shop our best sellers",
+            "products": [
+              {
+                "name": "Medieval Swords",
+                "description": "Hand-forged battle-ready medieval swords",
+                "image": "https://www.darksword-armory.com/wp-content/uploads/2025/06/1317-Scottish-Sword-of-Robert-the-bruce-main-sword-1-1-450x800.webp",
+                "price": ""
+              },
+              {
+                "name": "One Handed Sword",
+                "description": "Hand-forged battle-ready one handed sword",
+                "image": "https://www.darksword-armory.com/wp-content/uploads/2025/06/1505-Viking-sword-Norse-blade-2-378x800.webp",
+                "price": ""
+              },
+              {
+                "name": "Two Handed Sword",
+                "description": "Hand-forged battle-ready two handed sword",
+                "image": "https://www.darksword-armory.com/wp-content/uploads/2025/06/1305-one-handed-medieval-sword-1-378x800.webp",
+                "price": ""
+              },
+              {
+                "name": "Accessories",
+                "description": "Hand-forged battle-ready accessories",
+                "image": "https://www.darksword-armory.com/wp-content/uploads/2025/06/1324-10-378x800.webp",
+                "price": ""
+              },
+              {
+                "name": "Viking Swords",
+                "description": "Hand-forged battle-ready viking swords",
+                "image": "https://www.darksword-armory.com/wp-content/uploads/2025/06/1332-two-handed-medieval-sword-medieval-weapon-longsword-1332-sword-378x800.webp",
+                "price": ""
+              },
+              {
+                "name": "Templar Swords",
+                "description": "Hand-forged battle-ready templar swords",
+                "image": "https://www.darksword-armory.com/wp-content/uploads/2025/06/battle-ready-elf-sword-1553-378x800.webp",
+                "price": ""
+              }
+            ],
+            "ctaText": "View All Products",
+            "ctaLink": "#contact"
+          }
+        },
+        {
+          "id": "testimonials",
+          "type": "CTASection",
+          "props": {
+            "title": "The Darksword community, unfiltered.",
+            "description": "Collectors, HEMA practitioners, and enthusiasts trust Darksword Armory for battle-ready steel.",
+            "ctaText": "Read Reviews",
+            "ctaLink": "#contact"
+          }
+        },
+        {
+          "id": "contact-form",
+          "type": "ContactForm",
+          "props": {
+            "title": "Get in touch",
+            "fields": [
+              {
+                "name": "name",
+                "type": "text",
+                "label": "Name",
+                "required": true
+              },
+              {
+                "name": "email",
+                "type": "email",
+                "label": "Email",
+                "required": true
+              },
+              {
+                "name": "message",
+                "type": "textarea",
+                "label": "Message",
+                "required": true
+              }
+            ]
+          }
+        }
+      ],
+      "seo": {
+        "title": "Medieval Swords, Daggers and Armors Hand Forged and Battle Ready",
+        "description": "Darksword Armory’s Battle Ready Medieval swords, daggers and medieval weapons are individually hand forged in Canada to look, feel and handle as the originals.",
+        "keywords": [
+          "medieval swords",
+          "battle ready",
+          "hand forged",
+          "armor",
+          "daggers",
+          "viking swords"
+        ],
+        "ogTitle": "Medieval Swords, Daggers and Armors Hand Forged and Battle Ready",
+        "ogDescription": "Darksword Armory’s Battle Ready Medieval swords, daggers and medieval weapons are individually hand forged in Canada to look, feel and handle as the originals.",
+        "ogImage": "https://www.darksword-armory.com/wp-content/uploads/2025/06/homehalbanner2.webp",
+        "twitterCard": "summary_large_image",
+        "canonicalUrl": "https://www.darksword-armory.com/"
+      }
+    }
+  ],
+  "globalStyles": {
+    "colors": {
+      "primary": "#1a1a1a",
+      "secondary": "#2d2d2d",
+      "accent": "#c9a227",
+      "background": "#0f0f0f",
+      "text": "#ffffff",
+      "textMuted": "#a3a3a3"
+    },
+    "fonts": {
+      "heading": "Instrument Serif, Georgia, serif",
+      "body": "Suisse International, system-ui, sans-serif"
+    },
+    "layout": "responsive"
+  },
+  "navigation": {
+    "links": [
+      {
+        "label": "Swords",
+        "href": "#products"
+      },
+      {
+        "label": "Armor",
+        "href": "#products"
+      },
+      {
+        "label": "Collection",
+        "href": "#products"
+      },
+      {
+        "label": "Contact",
+        "href": "#contact-form"
+      }
+    ]
+  },
+  "footer": {
+    "text": "© Darksword Armory. Hand-forged in Canada.",
+    "links": [
+      {
+        "label": "Contact",
+        "href": "#contact-form"
+      },
+      {
+        "label": "Privacy",
+        "href": "#"
+      }
+    ]
+  },
+  "seo": {
+    "title": "Medieval Swords, Daggers and Armors Hand Forged and Battle Ready",
+    "description": "Darksword Armory’s Battle Ready Medieval swords, daggers and medieval weapons are individually hand forged in Canada to look, feel and handle as the originals.",
+    "keywords": [
+      "medieval swords",
+      "battle ready",
+      "hand forged",
+      "armor",
+      "daggers"
+    ],
+    "ogTitle": "Medieval Swords, Daggers and Armors Hand Forged and Battle Ready",
+    "ogDescription": "Darksword Armory’s Battle Ready Medieval swords, daggers and medieval weapons are individually hand forged in Canada to look, feel and handle as the originals.",
+    "ogImage": "https://www.darksword-armory.com/wp-content/uploads/2025/06/homehalbanner2.webp",
+    "twitterCard": "summary_large_image",
+    "canonicalUrl": "https://www.darksword-armory.com/"
+  }
+}
