@@ -47,9 +47,11 @@ import {
 
 interface CallHistoryPanelProps {
   selectedConversationId?: string;
+  /** Use 'docpen' to fetch from Docpen API (same UI, different data source) */
+  source?: 'elevenlabs' | 'docpen';
 }
 
-export default function CallHistoryPanel({ selectedConversationId }: CallHistoryPanelProps) {
+export default function CallHistoryPanel({ selectedConversationId, source = 'elevenlabs' }: CallHistoryPanelProps) {
   // Session and auth
   const { data: session } = useSession();
   
@@ -91,23 +93,24 @@ export default function CallHistoryPanel({ selectedConversationId }: CallHistory
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const waveformRef = useRef<HTMLDivElement | null>(null);
 
+  const apiBase = source === 'docpen' ? '/api/docpen/conversations' : '/api/elevenlabs/conversations';
+
   useEffect(() => {
     if (session) {
       fetchConversations();
     }
-  }, [session?.user?.id, session?.user?.isImpersonating]); // Refetch when user changes or impersonation status changes
+  }, [session?.user?.id, session?.user?.isImpersonating, source]); // Refetch when user changes or impersonation status changes
 
   const fetchConversations = async () => {
     setIsLoading(true);
     try {
       console.log('🔍 [CallHistoryPanel] Fetching conversations...', {
+        source,
         hasSession: !!session,
         userEmail: session?.user?.email,
-        isImpersonating: session?.user?.isImpersonating || false,
-        superAdminId: session?.user?.superAdminId || 'none',
       });
-      
-      const response = await fetch('/api/elevenlabs/conversations?page_size=100');
+
+      const response = await fetch(`${apiBase}?page_size=100`);
       if (!response.ok) {
         const errorData = await response.json();
         console.error('❌ [CallHistoryPanel] API error:', errorData);
@@ -131,7 +134,7 @@ export default function CallHistoryPanel({ selectedConversationId }: CallHistory
   const fetchConversationDetails = async (conversationId: string) => {
     setIsLoadingDetails(true);
     try {
-      const response = await fetch(`/api/elevenlabs/conversations/${conversationId}`);
+      const response = await fetch(`${apiBase}/${conversationId}`);
       if (!response.ok) throw new Error('Failed to fetch conversation details');
 
       const data = await response.json();
@@ -323,12 +326,13 @@ export default function CallHistoryPanel({ selectedConversationId }: CallHistory
     try {
       console.log('🗑️ Deleting call:', selectedConversation.conversation_id);
       
-      const response = await fetch(
-        `/api/elevenlabs/conversations/${selectedConversation.conversation_id}`,
-        {
-          method: 'DELETE',
-        }
-      );
+      const deleteUrl = source === 'docpen'
+        ? `/api/docpen/conversations/${selectedConversation.conversation_id}`
+        : `/api/elevenlabs/conversations/${selectedConversation.conversation_id}`;
+
+      const response = await fetch(deleteUrl, {
+        method: 'DELETE',
+      });
 
       const data = await response.json();
       

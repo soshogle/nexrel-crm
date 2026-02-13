@@ -217,9 +217,9 @@ export function LeadDetail({ lead }: LeadDetailProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <Card className="bg-gray-900 border-gray-800">
+            <Card className="bg-gray-900 border-gray-800 overflow-hidden">
               <CardHeader>
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between min-w-0">
                   <div className="space-y-2">
                     <CardTitle className="text-2xl flex items-center text-white">
                       <Building className="h-6 w-6 mr-3" />
@@ -252,41 +252,42 @@ export function LeadDetail({ lead }: LeadDetailProps) {
                 {/* Contact Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {lead.contactPerson && (
-                    <div className="flex items-center text-sm text-gray-300">
-                      <User className="h-4 w-4 mr-3 text-gray-400" />
-                      <span>{lead.contactPerson}</span>
+                    <div className="flex items-center text-sm text-gray-300 min-w-0">
+                      <User className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
+                      <span className="truncate">{lead.contactPerson}</span>
                     </div>
                   )}
                   
                   {lead.email && (
-                    <div className="flex items-center text-sm">
-                      <Mail className="h-4 w-4 mr-3 text-gray-400" />
-                      <a href={`mailto:${lead.email}`} className="text-blue-400 hover:underline">
+                    <div className="flex items-center text-sm min-w-0">
+                      <Mail className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
+                      <a href={`mailto:${lead.email}`} className="text-blue-400 hover:underline truncate">
                         {lead.email}
                       </a>
                     </div>
                   )}
                   
                   {lead.phone && (
-                    <div className="flex items-center text-sm">
-                      <Phone className="h-4 w-4 mr-3 text-gray-400" />
-                      <a href={`tel:${lead.phone}`} className="text-blue-400 hover:underline">
+                    <div className="flex items-center text-sm min-w-0">
+                      <Phone className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
+                      <a href={`tel:${lead.phone}`} className="text-blue-400 hover:underline truncate">
                         {lead.phone}
                       </a>
                     </div>
                   )}
                   
                   {lead.website && (
-                    <div className="flex items-center text-sm">
-                      <Globe className="h-4 w-4 mr-3 text-gray-400" />
+                    <div className="flex items-center text-sm min-w-0 overflow-hidden">
+                      <Globe className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
                       <a 
                         href={lead.website} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline flex items-center"
+                        className="text-blue-400 hover:underline min-w-0 overflow-hidden flex items-center gap-1"
+                        title={lead.website}
                       >
-                        {lead.website}
-                        <ExternalLink className="h-3 w-3 ml-1" />
+                        <span className="truncate min-w-0">{lead.website}</span>
+                        <ExternalLink className="h-3 w-3 flex-shrink-0" />
                       </a>
                     </div>
                   )}

@@ -103,7 +103,7 @@ export class CrmVoiceAgentService {
     // Create agent directly via ElevenLabs API (CRM agents don't need VoiceAgent records)
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
-      throw new Error('ElevenLabs API key not configured');
+      throw new Error('Soshogle AI voice is not configured');
     }
 
     const agentPayload = {
@@ -212,7 +212,7 @@ Your role:
 - Help users create and manage leads, deals, and contacts
 - Search for contacts and deals
 - Provide insights about business performance
-- Set up integrations (Stripe, Twilio, email, etc.)
+- Set up integrations (payments, SMS, email, etc.)
 - Create and manage workflows and automations
 - Answer questions about CRM features
 - Execute actions directly when requested

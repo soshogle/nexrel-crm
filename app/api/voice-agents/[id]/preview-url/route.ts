@@ -81,7 +81,7 @@ export async function GET(
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'No ElevenLabs API key configured' },
+        { error: 'Soshogle AI voice is not configured' },
         { status: 400 }
       );
     }
@@ -102,7 +102,7 @@ export async function GET(
       console.error('❌ ElevenLabs API error:', errorText);
       return NextResponse.json(
         { 
-          error: 'Failed to get signed URL from ElevenLabs',
+          error: 'Failed to get preview URL from Soshogle AI',
           details: errorText
         },
         { status: elevenLabsResponse.status }
@@ -115,7 +115,7 @@ export async function GET(
     if (!data.signed_url) {
       console.error('❌ No signed_url in ElevenLabs response:', data);
       return NextResponse.json(
-        { error: 'Invalid response from ElevenLabs' },
+        { error: 'Invalid response from Soshogle AI' },
         { status: 500 }
       );
     }

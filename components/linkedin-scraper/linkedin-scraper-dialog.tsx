@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Loader2, Search, AlertTriangle, CheckCircle2, Users, TrendingUp } from 'lucide-react';
+import { Loader2, Search, AlertTriangle, CheckCircle2, Users, TrendingUp, Mail } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface LinkedInScraperDialogProps {
   open: boolean;
@@ -24,6 +25,7 @@ export default function LinkedInScraperDialog({
 }: LinkedInScraperDialogProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [maxResults, setMaxResults] = useState(20);
+  const [profileMode, setProfileMode] = useState<'Short' | 'Full' | 'Full + email search'>('Full');
   const [isLoading, setIsLoading] = useState(false);
   const [limitStatus, setLimitStatus] = useState<any>(null);
   const [result, setResult] = useState<any>(null);
@@ -69,6 +71,7 @@ export default function LinkedInScraperDialog({
         body: JSON.stringify({
           searchQuery,
           maxResults,
+          profileMode,
         }),
       });
 
@@ -113,7 +116,7 @@ export default function LinkedInScraperDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] bg-gray-900 border-gray-800">
         <DialogHeader>
-          <DialogTitle className="gradient-text text-2xl">LinkedIn B2B Lead Scraper</DialogTitle>
+          <DialogTitle className="gradient-text text-2xl">LinkedIn B2B Soshogle Lead Finder</DialogTitle>
           <DialogDescription className="text-gray-400">
             Automatically find and import LinkedIn profiles as leads
           </DialogDescription>
@@ -164,6 +167,29 @@ export default function LinkedInScraperDialog({
             </p>
           </div>
 
+          {/* Profile Mode - controls data richness */}
+          <div className="space-y-2">
+            <Label className="text-white">Data Enrichment Level</Label>
+            <Select value={profileMode} onValueChange={(v: any) => setProfileMode(v)} disabled={isLoading}>
+              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Short">Basic — Names & headlines only (fastest, cheapest)</SelectItem>
+                <SelectItem value="Full">Full — Company, experience, location (recommended)</SelectItem>
+                <SelectItem value="Full + email search">
+                  <span className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Full + Email — Also finds emails when possible
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500">
+              Full mode gets company names. Email search attempts to find contact emails (not guaranteed).
+            </p>
+          </div>
+
           {/* Max Results */}
           <div className="space-y-2">
             <Label htmlFor="maxResults" className="text-white">
@@ -192,7 +218,7 @@ export default function LinkedInScraperDialog({
                   <>
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <span className="font-semibold text-green-400">Scraping Complete!</span>
+                      <span className="font-semibold text-green-400">Soshogle Lead Finder Complete!</span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 mt-3">
                       <div className="flex items-center gap-2">
@@ -204,7 +230,7 @@ export default function LinkedInScraperDialog({
                       <div className="flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-gray-400" />
                         <span className="text-sm text-gray-300">
-                          <strong>{result.leadsScraped}</strong> profiles scraped
+                          <strong>{result.leadsScraped}</strong> profiles found
                         </span>
                       </div>
                     </div>
@@ -218,7 +244,7 @@ export default function LinkedInScraperDialog({
                   <>
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5 text-red-500" />
-                      <span className="font-semibold text-red-400">Scraping Failed</span>
+                      <span className="font-semibold text-red-400">Soshogle Lead Finder Failed</span>
                     </div>
                     {result.errors && result.errors.map((error: string, index: number) => (
                       <p key={index} className="text-sm text-red-300 mt-1">
@@ -234,8 +260,7 @@ export default function LinkedInScraperDialog({
           {/* Info Box */}
           <Alert className="bg-blue-500/10 border-blue-500/50">
             <AlertDescription className="text-sm text-blue-300">
-              <strong>How it works:</strong> This scraper uses Apify to extract public LinkedIn profile data based on your search query.
-              Leads are automatically added to your CRM with available contact information.
+              <strong>How it works:</strong> Soshogle AI Lead Finder extracts LinkedIn profile data. Use &quot;Full&quot; or &quot;Full + Email&quot; to get company names and optionally emails. Phone numbers are not available from LinkedIn—use the Enrich button on leads to find emails via Hunter.io.
             </AlertDescription>
           </Alert>
         </div>

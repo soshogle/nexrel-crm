@@ -280,7 +280,7 @@ async function executeVoiceCall(
     }
     
     if (!agentId) {
-      return { success: false, error: 'No ElevenLabs agent ID configured. Assign a voice agent to your AI Team member or set a default agent.' };
+      return { success: false, error: 'No voice agent configured. Assign a voice agent to your AI Team member or set a default agent.' };
     }
     
     // Initiate phone call via ElevenLabs (with optional per-call voice override)

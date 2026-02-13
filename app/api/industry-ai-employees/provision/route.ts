@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
       apiKey = getApiKey();
     } catch (error) {
       return NextResponse.json(
-        { error: 'ElevenLabs API key not configured' },
+        { error: 'Soshogle AI voice is not configured' },
         { status: 500 }
       );
     }

@@ -45,7 +45,8 @@ import {
   Instagram,
   Facebook,
   Music,
-  Hash
+  Hash,
+  Wand2
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { MakeCallDialog } from '@/components/voice-agents/make-call-dialog'
@@ -294,7 +295,7 @@ export function LeadsList({ leads }: LeadsListProps) {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" asChild className="flex-1">
                         <Link href={`/dashboard/leads/${lead.id}`}>
                           <Eye className="h-4 w-4 mr-1" />
@@ -306,6 +307,21 @@ export function LeadsList({ leads }: LeadsListProps) {
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
                         </Link>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => { e.preventDefault(); handleEnrichLead(lead.id); }}
+                        disabled={enrichingLeads.has(lead.id)}
+                        className="flex-1"
+                        title="Enrich with Hunter.io (find email, company info)"
+                      >
+                        {enrichingLeads.has(lead.id) ? (
+                          <LoaderIcon className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Wand2 className="h-4 w-4 mr-1" />
+                        )}
+                        Enrich
                       </Button>
                     </div>
                   </CardContent>
@@ -366,6 +382,19 @@ export function LeadsList({ leads }: LeadsListProps) {
                               <Link href={`/dashboard/leads/${lead.id}/edit`}>
                                 <Edit className="h-4 w-4" />
                               </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEnrichLead(lead.id)}
+                              disabled={enrichingLeads.has(lead.id)}
+                              title="Enrich with Hunter.io (find email, company info)"
+                            >
+                              {enrichingLeads.has(lead.id) ? (
+                                <LoaderIcon className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Wand2 className="h-4 w-4" />
+                              )}
                             </Button>
                           </div>
                         </TableCell>
@@ -508,10 +537,10 @@ export function LeadsList({ leads }: LeadsListProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-purple-300">
                 <Sparkles className="h-5 w-5" />
-                Quick Launch Social Media Scrapers
+                Quick Launch Soshogle Lead Finders
               </CardTitle>
               <CardDescription>
-                Scrape leads directly from top social platforms
+                Find leads directly from top social platforms
               </CardDescription>
             </CardHeader>
             <CardContent>

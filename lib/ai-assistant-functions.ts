@@ -1131,17 +1131,17 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
       type: "function",
       function: {
         name: "setup_stripe",
-        description: "Configure Stripe payment processor",
+        description: "Configure payment processor",
         parameters: {
           type: "object",
           properties: {
             publishableKey: {
               type: "string",
-              description: "Stripe publishable key (starts with pk_)",
+              description: "Publishable key (starts with pk_)",
             },
             secretKey: {
               type: "string",
-              description: "Stripe secret key (starts with sk_)",
+              description: "Secret key (starts with sk_)",
             },
           },
           required: ["publishableKey", "secretKey"],
@@ -1182,13 +1182,13 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
       type: "function",
       function: {
         name: "setup_twilio",
-        description: "Configure Twilio for SMS and voice calls",
+        description: "Configure SMS and voice calls",
         parameters: {
           type: "object",
           properties: {
             accountSid: {
               type: "string",
-              description: "Twilio Account SID",
+              description: "Account SID",
             },
             authToken: {
               type: "string",
@@ -1196,7 +1196,7 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
             },
             phoneNumber: {
               type: "string",
-              description: "Twilio phone number",
+              description: "Phone number",
             },
           },
           required: ["accountSid", "authToken", "phoneNumber"],
@@ -1219,7 +1219,7 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
         parameters: {
           type: "object",
           properties: {
-            accountSid: { type: "string", description: "Twilio Account SID (optional)" },
+            accountSid: { type: "string", description: "Account SID (optional)" },
             authToken: { type: "string", description: "Auth Token (optional)" },
             phoneNumber: { type: "string", description: "WhatsApp-enabled number (optional)" },
           },

@@ -75,6 +75,7 @@ export default function WebsiteEditorPage() {
   const [activeTab, setActiveTab] = useState('editor');
   const [editorMode, setEditorMode] = useState<'simple' | 'advanced'>('simple');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selectedPageIndex, setSelectedPageIndex] = useState(0);
 
   useEffect(() => {
     if (session && params.id) {
@@ -82,6 +83,16 @@ export default function WebsiteEditorPage() {
       fetchPendingChanges();
     }
   }, [session, params.id]);
+
+  // Default to home page (path '/') when website loads
+  useEffect(() => {
+    if (website?.structure?.pages?.length) {
+      const homeIdx = website.structure.pages.findIndex(
+        (p: any) => p.path === '/' || p.id === 'home'
+      );
+      setSelectedPageIndex(homeIdx >= 0 ? homeIdx : 0);
+    }
+  }, [website?.structure?.pages]);
 
   // Poll for progress when building
   useEffect(() => {
@@ -421,7 +432,7 @@ export default function WebsiteEditorPage() {
           <WebsiteFilesManager websiteId={website.id} />
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <CardTitle>Page Sections</CardTitle>
                   <CardDescription>
@@ -431,63 +442,85 @@ export default function WebsiteEditorPage() {
                     <strong>Simple:</strong> Reorder and delete only. <strong>Advanced:</strong> Layout, image replace, and config per section.
                   </p>
                 </div>
-                <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v)} className="w-auto">
-                  <TabsList className="h-8">
-                    <TabsTrigger value="simple" className="text-xs">Simple</TabsTrigger>
-                    <TabsTrigger value="advanced" className="text-xs">Advanced</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <div className="flex items-center gap-2">
+                  {website.structure?.pages?.length > 1 && (
+                    <Tabs
+                      value={String(selectedPageIndex)}
+                      onValueChange={(v) => setSelectedPageIndex(parseInt(v, 10))}
+                      className="w-auto"
+                    >
+                      <TabsList className="h-8">
+                        {website.structure.pages.map((p: any, i: number) => (
+                          <TabsTrigger key={p.id || i} value={String(i)} className="text-xs">
+                            {p.name || p.path || `Page ${i + 1}`}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                    </Tabs>
+                  )}
+                  <Tabs value={editorMode} onValueChange={(v) => setEditorMode(v)} className="w-auto">
+                    <TabsList className="h-8">
+                      <TabsTrigger value="simple" className="text-xs">Simple</TabsTrigger>
+                      <TabsTrigger value="advanced" className="text-xs">Advanced</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               <SectionEditor
                 compactMode={editorMode === 'simple'}
                 websiteId={website.id}
-                pagePath="/"
-                components={website.structure?.pages?.[0]?.components || []}
+                pagePath={website.structure?.pages?.[selectedPageIndex]?.path || '/'}
+                components={website.structure?.pages?.[selectedPageIndex]?.components || []}
                 onReorder={async (from, to) => {
+                  const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
                   const res = await fetch('/api/ai-assistant/actions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       action: 'reorder_section',
-                      parameters: { websiteId: website.id, fromIndex: from, toIndex: to, pagePath: '/' },
+                      parameters: { websiteId: website.id, fromIndex: from, toIndex: to, pagePath },
                     }),
                   });
                   if (!res.ok) throw new Error((await res.json()).error);
                   await fetchWebsite();
                 }}
                 onDelete={async (sectionType) => {
+                  const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
                   const res = await fetch('/api/ai-assistant/actions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       action: 'delete_section',
-                      parameters: { websiteId: website.id, sectionType, pagePath: '/' },
+                      parameters: { websiteId: website.id, sectionType, pagePath },
                     }),
                   });
                   if (!res.ok) throw new Error((await res.json()).error);
                   await fetchWebsite();
                 }}
                 onUpdateImage={async (sectionType, imageUrl, alt) => {
+                  const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
                   const res = await fetch('/api/ai-assistant/actions', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       action: 'add_website_image',
-                      parameters: { websiteId: website.id, sectionType, imageUrl, alt, pagePath: '/' },
+                      parameters: { websiteId: website.id, sectionType, imageUrl, alt, pagePath },
                     }),
                   });
                   if (!res.ok) throw new Error((await res.json()).error);
                   await fetchWebsite();
                 }}
                 onUpdateLayout={async (sectionType, layout) => {
+                  const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
                   const res = await fetch(`/api/websites/${website.id}/structure`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       type: 'section_layout',
                       sectionType,
+                      pagePath,
                       layout: {
                         padding: layout.padding,
                         margin: layout.margin,
@@ -500,12 +533,14 @@ export default function WebsiteEditorPage() {
                   await fetchWebsite();
                 }}
                 onUpdateProps={async (sectionType, props) => {
+                  const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
                   const res = await fetch(`/api/websites/${website.id}/structure`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                       type: 'section_props',
                       sectionType,
+                      pagePath,
                       props,
                     }),
                   });

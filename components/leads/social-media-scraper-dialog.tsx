@@ -163,10 +163,10 @@ export default function SocialMediaScraperDialog({ open, onOpenChange, onSuccess
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Sparkles className="h-6 w-6 text-purple-500" />
-            Social Media Lead Scraper
+            Social Media Soshogle Lead Finder
           </DialogTitle>
           <DialogDescription>
-            Extract B2C leads from Instagram, Facebook, and TikTok using AI-powered scraping
+            Extract B2C leads from Instagram, Facebook, and TikTok using Soshogle AI Lead Finder
           </DialogDescription>
         </DialogHeader>
 
@@ -198,7 +198,7 @@ export default function SocialMediaScraperDialog({ open, onOpenChange, onSuccess
 
           {/* Template Selection */}
           <div>
-            <Label className="mb-3 block">Choose Scraping Template</Label>
+            <Label className="mb-3 block">Choose Soshogle Lead Finder Template</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {filteredTemplates.map((template) => {
                 const Icon = template.icon;

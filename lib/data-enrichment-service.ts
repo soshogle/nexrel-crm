@@ -43,8 +43,8 @@ export class DataEnrichmentService {
   private cacheTTL: number = 30 * 24 * 60 * 60 * 1000; // 30 days
 
   constructor() {
-    this.hunterApiKey = this.loadApiKey('hunter.io', 'api_key');
-    this.clearbitApiKey = this.loadApiKey('clearbit', 'api_key');
+    this.hunterApiKey = process.env.HUNTER_API_KEY || process.env.HUNTER_IO_API_KEY || this.loadApiKey('hunter.io', 'api_key');
+    this.clearbitApiKey = process.env.CLEARBIT_API_KEY || this.loadApiKey('clearbit', 'api_key');
   }
 
   private loadApiKey(service: string, secretName: string): string {
@@ -127,6 +127,28 @@ export class DataEnrichmentService {
       console.log(`✅ Cached enrichment data for ${email || domain}`);
     } catch (error) {
       console.error('❌ Cache save error:', error);
+    }
+  }
+
+  /**
+   * Resolve company domain from company name using Clearbit autocomplete
+   * Used when lead has businessName but no website (e.g. LinkedIn-scraped leads)
+   */
+  private async findDomainFromCompanyName(companyName: string): Promise<string | null> {
+    if (!companyName || companyName === 'Unknown Company') return null;
+    try {
+      const query = encodeURIComponent(companyName.trim());
+      const response = await fetch(
+        `https://autocomplete.clearbit.com/v1/companies/suggest?q=${query}`,
+        { headers: this.clearbitApiKey ? { Authorization: `Bearer ${this.clearbitApiKey}` } : {} }
+      );
+      if (!response.ok) return null;
+      const results = await response.json();
+      const match = Array.isArray(results) && results[0]?.domain;
+      return match || null;
+    } catch (error) {
+      console.warn('Clearbit autocomplete error:', error);
+      return null;
     }
   }
 
@@ -367,7 +389,16 @@ export class DataEnrichmentService {
     }
   ): Promise<EnrichmentResult> {
     try {
-      const { email, domain, firstName, lastName, businessName, skipCache = false } = options || {};
+      let { email, domain, firstName, lastName, businessName, skipCache = false } = options || {};
+
+      // Resolve domain from company name when lead has no website (e.g. LinkedIn-scraped leads)
+      if (!domain && businessName && (firstName || lastName)) {
+        const resolvedDomain = await this.findDomainFromCompanyName(businessName);
+        if (resolvedDomain) {
+          domain = resolvedDomain;
+          console.log(`🔍 Resolved domain from company name: ${businessName} → ${domain}`);
+        }
+      }
 
       // Check cache first (unless skipped)
       if (!skipCache) {
@@ -380,8 +411,8 @@ export class DataEnrichmentService {
       let enrichedData: any = {};
       let sources: string[] = [];
 
-      // Enrich with Hunter.io
-      if (domain && !email && firstName && lastName) {
+      // Enrich with Hunter.io (needs domain + name to find email)
+      if (domain && !email && (firstName || lastName)) {
         console.log(`🔍 Finding email with Hunter.io...`);
         const hunterResult = await this.findEmailWithHunter(domain, firstName, lastName);
         if (hunterResult.email) {
@@ -436,14 +467,19 @@ export class DataEnrichmentService {
       // Save to cache
       await this.saveToCache(email || enrichedData.email || null, domain || null, enrichedData);
 
-      // Update lead in database
+      // Update lead in database (persist found email, and website if we resolved domain from company name)
+      const updateData: any = {
+        enrichedData: enrichedData,
+        email: enrichedData.email || email,
+        lastEnrichedAt: new Date(),
+      };
+      if (domain && !options?.domain) {
+        // We resolved domain from company name - persist as website for future reference
+        updateData.website = `https://${domain}`;
+      }
       await prisma.lead.update({
         where: { id: leadId },
-        data: {
-          enrichedData: enrichedData,
-          email: enrichedData.email || email,
-          lastEnrichedAt: new Date(),
-        },
+        data: updateData,
       });
 
       console.log(`✅ Enrichment complete for lead ${leadId} using: ${sources.join(', ')}`);

@@ -28,13 +28,15 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { type, sectionType, sectionIndex, layout, globalStyles, props } = body;
+    const { type, sectionType, sectionIndex, layout, globalStyles, props, pagePath: reqPagePath } = body;
+    const pagePath = reqPagePath ?? '/';
 
     const structure = (website.structure || {}) as any;
 
     if (type === 'section_props' && props && sectionType) {
       const pages = structure?.pages || [];
-      const pageIndex = pages.findIndex((p: any) => p.path === '/');
+      let pageIndex = pages.findIndex((p: any) => p.path === pagePath);
+      if (pageIndex < 0) pageIndex = Math.max(0, pages.findIndex((p: any) => p.path === '/'));
       if (pageIndex >= 0 && pages[pageIndex].components) {
         const compIndex = pages[pageIndex].components.findIndex((c: any) => c.type === sectionType);
         if (compIndex >= 0) {
@@ -55,7 +57,7 @@ export async function PATCH(
 
     if (type === 'section_layout' && layout) {
       const newStructure = updateSectionLayout(structure, {
-        pagePath: '/',
+        pagePath,
         sectionType,
         sectionIndex,
         layout: {

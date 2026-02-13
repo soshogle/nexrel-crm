@@ -522,12 +522,12 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
           
           return NextResponse.json(
             { 
-              error: 'ElevenLabs plan upgrade required',
-              details: subscriptionCheck.error || 'Your ElevenLabs plan does not support phone number imports.',
+              error: 'Soshogle AI plan upgrade required',
+              details: subscriptionCheck.error || 'Your Soshogle AI plan does not support phone number imports.',
               tier: subscriptionCheck.tier,
               upgradeRequired: true,
-              upgradeUrl: 'https://elevenlabs.io/pricing',
-              recommendation: 'Please upgrade to the Starter plan ($10/month) or higher to use phone numbers with voice agents. Alternatively, create the agent without a phone number for testing.'
+              upgradeUrl: undefined,
+              recommendation: 'Please upgrade your Soshogle AI plan to use phone numbers with voice agents. Alternatively, create the agent without a phone number for testing.'
             },
             { status: 402 } // 402 Payment Required
           );
@@ -591,9 +591,9 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
         
         return NextResponse.json(
           { 
-            error: 'Failed to create voice agent in ElevenLabs',
+            error: 'Failed to create voice agent',
             details: provisionResult.error,
-            suggestion: 'Please check: 1) ElevenLabs API key is valid, 2) You have an active ElevenLabs plan (Starter or higher), 3) Twilio credentials are configured correctly'
+            suggestion: 'Please check: 1) Soshogle AI voice is configured, 2) You have an active plan, 3) Phone credentials are configured correctly'
           },
           { status: 500 }
         );

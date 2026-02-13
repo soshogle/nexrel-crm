@@ -58,7 +58,7 @@ export async function runApifyActor(config: ApifyRunInput): Promise<ApifyRunResu
   if (!token) {
     return {
       success: false,
-      error: 'Apify API token not configured. Add APIFY_API_TOKEN to environment.'
+      error: 'Soshogle AI Lead Finder not configured. Add APIFY_API_TOKEN to environment.'
     };
   }
 
@@ -189,14 +189,14 @@ export async function validateApifyConnection(): Promise<{
   const token = getToken();
   
   if (!token) {
-    return { valid: false, error: 'No Apify API token configured' };
+    return { valid: false, error: 'Soshogle AI Lead Finder not configured' };
   }
 
   try {
     const response = await fetch(`${APIFY_BASE_URL}/users/me?token=${token}`);
     
     if (!response.ok) {
-      return { valid: false, error: 'Invalid Apify API token' };
+      return { valid: false, error: 'Invalid Soshogle AI Lead Finder API token' };
     }
     
     const data = await response.json();
