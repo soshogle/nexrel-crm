@@ -37,6 +37,11 @@ export class LinkedInScraperService {
   }
 
   private loadApifyKey(): string {
+    // Prefer environment variables (works on Vercel, local, etc.)
+    if (process.env.APIFY_API_KEY) return process.env.APIFY_API_KEY;
+    if (process.env.APIFY_API_TOKEN) return process.env.APIFY_API_TOKEN;
+
+    // Fallback: secrets file (legacy Ubuntu/server setup)
     try {
       const secretsPath = path.join('/home/ubuntu/.config', 'abacusai_auth_secrets.json');
       if (fs.existsSync(secretsPath)) {
