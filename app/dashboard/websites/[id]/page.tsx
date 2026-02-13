@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { setWebsiteBuilderContext } from '@/lib/website-builder-context';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Globe, Settings, Loader2, MessageSquare, Eye, Check, X, Upload, Image as ImageIcon, AlertCircle, BarChart3, Package } from 'lucide-react';
+import { ArrowLeft, Globe, Settings, Loader2, MessageSquare, Eye, Check, X, Upload, Image as ImageIcon, AlertCircle, BarChart3, Package, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 interface Website {
   id: string;
@@ -76,6 +85,9 @@ export default function WebsiteEditorPage() {
   const [editorMode, setEditorMode] = useState<'simple' | 'advanced'>('simple');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedPageIndex, setSelectedPageIndex] = useState(0);
+  const [importUrlOpen, setImportUrlOpen] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     if (session && params.id) {
@@ -443,6 +455,76 @@ export default function WebsiteEditorPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Dialog open={importUrlOpen} onOpenChange={setImportUrlOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <Link2 className="h-3.5 w-3.5" />
+                        Import from URL
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Import from URL</DialogTitle>
+                        <DialogDescription>
+                          Scrape a website and add its sections (Hero, About, images, contact form, etc.) to the current page. Uses the same technology as the clone flow.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="import-url">Website URL</Label>
+                          <Input
+                            id="import-url"
+                            placeholder="https://example.com"
+                            value={importUrl}
+                            onChange={(e) => setImportUrl(e.target.value)}
+                            disabled={importing}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setImportUrlOpen(false)} disabled={importing}>
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={async () => {
+                            if (!importUrl.trim()) {
+                              toast.error('Enter a URL');
+                              return;
+                            }
+                            setImporting(true);
+                            try {
+                              const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
+                              const res = await fetch(`/api/websites/${website.id}/import-from-url`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ url: importUrl.trim(), pagePath }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data.error || 'Import failed');
+                              toast.success(`Added ${data.addedCount} sections from the URL`);
+                              setImportUrl('');
+                              setImportUrlOpen(false);
+                              await fetchWebsite();
+                            } catch (err: any) {
+                              toast.error(err.message || 'Failed to import');
+                            } finally {
+                              setImporting(false);
+                            }
+                          }}
+                          disabled={importing || !importUrl.trim()}
+                        >
+                          {importing ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Importing…
+                            </>
+                          ) : (
+                            'Import'
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                   {website.structure?.pages?.length > 1 && (
                     <Tabs
                       value={String(selectedPageIndex)}
