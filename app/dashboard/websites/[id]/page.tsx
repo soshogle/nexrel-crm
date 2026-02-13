@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { setWebsiteBuilderContext } from '@/lib/website-builder-context';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -88,6 +88,10 @@ export default function WebsiteEditorPage() {
   const [importUrlOpen, setImportUrlOpen] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
+  const prevImportInProgressRef = useRef(false);
+  const [templateFallbackOpen, setTemplateFallbackOpen] = useState(false);
+  const [fallbackTemplates, setFallbackTemplates] = useState<any[]>([]);
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
 
   useEffect(() => {
     if (session && params.id) {
@@ -112,6 +116,23 @@ export default function WebsiteEditorPage() {
     const interval = setInterval(fetchWebsite, 5000);
     return () => clearInterval(interval);
   }, [params.id, website?.status]);
+
+  // Poll when import from URL is in progress
+  const importBuild = website?.builds?.[0] as { status?: string; error?: string; buildData?: { type?: string; url?: string; addedCount?: number } } | undefined;
+  const isImportInProgress = importBuild?.status === 'IN_PROGRESS' && importBuild?.buildData?.type === 'import';
+  useEffect(() => {
+    if (!params.id || !isImportInProgress) return;
+    const interval = setInterval(fetchWebsite, 5000);
+    return () => clearInterval(interval);
+  }, [params.id, isImportInProgress]);
+
+  // Toast when import completes (transition from in-progress to completed)
+  useEffect(() => {
+    if (prevImportInProgressRef.current && !isImportInProgress && importBuild?.status === 'COMPLETED' && importBuild?.buildData?.addedCount) {
+      toast.success(`Added ${importBuild.buildData.addedCount} sections from the URL`);
+    }
+    prevImportInProgressRef.current = isImportInProgress;
+  }, [isImportInProgress, importBuild?.status, importBuild?.buildData?.addedCount]);
 
   // Sync website builder context so voice/chat AI sees what user sees
   useEffect(() => {
@@ -341,7 +362,7 @@ export default function WebsiteEditorPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {isBuilding && (
-        <Card>
+        <Card className="sticky top-0 z-10 bg-background shadow-sm">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Building your website...</span>
@@ -369,6 +390,94 @@ export default function WebsiteEditorPage() {
           </AlertDescription>
         </Alert>
       )}
+      {isImportInProgress && (
+        <Card className="sticky top-0 z-10 border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800 shadow-sm">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+              <div>
+                <p className="text-sm font-medium">Import in progress</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  We&apos;re scraping the URL and adding sections. Come back in a minute or refresh — the page will update automatically.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {importBuild?.status === 'FAILED' && importBuild?.buildData?.type === 'import' && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <p className="font-semibold">Import failed</p>
+            <p className="mt-1 text-sm break-words">{importBuild.error || 'Could not import from URL'}</p>
+            <p className="mt-2 text-xs opacity-90">The site may block scraping, use bot protection, or require login.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => {
+                setTemplateFallbackOpen(true);
+                fetch('/api/admin/website-templates?type=SERVICE')
+                  .then((r) => r.json())
+                  .then((d) => setFallbackTemplates(d.templates || []))
+                  .catch(() => setFallbackTemplates([]));
+              }}
+            >
+              Use a template instead
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      <Dialog open={templateFallbackOpen} onOpenChange={setTemplateFallbackOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Use a template instead</DialogTitle>
+            <DialogDescription>
+              Add sections from a pre-built template to your page. These templates work without scraping.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-64 overflow-y-auto space-y-2 py-2">
+            {fallbackTemplates.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Loading templates…</p>
+            ) : (
+              fallbackTemplates.map((tpl: any) => (
+                <Button
+                  key={tpl.id}
+                  variant="outline"
+                  className="w-full justify-start h-auto py-3"
+                  disabled={applyingTemplate}
+                  onClick={async () => {
+                    setApplyingTemplate(true);
+                    try {
+                      const pagePath = website?.structure?.pages?.[selectedPageIndex]?.path || '/';
+                      const res = await fetch(`/api/websites/${website?.id}/apply-template`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ templateId: tpl.id, pagePath }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Failed');
+                      toast.success(`Added ${data.addedCount} sections from ${tpl.name}`);
+                      setTemplateFallbackOpen(false);
+                      await fetchWebsite();
+                    } catch (err: any) {
+                      toast.error(err.message || 'Failed to apply template');
+                    } finally {
+                      setApplyingTemplate(false);
+                    }
+                  }}
+                >
+                  <span className="font-medium">{tpl.name}</span>
+                  {tpl.category && (
+                    <span className="text-muted-foreground text-xs ml-2">({tpl.category})</span>
+                  )}
+                </Button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/websites">
@@ -466,7 +575,7 @@ export default function WebsiteEditorPage() {
                       <DialogHeader>
                         <DialogTitle>Import from URL</DialogTitle>
                         <DialogDescription>
-                          Scrape a website and add its sections (Hero, About, images, contact form, etc.) to the current page. Uses the same technology as the clone flow.
+                          Scrape a website and add its sections (Hero, About, images, contact form, etc.) to the current page. Runs in the background — you can close this and come back in a minute.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
@@ -501,10 +610,17 @@ export default function WebsiteEditorPage() {
                               });
                               const data = await res.json();
                               if (!res.ok) throw new Error(data.error || 'Import failed');
-                              toast.success(`Added ${data.addedCount} sections from the URL`);
-                              setImportUrl('');
-                              setImportUrlOpen(false);
-                              await fetchWebsite();
+                              if (data.status === 'in_progress') {
+                                toast.success(data.message || 'Import started. Come back in a minute or refresh.');
+                                setImportUrl('');
+                                setImportUrlOpen(false);
+                                await fetchWebsite(); // Refresh to show import-in-progress state
+                              } else {
+                                toast.success(`Added ${data.addedCount} sections from the URL`);
+                                setImportUrl('');
+                                setImportUrlOpen(false);
+                                await fetchWebsite();
+                              }
                             } catch (err: any) {
                               toast.error(err.message || 'Failed to import');
                             } finally {
@@ -555,6 +671,8 @@ export default function WebsiteEditorPage() {
                 websiteId={website.id}
                 pagePath={website.structure?.pages?.[selectedPageIndex]?.path || '/'}
                 components={website.structure?.pages?.[selectedPageIndex]?.components || []}
+                isBuilding={isBuilding}
+                buildProgress={website.buildProgress ?? 0}
                 onReorder={async (from, to) => {
                   const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
                   const res = await fetch('/api/ai-assistant/actions', {

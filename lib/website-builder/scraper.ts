@@ -128,7 +128,8 @@ export class WebsiteScraper {
 
   /**
    * Fetch HTML content (with optional JavaScript rendering for SPAs)
-   * Uses Playwright when useJsRendering=true or ENABLE_JS_SCRAPING=true
+   * - forceJsRendering=true: Use Playwright only
+   * - forceJsRendering=false: Try simple fetch first, fallback to Playwright if blocked
    */
   private async fetchHTML(url: string, forceJsRendering?: boolean): Promise<string> {
     const useJsRendering = forceJsRendering ?? process.env.ENABLE_JS_SCRAPING === 'true';
@@ -142,24 +143,105 @@ export class WebsiteScraper {
       }
     }
 
-    return this.fetchHTMLSimple(url);
+    // Smart mode: try simple fetch first, fallback to Playwright if blocked
+    try {
+      const html = await this.fetchHTMLSimple(url);
+      if (this.looksLikeBlocked(html)) {
+        console.warn('Simple fetch returned block/challenge page, trying Playwright');
+        return await this.fetchHTMLWithPlaywright(url);
+      }
+      return html;
+    } catch (error: any) {
+      const msg = error?.message || '';
+      const isBlocked = /403|429|blocked|forbidden|timeout/i.test(msg);
+      const isTransient = /5\d{2}|timeout|econnreset|econnrefused|network/i.test(msg);
+      if (isBlocked) {
+        console.warn('Simple fetch failed (likely blocked), trying Playwright:', msg);
+        try {
+          return await this.fetchHTMLWithPlaywright(url);
+        } catch (pwErr: any) {
+          throw new Error(`Scrape failed. Simple fetch: ${msg}. Playwright: ${pwErr?.message || pwErr}`);
+        }
+      }
+      if (isTransient) {
+        console.warn('Transient error, retrying once:', msg);
+        await new Promise((r) => setTimeout(r, 2000)); // Brief delay before retry
+        try {
+          return await this.fetchHTMLSimple(url);
+        } catch (retryErr: any) {
+          // Last resort for timeout/slow sites: try Playwright
+          if (/timeout|slow/i.test(msg)) {
+            console.warn('Retry failed, trying Playwright as last resort');
+            return await this.fetchHTMLWithPlaywright(url);
+          }
+          throw retryErr;
+        }
+      }
+      throw error;
+    }
+  }
+
+  /** Headers that mimic a real browser to reduce blocking */
+  private static readonly BROWSER_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'DNT': '1',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+  };
+
+  /**
+   * Returns true if HTML looks like a block/challenge page (Cloudflare, bot check, etc.)
+   */
+  private looksLikeBlocked(html: string): boolean {
+    const lower = html.toLowerCase();
+    const suspicious = [
+      'enable javascript',
+      'please enable javascript',
+      'cloudflare',
+      'checking your browser',
+      'ddos protection',
+      'access denied',
+      'blocked',
+      'captcha',
+      'challenge',
+      'ray id',
+      'cf-browser-verification',
+    ];
+    return suspicious.some((s) => lower.includes(s)) || html.length < 500;
   }
 
   /**
    * Simple fetch - works for static HTML sites
    */
   private async fetchHTMLSimple(url: string): Promise<string> {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
+    try {
+      const response = await fetch(url, {
+        headers: WebsiteScraper.BROWSER_HEADERS,
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch website: ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch website: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.text();
+    } catch (err: any) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') {
+        throw new Error('Request timed out. The site may be slow or blocking requests.');
+      }
+      throw err;
     }
-
-    return await response.text();
   }
 
   /**

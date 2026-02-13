@@ -44,6 +44,9 @@ interface SectionEditorProps {
   onUpdateProps?: (sectionType: string, props: Record<string, any>) => Promise<void>;
   /** When true, only show reorder + delete (beginner-friendly). Hover to see "More" for image/layout. */
   compactMode?: boolean;
+  /** Shown in empty state when build is in progress */
+  isBuilding?: boolean;
+  buildProgress?: number;
 }
 
 function SortableSectionCard({
@@ -186,6 +189,8 @@ export function SectionEditor({
   onUpdateLayout,
   onUpdateProps,
   compactMode = false,
+  isBuilding = false,
+  buildProgress = 0,
 }: SectionEditorProps) {
   const [moveIndex, setMoveIndex] = useState<number | null>(null);
   const [mediaPickerFor, setMediaPickerFor] = useState<string | null>(null);
@@ -241,8 +246,22 @@ export function SectionEditor({
         <p className="text-muted-foreground mb-2">
           No sections yet. Your website structure will appear here once the build completes.
         </p>
+        {isBuilding && (
+          <div className="max-w-xs mx-auto mb-4">
+            <div className="flex items-center justify-between mb-1.5 text-sm">
+              <span className="text-muted-foreground">Building…</span>
+              <span className="text-muted-foreground">{buildProgress}%</span>
+            </div>
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-500"
+                style={{ width: `${buildProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
         <p className="text-sm text-muted-foreground">
-          <strong>Tip:</strong> Use the AI Chat tab to add sections, or wait for the build to finish (progress bar above).
+          <strong>Tip:</strong> {isBuilding ? 'Scroll up to see the full progress bar, or ' : ''}Use the AI Chat tab to add sections{isBuilding ? '' : ', or wait for the build to finish'}.
         </p>
       </div>
     );

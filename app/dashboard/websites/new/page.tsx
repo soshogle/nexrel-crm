@@ -168,6 +168,7 @@ export default function NewWebsitePage() {
   const [blogHasCTA, setBlogHasCTA] = useState(true);
   const [templateHasBlog, setTemplateHasBlog] = useState(false);
   const [hoveredTemplateId, setHoveredTemplateId] = useState<string | null>(null);
+  const [previewBlockedOverlay, setPreviewBlockedOverlay] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [hoveredRebuildTemplateId, setHoveredRebuildTemplateId] = useState<string | null>(null);
   const [rebuildPreviewUrl, setRebuildPreviewUrl] = useState<string | null>(null);
@@ -314,6 +315,13 @@ export default function NewWebsitePage() {
     'NeoCultural Couture - Fashion Innovation': 'https://www.neoculturalcouture.com/',
     'Little Lagniappe - Baby Food Subscription': 'https://www.little-lagniappe.com/',
   };
+  // Templates known to block iframe embedding (frame-ancestors, bot protection)
+  const knownBlockedPreviewTemplates = new Set([
+    'NeoCultural Couture - Fashion Innovation',
+    'NeoCultural Couture - Fashion',
+    'Little Lagniappe - Baby Food Subscription',
+    'Little Lagniappe - Baby Food',
+  ]);
 
   const getTemplatePreviewUrl = (tpl: { previewUrl?: string | null; name: string }) =>
     tpl.previewUrl || templateSourceUrls[tpl.name] || null;
@@ -323,6 +331,7 @@ export default function NewWebsitePage() {
     if (url) {
       setHoveredTemplateId(templateId);
       setPreviewUrl(url);
+      setPreviewBlockedOverlay(false);
     }
   };
 
@@ -338,8 +347,16 @@ export default function NewWebsitePage() {
     setTimeout(() => {
       setHoveredTemplateId(null);
       setPreviewUrl(null);
+      setPreviewBlockedOverlay(false);
     }, 200);
   };
+
+  // Show "Preview blocked" hint after 3s when iframe may be blocked (frame-ancestors, etc.)
+  useEffect(() => {
+    if (!hoveredTemplateId || !previewUrl) return;
+    const t = setTimeout(() => setPreviewBlockedOverlay(true), 3000);
+    return () => clearTimeout(t);
+  }, [hoveredTemplateId, previewUrl]);
 
   const handleRebuildTemplateLeave = () => {
     setTimeout(() => {
@@ -1088,7 +1105,7 @@ export default function NewWebsitePage() {
                             <div className="relative w-full rounded-lg mb-3 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center overflow-hidden shadow-md border border-gray-200 transition-all duration-300"
                               style={{ height: isHovered ? '400px' : '160px' }}
                             >
-                              {isHovered && previewUrl ? (
+                              {isHovered && previewUrl && !(template as { previewUrlBlocked?: boolean }).previewUrlBlocked && !knownBlockedPreviewTemplates.has(template.name) ? (
                                 <div className="w-full h-full relative">
                                   <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
                                     <a
@@ -1121,6 +1138,20 @@ export default function NewWebsitePage() {
                                     loading="lazy"
                                     style={{ pointerEvents: 'auto' }}
                                   />
+                                  {previewBlockedOverlay && (
+                                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/60 rounded-b-lg flex items-center justify-center gap-2">
+                                      <span className="text-white/90 text-xs">Preview blocked? Some sites block embedding.</span>
+                                      <a
+                                        href={previewUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-white font-medium text-xs underline hover:no-underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        Open in new tab
+                                      </a>
+                                    </div>
+                                  )}
                                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/20 to-transparent h-12 pointer-events-none" />
                                 </div>
                               ) : (

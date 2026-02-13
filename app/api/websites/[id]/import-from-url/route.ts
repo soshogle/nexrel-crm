@@ -1,9 +1,12 @@
 /**
  * Import sections from a URL into an existing website page
- * Uses the same scrape + convert logic as the clone/rebuild flow
+ * Runs async in background - returns immediately with "come back later" message
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
+
+export const maxDuration = 300; // 5 min - scraping can take a while, waitUntil keeps function alive
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -17,6 +20,98 @@ function normalizeUrl(url: string): string {
     return new URL(u).href;
   } catch {
     return u;
+  }
+}
+
+async function processImportInBackground(
+  websiteId: string,
+  buildId: string,
+  url: string,
+  pagePath: string,
+  userId: string
+) {
+  try {
+    const downloadImages = process.env.ENABLE_IMAGE_DOWNLOAD === 'true';
+    // Use Playwright for import - handles SPAs and sites with bot protection
+    const useJsRendering = true;
+    const scrapedData = await websiteScraper.scrapeWebsite(
+      url,
+      userId,
+      websiteId,
+      downloadImages,
+      useJsRendering
+    );
+
+    const newComponents = convertScrapedToComponents(scrapedData);
+    if (newComponents.length === 0) {
+      await prisma.websiteBuild.update({
+        where: { id: buildId },
+        data: { status: 'FAILED', error: 'No sections could be extracted from the URL', completedAt: new Date() },
+      });
+      return;
+    }
+
+    const website = await prisma.website.findFirst({
+      where: { id: websiteId },
+    });
+    if (!website) {
+      await prisma.websiteBuild.update({
+        where: { id: buildId },
+        data: { status: 'FAILED', error: 'Website not found', completedAt: new Date() },
+      });
+      return;
+    }
+
+    const structure = (website.structure || {}) as any;
+    let pages = structure?.pages || [];
+    if (pages.length === 0) {
+      pages = [{ id: 'home', name: 'Home', path: '/', components: [] }];
+      structure.pages = pages;
+    }
+    let pageIndex = pages.findIndex((p: any) => p.path === pagePath);
+    if (pageIndex < 0) {
+      pageIndex = pages.findIndex((p: any) => p.path === '/');
+    }
+    if (pageIndex < 0) pageIndex = 0;
+
+    const newStructure = JSON.parse(JSON.stringify(structure));
+    const targetPage = newStructure.pages[pageIndex];
+    if (!targetPage) {
+      await prisma.websiteBuild.update({
+        where: { id: buildId },
+        data: { status: 'FAILED', error: 'Page not found', completedAt: new Date() },
+      });
+      return;
+    }
+    if (!targetPage.components) {
+      targetPage.components = [];
+    }
+    targetPage.components.push(...newComponents);
+
+    await prisma.website.update({
+      where: { id: websiteId },
+      data: { structure: newStructure },
+    });
+
+    await prisma.websiteBuild.update({
+      where: { id: buildId },
+      data: {
+        status: 'COMPLETED',
+        progress: 100,
+        completedAt: new Date(),
+        buildData: { addedCount: newComponents.length },
+      },
+    });
+  } catch (error: any) {
+    console.error('[Import from URL background]', error);
+    await prisma.websiteBuild.update({
+      where: { id: buildId },
+      data: {
+        status: 'FAILED',
+        error: error?.message || 'Import failed',
+        completedAt: new Date(),
+      },
+    });
   }
 }
 
@@ -51,53 +146,40 @@ export async function POST(
 
     const normalizedUrl = normalizeUrl(url);
 
-    // Scrape the source URL (no image download for speed; user can replace images later)
-    const downloadImages = process.env.ENABLE_IMAGE_DOWNLOAD === 'true';
-    const useJsRendering = process.env.ENABLE_JS_SCRAPING === 'true';
-    const scrapedData = await websiteScraper.scrapeWebsite(
-      normalizedUrl,
-      session.user.id,
-      website.id,
-      downloadImages,
-      useJsRendering
-    );
-
-    const newComponents = convertScrapedToComponents(scrapedData);
-    if (newComponents.length === 0) {
-      return NextResponse.json(
-        { error: 'No sections could be extracted from the URL' },
-        { status: 400 }
-      );
-    }
-
-    const structure = (website.structure || {}) as any;
-    const pages = structure?.pages || [];
-    let pageIndex = pages.findIndex((p: any) => p.path === pagePath);
-    if (pageIndex < 0) {
-      pageIndex = pages.findIndex((p: any) => p.path === '/');
-    }
-    if (pageIndex < 0) pageIndex = 0;
-
-    const newStructure = JSON.parse(JSON.stringify(structure));
-    if (!newStructure.pages[pageIndex].components) {
-      newStructure.pages[pageIndex].components = [];
-    }
-    newStructure.pages[pageIndex].components.push(...newComponents);
-
-    await prisma.website.update({
-      where: { id: params.id },
-      data: { structure: newStructure },
+    // Create build record for tracking
+    const build = await prisma.websiteBuild.create({
+      data: {
+        websiteId: params.id,
+        buildType: 'UPDATE',
+        status: 'IN_PROGRESS',
+        progress: 0,
+        sourceUrl: normalizedUrl,
+        buildData: { type: 'import', url: normalizedUrl, pagePath },
+      },
     });
+
+    // Run import in background - waitUntil keeps serverless alive until it completes
+    waitUntil(
+      processImportInBackground(
+        params.id,
+        build.id,
+        normalizedUrl,
+        pagePath,
+        session.user.id
+      )
+    );
 
     return NextResponse.json({
       success: true,
-      addedCount: newComponents.length,
-      structure: newStructure,
+      status: 'in_progress',
+      message: 'Import started. Come back in a minute or refresh to see your new sections.',
+      buildId: build.id,
     });
   } catch (error: any) {
     console.error('[Import from URL]', error);
+    const message = error?.message || 'Failed to start import';
     return NextResponse.json(
-      { error: error.message || 'Failed to import from URL' },
+      { error: message },
       { status: 500 }
     );
   }
