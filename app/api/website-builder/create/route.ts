@@ -15,6 +15,7 @@ import { websiteVoiceAI } from '@/lib/website-builder/voice-ai';
 import { seoAutomation } from '@/lib/website-builder/seo-automation';
 import { googleSearchConsole } from '@/lib/website-builder/google-search-console';
 import { buildQuestionnaireFromUser } from '@/lib/website-builder/prefill-from-user';
+import { downloadExternalImagesInStructure } from '@/lib/website-builder/download-external-images';
 
 export async function POST(request: NextRequest) {
   try {
@@ -284,6 +285,23 @@ async function processWebsiteBuild(
         config.templateId // Pass templateId if provided
       );
       seoData = structure.pages[0]?.seo || {};
+    }
+
+    // Download external images to blob storage (one store for all; paths: website-images/{userId}/{websiteId}/)
+    const websiteForImages = await prisma.website.findUnique({
+      where: { id: websiteId },
+      select: { userId: true },
+    });
+    if (websiteForImages?.userId) {
+      try {
+        structure = await downloadExternalImagesInStructure(
+          structure,
+          websiteForImages.userId,
+          websiteId
+        );
+      } catch (imgErr: any) {
+        console.warn('[Website Build] External image download failed (non-critical):', imgErr.message);
+      }
     }
 
     // Update progress
