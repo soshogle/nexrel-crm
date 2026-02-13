@@ -57,8 +57,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-// ElevenLabs Conversation will be connected in Phase 2
-// import { Conversation } from '@elevenlabs/client';
+import { Conversation } from '@elevenlabs/client';
 
 interface Lead {
   id: string;
@@ -213,8 +212,8 @@ export function VoiceAIPanel() {
     setCallDuration(0);
 
     try {
-      // Get signed URL for real-time conversation
-      const response = await fetch('/api/docpen/voice-agent/websocket-url', {
+      // Get signed URL for real-time voice conversation (Soshogle AI)
+      const response = await fetch('/api/real-estate/voice-agent/websocket-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -229,14 +228,17 @@ export function VoiceAIPanel() {
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to get websocket URL');
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Failed to connect' }));
+        throw new Error(err.error || 'Failed to get connection URL');
+      }
 
       const { signedUrl } = await response.json();
+      if (!signedUrl) throw new Error('No connection URL');
 
-      // Initialize ElevenLabs conversation using the static startSession method
-      // Demo mode - real ElevenLabs will be connected in Phase 2
-      throw new Error("Demo mode");({
+      conversationRef.current = await Conversation.startSession({
         signedUrl,
+        connectionType: 'websocket',
         onConnect: () => {
           setIsConnecting(false);
           setIsCallActive(true);
@@ -247,37 +249,25 @@ export function VoiceAIPanel() {
           setIsConnecting(false);
         },
         onMessage: (message: any) => {
-          if (message.type === 'transcript') {
-            setTranscript(prev => [...prev, {
-              role: message.role,
-              text: message.text,
-            }]);
-            
-            // AI suggestion based on conversation
-            if (isAIAssistEnabled && message.role === 'user') {
-              generateAISuggestion(message.text);
+          if (message.message) {
+            const role = message.source === 'ai' ? 'assistant' : 'user';
+            setTranscript(prev => [...prev, { role, text: message.message }]);
+            if (isAIAssistEnabled && role === 'user') {
+              generateAISuggestion(message.message);
             }
           }
         },
         onError: (error: any) => {
           console.error('Conversation error:', error);
           toast.error('Call connection error');
+          setIsConnecting(false);
         },
       });
 
     } catch (error) {
       console.error('Failed to start call:', error);
       setIsConnecting(false);
-      
-      // Demo mode fallback
-      toast.success('Demo mode: Simulating call connection');
-      setTimeout(() => {
-        setIsConnecting(false);
-        setIsCallActive(true);
-        setTranscript([
-          { role: 'assistant', text: `Hello! Thank you for calling about your property at ${selectedLead?.address}. How can I help you today?` },
-        ]);
-      }, 2000);
+      toast.error(error instanceof Error ? error.message : 'Failed to start call');
     }
   };
 
@@ -342,7 +332,7 @@ export function VoiceAIPanel() {
         <TabsList className="bg-slate-900/50 border border-slate-700/50">
           <TabsTrigger value="dialer" className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
             <Phone className="w-4 h-4 mr-2" />
-            AI Dialer
+            Soshogle AI Dialer
           </TabsTrigger>
           <TabsTrigger value="leads" className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
             <Users className="w-4 h-4 mr-2" />
@@ -367,7 +357,7 @@ export function VoiceAIPanel() {
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <PhoneCall className="w-6 h-6 text-emerald-400" />
-                  AI-Powered Voice Dialer
+                  Soshogle AI Voice Dialer
                 </CardTitle>
                 <CardDescription className="text-slate-400">
                   Smart calling with real-time AI coaching
@@ -448,8 +438,8 @@ export function VoiceAIPanel() {
                       <Brain className="w-5 h-5 text-violet-400" />
                     </div>
                     <div>
-                      <p className="text-white font-medium">AI Call Assistant</p>
-                      <p className="text-slate-400 text-sm">Real-time suggestions & coaching</p>
+                    <p className="text-white font-medium">Soshogle AI Call Assistant</p>
+                    <p className="text-slate-400 text-sm">Real-time suggestions & coaching</p>
                     </div>
                   </div>
                   <Switch
@@ -535,7 +525,7 @@ export function VoiceAIPanel() {
                           <p className={`text-xs mb-1 ${
                             msg.role === 'assistant' ? 'text-emerald-400' : 'text-slate-400'
                           }`}>
-                            {msg.role === 'assistant' ? 'AI Assistant' : 'Lead'}
+                            {msg.role === 'assistant' ? 'Soshogle AI' : 'Lead'}
                           </p>
                           <p className="text-white text-sm">{msg.text}</p>
                         </div>

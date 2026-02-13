@@ -146,10 +146,10 @@ export function ElevenLabsKeysManager() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5" />
-                ElevenLabs API Keys
+                Soshogle AI API Keys
               </CardTitle>
               <CardDescription>
-                Manage your ElevenLabs API keys with automatic failover
+                Manage your Soshogle AI API keys with automatic failover
               </CardDescription>
             </div>
             <div className="flex gap-2">

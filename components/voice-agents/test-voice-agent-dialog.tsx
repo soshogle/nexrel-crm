@@ -82,7 +82,7 @@ export function TestVoiceAgentDialog({
     
     try {
       toast.info('🤖 Configuring Voice AI...', {
-        description: 'Setting up ElevenLabs integration automatically',
+        description: 'Setting up Soshogle AI integration automatically',
         duration: 3000,
       });
 
@@ -141,7 +141,7 @@ export function TestVoiceAgentDialog({
     } catch (error: any) {
       console.error('❌ Auto-configure error:', error);
       toast.error('Configuration failed', {
-        description: error.message || 'Could not configure Voice AI. Please check your ElevenLabs API key.',
+        description: error.message || 'Could not configure Voice AI. Please check your Soshogle AI API key.',
         duration: 6000,
       });
     } finally {
@@ -160,9 +160,9 @@ export function TestVoiceAgentDialog({
       }
 
       // Check if this is an "agent not found in ElevenLabs" issue
-      if (testResult?.message?.includes('not found in ElevenLabs')) {
+      if (testResult?.message?.includes('not found in Soshogle AI') || testResult?.message?.includes('not found in ElevenLabs')) {
         toast.info('Recreating voice agent...', {
-          description: 'This will recreate the agent in ElevenLabs',
+          description: 'This will recreate the agent in Soshogle AI',
         });
 
         const response = await fetch(`/api/voice-agents/${agent.id}/auto-configure`, {
@@ -352,7 +352,7 @@ export function TestVoiceAgentDialog({
 
       // Check if call was initiated immediately
       if (callData.callInitiated === false) {
-        throw new Error(callData.error || 'Failed to initiate the call. The agent may not be properly configured in ElevenLabs.');
+        throw new Error(callData.error || 'Failed to initiate the call. The agent may not be properly configured in Soshogle AI.');
       }
 
       setTestResult({
@@ -378,8 +378,8 @@ export function TestVoiceAgentDialog({
       let needsConfiguration = false;
       
       // Check for specific error patterns
-      if (errorMessage.includes('Not Found') || errorMessage.includes('not properly configured') || errorMessage.includes('not found in ElevenLabs')) {
-        errorMessage = 'Voice agent not found in ElevenLabs. The agent may have been deleted or not properly configured.';
+      if (errorMessage.includes('Not Found') || errorMessage.includes('not properly configured') || errorMessage.includes('not found in') || errorMessage.includes('ElevenLabs')) {
+        errorMessage = 'Voice agent not found in Soshogle AI. The agent may have been deleted or not properly configured.';
         needsConfiguration = true;
         canAutoFix = true; // Changed to true - we can auto-fix this by recreating the agent
       } else if (errorMessage.includes('not configured')) {
@@ -603,7 +603,7 @@ export function TestVoiceAgentDialog({
                       🤖 Voice AI Not Configured
                     </p>
                     <p className="text-blue-800 dark:text-blue-200 mt-1">
-                      This agent needs ElevenLabs Voice AI configuration before it can handle calls. Click below to configure automatically.
+                      This agent needs Soshogle AI Voice configuration before it can handle calls. Click below to configure automatically.
                     </p>
                   </div>
                   <div className="flex gap-2">
