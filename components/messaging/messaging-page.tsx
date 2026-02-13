@@ -82,7 +82,7 @@ export function MessagingPage() {
           setFromPhoneNumber(data.numbers[0].phoneNumber);
         }
       } else {
-        toast.error('No Twilio phone numbers found. Please purchase a number first.');
+        toast.error('No phone numbers found. Please configure in Settings.');
       }
     } catch (error) {
       console.error('Error fetching Twilio numbers:', error);

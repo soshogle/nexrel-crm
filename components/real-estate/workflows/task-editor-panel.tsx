@@ -63,9 +63,9 @@ const BRANCH_FIELDS = [
 ];
 
 const AVAILABLE_ACTIONS = [
-  { value: 'voice_call', label: 'Voice Call', icon: '📞', description: 'Make AI voice call via ElevenLabs' },
-  { value: 'sms', label: 'SMS', icon: '💬', description: 'Send SMS message via Twilio' },
-  { value: 'email', label: 'Email', icon: '📧', description: 'Send email via SendGrid' },
+  { value: 'voice_call', label: 'Voice Call', icon: '📞', description: 'Make AI voice call via Soshogle AI' },
+  { value: 'sms', label: 'SMS', icon: '💬', description: 'Send SMS message via Soshogle AI' },
+  { value: 'email', label: 'Email', icon: '📧', description: 'Send email via Soshogle AI' },
   { value: 'task', label: 'Create Task', icon: '✅', description: 'Create a task in CRM' },
   { value: 'calendar', label: 'Calendar Event', icon: '📅', description: 'Create calendar appointment' },
   { value: 'cma_generation', label: 'Generate CMA', icon: '📊', description: 'Create Comparative Market Analysis report' },

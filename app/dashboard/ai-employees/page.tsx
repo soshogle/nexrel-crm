@@ -2092,7 +2092,7 @@ export default function AIEmployeesPage() {
                           )}
                           {person.source && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              {person.source.includes('Hunter') || person.source.includes('Apollo') ? '✅' : '⚠️'} {person.source}
+                              {person.source.includes('Hunter') || person.source.includes('Apollo') ? '✅' : '⚠️'} {person.source?.replace(/Hunter|Apollo/gi, 'Soshogle AI') || person.source}
                             </p>
                           )}
                         </div>
@@ -2351,7 +2351,7 @@ export default function AIEmployeesPage() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Receipt Email Sent:</span>
-                          <span className="font-medium text-green-600">{workflowResults.results.onboarding.emailSent ? 'Yes via SendGrid ✓' : 'No email address'}</span>
+                          <span className="font-medium text-green-600">{workflowResults.results.onboarding.emailSent ? 'Yes via Soshogle AI ✓' : 'No email address'}</span>
                         </div>
                       </>
                     )}
@@ -2470,13 +2470,13 @@ export default function AIEmployeesPage() {
                         {workflowResults.results.communication.emailsSent > 0 && (
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Emails Sent:</span>
-                            <span className="font-medium text-green-600">{workflowResults.results.communication.emailsSent} via SendGrid ✓</span>
+                            <span className="font-medium text-green-600">{workflowResults.results.communication.emailsSent} via Soshogle AI ✓</span>
                           </div>
                         )}
                         {workflowResults.results.communication.smsSent > 0 && (
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">SMS Sent:</span>
-                            <span className="font-medium text-green-600">{workflowResults.results.communication.smsSent} via Twilio ✓</span>
+                            <span className="font-medium text-green-600">{workflowResults.results.communication.smsSent} via Soshogle AI ✓</span>
                           </div>
                         )}
                         {workflowResults.results.communication.voiceCallsInitiated > 0 && (

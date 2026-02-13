@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { searchQuery, maxResults = 20 } = body;
+    const { searchQuery, maxResults = 20, profileMode = 'Full' } = body;
 
     if (!searchQuery) {
       return NextResponse.json(
@@ -24,13 +24,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`🔍 LinkedIn scrape request from user ${session.user.id}: "${searchQuery}"`);
+    const validModes = ['Short', 'Full', 'Full + email search'];
+    const profileScraperMode = validModes.includes(profileMode) ? profileMode : 'Full';
+
+    console.log(`🔍 LinkedIn scrape request from user ${session.user.id}: "${searchQuery}" (mode: ${profileScraperMode})`);
 
     // Execute scraping
     const result = await linkedInScraperService.scrapeLinkedInProfiles(
       session.user.id,
       searchQuery,
-      maxResults
+      maxResults,
+      profileScraperMode
     );
 
     if (!result.success && result.errors.length > 0) {

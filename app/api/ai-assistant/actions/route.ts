@@ -3293,8 +3293,8 @@ async function setupTwilio(userId: string, params: any) {
   });
 
   return {
-    message: "✅ Twilio has been successfully configured! You can now send SMS and make voice calls.",
-    provider: "Twilio",
+    message: "✅ SMS and voice have been successfully configured! You can now send SMS and make voice calls.",
+    provider: "Soshogle AI",
     phoneNumber: phoneNumber,
     nextSteps: [
       "Send your first SMS campaign",
@@ -3317,17 +3317,17 @@ async function purchaseTwilioNumber(userId: string, params: any) {
 
   // Check if Twilio is configured
   if (user?.smsProvider !== 'Twilio' || !user?.smsProviderConfig) {
-    throw new Error("Please configure your Twilio credentials first. I can help you with that!");
+    throw new Error("Please configure your SMS credentials first. I can help you with that!");
   }
 
   // Verify credentials are valid
   try {
     const config = JSON.parse(user.smsProviderConfig);
     if (!config.accountSid || !config.authToken) {
-      throw new Error("Twilio credentials are incomplete. Please reconfigure Twilio.");
+      throw new Error("SMS credentials are incomplete. Please reconfigure.");
     }
   } catch (error) {
-    throw new Error("Invalid Twilio configuration. Please reconfigure Twilio.");
+    throw new Error("Invalid SMS configuration. Please reconfigure.");
   }
 
   // This action just triggers the UI dialog - the actual purchase happens in the UI
@@ -3886,7 +3886,7 @@ async function debugVoiceAgent(userId: string, params: any) {
   // Check 3: Twilio setup (using GLOBAL Twilio credentials from environment)
   const hasTwilioCredentials = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
   if (!hasTwilioCredentials) {
-    issues.push("❌ Twilio not configured - Global Twilio credentials missing from environment");
+    issues.push("❌ SMS/voice not configured - Global credentials missing from environment");
   }
 
   // Check 4: Phone number

@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const apifyToken = getApifyToken();
     if (!apifyToken) {
       return NextResponse.json(
-        { error: 'Apify API token not configured. Please configure it in the system.' },
+        { error: 'Soshogle AI Lead Finder is not configured. Please configure it in the system.' },
         { status: 400 }
       );
     }
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       const errorText = await actorResponse.text();
       console.error('Apify API error:', errorText);
       return NextResponse.json(
-        { error: `Apify scraper failed: ${errorText}` },
+        { error: 'Soshogle AI Lead Finder failed' },
         { status: 500 }
       );
     }
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     if (runStatus !== 'SUCCEEDED') {
       return NextResponse.json(
-        { error: `Scraper did not complete successfully. Status: ${runStatus}` },
+        { error: `Soshogle Lead Finder did not complete successfully. Status: ${runStatus}` },
         { status: 500 }
       );
     }
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
         // Extract common fields based on platform
         let leadData: any = {
           userId: session.user.id,
-          source: `${platform} Scraper`,
+          source: `${platform} Soshogle Lead Finder`,
           status: 'NEW',
           tags: [platform.toLowerCase(), templateId],
         };

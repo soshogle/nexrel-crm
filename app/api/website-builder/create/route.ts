@@ -255,6 +255,10 @@ async function processWebsiteBuild(
       // If template selected, merge scraped content into template; otherwise use scraped structure
       if (config.templateId) {
         const questionnaireFromScraped = buildQuestionnaireFromScraped(scrapedData, website?.name);
+        // Merge blog/CTA options from request (for rebuild flow - add blog if template doesn't have one)
+        if (config.questionnaireAnswers?.blog) {
+          questionnaireFromScraped.blog = config.questionnaireAnswers.blog;
+        }
         structure = await websiteBuilder.buildFromTemplate(questionnaireFromScraped, config.templateId);
         console.log(`[Website Build] Using template ${config.templateId}: ${structure?.pages?.[0]?.components?.length || 0} sections`);
       } else {

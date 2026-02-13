@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('[FSBO Scraper API] GET error:', error);
     return NextResponse.json(
-      { error: 'Failed to get scraper status' },
+      { error: 'Failed to get Soshogle Lead Finder status' },
       { status: 500 }
     );
   }
@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
     if (!validation.valid) {
       return NextResponse.json({
         success: false,
-        error: 'Apify not configured',
-        message: validation.error || 'Please configure your Apify API token'
+        error: 'Soshogle AI Lead Finder not configured',
+        message: validation.error || 'Please configure your Soshogle AI Lead Finder API token'
       }, { status: 400 });
     }
 

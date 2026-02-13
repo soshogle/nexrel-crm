@@ -24,7 +24,7 @@ const DocpenAgentSettings = dynamic(() => import('@/components/docpen/agent-sett
   loading: () => <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div></div>
 });
 
-const DocpenConversationHistory = dynamic(() => import('@/components/docpen/conversation-history').then(mod => ({ default: mod.DocpenConversationHistory })), {
+const CallHistoryPanel = dynamic(() => import('@/components/messaging/call-history-panel'), {
   ssr: false,
   loading: () => <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div></div>
 });
@@ -114,7 +114,7 @@ export default function DocpenSettingsPage() {
             <DocpenAgentSettings />
           </TabsContent>
           <TabsContent value="history" className="mt-0">
-            <DocpenConversationHistory />
+            <CallHistoryPanel source="docpen" />
           </TabsContent>
           <TabsContent value="training">
             <DocpenKnowledgeBaseTraining />

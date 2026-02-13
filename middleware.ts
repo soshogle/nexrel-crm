@@ -63,7 +63,7 @@ export async function middleware(request: NextRequest) {
       "img-src 'self' data: blob: https: http:",
       "worker-src 'self' blob:",
       "connect-src 'self' https://accounts.google.com https://api.elevenlabs.io wss://api.elevenlabs.io https://livekit.rtc.elevenlabs.io wss://livekit.rtc.elevenlabs.io https://api.twilio.com https://api.stripe.com https://api.square.com https://api.paypal.com https://*.abacusai.app wss://*.abacusai.app https://cloudflareinsights.com https://*.cloudflareinsights.com",
-      "frame-src 'self' blob: https://accounts.google.com https://www.paypal.com https://js.stripe.com https://hooks.stripe.com https://*.stripe.com https://vercel.com https://*.vercel.app https://*.soshogle.com https://calendly.com https://*.calendly.com https://www.youtube.com https://*.youtube.com https://youtube.com https://player.vimeo.com https://*.vimeo.com https://*.elevenlabs.io https://elevenlabs.io https://*.vapi.ai https://vapi.ai",
+      "frame-src 'self' blob: https: https://accounts.google.com https://www.paypal.com https://js.stripe.com https://hooks.stripe.com https://*.stripe.com https://vercel.com https://*.vercel.app https://*.soshogle.com https://calendly.com https://*.calendly.com https://www.youtube.com https://*.youtube.com https://youtube.com https://player.vimeo.com https://*.vimeo.com https://*.elevenlabs.io https://elevenlabs.io https://*.vapi.ai https://vapi.ai https://search.google.com https://www.zebracat.ai https://www.clay.com https://www.starcloud.com https://www.neoculturalcouture.com https://www.little-lagniappe.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",

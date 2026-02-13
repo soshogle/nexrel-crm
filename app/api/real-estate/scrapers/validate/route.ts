@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       user: result.user,
       error: result.error,
       message: result.valid 
-        ? `Connected to Apify as ${result.user}`
-        : result.error || 'Apify connection failed'
+        ? `Connected to Soshogle AI Lead Finder as ${result.user}`
+        : result.error || 'Soshogle AI Lead Finder connection failed'
     });
   } catch (error) {
     return NextResponse.json(

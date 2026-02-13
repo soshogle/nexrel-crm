@@ -202,8 +202,8 @@ export async function runScrapingJob(jobId: string, userId: string) {
   if (!token) {
     return {
       success: false,
-      error: 'Apify API not configured. Please add APIFY_API_TOKEN to environment.',
-      message: 'Scraping requires Apify API access. Configure your API token to enable automated FSBO scraping.'
+      error: 'Soshogle AI Lead Finder not configured. Please add APIFY_API_TOKEN to environment.',
+      message: 'Soshogle AI Lead Finder requires API access. Configure your API token to enable automated FSBO lead finding.'
     };
   }
 
@@ -216,6 +216,6 @@ export async function runScrapingJob(jobId: string, userId: string) {
     success: true,
     message: 'Scraping job started. Results will appear in your FSBO Leads list.',
     jobId,
-    note: 'Full automated scraping requires Apify actor configuration'
+    note: 'Full automated lead finding requires Soshogle AI Lead Finder configuration'
   };
 }
