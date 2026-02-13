@@ -29,7 +29,7 @@ interface ScrapeResult {
 export class LinkedInScraperService {
   private apifyApiKey: string;
   private readonly WEEKLY_LIMIT = 50;
-  private readonly APIFY_ACTOR_ID = 'apify/linkedin-profile-scraper';
+  private readonly APIFY_ACTOR_ID = 'harvestapi~linkedin-profile-search';
 
   constructor() {
     // Load API key from auth secrets
@@ -167,7 +167,7 @@ export class LinkedInScraperService {
    */
   private async callApifyActor(searchQuery: string, maxResults: number): Promise<LinkedInProfile[]> {
     try {
-      // Start Apify actor run
+      // Start Apify actor run (harvestapi/linkedin-profile-search)
       const runResponse = await fetch(`https://api.apify.com/v2/acts/${this.APIFY_ACTOR_ID}/runs`, {
         method: 'POST',
         headers: {
@@ -175,17 +175,16 @@ export class LinkedInScraperService {
           Authorization: `Bearer ${this.apifyApiKey}`,
         },
         body: JSON.stringify({
-          startUrls: [
-            {
-              url: `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(searchQuery)}`,
-            },
-          ],
-          maxResults: maxResults,
+          searchQuery,
+          profileScraperMode: 'Short', // Fast: basic profile data only. Use 'Full' for detailed profiles.
+          takePages: Math.ceil(maxResults / 25), // ~25 profiles per page
+          maxItems: maxResults,
         }),
       });
 
       if (!runResponse.ok) {
-        throw new Error(`Apify API error: ${runResponse.statusText}`);
+        const errText = await runResponse.text();
+        throw new Error(`Apify API error: ${runResponse.status} ${runResponse.statusText}${errText ? ` - ${errText.slice(0, 200)}` : ''}`);
       }
 
       const runData = await runResponse.json();
@@ -233,17 +232,22 @@ export class LinkedInScraperService {
 
       const profiles: any[] = await datasetResponse.json();
 
-      // Transform Apify data to our format
-      return profiles.map((p) => ({
-        name: p.name || p.fullName || 'Unknown',
-        headline: p.headline || '',
-        location: p.location || '',
-        profileUrl: p.profileUrl || p.url || '',
-        company: p.company || p.currentCompany || '',
-        email: p.email || '',
-        phone: p.phone || '',
-        about: p.about || p.summary || '',
-      }));
+      // Transform HarvestAPI output to our format
+      return profiles.map((p) => {
+        const name = p.fullName || [p.firstName, p.lastName].filter(Boolean).join(' ') || 'Unknown';
+        const location = typeof p.location === 'object' ? p.location?.linkedinText || p.location?.text || '' : (p.location || '');
+        const company = p.currentPosition?.[0]?.companyName || p.experience?.[0]?.companyName || p.company || '';
+        return {
+          name,
+          headline: p.headline || '',
+          location,
+          profileUrl: p.linkedinUrl || p.profileUrl || p.url || (p.publicIdentifier ? `https://www.linkedin.com/in/${p.publicIdentifier}` : ''),
+          company,
+          email: p.email || '',
+          phone: p.phone || p.mobileNumber || '',
+          about: p.about || p.summary || '',
+        };
+      });
     } catch (error: any) {
       console.error('❌ Apify API call failed:', error);
       throw new Error(`Apify scraping failed: ${error.message}`);
