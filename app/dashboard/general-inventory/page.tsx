@@ -54,6 +54,7 @@ export default function GeneralInventoryPage() {
   // Check if user's industry has access to inventory
   const userIndustry = (session?.user?.industry as Industry) || null;
   const hasInventoryAccess = isMenuItemVisible('general-inventory', userIndustry);
+  const isAdmin = ['SUPER_ADMIN', 'AGENCY_ADMIN', 'BUSINESS_OWNER'].includes((session?.user?.role as string) || '');
 
   // Redirect real estate users away from inventory
   useEffect(() => {
@@ -197,35 +198,39 @@ export default function GeneralInventoryPage() {
             Manage your stock, suppliers, and locations
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={() => setShowLowStockAlertsDialog(true)} className="gap-2">
             <Bell className="h-4 w-4" />
             Alerts
-          </Button>
-          <Button variant="outline" onClick={() => setShowEcommerceSyncDialog(true)} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            E-commerce Sync
           </Button>
           <Button variant="outline" onClick={() => setShowBarcodeSearchDialog(true)} className="gap-2">
             <Barcode className="h-4 w-4" />
             Barcode Search
           </Button>
-          <Button variant="outline" onClick={() => setShowReportsDialog(true)} className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Reports
-          </Button>
-          <Button variant="outline" onClick={handleExport} className="gap-2">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-          <Button variant="outline" onClick={() => setShowBulkImportDialog(true)} className="gap-2">
-            <Upload className="h-4 w-4" />
-            Bulk Import
-          </Button>
-          <Button onClick={() => setShowAddDialog(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Item
-          </Button>
+          {isAdmin && (
+            <>
+              <Button variant="outline" onClick={() => setShowEcommerceSyncDialog(true)} className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                E-commerce Sync
+              </Button>
+              <Button variant="outline" onClick={() => setShowReportsDialog(true)} className="gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Reports
+              </Button>
+              <Button variant="outline" onClick={handleExport} className="gap-2">
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+              <Button variant="outline" onClick={() => setShowBulkImportDialog(true)} className="gap-2">
+                <Upload className="h-4 w-4" />
+                Bulk Import
+              </Button>
+              <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Item
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -309,10 +314,12 @@ export default function GeneralInventoryPage() {
             <MapPin className="h-4 w-4 mr-2" />
             Locations
           </TabsTrigger>
-          <TabsTrigger value="ecommerce">
-            <Package className="h-4 w-4 mr-2" />
-            E-Commerce Sync
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="ecommerce">
+              <Package className="h-4 w-4 mr-2" />
+              E-Commerce Sync
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Items Tab */}
@@ -379,12 +386,14 @@ export default function GeneralInventoryPage() {
                 No items found
               </h3>
               <p className="text-gray-400 mb-4">
-                Get started by adding your first inventory item
+                {isAdmin ? 'Get started by adding your first inventory item' : 'No items match your search'}
               </p>
-              <Button onClick={() => setShowAddDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Item
-              </Button>
+              {isAdmin && (
+                <Button onClick={() => setShowAddDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Item
+                </Button>
+              )}
             </div>
           )}
         </TabsContent>
@@ -455,12 +464,14 @@ export default function GeneralInventoryPage() {
 
         {/* Locations Tab */}
         <TabsContent value="locations" className="space-y-4">
-          <div className="flex justify-end mb-4">
-            <Button onClick={() => setShowLocationsDialog(true)} className="gap-2">
-              <Settings className="h-4 w-4" />
-              Manage Locations
-            </Button>
-          </div>
+          {isAdmin && (
+            <div className="flex justify-end mb-4">
+              <Button onClick={() => setShowLocationsDialog(true)} className="gap-2">
+                <Settings className="h-4 w-4" />
+                Manage Locations
+              </Button>
+            </div>
+          )}
           <div className="grid gap-4 md:grid-cols-3">
             {locations.map((location) => (
               <Card key={location.id} className="bg-gray-900 border-gray-800 hover:border-purple-500/50 transition-colors">
@@ -494,10 +505,12 @@ export default function GeneralInventoryPage() {
           </div>
         </TabsContent>
 
-        {/* E-Commerce Sync Tab */}
-        <TabsContent value="ecommerce" className="space-y-4">
-          <EcommerceSyncTab />
-        </TabsContent>
+        {/* E-Commerce Sync Tab - admin only */}
+        {isAdmin && (
+          <TabsContent value="ecommerce" className="space-y-4">
+            <EcommerceSyncTab />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Dialogs */}
