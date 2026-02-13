@@ -237,22 +237,29 @@ async function processWebsiteBuild(
         select: { userId: true, name: true },
       });
 
-      // Scrape website with image downloading enabled
+      // Scrape website - use Playwright for JS-rendered sites (SPAs, React, etc.)
       const downloadImages = process.env.ENABLE_IMAGE_DOWNLOAD === 'true';
+      // Use Playwright for JS-rendered sites (SPAs, React, etc.). Set ENABLE_JS_SCRAPING=true to enable.
+      const useJsRendering = process.env.ENABLE_JS_SCRAPING === 'true';
+      console.log(`[Website Build] Scraping URL: ${config.sourceUrl} (JS rendering: ${useJsRendering})`);
       const scrapedData = await websiteScraper.scrapeWebsite(
         config.sourceUrl!,
         website?.userId,
         websiteId,
-        downloadImages
+        downloadImages,
+        useJsRendering
       );
       extractedData = scrapedData;
+      console.log(`[Website Build] Scrape complete: ${scrapedData?.images?.length || 0} images, ${scrapedData?.forms?.length || 0} forms, ${scrapedData?.videos?.length || 0} videos`);
 
-      // If template selected, merge scraped content into template; otherwise use basic conversion
+      // If template selected, merge scraped content into template; otherwise use scraped structure
       if (config.templateId) {
         const questionnaireFromScraped = buildQuestionnaireFromScraped(scrapedData, website?.name);
         structure = await websiteBuilder.buildFromTemplate(questionnaireFromScraped, config.templateId);
+        console.log(`[Website Build] Using template ${config.templateId}: ${structure?.pages?.[0]?.components?.length || 0} sections`);
       } else {
         structure = convertScrapedToStructure(scrapedData);
+        console.log(`[Website Build] Using scraped structure (no template): ${structure?.pages?.[0]?.components?.length || 0} sections`);
       }
       seoData = scrapedData.seo;
     } else {
@@ -538,9 +545,16 @@ function buildQuestionnaireFromScraped(scrapedData: any, defaultName?: string): 
     }
   }
 
+  const contentSections = scrapedData.contentSections;
+  const heroTitle = contentSections?.hero?.title;
+  const heroSubtitle = contentSections?.hero?.subtitle;
+  const aboutContent = contentSections?.sections?.find((s: any) =>
+    (s.title || '').toLowerCase().includes('about')
+  )?.content || contentSections?.sections?.[0]?.content;
+
   return {
-    businessName: metadata.businessName || seo.title || defaultName || 'My Business',
-    businessDescription: seo.description || metadata.description || '',
+    businessName: metadata.businessName || heroTitle || seo.title || defaultName || 'My Business',
+    businessDescription: heroSubtitle || aboutContent || seo.description || metadata.description || '',
     contactInfo: {
       email: contactEmail || metadata.email,
       phone: contactPhone || metadata.phone,

@@ -134,6 +134,7 @@ export interface ScrapedWebsiteData {
   products?: ScrapedProduct[];
   styles: ScrapedStyles;
   structure: ScrapedStructure;
+  contentSections?: { hero?: { title?: string; subtitle?: string }; sections: { title?: string; content?: string }[] };
   metadata: Record<string, any>;
 }
 
