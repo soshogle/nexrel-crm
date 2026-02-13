@@ -101,7 +101,7 @@ export function VoiceAgentsList({ agents, loading, onAgentUpdated }: VoiceAgents
           });
         } else {
           toast.success('Sync Complete!', {
-            description: data.message || 'Onboarding documents synced successfully to agent and ElevenLabs.',
+            description: data.message || 'Onboarding documents synced successfully to agent and Soshogle AI.',
             duration: 5000,
           });
         }

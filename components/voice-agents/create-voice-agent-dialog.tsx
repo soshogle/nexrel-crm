@@ -492,10 +492,10 @@ export function CreateVoiceAgentDialog({
             
             // Special handling for payment plan issues
             if (response.status === 402 || errorData.upgradeRequired) {
-              const upgradeMessage = `${errorData.details || errorData.error}\n\n${errorData.recommendation || 'Please upgrade your ElevenLabs plan.'}`;
+              const upgradeMessage = `${errorData.details || errorData.error}\n\n${errorData.recommendation || 'Please upgrade your Soshogle AI plan.'}`;
               setError(upgradeMessage);
               
-              toast.error('ElevenLabs Plan Upgrade Required', {
+              toast.error('Soshogle AI Plan Upgrade Required', {
                 description: errorData.details || errorData.error,
                 duration: 10000,
                 action: errorData.upgradeUrl ? {
@@ -1591,7 +1591,7 @@ export function CreateVoiceAgentDialog({
                   ⚡ Auto-Configure Voice AI (Recommended)
                 </Label>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Automatically set up the voice AI agent with ElevenLabs after creation. 
+                  Automatically set up the voice AI agent with Soshogle AI after creation. 
                   This means your agent will be ready to make and receive calls immediately! 
                   If disabled, you'll need to configure it manually before testing.
                 </p>
