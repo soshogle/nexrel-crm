@@ -100,7 +100,7 @@ function SortableSectionCard({
               {comp.type} {comp.props?.title && `- ${comp.props.title}`}
             </CardTitle>
           </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className={`flex items-center gap-1 transition-opacity ${hasLayoutEditor || hasConfigEditor ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
             {hasConfigEditor && (
               <Button
                 size="sm"
