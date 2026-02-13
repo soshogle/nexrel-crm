@@ -19,16 +19,18 @@ export class WebsiteScraper {
    * @param userId - User ID for multi-tenant storage
    * @param websiteId - Website ID for multi-tenant storage
    * @param downloadImages - Whether to download and store images (default: false)
+   * @param useJsRendering - Use Playwright for JS-rendered sites (default: from ENABLE_JS_SCRAPING env)
    */
   async scrapeWebsite(
     url: string,
     userId?: string,
     websiteId?: string,
-    downloadImages: boolean = false
+    downloadImages: boolean = false,
+    useJsRendering?: boolean
   ): Promise<ScrapedWebsiteData> {
     try {
-      // Fetch HTML
-      const html = await this.fetchHTML(url);
+      // Fetch HTML (use Playwright when requested or ENABLE_JS_SCRAPING=true)
+      const html = await this.fetchHTML(url, useJsRendering);
       
       // Extract SEO data
       const seo = await this.extractSEO(html, url);
@@ -100,10 +102,13 @@ export class WebsiteScraper {
       
       // Extract structure
       const structure = await this.extractStructure(html);
-      
+
+      // Extract content sections (headings, paragraphs) for template population
+      const contentSections = await this.extractContentSections(html);
+
       // Extract metadata
       const metadata = await this.extractMetadata(html);
-      
+
       return {
         html,
         seo,
@@ -113,6 +118,7 @@ export class WebsiteScraper {
         products,
         styles,
         structure,
+        contentSections,
         metadata,
       };
     } catch (error: any) {
@@ -122,10 +128,10 @@ export class WebsiteScraper {
 
   /**
    * Fetch HTML content (with optional JavaScript rendering for SPAs)
-   * Uses Playwright when ENABLE_JS_SCRAPING=true for JS-rendered sites
+   * Uses Playwright when useJsRendering=true or ENABLE_JS_SCRAPING=true
    */
-  private async fetchHTML(url: string): Promise<string> {
-    const useJsRendering = process.env.ENABLE_JS_SCRAPING === 'true';
+  private async fetchHTML(url: string, forceJsRendering?: boolean): Promise<string> {
+    const useJsRendering = forceJsRendering ?? process.env.ENABLE_JS_SCRAPING === 'true';
 
     if (useJsRendering) {
       try {
@@ -158,16 +164,26 @@ export class WebsiteScraper {
 
   /**
    * Fetch HTML using Playwright - renders JavaScript for SPAs and dynamic sites
+   * On Vercel/serverless, uses @sparticuz/chromium for a compatible Chromium binary
    */
   private async fetchHTMLWithPlaywright(url: string): Promise<string> {
-    const { chromium } = await import('playwright');
+    const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_VERSION;
+    const { chromium: playwrightChromium } = await import('playwright');
     let browser: any = null;
 
     try {
-      browser = await chromium.launch({
+      const launchOptions: { headless: boolean; args: string[]; executablePath?: string } = {
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-      });
+      };
+
+      if (isServerless) {
+        const chromium = (await import('@sparticuz/chromium')).default;
+        launchOptions.executablePath = await chromium.executablePath();
+        launchOptions.args = chromium.args;
+      }
+
+      browser = await playwrightChromium.launch(launchOptions);
 
       const context = await browser.newContext({
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -416,6 +432,48 @@ export class WebsiteScraper {
       fonts: fonts.slice(0, 5), // Limit to 5 fonts
       layout: 'responsive', // Default, can be enhanced
     };
+  }
+
+  /**
+   * Extract content sections (headings, paragraphs) for template population
+   */
+  private async extractContentSections(html: string): Promise<{ hero?: { title?: string; subtitle?: string }; sections: { title?: string; content?: string }[] }> {
+    const sections: { title?: string; content?: string }[] = [];
+    const stripHtml = (s: string) => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500);
+
+    // Extract h1-h3 for section titles
+    const headingMatches = html.matchAll(/<h[1-3][^>]*>([^<]+)<\/h[1-3]>/gi);
+    const headings: string[] = [];
+    for (const m of headingMatches) {
+      const text = stripHtml(m[1]);
+      if (text && text.length > 2) headings.push(text);
+    }
+
+    // Extract paragraphs
+    const pMatches = html.matchAll(/<p[^>]*>([^<]+)<\/p>/gi);
+    const paragraphs: string[] = [];
+    for (const m of pMatches) {
+      const text = stripHtml(m[1]);
+      if (text && text.length > 2) paragraphs.push(text);
+    }
+
+    // First h1 = hero title, first substantial p = hero subtitle
+    let hero: { title?: string; subtitle?: string } | undefined;
+    if (headings.length > 0) {
+      hero = { title: headings[0] };
+      const firstP = paragraphs.find((p) => p.length > 30);
+      if (firstP) hero.subtitle = firstP;
+    }
+
+    // Build sections from h2/h3 + following content
+    for (let i = 1; i < headings.length; i++) {
+      sections.push({ title: headings[i], content: paragraphs[i] || paragraphs[0] });
+    }
+    if (sections.length === 0 && paragraphs.length > 0) {
+      sections.push({ title: 'About', content: paragraphs.slice(0, 2).join(' ') });
+    }
+
+    return { hero, sections };
   }
 
   /**

@@ -643,11 +643,11 @@ export default function NewWebsitePage() {
                 />
               </div>
 
-              {/* Rebuild template selection */}
+              {/* Rebuild template selection - layout always from chosen template */}
               <div>
                 <Label className="text-base font-medium">Design Template</Label>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Choose a template design. Your scraped content will be placed into this layout for you to approve or modify with the AI editor.
+                  Choose a template design. Your scraped content will be placed into this layout. The layout is always from the template you choose.
                 </p>
                 <div className="flex gap-2 mb-2">
                   <Button
