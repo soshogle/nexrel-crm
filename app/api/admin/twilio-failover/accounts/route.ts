@@ -80,19 +80,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, accountSid, authToken, isPrimary } = await request.json();
+    const { name, accountSid, authToken, isPrimary, envKey } = await request.json();
 
-    if (!name || !accountSid || !authToken) {
+    if (!name || !accountSid) {
       return NextResponse.json(
-        { error: 'name, accountSid, and authToken required' },
+        { error: 'name and accountSid required' },
         { status: 400 }
       );
     }
 
-    // Encrypt auth token
-    const encryptedToken = encrypt(authToken);
+    // Either authToken (DB-stored) or envKey (env-based) required
+    if (!authToken && !envKey) {
+      return NextResponse.json(
+        { error: 'authToken or envKey required' },
+        { status: 400 }
+      );
+    }
 
-    // If setting as primary, unset other primary accounts
+    const encryptedToken = authToken ? encrypt(authToken) : null;
+
     if (isPrimary) {
       await prisma.twilioAccount.updateMany({
         where: { isPrimary: true },
@@ -105,6 +111,7 @@ export async function POST(request: NextRequest) {
         name,
         accountSid,
         authToken: encryptedToken,
+        envKey: envKey || null,
         isPrimary: isPrimary || false,
       },
     });

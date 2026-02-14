@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { EMAIL_PROVIDERS, SMS_PROVIDERS } from '@/lib/onboarding-config';
-import { Mail, MessageSquare, CheckCircle, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
+import { Mail, MessageSquare, CheckCircle, AlertCircle, Loader2, ExternalLink, Phone } from 'lucide-react';
 import { toast } from 'sonner';
+import PurchasePhoneNumberDialog from '@/components/voice-agents/purchase-phone-number-dialog';
 
 interface CommunicationStepProps {
   data: any;
@@ -30,6 +31,7 @@ export function CommunicationStep({ data, onChange }: CommunicationStepProps) {
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingSms, setTestingSms] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
 
   // Sync with incoming data after mount to avoid hydration issues
   useEffect(() => {
@@ -294,62 +296,28 @@ export function CommunicationStep({ data, onChange }: CommunicationStepProps) {
             </Select>
           </div>
 
-          {/* SMS Setup */}
+          {/* SMS Setup - Twilio via platform purchase */}
           {formData.smsProvider === 'twilio' && (
             <div className="space-y-3">
               <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-4 rounded-md">
-                <h4 className="font-semibold mb-2 text-sm">Setting up SMS Service</h4>
-                <ol className="text-sm space-y-1 list-decimal list-inside text-muted-foreground">
-                  <li>Your SMS service will be configured automatically</li>
-                  <li>Credentials are managed by Soshogle</li>
-                  <li>Purchase a phone number to get started</li>
-                  <li>Start sending SMS to your customers</li>
-                </ol>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Account SID</Label>
-                <Input
-                  placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                  value={smsConfig.accountSid || ''}
-                  onChange={(e) => updateSmsConfig('accountSid', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Auth Token</Label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={smsConfig.authToken || ''}
-                  onChange={(e) => updateSmsConfig('authToken', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Phone Number</Label>
-                <Input
-                  placeholder="+1234567890"
-                  value={smsConfig.phoneNumber || ''}
-                  onChange={(e) => updateSmsConfig('phoneNumber', e.target.value)}
-                />
-              </div>
-              <Button
-                type="button"
-                onClick={testSmsConnection}
-                disabled={!smsConfig.accountSid || !smsConfig.authToken || testingSms}
-                className="w-full"
-              >
-                {testingSms ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Testing...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Test Connection
-                  </>
+                <h4 className="font-semibold mb-2 text-sm">SMS & Voice via Soshogle</h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Purchase a phone number through the platform. No Twilio account needed—you&apos;ll be invoiced for the number. A voice agent will be created automatically for your business.
+                </p>
+                <Button
+                  type="button"
+                  onClick={() => setPurchaseDialogOpen(true)}
+                  className="w-full gap-2"
+                >
+                  <Phone className="h-4 w-4" />
+                  Purchase Phone Number
+                </Button>
+                {smsConfig.phoneNumber && (
+                  <p className="text-sm font-mono mt-3 text-green-600 dark:text-green-400">
+                    ✓ {smsConfig.phoneNumber}
+                  </p>
                 )}
-              </Button>
+              </div>
             </div>
           )}
 
@@ -395,6 +363,16 @@ export function CommunicationStep({ data, onChange }: CommunicationStepProps) {
           )}
         </div>
       </div>
+
+      <PurchasePhoneNumberDialog
+        open={purchaseDialogOpen}
+        onClose={() => setPurchaseDialogOpen(false)}
+        onSuccess={(phoneNumber) => {
+          updateSmsConfig('phoneNumber', phoneNumber);
+          setPurchaseDialogOpen(false);
+          toast.success('Phone number configured! Your voice agent is ready.');
+        }}
+      />
     </div>
   );
 }

@@ -699,23 +699,26 @@ model VoiceAgent {
 }
 
 model PurchasedPhoneNumber {
-  id           String    @id @default(cuid())
-  userId       String
-  phoneNumber  String
-  friendlyName String?
-  country      String
-  capabilities Json?
-  twilioSid    String    @unique
-  status       String    @default("active")
-  purchasedAt  DateTime  @default(now())
-  lastUsedAt   DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String         @id @default(cuid())
+  userId           String
+  phoneNumber      String
+  friendlyName     String?
+  country          String
+  capabilities     Json?
+  twilioSid        String         @unique
+  twilioAccountId  String?        // Which Twilio account owns this number
+  status           String         @default("active")
+  purchasedAt      DateTime       @default(now())
+  lastUsedAt       DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  twilioAccount     TwilioAccount? @relation(fields: [twilioAccountId], references: [id], onDelete: SetNull)
 
   @@unique([userId, phoneNumber])
   @@index([userId])
   @@index([phoneNumber])
+  @@index([twilioAccountId])
 }
 
 model CallLog {
@@ -9673,7 +9676,8 @@ model TwilioAccount {
   id                String    @id @default(cuid())
   name              String // e.g., "Primary", "Backup 1"
   accountSid        String    @unique
-  authToken         String // Encrypted
+  authToken         String?   // Encrypted when stored; null when envKey is used
+  envKey            String?   @unique // e.g. "PRIMARY", "BACKUP" - credentials from TWILIO_PRIMARY_*, TWILIO_BACKUP_*
   isPrimary         Boolean   @default(false)
   isActive          Boolean   @default(true)
   status            String    @default("ACTIVE") // ACTIVE, SUSPENDED, FAILED
@@ -9685,11 +9689,12 @@ model TwilioAccount {
   updatedAt         DateTime  @updatedAt
 
   // Relations
-  voiceAgents        VoiceAgent[]
-  healthChecks       TwilioHealthCheck[]
-  failoverEventsFrom TwilioFailoverEvent[]     @relation("FailoverFromAccount")
-  failoverEventsTo   TwilioFailoverEvent[]     @relation("FailoverToAccount")
-  backupPhoneNumbers TwilioBackupPhoneNumber[]
+  voiceAgents          VoiceAgent[]
+  purchasedPhoneNumbers PurchasedPhoneNumber[]
+  healthChecks         TwilioHealthCheck[]
+  failoverEventsFrom   TwilioFailoverEvent[]     @relation("FailoverFromAccount")
+  failoverEventsTo     TwilioFailoverEvent[]     @relation("FailoverToAccount")
+  backupPhoneNumbers   TwilioBackupPhoneNumber[]
 
   @@index([isPrimary])
   @@index([isActive])

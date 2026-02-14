@@ -55,6 +55,7 @@ export default function PurchasePhoneNumberDialog({
   const [countryCode, setCountryCode] = useState('US');
   const [areaCode, setAreaCode] = useState('');
   const [contains, setContains] = useState('');
+  const [twilioAccountId, setTwilioAccountId] = useState<string | null>(null);
 
   // Post-purchase configuration
   const [showPostPurchase, setShowPostPurchase] = useState(false);
@@ -109,6 +110,7 @@ export default function PurchasePhoneNumberDialog({
 
       if (data.numbers && data.numbers.length > 0) {
         setAvailableNumbers(data.numbers);
+        setTwilioAccountId(data.twilioAccountId || null);
         toast.success(`Found ${data.numbers.length} available numbers`);
       } else {
         toast.info('No phone numbers found. Try different search criteria.');
@@ -136,7 +138,9 @@ export default function PurchasePhoneNumberDialog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: selectedNumber,
-          friendlyName: 'Soshogle CRM Number'
+          friendlyName: 'Soshogle CRM Number',
+          autoCreateAgent: true,
+          twilioAccountId: twilioAccountId || undefined,
         })
       });
 
@@ -149,7 +153,14 @@ export default function PurchasePhoneNumberDialog({
       toast.success('Phone number purchased successfully!');
       setPurchasedNumber(data.phoneNumber);
       
-      // Show post-purchase configuration screen
+      // If agent was auto-created, skip config and close with success
+      if (data.voiceAgentId) {
+        if (onSuccess) onSuccess(data.phoneNumber);
+        handleClose();
+        return;
+      }
+      
+      // Show post-purchase configuration screen (create new vs assign)
       setShowPostPurchase(true);
       setAvailableNumbers([]);
       setSelectedNumber(null);
@@ -217,6 +228,7 @@ export default function PurchasePhoneNumberDialog({
     setAvailableNumbers([]);
     setSelectedNumber(null);
     setPurchasedNumber(null);
+    setTwilioAccountId(null);
     setShowPostPurchase(false);
     setConfigAction('new');
     setSelectedAgentId('');
@@ -476,6 +488,7 @@ export default function PurchasePhoneNumberDialog({
                 <div>
                   <p className="font-medium">Phone Number Purchased!</p>
                   <p className="text-sm font-mono mt-1">{purchasedNumber}</p>
+                  <p className="text-xs text-muted-foreground mt-2">This will be added to your next invoice.</p>
                 </div>
               </div>
             </div>

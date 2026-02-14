@@ -194,6 +194,7 @@ class ElevenLabsProvisioningService {
    */
   async createAgent(options: CreateAgentOptions & { 
     twilioPhoneNumber?: string;
+    twilioAccountId?: string; // For multi-account: which Twilio account owns the number
   }): Promise<{
     success: boolean;
     agentId?: string;
@@ -386,7 +387,8 @@ class ElevenLabsProvisioningService {
           const phoneImportResult = await this.importPhoneNumber(
             options.twilioPhoneNumber,
             agent.agent_id,
-            options.userId
+            options.userId,
+            options.twilioAccountId
           );
           
           if (phoneImportResult.success) {
@@ -627,7 +629,8 @@ class ElevenLabsProvisioningService {
   async importPhoneNumber(
     phoneNumber: string,
     agentId: string,
-    userId: string
+    userId: string,
+    twilioAccountId?: string
   ): Promise<{
     success: boolean;
     phoneNumberId?: string;
@@ -643,13 +646,34 @@ class ElevenLabsProvisioningService {
         return { success: false, error };
       }
 
-      const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
-      const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+      let TWILIO_ACCOUNT_SID: string;
+      let TWILIO_AUTH_TOKEN: string;
 
-      if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
-        const error = 'Twilio credentials (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) not configured in environment variables';
-        console.error('❌', error);
-        return { success: false, error };
+      if (twilioAccountId) {
+        const { getCredentialsForAccount } = await import('./twilio-credentials');
+        const creds = await getCredentialsForAccount(twilioAccountId);
+        if (!creds) {
+          const error = `Twilio credentials not found for account ${twilioAccountId}`;
+          console.error('❌', error);
+          return { success: false, error };
+        }
+        TWILIO_ACCOUNT_SID = creds.accountSid;
+        TWILIO_AUTH_TOKEN = creds.authToken;
+      } else {
+        TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
+        TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
+        if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+          const { getPrimaryCredentials } = await import('./twilio-credentials');
+          const primary = await getPrimaryCredentials();
+          if (primary) {
+            TWILIO_ACCOUNT_SID = primary.accountSid;
+            TWILIO_AUTH_TOKEN = primary.authToken;
+          } else {
+            const error = 'Twilio credentials not configured. Set TWILIO_PRIMARY_* or TWILIO_ACCOUNT_SID in environment.';
+            console.error('❌', error);
+            return { success: false, error };
+          }
+        }
       }
 
       // Ensure phone number is in E.164 format
