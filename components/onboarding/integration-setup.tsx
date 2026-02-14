@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Phone, MessageSquare, CreditCard, Calendar, CheckCircle2, Loader2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import PurchasePhoneNumberDialog from "@/components/voice-agents/purchase-phone-number-dialog";
 
 interface IntegrationSetupProps {
   type: 'email' | 'sms' | 'social' | 'payment' | 'calendar';
@@ -18,6 +19,7 @@ interface IntegrationSetupProps {
 export function IntegrationSetup({ type, onComplete }: IntegrationSetupProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [formData, setFormData] = useState<any>({});
+  const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
 
   const handleConnect = async (provider: string) => {
     setIsConnecting(true);
@@ -123,64 +125,37 @@ export function IntegrationSetup({ type, onComplete }: IntegrationSetupProps) {
             </div>
             <div>
               <CardTitle>SMS & Phone Setup</CardTitle>
-              <CardDescription>Configure Twilio for SMS communications</CardDescription>
+              <CardDescription>Purchase a phone number through Soshogle—no Twilio account needed</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="twilio-sid">Twilio Account SID</Label>
-              <Input
-                id="twilio-sid"
-                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                value={formData.accountSid || ''}
-                onChange={(e) => setFormData({ ...formData, accountSid: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="twilio-token">Twilio Auth Token</Label>
-              <Input
-                id="twilio-token"
-                type="password"
-                placeholder="Your auth token"
-                value={formData.authToken || ''}
-                onChange={(e) => setFormData({ ...formData, authToken: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="twilio-phone">Phone Number</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="twilio-phone"
-                  placeholder="+1234567890"
-                  value={formData.phoneNumber || ''}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                />
-                <Button variant="outline" size="sm" className="gap-2 whitespace-nowrap">
-                  <ExternalLink className="h-4 w-4" />
-                  Buy Number
-                </Button>
-              </div>
-            </div>
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-4 rounded-md">
+            <p className="text-sm text-muted-foreground mb-4">
+              Get a phone number for SMS and voice agents. The platform manages everything—you&apos;ll be invoiced for the number.
+            </p>
+            <Button
+              onClick={() => setPurchaseDialogOpen(true)}
+              className="w-full gap-2"
+            >
+              <Phone className="h-4 w-4" />
+              Purchase Phone Number
+            </Button>
           </div>
           <div className="flex gap-2">
-            <Button
-              onClick={() => handleConnect('twilio')}
-              disabled={isConnecting || !formData.accountSid}
-              className="flex-1"
-            >
-              {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-              Save Configuration
-            </Button>
-            <Button variant="ghost" onClick={handleSkip}>
+            <Button variant="ghost" onClick={handleSkip} className="flex-1">
               Skip
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Don't have Twilio? <a href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Sign up here</a>
-          </p>
         </CardContent>
+        <PurchasePhoneNumberDialog
+          open={purchaseDialogOpen}
+          onClose={() => setPurchaseDialogOpen(false)}
+          onSuccess={(phoneNumber) => {
+            onComplete({ provider: 'twilio', phoneNumber, connected: true });
+            setPurchaseDialogOpen(false);
+          }}
+        />
       </Card>
     );
   }

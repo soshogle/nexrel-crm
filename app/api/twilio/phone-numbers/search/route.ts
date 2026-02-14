@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      numbers: result.numbers
+      numbers: result.numbers,
+      twilioAccountId: result.twilioAccountId,
     });
 
   } catch (error) {

@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { purchasePhoneNumber } from '@/lib/twilio-phone-numbers';
-
+import { prisma } from '@/lib/db';
+import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
+import { VOICE_AGENT_LIMIT } from '@/lib/voice-agent-templates';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { phoneNumber, friendlyName, voiceUrl, smsUrl } = body;
+    const { phoneNumber, friendlyName, voiceUrl, smsUrl, autoCreateAgent = true, twilioAccountId } = body;
 
     if (!phoneNumber) {
       return NextResponse.json(
@@ -39,7 +41,8 @@ export async function POST(req: NextRequest) {
     const result = await purchasePhoneNumber(session.user.id, phoneNumber, {
       friendlyName: friendlyName || 'Soshogle CRM Number',
       voiceUrl: voiceUrl || `${baseUrl}/api/twilio/voice-callback`,
-      smsUrl: smsUrl || `${baseUrl}/api/twilio/sms-webhook`
+      smsUrl: smsUrl || `${baseUrl}/api/twilio/sms-webhook`,
+      twilioAccountId,
     });
 
     if (!result.success) {
@@ -49,41 +52,81 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // AUTOMATIC SYNC: Import the purchased number to ElevenLabs immediately
-    console.log('🔄 Auto-syncing purchased number to ElevenLabs:', result.phoneNumber);
-    
-    try {
-      const { elevenLabsProvisioning } = await import('@/lib/elevenlabs-provisioning');
-      
-      // Check if ElevenLabs plan supports phone numbers
-      const subscriptionCheck = await elevenLabsProvisioning.checkSubscription(session.user.id);
-      
-      if (subscriptionCheck.canUsePhoneNumbers) {
-        // Import the number to ElevenLabs
-        const importResult = await elevenLabsProvisioning.importPhoneNumber(
-          result.phoneNumber!,
-          '', // No agent assignment yet
-          session.user.id
-        );
-        
-        if (importResult.success) {
-          console.log('✅ Auto-sync successful: Phone number imported to ElevenLabs');
-        } else {
-          console.warn('⚠️  Auto-sync warning:', importResult.error);
-          // Don't fail the purchase if import fails - user can manually sync later
+    let voiceAgentId: string | null = null;
+
+    // Auto-create VoiceAgent with industry-specific prompt when requested
+    if (autoCreateAgent && result.phoneNumber) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { businessName: true, industry: true, businessDescription: true, language: true, role: true },
+        });
+
+        if (user) {
+          const isSuperAdmin = user.role === 'SUPER_ADMIN';
+          const existingCount = await prisma.voiceAgent.count({ where: { userId: session.user.id } });
+          if (!isSuperAdmin && existingCount >= VOICE_AGENT_LIMIT) {
+            console.warn('⚠️  Voice agent limit reached, skipping auto-creation');
+          } else {
+            const businessName = user.businessName || 'My Business';
+            const industry = user.industry || null;
+            const industryLabel = industry ? industry.replace(/_/g, ' ').toLowerCase() : 'general business';
+
+            const voiceAgent = await prisma.voiceAgent.create({
+              data: {
+                userId: session.user.id,
+                name: `${businessName} Receptionist`,
+                businessName,
+                businessIndustry: industryLabel,
+                twilioPhoneNumber: result.phoneNumber,
+                twilioAccountId: result.twilioAccountId || undefined,
+                type: 'INBOUND',
+                greetingMessage: `Thank you for calling ${businessName}. How can I help you today?`,
+                systemPrompt: undefined,
+                knowledgeBase: user.businessDescription || undefined,
+                status: 'PENDING',
+              },
+            });
+
+            const subscriptionCheck = await elevenLabsProvisioning.checkSubscription(session.user.id);
+            if (subscriptionCheck.canUsePhoneNumbers) {
+              const createResult = await elevenLabsProvisioning.createAgent({
+                name: voiceAgent.name,
+                businessName,
+                businessIndustry: industryLabel,
+                greetingMessage: voiceAgent.greetingMessage!,
+                systemPrompt: voiceAgent.systemPrompt || undefined,
+                knowledgeBase: voiceAgent.knowledgeBase || undefined,
+                twilioPhoneNumber: result.phoneNumber,
+                twilioAccountId: result.twilioAccountId || undefined,
+                userId: session.user.id,
+                voiceAgentId: voiceAgent.id,
+                language: user.language || 'en',
+              });
+
+              if (createResult.success) {
+                voiceAgentId = voiceAgent.id;
+                console.log('✅ Auto-created voice agent:', voiceAgent.id, 'with ElevenLabs agent:', createResult.agentId);
+              } else {
+                console.warn('⚠️  ElevenLabs agent creation failed:', createResult.error);
+              }
+            } else {
+              console.warn('⚠️  ElevenLabs plan does not support phone numbers, agent created in DB only');
+            }
+          }
         }
-      } else {
-        console.warn('⚠️  Auto-sync skipped: ElevenLabs plan does not support phone numbers');
-        console.warn('   Please upgrade to Starter plan or higher to use phone numbers with voice agents');
+      } catch (agentError: any) {
+        console.error('⚠️  Auto-create agent error (non-fatal):', agentError.message);
       }
-    } catch (syncError: any) {
-      console.error('⚠️  Auto-sync error (non-fatal):', syncError.message);
-      // Don't fail the purchase if sync fails - user can manually sync later
     }
+
+    // TODO: Add to platform invoice (Stripe or billing service)
+    // The platform invoices owners for number purchases
 
     return NextResponse.json({
       success: true,
       phoneNumber: result.phoneNumber,
+      voiceAgentId,
       message: 'Phone number purchased successfully!'
     });
 
