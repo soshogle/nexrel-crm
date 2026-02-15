@@ -1,0 +1,253 @@
+@import '../../../node_modules/bootstrap/scss/functions';
+@import '../../../node_modules/bootstrap/scss/mixins';
+@import '../../../node_modules/bootstrap/scss/variables';
+@import '../../../node_modules/bootstrap/scss/buttons';
+@import '../../../node_modules/bootstrap/scss/modal';
+@import '../../../node_modules/bootstrap/scss/close';
+@import '../../../node_modules/bootstrap/scss/utilities';
+@import '../../../node_modules/bootstrap/scss/grid';
+
+span.wpdesk-activation-reminder {
+  display: none;
+}
+
+.wpdesk-activation-reminder-popup {
+  @media (min-width: 576px) {
+    .modal-dialog {
+      max-width: none;
+      width: 50%;
+      min-width: 500px;
+    }
+    .modal-dialog.menu {
+      max-width: 576px;
+    }
+  }
+
+  .modal-header {
+    text-align: center;
+  }
+
+  img.logo {
+    width: 200px;
+  }
+
+  div.action button {
+    width: 200px;
+    height: 250px;
+    margin-top: 30px;
+  }
+
+  img.action {
+    width: 60px;
+  }
+
+  div.heading-description {
+    font-size: initial;
+    font-weight: normal;
+  }
+
+  h1.title {
+    color: #be272c;
+  }
+
+  .h1, .h2, .h3, .h4, .h5, .h6 {
+    margin-bottom: $headings-margin-bottom;
+    font-family: $headings-font-family;
+    font-weight: $headings-font-weight;
+    line-height: $headings-line-height;
+    color: $headings-color;
+  }
+
+  .h1 {
+    @include font-size($h1-font-size);
+  }
+
+  .h2 {
+    @include font-size($h2-font-size);
+  }
+
+  .h3 {
+    @include font-size($h3-font-size);
+  }
+
+  .h4 {
+    @include font-size($h4-font-size);
+  }
+
+  .h5 {
+    @include font-size($h5-font-size);
+  }
+
+  .h6 {
+    @include font-size($h6-font-size);
+  }
+
+  div.col {
+    text-align: center;
+  }
+
+  .container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .container .row div.section-image {
+    vertical-align: top;
+    min-height: 100px;
+  }
+
+  .container .row {
+    margin-top: 20px;
+  }
+
+  @media (min-width: 992px) {
+    .modal-lg {
+      max-width: 570px;
+    }
+  }
+
+  div.modal-header {
+    border-bottom: 0px;
+
+    .close {
+      cursor: pointer;
+    }
+  }
+
+  .modal-body {
+    text-align: center;
+    padding-top: 0px;
+    margin-top: -20px;
+  }
+
+  div.title {
+    margin: 0 0 25px;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1.14;
+    letter-spacing: normal;
+    text-align: center;
+    color: #005889;
+    padding-top: 0px;
+  }
+
+  div.logo {
+    margin-bottom: 30px;
+
+    img {
+      max-width: 190px;
+      width: 100%;
+    }
+  }
+
+  div.image {
+    margin-bottom: 20px;
+
+    img {
+      max-width: 350px;
+      width: 100%;
+    }
+  }
+
+  div.text {
+    padding: 0 80px;
+
+    p {
+      font-size: 14px;
+      font-weight: normal;
+      font-stretch: normal;
+      font-style: normal;
+      line-height: 1.41;
+      letter-spacing: normal;
+      text-align: center;
+      color: #333333;
+
+      strong {
+        font-weight: 600;
+
+        &.highlight {
+          color: #be272c;
+          background: none;
+        }
+      }
+    }
+  }
+
+  div.heading {
+    h1 {
+      margin: 0 17.5px 9px;
+      font-size: 24px;
+      font-weight: bold;
+      font-stretch: normal;
+      font-style: normal;
+      line-height: 1.33;
+      letter-spacing: normal;
+      text-align: center;
+      color: #be272c;
+    }
+  }
+
+  div.modal-footer {
+    text-align: center;
+    justify-content: center;
+    border-top: 0px;
+    padding-bottom: 40px;
+
+    button {
+      &.btn-link {
+        font-size: 12px;
+        font-weight: 500;
+        font-stretch: normal;
+        font-style: normal;
+        line-height: 1.33;
+        letter-spacing: normal;
+        text-align: center;
+        color: #666666;
+      }
+
+      &.btn-success {
+        padding: 8px 27px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px 0 rgba(72, 182, 72, 0.25);
+        background-color: #48b648;
+        font-size: 14px;
+        font-weight: 600;
+        font-stretch: normal;
+        font-style: normal;
+        line-height: 1.71;
+        letter-spacing: normal;
+        text-align: center;
+        color: #ffffff;
+      }
+    }
+  }
+
+  .benefits.row ul {
+    margin: 0 auto 20px;
+  }
+
+  .benefits.row ul li {
+    max-width: 50%;
+    margin: 5px auto;
+  }
+
+  .header.row h2 {
+    max-width: 75%;
+    margin: 10px auto 0px;
+  }
+
+  .get-licence.row button.btn-primary {
+    padding: 8px 27px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px 0 rgb(72 182 72 / 25%);
+    background-color: #48b648;
+    font-size: 14px;
+    font-weight: 600;
+    font-stretch: normal;
+    font-style: normal;
+    line-height: 1.71;
+    letter-spacing: normal;
+    text-align: center;
+    color: #fff;
+  }
+}

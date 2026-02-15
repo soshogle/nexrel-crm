@@ -1,0 +1,47 @@
+{
+  "name": "wp-wpdesk-activation-reminder",
+  "version": "1.0.0",
+  "description": "WP Desk Activation Reminder",
+  "main": "webpack.mix.js",
+  "author": "grola@wpdesk.net",
+  "dependencies": {
+    "@material-ui/core": "^4.11.3",
+    "@material-ui/icons": "^4.11.2",
+    "@material-ui/lab": "^4.0.0-alpha.57",
+    "@wordpress/i18n": "^3.18.0",
+    "bootstrap": "^4.6.0",
+    "html-react-parser": "^0.14.3",
+    "js-cookie": "^3.0.0",
+    "react": "^16.14.0",
+    "react-bootstrap": "^1.4.3",
+    "react-cookie": "^4.1.0",
+    "react-dom": "^16.0.0",
+    "react-dropzone": "^7.0.1",
+    "react-scripts": "^4.0.3",
+    "react-select": "^3.2.0",
+    "react-sortable-hoc": "^1.11.0",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-react-jsx": "^7.12.13",
+    "@babel/preset-react": "^7.12.13",
+    "@typescript-eslint/eslint-plugin": "^2.26.0",
+    "@typescript-eslint/parser": "^2.26.0",
+    "babel-loader": "^8.2.2",
+    "css-loader": "^1.0.1",
+    "mati-mix": "^2.0.1",
+    "sass": "^1.32.12",
+    "sass-loader": "^7.3.1",
+    "style-loader": "^0.23.1"
+  },
+  "scripts": {
+    "development": "cross-env NODE_ENV=development node_modules/webpack/bin/webpack.js --progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "production": "cross-env NODE_ENV=production node_modules/webpack/bin/webpack.js --no-progress --hide-modules --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "dev": "npm run development",
+    "watch": "npm run development -- --watch",
+    "prod": "npm run production"
+  },
+  "optionalDependencies": {
+    "fsevents": "^2.3.2"
+  }
+}

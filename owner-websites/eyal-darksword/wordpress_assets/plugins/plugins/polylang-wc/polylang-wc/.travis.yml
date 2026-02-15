@@ -1,0 +1,74 @@
+sudo: false
+
+language: php
+
+services:
+  - mysql
+
+notifications:
+  email:
+    on_success: never
+    on_failure: change
+
+branches:
+  only:
+    - master
+
+matrix:
+  include:
+  - name: PHPCS
+    php: 7.2
+    env: WP_VERSION=latest WP_MULTISITE=0 PHPCS=1
+  - name: PLL Dev + WC stable
+    php: 7.4
+    env: WP_VERSION=latest WP_MULTISITE=0 WC_VERSION=4.0.0 PLL_VERSION=dev
+  - name: WC 4.0
+    php: 7.4
+    env: WP_VERSION=5.3 WP_MULTISITE=0 WC_VERSION=4.0.0 PLL_VERSION=2.7
+  - name: WC 3.9 (PHP 7.3)
+    php: 7.3
+    env: WP_VERSION=5.2 WP_MULTISITE=0 WC_VERSION=3.9.1 PLL_VERSION=2.7
+  - name: WC 3.8 (PHP 7.2)
+    php: 7.2
+    env: WP_VERSION=5.2 WP_MULTISITE=0 WC_VERSION=3.8.1 PLL_VERSION=2.7
+  - name: WC 3.7 (PHP 7.1)
+    php: 7.1
+    env: WP_VERSION=5.2 WP_MULTISITE=0 WC_VERSION=3.7.1 PLL_VERSION=2.7
+  - name: WC 3.6 (PHP 7.0)
+    php: 7.0
+    env: WP_VERSION=5.2 WP_MULTISITE=0 WC_VERSION=3.6.5 PLL_VERSION=2.7
+  - name: WP 4.9 + WC 3.4 + PLL 2.7 (PHP 5.6)
+    php: 5.6
+    env: WP_VERSION=4.9 WP_MULTISITE=0 WC_VERSION=3.4 PLL_VERSION=2.7
+  - name: WC Dev + PLL Dev
+    php: 7.4
+    env: WP_VERSION=latest WP_MULTISITE=0 WC_VERSION=dev PLL_VERSION=dev
+  allow_failures:
+  - php: 7.4
+    env: WP_VERSION=latest WP_MULTISITE=0 WC_VERSION=dev PLL_VERSION=dev
+
+before_script:
+  - |
+    if [ -f ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini ]; then
+      phpenv config-rm xdebug.ini
+    fi
+  - export PATH="$HOME/.config/composer/vendor/bin:$PATH"
+  - |
+    if [[ "$PHPCS" == "1" ]]; then
+      composer global require dealerdirect/phpcodesniffer-composer-installer
+      composer global require wp-coding-standards/wpcs
+      composer global require automattic/vipwpcs
+      composer global require phpcompatibility/phpcompatibility-wp
+    else
+      bash tests/bin/install-wp-tests.sh wordpress_test root '' localhost $WP_VERSION
+      bash tests/bin/install-deps.sh
+      composer global require "phpunit/phpunit=5.7.*"
+    fi
+
+script:
+  - |
+    if [[ "$PHPCS" == "1" ]]; then
+      phpcs -s --extensions=php,js .
+    else
+      phpunit
+    fi

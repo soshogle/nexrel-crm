@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "iconic-woothumbs/variation-images",
+	"version": "1.0.0",
+	"title": "WooThumbs Variation Images - Iconic",
+	"category": "woocommerce",
+	"icon": "flag",
+	"description": "Variation Images block",
+	"attributes": {
+		"property": {
+			"type": "string"
+		}
+	},
+	"supports": {
+		"html": false,
+		"inserter": false
+	},
+	"textdomain": "iconic-woothumbs",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}

@@ -1,0 +1,1722 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-06-10 07:17+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: \n"
+"Language: \n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Loco https://localise.biz/"
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2141
+msgid " create an account, create an API Token, and paste it here."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:108
+msgid " to set default currency."
+msgstr ""
+
+#. %1$s: order total, %2$s: order item count
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/symbol.php:69
+#, php-format
+msgid "%1$s for %2$s item"
+msgid_plural "%1$s for %2$s items"
+msgstr[0] ""
+msgstr[1] ""
+
+#. %1s: currency title, %2s: currency symbol
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/shipping.php:186
+#, php-format
+msgid "%1$s(%2$s)"
+msgstr ""
+
+#. %s: currency default
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/shipping.php:181
+#, php-format
+msgid "(%s)"
+msgstr ""
+
+#. %s: taxes
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/order.php:389
+#, php-format
+msgid "(includes %s)"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:176
+msgid "*Important:"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:179
+msgid "*Note:"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:360
+msgid "*Note: "
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2078
+msgid "1 Day"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2074
+msgid "1 Hour "
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2092
+msgid "1 Month"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2090
+msgid "1 Week"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:81
+msgid ""
+"1. In <strong>WooCommerce → Settings → General → Default customer "
+"location</strong> make sure you have selected: <strong>Geolocate with page "
+"caching support</strong>"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2080
+msgid "2 Days"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:82
+msgid ""
+"2. Open wp-config.php file via FTP then insert <strong>"
+"define('WPFC_CACHE_QUERYSTRING', true);</strong>"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2082
+msgid "3 Days"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2072
+msgid "30 Minutes "
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2084
+msgid "4 Days"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2086
+msgid "5 Days"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2070
+msgid "5 Minutes "
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2088
+msgid "6 Days"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2076
+msgid "6 Hours"
+msgstr ""
+
+#. %s: Woo Discount Rules/Settings url
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/woo_discount_rules.php:105
+#, php-format
+msgid ""
+"<strong>WooCommerce Multi Currency and Woo Discount Rules compatibility "
+"issue</strong>: To make the two plugins work properly, please go to <a "
+"href=\"%s\">Woo Discount Rules/Settings/Third party plugin conflict fixes & "
+"options</a> and check the \"No\" checkbox next to \"Do you have custom "
+"prices set using another plugin or custom code?\""
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:42
+msgid ""
+"<strong>WooCommerce Multi Currency:</strong> Some other currency switcher "
+"plugins are also active which may cause conflict and may make WooCommerce "
+"Multi Currency plugin work incorrectly, please go to <a target=\"_blank\" "
+"href=\"plugins.php\">plugins</a> to deactivate them."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:40
+msgid ""
+"<strong>WooCommerce Multi Currency:</strong> Some other currency switcher "
+"plugins are also active which may cause conflict and may make WooCommerce "
+"Multi Currency plugin work incorrectly."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:101
+msgid "[WooCommerce] Your GEO IP"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:95
+msgid "[WooCommerce] Your IP"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:107
+msgid "_SERVER system"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:680
+msgid "Above original price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1520
+msgid "Accept lower bound"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:391
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1552
+msgid "Action"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:739
+msgid "Actions"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1436
+msgid "Active currency background color"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1425
+msgid "Active currency text color"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:570
+msgid "Add All Currencies"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:573
+msgid "Add Currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:327
+msgid "Add loading layer when loading price via AJAX"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:954
+msgid ""
+"Add query param to URL to switch currency based on language while using "
+"cache plugin that prevents currency from changing based on language"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:943
+msgid "Add query params"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1643
+msgid "Add rule"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1108
+msgid "Adjust which pages will appear using WP's conditional tags."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1858
+msgid ""
+"All enabled payment methods are available to select here for all currencies "
+"but they will be validated again in checkout. Therefore, even if you select "
+"a payment method for a currency that the payment does not support, it will "
+"not be available in the frontend."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:980
+msgid ""
+"All product fields of WooCommerce Multi Currency will be copied. When you "
+"switch language, Currency will change. "
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:862
+msgid "Allow currency widget change currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:65
+msgid "Allow URL Open"
+msgstr ""
+
+#. Description of the plugin
+msgid ""
+"Allows you to display prices and accepts payments in multiple currencies. "
+"Working only with WooCommerce."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/shortcode.php:1320
+msgid "Amount"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:704
+msgid "API will help detect customer country code based on IP address."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:609
+msgid "Approximate Price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:655
+msgid "Approximate price's label"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:671
+msgid "Approximate price's position"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:598
+msgid "Auto Detect"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:607
+msgid "Auto select currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2062
+msgid "Auto Update Exchange Rate"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2186
+msgid "Auto Update Key"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1300
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1414
+msgid "Background color"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/order.php:321
+msgid "Base on Currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1355
+msgid "Below add to cart"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1353
+msgid "Below excerpt"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1357
+msgid "Below meta"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:678
+msgid "Below original price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1351
+msgid "Below price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1359
+msgid "Below sharing"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1349
+msgid "Below title"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:646
+msgid ""
+"Besides product price, if you want to show approximate price for cart "
+"elements on cart/checkout page, please select them here"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1985
+msgid "Billing address"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:334
+msgid "Bot currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2035
+msgid "Both of cart & checkout page"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:97
+msgid "Bottom"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:135
+msgid "Bottom - Left"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:136
+msgid "Bottom - Right"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/import-export/general.php:31
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/import-export/general.php:32
+msgid "Bulk Fixed Price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1378
+msgid ""
+"By default, dropdown currency selector including product price switcher, "
+"Currency selector widgets(except the Default layout) and Currency selector "
+"shortcodes(except [woo_multi_currency]) will expand on hovering. Enable this "
+"option if you want them to only expand when clicking on."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1081
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2034
+msgid "Cart page"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1847
+msgid "Change all checkout status to:"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/order.php:477
+msgid "Change currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1977
+msgid "Change currency follow"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1995
+msgid "Change currency when customer change billing or shipping address"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-selector.php:20
+msgid ""
+"Change display currency on shop page. Widget of WooCommerce Multi Currency "
+"by VillaTheme"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1698
+msgid "Change the currency in cart page to a check out currency."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:128
+msgid "Checkout"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1715
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1877
+msgid "Checkout Currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1705
+msgid "Checkout currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1064
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2033
+msgid "Checkout page"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1216
+msgid "Click to expand currencies bar"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1367
+msgid "Click to expand currency selector"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1098
+msgid "Conditional Tags"
+msgstr ""
+
+#. %s: currency default
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/shipping.php:100
+#, php-format
+msgid "Converted from %s if empty"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:738
+msgid "Countries"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1452
+msgid "CSS"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2115
+msgid "Cuex"
+msgstr ""
+
+#. Name of the plugin
+msgid "CURCY - WooCommerce Multi Currency Premium"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1042
+msgid "Currencies Bar"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/order.php:315
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:383
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:737
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:818
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:895
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:994
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1551
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1713
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/update.php:114
+msgid "Currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:363
+msgid "currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:715
+msgid "Currency by Country"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1868
+msgid "Currency by Payment method"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/location.php:50
+msgid "Currency changed"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/shortcode.php:1316
+msgid "Currency convertor"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/order.php:157
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/order.php:166
+msgid "Currency Information"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:371
+msgid "Currency Options"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1317
+msgid "Currency Price Switcher"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/order.php:327
+msgid "Currency Rate"
+msgstr ""
+
+#. Base ID
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-selector.php:19
+msgid "Currency Selector"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1311
+msgid "Currency selector"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1333
+msgid "Currency Symbol"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/order.php:186
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/order.php:201
+msgid "Currency: "
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1447
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2121
+msgid "Custom"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2175
+msgid "Custom Email"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:388
+msgid "Custom symbol"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:584
+msgid ""
+"Custom symbol: You can set custom symbol for each currency in your list and "
+"how to it will be displayed (used when you have many currency have same "
+"symbol). Leave it empty to used default symbol. Example: if you set US$ for "
+"US dolar, system will display US$100 instead of $100 like default. Or you "
+"can use with pramater #PRICE# to display price in special format, example: "
+"if you set US #PRICE# $, system will display: US 100 $."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:390
+msgid "Decimal separator"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:381
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:836
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:911
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1009
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1275
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1714
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2109
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:936
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:60
+msgid "Default"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:344
+msgid "Default currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:131
+msgid "Design"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1199
+msgid "Desktop"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1830
+msgid ""
+"Direct bank transfer account will be display at thankyou page & email "
+"instructions if Bacs gateway availabel"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:93
+msgid "Direction"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:287
+msgid "Disable \"Use SESSION\" option above\""
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1241
+msgid "Disable Collapse"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1335
+msgid ""
+"Display a currency switcher under product price in single product pages."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2046
+msgid ""
+"Display currencies both in the store pages and checkout page if they are "
+"different at the checkout page."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2019
+msgid "Display multi currencies"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:186
+msgid "Don't use exchange rate"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1859
+msgid ""
+"E.g: PayPal does not support VND, if you select PayPal as a payment method "
+"of VND, PayPal will still not be available when your customers checkout in "
+"VND"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1102
+msgid "eg: !is_page(array(34,98,73))"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1253
+msgid "eg: 500"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:147
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:970
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1048
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1481
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1670
+msgid "Enable"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1687
+msgid "Enable Cart Page"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1208
+msgid "Enable Collapse"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:280
+msgid ""
+"Enable this if you are using a caching plugin(WP Super cache, W3 total cache,"
+" WP rocket, ...) and currency does not remain after being switched by "
+"customers in the frontend"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:232
+msgid ""
+"Enable this option if you don't want to add \"?wmc-currency={currency}\" to "
+"url of currency switcher buttons."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1491
+msgid ""
+"Enable this option to apply below rules to prices of your products in "
+"frontend"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1951
+msgid ""
+"Enable this option to change the currency immediately at the checkout order "
+"detail when the customer selects a payment gateway, instead of after "
+"clicking the 'place order' button."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1243
+msgid "Enable this option to expand the currencies bar."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1092
+msgid "Enable to hide Currencies Bar on Cart page."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1075
+msgid "Enable to hide Currencies Bar on Checkout page."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/cryptocurrency.php:27
+msgid "Ethereum"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:709
+msgid "European Union"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:177
+msgid ""
+"Even if you enable this option, you still have to Update/Config currency "
+"rates properly because rates will be used in case fixed product "
+"price/shipping cost is not set for a currency."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/update.php:132
+msgid "Exchange rate is updated"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2125
+msgid "Exchange rate resources."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2095
+msgid "Exchange will be updated automatically."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/import-export/general.php:70
+msgid "Export"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:698
+msgid "External"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/import-export/import-csv.php:120
+msgid "File not supported"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2100
+msgid "Finance API"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:511
+msgid "fixed"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:163
+msgid "Fixed Price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1279
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1327
+msgid "Flag"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:947
+msgid "Flag + Country + Currency + Symbol"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1329
+msgid "Flag + Currency Code"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1281
+msgid "Flag + Currency code"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:948
+msgid "Flag + Currency name + Currency Code"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1283
+msgid "Flag + Currency symbol"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1331
+msgid "Flag + Price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1388
+msgid "Flag Custom"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-selector.php:74
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:78
+msgid "Flag size"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1920
+msgid ""
+"For PayPal payment method of WooCommerce PayPal Payments plugin, if checkout "
+"currency is set, currency will be switched to this one when customers go to "
+"checkout"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/shipping.php:157
+msgid ""
+"Formula can also be used here. [cost] is already in {current_currency} and "
+"[fee] is calculated based on fee in {current_currency}. Other amounts "
+"entered here such as a fixed amount, min_fee, max_fee... should also be in "
+"{current_currency}."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1600
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2517
+msgid "Fraction"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1540
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/shortcode.php:1329
+msgid "From"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:122
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:48
+msgid "General"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:689
+msgid "Geo API"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:789
+msgid "Get country by currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2199
+msgid "Get Key"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2139
+msgid "Go to "
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2111
+msgid "Google Finance"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:382
+msgid "Hidden"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:451
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:452
+msgid "Hide currencies on widget, shortcode and sidebar"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:944
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:68
+msgid "Horizontal Currency Slide"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:943
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:67
+msgid "Horizontal Currency Symbols"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1654
+msgid "How does it work?"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "https://villatheme.com"
+msgstr ""
+
+#. URI of the plugin
+msgid "https://villatheme.com/extensions/woo-multi-currency/"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:727
+msgid ""
+"If \"Auto Detect\" option is set to Approximate Price, approximate price "
+"will be in the detected country's official currency if this option is "
+"disabled and will be the detected country's respective currency below if "
+"this option is enabled"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:726
+msgid ""
+"If \"Auto Detect\" option is set to Auto select currency, currency will be "
+"selected based on country."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2181
+msgid "If empty, notification will be sent to"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:197
+msgid ""
+"If enabled, products without fixed prices are not automatically converted by "
+"the exchange rate"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:502
+msgid ""
+"If Exchange fee is fixed, final rate will be Rate plus Exchange fee. Eg: "
+"Rate is 1.62, Exchange fee is 0.1(fixed) => Final rate = 1.62 + 0.1 = 1.72"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:615
+msgid ""
+"If the option is set to Auto-select currency and Geo API is WooCommerce or "
+"External, when the user goes to the website for the first time, the website "
+"will take time to detect currency and make the site a bit slow."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:361
+msgid "If the page URL contains"
+msgstr ""
+
+#. %s: currency default
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/shipping.php:157
+#, php-format
+msgid ""
+"If this field is not explicitly set but {default_field} is, the whole "
+"shipping cost in {current_currency} will be calculated by converting from %s"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1543
+msgid "If you format integer part, value is required"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2126
+msgid ""
+"If you select \"Custom\", you can custom exchange rate via "
+"\"wmc_get_currency_exchange_rates\" hook"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:707
+msgid ""
+"If you want to use MaxMind Geolocation, go to WooCommerce > Setting set "
+"Default customer location as Geolocate and go to WooCommerce > Setting > "
+"Integration set MaxMind License Key to use that API"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/import-export/general.php:85
+msgid "Import"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/import-export/general.php:63
+msgid "Import/Export Fixed Price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:700
+msgid "Inherited from server"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1599
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2516
+msgid "Integer"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:290
+msgid "It is not working with Approximate & Fixed price option."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:817
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:894
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:993
+msgid "Language"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:611
+msgid "Language Polylang"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:810
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:887
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:986
+msgid "Language switcher"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-selector.php:81
+msgid "Large"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-selector.php:64
+msgid "Layout"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1173
+msgid "Left"
+msgstr ""
+
+#. %s: currency symbol
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:479
+#, php-format
+msgid "Left %s99"
+msgstr ""
+
+#. %s: currency symbol
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:485
+#, php-format
+msgid "Left with space %s 99"
+msgstr ""
+
+#. Base ID
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-rates.php:19
+msgid "List Currency Rates"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:942
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:66
+msgid "List Flag + Currency Code"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:940
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:64
+msgid "List Flag Horizontal"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:941
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:65
+msgid "List Flag Vertical"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:939
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:63
+msgid "Listbox currency code"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/cryptocurrency.php:26
+msgid "Litecoin"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:316
+msgid "Loading price mask"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:125
+msgid "Location"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1289
+msgid "Main color"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1680
+msgid ""
+"Manage checkout currencies. If disabled, only the default currency will be "
+"used for checkout."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1248
+msgid "Max height (px)"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:709
+msgid "MaxMind and Inherited server is the fastest way."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:702
+msgid "MaxMind Geolocation"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-selector.php:80
+msgid "Medium"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:60
+msgid "Memory Limit"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1232
+msgid "Mobile"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1112
+msgid "more"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:342
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/product.php:92
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:33
+msgid "Multi Currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:455
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:605
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1770
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1851
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2068
+msgid "No"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/cache.php:168
+msgid "Nonce invalid"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:272
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1984
+msgid "None"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:343
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1908
+msgid "Not set"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1325
+msgid "Not Show"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1681
+msgid "Note"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:283
+msgid "Note for use JSON option"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/order.php:487
+msgid "Note: Please run 'Recalculate' after changing currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:387
+msgid "Number of Decimals"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:362
+msgid "or"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:274
+msgid "Override by AJAX"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:276
+msgid "Override by JSON"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:364
+msgid ""
+"parameters (which hold a currency code in uppercase), the value of those "
+"parameters will be used instead of this option."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1547
+msgid "Part"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1876
+msgid "Payment method"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1716
+msgid "Payment methods"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:55
+msgid "PHP Max Input Vars"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:51
+msgid "PHP Time Limit"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:937
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:61
+msgid "Plain Horizontal"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:938
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:62
+msgid "Plain Vertical"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-rates.php:56
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-selector.php:58
+msgid "Please enter your title"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/import-export/general.php:65
+msgid ""
+"Please export CSV file, fill or change fixed regular/sale price of each "
+"currency then upload the same file to import"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2204
+msgid "Please fill your key what you get from"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2385
+msgid ""
+"Please increase PHP Max Input Vars more than 3000 in php.ini to use this "
+"option."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:708
+msgid ""
+"Please note that site speed may experience a slight slowdown upon the "
+"initial visit if WooCommerce or External elements are utilized."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:753
+msgid "Please select countries"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:835
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:910
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1008
+msgid "Please select currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/shortcode.php:110
+msgid "Please select your currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:881
+msgid "Polylang"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:384
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1158
+msgid "Position"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1361
+msgid ""
+"Position of currency switcher in single product pages, it may be affected by "
+"the theme or product template"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:134
+msgid "Price format"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1341
+msgid "Price Switcher Position"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:111
+msgid "Processing..."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:632
+msgid "Product in cart"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:633
+msgid "Product subtotal"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/update.php:115
+msgid "Rate"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:386
+msgid "Rate + Exchange Fee"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2146
+msgid "Rate Decimals"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/product.php:121
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/wcfm.php:44
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/yith_product_bundles.php:36
+msgid "Regular Price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/product.php:186
+msgid "Regular Price:"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:298
+msgid "Reload filter price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:550
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:551
+msgid "Remove"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:776
+msgid "Remove All"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:566
+msgid "Remove All Currencies"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:309
+msgid "Reset price filter when loading via AJAX"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1189
+msgid "Right"
+msgstr ""
+
+#. %s: currency symbol
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:482
+#, php-format
+msgid "Right 99%s"
+msgstr ""
+
+#. %s: currency symbol
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:488
+#, php-format
+msgid "Right with space 99 %s"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/product.php:128
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/wcfm.php:51
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/yith_product_bundles.php:40
+msgid "Sale Price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/product.php:193
+msgid "Sale Price:"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2213
+msgid "Save"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2217
+msgid "Save & Check Key"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:773
+msgid "Select all"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:56
+msgid "Select switcher layout"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:356
+msgid ""
+"Select the currency that you want to show to Bots(web crawler tools) when "
+"they crawl your site. If not set, Bots will be treated like normal visitors "
+"which means that the auto-detect currency(if enabled) will also apply to "
+"them."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2159
+msgid "Send Email"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2170
+msgid "Send email to admin when exchange rate is updated."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:77
+msgid "Session path"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/product.php:99
+msgid "Set regular prices"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/product.php:100
+msgid "Set sale prices"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:174
+msgid ""
+"Set up product price in each currency manually, this price will overwrite "
+"the calculated price."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:298
+msgid "Settings"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:634
+msgid "Shipping"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1986
+msgid "Shipping address"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1398
+msgid "Shortcode"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1813
+msgid "Show all"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:624
+msgid "Show Approximate price for"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-rates.php:20
+msgid ""
+"Show list currency exchange rates of WooCommerce Multi Currency by VillaTheme"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1210
+msgid "Sidebar will collapse if you have many currencies."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-selector.php:79
+msgid "Small"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1473
+msgid ""
+"so that input price and output price have the same tax config: \"include "
+"tax\" or \"exclude tax\"."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1393
+msgid ""
+"Some countries use the same currency. You can choose the flag correctly. "
+"Each line is a flag. Structure [currency_code,country_code]. Example: EUR,ES"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:107
+msgid ""
+"Some orders are missing currency info, which leads to incorrect revenue and "
+"orders statistics in analytics/report. Do you want to fix it by adding "
+"currency info for those orders using the current exchange rates?"
+msgstr ""
+
+#. %s: Server country code data
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:706
+#, php-format
+msgid ""
+"Some servers support GEO IP. Only use \"Inherited from server\" if you go to "
+"System status and see that the $_SERVER variable contains one of these "
+"parameters %s and their values show your correct country code"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/import-export/general.php:68
+msgid "Step 1: Export CSV"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/import-export/general.php:81
+msgid "Step 2: Import CSV"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1269
+msgid "Style"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:636
+msgid "Subtotal"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:221
+msgid "Switch Currency by JS"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1277
+msgid "Symbol"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2001
+msgid "Sync checkout currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:21
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:123
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:123
+msgid "System Status"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:635
+msgid "Tax"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1473
+msgid "tax settings"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1258
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1403
+msgid "Text color"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/import-export/import-csv.php:64
+msgid "The file format is not correct, please export template and import again"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:108
+msgid ""
+"The following options affect how prices are displayed on the frontend. Woo "
+"Multi Currency is working. Please go to "
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1473
+msgid "This feature does not work with your current tax config, please change"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2047
+msgid "This option and Fixed price option don't work together"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:389
+msgid "Thousand separator"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1120
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:40
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:55
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:70
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:85
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:100
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:114
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:129
+msgid "Title"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-rates.php:55
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/widgets/widget-selector.php:57
+msgid "Title:"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1541
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/shortcode.php:1348
+msgid "To"
+msgstr ""
+
+#. %s: save path directory
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:84
+#, php-format
+msgid "To allow logging, make %1$s writable."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:180
+msgid ""
+"To make fixed shipping cost apply to a specific currency, you have to "
+"explicitly set all available cost fields in that currency if the respective "
+"field in default currency is not empty."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:98
+msgid "Top"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:133
+msgid "Top - Left"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:134
+msgid "Top - Right"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:637
+msgid "Total"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:638
+msgid "Total(Thank-you page)"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:804
+msgid "TranslatePress - Multilingual"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:613
+msgid "TranslatePress Multilingual"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/import-export/import-csv.php:117
+msgid "Unable to read file"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1549
+msgid "Up 1 unit"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:137
+msgid "Update"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:576
+msgid "Update All Rates"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:544
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:545
+msgid "Update Rate"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:261
+msgid "Use cache plugin"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:203
+msgid "Use SESSION"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:214
+msgid "Use SESSION instead of COOKIE."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1935
+msgid ""
+"Use this option if you want to put a mandatory currency with the respective "
+"payment gateway after clicking on the \"Place orders\""
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:662
+msgid "Use {price} to display price in special format. Example: (~ {price})"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1544
+msgid "Value"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:945
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:69
+msgid "Vertical Currency Symbols"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/data.php:946
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/includes/elementor/widget.php:70
+msgid "Vertical Currency Symbols (circle)"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/reports.php:452
+msgid "View in default currency"
+msgstr ""
+
+#. Author of the plugin
+msgid "VillaTheme"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2012
+msgid ""
+"When currency is switched on cart/checkout page by the \"Change currency "
+"follow\" option above, also switch currency of the whole current customer "
+"session"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1549
+msgid ""
+"When enabled, if part is fraction, plus 1 to final price; if part is integer,"
+" plus \"10 to the power length_of_compared_part\" to final price"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1383
+msgid "Widget"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2117
+msgid "Wise"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2132
+msgid "Wise Api token"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1969
+msgid "Without reload checkout page"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:32
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:47
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:62
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:77
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:92
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:106
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:121
+msgid "Woo multi currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:696
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:36
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:51
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:66
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:81
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:96
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:110
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/plugins/visual_composer.php:125
+msgid "WooCommerce"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:342
+msgid "WooCommerce Multi Currency"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:108
+msgid "WooCommerce Multi Currency setting page"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:99
+msgid "WooCommerce Multi Currency Settings"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:965
+msgid "WPML.org"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2119
+msgid "Xe"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2113
+msgid "Yahoo Finance"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:457
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1771
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1849
+msgid "Yes"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:108
+msgid "Yes, fix it please"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:78
+msgid ""
+"You are using <strong>WP Fastest Cache</strong>. Please make follow these "
+"steps these help <strong>WooCommerce Multi Currency</strong> is working fine "
+"with WP Fastest Cache."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/admin.php:63
+msgid ""
+"You are using <strong>WP Super Cache</strong>. Please install and active "
+"<strong>Country Caching For WP Super Cache</strong> that helps <strong>"
+"WooCommerce Multi Currency</strong> is working fine with WP Super Cache."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:2204
+msgid "You can automatically update WooCommerce Multi Currency plugin. See"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/update.php:132
+msgid "You can check at "
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/settings.php:1681
+msgid ""
+"You have to enable this option to use below features(except for Display "
+"multi currencies)."
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/frontend/checkout.php:427
+msgid "You will be billed:"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/system.php:89
+msgid "Your IP"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/cryptocurrency.php:29
+msgid "Zimbabwe"
+msgstr ""
+
+#: E:/git-2017/woocommerce-multi-currency/woocommerce-multi-currency/admin/cryptocurrency.php:28
+msgid "Zimbabwe Dollar"
+msgstr ""

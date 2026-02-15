@@ -1,0 +1,75 @@
+.mo-validated {
+	padding-right: 25px !important
+}
+
+.mo-validated-icon {
+	position: absolute;
+	top: calc(50% - 10px);
+	background: #00cd00;
+	color: #fff;
+	border-radius: 50%;
+	right: 5px;
+	animation: slideDown .3s ease-in forwards
+}
+
+.mo_message_box {
+	display: none;
+	width: 100%;
+	background-color: #f7f6f7;
+	padding: 1em 2em 1em 3.5em;
+	text-align: center;
+	margin-top: 3px;
+}
+
+@keyframes slideDown {
+	from {
+		transform: scale(0)
+	}
+
+	to {
+		transform: scale(1)
+	}
+}
+
+.moloader {
+	width: 8px !important;
+	height: 8px !important;
+	border-radius: 25% !important;
+	margin: auto;
+	aspect-ratio: 1;
+	border-radius: 50%;
+	animation: d5 1s infinite linear alternate;
+}
+
+@keyframes d5 {
+	0% {
+		box-shadow: 20px 0 #fff, -20px 0 #757575;
+		background: #fff
+	}
+
+	33% {
+		box-shadow: 20px 0 #fff, -20px 0 #757575;
+		background: #757575
+	}
+
+	66% {
+		box-shadow: 20px 0 #757575, -20px 0 #fff;
+		background: #757575
+	}
+
+	100% {
+		box-shadow: 20px 0 #757575, -20px 0 #fff;
+		background: #fff
+	}
+}
+
+.mo-flex-space-between {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-end;
+}
+
+.iti,
+.iti .iti__tel-input {
+	width: 100%;
+}

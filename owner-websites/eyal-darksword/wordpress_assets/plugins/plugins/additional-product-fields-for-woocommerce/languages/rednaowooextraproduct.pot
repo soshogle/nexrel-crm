@@ -1,0 +1,3132 @@
+# Copyright (C) 2023 RedNao
+# This file is distributed under the GPLv3.
+msgid ""
+msgstr ""
+"Project-Id-Version: Extra Product Options Builder for WooCommerce 1.2.74\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/woo-extra-products\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2023-01-22T17:44:23+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.6.0\n"
+"X-Domain: rednaowooextraproduct\n"
+
+#. Plugin Name of the plugin
+msgid "Extra Product Options Builder for WooCommerce"
+msgstr ""
+
+#. Plugin URI of the plugin
+msgid "https://productbuilder.rednao.com/getit/"
+msgstr ""
+
+#. Description of the plugin
+msgid "Additional product fields for woocommerce"
+msgstr ""
+
+#. Author of the plugin
+msgid "RedNao"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "http://rednao.com"
+msgstr ""
+
+#: core/Loader.php:477
+msgid "Advanced Product Options"
+msgstr ""
+
+#: core/Managers/WooStagesManager.php:364
+msgid "Edit Options"
+msgstr ""
+
+#: Integration/Widgets/ElementorWidget.php:11
+msgid "Extra Product Options"
+msgstr ""
+
+#: jstranslations/DeactivationDialog.php:2
+#: jstranslations/ProductFieldBuilder.php:12
+msgid "Cancel"
+msgstr ""
+
+#: jstranslations/DeactivationDialog.php:3
+msgid "Apply"
+msgstr ""
+
+#: jstranslations/FBFile.php:2
+msgid "Invalid file type"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:2
+msgid "Afghanistan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:3
+msgid "Albania"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:4
+msgid "Algeria"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:5
+msgid "American Samoa"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:6
+msgid "Andorra"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:7
+msgid "Angola"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:8
+msgid "Anguilla"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:9
+msgid "Antarctica"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:10
+msgid "Antigua & Barbuda"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:11
+msgid "Argentina"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:12
+msgid "Armenia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:13
+msgid "Aruba"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:14
+msgid "Ascension Island"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:15
+msgid "Australia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:16
+msgid "Austria"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:17
+msgid "Azerbaijan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:18
+msgid "Bahamas"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:19
+msgid "Bahrain"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:20
+msgid "Bangladesh"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:21
+msgid "Barbados"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:22
+msgid "Belarus"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:23
+msgid "Belgium"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:24
+msgid "Belize"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:25
+msgid "Benin"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:26
+msgid "Bermuda"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:27
+msgid "Bhutan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:28
+msgid "Bolivia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:29
+msgid "Bosnia & Herzegovina"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:30
+msgid "Botswana"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:31
+msgid "Bouvet Island"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:32
+msgid "Brazil"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:33
+msgid "British Indian Ocean Territory"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:34
+msgid "British Virgin Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:35
+msgid "Brunei"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:36
+msgid "Bulgaria"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:37
+msgid "Burkina Faso"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:38
+msgid "Burundi"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:39
+msgid "Cambodia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:40
+msgid "Cameroon"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:41
+msgid "Canada"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:42
+msgid "Canary Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:43
+msgid "Cape Verde"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:44
+msgid "Caribbean Netherlands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:45
+msgid "Cayman Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:46
+msgid "Central African Republic"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:47
+msgid "Ceuta & Melilla"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:48
+msgid "Chad"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:49
+msgid "Chile"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:50
+msgid "China"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:51
+msgid "Christmas Island"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:52
+msgid "Clipperton Island"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:53
+msgid "Cocos (Keeling) Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:54
+msgid "Colombia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:55
+msgid "Comoros"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:56
+msgid "Congo - Brazzaville"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:57
+msgid "Congo - Kinshasa"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:58
+msgid "Cook Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:59
+msgid "Costa Rica"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:60
+msgid "Croatia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:61
+msgid "Cuba"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:62
+msgid "Curaçao"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:63
+msgid "Cyprus"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:64
+msgid "Czechia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:65
+msgid "Côte d’Ivoire"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:66
+msgid "Denmark"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:67
+msgid "Diego Garcia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:68
+msgid "Djibouti"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:69
+msgid "Dominica"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:70
+msgid "Dominican Republic"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:71
+msgid "Ecuador"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:72
+msgid "Egypt"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:73
+msgid "El Salvador"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:74
+msgid "Equatorial Guinea"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:75
+msgid "Eritrea"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:76
+msgid "Estonia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:77
+msgid "Eswatini"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:78
+msgid "Ethiopia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:79
+msgid "Falkland Islands (Islas Malvinas)"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:80
+msgid "Faroe Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:81
+msgid "Fiji"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:82
+msgid "Finland"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:83
+msgid "France"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:84
+msgid "French Guiana"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:85
+msgid "French Polynesia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:86
+msgid "French Southern Territories"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:87
+msgid "Gabon"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:88
+msgid "Gambia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:89
+msgid "Georgia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:90
+msgid "Germany"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:91
+msgid "Ghana"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:92
+msgid "Gibraltar"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:93
+msgid "Greece"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:94
+msgid "Greenland"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:95
+msgid "Grenada"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:96
+msgid "Guadeloupe"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:97
+msgid "Guam"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:98
+msgid "Guatemala"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:99
+msgid "Guernsey"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:100
+msgid "Guinea"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:101
+msgid "Guinea-Bissau"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:102
+msgid "Guyana"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:103
+msgid "Haiti"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:104
+msgid "Heard & McDonald Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:105
+msgid "Honduras"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:106
+msgid "Hong Kong"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:107
+msgid "Hungary"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:108
+msgid "Iceland"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:109
+msgid "India"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:110
+msgid "Indonesia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:111
+msgid "Iran"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:112
+msgid "Iraq"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:113
+msgid "Ireland"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:114
+msgid "Isle of Man"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:115
+msgid "Israel"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:116
+msgid "Italy"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:117
+msgid "Jamaica"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:118
+msgid "Japan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:119
+msgid "Jersey"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:120
+msgid "Jordan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:121
+msgid "Kazakhstan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:122
+msgid "Kenya"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:123
+msgid "Kiribati"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:124
+msgid "Kosovo"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:125
+msgid "Kuwait"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:126
+msgid "Kyrgyzstan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:127
+msgid "Laos"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:128
+msgid "Latvia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:129
+msgid "Lebanon"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:130
+msgid "Lesotho"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:131
+msgid "Liberia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:132
+msgid "Libya"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:133
+msgid "Liechtenstein"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:134
+msgid "Lithuania"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:135
+msgid "Luxembourg"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:136
+msgid "Macao"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:137
+msgid "Madagascar"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:138
+msgid "Malawi"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:139
+msgid "Malaysia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:140
+msgid "Maldives"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:141
+msgid "Mali"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:142
+msgid "Malta"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:143
+msgid "Marshall Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:144
+msgid "Martinique"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:145
+msgid "Mauritania"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:146
+msgid "Mauritius"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:147
+msgid "Mayotte"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:148
+msgid "Mexico"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:149
+msgid "Micronesia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:150
+msgid "Moldova"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:151
+msgid "Monaco"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:152
+msgid "Mongolia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:153
+msgid "Montenegro"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:154
+msgid "Montserrat"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:155
+msgid "Morocco"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:156
+msgid "Mozambique"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:157
+msgid "Myanmar (Burma)"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:158
+msgid "Namibia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:159
+msgid "Nauru"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:160
+msgid "Nepal"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:161
+msgid "Netherlands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:162
+msgid "New Caledonia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:163
+msgid "New Zealand"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:164
+msgid "Nicaragua"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:165
+msgid "Niger"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:166
+msgid "Nigeria"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:167
+msgid "Niue"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:168
+msgid "Norfolk Island"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:169
+msgid "North Korea"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:170
+msgid "North Macedonia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:171
+msgid "Northern Mariana Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:172
+msgid "Norway"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:173
+msgid "Oman"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:174
+msgid "Pakistan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:175
+msgid "Palau"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:176
+msgid "Palestine"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:177
+msgid "Panama"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:178
+msgid "Papua New Guinea"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:179
+msgid "Paraguay"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:180
+msgid "Peru"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:181
+msgid "Philippines"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:182
+msgid "Pitcairn Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:183
+msgid "Poland"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:184
+msgid "Portugal"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:185
+msgid "Puerto Rico"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:186
+msgid "Qatar"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:187
+msgid "Romania"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:188
+msgid "Russia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:189
+msgid "Rwanda"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:190
+msgid "Réunion"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:191
+msgid "Samoa"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:192
+msgid "San Marino"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:193
+msgid "Saudi Arabia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:194
+msgid "Senegal"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:195
+msgid "Serbia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:196
+msgid "Seychelles"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:197
+msgid "Sierra Leone"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:198
+msgid "Singapore"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:199
+msgid "Sint Maarten"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:200
+msgid "Slovakia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:201
+msgid "Slovenia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:202
+msgid "Solomon Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:203
+msgid "Somalia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:204
+msgid "South Africa"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:205
+msgid "South Georgia & South Sandwich Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:206
+msgid "South Korea"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:207
+msgid "South Sudan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:208
+msgid "Spain"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:209
+msgid "Sri Lanka"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:210
+msgid "St. Barthélemy"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:211
+msgid "St. Helena"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:212
+msgid "St. Kitts & Nevis"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:213
+msgid "St. Lucia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:214
+msgid "St. Martin"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:215
+msgid "St. Pierre & Miquelon"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:216
+msgid "St. Vincent & Grenadines"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:217
+msgid "Sudan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:218
+msgid "Suriname"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:219
+msgid "Svalbard & Jan Mayen"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:220
+msgid "Sweden"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:221
+msgid "Switzerland"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:222
+msgid "Syria"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:223
+msgid "São Tomé & Príncipe"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:224
+msgid "Taiwan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:225
+msgid "Tajikistan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:226
+msgid "Tanzania"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:227
+msgid "Thailand"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:228
+msgid "Timor-Leste"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:229
+msgid "Togo"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:230
+msgid "Tokelau"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:231
+msgid "Tonga"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:232
+msgid "Trinidad & Tobago"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:233
+msgid "Tristan da Cunha"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:234
+msgid "Tunisia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:235
+msgid "Turkey"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:236
+msgid "Turkmenistan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:237
+msgid "Turks & Caicos Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:238
+msgid "Tuvalu"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:239
+msgid "U.S. Outlying Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:240
+msgid "U.S. Virgin Islands"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:241
+msgid "Uganda"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:242
+msgid "Ukraine"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:243
+msgid "United Arab Emirates"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:244
+msgid "United Kingdom"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:245
+msgid "United States"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:246
+msgid "Uruguay"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:247
+msgid "Uzbekistan"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:248
+msgid "Vanuatu"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:249
+msgid "Vatican City"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:250
+msgid "Venezuela"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:251
+msgid "Vietnam"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:252
+msgid "Wallis & Futuna"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:253
+msgid "Western Sahara"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:254
+msgid "Yemen"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:255
+msgid "Zambia"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:256
+msgid "Zimbabwe"
+msgstr ""
+
+#: jstranslations/FBGoogleMaps.php:257
+msgid "Åland Islands"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:2
+#: jstranslations/ProductFieldBuilder.php:318
+msgid "Required field"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:3
+#: jstranslations/ProductFieldBuilder.php:319
+msgid "Toggle strong style"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:4
+#: jstranslations/ProductFieldBuilder.php:320
+msgid "Toggle emphasis"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:5
+#: jstranslations/ProductFieldBuilder.php:321
+msgid "Toggle code font"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:6
+#: jstranslations/ProductFieldBuilder.php:322
+msgid "Wrap in bullet list"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:7
+#: jstranslations/ProductFieldBuilder.php:323
+msgid "Wrap in ordered list"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:8
+#: jstranslations/ProductFieldBuilder.php:324
+msgid "Wrap in block quote"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:9
+#: jstranslations/ProductFieldBuilder.php:325
+msgid "Change to paragraph"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:10
+#: jstranslations/ProductFieldBuilder.php:326
+msgid "Plain"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:11
+#: jstranslations/ProductFieldBuilder.php:327
+msgid "Change to code block"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:12
+#: jstranslations/ProductFieldBuilder.php:328
+msgid "Code"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:13
+#: jstranslations/ProductFieldBuilder.php:329
+msgid "Change to heading "
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:14
+#: jstranslations/ProductFieldBuilder.php:330
+msgid "Level "
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:15
+#: jstranslations/ProductFieldBuilder.php:331
+msgid "Insert horizontal rule"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:16
+#: jstranslations/ProductFieldBuilder.php:332
+msgid "Horizontal rule"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:17
+#: jstranslations/ProductFieldBuilder.php:333
+msgid "Heading"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:18
+#: jstranslations/ProductFieldBuilder.php:334
+msgid "Type..."
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:19
+#: jstranslations/ProductDesignerPro.php:45
+#: jstranslations/ProductFieldBuilder.php:335
+msgid "Color"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:20
+#: jstranslations/ProductFieldBuilder.php:377
+msgid "Link Options"
+msgstr ""
+
+#: jstranslations/FBTextWithStyles.php:21
+#: jstranslations/ProductFieldBuilder.php:378
+msgid "The url can not be empty"
+msgstr ""
+
+#: jstranslations/FormBuilder.php:2
+#: jstranslations/ProductDesignerPro.php:16
+#: jstranslations/ProductFieldBuilder.php:121
+#: jstranslations/RunnableGlobalProductBuilder.php:18
+#: ProductFieldBuilder.php:1
+msgid "Required"
+msgstr ""
+
+#: jstranslations/FormBuilder.php:3
+#: panel/ProductBuilderPanel.php:124
+msgid "Options amount"
+msgstr ""
+
+#: jstranslations/FormBuilder.php:4
+#: panel/ProductBuilderPanel.php:123
+msgid "Final Total"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:2
+msgid "Global Product Options"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:3
+msgid "Add new global option"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:4
+#: jstranslations/RunnableGlobalProductBuilder.php:6
+msgid "Name"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:5
+msgid "Edit"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:6
+msgid "Delete"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:7
+msgid "Clone"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:8
+msgid "Last Update"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:9
+msgid "Status"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:10
+msgid "Disabling"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:11
+msgid "Option disabled successfully"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:12
+msgid "Enabling"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:13
+msgid "Option enabled successfully"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:14
+msgid "Please confirm"
+msgstr ""
+
+#: jstranslations/GlobalProductList.php:15
+msgid "Please select an action first"
+msgstr ""
+
+#: jstranslations/GlobalProductOptions.php:2
+#: jstranslations/ProductFieldBuilder.php:171
+#: jstranslations/RunnableGlobalProductBuilder.php:27
+msgid "Equal to"
+msgstr ""
+
+#: jstranslations/GlobalProductOptions.php:3
+#: jstranslations/ProductFieldBuilder.php:172
+#: jstranslations/RunnableGlobalProductBuilder.php:28
+msgid "Not Equal to"
+msgstr ""
+
+#: jstranslations/GlobalProductOptions.php:4
+#: jstranslations/ProductFieldBuilder.php:173
+#: jstranslations/RunnableGlobalProductBuilder.php:29
+msgid "Is Empty"
+msgstr ""
+
+#: jstranslations/GlobalProductOptions.php:5
+#: jstranslations/ProductFieldBuilder.php:174
+#: jstranslations/RunnableGlobalProductBuilder.php:30
+msgid "Is Not Empty"
+msgstr ""
+
+#: jstranslations/GlobalProductOptions.php:6
+#: jstranslations/ProductFieldBuilder.php:176
+msgid "Greater Than"
+msgstr ""
+
+#: jstranslations/GlobalProductOptions.php:7
+#: jstranslations/ProductFieldBuilder.php:177
+msgid "Greater or Equal Than"
+msgstr ""
+
+#: jstranslations/GlobalProductOptions.php:8
+#: jstranslations/ProductFieldBuilder.php:178
+msgid "Less Than"
+msgstr ""
+
+#: jstranslations/GlobalProductOptions.php:9
+#: jstranslations/ProductFieldBuilder.php:179
+msgid "Less or Equal Than"
+msgstr ""
+
+#: jstranslations/GlobalProductOptions.php:10
+#: jstranslations/ProductFieldBuilder.php:181
+msgid "Is Checked"
+msgstr ""
+
+#: jstranslations/GlobalProductOptions.php:11
+#: jstranslations/ProductFieldBuilder.php:182
+msgid "Is Not Checked"
+msgstr ""
+
+#: jstranslations/InternalShared.php:2
+msgid "Jan"
+msgstr ""
+
+#: jstranslations/InternalShared.php:3
+msgid "Feb"
+msgstr ""
+
+#: jstranslations/InternalShared.php:4
+msgid "Mar"
+msgstr ""
+
+#: jstranslations/InternalShared.php:5
+msgid "Apr"
+msgstr ""
+
+#: jstranslations/InternalShared.php:6
+msgid "May"
+msgstr ""
+
+#: jstranslations/InternalShared.php:7
+msgid "Jun"
+msgstr ""
+
+#: jstranslations/InternalShared.php:8
+msgid "Jul"
+msgstr ""
+
+#: jstranslations/InternalShared.php:9
+msgid "Aug"
+msgstr ""
+
+#: jstranslations/InternalShared.php:10
+msgid "Sep"
+msgstr ""
+
+#: jstranslations/InternalShared.php:11
+msgid "Oct"
+msgstr ""
+
+#: jstranslations/InternalShared.php:12
+msgid "Nov"
+msgstr ""
+
+#: jstranslations/InternalShared.php:13
+msgid "Dec"
+msgstr ""
+
+#: jstranslations/InternalShared.php:14
+msgid "January"
+msgstr ""
+
+#: jstranslations/InternalShared.php:15
+msgid "February"
+msgstr ""
+
+#: jstranslations/InternalShared.php:16
+msgid "March"
+msgstr ""
+
+#: jstranslations/InternalShared.php:17
+msgid "April"
+msgstr ""
+
+#: jstranslations/InternalShared.php:18
+msgid "June"
+msgstr ""
+
+#: jstranslations/InternalShared.php:19
+msgid "July"
+msgstr ""
+
+#: jstranslations/InternalShared.php:20
+msgid "August"
+msgstr ""
+
+#: jstranslations/InternalShared.php:21
+msgid "September"
+msgstr ""
+
+#: jstranslations/InternalShared.php:22
+msgid "October"
+msgstr ""
+
+#: jstranslations/InternalShared.php:23
+msgid "November"
+msgstr ""
+
+#: jstranslations/InternalShared.php:24
+msgid "December"
+msgstr ""
+
+#: jstranslations/InternalShared.php:25
+msgid "Su"
+msgstr ""
+
+#: jstranslations/InternalShared.php:26
+msgid "Mo"
+msgstr ""
+
+#: jstranslations/InternalShared.php:27
+msgid "Tu"
+msgstr ""
+
+#: jstranslations/InternalShared.php:28
+msgid "We"
+msgstr ""
+
+#: jstranslations/InternalShared.php:29
+msgid "Th"
+msgstr ""
+
+#: jstranslations/InternalShared.php:30
+msgid "Fr"
+msgstr ""
+
+#: jstranslations/InternalShared.php:31
+msgid "Sa"
+msgstr ""
+
+#: jstranslations/InternalShared.php:32
+msgid "Sun"
+msgstr ""
+
+#: jstranslations/InternalShared.php:33
+msgid "Mon"
+msgstr ""
+
+#: jstranslations/InternalShared.php:34
+msgid "Tue"
+msgstr ""
+
+#: jstranslations/InternalShared.php:35
+msgid "Wed"
+msgstr ""
+
+#: jstranslations/InternalShared.php:36
+msgid "Thu"
+msgstr ""
+
+#: jstranslations/InternalShared.php:37
+msgid "Fri"
+msgstr ""
+
+#: jstranslations/InternalShared.php:38
+msgid "Sat"
+msgstr ""
+
+#: jstranslations/InternalShared.php:39
+#: jstranslations/ProductFieldBuilder.php:357
+msgid "Sunday"
+msgstr ""
+
+#: jstranslations/InternalShared.php:40
+#: jstranslations/ProductFieldBuilder.php:358
+msgid "Monday"
+msgstr ""
+
+#: jstranslations/InternalShared.php:41
+#: jstranslations/ProductFieldBuilder.php:359
+msgid "Tuesday"
+msgstr ""
+
+#: jstranslations/InternalShared.php:42
+#: jstranslations/ProductFieldBuilder.php:360
+msgid "Wednesday"
+msgstr ""
+
+#: jstranslations/InternalShared.php:43
+#: jstranslations/ProductFieldBuilder.php:361
+msgid "Thursday"
+msgstr ""
+
+#: jstranslations/InternalShared.php:44
+#: jstranslations/ProductFieldBuilder.php:362
+msgid "Friday"
+msgstr ""
+
+#: jstranslations/InternalShared.php:45
+#: jstranslations/ProductFieldBuilder.php:363
+msgid "Saturday"
+msgstr ""
+
+#: jstranslations/MultipleStepsDesigner.php:2
+msgid "There should be at least one step"
+msgstr ""
+
+#: jstranslations/OrderDashboard.php:2
+#: jstranslations/ProductFieldBuilder.php:71
+msgid "An unexpected error occurred, please try again"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:2
+#: jstranslations/ProductFieldBuilder.php:134
+#: ProductFieldBuilder.php:1
+msgid "Label"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:3
+#: jstranslations/ProductFieldBuilder.php:226
+msgid "Value"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:4
+#: jstranslations/ProductFieldBuilder.php:201
+msgid "Price type"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:5
+#: jstranslations/ProductFieldBuilder.php:202
+msgid "None (don't use this field to calculate price)"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:6
+#: jstranslations/ProductFieldBuilder.php:230
+msgid "Current value"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:7
+#: jstranslations/ProductFieldBuilder.php:231
+msgid "Product Quantity"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:8
+#: jstranslations/ProductFieldBuilder.php:205
+msgid "Formula (Full version only)"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:9
+#: jstranslations/ProductFieldBuilder.php:218
+msgid "Advanced"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:10
+#: jstranslations/ProductFieldBuilder.php:219
+msgid "Field Name"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:11
+#: jstranslations/ProductFieldBuilder.php:220
+msgid "The field is used when you wanto to access the field programmatically through the API"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:12
+#: jstranslations/ProductFieldBuilder.php:221
+msgid "Text can only have text, numbers, underscores and dashes"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:13
+#: jstranslations/ProductFieldBuilder.php:222
+msgid "Don't show this field in the cart and checkout page"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:14
+msgid "Allowed Extensions (separate them by a comma e.g. .png,.pdf)"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:15
+msgid "Allow multiple files"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:17
+#: jstranslations/ProductFieldBuilder.php:61
+#: ProductFieldBuilder.php:1
+msgid "General"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:18
+#: jstranslations/ProductFieldBuilder.php:236
+msgid "Appearance"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:19
+#: jstranslations/ProductFieldBuilder.php:143
+#: ProductFieldBuilder.php:1
+msgid "Placeholder"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:20
+msgid "Show images in cart, checkout and email"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:21
+msgid "When this box is checked if an image is uploaded it will be shown in the cart, checkout page and emails. If not checked it will show the file name"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:22
+#: jstranslations/ProductFieldBuilder.php:204
+msgid "Fixed Amount"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:23
+#: jstranslations/ProductFieldBuilder.php:371
+msgid "Price Per Item"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:24
+#: jstranslations/ProductFieldBuilder.php:106
+msgid "Price"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:25
+#: jstranslations/ProductFieldBuilder.php:206
+msgid "Sale Price (Empty = No Sale)"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:26
+#: jstranslations/ProductFieldBuilder.php:211
+#: ProductFieldBuilder.php:1
+msgid "Hide price"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:27
+#: jstranslations/ProductFieldBuilder.php:217
+#: ProductFieldBuilder.php:1
+msgid "Pricing"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:28
+msgid "Show Subtotal"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:29
+msgid "Subtotal Label"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:30
+msgid "Enable multiple columns"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:31
+#: jstranslations/ProductFieldBuilder.php:256
+msgid "Columns"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:32
+msgid "Add and Remove Button"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:33
+msgid "Repeat it a defined number of times"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:34
+msgid "Maximum number of items"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:35
+#: jstranslations/ProductFieldBuilder.php:197
+#: ProductFieldBuilder.php:1
+msgid "0 = No Maximum"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:36
+msgid "Repeat number of times"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:37
+msgid "Sum of fields in group"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:38
+#: jstranslations/ProductFieldBuilder.php:276
+msgid "Formula support is only available in the full version"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:39
+msgid "Total Label"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:40
+msgid "Total Price"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:41
+#: jstranslations/ProductFieldBuilder.php:245
+msgid "Popup Title"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:42
+msgid "Close button label"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:43
+msgid "Open button label"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:44
+msgid "Button Icon"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:46
+msgid "Is Open"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:47
+msgid "Font Family"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:48
+msgid "Unexpected"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:49
+msgid "Field with id"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:50
+msgid "not found"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:51
+msgid "The formula is valid!"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:52
+msgid "Using this error message: "
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:53
+msgid "Mark the field as "
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:54
+msgid "Invalid"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:55
+msgid "Valid"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:56
+msgid " if"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:57
+msgid "Email sent successfully"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:58
+msgid "At least one item should be available"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:59
+msgid "Invalid email address"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:60
+msgid "The email"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:61
+msgid "was already added"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:62
+#: jstranslations/ProductFieldBuilder.php:39
+msgid "Repeater"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:63
+msgid "Row Number"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:64
+msgid "Product Information"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:65
+msgid "Product Regular Price"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:66
+#: jstranslations/ProductFieldBuilder.php:216
+#: ProductFieldBuilder.php:1
+msgid "Quantity"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:67
+msgid "Stock Quantity"
+msgstr ""
+
+#: jstranslations/ProductDesignerPro.php:68
+msgid "this block if"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:2
+msgid "Support/Feed Back"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:3
+msgid "Support"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:4
+msgid "Do you need help in something? if so please let us know by"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:5
+msgid "creating a support ticket"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:6
+msgid "or reach us in the"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:7
+msgid "Wordpress plugin site"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:8
+msgid "Feed Back"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:9
+msgid "We want to help you succeed so if you want something to be added or couldn’t do what you were trying to please"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:10
+msgid "let us know!"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:11
+msgid "Please select a field"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:13
+msgid "Standard"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:14
+msgid "Text Box"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:15
+msgid "Number"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:16
+msgid "Multiline Box"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:17
+msgid "Dropdown"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:18
+msgid "Radio"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:19
+msgid "Checkbox"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:20
+msgid "Paragraph"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:21
+msgid "Divider"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:22
+msgid "Datepicker"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:23
+msgid "Masked Input"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:24
+msgid "Color Picker"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:25
+msgid "Slider"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:26
+msgid "Button Selection"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:27
+msgid "Switch"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:28
+msgid "Signature"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:29
+msgid "Item Swatcher"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:30
+msgid "Term of Service"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:31
+msgid "Google Maps Address"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:32
+msgid "Image with text"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:33
+msgid "Total"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:34
+msgid "Premium"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:35
+msgid "List"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:36
+msgid "File Upload"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:37
+msgid "Hidden"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:38
+msgid "Image Picker"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:40
+msgid "Group Panel"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:41
+msgid "Date Range"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:42
+msgid "Collapsible"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:43
+msgid "Size Chart"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:44
+msgid "Popup Container"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:45
+msgid "Searchable Dropdown"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:46
+msgid "Text with styles"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:47
+msgid "Likert Scale"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:48
+msgid "Survey"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:49
+msgid "Group Button"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:50
+msgid "Range"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:51
+msgid "Rating"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:52
+msgid "Sub Products"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:53
+msgid "Sub Product"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:54
+msgid "This field is only available in the full version"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:55
+msgid "You can see a demo of"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:56
+msgid "this field here"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:57
+msgid "You need the subproduct add on to use these fields"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:58
+msgid "Send test email"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:59
+msgid "Done"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:60
+#: jstranslations/RunnableGlobalProductBuilder.php:4
+msgid "Settings"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:62
+msgid "Styles"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:63
+msgid "Image Condition"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:64
+msgid "Google Maps"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:65
+msgid "License"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:66
+msgid "Additional Fees"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:67
+msgid "Java Script"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:68
+msgid "License Key"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:69
+msgid "Deactivate"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:70
+msgid "Activate"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:72
+msgid "The maximum number of activations have been already used for this license. You can check where this license has been used by login into your account."
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:73
+msgid "Invalid license!"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:74
+msgid "License activated successfully"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:75
+msgid "The license could not be deactivated! please try again"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:76
+msgid "License deactivated successfully"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:77
+msgid "You can put any javascript code here, this code is executed after the form is loaded"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:78
+msgid "Type Ctr+space to open autocomplete"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:79
+msgid "Form Type"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:80
+msgid "Normal"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:81
+msgid "Multiple Steps (Full Version Only)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:82
+msgid "Options Amount Label"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:83
+msgid "Options Amount Visibility"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:84
+msgid "Final Total Label"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:85
+msgid "Final Total Visibility"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:86
+msgid "Previous Button Text"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:87
+msgid "Next Button Text"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:88
+msgid "Submit Button Text"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:89
+msgid "Multiple steps is only available in the full version"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:90
+msgid "Step 1"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:91
+msgid "My Fee"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:92
+msgid "Currently this product doesn't add any additional fee"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:93
+msgid "Click here to add a fee"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:94
+msgid "When this condition is met"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:95
+msgid "Add another fee"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:96
+msgid "Pro required"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:97
+msgid "Api Key"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:98
+msgid "Changes to the api key won't be reflected until the page is refreshed"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:99
+msgid "Add the following fee"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:100
+msgid "Fee Name"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:101
+msgid "Add only once"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:102
+msgid "Check this box to only include the fee with the same name only once, if not checked the fee will be added again for each product that match the condition"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:103
+msgid "Fee Type"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:104
+msgid "Fixed amount"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:105
+msgid "Percentage of product price"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:107
+msgid "Percentage"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:108
+msgid "View styles for"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:109
+msgid "This field only"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:110
+msgid "All the fields of this type"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:111
+msgid "Default"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:112
+msgid "Size"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:113
+msgid "Text Decoration"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:114
+msgid "Overline"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:115
+msgid "Line Through"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:116
+msgid "Underline"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:117
+msgid "Alignment"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:118
+msgid "Bold"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:119
+msgid "Yes"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:120
+msgid "No"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:122
+msgid "Width"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:123
+msgid "Select a custom action"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:124
+msgid "Add"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:125
+msgid "Please select a custom action first"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:126
+msgid "On Change"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:127
+msgid "Formula: "
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:128
+msgid "Show description when"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:129
+msgid "Allways"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:130
+msgid "Only when field is filled"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:131
+msgid "Description"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:132
+msgid "Tooltip"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:133
+msgid "Descriptions (Full Version Only)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:135
+msgid "Image URL"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:136
+msgid "Sale"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:137
+msgid "Price Type"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:138
+msgid "% of original price"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:139
+msgid "% of original price + options"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:140
+msgid "Add Additional Column"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:141
+msgid "At least one option should be available"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:142
+msgid "Default Text"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:144
+msgid "Top"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:145
+msgid "Left"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:146
+msgid "No image selected yet"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:147
+msgid "days after the start date"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:148
+msgid "Default Values"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:149
+msgid "Add Indicator"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:150
+msgid "There should be at least one indicator"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:151
+msgid "Field Type"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:152
+msgid "Additional Data"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:153
+msgid "Here you can add additional columns for each option, these columns can be used in formulas"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:154
+msgid "Column Name"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:155
+msgid "Add Column"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:156
+msgid "You need to select an image first"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:157
+msgid "Sale Price"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:158
+msgid "No Image"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:159
+msgid "Conditions"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:160
+msgid "Custom Actions"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:161
+msgid "Enable Show/Hide Conditions"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:162
+msgid "Enable Custom Validations (Full Version Only)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:163
+msgid "Show"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:164
+msgid "Hide"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:165
+msgid "this field if"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:166
+msgid "Select a field"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:167
+msgid "Fields"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:168
+#: jstranslations/RunnableGlobalProductBuilder.php:26
+msgid "AND"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:169
+#: jstranslations/RunnableGlobalProductBuilder.php:20
+msgid "or"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:170
+#: jstranslations/RunnableGlobalProductBuilder.php:21
+msgid "Add new group"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:175
+#: jstranslations/RunnableGlobalProductBuilder.php:31
+msgid "Contains"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:180
+#: jstranslations/RunnableGlobalProductBuilder.php:32
+msgid "Not Contains"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:183
+msgid "Import"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:184
+msgid "Export"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:185
+msgid "Importing a new template will delete the fields that you have created so far, continue?"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:186
+msgid "Change image depending on a condition"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:187
+msgid "Disable options depending on a condition (Full Version Only)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:188
+msgid "Set maximum number of items depending on a condition (Full Version Only)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:189
+msgid "Change option price depending on a condition (Full Version Only)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:190
+msgid "Use as product image"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:191
+#: ProductFieldBuilder.php:1
+msgid "Show quantity selector"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:192
+#: ProductFieldBuilder.php:1
+msgid "Quantity Position"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:193
+msgid "Right"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:194
+msgid "Bottom"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:195
+#: ProductFieldBuilder.php:1
+msgid "Default value"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:196
+#: ProductFieldBuilder.php:1
+msgid "Quantity Label"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:198
+#: ProductFieldBuilder.php:1
+msgid "Maximum Value"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:199
+#: ProductFieldBuilder.php:1
+msgid "0 = No Minimum"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:200
+#: ProductFieldBuilder.php:1
+msgid "Minimum Value"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:203
+msgid "Price per item (Full Version Only)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:207
+msgid "Sale Percentage"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:208
+msgid "Free chars"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:209
+msgid "Ignore Spaces"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:210
+msgid "Free words"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:212
+msgid "Image"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:213
+msgid "Image Width"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:214
+msgid "Image Height"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:215
+msgid "Text inside image"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:223
+msgid "Custom CSS"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:224
+msgid "Colum"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:225
+msgid "Total Type"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:227
+msgid "Default text"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:228
+msgid "Read only"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:229
+msgid "Quantity With Price"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:232
+msgid "Percent of the original price"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:233
+msgid "Percent of the original price + options"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:234
+msgid "Price per word"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:235
+msgid "Price per char"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:237
+msgid "Maximum number of characters (0 for no maximum)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:238
+msgid "Input Box"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:239
+msgid "Text"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:240
+msgid "Surround the link with"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:241
+msgid "e.g."
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:242
+msgid "Term of Services"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:243
+msgid "Popup"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:244
+msgid "Open in another tab"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:246
+msgid "Popup Content"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:247
+msgid "Link URL"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:248
+msgid "Checked"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:249
+msgid "Checked Icon"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:250
+msgid "Check Background Color"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:251
+msgid "Unchecked Icon"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:252
+msgid "Uncheck Background Color"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:253
+msgid "Allow multiple"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:254
+#: jstranslations/RunnableGlobalProductBuilder.php:5
+#: ProductFieldBuilder.php:1
+msgid "Options"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:255
+msgid "Rows"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:257
+msgid "Default Value"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:258
+msgid "Min Value"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:259
+msgid "Max Value"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:260
+msgid "Step"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:261
+msgid "Show Value Tooltip"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:262
+msgid "Slider value"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:263
+msgid "Slider label"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:264
+msgid "Number of Rows"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:265
+msgid "Are you sure?"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:266
+msgid "This will delete rows from your size chart starting from the last one(s), do you want to continue?"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:267
+msgid "Number of columns"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:268
+msgid "This will delete columns from your size chart starting from the last one(s), do you want to continue?"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:269
+msgid "Rows can be selected"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:270
+msgid "Include Headers"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:271
+msgid "Allow Multiple Selection"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:272
+msgid "Cell Options"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:273
+msgid "Row Options"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:274
+msgid "Price per row"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:275
+msgid "Formula"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:277
+msgid "Show options price"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:278
+msgid "Formula per item (Full version only)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:279
+msgid "Items"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:280
+msgid "Show Selected Value"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:281
+msgid "Selected Value Label"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:282
+msgid "Price Per Range"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:283
+msgid "Indicators"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:284
+msgid "Allow half star"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:285
+msgid "The field is used when you want to to access the field programmatically through the API"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:286
+msgid "Mask Type"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:287
+msgid "Phone: (999)99-999-999"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:288
+msgid "Credit Card: 9999 9999 9999 9999"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:289
+msgid "Custom"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:290
+msgid "9=Numbers, a=letters, *=Numbers or letters"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:291
+msgid "Custom Mask"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:292
+msgid "Mask Char"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:293
+msgid "Orientation"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:294
+msgid "Horizontal"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:295
+msgid "Vertical"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:296
+msgid "Allow Multiple"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:297
+msgid "Allow Zoom"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:298
+msgid "Maximum number of selectable items"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:299
+msgid "Images"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:300
+msgid "Image Items"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:301
+msgid "Style"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:302
+msgid "Show Price In Each Button"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:303
+msgid "Label Address1"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:304
+msgid "Label Address2"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:305
+msgid "Label City"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:306
+msgid "Label State"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:307
+msgid "Label Zip"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:308
+msgid "Label Country"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:309
+msgid "Distance between points (full version only)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:310
+msgid "Show address 2"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:311
+msgid "Show city"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:312
+msgid "Show state"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:313
+msgid "Show zip"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:314
+msgid "Show country"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:315
+msgid "Show Map"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:316
+msgid "Markers"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:317
+msgid "Labels"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:336
+msgid "Type"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:337
+msgid "Title"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:338
+msgid "Dashed"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:339
+msgid "Solid"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:340
+#: ProductFieldBuilder.php:1
+msgid "Date Format"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:341
+msgid "Price Per Day"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:342
+msgid "Label (Start Date)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:343
+msgid "Placeholder (Start Date)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:344
+msgid "Default Date (Start Date)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:345
+msgid "This property support two type of fields"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:346
+msgid "A number, representing the number of dates from now e.g. 0 for today 1 for tomorrow"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:347
+msgid "2 for the day after tomorrow and so on. It supports negative numbers as well"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:348
+msgid "An specific date in the format of YYYY/MM/DD e.g. 2000/02/01 for February first of 2000"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:349
+msgid "Start Date"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:350
+msgid "Label (End Date)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:351
+msgid "Placeholder (End Date)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:352
+msgid "Default Date (End Date)"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:353
+msgid "The end date should be at least"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:354
+msgid "End Date"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:355
+msgid "Default Date"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:356
+msgid "Week Start On"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:364
+msgid "Enable time picker"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:365
+msgid "Time Format"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:366
+msgid "Restrictions"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:367
+msgid "Minimum Date"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:368
+msgid "Maximum Date"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:369
+msgid "Disable day of week"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:370
+msgid "Input"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:372
+msgid "Itemized"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:373
+msgid "Image Position"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:374
+msgid "Number of Columns"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:375
+msgid "Default Color"
+msgstr ""
+
+#: jstranslations/ProductFieldBuilder.php:376
+msgid "Remove"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:2
+msgid "Global Options Designer"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:3
+msgid "Save"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:7
+msgid "When a product already have options configured"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:8
+msgid "Don't add these options"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:9
+msgid "Add these options bellow the product options"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:10
+msgid "Add these options above the product options"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:11
+msgid "Add these options to the products that met this condition"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:12
+msgid "No condition has been added yet, this mean these options will not be added to any product"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:13
+msgid "Excluding the products that met this condition"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:14
+msgid "No excluding condition has been added yet, this mean that these options will be added to all the products that met the condition above without exceptions."
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:15
+msgid "Global Options"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:16
+msgid "Name is mandatory"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:17
+msgid "Global options saved"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:19
+msgid "Create Condition"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:22
+msgid "Select a condition type"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:23
+msgid "Product Category"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:24
+msgid "Product Tag"
+msgstr ""
+
+#: jstranslations/RunnableGlobalProductBuilder.php:25
+msgid "Product Attribute"
+msgstr ""
+
+#: pr/PRLoader.php:128
+msgid "Global product options"
+msgstr ""

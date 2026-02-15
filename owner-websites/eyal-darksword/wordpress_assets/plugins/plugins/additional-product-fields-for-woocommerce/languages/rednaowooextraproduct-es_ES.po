@@ -1,0 +1,672 @@
+# Copyright (C) 2019 RedNao
+# This file is distributed under the same license as the Extra Product Options Builder for WooCommerce plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Extra Product Options Builder for WooCommerce 1.2.10\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/woo-extra-"
+"products\n"
+"POT-Creation-Date: 2019-11-03T13:37:54+00:00\n"
+"PO-Revision-Date: 2019-11-03 07:38-0600\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.0.6\n"
+"X-Domain: rednaowooextraproduct\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Plugin Name of the plugin
+msgid "Extra Product Options Builder for WooCommerce"
+msgstr "Extra Product Options Builder for WooCommerce"
+
+#. Plugin URI of the plugin
+msgid "http://smartforms.rednao.com/getit"
+msgstr "http://smartforms.rednao.com/getit"
+
+#. Description of the plugin
+msgid "Additional product fields for woocommerce"
+msgstr "Additional product fields for woocommerce"
+
+#. Author of the plugin
+msgid "RedNao"
+msgstr "RedNao"
+
+#. Author URI of the plugin
+msgid "http://rednao.com"
+msgstr "http://rednao.com"
+
+#: jstranslations/InternalShared.php:2
+msgid "Jan"
+msgstr "Ene"
+
+#: jstranslations/InternalShared.php:3
+msgid "Feb"
+msgstr "Feb"
+
+#: jstranslations/InternalShared.php:4
+msgid "Mar"
+msgstr "Mar"
+
+#: jstranslations/InternalShared.php:5
+msgid "Apr"
+msgstr "Abr"
+
+#: jstranslations/InternalShared.php:6
+msgid "May"
+msgstr "May"
+
+#: jstranslations/InternalShared.php:7
+msgid "Jun"
+msgstr "Jun"
+
+#: jstranslations/InternalShared.php:8
+msgid "Jul"
+msgstr "Jul"
+
+#: jstranslations/InternalShared.php:9
+msgid "Aug"
+msgstr "Ago"
+
+#: jstranslations/InternalShared.php:10
+msgid "Sep"
+msgstr "Sep"
+
+#: jstranslations/InternalShared.php:11
+msgid "Oct"
+msgstr "Oct"
+
+#: jstranslations/InternalShared.php:12
+msgid "Nov"
+msgstr "Nov"
+
+#: jstranslations/InternalShared.php:13
+msgid "Dec"
+msgstr "Dic"
+
+#: jstranslations/InternalShared.php:14
+msgid "January"
+msgstr "Enero"
+
+#: jstranslations/InternalShared.php:15
+msgid "February"
+msgstr "Febrero"
+
+#: jstranslations/InternalShared.php:16
+msgid "March"
+msgstr "Marzo"
+
+#: jstranslations/InternalShared.php:17
+msgid "April"
+msgstr "Abril"
+
+#: jstranslations/InternalShared.php:18
+msgid "June"
+msgstr "Junio"
+
+#: jstranslations/InternalShared.php:19
+msgid "July"
+msgstr "Julio"
+
+#: jstranslations/InternalShared.php:20
+msgid "August"
+msgstr "Agosto"
+
+#: jstranslations/InternalShared.php:21
+msgid "September"
+msgstr "Septiembre"
+
+#: jstranslations/InternalShared.php:22
+msgid "October"
+msgstr "Octubre"
+
+#: jstranslations/InternalShared.php:23
+msgid "November"
+msgstr "Noviembre"
+
+#: jstranslations/InternalShared.php:24
+msgid "December"
+msgstr "Diciembre"
+
+#: jstranslations/InternalShared.php:25
+msgid "Su"
+msgstr "Do"
+
+#: jstranslations/InternalShared.php:26
+msgid "Mo"
+msgstr "Lu"
+
+#: jstranslations/InternalShared.php:27
+msgid "Tu"
+msgstr "Ma"
+
+#: jstranslations/InternalShared.php:28
+msgid "We"
+msgstr "Mi"
+
+#: jstranslations/InternalShared.php:29
+msgid "Th"
+msgstr "Ju"
+
+#: jstranslations/InternalShared.php:30
+msgid "Fr"
+msgstr "Vi"
+
+#: jstranslations/InternalShared.php:31
+msgid "Sa"
+msgstr "Sa"
+
+#: jstranslations/InternalShared.php:32
+msgid "Sun"
+msgstr "Dom"
+
+#: jstranslations/InternalShared.php:33
+msgid "Mon"
+msgstr "Lun"
+
+#: jstranslations/InternalShared.php:34
+msgid "Tue"
+msgstr "Mar"
+
+#: jstranslations/InternalShared.php:35
+msgid "Wed"
+msgstr "Mie"
+
+#: jstranslations/InternalShared.php:36
+msgid "Thu"
+msgstr "Jue"
+
+#: jstranslations/InternalShared.php:37
+msgid "Fri"
+msgstr "Vie"
+
+#: jstranslations/InternalShared.php:38
+msgid "Sat"
+msgstr "Sab"
+
+#: jstranslations/InternalShared.php:39
+#: jstranslations/ProductFieldBuilder.php:100
+msgid "Sunday"
+msgstr "Domingo"
+
+#: jstranslations/InternalShared.php:40
+#: jstranslations/ProductFieldBuilder.php:101
+msgid "Monday"
+msgstr "Lunes"
+
+#: jstranslations/InternalShared.php:41
+#: jstranslations/ProductFieldBuilder.php:102
+msgid "Tuesday"
+msgstr "Martes"
+
+#: jstranslations/InternalShared.php:42
+#: jstranslations/ProductFieldBuilder.php:103
+msgid "Wednesday"
+msgstr "Miercoles"
+
+#: jstranslations/InternalShared.php:43
+#: jstranslations/ProductFieldBuilder.php:104
+msgid "Thursday"
+msgstr "Jueves"
+
+#: jstranslations/InternalShared.php:44
+#: jstranslations/ProductFieldBuilder.php:105
+msgid "Friday"
+msgstr "Viernes"
+
+#: jstranslations/InternalShared.php:45
+#: jstranslations/ProductFieldBuilder.php:106
+msgid "Saturday"
+msgstr "Sabado"
+
+#: jstranslations/ProductDesignerPro.php:2
+msgid "Value"
+msgstr "Valor"
+
+#: jstranslations/ProductDesignerPro.php:3
+#: jstranslations/ProductFieldBuilder.php:6 ProductFieldBuilder.php:1
+msgid "Label"
+msgstr "Etiqueta"
+
+#: jstranslations/ProductDesignerPro.php:4
+msgid "Allowed Extensions (separate them by a comma e.g. .png,.pdf)"
+msgstr "Extensiones Permitidas (separadas por coma, ej: .png,.pdf)"
+
+#: jstranslations/ProductDesignerPro.php:5
+msgid "Allow multiple files"
+msgstr "Permitir multiple archivos"
+
+#: jstranslations/ProductDesignerPro.php:6
+#: jstranslations/ProductFieldBuilder.php:35 ProductFieldBuilder.php:1
+msgid "Required"
+msgstr "Requerido"
+
+#: jstranslations/ProductDesignerPro.php:7
+#: jstranslations/ProductFieldBuilder.php:64 ProductFieldBuilder.php:1
+msgid "General"
+msgstr "General"
+
+#: jstranslations/ProductDesignerPro.php:8
+#: jstranslations/ProductFieldBuilder.php:48
+msgid "Price type"
+msgstr "Tipo de precio"
+
+#: jstranslations/ProductDesignerPro.php:9
+#: jstranslations/ProductFieldBuilder.php:49
+msgid "None (don't use this field to calculate price)"
+msgstr "Ninguno (No se usara este campo para calcular precios)"
+
+#: jstranslations/ProductDesignerPro.php:10
+#: jstranslations/ProductFieldBuilder.php:50
+msgid "Fixed Amount"
+msgstr "Cantidad fija"
+
+#: jstranslations/ProductDesignerPro.php:11
+msgid "Price Per Item"
+msgstr "Precio por Articulo"
+
+#: jstranslations/ProductDesignerPro.php:12
+#: jstranslations/ProductFieldBuilder.php:8
+msgid "Price"
+msgstr "Precio"
+
+#: jstranslations/ProductDesignerPro.php:13
+#: jstranslations/ProductFieldBuilder.php:57
+msgid "Sale Price (Empty = No Sale)"
+msgstr "Precio en descuento (Vacio = No Descuento)"
+
+#: jstranslations/ProductDesignerPro.php:14
+#: jstranslations/ProductFieldBuilder.php:63 ProductFieldBuilder.php:1
+msgid "Hide price"
+msgstr "Ocultar Precio"
+
+#: jstranslations/ProductDesignerPro.php:15
+#: jstranslations/ProductFieldBuilder.php:65 ProductFieldBuilder.php:1
+msgid "Pricing"
+msgstr "Precio"
+
+#: jstranslations/ProductDesignerPro.php:16
+msgid "Show Subtotal"
+msgstr "Mostrar Subtotal"
+
+#: jstranslations/ProductDesignerPro.php:17
+msgid "Subtotal Label"
+msgstr "Etiqueta Subtotal"
+
+#: jstranslations/ProductDesignerPro.php:18
+msgid "Sum of fields in group"
+msgstr "Suma de campos en grupo"
+
+#: jstranslations/ProductDesignerPro.php:19
+msgid "Enable multiple columns"
+msgstr "Habilitar multiple columnas"
+
+#: jstranslations/ProductDesignerPro.php:20
+msgid "Columns"
+msgstr "Columnas"
+
+#: jstranslations/ProductFieldBuilder.php:2
+msgid "Please select a field"
+msgstr "Por favor selecciona un campo"
+
+#: jstranslations/ProductFieldBuilder.php:3
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: jstranslations/ProductFieldBuilder.php:4
+msgid "Import"
+msgstr "Importar"
+
+#: jstranslations/ProductFieldBuilder.php:5
+msgid "Export"
+msgstr "Exportar"
+
+#: jstranslations/ProductFieldBuilder.php:7
+msgid "Image URL"
+msgstr "URL Imagen"
+
+#: jstranslations/ProductFieldBuilder.php:9
+msgid "Sale"
+msgstr "Descuento"
+
+#: jstranslations/ProductFieldBuilder.php:10
+msgid "Price Type"
+msgstr "Tipo de precio"
+
+#: jstranslations/ProductFieldBuilder.php:11
+msgid "Fixed amount"
+msgstr "Cantidad fija"
+
+#: jstranslations/ProductFieldBuilder.php:12
+msgid "% of original price"
+msgstr "% de el precio original"
+
+#: jstranslations/ProductFieldBuilder.php:13
+msgid "% of original price + options"
+msgstr "% de precio original + opciones"
+
+#: jstranslations/ProductFieldBuilder.php:14
+msgid "Field Type"
+msgstr "Tipo de Campo"
+
+#: jstranslations/ProductFieldBuilder.php:15
+msgid "Enable Show/Hide Conditions"
+msgstr "Habilitar condiciones Mostrar/Esconder"
+
+#: jstranslations/ProductFieldBuilder.php:16
+msgid "Show"
+msgstr "Mostrar"
+
+#: jstranslations/ProductFieldBuilder.php:17
+msgid "Hide"
+msgstr "Esconder"
+
+#: jstranslations/ProductFieldBuilder.php:18
+msgid "this field if"
+msgstr "este campo si"
+
+#: jstranslations/ProductFieldBuilder.php:19
+msgid "Settings"
+msgstr "Ajustes"
+
+#: jstranslations/ProductFieldBuilder.php:20
+msgid "Conditions"
+msgstr "Condiciones"
+
+#: jstranslations/ProductFieldBuilder.php:21
+msgid "Select a field"
+msgstr "Selecciona un campo"
+
+#: jstranslations/ProductFieldBuilder.php:22
+msgid "Fields"
+msgstr "Campos"
+
+#: jstranslations/ProductFieldBuilder.php:23
+msgid "AND"
+msgstr "Y"
+
+#: jstranslations/ProductFieldBuilder.php:24
+msgid "or"
+msgstr "o"
+
+#: jstranslations/ProductFieldBuilder.php:25
+msgid "Add new group"
+msgstr "Agregar nuevo grupo"
+
+#: jstranslations/ProductFieldBuilder.php:26
+msgid "Select one"
+msgstr "Selecciona uno"
+
+#: jstranslations/ProductFieldBuilder.php:27
+msgid "Contains"
+msgstr "Contiene"
+
+#: jstranslations/ProductFieldBuilder.php:28
+msgid "Not Contains"
+msgstr "No Contiene"
+
+#: jstranslations/ProductFieldBuilder.php:29
+msgid "Is Empty"
+msgstr "Esta Vacio"
+
+#: jstranslations/ProductFieldBuilder.php:30
+msgid "Is Not Empty"
+msgstr "No Esta Vacio"
+
+#: jstranslations/ProductFieldBuilder.php:31
+msgid "Equal to"
+msgstr "Igual a"
+
+#: jstranslations/ProductFieldBuilder.php:32
+msgid "Not Equal to"
+msgstr "No igual a"
+
+#: jstranslations/ProductFieldBuilder.php:33
+msgid "Default text"
+msgstr "Valor por defecto"
+
+#: jstranslations/ProductFieldBuilder.php:34 ProductFieldBuilder.php:1
+msgid "Placeholder"
+msgstr "Contenedor"
+
+#: jstranslations/ProductFieldBuilder.php:36 ProductFieldBuilder.php:1
+msgid "Show quantity selector"
+msgstr "Mostrar selector de cantidad"
+
+#: jstranslations/ProductFieldBuilder.php:37 ProductFieldBuilder.php:1
+msgid "Quantity Position"
+msgstr "Posicion de la Cantidad"
+
+#: jstranslations/ProductFieldBuilder.php:38
+msgid "Left"
+msgstr "Izquierda"
+
+#: jstranslations/ProductFieldBuilder.php:39
+msgid "Right"
+msgstr "Derecha"
+
+#: jstranslations/ProductFieldBuilder.php:40
+msgid "Top"
+msgstr "Arriba"
+
+#: jstranslations/ProductFieldBuilder.php:41
+msgid "Bottom"
+msgstr "Abajo"
+
+#: jstranslations/ProductFieldBuilder.php:42 ProductFieldBuilder.php:1
+msgid "Default value"
+msgstr "Valor por defecto"
+
+#: jstranslations/ProductFieldBuilder.php:43 ProductFieldBuilder.php:1
+msgid "Quantity Label"
+msgstr "Etiqueta de la Cantidad"
+
+#: jstranslations/ProductFieldBuilder.php:44 ProductFieldBuilder.php:1
+msgid "0 = No Maximum"
+msgstr "0 = No Maximo"
+
+#: jstranslations/ProductFieldBuilder.php:45 ProductFieldBuilder.php:1
+msgid "Maximum Value"
+msgstr "Valor Maximo"
+
+#: jstranslations/ProductFieldBuilder.php:46 ProductFieldBuilder.php:1
+msgid "0 = No Minimum"
+msgstr "0 = No Minimo"
+
+#: jstranslations/ProductFieldBuilder.php:47 ProductFieldBuilder.php:1
+msgid "Minimum Value"
+msgstr "Valor Minimo"
+
+#: jstranslations/ProductFieldBuilder.php:51 ProductFieldBuilder.php:1
+msgid "Quantity"
+msgstr "Cantidad"
+
+#: jstranslations/ProductFieldBuilder.php:52
+msgid "Current value"
+msgstr "Valor actual"
+
+#: jstranslations/ProductFieldBuilder.php:53
+msgid "Percent of the original price"
+msgstr "% de el precio original"
+
+#: jstranslations/ProductFieldBuilder.php:54
+msgid "Percent of the original price + options"
+msgstr "% de precio original + opciones"
+
+#: jstranslations/ProductFieldBuilder.php:55
+msgid "Price per word"
+msgstr "Precio por palabra"
+
+#: jstranslations/ProductFieldBuilder.php:56
+msgid "Price per char"
+msgstr "Precio por caracter"
+
+#: jstranslations/ProductFieldBuilder.php:58
+msgid "Percentage"
+msgstr "Porcentaje"
+
+#: jstranslations/ProductFieldBuilder.php:59
+msgid "Sale Percentage"
+msgstr "Porcentaje en Descuento"
+
+#: jstranslations/ProductFieldBuilder.php:60
+msgid "Free chars"
+msgstr "Caracteres Gratis"
+
+#: jstranslations/ProductFieldBuilder.php:61
+msgid "Ignore Spaces"
+msgstr "Espacios Ignorados"
+
+#: jstranslations/ProductFieldBuilder.php:62
+msgid "Free words"
+msgstr "Palabras Gratuitas"
+
+#: jstranslations/ProductFieldBuilder.php:66 ProductFieldBuilder.php:1
+msgid "Options"
+msgstr "Opciones"
+
+#: jstranslations/ProductFieldBuilder.php:67
+msgid "Image Width"
+msgstr "Longitud de Imagen"
+
+#: jstranslations/ProductFieldBuilder.php:68
+msgid "Image Height"
+msgstr "Altura de Imagen"
+
+#: jstranslations/ProductFieldBuilder.php:69
+msgid "Allow Multiple"
+msgstr "Permitir Multiple"
+
+#: jstranslations/ProductFieldBuilder.php:70
+msgid "Text"
+msgstr "Texto"
+
+#: jstranslations/ProductFieldBuilder.php:71
+msgid "Title"
+msgstr "Titulo"
+
+#: jstranslations/ProductFieldBuilder.php:72
+msgid "Style"
+msgstr "Estilo"
+
+#: jstranslations/ProductFieldBuilder.php:73
+msgid "Dashed"
+msgstr "Rayado"
+
+#: jstranslations/ProductFieldBuilder.php:74
+msgid "Solid"
+msgstr "Solido"
+
+#: jstranslations/ProductFieldBuilder.php:75
+msgid "Color"
+msgstr "Color"
+
+#: jstranslations/ProductFieldBuilder.php:76
+msgid "Horizontal"
+msgstr "Horizontal"
+
+#: jstranslations/ProductFieldBuilder.php:77
+msgid "Vertical"
+msgstr "Vertical"
+
+#: jstranslations/ProductFieldBuilder.php:78 ProductFieldBuilder.php:1
+msgid "Date Format"
+msgstr "Formato de Fecha"
+
+#: jstranslations/ProductFieldBuilder.php:79
+msgid "Price Per Day"
+msgstr "Precio por dia"
+
+#: jstranslations/ProductFieldBuilder.php:80
+msgid "Label (Start Date)"
+msgstr "Etiqueta (Fecha Inicio)"
+
+#: jstranslations/ProductFieldBuilder.php:81
+msgid "Placeholder (Start Date)"
+msgstr "Contenedor (Fecha Inicio)"
+
+#: jstranslations/ProductFieldBuilder.php:82
+msgid "Default Date (Start Date)"
+msgstr "Valor por defecto (Fecha Inicio)"
+
+#: jstranslations/ProductFieldBuilder.php:83
+msgid "This property support two type of fields"
+msgstr "Esta propiedad soporta 2 tipos de valores"
+
+#: jstranslations/ProductFieldBuilder.php:84
+msgid ""
+"A number, representing the number of dates from now e.g. 0 for today 1 for "
+"tomorrow"
+msgstr ""
+"Un numero, representando el numero de dias desde hoy. Ej. 0 para hoy, 1 para "
+"mañana"
+
+#: jstranslations/ProductFieldBuilder.php:85
+msgid ""
+"2 for the day after tomorrow and so on. It supports negative numbers as well"
+msgstr "2 para pasado mañana etc. Tambien soporta numerous negativos"
+
+#: jstranslations/ProductFieldBuilder.php:86
+msgid ""
+"An specific date in the format of YYYY/MM/DD e.g. 2000/02/01 for February "
+"first of 2000"
+msgstr ""
+"Una fecha en especifico con el formato de YYYY/MM/DD ej. 2000/02/01 para "
+"Febrero 1 de el 2000"
+
+#: jstranslations/ProductFieldBuilder.php:87
+msgid "Start Date"
+msgstr "Fecha Inicio"
+
+#: jstranslations/ProductFieldBuilder.php:88
+msgid "Label (End Date)"
+msgstr "Etiqueta (Fecha Fin)"
+
+#: jstranslations/ProductFieldBuilder.php:89
+msgid "Placeholder (End Date)"
+msgstr "Contenedor (Fecha Fin)"
+
+#: jstranslations/ProductFieldBuilder.php:90
+msgid "Default Date (End Date)"
+msgstr "Valor por defecto (Fecha Fin)"
+
+#: jstranslations/ProductFieldBuilder.php:91
+msgid "End Date"
+msgstr "Fecha Fin"
+
+#: jstranslations/ProductFieldBuilder.php:92
+msgid "Phone: (999)99-999-999"
+msgstr "Telefono: (999)99-999-999"
+
+#: jstranslations/ProductFieldBuilder.php:93
+msgid "Credit Card: 9999 9999 9999 9999"
+msgstr "Tarjeta Credito: 9999 9999 9999 9999"
+
+#: jstranslations/ProductFieldBuilder.php:94
+msgid "Custom"
+msgstr "Personalizado"
+
+#: jstranslations/ProductFieldBuilder.php:95
+msgid "9=Numbers, a=letters, *=Numbers or letters"
+msgstr "9=Numeros, a=letras, *=Numeros o letras"
+
+#: jstranslations/ProductFieldBuilder.php:96
+msgid "Custom Mask"
+msgstr "Mascara Personalizada"
+
+#: jstranslations/ProductFieldBuilder.php:97
+msgid "Mask Char"
+msgstr "Caracteres Enmascarados"
+
+#: jstranslations/ProductFieldBuilder.php:98
+msgid "Default Date"
+msgstr "Fecha por Default"
+
+#: jstranslations/ProductFieldBuilder.php:99
+msgid "Week Start On"
+msgstr "La semana empieza en"
+
+#: jstranslations/ProductFieldBuilder.php:107
+msgid "Default Color"
+msgstr "Color"

@@ -1,0 +1,44 @@
+{
+  "name": "wpdesk/wp-wpdesk-activation-reminder",
+  "type": "composer-plugin",
+  "authors": [
+    {
+      "name": "Krzysiek",
+      "email": "krzysiek@wpdesk.pl"
+    },
+    {
+      "name": "Grzegorz",
+      "email": "grzegorz@wpdesk.net"
+    }
+  ],
+  "require": {
+    "php": ">=7.0",
+    "composer-plugin-api": "^1|^2"
+  },
+  "require-dev": {
+    "composer/composer": "^1|^2",
+    "10up/wp_mock": "0.3",
+    "phpunit/phpunit": "<7"
+  },
+  "autoload": {
+    "psr-4": {
+      "WPDesk\\": "src/"
+    }
+  },
+  "autoload-dev": {
+  },
+  "extra": {
+    "class": "WPDesk\\ActivationReminder\\Composer\\Plugin",
+    "text-domain": "wp-wpdesk-activation-reminder",
+    "translations-folder": "lang",
+    "po-files": {
+      "pl_PL": "pl_PL.po"
+    }
+  },
+  "scripts": {
+    "phpunit-unit": "phpunit --configuration phpunit-unit.xml --coverage-text --colors=never",
+    "phpunit-unit-fast": "phpunit --configuration phpunit-unit.xml --no-coverage",
+    "phpunit-integration": "phpunit --configuration phpunit-integration.xml --coverage-text --colors=never",
+    "phpunit-integration-fast": "phpunit --configuration phpunit-integration.xml --no-coverage"
+  }
+}

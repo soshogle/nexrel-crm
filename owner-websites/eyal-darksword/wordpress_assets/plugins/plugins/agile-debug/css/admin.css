@@ -1,0 +1,21 @@
+.agile_dbg_collapsible{
+    background: none repeat scroll 0 0 #CCCCCC;
+    border-top: 1px solid #F0F0F0;
+    color: #000000;
+    font-family: Arial,Helvetica,sans-serif;
+    font-size: 1em;
+    height: 20px;
+    margin: 0;
+    padding: 5px;
+    text-decoration: none;
+	overflow: hidden;
+    /*text-transform: uppercase;*/
+}
+.agile_dbg_content {
+    background: #FFFFCC;
+    font-family: "Helvetica Neue",Arial,Helvetica,Geneva,sans-serif;
+    font-size: 0.9em;
+    line-height: 1.5em;
+    margin: 0;
+    padding: 10px;
+}

@@ -1,0 +1,1985 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Flexible Shipping PRO 2.15.3\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/flexible-shipping-pro\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2023-02-09T17:23:44+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Language: pl_PL\n"
+"X-Generator: WP-CLI 2.7.1\n"
+"X-Domain: flexible-shipping-pro\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: vendor\n"
+"X-Poedit-SearchPathExcluded-1: vendor_prefixed\n"
+"X-Poedit-SearchPathExcluded-2: tests\n"
+"X-Poedit-SearchPath-1: src\n"
+"X-Loco-Source-Locale: en_PL\n"
+"X-Loco-Parser: loco_parse_po\n"
+
+#. Plugin Name of the plugin
+#. Plugin Name of the plugin/theme
+#: src/ShippingExtensions/Page.php:99
+#: src/PluginCompatibilityChecker.php:100
+msgid "Flexible Shipping PRO"
+msgstr "Flexible Shipping PRO"
+
+#. Plugin URI of the plugin
+#. Plugin URI of the plugin/theme
+msgid "https://octol.io/fs-plugin-site"
+msgstr ""
+
+#. Description of the plugin
+#. Description of the plugin/theme
+msgid "Extends the free version of Flexible Shipping by adding advanced pro features."
+msgstr ""
+
+#. Author of the plugin
+#. Author of the plugin/theme
+msgid "Octolize"
+msgstr "WP Desk"
+
+#. Author URI of the plugin
+#. Author URI of the plugin/theme
+msgid "https://octol.io/fs-author"
+msgstr ""
+
+#. Translators: plugins url.
+#: classes/class-wpdesk-flexible-shipping-pro-plugin.php:143
+#, php-format
+msgid "A new Flexible Shipping version introducing the helpful rules table hints and tooltips is available. %1$sUpdate now%2$s"
+msgstr "Nowa wersja wtyczki Flexible Shipping zawierająca podpowiedzi dotyczące funkcjonalności tabeli reguł jest gotowa do pobrania. %1$sZaktualizuj teraz%2$s"
+
+#: classes/class-wpdesk-flexible-shipping-pro-plugin.php:234
+#: src/Plugin/AbstractPlugin.php:214
+msgid "Settings"
+msgstr "Ustawienia"
+
+#: classes/class-wpdesk-flexible-shipping-pro-plugin.php:235
+#: src/Plugin/AbstractPlugin.php:207
+msgid "Docs"
+msgstr "Docs"
+
+#: classes/class-wpdesk-flexible-shipping-pro-plugin.php:236
+#: src/Plugin/AbstractPlugin.php:201
+msgid "Support"
+msgstr "Wsparcie"
+
+#: classes/flexible-shipping-hooks.php:58
+msgid "Cart Calculation"
+msgstr "Kalkulacja w koszyku"
+
+#: classes/flexible-shipping-hooks.php:62
+msgid "Choose Package value to exclude virtual products from rules calculation."
+msgstr "Aby wykluczyć produkty wirtualne z kalkulacji reguł wybierz opcję Wartość paczki."
+
+#: classes/flexible-shipping-hooks.php:68
+msgid "Free Shipping Requires"
+msgstr "Darmowa wysyłka wymaga"
+
+#: classes/flexible-shipping-hooks.php:72
+msgid "Condition for free shipping"
+msgstr "Warunek do zastosowania darmowej wysyłki"
+
+#: classes/flexible-shipping-hooks.php:80
+msgid "Coupons discounts"
+msgstr "Kupony"
+
+#: classes/flexible-shipping-hooks.php:81
+msgid "Apply minimum order rule before coupon discount"
+msgstr "Zastosuj regułę minimalnej wartości zamówienia przed kuponem"
+
+#: classes/flexible-shipping-hooks.php:84
+msgid "If checked, free shipping would be available based on pre-discount order amount."
+msgstr "Zaznacz, aby zastosować regułę minimalnej wartości zamówienia przed zastosowaniem kuponu."
+
+#: classes/flexible-shipping-hooks.php:90
+msgid "Maximum Cost"
+msgstr "Maksymalny koszt"
+
+#: classes/flexible-shipping-hooks.php:93
+msgid "Set a maximum cost of shipping. This will override the costs configured below."
+msgstr "Ustaw maksymalny koszt wysyłki. To nadpisze koszty ustawione w regułach."
+
+#: classes/flexible-shipping-hooks.php:144
+msgid "Export selected"
+msgstr "Eksportuj zaznaczone"
+
+#: classes/woocommerce-form-field.php:33
+msgid "Choose an option"
+msgstr "Wybierz opcje"
+
+#: src/WPDesk/FSPro/TableRate/CalculationMethodOptions.php:20
+#: src/CalculationMethodOptions.php:19
+msgid "Sum"
+msgstr "Suma"
+
+#: src/WPDesk/FSPro/TableRate/CalculationMethodOptions.php:21
+msgid "Lowest cost"
+msgstr "Najniższy koszt"
+
+#: src/WPDesk/FSPro/TableRate/CalculationMethodOptions.php:22
+msgid "Highest cost"
+msgstr "Najwyższy koszt"
+
+#: src/WPDesk/FSPro/TableRate/CartCalculationOptions.php:22
+#: src/Settings/CartCalculationOptions.php:25
+msgid "Cart value"
+msgstr "Wartość koszyka"
+
+#: src/WPDesk/FSPro/TableRate/CartCalculationOptions.php:23
+#: src/Settings/CartCalculationOptions.php:26
+msgid "Package value"
+msgstr "Wartość paczki"
+
+#: src/WPDesk/FSPro/TableRate/FreeShipping/FreeShippingRequiresOptions.php:27
+msgid "Minimum order amount"
+msgstr "Minimalnej wartości zamówienia"
+
+#: src/WPDesk/FSPro/TableRate/FreeShipping/FreeShippingRequiresOptions.php:28
+msgid "Free shipping coupon"
+msgstr "Kuponu umożliwiającego darmową wysyłkę"
+
+#: src/WPDesk/FSPro/TableRate/FreeShipping/FreeShippingRequiresOptions.php:29
+msgid "Free shipping coupon or minimum order amount"
+msgstr "Minimalnej wartości zamówienia lub kuponu"
+
+#: src/WPDesk/FSPro/TableRate/FreeShipping/FreeShippingRequiresOptions.php:30
+msgid "Free shipping coupon and minimum order amount"
+msgstr "Minimalnej wartości zamówienia i kuponu"
+
+#. Translators: product id.
+#: src/WPDesk/FSPro/TableRate/ImportExport/Conditions/ProductImportData.php:54
+#, php-format
+msgid "Product with ID #%1$s does not exist."
+msgstr "Produkt o ID #%1$s nie istnieje."
+
+#. Translators: rule shipping class and wp_error message.
+#: src/WPDesk/FSPro/TableRate/ImportExport/Conditions/ShippingClassImportData.php:113
+#, php-format
+msgid "Error while creating shipping class: %1$s, %2$s"
+msgstr "Błąd tworzenia klasy wysyłkowej: %1$s, %2$s"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:33
+msgid "Cart line item"
+msgstr "Pozycja w koszyku"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:34
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:36
+msgid "Cart"
+msgstr "Koszyk"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:35
+msgid "Shipping cost based on the number of cart line items"
+msgstr "Koszt wysyłki w oparciu o liczbę pozycji w koszyku"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:79
+msgid "cart lines is from"
+msgstr "od liczby pozycji koszyka"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:80
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:82
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:91
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:84
+msgid "min"
+msgstr "min"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:81
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:130
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:83
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:94
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/PricePro.php:36
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:94
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:115
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:92
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:85
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/WeightPro.php:35
+msgid "from"
+msgstr "od"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:87
+msgid "lines to"
+msgstr "pozycji do"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:88
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:90
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:97
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:91
+msgid "max"
+msgstr "max"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:89
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:138
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:139
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:91
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:100
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:101
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:100
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:101
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:116
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:98
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:92
+msgid "to"
+msgstr "do"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:90
+msgid "lines"
+msgstr "poz"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:47
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:96
+msgid "is"
+msgstr "jest"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:51
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:97
+msgid "is not"
+msgstr "nie jest"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:69
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:98
+msgid "any"
+msgstr "jeden z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:73
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:99
+msgid "all"
+msgstr "wszystkie z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:77
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:100
+msgid "none"
+msgstr "żaden z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:81
+msgid "matches"
+msgstr "jest"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:35
+msgid "Day of the week"
+msgstr "Dzień tygodnia"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:36
+msgid "Shipping cost based on the day the order is placed"
+msgstr "Koszt wysyłki w oparciu o dzień tygodnia, w którym składane jest zamówienie"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:37
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:39
+msgid "Destination & Time"
+msgstr "Lokalizacja i czas"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:82
+msgid "Select the days"
+msgstr "Wybierz dni"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:83
+msgid "one of"
+msgstr "jednym z"
+
+#. Translators: condition name.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:96
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:93
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:173
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:154
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:173
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:137
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:110
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:68
+#, php-format
+msgid "Condition: %1$s;"
+msgstr "Warunek: %1$s;"
+
+#. Translators: operator.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:99
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:96
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:176
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:157
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:176
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:140
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:113
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:71
+#, php-format
+msgid " operator: %1$s;"
+msgstr " operator: %1$s;"
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:110
+#, php-format
+msgid " days: %1$s;"
+msgstr " dni: %1$s;"
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:112
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:107
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:190
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:175
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:189
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:160
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:119
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:76
+#, php-format
+msgid " input data: %1$s;"
+msgstr " dane wejściowe: %1$s;"
+
+#. Translators: matched condition.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:114
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:111
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:192
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:177
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:191
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:162
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:121
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:79
+#, php-format
+msgid " matched: %1$s"
+msgstr " zgodna: %1$s"
+
+#. Translators: matched condition.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:114
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:111
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:192
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:177
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:191
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:162
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:121
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:79
+#: src/Settings/CheckboxValue.php:22
+msgid "yes"
+msgstr "tak"
+
+#. Translators: matched condition.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:114
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:111
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:192
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:177
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:191
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:162
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:121
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:79
+#: src/Settings/CheckboxValue.php:22
+msgid "no"
+msgstr "nie"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:137
+msgid "Monday"
+msgstr "Poniedziałek"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:138
+msgid "Tuesday"
+msgstr "Wtorek"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:139
+msgid "Wednesday"
+msgstr "Środa"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:140
+msgid "Thursday"
+msgstr "Czwartek"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:141
+msgid "Friday"
+msgstr "Piątek"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:142
+msgid "Saturday"
+msgstr "Sobota"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:143
+msgid "Sunday"
+msgstr "Niedziela"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:37
+msgid "Dimensional weight"
+msgstr "Waga gabarytowa"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:38
+msgid "Shipping cost based on the dimensional weight of the cart or package"
+msgstr "Koszt wysyłki w oparciu o wagę gabarytową koszyka lub paczki"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:39
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:40
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:38
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:40
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:54
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:38
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionHeight.php:27
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionLength.php:27
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionWidth.php:26
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:40
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:63
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:40
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:40
+msgid "Product"
+msgstr "Produkt"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:99
+msgid "Undefined"
+msgstr "Nieokreślony"
+
+#. Translators: ratio.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:103
+#, php-format
+msgid " DIM Factor: %1$s;"
+msgstr " Współczynnik przeliczeniowy wagi gabarytowej: %1$s;"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:128
+msgid "weight is from"
+msgstr "waga od"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:129
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:93
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:93
+msgid "is from"
+msgstr "jest od"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:136
+msgid "weight to"
+msgstr "waga do"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:34
+msgid "Item"
+msgstr "Sztuka"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:35
+msgid "Shipping cost based on the products' in the cart quantity"
+msgstr "Koszt wysyłki w oparciu o ilość produktów w koszyku"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:81
+msgid "items is from"
+msgstr "sztuk od"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:89
+msgid "items to"
+msgstr "sztuk do"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:92
+msgid "qty"
+msgstr "szt"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:38
+msgid "Max dimension"
+msgstr "Maksymalny wymiar"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:39
+msgid "Shipping cost based on the product's maximum dimension"
+msgstr "Kosz wysyłki w oparciu o maksymalny wymiar produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:39
+msgid "Shipping cost based on the specific product"
+msgstr "Koszt wysyłki w oparciu o konkretny produkt"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:97
+msgid "search product"
+msgstr "szukaj produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:101
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:208
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:99
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:194
+msgctxt "select"
+msgid "of"
+msgstr "z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:119
+msgctxt "product"
+msgid "any"
+msgstr "jednym"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:120
+msgid "The rule will be used if there is at least 1 product from selected products in the cart"
+msgstr "Reguła zostanie użyta, gdy co najmniej 1 produkt ze wskazanych produktów znajdzie się w koszyku"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:124
+msgctxt "product"
+msgid "all"
+msgstr "każdym"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:125
+msgid "The rule will be used if all selected products are in the cart"
+msgstr "Reguła zostanie użyta, gdy w koszyku znajdą się wszystkie wskazane produkty"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:129
+msgctxt "product"
+msgid "none"
+msgstr "żadnym"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:130
+msgid "The rule will be used only if there are no products from selected products in the cart"
+msgstr "Reguła zostanie użyta, gdy w koszyku nie będzie żadnego produktu ze wskazanym produktów"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:134
+msgctxt "product"
+msgid "matches"
+msgstr "jest"
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:188
+#, php-format
+msgid " products: %1$s;"
+msgstr " produkty: %1$s;"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:204
+msgctxt "product"
+msgid "matches any"
+msgstr "jest jednym z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:205
+msgctxt "product"
+msgid "matches all"
+msgstr "jest każdym z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:206
+msgctxt "product"
+msgid "matches none"
+msgstr "jest żadnym z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:52
+msgid "Product category"
+msgstr "Kategoria produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:53
+msgid "Shipping cost based on the selected product categories"
+msgstr "Koszt wysyłki w oparciu o kategorie produktów"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:125
+msgid "None (category not set)"
+msgstr "Brak (produkt bez kategorii)"
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:173
+#, php-format
+msgid " product categories: %1$s;"
+msgstr " kategorie produktów: %1$s;"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:189
+msgctxt "product-category"
+msgid "matches any"
+msgstr "jest jedną z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:190
+msgctxt "product-category"
+msgid "matches all"
+msgstr "jest każdą z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:191
+msgctxt "product-category"
+msgid "matches none"
+msgstr "jest żadną z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:207
+msgid "search product category"
+msgstr "szukaj kategorii produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:229
+msgctxt "product-category"
+msgid "any"
+msgstr "jedną"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:230
+msgid "The rule will be used if there is at least 1 product with selected product categories in the cart"
+msgstr "Reguła zostanie użyta, gdy co najmniej 1 produkt ze wskazaną kategorią produktu znajdzie się w koszyku"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:234
+msgctxt "product-category"
+msgid "all"
+msgstr "każdą"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:235
+msgid "The rule will be used if there is at least 1 product from each of selected product categories in the cart"
+msgstr "Reguła zostanie użyta, gdy w koszyku znajdzie się co najmniej po 1 produkcie z każdej ze wskazanej kategorii produktów"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:239
+msgctxt "product-category"
+msgid "none"
+msgstr "żadną"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:240
+msgid "The rule will be used only if there are no products with selected product categories in the cart"
+msgstr "Reguła zostanie użyta, gdy w koszyku nie będzie żadnego produktu ze wskazanej kategorii produktów"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:244
+msgctxt "product-category"
+msgid "matches"
+msgstr "jest"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:36
+msgid "Product dimension"
+msgstr "Wymiar produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:37
+msgid "Shipping cost based on the product's dimension"
+msgstr "Koszt wysyłki w oparciu o wymiar produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionHeight.php:25
+msgid "Height"
+msgstr "Wysokość produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionHeight.php:26
+msgid "Shipping cost based on the product's height"
+msgstr "Koszt wysyłki w oparciu o wysokość produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionLength.php:25
+msgid "Length"
+msgstr "Długość produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionLength.php:26
+msgid "Shipping cost based on the product's length"
+msgstr "Koszt wysyłki w oparciu o długość produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionWidth.php:24
+msgid "Width"
+msgstr "Szerokość produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionWidth.php:25
+msgid "Shipping cost based on the product's width"
+msgstr "Koszt wysyłki w oparciu o szerokość produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:39
+msgid "Product tag"
+msgstr "Tag produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:41
+msgid "Shipping cost based on the selected product tags"
+msgstr "Koszt wysyłki w oparciu o przypisane do produktów tagi"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:98
+msgid "search tags"
+msgstr "szukaj tagów"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:120
+msgctxt "product-tag"
+msgid "any"
+msgstr "jednym"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:121
+msgid "The rule will be used if there is at least 1 product with selected product tags in the cart"
+msgstr "Reguła zostanie użyta, gdy co najmniej 1 produkt ze wskazanym tagiem produktu znajdzie się w koszyku"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:125
+msgctxt "product-tag"
+msgid "all"
+msgstr "każdym"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:126
+msgid "The rule will be used if there is at least 1 product from each of selected product tags in the cart"
+msgstr "Reguła zostanie użyta, gdy w koszyku znajdzie się co najmniej po 1 produkcie z każdym ze wskazanych tagów produktów"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:130
+msgctxt "product-tag"
+msgid "none"
+msgstr "żadnym"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:131
+msgid "The rule will be used only if there are no products with selected product tags in the cart"
+msgstr "Reguła zostanie użyta, gdy w koszyku nie będzie żadnego produktu ze wskazanymi tagami produktów"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:135
+msgctxt "product-tag"
+msgid "matches"
+msgstr "jest"
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:187
+#, php-format
+msgid " tags: %1$s;"
+msgstr " tagi: %1$s;"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:203
+msgctxt "product-tag"
+msgid "matches any"
+msgstr "jest jednym z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:204
+msgctxt "product-tag"
+msgid "matches all"
+msgstr "jest każdym z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:205
+msgctxt "product-tag"
+msgid "matches none"
+msgstr "jest żadnym z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:61
+msgid "Shipping class"
+msgstr "Klasa wysyłkowa"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:62
+msgid "Shipping cost based on the selected shipping class"
+msgstr "Koszt wysyłki w oparciu o klasę wysyłkową produktu w koszyku"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:110
+#: src/WPDesk/FSPro/TableRate/ShippingClassSettings.php:24
+#: src/BasedOnOptions.php:20
+#: src/Settings/IntegrationSettingsImplementation.php:41
+msgid "None"
+msgstr "Brak"
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:158
+#, php-format
+msgid " shipping classes: %1$s;"
+msgstr " klasy wysyłkowe: %1$s;"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:174
+msgctxt "shipping-class"
+msgid "matches any"
+msgstr "jest jedną z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:175
+msgctxt "shipping-class"
+msgid "matches all"
+msgstr "jest każdą z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:176
+msgctxt "shipping-class"
+msgid "matches none"
+msgstr "jest żadną z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:193
+msgid "search shipping class"
+msgstr "wyszukaj klasę wysyłkową"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:210
+msgctxt "shipping-class"
+msgid "any"
+msgstr "jedną"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:211
+msgid "The rule will be used if there is at least 1 product with selected shipping classes in the cart"
+msgstr "Reguła zostanie użyta, gdy co najmniej 1 produkt ze wskazaną klasą wysyłkową znajdzie się w koszyku"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:215
+msgctxt "shipping-class"
+msgid "all"
+msgstr "każdą"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:216
+msgid "The rule will be used if there is at least 1 product from each of selected shipping classes in the cart"
+msgstr "Reguła zostanie użyta, gdy w koszyku znajdzie się co najmniej po 1 produkcie z każdą ze wskazanych klas wysyłkowych"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:220
+msgctxt "shipping-class"
+msgid "none"
+msgstr "żadną"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:221
+msgid "The rule will be used only if there are no products with selected shipping classes in the cart"
+msgstr "Reguła zostanie użyta, gdy w koszyku nie będzie żadnego produktu ze wskazanymi klasami wysyłkowymi"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:225
+msgctxt "shipping-class"
+msgid "matches"
+msgstr "jest"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:241
+#: src/WPDesk/FSPro/TableRate/ShippingClassSettings.php:22
+msgid "All products"
+msgstr "Wszystkie produkty"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:242
+#: src/WPDesk/FSPro/TableRate/ShippingClassSettings.php:23
+msgid "Any class (must be set)"
+msgstr "Dowolna klasa (musi być ustawiona)"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:245
+msgid "Products without shipping class"
+msgstr "Produkty bez klasy wysyłkowej"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:38
+msgid "Time of the day"
+msgstr "Pora dnia"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:40
+msgid "Shipping cost based on the defined time frames"
+msgstr "Koszt wysyłki w oparciu o zdefiniowane przedziały czasowe"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:138
+msgid "between"
+msgstr "pomiędzy"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:145
+msgid "and"
+msgstr "a"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:181
+msgid "12:00 AM"
+msgstr "00:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:185
+msgid "1:00 AM"
+msgstr "01:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:189
+msgid "2:00 AM"
+msgstr "02:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:193
+msgid "3:00 AM"
+msgstr "03:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:197
+msgid "4:00 AM"
+msgstr "04:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:201
+msgid "5:00 AM"
+msgstr "05:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:205
+msgid "6:00 AM"
+msgstr "06:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:209
+msgid "7:00 AM"
+msgstr "07:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:213
+msgid "8:00 AM"
+msgstr "08:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:217
+msgid "9:00 AM"
+msgstr "09:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:221
+msgid "10:00 AM"
+msgstr "10:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:225
+msgid "11:00 AM"
+msgstr "11:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:229
+msgid "12:00 PM"
+msgstr "12:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:233
+msgid "1:00 PM"
+msgstr "13:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:237
+msgid "2:00 PM"
+msgstr "14:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:241
+msgid "3:00 PM"
+msgstr "15:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:245
+msgid "4:00 PM"
+msgstr "16:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:249
+msgid "5:00 PM"
+msgstr "17:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:253
+msgid "6:00 PM"
+msgstr "18:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:257
+msgid "7:00 PM"
+msgstr "19:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:261
+msgid "8:00 PM"
+msgstr "20:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:265
+msgid "9:00 PM"
+msgstr "21:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:269
+msgid "10:00 PM"
+msgstr "22:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:273
+msgid "11:00 PM"
+msgstr "23:00"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:38
+msgid "Total overall dimensions"
+msgstr "Suma wymiarów pojedynczego produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:39
+msgid "Shipping cost based on single product's summed up length, width & height"
+msgstr "Koszt wysyłki w oparciu o zsumowaną długość, szerokość i wysokość pojedynczego produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:34
+msgid "User Role"
+msgstr "Rola użytkownika"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:35
+msgid "User"
+msgstr "Użytkownik"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:36
+msgid "Shipping cost based on the selected user role"
+msgstr "Koszt wysyłki w oparciu o rolę użytkownika"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:73
+msgid "user role"
+msgstr "rola użytkownika"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:95
+msgctxt "user role"
+msgid "one of"
+msgstr "jedną z"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:151
+msgid "Guest (Not logged in user)"
+msgstr "Gość (Niezalogowany)"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:38
+msgid "Volume"
+msgstr "Objętość"
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:39
+msgid "Shipping cost based on the volume of the products"
+msgstr "Koszt wysyłki w oparciu o objętość produktów w koszyku"
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:60
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:137
+#: src/BasedOnOptions.php:21
+msgid "Price"
+msgstr "Cena"
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:61
+msgid "Shipping cost as a percentage of order’s value"
+msgstr "Procentowy koszt wysyłki od wartości koszyka"
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:62
+#, fuzzy,php-format
+msgid "Shipping cost always equals 15% of cart total price."
+msgstr "Koszt wysyłki zawsze równy 15% ceny produktów w koszyku."
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:98
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:120
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:171
+msgid "Shipping classes"
+msgstr "Klasy wysyłkowe"
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:99
+msgid "Combining different shipping classes in the cart"
+msgstr "Łączenie klas wysyłkowych"
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:100
+msgid "Different shipping cost for specific shipping classes' combinations and different for products purchased one at a time."
+msgstr "Inny koszt wysyłki dla poszczególnych kombinacji klas wysyłkowych i inny dla produktów kupowanych pojedynczo."
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:105
+msgid "3 existing shipping classes required - if not present, please add them before using the scenario."
+msgstr "Scenariusz wymaga 3 istniejących klas wysyłkowych - w przypadku ich braku, utwórz je przed użyciem."
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:121
+msgid "Disable or hide the shipping method"
+msgstr "Warunkowe ukrywanie metody wysyłki"
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:122
+msgid "The shipping method remains hidden not being displayed in the cart and checkout once the specific condition is met."
+msgstr "Metoda wysyłki zostaje ukryta w określonych okolicznościach, gdy zdefiniowany warunek zostanie spełniony."
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:127
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:178
+msgid "1 existing shipping class required - if not present, please add it before using the scenario."
+msgstr "Scenariusz wymaga 1 istniejącej klasy wysyłkowej - w przypadku jej braku, utwórz ją przed użyciem."
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:138
+msgid "Extra cost for every item"
+msgstr "Koszt bazowy i dodatkowy koszt za każdą sztukę produktu"
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:139
+msgid "Basic shipping cost based on price and additional cost added with each single item in the cart."
+msgstr "Podstawowy koszt wysyłki oparty o cenę i dodatkowy koszt za każdą sztukę produktu w koszyku."
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:152
+msgid "Additional cost"
+msgstr "Dodatkowy koszt"
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:153
+msgid "Progressively increasing weight based shipping"
+msgstr "Koszt rosnący proporcjonalnie do wagi"
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:154
+msgid "Fixed basic shipping cost and progressively calculated additional shipping cost increasing with every 1 kg of weight."
+msgstr "Stały podstawowy koszt wysyłki i rosnący proporcjonalnie dodatkowy koszt za każdy rozpoczęty 1 kg wagi produktów."
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:172
+msgid "Combining the shipping cost calculation conditions"
+msgstr "Łączenie warunków obliczania kosztów"
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:173
+msgid "Shipping cost calculated based on various conditions' combinations."
+msgstr "Koszt wysyłki obliczany w oparciu o połączenie kilku różnych warunków."
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:186
+msgid "There are not enough existing shipping classes required to use the scenario. Create the required number of shipping classes and try again."
+msgstr "Brak wystarczającej ilości istniejących klas wysyłkowych wymaganych do użycia scenariusza. Utwórz potrzebną ilość klas wysyłkowych i spróbuj ponownie."
+
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Cancel.php:24
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Cancel.php:28
+msgid "Hide"
+msgstr "Ukryj"
+
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Cancel.php:25
+msgid "Hide this shipping method once the condition defined in this rule is met"
+msgstr "Ukryj metodę wysyłki, gdy zostanie spełniony warunek zdefiniowany w tej regule"
+
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Stop.php:24
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Stop.php:28
+msgid "Stop"
+msgstr "Zatrzymaj"
+
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Stop.php:25
+msgid "Stop calculating the following rules once the condition defined in this one is met"
+msgstr "Zatrzymaj obliczanie kolejnych reguł, jeśli zostanie spełniony warunek zdefiniowany w tej regule"
+
+#. Translators: currency.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnCartLineItem.php:24
+msgid "Line item (pos)"
+msgstr "Pozycja w koszyku"
+
+#. Translators: weight unit.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnDimensionalWeight.php:29
+#, php-format
+msgid "Dimensional Weight (%1$s)"
+msgstr "Waga gabarytowa (%1$s)"
+
+#. Translators: currency.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnItem.php:24
+msgid "Item (qty)"
+msgstr "Produkt (szt)"
+
+#. Translators: currency.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnValue.php:33
+#, php-format
+msgid "Price (%1$s)"
+msgstr "Cena (%1$s)"
+
+#. Translators: currency.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnVolume.php:36
+#, php-format
+msgid "Volume (%1$s)"
+msgstr "Objętość (%1$s)"
+
+#. Translators: weight unit.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnWeight.php:24
+#, php-format
+msgid "Weight (%1$s)"
+msgstr "Waga (%1$s)"
+
+#: src/WPDesk/FSPro/TableRate/RuleCost/Value.php:15
+msgid "Value"
+msgstr "Wartość"
+
+#: src/WPDesk/FSPro/TableRate/RuleCost/Value.php:19
+msgid "Value for additional cost."
+msgstr "Wartość dodatkowego kosztu."
+
+#. Translators: shipping method settings.
+#: src/WPDesk/FSPro/TableRate/Settings/ProMethodSettingsImplementation.php:130
+#, php-format
+msgid "Method settings:%1$s Enabled: %2$s Method Title: %3$s Method Description: %4$s Tax status: %5$s Costs includes tax: %6$s Free Shipping requires: %7$s Free Shipping: %8$s Coupons discounts (Apply minimum order rule before coupon discount): %9$s Free Shipping Label: %10$s 'Left to free shipping' notice: %11$s Maximum Cost: %12$s Rules Calculation: %13$s Cart calculation: %14$s Visibility (Show only for logged in users): %15$s Default: %16$s Debug mode: %17$s"
+msgstr "Ustawienia metody wysyłki: %1$s Włączona: %2$s Tytuł metody: %3$s Opis: %4$s Status podatku: %5$s Darmowa wysyłka wymaga: %6$s Podatek wliczony w koszt wysyłki: %7$s Darmowa wysyłka: %8$s Kupony (Zastosuj regułę minimalnej wartości zamówienia przed kuponem): %9$s Etykieta darmowej wysyłki: %10$s Do darmowej wysyłki brakuje: %11$s Maksymalny koszt: %12$s Metoda obliczania: %13$s Kalkulacja w koszyku: %14$s Wyświetlanie (Pokaż tylko dla zalogowanych użytkowników): %15$s Domyślnie: %16$s Tryb debugowania FS: %17$s"
+
+#: src/WPDesk/FSPro/TableRate/views/html-admin-weight-ratio-validator.php:36
+msgid "Entering the DIM Factor value is required if the When: Dimensional weight condition was used. Please fill it in and save the changes once again."
+msgstr "Pole Współczynnik przeliczeniowy wagi gabarytowej jest wymagane, gdy został użyty warunek Kiedy: Waga gabarytowa. Uzupełnij je właściwą wartością i zapisz zmiany ponownie."
+
+#: src/WPDesk/FSPro/TableRate/WeightCalculationSettings.php:44
+msgid "DIM Factor"
+msgstr "Współczynnik przeliczeniowy wagi gabarytowej"
+
+#: src/WPDesk/FSPro/TableRate/WeightCalculationSettings.php:46
+msgid "e.g. 166"
+msgstr "np. 5000"
+
+#. Translators: strong tag open, strong tag close.
+#: src/WPDesk/FSPro/TableRate/WeightCalculationSettings.php:52
+#, php-format
+msgid "Filling in the %1$sDIM Factor%2$s value in this field is required if you use the %1$sWhen: Dimensional weight%2$s condition to calculate the shipping cost. What's more, all the products in your shop should have their dimensions entered."
+msgstr "Jeżeli do kalkulacji kosztu wysyłki zostanie użyty warunek %1$sKiedy: Waga gabarytowa%2$s wymagane jest uzupełnienie pola %1$sWspółczynnik przeliczeniowy wagi gabarytowej%2$s. Wszystkie produkty w sklepie powinny posiadać również uzupełnione wymiary."
+
+#. Translators:new line tag, docs url tag open, docs url tag close.
+#: src/WPDesk/FSPro/TableRate/WeightCalculationSettings.php:58
+#, php-format
+msgid "Learn more about the %1$sdifference between dimensional and actual weight →%2$s"
+msgstr "Dowiedz się więcej o %1$sróżnicy między wagą gabarytową a rzeczywistą →%2$s"
+
+#: classes/flexible-shipping-hooks.php:106
+msgid "WooCommerce"
+msgstr ""
+
+#: src/OptInNotice/views/html-notice.php:8
+msgid "Help us improve Octolize plugins' experience"
+msgstr "Pomóż nam ulepszyć i rozwijać wtyczki Octolize"
+
+#: src/OptInNotice/views/html-notice.php:10
+#, php-format
+msgid "Hi %1$s, with your helping hand we can build effective solutions, launch the new features and shape better plugins experience. By agreeing to anonymously share non-sensitive %2$susage data%3$s of our plugins, you will help us develop them in the right direction. No personal data is tracked or stored and you can opt-out any time. Will you give the thumbs up to our efforts?"
+msgstr "Cześć %1$s, z Twoją pomocą możemy tworzyć skuteczne rozwiązania, wdrażać nowe funkcjonalności i stale ulepszać nasze wtyczki. Zgadzając się na udostępnianie anonimowo niewrażliwych %2$sdanych użytkowania%3$s wtyczek, pomożesz nam rozwijać je we właściwym kierunku. Żadne dane osobowe nie są udostępniane ani przechowywane i możesz zrezygnować w dowolnym momencie. Czy możemy na Ciebie liczyć?"
+
+#: src/OptInNotice/views/html-notice.php:17
+#: src/views/tracker-notice.php:15
+msgid "Allow"
+msgstr "Pozwól"
+
+#: src/ShippingExtensions/Page.php:51
+msgctxt "Page title"
+msgid "Shipping Extensions"
+msgstr "Rozszerzenia wysyłki"
+
+#: src/ShippingExtensions/Page.php:76
+msgctxt "Menu Title"
+msgid ""
+"Shipping\n"
+"Extensions"
+msgstr ""
+"Rozszerzenia\n"
+"wysyłki"
+
+#: src/ShippingExtensions/Page.php:100
+msgid "The best and the most powerful Table Rate shipping plugin for WooCommerce. Define the shipping rules based on numerous conditions and configure even the most complex shipping scenarios with ease."
+msgstr "Najlepsza i najpopularniejsza wtyczka wysyłkowa typu Table Rate dla WooCommerce. Zdefiniuj zasady wysyłki w oparciu o liczne warunki i skonfiguruj nawet najbardziej złożone scenariusze wysyłki."
+
+#: src/ShippingExtensions/Page.php:103
+#: src/ShippingExtensions/Page.php:147
+#: src/ShippingExtensions/Page.php:158
+#: src/ShippingExtensions/Page.php:180
+#: src/ShippingExtensions/Page.php:202
+#: src/ShippingExtensions/Page.php:213
+#: src/ShippingExtensions/Page.php:246
+#: src/ShippingExtensions/Page.php:268
+#: src/ShippingExtensions/Page.php:283
+msgid "Customizable Rates"
+msgstr "Zarządzanie wysyłką"
+
+#: src/ShippingExtensions/Page.php:110
+msgid "UPS Live Rates and Access Points PRO"
+msgstr "UPS WooCommerce - Stawki live i punkty odbioru"
+
+#: src/ShippingExtensions/Page.php:111
+msgid "WooCommerce UPS integration packed with many advanced features. Display the dynamically calculated live rates for UPS shipping methods and adjust them to your needs."
+msgstr "Integracja WooCommerce UPS z wieloma zaawansowanymi funkcjami. Wyświetl dynamicznie obliczane stawki wysyłki dla metod wysyłki UPS i dostosuj je do swoich potrzeb."
+
+#: src/ShippingExtensions/Page.php:114
+#: src/ShippingExtensions/Page.php:136
+#: src/ShippingExtensions/Page.php:191
+#: src/ShippingExtensions/Page.php:224
+#: src/ShippingExtensions/Page.php:257
+#: src/ShippingExtensions/Page.php:282
+msgid "Live Rates"
+msgstr "Stawki Live"
+
+#: src/ShippingExtensions/Page.php:121
+msgid "DPD UK & DPD Local"
+msgstr "DPD UK & DPD Local"
+
+#: src/ShippingExtensions/Page.php:122
+msgid "Ship your DPD orders faster with advanced DPD UK & DPD Local WooCommerce integration. Gather shipping details, download printable shipping labels and track parcels - everything is automated."
+msgstr "Wysyłaj swoje zamówienia DPD szybciej dzięki zaawansowanej integracji DPD UK & DPD Local WooCommerce. Zbierz szczegóły wysyłki, pobierz drukowalne etykiety wysyłkowe i śledź paczki - wszystko jest zautomatyzowane."
+
+#: src/ShippingExtensions/Page.php:125
+#: src/ShippingExtensions/Page.php:169
+#: src/ShippingExtensions/Page.php:235
+#: src/ShippingExtensions/Page.php:284
+msgid "Shipping Labels"
+msgstr "Etykiety wysyłkowe"
+
+#: src/ShippingExtensions/Page.php:132
+msgid "FedEx WooCommerce Live Rates PRO"
+msgstr "FedEx WooCommerce - Stawki Live"
+
+#: src/ShippingExtensions/Page.php:133
+msgid "Enable the FedEx live rates for international delivery and integrate it with your shop in less than 5 minutes. Save your time and money – let the shipping cost be calculated automatically."
+msgstr "Zintegruj swój sklep z najpopularniejszym kurierem na świecie. Włącz stawki live oraz automatyczne usługi FedEx w WooCommerce i zapomnij o ręcznej konfiguracji cen wysyłki."
+
+#: src/ShippingExtensions/Page.php:143
+msgid "Distance Based Shipping Rates"
+msgstr "Koszt wysyłki na podstawie odległości"
+
+#: src/ShippingExtensions/Page.php:144
+msgid "Offer shipping rates based on Distance or Total Travel Time calculated by Google Distance Matrix API and don't overpay for shipping."
+msgstr "Uzależnij koszt wysyłki od odległości lub czasu dostawy ze sklepu do klienta."
+
+#: src/ShippingExtensions/Page.php:154
+#: src/PluginCompatibilityChecker.php:104
+msgid "Flexible Shipping Locations"
+msgstr "Flexible Shipping Lokalizacje"
+
+#: src/ShippingExtensions/Page.php:155
+msgid "Calculate the shipping cost based on location. Define your own custom locations, use the WooCommerce defaults or the ones created by 3rd party plugins."
+msgstr "Twórz reguły wysyłki oparte na lokalizacjach. Różnicuj koszty wysyłki dla grup, pojedynczych krajów lub województw."
+
+#: src/ShippingExtensions/Page.php:165
+msgid "Flexible Printing"
+msgstr "Drukowanie PrintNode"
+
+#: src/ShippingExtensions/Page.php:166
+msgid "Automate your shipping process. Print the shipping labels on thermal printers via PrintNode service. Let the labels be printed automatically the same time the order is placed."
+msgstr "Połącz WooCommerce z drukarkami za pomocą PrintNode. Automatycznie drukuj etykiety nadawcze, faktury, zamówienia i etykiety adresowe."
+
+#: src/ShippingExtensions/Page.php:176
+msgid "Flexible Shipping Import / Export"
+msgstr "Flexible Shipping Import/Export"
+
+#: src/ShippingExtensions/Page.php:177
+msgid "Use the CSV files to import or export your shipping methods. Edit, update, move or backup the ready configurations and shipping scenarios."
+msgstr "Użyj plików CSV, aby importować lub eksportować swoje metody wysyłki. Edytuj, aktualizuj, przenieś lub utwórz kopię zapasową gotowych konfiguracji i scenariuszy wysyłki."
+
+#: src/ShippingExtensions/Page.php:187
+msgid "DHL Express Live Rates PRO"
+msgstr "DHL Express Live Rates PRO"
+
+#: src/ShippingExtensions/Page.php:188
+msgid "WooCommerce DHL Express integration packed with many advanced features. Display the dynamically calculated live rates for DHL Express shipping methods and adjust them to your needs."
+msgstr "Integracja WooCommerce DHL Express z wieloma zaawansowanymi funkcjami. Wyświetl dynamicznie obliczane stawki wysyłki dla metod wysyłki DHL Express i dostosuj je do swoich potrzeb."
+
+#: src/ShippingExtensions/Page.php:198
+msgid "Multi Vendor Shipping"
+msgstr "Multi Vendor Shipping"
+
+#: src/ShippingExtensions/Page.php:199
+msgid "Define precisely the shipping cost calculation rules for each Vendor / Product Author in your marketplace or multivendor store."
+msgstr "Zdefiniuj dokładnie zasady obliczania kosztów wysyłki dla każdego sprzedawcy / autora produktu w swoim marketplace lub sklepie typu multivendor."
+
+#: src/ShippingExtensions/Page.php:209
+msgid "Shipping Packages"
+msgstr "Shipping Packages"
+
+#: src/ShippingExtensions/Page.php:210
+msgid "Split the WooCommerce cart content into multiple packages based on various conditions like shipping class."
+msgstr "Podziel koszyk na kilka paczek do wysyłki w oparciu o liczne warunki, takie jak choćby klasa wysyłkowa produktów w koszyku."
+
+#: src/ShippingExtensions/Page.php:220
+msgid "Conditional Shipping Methods"
+msgstr "Conditional Shipping Methods"
+
+#: src/ShippingExtensions/Page.php:221
+msgid "Conditionally display and hide the shipping methods in your WooCommerce store. Define the rules when the specific shipping methods, e.g., live rates should be available to pick and when not to."
+msgstr "Wyświetlaj i ukrywaj warunkowo metody wysyłki w swoim sklepie. Określ w prosty sposób reguły, kiedy konkretne metody wysyłki powinny być dostępne, a kiedy nie."
+
+#: src/ShippingExtensions/Page.php:231
+msgid "UPS Labels and Tracking"
+msgstr "UPS WooCommerce - Etykiety nadawcze i śledzenie przesyłek"
+
+#: src/ShippingExtensions/Page.php:232
+msgid "Create the shipments, generate the printable UPS shipping labels for the placed orders and track the parcels directly from your WooCommerce store."
+msgstr "Twórz przesyłki i generuj etykiety wysyłkowe UPS w WooCommerce. Drukuj etykiety i śledź przesyłki UPS bezpośrednio ze swojego sklepu."
+
+#: src/ShippingExtensions/Page.php:242
+msgid "Delivery Date Picker"
+msgstr "Wybór czasu dostawy"
+
+#: src/ShippingExtensions/Page.php:243
+msgid "Let your customers choose a convenient delivery date for the ordered products and make the shipping cost dependent on the date they choose."
+msgstr "Pozwól klientom wybrać datę dostawy i ustalaj koszt wysyłki dla wybranego przez nich terminu."
+
+#: src/ShippingExtensions/Page.php:253
+msgid "USPS Live Rates PRO"
+msgstr "USPS Live Rates PRO"
+
+#: src/ShippingExtensions/Page.php:254
+msgid "Serve your customers the automatically and real-time calculated USPS shipping rates. Add the handling fees, insurance and adjust them to your needs with just a few clicks."
+msgstr "Integracja WooCommerce USPS z wieloma zaawansowanymi funkcjami. Wyświetl dynamicznie obliczane stawki wysyłki dla metod wysyłki USPS i dostosuj je do swoich potrzeb."
+
+#: src/ShippingExtensions/Page.php:264
+msgid "Shipping Cost on Product Page PRO"
+msgstr "Koszt wysyłki na stronie produktu PRO"
+
+#: src/ShippingExtensions/Page.php:265
+msgid "Let your customers calculate and see the shipping cost on product pages based on the entered shipping destination and cart contents. Decide how and when exactly you want the shipping cost calculator to display."
+msgstr "Pozwól klientom sklepu obliczyć koszt wysyłki bezpośrednio na stronie produktu. Zdecyduj, jak i kiedy dokładnie chcesz, aby kalkulator kosztów wysyłki był wyświetlany."
+
+#: src/ShippingExtensions/PluginLinks.php:63
+msgctxt "Link on plugin list page"
+msgid "Extensions"
+msgstr "Rozszerzenia"
+
+#: src/ShippingExtensions/views/html-shipping-extensions-page.php:21
+msgid "Shipping Extensions by"
+msgstr "Rozszerzenia wysyłki od"
+
+#: src/ShippingExtensions/views/html-shipping-extensions-page.php:22
+msgid "Dive into a system of Octolize ecommerce shipping plugins for WooCommerce. Don’t lose your customers, time and money. Let our plugins secure your sales!"
+msgstr "Odkryj pełną ofertę wtyczek wysyłkowych WooCommerce od Octolize. Zarządzaj wysyłką, integruj swój sklep z kurierami i wyświetlaj najdokładniejsze stawki za wysyłkę. "
+
+#: src/ShippingExtensions/views/html-shipping-extensions-page.php:31
+msgid "Filter plugins:"
+msgstr "Filtruj wtyczki:"
+
+#: src/ShippingExtensions/views/html-shipping-extensions-page.php:34
+msgid "All"
+msgstr "Wszystkie"
+
+#: src/ShippingExtensions/views/html-shipping-extensions-page.php:63
+msgid "Buy plugin →"
+msgstr "Kup wtyczkę →"
+
+#: Basic_Requirement_Checker.php:202
+#, php-format
+msgid "The &#8220;%s&#8221; plugin cannot run on PHP versions older than %s. Please contact your host and ask them to upgrade."
+msgstr "Wtyczka &#8220;%s&#8221; nie może działać na wersjach PHP starszych niż %s. Skontaktuj się z administratorem hostingu i poproś o aktualizację wersji PHP."
+
+#: Basic_Requirement_Checker.php:206
+#, php-format
+msgid "The &#8220;%s&#8221; plugin cannot run on WordPress versions older than %s. Please update WordPress."
+msgstr "Wtyczka &#8220;%s&#8221; nie może działać na wersjach WordPressa starszych niż %s. Wykonaj aktualizację WordPressa."
+
+#: Basic_Requirement_Checker.php:210
+#, php-format
+msgid "The &#8220;%s&#8221; plugin cannot run on WooCommerce versions older than %s. Please update WooCommerce."
+msgstr "Wtyczka &#8220;%s&#8221; nie może działać na wersjach WooCommerce starszych niż %s. Wykonaj aktualizację WooCommerce."
+
+#: Basic_Requirement_Checker.php:214
+#, php-format
+msgid "The &#8220;%s&#8221; plugin cannot run without OpenSSL module version at least %s. Please update OpenSSL module."
+msgstr "Wtyczka &#8220;%s&#8221; nie może działać bez aktywacji OpenSSL co najmniej w wersji %s. Wykonaj aktualizację OpenSSL."
+
+#: Basic_Requirement_Checker.php:308
+#, php-format
+msgid "The &#8220;%1$s&#8221; plugin requires at least %2$s version of %3$s to work correctly. Please update it to its latest release."
+msgstr "Do poprawnego działania wtyczki &#8220;%1$s&#8221; wymagana jest wtyczka %3$s co najmniej w wersji %2$s. Wykonaj jej aktualizację."
+
+#: Basic_Requirement_Checker.php:395
+#, php-format
+msgid "The &#8220;%s&#8221; plugin cannot run without %s active. Please install and activate %s plugin."
+msgstr "Wtyczka &#8220;%s&#8221; nie może działać bez aktywacji %s. Zainstaluj i aktywuj wtyczkę %s."
+
+#: Basic_Requirement_Checker.php:456
+#, php-format
+msgid "The &#8220;%s&#8221; plugin requires free %s plugin. <a href=\"%s\">Install %s →</a>"
+msgstr "Wtyczka &#8220;%s&#8221; wymaga bezpłatnej wtyczki %s. <a href=\"%s\">Zainstaluj %s →</a>"
+
+#: Basic_Requirement_Checker.php:465
+#, php-format
+msgid "The &#8220;%s&#8221; plugin requires activating %s plugin. <a href=\"%s\">Activate %s →</a>"
+msgstr "Wtyczka &#8220;%s&#8221; wymaga aktywnej wtyczki %s. <a href=\"%s\">Włącz %s →</a>"
+
+#: Basic_Requirement_Checker.php:512
+#, php-format
+msgid "The &#8220;%s&#8221; plugin cannot run without %s PHP module installed. Please contact your host and ask them to install %s."
+msgstr "Wtyczka &#8220;%s&#8221; nie może działać bez modułu PHP: %s. Skontaktuj się z administratorem hostingu i poproś o instalację %s."
+
+#: Basic_Requirement_Checker.php:540
+#, php-format
+msgid "The &#8220;%s&#8221; plugin cannot run without %s PHP setting set to %s. Please contact your host and ask them to set %s."
+msgstr "Wtyczka &#8220;%s&#8221; nie może działać bez ustawienia PHP %s ustawionego na %s. Skontaktuj się z administratorem hostingu i poproś o ustawienie %s."
+
+#: Basic_Requirement_Checker_With_Update_Disable.php:27
+#, php-format
+msgid "The &#8220;%s&#8221; plugin is temporarily disabled since the required %s plugin is being upgraded."
+msgstr "Wtyczka &#8220;%s&#8221; została chwilowo wyłączona, ponieważ wymagana wtyczka %s jest właśnie aktualizowana."
+
+#: templates/input-image.php:24
+msgid "Set image"
+msgstr "Wstaw obraz"
+
+#: templates/input-image.php:29
+msgid "Remove image"
+msgstr "Usuń obraz"
+
+#: templates/input-image.php:50
+msgid "Select or Upload Media"
+msgstr "Wybierz lub prześlij media"
+
+#: templates/input-image.php:52
+msgid "Use this media"
+msgstr "Wybierz"
+
+#: templates/product-select.php:13
+msgid "Search for a product&hellip;"
+msgstr "Szukaj produktu&hellip;"
+
+#: Beacon/Beacon.php:57
+#: Beacon/Beacon.php:98
+msgid "When you click OK we will open our HelpScout beacon where you can find answers to your questions. This beacon will load our help articles and also potentially set cookies."
+msgstr "Gdy klikniesz OK, w prawym dolnym rogu ekranu otworzy się okienko pomocy kontekstowej, za pomocą którego znajdziesz odpowiedzi na najczęściej zadawane pytania. Mechanizm pomocy kontekstowej może wykorzystywać pliki cookie."
+
+#: WP/WPCapture.php:25
+#, php-format
+msgid "Can not enable WP Desk Debug log! Cannot create directory %s or this directory is not writeable!"
+msgstr "Nie można włączyć WP Desk Debug log! Nie można utworzyć katalogu %s lub brak uprawnień do zapisu w tym katalogu!"
+
+#: WP/WPCapture.php:44
+#, php-format
+msgid "Can not enable WP Desk Debug log! Cannot create file %s!"
+msgstr "Nie można włączyć logowania błędów za pomocą WP Desk Debug! Nie można utworzyć pliku %s!"
+
+#: deprecated/wpdesk-logger.php:70
+msgid "Disabled"
+msgstr "Wyłączono"
+
+#: deprecated/wpdesk-logger.php:71
+msgid "Emergency"
+msgstr "Wypadek"
+
+#: deprecated/wpdesk-logger.php:72
+msgid "Alert"
+msgstr "Ostrzeżenie"
+
+#: deprecated/wpdesk-logger.php:73
+msgid "Critical"
+msgstr "Błąd krytyczny"
+
+#: deprecated/wpdesk-logger.php:74
+msgid "Error"
+msgstr "Błąd"
+
+#: deprecated/wpdesk-logger.php:75
+msgid "Warning"
+msgstr "Ostrzeżenie"
+
+#: deprecated/wpdesk-logger.php:76
+msgid "Notice"
+msgstr "Powiadomienie"
+
+#: deprecated/wpdesk-logger.php:77
+msgid "Info"
+msgstr "Informacja"
+
+#: deprecated/wpdesk-logger.php:78
+msgid "Debug"
+msgstr "Debugowanie"
+
+#: src/BlockSettings.php:135
+#, php-format
+msgid "In order to prevent any further issues with the plugin configuration or its proper functioning, before saving the changes please update the following: %s."
+msgstr "Aby wykluczyć możliwość wystąpienia dalszych nieprawidłowości związanych z konfiguracją i funkcjonowaniem wtyczki, przed zapisaniem zmian konieczna jest aktualizacja: %s."
+
+#: src/BlockSettings.php:144
+msgid "Go to the plugins list &rarr;"
+msgstr "Przejdź do listy wtyczek &rarr;"
+
+#: src/Notice.php:50
+#, php-format
+msgid "If the WordPress updater hasn't informed you about the newer versions available, please %sfollow these instructions &rarr;%s"
+msgstr "Jeżeli nie została automatycznie wyświetlona informacja o dostępnej aktualizacji wtyczki, postępuj %szgodnie z tymi instrukcjami &rarr;%s"
+
+#: src/Notice.php:51
+msgid "https://wpde.sk/fs-2-docs"
+msgstr "https://wpde.sk/fs-2-docs-pl"
+
+#: src/Notice.php:62
+#, php-format
+msgid "%sFlexible Shipping%s plugin you are currently using is not compatible with the installed version of Flexible Shipping PRO and Flexible Shipping Locations. Please update the %sFlexible Shipping%s plugin to %s version or newer."
+msgstr "Wtyczka %sFlexible Shipping%s nie jest kompatybilna z aktualnie używaną wersją wtyczki Flexible Shipping PRO oraz Flexible Shipping Lokalizacje. Prosimy zaktualizować wtyczkę %sFlexible Shipping%s do wersji %s lub najnowszej."
+
+#: src/Notice.php:67
+#, php-format
+msgid "%sFlexible Shipping%s plugin you are currently using is not compatible with the installed version of Flexible Shipping PRO. Please update the %sFlexible Shipping%s plugin to %s version or newer."
+msgstr "Wtyczka %sFlexible Shipping%s nie jest kompatybilna z aktualnie używaną wersją wtyczki Flexible Shipping PRO. Prosimy zaktualizować wtyczkę %sFlexible Shipping%s do wersji %s lub najnowszej."
+
+#: src/Notice.php:72
+#, php-format
+msgid "%sFlexible Shipping%s plugin you are currently using is not compatible with the installed version of Flexible Shipping Locations. Please update the %sFlexible Shipping%s plugin to %s version or newer."
+msgstr "Wtyczka %sFlexible Shipping%s nie jest kompatybilna z aktualnie używaną wersją wtyczki Flexible Shipping Lokalizacje. Prosimy zaktualizować wtyczkę %sFlexible Shipping%s do wersji %s lub najnowszej."
+
+#: src/Notice.php:76
+#, php-format
+msgid "%sFlexible Shipping PRO%s plugin you are currently using is not compatible with the installed version of Flexible Shipping free. Please update the %sFlexible Shipping PRO%s plugin to %s version or newer."
+msgstr "Wtyczka %sFlexible Shipping PRO%s nie jest kompatybilna z aktualnie używaną wersją darmowej wtyczki Flexible Shipping. Prosimy zaktualizować wtyczkę %sFlexible Shipping PRO%s do wersji %s lub najnowszej."
+
+#: src/Notice.php:80
+#, php-format
+msgid "%sFlexible Shipping Locations%s plugin you are currently using is not compatible with the installed version of Flexible Shipping free. Please update the %sFlexible Shipping Locations%s plugin to %s version or newer."
+msgstr "Wtyczka %sFlexible Shipping Lokalizacje%s nie jest kompatybilna z aktualnie używaną wersją darmowej wtyczki Flexible Shipping. Prosimy zaktualizować wtyczkę %sFlexible Shipping Lokalizacje%s do wersji %s lub najnowszej."
+
+#: src/PluginCompatibilityChecker.php:96
+msgid "Flexible Shipping"
+msgstr ""
+
+#: src/BasedOnOptions.php:22
+msgid "Weight"
+msgstr "Waga"
+
+#: src/Logger/ShippingMethodLogger.php:74
+msgid "shipping method configuration"
+msgstr "konfigurację metody wysyłki"
+
+#: src/Logger/ShippingMethodLogger.php:81
+msgid "input data"
+msgstr "dane wejściowe"
+
+#: src/Logger/ShippingMethodLogger.php:88
+#, php-format
+msgid "rules (%1$s)"
+msgstr "reguły (%1$s)"
+
+#: src/Logger/ShippingMethodLogger.php:88
+msgid "triggered"
+msgstr "zastosowane"
+
+#: src/Logger/ShippingMethodLogger.php:88
+msgid "not triggered"
+msgstr "niezastosowane"
+
+#: src/Logger/ShippingMethodLogger.php:95
+msgid "the result of shipping method's usage"
+msgstr "rezultat zastosowania reguły"
+
+#: src/Logger/view/display-notice-content-single-value.php:8
+#, php-format
+msgid "Show %1$s"
+msgstr "Pokaż %1$s"
+
+#: src/Logger/view/display-notice-content-single-value.php:9
+#, php-format
+msgid "Hide %1$s"
+msgstr "Ukryj %1$s"
+
+#: src/Logger/view/display-notice-content-single-value.php:10
+#, php-format
+msgid "Copy %1$s"
+msgstr "Kopiuj %1$s"
+
+#: src/Logger/view/display-notice-footer.php:5
+msgid "Copy all data"
+msgstr "Kopiuj wszystkie dane"
+
+#: src/Logger/view/display-notice-header.php:7
+#, php-format
+msgid "FS Debug mode for %1$s%2$s%3$s shipping method."
+msgstr "Tryb debugowania FS dla metody wysyłki:  %1$s%2$s%3$s."
+
+#: src/Settings/IntegrationSettingsImplementation.php:44
+#, php-format
+msgid "Integration: %1$s"
+msgstr "Integracja: %1$s"
+
+#: src/Settings/MethodSettingsImplementation.php:311
+#, php-format
+msgid "Method settings:%1$s Enabled: %2$s Method Title: %3$s Method Description: %4$s Tax status: %5$s Costs includes tax: %6$s Free Shipping: %7$s Free Shipping Label: %8$s 'Left to free shipping' notice: %9$s Rules Calculation: %10$s Cart Calculation: %11$s Visibility (Show only for logged in users): %12$s Default: %13$s Debug mode: %14$s"
+msgstr "Ustawienia metody wysyłki:%1$s Włącz: %2$s Tytuł metody: %3$s Opis: %4$s Status podatku: %5$s Koszty wysyłki zawierają podatek: %6$s Darmowa wysyłka: %7$s Etykieta darmowej wysyłki: %8$s Do darmowej wysyłki brakuje: %9$s Metoda obliczania: %10$s Kalkulacja w koszyku: %11$s Wyświetlanie (Pokaż tylko dla zalogowanych użytkowników): %12$s Domyślnie: %13$s Tryb debug: %14$s"
+
+#: src/Settings/MethodSettingsImplementation.php:334
+msgid "Taxable"
+msgstr "Opodatkowany"
+
+#: src/Settings/MethodSettingsImplementation.php:335
+msgctxt "Tax status"
+msgid "None"
+msgstr "Brak"
+
+#: ActivationForm/views/activation-form-content.php:25
+msgid "Plugin's API key has been successfully activated. You are now fully eligible to receive plugin updates and support."
+msgstr "Klucz API wtyczki został pomyślnie aktywowany. Masz teraz pełen dostęp do jej aktualizacji oraz dedykowanego wsparcia technicznego."
+
+#: ActivationForm/views/activation-form-content.php:27
+msgid "Plugin's API key has been successfully activated, but your subscription has expired. In order to receive the upcoming updates and support please renew your subscription."
+msgstr "Klucz API wtyczki został pomyślnie aktywowany, jednak okres ważności Twojej subskrypcji dobiegł końca. Odnów subskrypcję, aby ponownie uzyskać dostęp do najnowszych aktualizacji wtyczki oraz dedykowanego wsparcia technicznego."
+
+#: ActivationForm/views/activation-form-content.php:30
+msgid "In order to receive the upcoming updates and support please enter the plugin's API key obtained after the purchase."
+msgstr "Wprowadź klucz API wtyczki otrzymany po zakupie, aby móc pobrać jej nadchodzące aktualizacje i otrzymać wsparcie techniczne, gdy zajdzie taka potrzeba."
+
+#: ActivationForm/views/activation-form-content.php:35
+#, php-format
+msgid "You can find it in %1$sMy Account / API Keys%2$s tab. %3$sLearn more about activating the API key →%4$s"
+msgstr "Klucz API wtyczki znajdziesz w zakładce %1$sMoje konto / Klucze API%2$s. Dowiedz się więcej o %3$saktywacji klucza API →%4$s"
+
+#: ActivationForm/views/activation-form-content.php:46
+msgid "Key: "
+msgstr "Klucz: "
+
+#: ActivationForm/views/activation-form-content.php:50
+msgid "Deactivate license"
+msgstr "Dezaktywuj licencję"
+
+#: ActivationForm/views/activation-form-content.php:52
+msgid "Renew subscription →"
+msgstr "Odnów subskrypcję →"
+
+#: ActivationForm/views/activation-form-content.php:55
+msgid "Activate license"
+msgstr "Aktywuj licencję"
+
+#: ActivationForm/views/activation-form.php:52
+msgid "The action failed with an error: "
+msgstr "Akcja zakończyła się niepoprawnie z błędem: "
+
+#: ActivationForm/views/activation-form.php:53
+msgid "Enter license key"
+msgstr "Wprowadź klucz licencyjny"
+
+#: ApiManager/class-wc-api-manager-menu.php:59
+#: ApiManager/class-wc-api-manager-menu.php:64
+msgid "Save Changes"
+msgstr "Zapisz zmiany"
+
+#: ApiManager/class-wc-api-manager-menu.php:81
+msgid "API Key Activation"
+msgstr "Aktywacja subskrypcji"
+
+#: ApiManager/class-wc-api-manager-menu.php:83
+msgid "API Key Status"
+msgstr "Status subskrypcji"
+
+#: ApiManager/class-wc-api-manager-menu.php:87
+msgid "API Subscription Key"
+msgstr "Klucz API"
+
+#: ApiManager/class-wc-api-manager-menu.php:90
+msgid "API Subscription email"
+msgstr "E-mail API"
+
+#: ApiManager/class-wc-api-manager-menu.php:97
+msgid "API Key Deactivation"
+msgstr "Dezaktywacja subskrypcji"
+
+#: ApiManager/class-wc-api-manager-menu.php:100
+msgid "Deactivate API Key"
+msgstr "Dezaktywuj klucz API"
+
+#: ApiManager/class-wc-api-manager-menu.php:183
+msgid "Plugin activated. "
+msgstr "Wtyczka została włączona. "
+
+#: ApiManager/class-wc-api-manager-menu.php:191
+msgid "Connection failed to the API Key server. Try again later."
+msgstr "Nie udało się połączyć z serwerem subskrypcji. Spróbuj później."
+
+#: ApiManager/class-wc-api-manager-menu.php:297
+msgid "The subscription could not be deactivated. Use the Subscription Deactivation tab to manually deactivate the subscription before activating a new subscription."
+msgstr "Subskrypcja nie może być dezaktywowana. Użyj ręcznej dezaktywacji subskrypcji przed aktywacją nowej subskrypcji."
+
+#: ApiManager/class-wc-api-manager-menu.php:337
+msgid "Plugin subscription deactivated. "
+msgstr "Subskrypcja wtyczki dezaktywowana. "
+
+#: ApiManager/class-wc-api-manager-menu.php:422
+msgid "Deactivates an API Key so it can be used on another blog."
+msgstr "Dezaktywuje klucz API, dzięki czemu może być użyty na innej stronie."
+
+#: ApiManager/class-wc-api-manager.php:177
+msgid "Subscription Activation"
+msgstr "Aktywacja subskrypcji"
+
+#: ApiManager/class-wc-api-manager.php:178
+msgid "Subscription Deactivation"
+msgstr "Dezaktywacja subskrypcji"
+
+#: ApiManager/class-wc-api-manager.php:462
+#, fuzzy,php-format
+msgid "The %1$s%2$s%3$s API Key has not been activated, so you won't be supported and your plugin won't be updated! %4$sClick here%5$s to activate the API key and the plugin."
+msgstr "Klucz API wtyczki %s%s%s nie został aktywowany, więc nie otrzymasz wsparcia i aktualizacji wtyczki. %sKliknij tutaj%s, aby aktywować klucz API wtyczki."
+
+#: ApiManager/class-wc-api-manager.php:486
+#, php-format
+msgid "<b>Warning!</b> You're blocking external requests which means you won't be able to get %s updates. Please add %s to %s."
+msgstr "<b>Uwaga!</b> Blokujesz zewnętrzne połączenia i nie będziesz otrzymywać aktualizacji wtyczki: %s. Proszę dodaj host %s do %s."
+
+#: ApiManager/class-wc-plugin-update.php:458
+#, php-format
+msgid "The API key for %s has expired. You can reactivate or purchase a API key from your account <a href=\"%s\" target=\"_blank\">dashboard</a>."
+msgstr "Subskrypcja na wtyczkę: %s wygasła. Aby odnowić subskrypcję, <a href=\"%s\" target=\"_blank\">kliknij tutaj</a>."
+
+#: ApiManager/class-wc-plugin-update.php:472
+#, php-format
+msgid "The subscription for %s is on-hold. You can reactivate the subscription from your account <a href=\"%s\" target=\"_blank\">dashboard</a>."
+msgstr "Subskrypcja na wtyczkę: %s jest wstrzymana. Możesz zarządzać subskrypcjami <a href=\"%s\" target=\"_blank\">tutaj</a>."
+
+#: ApiManager/class-wc-plugin-update.php:486
+#, php-format
+msgid "The subscription for %s has been cancelled. You can renew the subscription from your account <a href=\"%s\" target=\"_blank\">dashboard</a>. A new API key will be emailed to you after your order has been completed."
+msgstr "Subskrypcja na wtyczkę: %s została anulowana. Aby odnowić subskrypcję, <a href=\"%s\" target=\"_blank\">kliknij tutaj</a>."
+
+#: ApiManager/class-wc-plugin-update.php:500
+#, php-format
+msgid "The subscription for %s has expired. You can reactivate the subscription from your account <a href=\"%s\" target=\"_blank\">dashboard</a>."
+msgstr "Subskrypcja na wtyczkę: %s wygasła. Aby odnowić subskrypcję, <a href=\"%s\" target=\"_blank\">kliknij tutaj</a>."
+
+#: ApiManager/class-wc-plugin-update.php:514
+#, php-format
+msgid "The subscription for %s has been suspended. You can reactivate the subscription from your account <a href=\"%s\" target=\"_blank\">dashboard</a>."
+msgstr "Subskrypcja na wtyczkę: %s została zawieszona. Aby odnowić subskrypcję, <a href=\"%s\" target=\"_blank\">kliknij tutaj</a>."
+
+#: ApiManager/class-wc-plugin-update.php:528
+#, php-format
+msgid "The subscription for %s is still pending. You can check on the status of the subscription from your account <a href=\"%s\" target=\"_blank\">dashboard</a>."
+msgstr "Subskrypcja na wtyczkę: %s jest przetwarzana. Aby sprawdzić status subskrypcji, <a href=\"%s\" target=\"_blank\">kliknij tutaj</a>."
+
+#: ApiManager/class-wc-plugin-update.php:542
+#, php-format
+msgid "The subscription for %s has been placed in the trash and will be deleted soon. You can purchase a new subscription from your account <a href=\"%s\" target=\"_blank\">dashboard</a>."
+msgstr "Subskrypcja na wtyczkę: %s została anulowana. Aby odnowić subskrypcję, <a href=\"%s\" target=\"_blank\">kliknij tutaj</a>."
+
+#: ApiManager/class-wc-plugin-update.php:556
+#, php-format
+msgid "A subscription for %s could not be found. You can purchase a subscription from your account <a href=\"%s\" target=\"_blank\">dashboard</a>."
+msgstr "Subskrypcja na wtyczkę: %s nie została znaleziona. Możesz zarządzać subskrypcjami <a href=\"%s\" target=\"_blank\">tutaj</a>."
+
+#: ApiManager/class-wc-plugin-update.php:570
+#, php-format
+msgid "A API key for %s could not be found. Maybe you forgot to enter a API key when setting up %s, or the key was deactivated in your account. You can reactivate or purchase a subscription key from your account <a href=\"%s\" target=\"_blank\">dashboard</a>."
+msgstr "Subskrypcja na wtyczkę: %s nie została znaleziona. Być może zapomniałeś wpisać klucza API przy aktywacji: %s lub klucz został dezaktywowany. Możesz zarządzać subskrypcjami <a href=\"%s\" target=\"_blank\">tutaj</a>."
+
+#: ApiManager/class-wc-plugin-update.php:585
+#, php-format
+msgid "Download permission for %s has been revoked possibly due to a API key or subscription expiring. You can reactivate or purchase a API key from your account <a href=\"%s\" target=\"_blank\">dashboard</a>."
+msgstr "Możliwość pobrania wtyczki: %s została zablokowana. Aby odnowić subskrypcję, <a href=\"%s\" target=\"_blank\">kliknij tutaj</a>."
+
+#: ApiManager/class-wc-plugin-update.php:599
+#, php-format
+msgid "%s has not been activated. Go to the settings page and enter the API key and subscription email to activate %s."
+msgstr "Wtyczka %s nie została aktywowana. Przejdź do ustawień i wpisz klucz API i e-mail, aby aktywować %s."
+
+#: ApiManager/class-wc-plugin-update.php:613
+#, php-format
+msgid "You changed the subscription for %s, so you will need to enter your new API Key in the settings page. The API Key should have arrived in your email inbox, if not you can get it by logging into your account <a href=\"%s\" target=\"_blank\">dashboard</a>."
+msgstr "Subskrypcja na wtyczkę: %s została zmieniona. Możesz zarządzać subskrypcjami <a href=\"%s\" target=\"_blank\">tutaj</a>."
+
+#: Page/License/Action/LicenseActivation.php:142
+msgid "Connection failed to the Subscription Key API server. Try again later."
+msgstr "Nie udało się połączyć z serwerem subskrypcji. Spróbuj później."
+
+#: Page/License/Action/LicenseActivation.php:156
+msgid "Plugin license activated. "
+msgstr "Licencja wtyczki została aktywowana. "
+
+#: Page/License/Action/LicenseDeactivation.php:46
+msgid "Plugin license deactivated. "
+msgstr "Licencja wtyczki została dezaktywowana. "
+
+#: Page/License/views/class-wpdesk-helper-list-table.php:34
+msgid "No WP Desk plugins found."
+msgstr "Nie znaleziono wtyczek WP Desk."
+
+#: Page/License/views/class-wpdesk-helper-list-table.php:47
+msgid "Plugin"
+msgstr "Wtyczka"
+
+#: Page/License/views/class-wpdesk-helper-list-table.php:48
+msgid "Subscription Status"
+msgstr "Status subskrypcji"
+
+#: Page/License/views/class-wpdesk-helper-list-table.php:49
+msgid "Subscription Data"
+msgstr "Dane subskrypcji"
+
+#: Page/License/views/class-wpdesk-helper-list-table.php:69
+msgid "Deactivated"
+msgstr "Nieaktywna"
+
+#: Page/License/views/class-wpdesk-helper-list-table.php:71
+msgid "Activated"
+msgstr "Aktywna"
+
+#: Page/License/views/license-actions.php:9
+msgid "Key:"
+msgstr "Klucz:"
+
+#: Page/License/views/license-actions.php:14
+msgid "Email:"
+msgstr "E-mail:"
+
+#: Page/License/views/license-actions.php:22
+msgid "Activate"
+msgstr "Aktywuj"
+
+#: Page/License/views/license-actions.php:24
+msgid "Deactivate"
+msgstr "Dezaktywuj"
+
+#: Page/License/views/licenses.php:20
+msgid "WP Desk Subscriptions"
+msgstr "Subskrypcje WP Desk"
+
+#: Page/License/views/licenses.php:30
+#, php-format
+msgid "Get your subscription keys <a href=\"%s\" target=\"_blank\">here</a>. You can activate/deactivate API keys <strong>unlimited times on different domains</strong> as long as you have an active subscription."
+msgstr "Pobierz klucze API <a href=\"%s\" target=\"_blank\">tutaj</a>. Możesz aktywować i dezaktywować klucze API <strong>dowolną ilość razy na różnych domenach</strong>, pod warunkiem, że subskrypcja jest aktywna."
+
+#: Page/LicensePage.php:45
+#: Page/LicensePage.php:46
+msgid "Subscriptions"
+msgstr "Subskrypcje"
+
+#: WpUpgrader/SubscriptionHandler.php:82
+#, php-format
+msgid "Your plugin subscription has expired. In order to update the plugin please %1$srenew your subscription →%2$s"
+msgstr "Okres ważności Twojej subskrypcji dobiegł końca. Aby zaktualizować wtyczkę %1$sodnów subskrypcję →%2$s"
+
+#: WpUpgrader/SubscriptionHandler.php:91
+#, php-format
+msgid "An active subscription API key is required to download the plugin updates. In order to update the plugin please %1$sactivate your API key →%2$s"
+msgstr "Do pobrania aktualizacji wymagany jest aktywny klucz API subskrypcji. Aby zaktualizować wtyczkę %1$saktywuj jej klucz API →%2$s"
+
+#: src/PSR/WPDesk/Tracker/OptOut.php:45
+#, php-format
+msgid "You successfully opted out of collecting usage data by %1$s. If you change your mind, you can always opt in later in the plugin's quick links."
+msgstr "Twoja rezygnacja ze zbierania danych użytkowania wtyczek przez %1$s została przyjęta. Jeśli zmienisz zdanie, zawsze możesz włączyć zgodę ponownie za pomocą szybkich linków na liście wtyczek."
+
+#: src/PSR/WPDesk/Tracker/PluginActionLinks.php:55
+msgid "Opt-in"
+msgstr "Opt-in"
+
+#: src/PSR/WPDesk/Tracker/PluginActionLinks.php:58
+msgid "Opt-out"
+msgstr "Opt-out"
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:15
+#: src/views/tracker-connect.php:7
+#: src/views/tracker-notice.php:7
+#, php-format
+msgid "Hey %s,"
+msgstr "Hej %s,"
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:16
+#: src/views/tracker-connect.php:8
+msgid "Please help us improve our plugins! If you opt-in, we will collect some non-sensitive data and usage information anonymously. If you skip this, that's okay! All plugins will work just fine."
+msgstr "Proszę pomóż nam udoskonalić nasze wtyczki! Jeśli się zgodzisz, będziemy zbierać niewrażliwe dane użytkowania anonimowo. Jeśli pominiesz ten krok, w porządku! Wszystkie wtyczki będą działać niezależnie od Twojej decyzji."
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:21
+#: src/views/tracker-connect.php:13
+msgid "Allow & Continue &rarr;"
+msgstr "Pozwól i kontynuuj &rarr;"
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:22
+#: src/views/tracker-connect.php:14
+msgid "Skip"
+msgstr "Pomiń"
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:27
+#: src/views/tracker-connect.php:19
+msgid "What permissions are being granted?"
+msgstr "Jakie uprawnienia są przyznawane?"
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:34
+#: src/views/tracker-connect.php:26
+msgid "Your Site Overview"
+msgstr "Dane witryny"
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:35
+#: src/views/tracker-connect.php:27
+msgid "WP version, PHP info"
+msgstr "Wersja WP, wersja PHP"
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:41
+#: src/views/tracker-connect.php:33
+msgid "Plugin Usage"
+msgstr "Dane użytkowania wtyczek"
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:42
+#, php-format
+msgid "Current settings and usage information of %1$s plugins"
+msgstr "Ustawienia i informacje o użytkowaniu wtyczek %1$s"
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:48
+#: src/views/tracker-connect.php:40
+msgid "Your Store Overview"
+msgstr "Dane sklepu"
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:49
+#: src/views/tracker-connect.php:41
+msgid "Anonymized and non-sensitive store usage information"
+msgstr "Tylko niewrażliwe i anonimowe dane o użytkowaniu sklepu"
+
+#: src/PSR/WPDesk/Tracker/views/tracker-connect.php:55
+#: src/views/tracker-connect.php:47
+#: src/views/tracker-notice.php:9
+msgid "Find out more &raquo;"
+msgstr "Dowiedz się więcej &raquo;"
+
+#: src/views/tracker-connect.php:34
+msgid "Current settings and usage information of WP Desk plugins"
+msgstr "Ustawienia i informacje o użytkowaniu wtyczek WP Desk"
+
+#: src/views/tracker-deactivate.php:3
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:14
+#, php-format
+msgid "You are deactivating %s plugin."
+msgstr "Dezaktywujesz wtyczkę %s."
+
+#: src/views/tracker-deactivate.php:9
+msgid " If you have a moment, please let us know why you are deactivating plugin (anonymous feedback):"
+msgstr " Jeśli masz chwilę, prosimy daj nam znać dlaczego dezaktywujesz wtyczkę (anonimowa opinia):"
+
+#: src/views/tracker-deactivate.php:16
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:26
+msgid "The plugin suddenly stopped working"
+msgstr "Wtyczka nagle przestała działać"
+
+#: src/views/tracker-deactivate.php:24
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:34
+msgid "The plugin broke my site"
+msgstr "Wtyczka zepsuła moją stronę"
+
+#: src/views/tracker-deactivate.php:32
+msgid "I found a better plugin"
+msgstr "Znalazłem lepszą wtyczkę"
+
+#: src/views/tracker-deactivate.php:35
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:45
+msgid "What's the plugin's name?"
+msgstr "Jaka to wtyczka?"
+
+#: src/views/tracker-deactivate.php:43
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:53
+msgid "I only needed the plugin for a short period"
+msgstr "Potrzebowałem wtyczki tylko przez krótki okres"
+
+#: src/views/tracker-deactivate.php:51
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:61
+msgid "I no longer need the plugin"
+msgstr "Nie potrzebuję już wtyczki"
+
+#: src/views/tracker-deactivate.php:59
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:69
+msgid "It's a temporary deactivation. I'm just debugging an issue."
+msgstr "Jest to tymczasowa dezaktywacja, debuguję problem."
+
+#: src/views/tracker-deactivate.php:67
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:77
+msgid "Other"
+msgstr "Inny"
+
+#: src/views/tracker-deactivate.php:70
+msgid "Kindly tell us the reason so we can improve"
+msgstr "Napisz nam powód abyśmy mogli go poprawić"
+
+#: src/views/tracker-deactivate.php:77
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:87
+msgid "Cancel"
+msgstr "Anuluj"
+
+#: src/views/tracker-deactivate.php:78
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:88
+msgid "Skip &amp; Deactivate"
+msgstr "Pomiń i dezaktywuj"
+
+#: src/views/tracker-deactivate.php:92
+#: src/WPDesk/Tracker/Deactivation/views/scripts.php:85
+msgid "Submit &amp; Deactivate"
+msgstr "Wyślij i dezaktywuj"
+
+#: src/views/tracker-notice.php:8
+msgid "We need your help to improve <strong>WP Desk plugins</strong>, so they are more useful for you and the rest of <strong>30,000+ users</strong>. By collecting data on how you use our plugins, you will help us a lot. We will not collect any sensitive data, so you can feel safe."
+msgstr "Potrzebujemy Twojej pomocy, aby dalej rozwijać <strong>wtyczki WP Desk</strong> i były one jeszcze bardziej pomocne dla Ciebie i pozostałych ponad <strong>30 000 użytkowników</strong>. Zbierając dane na temat tego jak korzystasz z naszych wtyczek bardzo nam w tym pomożesz. Nie będziemy zbierać żadnych danych wrażliwych, więc możesz czuć się bezpiecznie."
+
+#: src/views/tracker-opt-out-notice.php:3
+msgid "You successfully opted out of collecting usage data by WP Desk. If you change your mind, you can always opt in later in the plugin's quick links."
+msgstr "Twoja rezygnacja ze zbierania danych użytkowania wtyczek przez WP Desk została przyjęta. Jeśli zmienisz zdanie, zawsze możesz włączyć zgodę ponownie za pomocą szybkich linków na liście wtyczek."
+
+#: src/WPDesk/Tracker/Deactivation/views/scripts.php:36
+msgid "Plugin deactivation"
+msgstr "Wyłączanie wtyczki"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:19
+msgid "If you have a moment, please let us know why you are deactivating the plugin (anonymous feedback):"
+msgstr "Jeśli masz chwilę, prosimy daj nam znać dlaczego wyłączasz wtyczkę (anonimowa opinia):"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:42
+msgid "I have found a better plugin"
+msgstr "Znalazłem lepszą wtyczkę"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:80
+msgid "Please let us know how we can improve our plugin"
+msgstr "Napisz co moglibyśmy zmienić, aby ulepszyć naszą wtyczkę"

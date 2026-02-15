@@ -1,0 +1,22 @@
+<?php return array(
+"Required field"=>__("Required field","rednaowooextraproduct"),
+"Toggle strong style"=>__("Toggle strong style","rednaowooextraproduct"),
+"Toggle emphasis"=>__("Toggle emphasis","rednaowooextraproduct"),
+"Toggle code font"=>__("Toggle code font","rednaowooextraproduct"),
+"Wrap in bullet list"=>__("Wrap in bullet list","rednaowooextraproduct"),
+"Wrap in ordered list"=>__("Wrap in ordered list","rednaowooextraproduct"),
+"Wrap in block quote"=>__("Wrap in block quote","rednaowooextraproduct"),
+"Change to paragraph"=>__("Change to paragraph","rednaowooextraproduct"),
+"Plain"=>__("Plain","rednaowooextraproduct"),
+"Change to code block"=>__("Change to code block","rednaowooextraproduct"),
+"Code"=>__("Code","rednaowooextraproduct"),
+"Change to heading "=>__("Change to heading ","rednaowooextraproduct"),
+"Level "=>__("Level ","rednaowooextraproduct"),
+"Insert horizontal rule"=>__("Insert horizontal rule","rednaowooextraproduct"),
+"Horizontal rule"=>__("Horizontal rule","rednaowooextraproduct"),
+"Heading"=>__("Heading","rednaowooextraproduct"),
+"Type..."=>__("Type...","rednaowooextraproduct"),
+"Color"=>__("Color","rednaowooextraproduct"),
+"Link Options"=>__("Link Options","rednaowooextraproduct"),
+"The url can not be empty"=>__("The url can not be empty","rednaowooextraproduct")
+);

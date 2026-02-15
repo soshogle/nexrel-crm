@@ -1,0 +1,1734 @@
+# Copyright (C) 2023 Octolize
+# This file is distributed under the same license as the Flexible Shipping PRO plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Flexible Shipping PRO 2.15.3\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/flexible-shipping-pro\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2023-02-09T17:23:49+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.7.1\n"
+"X-Domain: flexible-shipping-pro\n"
+
+#. Plugin Name of the plugin
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:82
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/PluginCompatibilityChecker.php:97
+msgid "Flexible Shipping PRO"
+msgstr ""
+
+#. Plugin URI of the plugin
+msgid "https://octol.io/fs-plugin-site"
+msgstr ""
+
+#. Description of the plugin
+msgid "Extends the free version of Flexible Shipping by adding advanced pro features."
+msgstr ""
+
+#. Author of the plugin
+msgid "Octolize"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "https://octol.io/fs-author"
+msgstr ""
+
+#. Translators: plugins url.
+#: classes/class-wpdesk-flexible-shipping-pro-plugin.php:143
+msgid "A new Flexible Shipping version introducing the helpful rules table hints and tooltips is available. %1$sUpdate now%2$s"
+msgstr ""
+
+#: classes/class-wpdesk-flexible-shipping-pro-plugin.php:234
+msgid "Settings"
+msgstr ""
+
+#: classes/class-wpdesk-flexible-shipping-pro-plugin.php:235
+msgid "Docs"
+msgstr ""
+
+#: classes/class-wpdesk-flexible-shipping-pro-plugin.php:236
+msgid "Support"
+msgstr ""
+
+#: classes/flexible-shipping-hooks.php:58
+msgid "Cart Calculation"
+msgstr ""
+
+#: classes/flexible-shipping-hooks.php:62
+msgid "Choose Package value to exclude virtual products from rules calculation."
+msgstr ""
+
+#: classes/flexible-shipping-hooks.php:68
+msgid "Free Shipping Requires"
+msgstr ""
+
+#: classes/flexible-shipping-hooks.php:72
+msgid "Condition for free shipping"
+msgstr ""
+
+#: classes/flexible-shipping-hooks.php:80
+msgid "Coupons discounts"
+msgstr ""
+
+#: classes/flexible-shipping-hooks.php:81
+msgid "Apply minimum order rule before coupon discount"
+msgstr ""
+
+#: classes/flexible-shipping-hooks.php:84
+msgid "If checked, free shipping would be available based on pre-discount order amount."
+msgstr ""
+
+#: classes/flexible-shipping-hooks.php:90
+msgid "Maximum Cost"
+msgstr ""
+
+#: classes/flexible-shipping-hooks.php:93
+msgid "Set a maximum cost of shipping. This will override the costs configured below."
+msgstr ""
+
+#: classes/flexible-shipping-hooks.php:144
+msgid "Export selected"
+msgstr ""
+
+#: classes/woocommerce-form-field.php:33
+msgid "Choose an option"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/CalculationMethodOptions.php:20
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/CalculationMethodOptions.php:20
+msgid "Sum"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/CalculationMethodOptions.php:21
+msgid "Lowest cost"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/CalculationMethodOptions.php:22
+msgid "Highest cost"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/CartCalculationOptions.php:22
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Settings/CartCalculationOptions.php:23
+msgid "Cart value"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/CartCalculationOptions.php:23
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Settings/CartCalculationOptions.php:23
+msgid "Package value"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/FreeShipping/FreeShippingRequiresOptions.php:27
+msgid "Minimum order amount"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/FreeShipping/FreeShippingRequiresOptions.php:28
+msgid "Free shipping coupon"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/FreeShipping/FreeShippingRequiresOptions.php:29
+msgid "Free shipping coupon or minimum order amount"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/FreeShipping/FreeShippingRequiresOptions.php:30
+msgid "Free shipping coupon and minimum order amount"
+msgstr ""
+
+#. Translators: product id.
+#: src/WPDesk/FSPro/TableRate/ImportExport/Conditions/ProductImportData.php:54
+msgid "Product with ID #%1$s does not exist."
+msgstr ""
+
+#. Translators: rule shipping class and wp_error message.
+#: src/WPDesk/FSPro/TableRate/ImportExport/Conditions/ShippingClassImportData.php:113
+msgid "Error while creating shipping class: %1$s, %2$s"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:33
+msgid "Cart line item"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:34
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:36
+msgid "Cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:35
+msgid "Shipping cost based on the number of cart line items"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:79
+msgid "cart lines is from"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:80
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:82
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:91
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:84
+msgid "min"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:81
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:130
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:83
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:94
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/PricePro.php:36
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:94
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:115
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:92
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:85
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/WeightPro.php:35
+msgid "from"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:87
+msgid "lines to"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:88
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:90
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:97
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:91
+msgid "max"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:89
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:138
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:139
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:91
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:100
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:101
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:100
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:101
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:116
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:98
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:92
+msgid "to"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/CartLineItem.php:90
+msgid "lines"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:47
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:96
+msgid "is"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:51
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:97
+msgid "is not"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:69
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:98
+msgid "any"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:73
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:99
+msgid "all"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:77
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:100
+msgid "none"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ConditionOperators.php:81
+msgid "matches"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:35
+msgid "Day of the week"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:36
+msgid "Shipping cost based on the day the order is placed"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:37
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:39
+msgid "Destination & Time"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:82
+msgid "Select the days"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:83
+msgid "one of"
+msgstr ""
+
+#. Translators: condition name.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:96
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:93
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:173
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:154
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:173
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:137
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:110
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:68
+msgid "Condition: %1$s;"
+msgstr ""
+
+#. Translators: operator.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:99
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:96
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:176
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:157
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:176
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:140
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:113
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:71
+msgid " operator: %1$s;"
+msgstr ""
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:110
+msgid " days: %1$s;"
+msgstr ""
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:112
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:107
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:190
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:175
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:189
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:160
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:119
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:76
+msgid " input data: %1$s;"
+msgstr ""
+
+#. Translators: matched condition.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:114
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:111
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:192
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:177
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:191
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:162
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:121
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:79
+msgid " matched: %1$s"
+msgstr ""
+
+#. Translators: matched condition.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:114
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:111
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:192
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:177
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:191
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:162
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:121
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:79
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Settings/CheckboxValue.php:23
+msgid "yes"
+msgstr ""
+
+#. Translators: matched condition.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:114
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:111
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:192
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:177
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:191
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:162
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:121
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:79
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Settings/CheckboxValue.php:23
+msgid "no"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:137
+msgid "Monday"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:138
+msgid "Tuesday"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:139
+msgid "Wednesday"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:140
+msgid "Thursday"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:141
+msgid "Friday"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:142
+msgid "Saturday"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DayOfTheWeek.php:143
+msgid "Sunday"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:37
+msgid "Dimensional weight"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:38
+msgid "Shipping cost based on the dimensional weight of the cart or package"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:39
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:40
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:38
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:40
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:54
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:38
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionHeight.php:27
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionLength.php:27
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionWidth.php:26
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:40
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:63
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:40
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:40
+msgid "Product"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:99
+msgid "Undefined"
+msgstr ""
+
+#. Translators: ratio.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:103
+msgid " DIM Factor: %1$s;"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:128
+msgid "weight is from"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:129
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:93
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:93
+msgid "is from"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/DimensionalWeight.php:136
+msgid "weight to"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:34
+msgid "Item"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:35
+msgid "Shipping cost based on the products' in the cart quantity"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:81
+msgid "items is from"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:89
+msgid "items to"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Item.php:92
+msgid "qty"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:38
+msgid "Max dimension"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/MaxDimension.php:39
+msgid "Shipping cost based on the product's maximum dimension"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:39
+msgid "Shipping cost based on the specific product"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:97
+msgid "search product"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:101
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:208
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:99
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:194
+msgctxt "select"
+msgid "of"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:119
+msgctxt "product"
+msgid "any"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:120
+msgid "The rule will be used if there is at least 1 product from selected products in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:124
+msgctxt "product"
+msgid "all"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:125
+msgid "The rule will be used if all selected products are in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:129
+msgctxt "product"
+msgid "none"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:130
+msgid "The rule will be used only if there are no products from selected products in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:134
+msgctxt "product"
+msgid "matches"
+msgstr ""
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:188
+msgid " products: %1$s;"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:204
+msgctxt "product"
+msgid "matches any"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:205
+msgctxt "product"
+msgid "matches all"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Product.php:206
+msgctxt "product"
+msgid "matches none"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:52
+msgid "Product category"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:53
+msgid "Shipping cost based on the selected product categories"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:125
+msgid "None (category not set)"
+msgstr ""
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:173
+msgid " product categories: %1$s;"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:189
+msgctxt "product-category"
+msgid "matches any"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:190
+msgctxt "product-category"
+msgid "matches all"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:191
+msgctxt "product-category"
+msgid "matches none"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:207
+msgid "search product category"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:229
+msgctxt "product-category"
+msgid "any"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:230
+msgid "The rule will be used if there is at least 1 product with selected product categories in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:234
+msgctxt "product-category"
+msgid "all"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:235
+msgid "The rule will be used if there is at least 1 product from each of selected product categories in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:239
+msgctxt "product-category"
+msgid "none"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:240
+msgid "The rule will be used only if there are no products with selected product categories in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductCategory.php:244
+msgctxt "product-category"
+msgid "matches"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:36
+msgid "Product dimension"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimension.php:37
+msgid "Shipping cost based on the product's dimension"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionHeight.php:25
+msgid "Height"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionHeight.php:26
+msgid "Shipping cost based on the product's height"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionLength.php:25
+msgid "Length"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionLength.php:26
+msgid "Shipping cost based on the product's length"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionWidth.php:24
+msgid "Width"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductDimensionWidth.php:25
+msgid "Shipping cost based on the product's width"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:39
+msgid "Product tag"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:41
+msgid "Shipping cost based on the selected product tags"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:98
+msgid "search tags"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:120
+msgctxt "product-tag"
+msgid "any"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:121
+msgid "The rule will be used if there is at least 1 product with selected product tags in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:125
+msgctxt "product-tag"
+msgid "all"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:126
+msgid "The rule will be used if there is at least 1 product from each of selected product tags in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:130
+msgctxt "product-tag"
+msgid "none"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:131
+msgid "The rule will be used only if there are no products with selected product tags in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:135
+msgctxt "product-tag"
+msgid "matches"
+msgstr ""
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:187
+msgid " tags: %1$s;"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:203
+msgctxt "product-tag"
+msgid "matches any"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:204
+msgctxt "product-tag"
+msgid "matches all"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ProductTag.php:205
+msgctxt "product-tag"
+msgid "matches none"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:61
+msgid "Shipping class"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:62
+msgid "Shipping cost based on the selected shipping class"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:110
+#: src/WPDesk/FSPro/TableRate/ShippingClassSettings.php:24
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/BasedOnOptions.php:20
+msgid "None"
+msgstr ""
+
+#. Translators: input data.
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:158
+msgid " shipping classes: %1$s;"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:174
+msgctxt "shipping-class"
+msgid "matches any"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:175
+msgctxt "shipping-class"
+msgid "matches all"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:176
+msgctxt "shipping-class"
+msgid "matches none"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:193
+msgid "search shipping class"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:210
+msgctxt "shipping-class"
+msgid "any"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:211
+msgid "The rule will be used if there is at least 1 product with selected shipping classes in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:215
+msgctxt "shipping-class"
+msgid "all"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:216
+msgid "The rule will be used if there is at least 1 product from each of selected shipping classes in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:220
+msgctxt "shipping-class"
+msgid "none"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:221
+msgid "The rule will be used only if there are no products with selected shipping classes in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:225
+msgctxt "shipping-class"
+msgid "matches"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:241
+#: src/WPDesk/FSPro/TableRate/ShippingClassSettings.php:22
+msgid "All products"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:242
+#: src/WPDesk/FSPro/TableRate/ShippingClassSettings.php:23
+msgid "Any class (must be set)"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/ShippingClass.php:245
+msgid "Products without shipping class"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:38
+msgid "Time of the day"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:40
+msgid "Shipping cost based on the defined time frames"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:138
+msgid "between"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:145
+msgid "and"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:181
+msgid "12:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:185
+msgid "1:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:189
+msgid "2:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:193
+msgid "3:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:197
+msgid "4:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:201
+msgid "5:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:205
+msgid "6:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:209
+msgid "7:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:213
+msgid "8:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:217
+msgid "9:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:221
+msgid "10:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:225
+msgid "11:00 AM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:229
+msgid "12:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:233
+msgid "1:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:237
+msgid "2:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:241
+msgid "3:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:245
+msgid "4:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:249
+msgid "5:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:253
+msgid "6:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:257
+msgid "7:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:261
+msgid "8:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:265
+msgid "9:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:269
+msgid "10:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TimeOfTheDay.php:273
+msgid "11:00 PM"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:38
+msgid "Total overall dimensions"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/TotalOverallDimensions.php:39
+msgid "Shipping cost based on single product's summed up length, width & height"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:34
+msgid "User Role"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:35
+msgid "User"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:36
+msgid "Shipping cost based on the selected user role"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:73
+msgid "user role"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:95
+msgctxt "user role"
+msgid "one of"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/UserRole.php:151
+msgid "Guest (Not logged in user)"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:38
+msgid "Volume"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/Condition/Volume.php:39
+msgid "Shipping cost based on the volume of the products"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:60
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:137
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/BasedOnOptions.php:20
+msgid "Price"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:61
+msgid "Shipping cost as a percentage of order’s value"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:62
+msgid "Shipping cost always equals 15% of cart total price."
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:98
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:120
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:171
+msgid "Shipping classes"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:99
+msgid "Combining different shipping classes in the cart"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:100
+msgid "Different shipping cost for specific shipping classes' combinations and different for products purchased one at a time."
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:105
+msgid "3 existing shipping classes required - if not present, please add them before using the scenario."
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:121
+msgid "Disable or hide the shipping method"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:122
+msgid "The shipping method remains hidden not being displayed in the cart and checkout once the specific condition is met."
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:127
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:178
+msgid "1 existing shipping class required - if not present, please add it before using the scenario."
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:138
+msgid "Extra cost for every item"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:139
+msgid "Basic shipping cost based on price and additional cost added with each single item in the cart."
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:152
+msgid "Additional cost"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:153
+msgid "Progressively increasing weight based shipping"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:154
+msgid "Fixed basic shipping cost and progressively calculated additional shipping cost increasing with every 1 kg of weight."
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:172
+msgid "Combining the shipping cost calculation conditions"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:173
+msgid "Shipping cost calculated based on various conditions' combinations."
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/PreconfiguredScenarios/PreconfiguredScenariosPro.php:186
+msgid "There are not enough existing shipping classes required to use the scenario. Create the required number of shipping classes and try again."
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Cancel.php:24
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Cancel.php:28
+msgid "Hide"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Cancel.php:25
+msgid "Hide this shipping method once the condition defined in this rule is met"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Stop.php:24
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Stop.php:28
+msgid "Stop"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/Rule/SpecialAction/Stop.php:25
+msgid "Stop calculating the following rules once the condition defined in this one is met"
+msgstr ""
+
+#. Translators: currency.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnCartLineItem.php:24
+msgid "Line item (pos)"
+msgstr ""
+
+#. Translators: weight unit.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnDimensionalWeight.php:29
+msgid "Dimensional Weight (%1$s)"
+msgstr ""
+
+#. Translators: currency.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnItem.php:24
+msgid "Item (qty)"
+msgstr ""
+
+#. Translators: currency.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnValue.php:33
+msgid "Price (%1$s)"
+msgstr ""
+
+#. Translators: currency.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnVolume.php:36
+msgid "Volume (%1$s)"
+msgstr ""
+
+#. Translators: weight unit.
+#: src/WPDesk/FSPro/TableRate/RuleCost/Cost/BasedOnWeight.php:24
+msgid "Weight (%1$s)"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/RuleCost/Value.php:15
+msgid "Value"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/RuleCost/Value.php:19
+msgid "Value for additional cost."
+msgstr ""
+
+#. Translators: shipping method settings.
+#: src/WPDesk/FSPro/TableRate/Settings/ProMethodSettingsImplementation.php:130
+msgid "Method settings:%1$s Enabled: %2$s Method Title: %3$s Method Description: %4$s Tax status: %5$s Costs includes tax: %6$s Free Shipping requires: %7$s Free Shipping: %8$s Coupons discounts (Apply minimum order rule before coupon discount): %9$s Free Shipping Label: %10$s 'Left to free shipping' notice: %11$s Maximum Cost: %12$s Rules Calculation: %13$s Cart calculation: %14$s Visibility (Show only for logged in users): %15$s Default: %16$s Debug mode: %17$s"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/views/html-admin-weight-ratio-validator.php:36
+msgid "Entering the DIM Factor value is required if the When: Dimensional weight condition was used. Please fill it in and save the changes once again."
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/WeightCalculationSettings.php:44
+msgid "DIM Factor"
+msgstr ""
+
+#: src/WPDesk/FSPro/TableRate/WeightCalculationSettings.php:46
+msgid "e.g. 166"
+msgstr ""
+
+#. Translators: strong tag open, strong tag close.
+#: src/WPDesk/FSPro/TableRate/WeightCalculationSettings.php:52
+msgid "Filling in the %1$sDIM Factor%2$s value in this field is required if you use the %1$sWhen: Dimensional weight%2$s condition to calculate the shipping cost. What's more, all the products in your shop should have their dimensions entered."
+msgstr ""
+
+#. Translators:new line tag, docs url tag open, docs url tag close.
+#: src/WPDesk/FSPro/TableRate/WeightCalculationSettings.php:58
+msgid "Learn more about the %1$sdifference between dimensional and actual weight →%2$s"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-octolize-tracker/src/OptInNotice/views/html-notice.php:12
+msgid "Help us improve Octolize plugins' experience"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-octolize-tracker/src/OptInNotice/views/html-notice.php:15
+msgid "Hi %1$s, with your helping hand we can build effective solutions, launch the new features and shape better plugins experience. By agreeing to anonymously share non-sensitive %2$susage data%3$s of our plugins, you will help us develop them in the right direction. No personal data is tracked or stored and you can opt-out any time. Will you give the thumbs up to our efforts?"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-octolize-tracker/src/OptInNotice/views/html-notice.php:22
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-notice.php:41
+msgid "Allow"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:45
+msgctxt "Page title"
+msgid "Shipping Extensions"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:63
+msgctxt "Menu Title"
+msgid ""
+"Shipping\n"
+"Extensions"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:82
+msgid "The best and the most powerful Table Rate shipping plugin for WooCommerce. Define the shipping rules based on numerous conditions and configure even the most complex shipping scenarios with ease."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:82
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:94
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:97
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:103
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:109
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:112
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:121
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:127
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:137
+msgid "Customizable Rates"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:85
+msgid "UPS Live Rates and Access Points PRO"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:85
+msgid "WooCommerce UPS integration packed with many advanced features. Display the dynamically calculated live rates for UPS shipping methods and adjust them to your needs."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:85
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:91
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:106
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:115
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:124
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:137
+msgid "Live Rates"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:88
+msgid "DPD UK & DPD Local"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:88
+msgid "Ship your DPD orders faster with advanced DPD UK & DPD Local WooCommerce integration. Gather shipping details, download printable shipping labels and track parcels - everything is automated."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:88
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:100
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:118
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:137
+msgid "Shipping Labels"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:91
+msgid "FedEx WooCommerce Live Rates PRO"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:91
+msgid "Enable the FedEx live rates for international delivery and integrate it with your shop in less than 5 minutes. Save your time and money – let the shipping cost be calculated automatically."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:94
+msgid "Distance Based Shipping Rates"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:94
+msgid "Offer shipping rates based on Distance or Total Travel Time calculated by Google Distance Matrix API and don't overpay for shipping."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:97
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/PluginCompatibilityChecker.php:100
+msgid "Flexible Shipping Locations"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:97
+msgid "Calculate the shipping cost based on location. Define your own custom locations, use the WooCommerce defaults or the ones created by 3rd party plugins."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:100
+msgid "Flexible Printing"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:100
+msgid "Automate your shipping process. Print the shipping labels on thermal printers via PrintNode service. Let the labels be printed automatically the same time the order is placed."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:103
+msgid "Flexible Shipping Import / Export"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:103
+msgid "Use the CSV files to import or export your shipping methods. Edit, update, move or backup the ready configurations and shipping scenarios."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:106
+msgid "DHL Express Live Rates PRO"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:106
+msgid "WooCommerce DHL Express integration packed with many advanced features. Display the dynamically calculated live rates for DHL Express shipping methods and adjust them to your needs."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:109
+msgid "Multi Vendor Shipping"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:109
+msgid "Define precisely the shipping cost calculation rules for each Vendor / Product Author in your marketplace or multivendor store."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:112
+msgid "Shipping Packages"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:112
+msgid "Split the WooCommerce cart content into multiple packages based on various conditions like shipping class."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:115
+msgid "Conditional Shipping Methods"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:115
+msgid "Conditionally display and hide the shipping methods in your WooCommerce store. Define the rules when the specific shipping methods, e.g., live rates should be available to pick and when not to."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:118
+msgid "UPS Labels and Tracking"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:118
+msgid "Create the shipments, generate the printable UPS shipping labels for the placed orders and track the parcels directly from your WooCommerce store."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:121
+msgid "Delivery Date Picker"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:121
+msgid "Let your customers choose a convenient delivery date for the ordered products and make the shipping cost dependent on the date they choose."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:124
+msgid "USPS Live Rates PRO"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:124
+msgid "Serve your customers the automatically and real-time calculated USPS shipping rates. Add the handling fees, insurance and adjust them to your needs with just a few clicks."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:127
+msgid "Shipping Cost on Product Page PRO"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/Page.php:127
+msgid "Let your customers calculate and see the shipping cost on product pages based on the entered shipping destination and cart contents. Decide how and when exactly you want the shipping cost calculator to display."
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/PluginLinks.php:57
+msgctxt "Link on plugin list page"
+msgid "Extensions"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/views/html-shipping-extensions-page.php:25
+msgid "Shipping Extensions by"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/views/html-shipping-extensions-page.php:30
+msgid "Dive into a system of Octolize ecommerce shipping plugins for WooCommerce. Don’t lose your customers, time and money. Let our plugins secure your sales!"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/views/html-shipping-extensions-page.php:43
+msgid "Filter plugins:"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/views/html-shipping-extensions-page.php:48
+msgid "All"
+msgstr ""
+
+#: vendor_prefixed/octolize/wp-shipping-extensions/src/ShippingExtensions/views/html-shipping-extensions-page.php:105
+msgid "Buy plugin →"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-forms/templates/input-image.php:46
+msgid "Set image"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-forms/templates/input-image.php:57
+msgid "Remove image"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-forms/templates/input-image.php:82
+msgid "Select or Upload Media"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-forms/templates/input-image.php:86
+msgid "Use this media"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-forms/templates/product-select.php:22
+msgid "Search for a product&hellip;"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-helpscout-beacon/src/Beacon/Beacon.php:51
+#: vendor_prefixed/wpdesk/wp-helpscout-beacon/src/Beacon/Beacon.php:92
+msgid "When you click OK we will open our HelpScout beacon where you can find answers to your questions. This beacon will load our help articles and also potentially set cookies."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-logs/src/deprecated/wpdesk-logger.php:59
+msgid "Disabled"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-logs/src/deprecated/wpdesk-logger.php:59
+msgid "Emergency"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-logs/src/deprecated/wpdesk-logger.php:59
+msgid "Alert"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-logs/src/deprecated/wpdesk-logger.php:59
+msgid "Critical"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-logs/src/deprecated/wpdesk-logger.php:59
+msgid "Error"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-logs/src/deprecated/wpdesk-logger.php:59
+msgid "Warning"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-logs/src/deprecated/wpdesk-logger.php:59
+msgid "Notice"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-logs/src/deprecated/wpdesk-logger.php:59
+msgid "Info"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-logs/src/deprecated/wpdesk-logger.php:59
+msgid "Debug"
+msgstr ""
+
+#. Translators: directory.
+#: vendor_prefixed/wpdesk/wp-logs/src/WP/WPCapture.php:23
+msgid "Can not enable WP Desk Debug log! Cannot create directory %s or this directory is not writeable!"
+msgstr ""
+
+#. Translators: directory.
+#: vendor_prefixed/wpdesk/wp-logs/src/WP/WPCapture.php:36
+msgid "Can not enable WP Desk Debug log! Cannot create file %s!"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/BlockSettings.php:100
+msgid "In order to prevent any further issues with the plugin configuration or its proper functioning, before saving the changes please update the following: %s."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/BlockSettings.php:107
+msgid "Go to the plugins list &rarr;"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/Notice.php:46
+msgid "If the WordPress updater hasn't informed you about the newer versions available, please %sfollow these instructions &rarr;%s"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/Notice.php:46
+msgid "https://octol.io/fs-2-docs"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/Notice.php:49
+msgid "%sFlexible Shipping%s plugin you are currently using is not compatible with the installed version of Flexible Shipping PRO and Flexible Shipping Locations. Please update the %sFlexible Shipping%s plugin to %s version or newer."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/Notice.php:51
+msgid "%sFlexible Shipping%s plugin you are currently using is not compatible with the installed version of Flexible Shipping PRO. Please update the %sFlexible Shipping%s plugin to %s version or newer."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/Notice.php:53
+msgid "%sFlexible Shipping%s plugin you are currently using is not compatible with the installed version of Flexible Shipping Locations. Please update the %sFlexible Shipping%s plugin to %s version or newer."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/Notice.php:57
+msgid "%sFlexible Shipping PRO%s plugin you are currently using is not compatible with the installed version of Flexible Shipping free. Please update the %sFlexible Shipping PRO%s plugin to %s version or newer."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/Notice.php:60
+msgid "%sFlexible Shipping Locations%s plugin you are currently using is not compatible with the installed version of Flexible Shipping free. Please update the %sFlexible Shipping Locations%s plugin to %s version or newer."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-compatibility/src/PluginCompatibilityChecker.php:94
+msgid "Flexible Shipping"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/BasedOnOptions.php:20
+msgid "Weight"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Logger/ShippingMethodLogger.php:71
+msgid "shipping method configuration"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Logger/ShippingMethodLogger.php:78
+msgid "input data"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Logger/ShippingMethodLogger.php:85
+msgid "rules (%1$s)"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Logger/ShippingMethodLogger.php:85
+msgid "triggered"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Logger/ShippingMethodLogger.php:85
+msgid "not triggered"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Logger/ShippingMethodLogger.php:92
+msgid "the result of shipping method's usage"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Logger/view/display-notice-content-single-value.php:12
+msgid "Show %1$s"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Logger/view/display-notice-content-single-value.php:15
+msgid "Hide %1$s"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Logger/view/display-notice-content-single-value.php:18
+msgid "Copy %1$s"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Logger/view/display-notice-footer.php:9
+msgid "Copy all data"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Logger/view/display-notice-header.php:9
+msgid "FS Debug mode for %1$s%2$s%3$s shipping method."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Settings/IntegrationSettingsImplementation.php:41
+msgid "Integration: %1$s"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Settings/MethodSettingsImplementation.php:272
+msgid "Method settings:%1$s Enabled: %2$s Method Title: %3$s Method Description: %4$s Tax status: %5$s Costs includes tax: %6$s Free Shipping: %7$s Free Shipping Label: %8$s 'Left to free shipping' notice: %9$s Rules Calculation: %10$s Cart Calculation: %11$s Visibility (Show only for logged in users): %12$s Default: %13$s Debug mode: %14$s"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Settings/MethodSettingsImplementation.php:279
+msgid "Taxable"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-fs-table-rate/src/Settings/MethodSettingsImplementation.php:279
+msgctxt "Tax status"
+msgid "None"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/ActivationForm/views/activation-form-content.php:32
+msgid "Plugin's API key has been successfully activated. You are now fully eligible to receive plugin updates and support."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/ActivationForm/views/activation-form-content.php:34
+msgid "Plugin's API key has been successfully activated, but your subscription has expired. In order to receive the upcoming updates and support please renew your subscription."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/ActivationForm/views/activation-form-content.php:37
+msgid "In order to receive the upcoming updates and support please enter the plugin's API key obtained after the purchase."
+msgstr ""
+
+#. Translators: my account link and docs link.
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/ActivationForm/views/activation-form-content.php:42
+msgid "You can find it in %1$sMy Account / API Keys%2$s tab. %3$sLearn more about activating the API key →%4$s"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/ActivationForm/views/activation-form-content.php:54
+msgid "Key: "
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/ActivationForm/views/activation-form-content.php:66
+msgid "Deactivate license"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/ActivationForm/views/activation-form-content.php:74
+msgid "Renew subscription →"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/ActivationForm/views/activation-form-content.php:83
+msgid "Activate license"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/ActivationForm/views/activation-form.php:76
+msgid "The action failed with an error: "
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/ActivationForm/views/activation-form.php:79
+msgid "Enter license key"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/Action/LicenseActivation.php:132
+msgid "Connection failed to the Subscription Key API server. Try again later."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/Action/LicenseActivation.php:141
+msgid "Plugin license activated. "
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/Action/LicenseDeactivation.php:31
+msgid "Plugin license deactivated. "
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/class-wpdesk-helper-list-table.php:27
+msgid "No WP Desk plugins found."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/class-wpdesk-helper-list-table.php:39
+msgid "Plugin"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/class-wpdesk-helper-list-table.php:39
+msgid "Subscription Status"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/class-wpdesk-helper-list-table.php:39
+msgid "Subscription Data"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/class-wpdesk-helper-list-table.php:56
+msgid "Deactivated"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/class-wpdesk-helper-list-table.php:58
+msgid "Activated"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/license-actions.php:14
+msgid "Key:"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/license-actions.php:25
+msgid "Email:"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/license-actions.php:41
+msgid "Activate"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/license-actions.php:47
+msgid "Deactivate"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/licenses.php:27
+msgid "WP Desk Subscriptions"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/License/views/licenses.php:37
+msgid "Get your subscription keys <a href=\"%s\" target=\"_blank\">here</a>. You can activate/deactivate API keys <strong>unlimited times on different domains</strong> as long as you have an active subscription."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/Page/LicensePage.php:41
+msgid "Subscriptions"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/WpUpgrader/SubscriptionHandler.php:72
+msgid "Your plugin subscription has expired. In order to update the plugin please %1$srenew your subscription →%2$s"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-license/src/WpUpgrader/SubscriptionHandler.php:74
+msgid "An active subscription API key is required to download the plugin updates. In order to update the plugin please %1$sactivate your API key →%2$s"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/scripts.php:44
+msgid "Plugin deactivation"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/scripts.php:115
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:126
+msgid "Submit &amp; Deactivate"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:20
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:11
+msgid "You are deactivating %s plugin."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:29
+msgid "If you have a moment, please let us know why you are deactivating the plugin (anonymous feedback):"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:38
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:28
+msgid "The plugin suddenly stopped working"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:48
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:38
+msgid "The plugin broke my site"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:58
+msgid "I have found a better plugin"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:63
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:53
+msgid "What's the plugin's name?"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:73
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:63
+msgid "I only needed the plugin for a short period"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:83
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:73
+msgid "I no longer need the plugin"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:93
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:83
+msgid "It's a temporary deactivation. I'm just debugging an issue."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:103
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:93
+msgid "Other"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:108
+msgid "Please let us know how we can improve our plugin"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:117
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:107
+msgid "Cancel"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker-deactivation/src/WPDesk/Tracker/Deactivation/views/thickbox.php:120
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:110
+msgid "Skip &amp; Deactivate"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/OptOut.php:41
+msgid "You successfully opted out of collecting usage data by %1$s. If you change your mind, you can always opt in later in the plugin's quick links."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/PluginActionLinks.php:50
+msgid "Opt-in"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/PluginActionLinks.php:53
+msgid "Opt-out"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:23
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:15
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-notice.php:19
+msgid "Hey %s,"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:26
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:18
+msgid "Please help us improve our plugins! If you opt-in, we will collect some non-sensitive data and usage information anonymously. If you skip this, that's okay! All plugins will work just fine."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:35
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:27
+msgid "Allow & Continue &rarr;"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:40
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:32
+msgid "Skip"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:47
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:39
+msgid "What permissions are being granted?"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:56
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:48
+msgid "Your Site Overview"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:59
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:51
+msgid "WP version, PHP info"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:67
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:59
+msgid "Plugin Usage"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:70
+msgid "Current settings and usage information of %1$s plugins"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:78
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:70
+msgid "Your Store Overview"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:81
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:73
+msgid "Anonymized and non-sensitive store usage information"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/PSR/WPDesk/Tracker/views/tracker-connect.php:91
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:83
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-notice.php:27
+msgid "Find out more &raquo;"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-connect.php:62
+msgid "Current settings and usage information of WP Desk plugins"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:19
+msgid " If you have a moment, please let us know why you are deactivating plugin (anonymous feedback):"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:48
+msgid "I found a better plugin"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-deactivate.php:98
+msgid "Kindly tell us the reason so we can improve"
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-notice.php:22
+msgid "We need your help to improve <strong>WP Desk plugins</strong>, so they are more useful for you and the rest of <strong>30,000+ users</strong>. By collecting data on how you use our plugins, you will help us a lot. We will not collect any sensitive data, so you can feel safe."
+msgstr ""
+
+#: vendor_prefixed/wpdesk/wp-wpdesk-tracker/src/views/tracker-opt-out-notice.php:11
+msgid "You successfully opted out of collecting usage data by WP Desk. If you change your mind, you can always opt in later in the plugin's quick links."
+msgstr ""

@@ -1,0 +1,17 @@
+.wpb_vc_grid_container {
+  margin: 0 0 15px;
+
+  .vc_grid_container {
+    display: grid;
+    grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+    grid-template-rows: auto;
+    gap: 10px;
+  }
+
+  &.vc_collapsed-grid {
+    .vc_container_for_children {
+      height: 22px;
+      overflow: hidden;
+    }
+  }
+}

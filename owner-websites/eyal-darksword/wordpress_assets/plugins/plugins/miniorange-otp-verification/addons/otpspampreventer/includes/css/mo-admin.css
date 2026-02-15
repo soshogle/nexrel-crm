@@ -1,0 +1,623 @@
+/* OTP Spam Preventer Admin Styles */
+/* Professional spacing and layout */
+
+/* Main Container */
+.mo-osp-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Using plugin's existing mo-header classes - no custom header CSS needed */
+
+/* SVG Icon Styles */
+.mo-osp-header-icon {
+    margin-right: 8px;
+    color: rgb(51 65 85);
+    vertical-align: middle;
+}
+
+.mo-osp-section-icon {
+    margin-right: 8px;
+    color: rgb(51 65 85);
+    vertical-align: middle;
+}
+
+.mo-osp-subsection-icon {
+    margin-right: 6px;
+    color: rgb(51 65 85);
+    vertical-align: middle;
+}
+
+.mo-osp-field-icon {
+    margin-right: 6px;
+    color: rgb(100 116 139);
+    vertical-align: middle;
+}
+
+/* Icon alignment in titles and labels */
+.mo-osp-section-title,
+.mo-osp-subsection-title {
+    display: flex;
+    align-items: center;
+}
+
+.mo-input-label {
+    display: flex !important;
+    align-items: center;
+}
+
+/* Card Layout */
+.mo-osp-card {
+    background: rgb(255 255 255);
+    border: 1px solid rgb(226 232 240);
+    border-radius: 8px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin: 10px 20px;
+}
+
+.mo-osp-card:last-child {
+    margin-bottom: 32px; /* Add bottom margin to advanced settings card */
+}
+
+/* Card Header */
+.mo-osp-card-header {
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid rgb(241 245 249);
+}
+
+.mo-osp-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: rgb(51 65 85);
+    margin: 0 0 8px 0;
+    line-height: 1.4;
+}
+
+.mo-osp-section-desc {
+    font-size: 14px;
+    color: rgb(100 116 139);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Card Body */
+.mo-osp-card-body {
+    padding: 20px 24px 24px 24px;
+}
+
+/* Fields Grid */
+.mo-osp-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+}
+
+@media (min-width: 768px) {
+    .mo-osp-fields-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 32px 24px;
+    }
+}
+
+/* Field Groups */
+.mo-osp-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mo-osp-field-full {
+    grid-column: 1 / -1;
+}
+
+.mo-osp-field-desc {
+    font-size: 13px;
+    color: rgb(100 116 139);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Toggle Button */
+.mo-osp-toggle-btn {
+    width: 100%;
+    padding: 20px 24px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.mo-osp-toggle-btn:hover {
+    background-color: rgb(248 250 252);
+}
+
+.mo-osp-toggle-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.mo-osp-toggle-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mo-osp-toggle-text {
+    font-size: 14px;
+    color: rgb(100 116 139);
+    font-weight: 500;
+}
+
+.mo-osp-toggle-icon {
+    font-size: 12px;
+    color: rgb(100 116 139);
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+
+.mo-osp-toggle-icon.rotate-180 {
+    transform: rotate(180deg);
+}
+
+/* Advanced Settings */
+.mo-osp-advanced-hidden {
+    display: none;
+}
+
+.mo-osp-advanced-visible {
+    display: block;
+}
+
+.mo-osp-advanced-content {
+    padding: 0 24px 32px 24px; /* Increased bottom padding */
+    border-top: 1px solid rgb(241 245 249);
+}
+
+/* Subsections */
+.mo-osp-subsection {
+    margin-top: 32px;
+}
+
+.mo-osp-subsection:last-child {
+    margin-bottom: 0;
+}
+
+.mo-osp-subsection-header {
+    margin-bottom: 20px;
+    padding-top: 24px;
+}
+
+.mo-osp-subsection:first-child .mo-osp-subsection-header {
+    padding-top: 0;
+}
+
+.mo-osp-subsection-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: rgb(51 65 85);
+    margin: 0 0 6px 0;
+    line-height: 1.4;
+}
+
+/* Form Input Overrides */
+.mo-osp-container .mo-form-input,
+.mo-osp-container .mo-form-textarea {
+    border-radius: 6px;
+    border: 1px solid rgb(226 232 240);
+    padding: 10px 12px;
+    font-size: 14px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    background: rgb(255 255 255);
+    color: rgb(51 65 85);
+}
+
+.mo-osp-container .mo-form-input:focus,
+.mo-osp-container .mo-form-textarea:focus {
+    border-color: rgb(99 102 241);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    outline: none;
+}
+
+.mo-osp-container .mo-input-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgb(51 65 85);
+    margin-bottom: 6px;
+    display: block;
+}
+
+.mo-osp-container .mo-form-textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* Number Input Styling */
+.mo-osp-container .mo-form-input[type="number"] {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+}
+
+.mo-osp-container .mo-form-input[type="number"]::-webkit-outer-spin-button,
+.mo-osp-container .mo-form-input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Validation Error Styling */
+.mo-osp-error-field {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.mo-osp-validation-error {
+    color: #ef4444;
+    font-size: 12px;
+    margin-top: 4px;
+    display: block;
+}
+
+/* Responsive Design */
+@media (max-width: 767px) {
+    .mo-osp-container {
+        padding: 0 16px;
+    }
+    
+    .mo-osp-card-header,
+    .mo-osp-card-body,
+    .mo-osp-advanced-content {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    
+    .mo-osp-toggle-btn {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    
+    .mo-osp-section-title {
+        font-size: 16px;
+    }
+    
+    .mo-osp-subsection-title {
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .mo-osp-container {
+        padding: 0 12px;
+    }
+    
+    .mo-osp-card-header,
+    .mo-osp-card-body,
+    .mo-osp-advanced-content {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+    
+    .mo-osp-toggle-btn {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
+
+/* Puzzle Verification Popup Styles */
+.mo-osp-puzzle-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 100001 !important; /* Higher than WooCommerce checkout popup (100000) and other modals */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: mo-osp-fade-in 0.3s ease-out;
+}
+
+.mo-osp-puzzle-overlay.mo-osp-hidden {
+    display: none;
+}
+
+/* Puzzle popup outer wrapper - ensures it appears above WooCommerce checkout popup */
+#mo-osp-puzzle-popup-outer-div {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100001 !important; /* Higher than WooCommerce checkout popup (100000) */
+    display: none;
+}
+
+.mo-osp-puzzle-popup {
+    background: rgb(255 255 255);
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    max-width: 480px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: mo-osp-slide-up 0.3s ease-out;
+    position: relative;
+    z-index: 100002; /* Higher than overlay to ensure popup content is on top */
+}
+
+.mo-osp-puzzle-header {
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid rgb(241 245 249);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mo-osp-puzzle-title {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: rgb(51 65 85);
+}
+
+.mo-osp-puzzle-icon {
+    margin-right: 8px;
+    color: rgb(99 102 241);
+}
+
+.mo-osp-puzzle-close {
+    background: none;
+    border: none;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: rgb(107 114 128);
+    transition: all 0.2s ease;
+}
+
+.mo-osp-puzzle-close:hover {
+    background: rgb(243 244 246);
+    color: rgb(75 85 99);
+}
+
+.mo-osp-puzzle-body {
+    padding: 24px;
+}
+
+.mo-osp-puzzle-message {
+    margin-bottom: 24px;
+}
+
+.mo-osp-puzzle-message p {
+    margin: 0;
+    color: rgb(75 85 99);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.mo-osp-puzzle-question {
+    margin-bottom: 20px;
+}
+
+.mo-osp-puzzle-equation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px;
+    background: rgb(248 250 252);
+    border: 2px solid rgb(226 232 240);
+    border-radius: 8px;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.mo-osp-equation-text {
+    color: rgb(51 65 85);
+    font-family: 'Courier New', monospace;
+}
+
+.mo-osp-puzzle-image {
+    max-width: 280px;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    border: 2px solid rgb(226 232 240);
+    background: rgb(255 255 255);
+    padding: 2px;
+    display: block;
+}
+
+.mo-osp-equals {
+    color: rgb(99 102 241);
+    font-weight: 700;
+}
+
+.mo-osp-puzzle-input {
+    width: 80px;
+    height: 48px;
+    border: 2px solid rgb(226 232 240);
+    border-radius: 6px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    color: rgb(51 65 85);
+    background: rgb(255 255 255);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mo-osp-puzzle-input:focus {
+    outline: none;
+    border-color: rgb(99 102 241);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.mo-osp-puzzle-input::placeholder {
+    color: rgb(156 163 175);
+}
+
+.mo-osp-puzzle-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgb(254 242 242);
+    border: 1px solid rgb(252 165 165);
+    border-radius: 6px;
+    color: rgb(220 38 38);
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.mo-osp-error-icon {
+    flex-shrink: 0;
+}
+
+.mo-osp-puzzle-footer {
+    padding: 16px 24px 24px 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.mo-osp-puzzle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.mo-osp-btn-secondary {
+    background: rgb(243 244 246);
+    color: rgb(75 85 99);
+    border: 1px solid rgb(209 213 219);
+}
+
+.mo-osp-btn-secondary:hover {
+    background: rgb(229 231 235);
+    color: rgb(55 65 81);
+}
+
+.mo-osp-btn-primary {
+    background: rgb(99 102 241);
+    color: rgb(255 255 255);
+}
+
+.mo-osp-btn-primary:hover {
+    background: rgb(79 70 229);
+}
+
+.mo-osp-btn-primary:disabled {
+    background: rgb(156 163 175);
+    cursor: not-allowed;
+}
+
+/* Animations */
+@keyframes mo-osp-fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes mo-osp-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Responsive design for puzzle popup */
+@media (max-width: 480px) {
+    .mo-osp-puzzle-popup {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .mo-osp-puzzle-header,
+    .mo-osp-puzzle-body,
+    .mo-osp-puzzle-footer {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    
+    .mo-osp-puzzle-equation {
+        font-size: 20px;
+        gap: 12px;
+        padding: 12px;
+        flex-wrap: wrap;
+    }
+    
+    .mo-osp-puzzle-image {
+        max-width: 100%;
+    }
+    
+    .mo-osp-puzzle-input {
+        width: 70px;
+        height: 44px;
+        font-size: 18px;
+    }
+    
+    .mo-osp-puzzle-footer {
+        flex-direction: column;
+    }
+    
+    .mo-osp-puzzle-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Light theme only - no dark mode */
+
+/* Send OTP Button Processing State */
+.mo-osp-processing {
+    opacity: 0.7 !important;
+    cursor: not-allowed !important;
+    position: relative;
+}
+
+.mo-osp-processing::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: mo-osp-spin 1s linear infinite;
+    z-index: 1;
+}
+
+@keyframes mo-osp-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Ensure button text is still visible during processing */
+.mo-osp-processing {
+    color: rgba(255, 255, 255, 0.8) !important;
+}

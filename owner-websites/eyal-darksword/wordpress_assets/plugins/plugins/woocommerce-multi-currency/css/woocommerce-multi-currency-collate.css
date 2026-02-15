@@ -1,0 +1,40 @@
+.wmc-shortcode-price-collate.wmc-collate-archive-page {
+  display: flex;
+  justify-content: center;
+}
+.wmc-shortcode-price-collate.wmc-collate-archive-page.wmc-shortcode-price-collate-layout-tooltip {
+  flex-direction: column;
+}
+.wmc-shortcode-price-collate.wmc-collate-archive-page.wmc-shortcode-price-collate-layout-split {
+  flex-direction: column;
+}
+.wmc-shortcode-price-collate.wmc-shortcode-price-collate-layout-tooltip .wmc-collate-title-wrap {
+  cursor: pointer;
+}
+.wmc-shortcode-price-collate.wmc-shortcode-price-collate-layout-tooltip .wmc-collate-title-wrap:hover + .wmc-currency-collate-wrapper {
+  display: block;
+}
+.wmc-shortcode-price-collate.wmc-shortcode-price-collate-layout-tooltip .wmc-currency-collate-wrapper {
+  display: none;
+  position: absolute;
+  padding: 5px;
+  background-color: #fff;
+}
+.wmc-shortcode-price-collate .wmc-currency-collate-wrapper.wmc-collate-layout-inline {
+  display: flex;
+  flex-wrap: wrap;
+}
+.wmc-shortcode-price-collate .wmc-currency-collate-wrapper.wmc-collate-layout-split .wmc-collate-currency-separate-symbol {
+  display: none;
+}
+.wmc-shortcode-price-collate .wmc-currency-collate-wrapper.wmc-collate-layout-tooltip .wmc-collate-currency-separate-symbol {
+  display: none;
+}
+.wmc-shortcode-price-collate .wmc-currency-collate-wrapper .wmc-collate-currency-separate-symbol {
+  padding: 0 5px;
+}
+.wmc-shortcode-price-collate .wmc-hidden {
+  display: none;
+}
+
+/*# sourceMappingURL=woocommerce-multi-currency-collate.css.map */

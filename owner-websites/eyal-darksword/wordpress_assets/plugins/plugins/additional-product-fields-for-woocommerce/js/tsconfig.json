@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "noImplicitAny": false,
+    "module": "commonjs",
+    "target": "es5",
+    "lib": ["dom","es2017","es6","es2015"],
+    "jsx": "react",
+    "experimentalDecorators": true,
+    "baseUrl": "./src",
+    "paths": {
+      "shared/*": ["shared/*"],
+      "FormBuilder/*": ["app/FormBuilder/*"],
+      "InternalShared/*": ["app/InternalShared/*"],
+      "ProductFieldBuilder/*": ["app/ProductFieldBuilder/*"],
+      "FreeFields/*": ["app/FreeFields/*"],
+      "FormulaParser/*": ["app/FormulaParser/*"],
+      "Dynamics/*": ["app/Dynamics/*"],
+      "OrderDashboard/*": ["app/OrderDashboard/*"]
+    }
+  },
+  "exclude": ["node_modules","\\.d\\.ts$"]
+}

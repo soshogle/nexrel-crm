@@ -1,0 +1,1734 @@
+# Copyright (C) 2026 reCaptcha for WooCommerce
+# This file is distributed under the same license as the reCaptcha for WooCommerce package.
+msgid ""
+msgstr ""
+"Project-Id-Version: reCaptcha for WooCommerce 2.70\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/recaptcha-for-"
+"woocommerce\n"
+"POT-Creation-Date: 2026-01-13 07:15:59+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2026-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+
+#: google-recaptcha.php:193 google-recaptcha.php:205 google-recaptcha.php:221
+#: google-recaptcha.php:229
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:82
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:91
+#: turnstile-recaptcha.php:193 turnstile-recaptcha.php:205
+#: turnstile-recaptcha.php:221 turnstile-recaptcha.php:229
+msgid "Order with an unknown origin is not allowed."
+msgstr ""
+
+#: google-recaptcha.php:355 google-recaptcha.php:513
+#: turnstile-recaptcha.php:355 turnstile-recaptcha.php:456
+msgid "Security check failure."
+msgstr ""
+
+#: google-recaptcha.php:356 google-recaptcha.php:379 google-recaptcha.php:383
+#: google-recaptcha.php:395 google-recaptcha.php:399 google-recaptcha.php:441
+#: google-recaptcha.php:445 google-recaptcha.php:453 google-recaptcha.php:457
+#: google-recaptcha.php:470 google-recaptcha.php:474 google-recaptcha.php:514
+#: google-recaptcha.php:551 google-recaptcha.php:559 google-recaptcha.php:572
+#: google-recaptcha.php:580 google-recaptcha.php:593 google-recaptcha.php:601
+#: google-recaptcha.php:646 google-recaptcha.php:654 google-recaptcha.php:670
+#: google-recaptcha.php:678 google-recaptcha.php:693 google-recaptcha.php:701
+#: google-recaptcha.php:715 google-recaptcha.php:723 google-recaptcha.php:4071
+#: google-recaptcha.php:4094 google-recaptcha.php:4096
+#: google-recaptcha.php:4106 google-recaptcha.php:4108
+#: google-recaptcha.php:4150 google-recaptcha.php:4152
+#: google-recaptcha.php:4159 google-recaptcha.php:4161
+#: google-recaptcha.php:4172 google-recaptcha.php:4174
+#: google-recaptcha.php:4201 google-recaptcha.php:4235
+#: google-recaptcha.php:4237 google-recaptcha.php:4248
+#: google-recaptcha.php:4250 google-recaptcha.php:4261
+#: google-recaptcha.php:4263 google-recaptcha.php:4306
+#: google-recaptcha.php:4308 google-recaptcha.php:4324
+#: google-recaptcha.php:4326 google-recaptcha.php:4340
+#: google-recaptcha.php:4342 google-recaptcha.php:4353
+#: google-recaptcha.php:4355 google-recaptcha.php:4409
+#: google-recaptcha.php:4431 google-recaptcha.php:4435
+#: google-recaptcha.php:4446 google-recaptcha.php:4449
+#: google-recaptcha.php:4491 google-recaptcha.php:4495
+#: google-recaptcha.php:4503 google-recaptcha.php:4506
+#: google-recaptcha.php:4519 google-recaptcha.php:4522
+#: google-recaptcha.php:4551 google-recaptcha.php:4586
+#: google-recaptcha.php:4588 google-recaptcha.php:4599
+#: google-recaptcha.php:4602 google-recaptcha.php:4613
+#: google-recaptcha.php:4616 google-recaptcha.php:4659
+#: google-recaptcha.php:4662 google-recaptcha.php:4676
+#: google-recaptcha.php:4678 google-recaptcha.php:4691
+#: google-recaptcha.php:4694 google-recaptcha.php:4706
+#: google-recaptcha.php:4709 google-recaptcha.php:4763
+#: google-recaptcha.php:4785 google-recaptcha.php:4787
+#: google-recaptcha.php:4798 google-recaptcha.php:4800
+#: google-recaptcha.php:4842 google-recaptcha.php:4844
+#: google-recaptcha.php:4851 google-recaptcha.php:4853
+#: google-recaptcha.php:4865 google-recaptcha.php:4867
+#: google-recaptcha.php:4898 google-recaptcha.php:4934
+#: google-recaptcha.php:4936 google-recaptcha.php:4948
+#: google-recaptcha.php:4951 google-recaptcha.php:4962
+#: google-recaptcha.php:4965 google-recaptcha.php:5011
+#: google-recaptcha.php:5013 google-recaptcha.php:5028
+#: google-recaptcha.php:5030 google-recaptcha.php:5043
+#: google-recaptcha.php:5046 google-recaptcha.php:5057
+#: google-recaptcha.php:5060 google-recaptcha.php:5131
+#: google-recaptcha.php:5133 google-recaptcha.php:5143
+#: google-recaptcha.php:5145 google-recaptcha.php:5187
+#: google-recaptcha.php:5189 google-recaptcha.php:5196
+#: google-recaptcha.php:5198 google-recaptcha.php:5210
+#: google-recaptcha.php:5212 google-recaptcha.php:5217
+#: google-recaptcha.php:5250 google-recaptcha.php:5287
+#: google-recaptcha.php:5289 google-recaptcha.php:5300
+#: google-recaptcha.php:5303 google-recaptcha.php:5315
+#: google-recaptcha.php:5318 google-recaptcha.php:5363
+#: google-recaptcha.php:5366 google-recaptcha.php:5381
+#: google-recaptcha.php:5383 google-recaptcha.php:5396
+#: google-recaptcha.php:5398 google-recaptcha.php:5409
+#: google-recaptcha.php:5412 google-recaptcha.php:6867
+#: google-recaptcha.php:6894 google-recaptcha.php:6896
+#: google-recaptcha.php:6905 google-recaptcha.php:6907
+#: google-recaptcha.php:6947 google-recaptcha.php:6949
+#: google-recaptcha.php:6956 google-recaptcha.php:6958
+#: google-recaptcha.php:6969 google-recaptcha.php:6971
+#: google-recaptcha.php:7001 google-recaptcha.php:7037
+#: google-recaptcha.php:7039 google-recaptcha.php:7050
+#: google-recaptcha.php:7052 google-recaptcha.php:7065
+#: google-recaptcha.php:7067 google-recaptcha.php:7111
+#: google-recaptcha.php:7113 google-recaptcha.php:7128
+#: google-recaptcha.php:7130 google-recaptcha.php:7143
+#: google-recaptcha.php:7145 google-recaptcha.php:7159
+#: google-recaptcha.php:7161 turnstile-recaptcha.php:356
+#: turnstile-recaptcha.php:386 turnstile-recaptcha.php:390
+#: turnstile-recaptcha.php:402 turnstile-recaptcha.php:406
+#: turnstile-recaptcha.php:417 turnstile-recaptcha.php:421
+#: turnstile-recaptcha.php:457 turnstile-recaptcha.php:493
+#: turnstile-recaptcha.php:501 turnstile-recaptcha.php:514
+#: turnstile-recaptcha.php:522 turnstile-recaptcha.php:535
+#: turnstile-recaptcha.php:543 turnstile-recaptcha.php:558
+#: turnstile-recaptcha.php:566 turnstile-recaptcha.php:3646
+#: turnstile-recaptcha.php:3678 turnstile-recaptcha.php:3681
+#: turnstile-recaptcha.php:3691 turnstile-recaptcha.php:3694
+#: turnstile-recaptcha.php:3704 turnstile-recaptcha.php:3706
+#: turnstile-recaptcha.php:3729 turnstile-recaptcha.php:3761
+#: turnstile-recaptcha.php:3765 turnstile-recaptcha.php:3777
+#: turnstile-recaptcha.php:3779 turnstile-recaptcha.php:3791
+#: turnstile-recaptcha.php:3794 turnstile-recaptcha.php:3806
+#: turnstile-recaptcha.php:3808 turnstile-recaptcha.php:3862
+#: turnstile-recaptcha.php:3893 turnstile-recaptcha.php:3897
+#: turnstile-recaptcha.php:3908 turnstile-recaptcha.php:3912
+#: turnstile-recaptcha.php:3923 turnstile-recaptcha.php:3926
+#: turnstile-recaptcha.php:3951 turnstile-recaptcha.php:3984
+#: turnstile-recaptcha.php:3988 turnstile-recaptcha.php:4000
+#: turnstile-recaptcha.php:4003 turnstile-recaptcha.php:4014
+#: turnstile-recaptcha.php:4018 turnstile-recaptcha.php:4031
+#: turnstile-recaptcha.php:4034 turnstile-recaptcha.php:4088
+#: turnstile-recaptcha.php:4118 turnstile-recaptcha.php:4120
+#: turnstile-recaptcha.php:4131 turnstile-recaptcha.php:4133
+#: turnstile-recaptcha.php:4144 turnstile-recaptcha.php:4146
+#: turnstile-recaptcha.php:4173 turnstile-recaptcha.php:4209
+#: turnstile-recaptcha.php:4213 turnstile-recaptcha.php:4225
+#: turnstile-recaptcha.php:4228 turnstile-recaptcha.php:4239
+#: turnstile-recaptcha.php:4243 turnstile-recaptcha.php:4258
+#: turnstile-recaptcha.php:4262 turnstile-recaptcha.php:4344
+#: turnstile-recaptcha.php:4348 turnstile-recaptcha.php:4358
+#: turnstile-recaptcha.php:4362 turnstile-recaptcha.php:4373
+#: turnstile-recaptcha.php:4375 turnstile-recaptcha.php:4380
+#: turnstile-recaptcha.php:4409 turnstile-recaptcha.php:4445
+#: turnstile-recaptcha.php:4447 turnstile-recaptcha.php:4460
+#: turnstile-recaptcha.php:4463 turnstile-recaptcha.php:4475
+#: turnstile-recaptcha.php:4478 turnstile-recaptcha.php:4491
+#: turnstile-recaptcha.php:4494 turnstile-recaptcha.php:5513
+#: turnstile-recaptcha.php:5548 turnstile-recaptcha.php:5550
+#: turnstile-recaptcha.php:5559 turnstile-recaptcha.php:5561
+#: turnstile-recaptcha.php:5569 turnstile-recaptcha.php:5571
+#: turnstile-recaptcha.php:5597 turnstile-recaptcha.php:5632
+#: turnstile-recaptcha.php:5634 turnstile-recaptcha.php:5645
+#: turnstile-recaptcha.php:5647 turnstile-recaptcha.php:5660
+#: turnstile-recaptcha.php:5662 turnstile-recaptcha.php:5678
+#: turnstile-recaptcha.php:5680
+msgid "ERROR:"
+msgstr ""
+
+#: google-recaptcha.php:356 google-recaptcha.php:514 google-recaptcha.php:2234
+#: google-recaptcha.php:2382 google-recaptcha.php:2622
+#: google-recaptcha.php:2769 google-recaptcha.php:4071
+#: google-recaptcha.php:4201 google-recaptcha.php:6867
+#: google-recaptcha.php:7001 turnstile-recaptcha.php:356
+#: turnstile-recaptcha.php:457 turnstile-recaptcha.php:2184
+#: turnstile-recaptcha.php:2277 turnstile-recaptcha.php:2434
+#: turnstile-recaptcha.php:2530 turnstile-recaptcha.php:3646
+#: turnstile-recaptcha.php:3729 turnstile-recaptcha.php:5513
+#: turnstile-recaptcha.php:5597
+msgid "Nonce verification failed."
+msgstr ""
+
+#: google-recaptcha.php:378 google-recaptcha.php:379 google-recaptcha.php:440
+#: google-recaptcha.php:441 google-recaptcha.php:2260 google-recaptcha.php:2321
+#: google-recaptcha.php:2648 google-recaptcha.php:2709
+#: google-recaptcha.php:3745 google-recaptcha.php:3802
+#: google-recaptcha.php:4094 google-recaptcha.php:4150
+#: google-recaptcha.php:4431 google-recaptcha.php:4491
+#: google-recaptcha.php:4785 google-recaptcha.php:4842
+#: google-recaptcha.php:5131 google-recaptcha.php:5187
+#: google-recaptcha.php:5581 google-recaptcha.php:5646
+#: google-recaptcha.php:5728 google-recaptcha.php:5793
+#: google-recaptcha.php:6174 google-recaptcha.php:6229
+#: google-recaptcha.php:6534 google-recaptcha.php:6590
+#: google-recaptcha.php:6894 google-recaptcha.php:6947
+#: google-recaptcha.php:7290 google-recaptcha.php:7651
+#: google-recaptcha.php:7710 google-recaptcha.php:12829
+#: google-recaptcha.php:12900 google-recaptcha.php:13262
+#: google-recaptcha.php:13334 google-recaptcha.php:14094
+#: google-recaptcha.php:14155 google-recaptcha.php:14922
+#: google-recaptcha.php:15212
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:981
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1047
+msgid "Invalid recaptcha."
+msgstr ""
+
+#: google-recaptcha.php:394 google-recaptcha.php:395 google-recaptcha.php:452
+#: google-recaptcha.php:453 google-recaptcha.php:2275 google-recaptcha.php:2333
+#: google-recaptcha.php:2452 google-recaptcha.php:2538
+#: google-recaptcha.php:2663 google-recaptcha.php:2721
+#: google-recaptcha.php:2840 google-recaptcha.php:2925
+#: google-recaptcha.php:3758 google-recaptcha.php:3812
+#: google-recaptcha.php:4106 google-recaptcha.php:4159
+#: google-recaptcha.php:4446 google-recaptcha.php:4503
+#: google-recaptcha.php:4798 google-recaptcha.php:4851
+#: google-recaptcha.php:5143 google-recaptcha.php:5196
+#: google-recaptcha.php:5597 google-recaptcha.php:5655
+#: google-recaptcha.php:5744 google-recaptcha.php:5802
+#: google-recaptcha.php:6186 google-recaptcha.php:6238
+#: google-recaptcha.php:6547 google-recaptcha.php:6599
+#: google-recaptcha.php:6905 google-recaptcha.php:6956
+#: google-recaptcha.php:7666 google-recaptcha.php:7721
+#: google-recaptcha.php:12848 google-recaptcha.php:12912
+#: google-recaptcha.php:13281 google-recaptcha.php:13349
+#: google-recaptcha.php:14109 google-recaptcha.php:14167
+msgid "Could not get response from recaptcha server."
+msgstr ""
+
+#: google-recaptcha.php:469 google-recaptcha.php:470 google-recaptcha.php:849
+#: google-recaptcha.php:944 google-recaptcha.php:2351 google-recaptcha.php:2738
+#: google-recaptcha.php:3055 google-recaptcha.php:3379
+#: google-recaptcha.php:3825 google-recaptcha.php:4172
+#: google-recaptcha.php:4519 google-recaptcha.php:4865
+#: google-recaptcha.php:5210 google-recaptcha.php:5669
+#: google-recaptcha.php:5816 google-recaptcha.php:6251
+#: google-recaptcha.php:6613 google-recaptcha.php:6969
+#: google-recaptcha.php:7354 google-recaptcha.php:7737
+#: google-recaptcha.php:8110 google-recaptcha.php:8123
+#: google-recaptcha.php:8431 google-recaptcha.php:8501
+#: google-recaptcha.php:8531 google-recaptcha.php:9040
+#: google-recaptcha.php:9051 google-recaptcha.php:9117
+#: google-recaptcha.php:9124 google-recaptcha.php:9428
+#: google-recaptcha.php:9472 google-recaptcha.php:9487
+#: google-recaptcha.php:9688 google-recaptcha.php:9732
+#: google-recaptcha.php:9748 google-recaptcha.php:10357
+#: google-recaptcha.php:10416 google-recaptcha.php:10841
+#: google-recaptcha.php:11495 google-recaptcha.php:11816
+#: google-recaptcha.php:11819 google-recaptcha.php:12181
+#: google-recaptcha.php:12508 google-recaptcha.php:12511
+#: google-recaptcha.php:12928 google-recaptcha.php:13371
+#: google-recaptcha.php:13729 google-recaptcha.php:13767
+#: google-recaptcha.php:13797 google-recaptcha.php:14183
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1073
+msgid "Recaptcha is a required field."
+msgstr ""
+
+#: google-recaptcha.php:547 google-recaptcha.php:551 google-recaptcha.php:568
+#: google-recaptcha.php:572 google-recaptcha.php:642 google-recaptcha.php:646
+#: google-recaptcha.php:666 google-recaptcha.php:670 google-recaptcha.php:2420
+#: google-recaptcha.php:2436 google-recaptcha.php:2500
+#: google-recaptcha.php:2520 google-recaptcha.php:2808
+#: google-recaptcha.php:2824 google-recaptcha.php:2888
+#: google-recaptcha.php:2907 google-recaptcha.php:3899
+#: google-recaptcha.php:3913 google-recaptcha.php:3973
+#: google-recaptcha.php:3990 google-recaptcha.php:4235
+#: google-recaptcha.php:4248 google-recaptcha.php:4306
+#: google-recaptcha.php:4324 google-recaptcha.php:4586
+#: google-recaptcha.php:4599 google-recaptcha.php:4659
+#: google-recaptcha.php:4676 google-recaptcha.php:4934
+#: google-recaptcha.php:4948 google-recaptcha.php:5011
+#: google-recaptcha.php:5028 google-recaptcha.php:5287
+#: google-recaptcha.php:5300 google-recaptcha.php:5363
+#: google-recaptcha.php:5381 google-recaptcha.php:5933
+#: google-recaptcha.php:5948 google-recaptcha.php:6023
+#: google-recaptcha.php:6051 google-recaptcha.php:6329
+#: google-recaptcha.php:6342 google-recaptcha.php:6402
+#: google-recaptcha.php:6420 google-recaptcha.php:6688
+#: google-recaptcha.php:6702 google-recaptcha.php:6766
+#: google-recaptcha.php:6784 google-recaptcha.php:7037
+#: google-recaptcha.php:7050 google-recaptcha.php:7111
+#: google-recaptcha.php:7128 google-recaptcha.php:7463
+#: google-recaptcha.php:7491 google-recaptcha.php:7822
+#: google-recaptcha.php:7838 google-recaptcha.php:7901
+#: google-recaptcha.php:7920 google-recaptcha.php:13029
+#: google-recaptcha.php:13045 google-recaptcha.php:13116
+#: google-recaptcha.php:13142 google-recaptcha.php:13464
+#: google-recaptcha.php:13486 google-recaptcha.php:13562
+#: google-recaptcha.php:13588 google-recaptcha.php:14252
+#: google-recaptcha.php:14268 google-recaptcha.php:14332
+#: google-recaptcha.php:14351 google-recaptcha.php:14552
+#: google-recaptcha.php:14588 google-recaptcha.php:14696
+#: google-recaptcha.php:14738 google-recaptcha.php:15036
+#: google-recaptcha.php:15326 google-recaptcha.php:15531
+#: google-recaptcha.php:15567 google-recaptcha.php:15675
+#: google-recaptcha.php:15717
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1199
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1215
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1280
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1301
+msgid "Google reCAPTCHA verification failed, please try again later."
+msgstr ""
+
+#: google-recaptcha.php:589 google-recaptcha.php:593 google-recaptcha.php:689
+#: google-recaptcha.php:693 google-recaptcha.php:3928 google-recaptcha.php:4005
+#: google-recaptcha.php:4261 google-recaptcha.php:4340
+#: google-recaptcha.php:4613 google-recaptcha.php:4691
+#: google-recaptcha.php:4962 google-recaptcha.php:5043
+#: google-recaptcha.php:5315 google-recaptcha.php:5396
+#: google-recaptcha.php:5974 google-recaptcha.php:6068
+#: google-recaptcha.php:6356 google-recaptcha.php:6435
+#: google-recaptcha.php:6717 google-recaptcha.php:6800
+#: google-recaptcha.php:7065 google-recaptcha.php:7143
+#: google-recaptcha.php:7322 google-recaptcha.php:7522
+#: google-recaptcha.php:7854 google-recaptcha.php:7938
+#: google-recaptcha.php:13067 google-recaptcha.php:13160
+#: google-recaptcha.php:13508 google-recaptcha.php:13612
+#: google-recaptcha.php:14284 google-recaptcha.php:14369
+#: google-recaptcha.php:14631 google-recaptcha.php:14771
+#: google-recaptcha.php:14964 google-recaptcha.php:15067
+#: google-recaptcha.php:15254 google-recaptcha.php:15357
+#: google-recaptcha.php:15610 google-recaptcha.php:15750
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1001
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1058
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1235
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1314
+msgid "Could not get response from reCAPTCHA server."
+msgstr ""
+
+#: google-recaptcha.php:711 google-recaptcha.php:715 google-recaptcha.php:2556
+#: google-recaptcha.php:2942 google-recaptcha.php:4020
+#: google-recaptcha.php:4353 google-recaptcha.php:4706
+#: google-recaptcha.php:5057 google-recaptcha.php:5409
+#: google-recaptcha.php:6085 google-recaptcha.php:6450
+#: google-recaptcha.php:6816 google-recaptcha.php:7159
+#: google-recaptcha.php:7549 google-recaptcha.php:7955
+#: google-recaptcha.php:13176 google-recaptcha.php:13635
+#: google-recaptcha.php:14385 google-recaptcha.php:14808
+#: google-recaptcha.php:15101 google-recaptcha.php:15391
+#: google-recaptcha.php:15787
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1330
+msgid "Google reCAPTCHA token is missing."
+msgstr ""
+
+#: google-recaptcha.php:828 google-recaptcha.php:1031
+#: turnstile-recaptcha.php:671 turnstile-recaptcha.php:882
+msgid "Error!"
+msgstr ""
+
+#: google-recaptcha.php:919 google-recaptcha.php:1431 google-recaptcha.php:1652
+#: google-recaptcha.php:3025 google-recaptcha.php:3354
+#: google-recaptcha.php:8092 google-recaptcha.php:8479
+#: google-recaptcha.php:8981 google-recaptcha.php:8993
+#: google-recaptcha.php:9404 google-recaptcha.php:9668
+#: google-recaptcha.php:10311 google-recaptcha.php:10819
+#: google-recaptcha.php:11453 google-recaptcha.php:11789
+#: google-recaptcha.php:12158 google-recaptcha.php:12481
+#: google-recaptcha.php:13841 turnstile-recaptcha.php:770
+#: turnstile-recaptcha.php:1295 turnstile-recaptcha.php:1533
+#: turnstile-recaptcha.php:2707 turnstile-recaptcha.php:3048
+#: turnstile-recaptcha.php:6104 turnstile-recaptcha.php:6493
+#: turnstile-recaptcha.php:6998 turnstile-recaptcha.php:7010
+#: turnstile-recaptcha.php:7438 turnstile-recaptcha.php:7720
+#: turnstile-recaptcha.php:8387 turnstile-recaptcha.php:8921
+#: turnstile-recaptcha.php:9586 turnstile-recaptcha.php:9933
+#: turnstile-recaptcha.php:10303 turnstile-recaptcha.php:10634
+#: turnstile-recaptcha.php:11713
+msgid "Captcha"
+msgstr ""
+
+#: google-recaptcha.php:989 google-recaptcha.php:3158 google-recaptcha.php:3482
+#: google-recaptcha.php:8245 google-recaptcha.php:8598
+#: google-recaptcha.php:9177 google-recaptcha.php:9920
+#: google-recaptcha.php:10441 google-recaptcha.php:11053
+#: google-recaptcha.php:11610 google-recaptcha.php:11938
+#: google-recaptcha.php:12288 google-recaptcha.php:12629
+#: google-recaptcha.php:13900 turnstile-recaptcha.php:10781
+msgid "Generating reCaptcha token, Please wait..."
+msgstr ""
+
+#: google-recaptcha.php:1388 google-recaptcha.php:9379
+#: google-recaptcha.php:10788
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:643
+#: turnstile-recaptcha.php:1252 turnstile-recaptcha.php:7413
+#: turnstile-recaptcha.php:8890
+msgid "Refresh Captcha"
+msgstr ""
+
+#: google-recaptcha.php:3832 google-recaptcha.php:5217
+#: google-recaptcha.php:5675 google-recaptcha.php:5823
+#: google-recaptcha.php:6093 google-recaptcha.php:6258
+#: google-recaptcha.php:6620 google-recaptcha.php:7247
+#: google-recaptcha.php:7746 google-recaptcha.php:12938
+#: google-recaptcha.php:13387 google-recaptcha.php:14193
+#: google-recaptcha.php:15949 turnstile-recaptcha.php:3484
+#: turnstile-recaptcha.php:4380 turnstile-recaptcha.php:4710
+#: turnstile-recaptcha.php:4813 turnstile-recaptcha.php:4987
+#: turnstile-recaptcha.php:5111 turnstile-recaptcha.php:5353
+#: turnstile-recaptcha.php:5843 turnstile-recaptcha.php:11042
+#: turnstile-recaptcha.php:11341 turnstile-recaptcha.php:12015
+#: turnstile-recaptcha.php:13218
+msgid "Could not verify request."
+msgstr ""
+
+#: google-recaptcha.php:4409 google-recaptcha.php:4551
+#: google-recaptcha.php:4763 google-recaptcha.php:4898
+#: google-recaptcha.php:5250 turnstile-recaptcha.php:3862
+#: turnstile-recaptcha.php:3951 turnstile-recaptcha.php:4088
+#: turnstile-recaptcha.php:4173 turnstile-recaptcha.php:4409
+msgid "Nonce verification failed"
+msgstr ""
+
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:63
+msgid "Extensions cannot be empty"
+msgstr ""
+
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:102
+msgid "Catpcha response cannot be empty"
+msgstr ""
+
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:787
+msgid "Check recaptcha value."
+msgstr ""
+
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1515
+#: turnstile-recaptcha.php:385 turnstile-recaptcha.php:386
+#: turnstile-recaptcha.php:2220 turnstile-recaptcha.php:2471
+#: turnstile-recaptcha.php:3449 turnstile-recaptcha.php:3678
+#: turnstile-recaptcha.php:3893 turnstile-recaptcha.php:4118
+#: turnstile-recaptcha.php:4344 turnstile-recaptcha.php:4673
+#: turnstile-recaptcha.php:4773 turnstile-recaptcha.php:5078
+#: turnstile-recaptcha.php:5317 turnstile-recaptcha.php:5548
+#: turnstile-recaptcha.php:5801 turnstile-recaptcha.php:10999
+#: turnstile-recaptcha.php:11283 turnstile-recaptcha.php:11976
+#: turnstile-recaptcha.php:12532 turnstile-recaptcha.php:12729
+msgid "Invalid captcha."
+msgstr ""
+
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1535
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1708
+#: turnstile-recaptcha.php:401 turnstile-recaptcha.php:402
+#: turnstile-recaptcha.php:531 turnstile-recaptcha.php:535
+#: turnstile-recaptcha.php:2235 turnstile-recaptcha.php:2349
+#: turnstile-recaptcha.php:2487 turnstile-recaptcha.php:2603
+#: turnstile-recaptcha.php:3463 turnstile-recaptcha.php:3579
+#: turnstile-recaptcha.php:3691 turnstile-recaptcha.php:3791
+#: turnstile-recaptcha.php:3908 turnstile-recaptcha.php:4014
+#: turnstile-recaptcha.php:4131 turnstile-recaptcha.php:4239
+#: turnstile-recaptcha.php:4358 turnstile-recaptcha.php:4475
+#: turnstile-recaptcha.php:4689 turnstile-recaptcha.php:4791
+#: turnstile-recaptcha.php:4959 turnstile-recaptcha.php:5091
+#: turnstile-recaptcha.php:5207 turnstile-recaptcha.php:5332
+#: turnstile-recaptcha.php:5445 turnstile-recaptcha.php:5559
+#: turnstile-recaptcha.php:5660 turnstile-recaptcha.php:5818
+#: turnstile-recaptcha.php:5948 turnstile-recaptcha.php:11018
+#: turnstile-recaptcha.php:11169 turnstile-recaptcha.php:11304
+#: turnstile-recaptcha.php:11458 turnstile-recaptcha.php:11991
+#: turnstile-recaptcha.php:12109 turnstile-recaptcha.php:12371
+#: turnstile-recaptcha.php:12574 turnstile-recaptcha.php:12771
+#: turnstile-recaptcha.php:13019
+msgid "Could not get response from turnstile server."
+msgstr ""
+
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1550
+#: turnstile-recaptcha.php:416 turnstile-recaptcha.php:417
+#: turnstile-recaptcha.php:692 turnstile-recaptcha.php:795
+#: turnstile-recaptcha.php:2251 turnstile-recaptcha.php:2503
+#: turnstile-recaptcha.php:2737 turnstile-recaptcha.php:3073
+#: turnstile-recaptcha.php:3477 turnstile-recaptcha.php:3704
+#: turnstile-recaptcha.php:3923 turnstile-recaptcha.php:4144
+#: turnstile-recaptcha.php:4373 turnstile-recaptcha.php:4704
+#: turnstile-recaptcha.php:4806 turnstile-recaptcha.php:5104
+#: turnstile-recaptcha.php:5346 turnstile-recaptcha.php:5569
+#: turnstile-recaptcha.php:5833 turnstile-recaptcha.php:6121
+#: turnstile-recaptcha.php:6134 turnstile-recaptcha.php:6445
+#: turnstile-recaptcha.php:6515 turnstile-recaptcha.php:6545
+#: turnstile-recaptcha.php:7061 turnstile-recaptcha.php:7072
+#: turnstile-recaptcha.php:7144 turnstile-recaptcha.php:7151
+#: turnstile-recaptcha.php:7462 turnstile-recaptcha.php:7518
+#: turnstile-recaptcha.php:7533 turnstile-recaptcha.php:7741
+#: turnstile-recaptcha.php:7789 turnstile-recaptcha.php:7805
+#: turnstile-recaptcha.php:8444 turnstile-recaptcha.php:8509
+#: turnstile-recaptcha.php:8942 turnstile-recaptcha.php:9628
+#: turnstile-recaptcha.php:9960 turnstile-recaptcha.php:9963
+#: turnstile-recaptcha.php:10328 turnstile-recaptcha.php:10661
+#: turnstile-recaptcha.php:10664 turnstile-recaptcha.php:11032
+#: turnstile-recaptcha.php:11325 turnstile-recaptcha.php:11578
+#: turnstile-recaptcha.php:11632 turnstile-recaptcha.php:11662
+#: turnstile-recaptcha.php:12005
+msgid "Captcha is a required field."
+msgstr ""
+
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1672
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1688
+#: turnstile-recaptcha.php:489 turnstile-recaptcha.php:493
+#: turnstile-recaptcha.php:510 turnstile-recaptcha.php:514
+#: turnstile-recaptcha.php:2316 turnstile-recaptcha.php:2332
+#: turnstile-recaptcha.php:2569 turnstile-recaptcha.php:2585
+#: turnstile-recaptcha.php:3761 turnstile-recaptcha.php:3777
+#: turnstile-recaptcha.php:3984 turnstile-recaptcha.php:4000
+#: turnstile-recaptcha.php:4917 turnstile-recaptcha.php:4932
+#: turnstile-recaptcha.php:5912 turnstile-recaptcha.php:5930
+#: turnstile-recaptcha.php:11129 turnstile-recaptcha.php:11146
+#: turnstile-recaptcha.php:11412 turnstile-recaptcha.php:11434
+#: turnstile-recaptcha.php:12075 turnstile-recaptcha.php:12092
+#: turnstile-recaptcha.php:12292 turnstile-recaptcha.php:12328
+#: turnstile-recaptcha.php:12940 turnstile-recaptcha.php:12976
+msgid "Captcha verification failed, please try again later."
+msgstr ""
+
+#: i13-recaptcha-checkout-block/woocommerce-blocks-integration.php:1724
+#: turnstile-recaptcha.php:554 turnstile-recaptcha.php:558
+#: turnstile-recaptcha.php:2368 turnstile-recaptcha.php:2622
+#: turnstile-recaptcha.php:3595 turnstile-recaptcha.php:3806
+#: turnstile-recaptcha.php:4031 turnstile-recaptcha.php:4258
+#: turnstile-recaptcha.php:4491 turnstile-recaptcha.php:4978
+#: turnstile-recaptcha.php:5462 turnstile-recaptcha.php:5678
+#: turnstile-recaptcha.php:5966 turnstile-recaptcha.php:11187
+#: turnstile-recaptcha.php:11482 turnstile-recaptcha.php:12128
+#: turnstile-recaptcha.php:12408 turnstile-recaptcha.php:12608
+#: turnstile-recaptcha.php:12805 turnstile-recaptcha.php:13056
+msgid "Turnstile token is missing."
+msgstr ""
+
+#: includes/Settings.php:16
+msgid "reCaptcha"
+msgstr ""
+
+#: includes/Settings.php:50 includes/Settings.php:672 includes/Settings.php:841
+#: includes/Settings.php:980 includes/Settings.php:1216
+#: includes/Settings.php:1373 includes/Settings.php:1492
+#: includes/Settings.php:1621 includes/Settings.php:1741
+#: includes/Settings.php:1860 includes/Settings.php:1981
+#: includes/Settings.php:2100 includes/Settings.php:2227
+msgid ""
+"Instead of showing a CAPTCHA challenge, reCAPTCHA v3 returns a score so you "
+"can choose the most appropriate action for your website. The score is based "
+"on interactions with your site and enables you to take an appropriate action "
+"for your site. Recaptcha will rank traffic and interactions based on a score "
+"of 0.0 to 1.0, with a 1.0 being a good interaction and scores closer to 0.0 "
+"indicating a good likelihood that the traffic was generated by bots"
+msgstr ""
+
+#: includes/Settings.php:64
+msgid "Note :- "
+msgstr ""
+
+#: includes/Settings.php:97 includes/Settings.php:2571
+msgid ""
+"Turnstile hidden captcha does not show any challenge to solve etc. Hidden "
+"mode that works invisibly in the background, using JavaScript challenges and "
+"user behavior analysis to verify humans vs. bots, reducing friction for "
+"legitimate users while stopping spam without constant visual puzzles."
+msgstr ""
+
+#: includes/Settings.php:155
+msgid ""
+"Note:- To use checkbox captcha along with hidden mode captcha , Please set "
+"captcha mode first and set all options as you need and then set hidden mode "
+"captcha"
+msgstr ""
+
+#: includes/Settings.php:245 includes/Settings.php:2327
+msgid ""
+"Recaptcha V3 does not show any challenge like I am not robot etc. ReCaptcha "
+"V3 uses a behind-the-scenes scoring system to detect abusive traffic, and "
+"lets you decide the minimum passing score. Please note that there is no user "
+"interaction shown in reRecapcha V3 meaning that no recaptcha challenge is "
+"shown to solve."
+msgstr ""
+
+#: includes/Settings.php:457
+msgid ""
+"Note:- To use reCaptcha V2 along with reCaptcha V3, Please set reCaptcha V2 "
+"first and set all options as you need and then set reCaptcha V3"
+msgstr ""
+
+#: includes/Settings.php:523
+msgid "General Settings"
+msgstr ""
+
+#: includes/Settings.php:524
+msgid "Woo Registration Captcha"
+msgstr ""
+
+#: includes/Settings.php:525
+msgid "Woo Login Captcha"
+msgstr ""
+
+#: includes/Settings.php:526
+msgid "Woo Lost Password Captcha"
+msgstr ""
+
+#: includes/Settings.php:527
+msgid "Woo Checkout Captcha"
+msgstr ""
+
+#: includes/Settings.php:528
+msgid "Woo Add Payment Method Captcha"
+msgstr ""
+
+#: includes/Settings.php:529
+msgid "Woo Product Review Form Captcha"
+msgstr ""
+
+#: includes/Settings.php:530
+msgid "Woo Order Tracking"
+msgstr ""
+
+#: includes/Settings.php:531
+msgid "Woo Post Comment Form Captcha"
+msgstr ""
+
+#: includes/Settings.php:532
+msgid "WP Login Captcha"
+msgstr ""
+
+#: includes/Settings.php:533
+msgid "WP Registration Captcha"
+msgstr ""
+
+#: includes/Settings.php:534
+msgid "WP Lost Password Captcha"
+msgstr ""
+
+#: includes/Settings.php:535
+msgid "Jetpack Forms"
+msgstr ""
+
+#: includes/Settings.php:569 includes/Settings.php:657
+msgid "Recaptcha On Registration Page"
+msgstr ""
+
+#: includes/Settings.php:575 includes/Settings.php:663
+msgid "Enable Recaptcha on Signup"
+msgstr ""
+
+#: includes/Settings.php:580 includes/Settings.php:765
+#: includes/Settings.php:917 includes/Settings.php:1061
+#: includes/Settings.php:1310 includes/Settings.php:1429
+#: includes/Settings.php:1557 includes/Settings.php:1678
+#: includes/Settings.php:1796 includes/Settings.php:1917
+#: includes/Settings.php:2036 includes/Settings.php:2155
+msgid "Recaptcha Field Title"
+msgstr ""
+
+#: includes/Settings.php:586 includes/Settings.php:771
+#: includes/Settings.php:923 includes/Settings.php:1067
+#: includes/Settings.php:1316 includes/Settings.php:1435
+#: includes/Settings.php:1563 includes/Settings.php:1684
+#: includes/Settings.php:1802 includes/Settings.php:1923
+#: includes/Settings.php:2042 includes/Settings.php:2161
+msgid "Hide Label"
+msgstr ""
+
+#: includes/Settings.php:590 includes/Settings.php:775
+#: includes/Settings.php:927 includes/Settings.php:1071
+#: includes/Settings.php:1320 includes/Settings.php:1439
+#: includes/Settings.php:1567 includes/Settings.php:1688
+#: includes/Settings.php:1806 includes/Settings.php:1927
+#: includes/Settings.php:2046 includes/Settings.php:2165
+msgid "Hide label on form?"
+msgstr ""
+
+#: includes/Settings.php:593 includes/Settings.php:778
+#: includes/Settings.php:930 includes/Settings.php:1081
+#: includes/Settings.php:1323 includes/Settings.php:1442
+#: includes/Settings.php:1570 includes/Settings.php:1691
+#: includes/Settings.php:1809 includes/Settings.php:1930
+#: includes/Settings.php:2049 includes/Settings.php:2168
+msgid "Recaptcha Theme"
+msgstr ""
+
+#: includes/Settings.php:597 includes/Settings.php:782
+#: includes/Settings.php:934 includes/Settings.php:1085
+#: includes/Settings.php:1327 includes/Settings.php:1446
+#: includes/Settings.php:1574 includes/Settings.php:1695
+#: includes/Settings.php:1813 includes/Settings.php:1934
+#: includes/Settings.php:2053 includes/Settings.php:2172
+msgid "Light"
+msgstr ""
+
+#: includes/Settings.php:598 includes/Settings.php:783
+#: includes/Settings.php:935 includes/Settings.php:1086
+#: includes/Settings.php:1328 includes/Settings.php:1447
+#: includes/Settings.php:1575 includes/Settings.php:1696
+#: includes/Settings.php:1814 includes/Settings.php:1935
+#: includes/Settings.php:2054 includes/Settings.php:2173
+msgid "Dark"
+msgstr ""
+
+#: includes/Settings.php:603 includes/Settings.php:788
+#: includes/Settings.php:940 includes/Settings.php:1091
+#: includes/Settings.php:1333 includes/Settings.php:1452
+#: includes/Settings.php:1580 includes/Settings.php:1701
+#: includes/Settings.php:1819 includes/Settings.php:1940
+#: includes/Settings.php:2059 includes/Settings.php:2178
+msgid "Recaptcha Size"
+msgstr ""
+
+#: includes/Settings.php:607 includes/Settings.php:792
+#: includes/Settings.php:944 includes/Settings.php:1095
+#: includes/Settings.php:1337 includes/Settings.php:1456
+#: includes/Settings.php:1584 includes/Settings.php:1705
+#: includes/Settings.php:1823 includes/Settings.php:1944
+#: includes/Settings.php:2063 includes/Settings.php:2182
+msgid "Normal"
+msgstr ""
+
+#: includes/Settings.php:608 includes/Settings.php:793
+#: includes/Settings.php:945 includes/Settings.php:1096
+#: includes/Settings.php:1338 includes/Settings.php:1457
+#: includes/Settings.php:1585 includes/Settings.php:1706
+#: includes/Settings.php:1824 includes/Settings.php:1945
+#: includes/Settings.php:2064 includes/Settings.php:2183
+msgid "Compact"
+msgstr ""
+
+#: includes/Settings.php:613 includes/Settings.php:798
+#: includes/Settings.php:950 includes/Settings.php:1107
+#: includes/Settings.php:1113 includes/Settings.php:1119
+#: includes/Settings.php:1343 includes/Settings.php:1462
+#: includes/Settings.php:1590 includes/Settings.php:1711
+#: includes/Settings.php:1829 includes/Settings.php:1950
+#: includes/Settings.php:2069 includes/Settings.php:2188
+msgid "Disable submit button"
+msgstr ""
+
+#: includes/Settings.php:614 includes/Settings.php:799
+#: includes/Settings.php:951 includes/Settings.php:1344
+#: includes/Settings.php:1463 includes/Settings.php:1591
+#: includes/Settings.php:1712 includes/Settings.php:1830
+#: includes/Settings.php:1951 includes/Settings.php:2070
+#: includes/Settings.php:2189
+msgid "Disable submit button until recaptcha validate."
+msgstr ""
+
+#: includes/Settings.php:619 includes/Settings.php:689
+msgid "Using ajax signup popup?"
+msgstr ""
+
+#: includes/Settings.php:622 includes/Settings.php:692
+msgid "If your theme has ajax signup modal box"
+msgstr ""
+
+#: includes/Settings.php:625 includes/Settings.php:695
+msgid "Using Buddy Press signup?"
+msgstr ""
+
+#: includes/Settings.php:628 includes/Settings.php:698
+msgid "If your are using buddy press signup"
+msgstr ""
+
+#: includes/Settings.php:631 includes/Settings.php:701
+msgid "Block REST API Registrations"
+msgstr ""
+
+#: includes/Settings.php:632 includes/Settings.php:702
+msgid "Useful when you see lots of fake Registrations."
+msgstr ""
+
+#: includes/Settings.php:638 includes/Settings.php:708
+msgid "Select API Versions to Block"
+msgstr ""
+
+#: includes/Settings.php:642 includes/Settings.php:712
+msgid "Block V1 Registration endpoint"
+msgstr ""
+
+#: includes/Settings.php:643 includes/Settings.php:713
+msgid "Block V2 Registration endpoint"
+msgstr ""
+
+#: includes/Settings.php:644 includes/Settings.php:714
+msgid "Block V3 Registration endpoint"
+msgstr ""
+
+#: includes/Settings.php:668 includes/Settings.php:837
+#: includes/Settings.php:976 includes/Settings.php:1212
+#: includes/Settings.php:1369 includes/Settings.php:1488
+#: includes/Settings.php:1616 includes/Settings.php:1737
+#: includes/Settings.php:1856 includes/Settings.php:1977
+#: includes/Settings.php:2096 includes/Settings.php:2223
+msgid "Recaptcha score threshold"
+msgstr ""
+
+#: includes/Settings.php:675 includes/Settings.php:844
+#: includes/Settings.php:983 includes/Settings.php:1219
+#: includes/Settings.php:1376 includes/Settings.php:1495
+#: includes/Settings.php:1624 includes/Settings.php:1744
+#: includes/Settings.php:1863 includes/Settings.php:1984
+#: includes/Settings.php:2103 includes/Settings.php:2230
+msgid "Recaptcha Action Name"
+msgstr ""
+
+#: includes/Settings.php:679 includes/Settings.php:848
+#: includes/Settings.php:987 includes/Settings.php:1223
+#: includes/Settings.php:1380 includes/Settings.php:1499
+#: includes/Settings.php:1628 includes/Settings.php:1748
+#: includes/Settings.php:1867 includes/Settings.php:1988
+#: includes/Settings.php:2107 includes/Settings.php:2234
+msgid ""
+"In reCAPTCHA v3, Google introducing a new concept called “Action” —a tag "
+"that you can use to define the key steps of your user journey and enable "
+"reCAPTCHA to run its risk analysis in context."
+msgstr ""
+
+#: includes/Settings.php:729 includes/Settings.php:882
+#: includes/Settings.php:1009 includes/Settings.php:1276
+#: includes/Settings.php:1396 includes/Settings.php:1522
+#: includes/Settings.php:1643 includes/Settings.php:1763
+#: includes/Settings.php:1883 includes/Settings.php:2003
+#: includes/Settings.php:2122 includes/Settings.php:2257
+msgid ""
+"In turnstile hidden mode, You can add “Action” —a tag that you can use to "
+"define the key steps of your user journey and it will used to validate "
+"action on validation of captcha."
+msgstr ""
+
+#: includes/Settings.php:730 includes/Settings.php:883
+#: includes/Settings.php:1010 includes/Settings.php:1277
+#: includes/Settings.php:1397 includes/Settings.php:1523
+#: includes/Settings.php:1644 includes/Settings.php:1764
+#: includes/Settings.php:1884 includes/Settings.php:2004
+#: includes/Settings.php:2123 includes/Settings.php:2258
+msgid "Captcha Action Name"
+msgstr ""
+
+#: includes/Settings.php:754 includes/Settings.php:826
+msgid "Recaptcha On Login Page"
+msgstr ""
+
+#: includes/Settings.php:760 includes/Settings.php:832
+msgid "Enable Recaptcha on Login"
+msgstr ""
+
+#: includes/Settings.php:804 includes/Settings.php:851
+msgid "Have custom wp login form"
+msgstr ""
+
+#: includes/Settings.php:805 includes/Settings.php:852
+msgid "Using custom login form with using wp_login_form"
+msgstr ""
+
+#: includes/Settings.php:810 includes/Settings.php:864
+msgid "Using ajax login popup?"
+msgstr ""
+
+#: includes/Settings.php:813 includes/Settings.php:867
+msgid "If your theme has ajax login modal box"
+msgstr ""
+
+#: includes/Settings.php:906 includes/Settings.php:965
+msgid "Recaptcha On Lost Password Page"
+msgstr ""
+
+#: includes/Settings.php:912 includes/Settings.php:971
+msgid "Enable Recaptcha on Lost Password"
+msgstr ""
+
+#: includes/Settings.php:1033 includes/Settings.php:1177
+msgid "Recaptcha on Checkout"
+msgstr ""
+
+#: includes/Settings.php:1039 includes/Settings.php:1183
+msgid "Enable Recaptcha on Guest Checkout"
+msgstr ""
+
+#: includes/Settings.php:1044 includes/Settings.php:1188
+msgid "Enable Recaptcha on Login Checkout"
+msgstr ""
+
+#: includes/Settings.php:1049 includes/Settings.php:1193
+msgid "Enable Captcha Block"
+msgstr ""
+
+#: includes/Settings.php:1052
+msgid ""
+"When checked, It enable captcha for checkout block. If you are not using "
+"classic checkout and using checkout block. This option enable captcha for "
+"checkout block."
+msgstr ""
+
+#: includes/Settings.php:1055 includes/Settings.php:1199
+msgid "Enable Recaptcha on Pay For Order"
+msgstr ""
+
+#: includes/Settings.php:1058 includes/Settings.php:1202
+msgid ""
+"WooCommerce allow failed order to pay again. In this case captcha must be "
+"needed to prevent fraud"
+msgstr ""
+
+#: includes/Settings.php:1074 includes/Settings.php:1205
+msgid "Recaptcha Validity"
+msgstr ""
+
+#: includes/Settings.php:1078 includes/Settings.php:1209
+msgid ""
+"Some payment processor needs more time to process an order. So captcha will "
+"valid for a given number of minutes once reCaptcha is validate. 0 means "
+"require validation on each request. Default value is 3 minute will used if "
+"you leave blank."
+msgstr ""
+
+#: includes/Settings.php:1101
+msgid "Recaptcha Refresh Title"
+msgstr ""
+
+#: includes/Settings.php:1108
+msgid "Disable submit button until recaptcha validate for guest checkout."
+msgstr ""
+
+#: includes/Settings.php:1114
+msgid "Disable submit button until recaptcha validate for login checkout."
+msgstr ""
+
+#: includes/Settings.php:1120
+msgid "Disable submit button until recaptcha validate for pay for order."
+msgstr ""
+
+#: includes/Settings.php:1125 includes/Settings.php:1126
+msgid "Refresh captcha on guest checkout error"
+msgstr ""
+
+#: includes/Settings.php:1131 includes/Settings.php:1132
+msgid "Refresh captcha on login checkout error"
+msgstr ""
+
+#: includes/Settings.php:1137 includes/Settings.php:1233
+msgid "Enable captcha for express checkout buttons on product page"
+msgstr ""
+
+#: includes/Settings.php:1138 includes/Settings.php:1234
+msgid ""
+"If you have enabled express checkout buttons for checkout directly from "
+"product page you can enable captcha. For example Google Pay, Apple Pay "
+"available in stripe."
+msgstr ""
+
+#: includes/Settings.php:1143 includes/Settings.php:1239
+msgid "Enable captcha for express checkout buttons on cart page"
+msgstr ""
+
+#: includes/Settings.php:1144 includes/Settings.php:1240
+msgid ""
+"If you have enabled express checkout buttons for checkout directly from cart "
+"page you can enable captcha. For example Google Pay, Apple Pay available in "
+"stripe."
+msgstr ""
+
+#: includes/Settings.php:1149 includes/Settings.php:1245
+msgid "Block orders from “unknown” origin"
+msgstr ""
+
+#: includes/Settings.php:1150 includes/Settings.php:1246
+msgid ""
+"This is useful when there is a carding attack. When order management shows "
+"“unknown” as the origin of many failed orders, you can use this to block."
+msgstr ""
+
+#: includes/Settings.php:1155 includes/Settings.php:1251
+msgid "Block REST API Checkout endpoint"
+msgstr ""
+
+#: includes/Settings.php:1158 includes/Settings.php:1254
+msgid ""
+"Attackers are using REST API to create BOT orders. You can check the mark to "
+"block the REST Checkout endpoint. Please note that if your site needs orders "
+"via the API then please do not use this option."
+msgstr ""
+
+#: includes/Settings.php:1161 includes/Settings.php:1257
+msgid "Block REST API Checkout endpoint V1 (Checkout Block)"
+msgstr ""
+
+#: includes/Settings.php:1164 includes/Settings.php:1260
+msgid ""
+"Attackers are using REST API to create BOT orders. You can check the mark to "
+"block the REST Checkout endpoint. Please note that if your site uses latest "
+"checkout block feature of WooCommerce then please do not use this option."
+msgstr ""
+
+#: includes/Settings.php:1196
+msgid ""
+"When checked, It enable captcha for checkout block. If you are not using "
+"classic checkout and using checkout block. This option enable captcha for "
+"checkout block"
+msgstr ""
+
+#: includes/Settings.php:1299 includes/Settings.php:1358
+msgid "Recaptcha On WP Login"
+msgstr ""
+
+#: includes/Settings.php:1305 includes/Settings.php:1364
+msgid "Enable Recaptcha on WP Login"
+msgstr ""
+
+#: includes/Settings.php:1418
+msgid "Recaptcha On Add Payment Method"
+msgstr ""
+
+#: includes/Settings.php:1424 includes/Settings.php:1483
+msgid "Enable Recaptcha on Add Payment Method"
+msgstr ""
+
+#: includes/Settings.php:1477
+msgid "Recaptcha On Add Payment Method Login"
+msgstr ""
+
+#: includes/Settings.php:1546 includes/Settings.php:1605
+msgid "Recaptcha On WP Registration"
+msgstr ""
+
+#: includes/Settings.php:1552 includes/Settings.php:1611
+msgid "Enable Recaptcha on WP Registration"
+msgstr ""
+
+#: includes/Settings.php:1667 includes/Settings.php:1726
+msgid "Recaptcha On WP Lost Password"
+msgstr ""
+
+#: includes/Settings.php:1673 includes/Settings.php:1732
+msgid "Enable Recaptcha on WP Lost Password"
+msgstr ""
+
+#: includes/Settings.php:1785 includes/Settings.php:1845
+msgid "Recaptcha on product review form"
+msgstr ""
+
+#: includes/Settings.php:1791 includes/Settings.php:1851
+msgid "Enable Recaptcha on product review form"
+msgstr ""
+
+#: includes/Settings.php:1906 includes/Settings.php:1966
+msgid "Recaptcha on order tracking form"
+msgstr ""
+
+#: includes/Settings.php:1912 includes/Settings.php:1972
+msgid "Enable Recaptcha on order tracking form"
+msgstr ""
+
+#: includes/Settings.php:2025 includes/Settings.php:2085
+msgid "Recaptcha on comment form"
+msgstr ""
+
+#: includes/Settings.php:2031 includes/Settings.php:2091
+msgid "Enable Recaptcha on comment form"
+msgstr ""
+
+#: includes/Settings.php:2144 includes/Settings.php:2212
+msgid "Recaptcha on jetpack form"
+msgstr ""
+
+#: includes/Settings.php:2150 includes/Settings.php:2218
+msgid "Enable Recaptcha on jetpack form"
+msgstr ""
+
+#: includes/Settings.php:2194 includes/Settings.php:2238
+msgid "Do not show a captcha for the following forms"
+msgstr ""
+
+#: includes/Settings.php:2198 includes/Settings.php:2242
+msgid ""
+"Comma-separated jetpack page/post id (where form added) for which you do not "
+"want to show a captcha"
+msgstr ""
+
+#: includes/Settings.php:2282
+msgid "Recaptcha Settings"
+msgstr ""
+
+#: includes/Settings.php:2288
+msgid "Choose Provider"
+msgstr ""
+
+#: includes/Settings.php:2289
+msgid "Choose captcha provider"
+msgstr ""
+
+#: includes/Settings.php:2297
+msgid "Google reCaptcha"
+msgstr ""
+
+#: includes/Settings.php:2298
+msgid "Cloudflare Turnstile"
+msgstr ""
+
+#: includes/Settings.php:2308
+msgid "Use enterprise reCaptcha?"
+msgstr ""
+
+#: includes/Settings.php:2311
+msgid ""
+"Enterprise reCaptcha use Site Key, Google Cloud Project ID and Google Cloud "
+"API key while Classic reCaptcha use Site Key and Secret Key (Legacy Key)"
+msgstr ""
+
+#: includes/Settings.php:2311
+msgid "Please use this guideline to get classic reCaptcha Keys "
+msgstr ""
+
+#: includes/Settings.php:2311
+msgid "reCaptcha keys V2 (checkbox)"
+msgstr ""
+
+#: includes/Settings.php:2311
+msgid "reCaptcha keys V3"
+msgstr ""
+
+#: includes/Settings.php:2311
+msgid ""
+"Please use this guideline to get enterprise reCaptcha Keys like Site Key, "
+"Google Cloud Project ID and Google Cloud API key "
+msgstr ""
+
+#: includes/Settings.php:2311
+msgid "reCaptcha keys V3 "
+msgstr ""
+
+#: includes/Settings.php:2315
+msgid "Recaptcha Version"
+msgstr ""
+
+#: includes/Settings.php:2319
+msgid "ReCaptcha V2 (checkbox)"
+msgstr ""
+
+#: includes/Settings.php:2320
+msgid "ReCaptcha V3"
+msgstr ""
+
+#: includes/Settings.php:2330
+msgid "Show reCaptcha V2 ( I am not robot) on V3 failure (Fallback reCaptcha)"
+msgstr ""
+
+#: includes/Settings.php:2333
+msgid ""
+"As reCaptcha V3 is fully algorithm-based, Sometimes it may block legit users "
+"due to false positive issues like VPN/Firewall etc, In this case show V2 "
+"reCaptcha as fallback."
+msgstr ""
+
+#: includes/Settings.php:2337
+msgid "reCaptcha V3 Site Key"
+msgstr ""
+
+#: includes/Settings.php:2339 includes/Settings.php:2345
+#: includes/Settings.php:2351 includes/Settings.php:2357
+#: includes/Settings.php:2363 includes/Settings.php:2369
+#: includes/Settings.php:2375 includes/Settings.php:2381
+#: includes/Settings.php:2583 includes/Settings.php:2589
+#: includes/Settings.php:2596 includes/Settings.php:2602
+msgid "Click here"
+msgstr ""
+
+#: includes/Settings.php:2339
+msgid " to know How to get reCaptcha V3 site key"
+msgstr ""
+
+#: includes/Settings.php:2343
+msgid "reCaptcha V3 Secret Key"
+msgstr ""
+
+#: includes/Settings.php:2345
+msgid " to know How to get reCaptcha V3 secret key "
+msgstr ""
+
+#: includes/Settings.php:2349
+msgid "reCaptcha V3 Google Cloud Project API Key"
+msgstr ""
+
+#: includes/Settings.php:2351 includes/Settings.php:2375
+msgid " to know How to get Google Cloud Project API Key"
+msgstr ""
+
+#: includes/Settings.php:2355
+msgid "reCaptcha V3 Google Cloud Project ID"
+msgstr ""
+
+#: includes/Settings.php:2357 includes/Settings.php:2381
+msgid " to know How to get Google Cloud Project ID"
+msgstr ""
+
+#: includes/Settings.php:2361
+msgid "reCaptcha V2 Site Key"
+msgstr ""
+
+#: includes/Settings.php:2363
+msgid " to know How to get reCaptcha V2 site key"
+msgstr ""
+
+#: includes/Settings.php:2367
+msgid "reCaptcha V2 Secret Key"
+msgstr ""
+
+#: includes/Settings.php:2369
+msgid " to know How to get reCaptcha V2 secret key "
+msgstr ""
+
+#: includes/Settings.php:2373
+msgid "reCaptcha V2 Google Cloud Project API Key"
+msgstr ""
+
+#: includes/Settings.php:2379
+msgid "reCaptcha V2 Google Cloud Project ID"
+msgstr ""
+
+#: includes/Settings.php:2385
+msgid "Validity to switch back to v3"
+msgstr ""
+
+#: includes/Settings.php:2389
+msgid ""
+"After V3 has a verification issue for a particular action like checkout/"
+"signup etc. It will show V2 to complete the action. It will switch back to "
+"V3 upon action complete, After how many minutes switch back to V3 if action "
+"not complete ?."
+msgstr ""
+
+#: includes/Settings.php:2392
+msgid "Error message recaptcha verification failed"
+msgstr ""
+
+#: includes/Settings.php:2396
+msgid ""
+"This message shown when google detect abusive, invalid, spam, bot etc traffic"
+msgstr ""
+
+#: includes/Settings.php:2399 includes/Settings.php:2417
+msgid "Error message recaptcha blank"
+msgstr ""
+
+#: includes/Settings.php:2405
+msgid "Message when reCaptcha generating token"
+msgstr ""
+
+#: includes/Settings.php:2411 includes/Settings.php:2633
+msgid "Error message for can not connect to server"
+msgstr ""
+
+#: includes/Settings.php:2421 includes/Settings.php:2428
+#: includes/Settings.php:2435
+msgid "[recaptcha] will replaced with captcha field title"
+msgstr ""
+
+#: includes/Settings.php:2424 includes/Settings.php:2646
+msgid "Error message for can not connect to server "
+msgstr ""
+
+#: includes/Settings.php:2431 includes/Settings.php:2653
+msgid "Error message for invalid captcha"
+msgstr ""
+
+#: includes/Settings.php:2438 includes/Settings.php:2442
+#: includes/Settings.php:2660 includes/Settings.php:2664
+msgid "Error message for “unknown” origin order"
+msgstr ""
+
+#: includes/Settings.php:2445 includes/Settings.php:2457
+#: includes/Settings.php:2667 includes/Settings.php:2673
+msgid "No-Conflict Mode"
+msgstr ""
+
+#: includes/Settings.php:2448 includes/Settings.php:2460
+msgid ""
+"When checked, other reCAPTCHA occurrences on this plugin sections like "
+"checkout, registration, login etc are forcefully removed, to prevent "
+"conflicts. Only check if your site is having compatibility issues or "
+"instructed to by support."
+msgstr ""
+
+#: includes/Settings.php:2451
+msgid "Use global reCaptcha Domain"
+msgstr ""
+
+#: includes/Settings.php:2454
+msgid ""
+"google.com is blocked in certain countries like china, So if you are site "
+"doing business on such countries please enable this option. This will use "
+"recaptcha.net instead of google.com for service."
+msgstr ""
+
+#: includes/Settings.php:2463 includes/Settings.php:2681
+msgid "Ip or Range of IP"
+msgstr ""
+
+#: includes/Settings.php:2467 includes/Settings.php:2685
+msgid ""
+"Useful when you want to not show reCaptcha for certain users/clients. When "
+"requests comes through the above IP or IP range the reCaptcha is not shown "
+"and validation will skipped. for example "
+"123.201.160.11,123.201.160.11-123.201.160.50"
+msgstr ""
+
+#: includes/Settings.php:2470 includes/Settings.php:2688
+msgid "Language Code"
+msgstr ""
+
+#: includes/Settings.php:2471
+msgid ""
+"Choose language for recaptcha V2 when shown. For example translation of I am "
+"not robot."
+msgstr ""
+
+#: includes/Settings.php:2478 includes/Settings.php:2696
+msgid "Arabic"
+msgstr ""
+
+#: includes/Settings.php:2479
+msgid "Afrikaans"
+msgstr ""
+
+#: includes/Settings.php:2480
+msgid "Amharic"
+msgstr ""
+
+#: includes/Settings.php:2481
+msgid "Armenian"
+msgstr ""
+
+#: includes/Settings.php:2482
+msgid "Azerbaijani"
+msgstr ""
+
+#: includes/Settings.php:2483
+msgid "Basque"
+msgstr ""
+
+#: includes/Settings.php:2484
+msgid "Bengali"
+msgstr ""
+
+#: includes/Settings.php:2485 includes/Settings.php:2697
+msgid "Bulgarian"
+msgstr ""
+
+#: includes/Settings.php:2486
+msgid "Catalan"
+msgstr ""
+
+#: includes/Settings.php:2487
+msgid "Chinese (Hong Kong)"
+msgstr ""
+
+#: includes/Settings.php:2488 includes/Settings.php:2698
+msgid "Chinese (Simplified)"
+msgstr ""
+
+#: includes/Settings.php:2489
+msgid "Chinese (Traditional)"
+msgstr ""
+
+#: includes/Settings.php:2490 includes/Settings.php:2699
+msgid "Croatian"
+msgstr ""
+
+#: includes/Settings.php:2491 includes/Settings.php:2700
+msgid "Czech"
+msgstr ""
+
+#: includes/Settings.php:2492 includes/Settings.php:2701
+msgid "Danish"
+msgstr ""
+
+#: includes/Settings.php:2493 includes/Settings.php:2702
+msgid "Dutch"
+msgstr ""
+
+#: includes/Settings.php:2494
+msgid "English (UK)"
+msgstr ""
+
+#: includes/Settings.php:2495
+msgid "English (US)"
+msgstr ""
+
+#: includes/Settings.php:2496
+msgid "Estonian"
+msgstr ""
+
+#: includes/Settings.php:2497
+msgid "Filipino"
+msgstr ""
+
+#: includes/Settings.php:2498 includes/Settings.php:2706
+msgid "French"
+msgstr ""
+
+#: includes/Settings.php:2499
+msgid "French (Canadian)"
+msgstr ""
+
+#: includes/Settings.php:2500
+msgid "Galician"
+msgstr ""
+
+#: includes/Settings.php:2501
+msgid "Georgian"
+msgstr ""
+
+#: includes/Settings.php:2502 includes/Settings.php:2707
+msgid "German"
+msgstr ""
+
+#: includes/Settings.php:2503
+msgid "German (Austria)"
+msgstr ""
+
+#: includes/Settings.php:2504
+msgid "German (Switzerland)"
+msgstr ""
+
+#: includes/Settings.php:2505 includes/Settings.php:2708
+msgid "Greek"
+msgstr ""
+
+#: includes/Settings.php:2506
+msgid "Gujarati"
+msgstr ""
+
+#: includes/Settings.php:2507 includes/Settings.php:2709
+msgid "Hebrew"
+msgstr ""
+
+#: includes/Settings.php:2508 includes/Settings.php:2710
+msgid "Hindi"
+msgstr ""
+
+#: includes/Settings.php:2509
+msgid "Hungarain"
+msgstr ""
+
+#: includes/Settings.php:2510
+msgid "Icelandic"
+msgstr ""
+
+#: includes/Settings.php:2511 includes/Settings.php:2712
+msgid "Indonesian"
+msgstr ""
+
+#: includes/Settings.php:2512 includes/Settings.php:2713
+msgid "Italian"
+msgstr ""
+
+#: includes/Settings.php:2513 includes/Settings.php:2714
+msgid "Japanese"
+msgstr ""
+
+#: includes/Settings.php:2514
+msgid "Kannada"
+msgstr ""
+
+#: includes/Settings.php:2515 includes/Settings.php:2715
+msgid "Korean"
+msgstr ""
+
+#: includes/Settings.php:2516
+msgid "Laothian"
+msgstr ""
+
+#: includes/Settings.php:2517
+msgid "Latvian"
+msgstr ""
+
+#: includes/Settings.php:2518 includes/Settings.php:2716
+msgid "Lithuanian"
+msgstr ""
+
+#: includes/Settings.php:2519 includes/Settings.php:2717
+msgid "Malay"
+msgstr ""
+
+#: includes/Settings.php:2520
+msgid "Malayalam"
+msgstr ""
+
+#: includes/Settings.php:2521
+msgid "Marathi"
+msgstr ""
+
+#: includes/Settings.php:2522
+msgid "Mongolian"
+msgstr ""
+
+#: includes/Settings.php:2523
+msgid "Norwegian"
+msgstr ""
+
+#: includes/Settings.php:2524
+msgid "Persian"
+msgstr ""
+
+#: includes/Settings.php:2525 includes/Settings.php:2719
+msgid "Polish"
+msgstr ""
+
+#: includes/Settings.php:2526
+msgid "Portuguese"
+msgstr ""
+
+#: includes/Settings.php:2527 includes/Settings.php:2720
+msgid "Portuguese (Brazil)"
+msgstr ""
+
+#: includes/Settings.php:2528
+msgid "Portuguese (Portugal)"
+msgstr ""
+
+#: includes/Settings.php:2529 includes/Settings.php:2721
+msgid "Romanian"
+msgstr ""
+
+#: includes/Settings.php:2530 includes/Settings.php:2722
+msgid "Russian"
+msgstr ""
+
+#: includes/Settings.php:2531 includes/Settings.php:2723
+msgid "Serbian"
+msgstr ""
+
+#: includes/Settings.php:2532
+msgid "Sinhalese"
+msgstr ""
+
+#: includes/Settings.php:2533 includes/Settings.php:2724
+msgid "Slovak"
+msgstr ""
+
+#: includes/Settings.php:2534 includes/Settings.php:2725
+msgid "Slovenian"
+msgstr ""
+
+#: includes/Settings.php:2535 includes/Settings.php:2726
+msgid "Spanish"
+msgstr ""
+
+#: includes/Settings.php:2536
+msgid "Spanish (Latin America)"
+msgstr ""
+
+#: includes/Settings.php:2537
+msgid "Swahili"
+msgstr ""
+
+#: includes/Settings.php:2538 includes/Settings.php:2727
+msgid "Swedish"
+msgstr ""
+
+#: includes/Settings.php:2539
+msgid "Tamil"
+msgstr ""
+
+#: includes/Settings.php:2540
+msgid "Telugu"
+msgstr ""
+
+#: includes/Settings.php:2541 includes/Settings.php:2729
+msgid "Thai"
+msgstr ""
+
+#: includes/Settings.php:2542 includes/Settings.php:2730
+msgid "Turkish"
+msgstr ""
+
+#: includes/Settings.php:2543 includes/Settings.php:2731
+msgid "Ukrainian"
+msgstr ""
+
+#: includes/Settings.php:2544
+msgid "Urdu"
+msgstr ""
+
+#: includes/Settings.php:2545 includes/Settings.php:2732
+msgid "Vietnamese"
+msgstr ""
+
+#: includes/Settings.php:2546
+msgid "Zulu"
+msgstr ""
+
+#: includes/Settings.php:2559
+msgid "Captcha Type"
+msgstr ""
+
+#: includes/Settings.php:2563
+msgid "Checkbox"
+msgstr ""
+
+#: includes/Settings.php:2564
+msgid "Hidden"
+msgstr ""
+
+#: includes/Settings.php:2574
+msgid "Show Checkbox mode on hidden mode failure (Fallback Captcha)"
+msgstr ""
+
+#: includes/Settings.php:2577
+msgid ""
+"As hidden mode is fully algorithm-based, Sometimes it may block legit users "
+"due to false positive issues like VPN/Firewall etc, In this case show "
+"checkbox as fallback."
+msgstr ""
+
+#: includes/Settings.php:2581
+msgid "Hidden mode Site Key"
+msgstr ""
+
+#: includes/Settings.php:2583
+msgid " to know How to get turnstile hidden mode site key"
+msgstr ""
+
+#: includes/Settings.php:2587
+msgid "Hidden mode Secret Key"
+msgstr ""
+
+#: includes/Settings.php:2589
+msgid " to know How to get hidden mode secret key "
+msgstr ""
+
+#: includes/Settings.php:2594
+msgid "Checkbox mode Site Key"
+msgstr ""
+
+#: includes/Settings.php:2596
+msgid " to know How to get turnstile checkbox mode site key"
+msgstr ""
+
+#: includes/Settings.php:2600
+msgid "Checkbox mode Secret Key"
+msgstr ""
+
+#: includes/Settings.php:2602
+msgid " to know How to get turnstile checkbox secret key "
+msgstr ""
+
+#: includes/Settings.php:2607
+msgid "Validity to switch back to hidden mode"
+msgstr ""
+
+#: includes/Settings.php:2611
+msgid ""
+"After hidden mode has a verification issue for a particular action like "
+"checkout/signup etc. It will show checkbox mode to complete the action. It "
+"will switch back to hidden mode upon action complete, After how many minutes "
+"switch back to hidden mode if action not complete ?."
+msgstr ""
+
+#: includes/Settings.php:2614
+msgid "Error message turnstile verification failed"
+msgstr ""
+
+#: includes/Settings.php:2618
+msgid ""
+"This message shown when turnstile detect abusive, invalid, spam, bot etc "
+"traffic"
+msgstr ""
+
+#: includes/Settings.php:2621 includes/Settings.php:2639
+msgid "Error message turnstile captcha blank"
+msgstr ""
+
+#: includes/Settings.php:2627
+msgid "Message when turnstile generating token"
+msgstr ""
+
+#: includes/Settings.php:2643 includes/Settings.php:2650
+#: includes/Settings.php:2657
+msgid "[captcha] will replaced with captcha field title"
+msgstr ""
+
+#: includes/Settings.php:2670 includes/Settings.php:2676
+msgid ""
+"When checked, other turnstile occurrences on this plugin sections like "
+"checkout, registration, login etc are forcefully removed, to prevent "
+"conflicts. Only check if your site is having compatibility issues or "
+"instructed to by support."
+msgstr ""
+
+#: includes/Settings.php:2689
+msgid ""
+"Choose language for turnstile V2 when shown. For example translation of I am "
+"not robot."
+msgstr ""
+
+#: includes/Settings.php:2703
+msgid "English"
+msgstr ""
+
+#: includes/Settings.php:2704
+msgid "Farsi"
+msgstr ""
+
+#: includes/Settings.php:2705
+msgid "Finnish"
+msgstr ""
+
+#: includes/Settings.php:2711
+msgid "Hungarian"
+msgstr ""
+
+#: includes/Settings.php:2718
+msgid "Norwegian Bokmål"
+msgstr ""
+
+#: includes/Settings.php:2728
+msgid "Tagalog"
+msgstr ""
+
+#: turnstile-recaptcha.php:846 turnstile-recaptcha.php:2842
+#: turnstile-recaptcha.php:3179 turnstile-recaptcha.php:6252
+#: turnstile-recaptcha.php:6620 turnstile-recaptcha.php:7204
+#: turnstile-recaptcha.php:8535 turnstile-recaptcha.php:9173
+#: turnstile-recaptcha.php:9747 turnstile-recaptcha.php:10079
+#: turnstile-recaptcha.php:10438 turnstile-recaptcha.php:11768
+msgid "Generating turnstile token, Please wait..."
+msgstr ""
+
+#: turnstile-recaptcha.php:3549 turnstile-recaptcha.php:3563
+#: turnstile-recaptcha.php:4209 turnstile-recaptcha.php:4225
+#: turnstile-recaptcha.php:4445 turnstile-recaptcha.php:4460
+#: turnstile-recaptcha.php:5178 turnstile-recaptcha.php:5193
+#: turnstile-recaptcha.php:5416 turnstile-recaptcha.php:5430
+#: turnstile-recaptcha.php:5632 turnstile-recaptcha.php:5645
+msgid "Turnstile captcha verification failed, please try again later."
+msgstr ""
+
+#: turnstile-recaptcha.php:5224
+msgid "Turnstile captcha token is missing."
+msgstr ""
+
+#. Plugin Name of the plugin/theme
+msgid "reCaptcha for WooCommerce"
+msgstr ""
+
+#. Plugin URI of the plugin/theme
+msgid "https://wordpress.org/plugins/woo-recpatcha"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid "Protect your eCommerce site with google recptcha."
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "I Thirteen Web Solution"
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "https://www.i13websolution.com"
+msgstr ""

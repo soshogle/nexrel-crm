@@ -1,0 +1,38 @@
+.wp-block-iconic-woothumbs-variation-images__image-wrap {
+	position: relative;
+	width: 75px;
+
+	&:hover {
+		cursor: pointer;
+		
+		.wp-block-iconic-woothumbs-variation-images__image-remove-button {
+			opacity: 1;
+		}
+
+		.wp-block-iconic-woothumbs-variation-images__image {
+			opacity: .5;
+		}
+	}
+}
+
+.wp-block-iconic-woothumbs-variation-images__image-remove-button {
+	position: absolute;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	transition: opacity .3s ease-in-out;;
+}
+
+.wp-block-iconic-woothumbs-variation-images__image {
+	height: 75px;
+	width: 75px;
+	object-fit: cover;
+	position: relative;
+	transition: opacity .3s ease-in-out;
+	border: 1px solid #ddd
+}
+
+

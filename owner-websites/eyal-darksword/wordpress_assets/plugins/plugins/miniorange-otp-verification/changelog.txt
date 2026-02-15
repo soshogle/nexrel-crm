@@ -1,0 +1,552 @@
+﻿= 5.2.9 =
+* miniOrange WordPress OTP Verification
+ * Paid Membership Pro Form, Tutor LMS Login Form, WooCommerce Notifications: Bug fixes
+ * Added miniOrange SMTP support for email verification in premium plans
+ * Released OTP Verification on Fluent Conversational Form
+ * Released miniOrange SMTP in premium plans
+ * Feature improvements in Elementor Pro Form
+ * Improvements – CSS of tooltips
+= 5.2.8 =
+* miniOrange WordPress OTP Verification
+ * Released Limit OTP Timer Addon to enhance security and prevent spamming attacks
+ * WooCommerce Login form: Redirection fixes
+ * Fluent form: Hidden attribute issue
+= 5.2.6 =
+* miniOrange WordPress OTP Verification
+ * Bug fixes – Gravity Forms
+ * CSS issue fixes in Elementor Pro Form
+= 5.2.5 =
+* Introduced JetFormBuilder & WS Pro Contact Form
+ * Released:Transaction report feature
+ * WC Block Checkout:OTP with Popup,OTP for guest users & selective payment method
+ * Improvements:Edit messages,Popup design tab,Gravity Form 
+ * Bug fixes:WC login & Ninja form
+= 5.2.4 =
+* Added an option to edit the text and CSS of the buttons in the Login Form
+ * Minor Fixes - Login forms and Houzez Form
+ * Added payment links for addons
+ * Updated links for set-up guides and videos for some forms
+ * Reorganized the code structure of the pop-ups to improve Usability
+= 5.2.3 =
+* miniOrange WordPress OTP Verification
+ * WordPress 6.6 compatibility
+ * Usability Improvements
+= 5.2.2 =
+* miniOrange WordPress OTP Verification
+ * Updated WooCommerce Checkout Forms Integration
+ * AR Member Form – View issue fix
+ * Formidable form compatibility with Limit OTP Addon
+ * Updated WooCommerce notifications tags
+ * UM Login Form Fix: Compatibility with Ultimate Member Admin Approve Action
+ * Minor Fix to show loader on send otp
+ * Load Form CSS file issue fixes
+ * Gravity forms – Flow changes
+ * OTP Pop-up – UI Improvements
+= 5.2.1 =
+* miniOrange WordPress OTP Verification
+ * WordPress 6.5 compatibility
+ * Woocommerce Checkout & Formidable form CSS Fixes
+ * Marketed Form Notifications
+ * Enhanced Contact Us feature
+ * miniOrange SMS/Email Gateway plan updates
+ * Removed Try me form.
+ * Removed Custom Messages Notification
+ 
+= 5.2.0 =
+* WordPress OTP Verification
+ * Fluent Form – Minor Fixes
+ * Ultimate Member Password Reset – Minor Improvements
+ * WooCommerce Password Reset – Minor Improvements
+ * Licensing Page Updated
+ * WhatsApp compatibility for WooCommerce Notifications
+ * Usability Improvements
+ * Minor Bug fixes
+ * Notice Update
+= 5.1.5 =
+* miniOrange WordPress OTP Verification
+ * Added setup guide links for new forms
+ * Added OTP over the new WooCommerce Checkout Form
+= 5.1.0 =
+* Added redirection option after Login with OTP
+ * Added options in Contact us for the queries form
+ * Added WhatsApp Notification Functionality test feature
+ * Added option to reset the OTP pop-up to the default
+ * Buddypress Form – Minor Fix
+ * Updated Licensing Page
+= 5.0.5 =
+* WordPress OTP Verification
+ * Bug fixes
+= 5.0.4 =
+* OTP Verification
+ * Gravity Form – Minor Fix
+ * Limit OTP Addon Resend OTP Fix
+ * Minor bug fixes
+= 5.0.3 =
+* WordPress OTP Verification
+ * Minor bug fix
+= 5.0.2 =
+* OTP Verification
+ * Compatibility with WooCommerce 8.2.1
+ * WooCommerce Notifications – Minor Fix
+ * Fluent Forms – Minor Fix
+ * Released OTP Spam Preventer Addon in Enterprise plan
+= 5.0.1 =
+* OTP Verification
+ * Minor Forms Fixes
+ * WooCommerce Checkout Form – Minor Fix
+ * Licensing page update
+= 5.0.0 =
+* New UI/UX of OTP plugin
+ * Introduced:PopUp Template Custom fields,AutoFill OTP, WooCommerce Low & Out of Stock ,Dokan Vendor Notifications
+ * Added:Download & delete report in Transaction Report Feature
+ * OTP Verification on WP User Manager,AR Member,Houzez Theme Registration Form
+ = 4.2.1 =
+* OTP Verification
+ * Minor CSS fixes.
+ * Forminator Form – Minor fix
+ * Compatibility with WordPress 6.3
+ * Readme updates
+= 4.2.0 =
+* OTP on Fluent & Tutor LMS Form
+ * Updated:Notice for SMS Delivery Rules & Contact Form 7
+ * Added View & Low Transactions Alert,Custom redirect option in WooCommerce/Ultimate Member/WordPress Login form
+ * Fixes:MemberPress Checkout,Ultimate Membership,MemberPress Registration Form
+= 4.1.1 =
+* OTP Verification
+ * WordPress 6.2 compatibility
+= 4.1.0 =
+* OTP Verification
+ * Pricing Plan Changes
+ * Added Notice for SMS Delivery rule changes
+ * Introduced OTP Verification on Forminator Form
+ * Minor Fixes
+= 4.0.0 =
+* OTP Verification
+ * Code Improvements according to WPCS
+ * Ninja form bug fix
+ * Registration magic form bug fix
+= 3.9.3 =
+* OTP Verification
+ * Updated OTP plugin feedback form
+ * WooCommerce notification addon fix
+= 3.9.2 =
+* OTP Verification
+ * Compatibility with WordPress 6.1
+ * OTP Verification fixes for CF7 form.
+= 3.9.1 =
+* OTP Verification
+ * Introduced WhatsApp OTP Verification test feature
+ * Added user logged-in check in the MemberPress single checkout form
+= 3.9.0 =
+* OTP Verification
+ * Introduced Woocommerce OTP & Notification Plan
+ * Added Firebase OTP plugin link
+= 3.8.7 =
+* OTP Verification
+ * Introduced OTP Audit/Reporting
+ * Updated OTP with Firebase Contact Form
+ * Introduced Limit OTP addon in Enterprise plan
+= 3.8.6 =
+* OTP Verification
+ * WooCommerce notification fix
+ * Added setup guide links
+ * Updated feedback template
+= 3.8.5 =
+* WordPress OTP Verification
+ * Updated Licensing Plan page
+ * Minor fix for SMS notifications
+= 3.8.4 =
+* OTP Verification
+ * Minor fixes
+= 3.8.3 =
+  * Published OTP verification on the Everest Contact form & WooCommerce Profile form
+ * Advertised premium addons in the addon tab
+ * Advertised Geolocation premium addon
+ * OTP over WhatsApp: New Implementation UI
+ * FormCraft Basic and Premium minor fixes
+ * Real Estate 7 form minor fix
+= 3.8.2 =
+* OTP Verification
+ * WordPress 6.0 Compatibility
+ * Advertised OTP Firebase Gateway Plan
+ * Eduma Login Form View Improvements
+ * Removed OTP verification on Ninja Form below 3.0 version support
+ * Removed OTP SMS Monthly plan
+= 3.8.1 =
+* OTP Verification
+ * Security Improvements
+= 3.8.0 =
+* OTP Verification
+ * Minor UI Fixes.
+ * Added WP Forms instructions for phone field to be set as International.
+= 3.7.9 =
+* OTP Verification
+ * WordPress 5.9 Compatibility
+ * Removed End of Year Sale
+= 3.7.8 =
+* OTP Verification
+ * End of Year Sale Offers
+ * Buy 1 License and get 1 License Free
+ * Free Android/IOS API Addon
+ * Free WordPress Password Reset via OTP Addon
+ * Free OTP Verification via Call Addon – Twilio Gateway
+ * WooCommerce Checkout OTP Verification Improvements
+= 3.7.7 =
+* OTP Verification
+ * Added support for MemberPress Single Page Checkout
+ * Caldera Forms – Minor Fixes: is session unset
+ * Updated OTP Verification set up guide links
+ * Updated language translation files.
+= 3.7.6 =
+* OTP Verification
+ * Compatibility with WooCommerce 5.6
+ * WP Forms – Improvements
+ * Minor UI fixes
+= 3.7.5 =
+* OTP Verification
+ * Bug Fixes – Sanitization of input fields.
+= 3.7.4 =
+* OTP Verification
+ * WhatsApp OTP Verification
+ * WhatsApp Notification – Order Updates, New Account, & Custom WhatsApp Notification
+ * Added free SMS and Emails to the Enterprise Plan
+ * Compatibility with WordPress 5.8
+= 3.7.3 =
+ * Introduced miniOrange SMS Gateway monthly plan.
+ * Introduced OTP over Call – Twilio SMS Gateway
+ * Introduced Bulk SMS addon.
+ * Introduced WhatsApp UI.
+ * Added OTP Verification on Eduma Theme Login & Registration
+ * Added option for Demo.
+ * Updated miniOrange gateway SMS pricing.
+= 3.7.2 =
+* OTP Verification
+ * Added DLT-related notices for Indian users.
+ * Updated the WooCommerce SMS Notification Templates.
+ * Updated the Ultimate Member SMS Notification Templates.
+ * Updated Custom Message Templates.
+ * Updated WooCommerce Custom Order SMS Templates.
+= 3.7.1 =
+* OTP Verification
+ * Added Admin Notice
+= 3.7 =
+* Introduced:Alphanumeric OTP,SMS Test Configuration & OTP for Selected countries,Social Login,WC Password Reset 
+ * Fixes:Contact Form 7,Ultimate Member Profile,Account & WordPress Login,Registration Magic,WC Checkout Forms
+ * Compatibility:WooCommerce 5.1.0, WordPress 5.7 & WPML 
+= 3.6.3 =
+* Added Error/Success message handling in the Custom Messages Addon
+ * Paid Membership Pro Improvement– Registered Phone Number in the database
+ * Registration Magic Improvement– Minor fix in OTP Verification over Phone
+ * WooCommerce Custom Messages– Minor fix
+= 3.6.2 =
+ * Added OTP Verification view for WCFM.
+ * Added OTP Verification view for Elementor PRO.
+ * Added AWS SNS gateway support in the Custom gateway plugin.
+ * Added Firebase gateway support.
+ * Added improvements for WooCommerce Registration Form.
+ * Added Email Verification via link addon.
+= 3.6.1 =
+* Added feature for viewing SMS and Email Transactions
+ * Added improvements for WooCommerce Registration Form
+ * Added improvements for Ultimate Member Registration Form
+ * Added fixes for Caldera and Ninja Forms
+ * Removed password tag from Ultimate Member and WooCommerce Addons.
+ * Form Fixes
+= 3.6 =
+* Custom Form Improvements, Form Fixes & New Addons
+ * Added improvements in the Custom Form Feature for OTP verification.
+ * Added Login with Phone number Only add-on.
+ * Added feature to check SMS / Email transactions for OTP Verification.
+ * Bug fixes for WooCommerce and other forms.
+= 3.5 =
+* OTP Verification: UI Changes, Custom Form & Twilio Plan
+ * Added new Custom Form feature.
+ * Added new Twilio Plan.
+ * Added compatibility with forms.
+ * Bug fixes for WooCommerce and other forms.
+ * Addon fixes.
+ * Premium addon improvements.
+= 3.4.3 =
+* OTP Verification: UI Changes, New Pages & Added Documentation
+ * Fix for Ninja Form
+ * Added Contact Us Page
+ * Added Premium Addons Page
+ * Updated Documents
+ * Updated FAQs
+* Compatibility with WooCommerce 4.0
+= 3.4.2 =
+* OTP Verification: Fixes
+ * Fix for Fatal error on certain environments
+* Compatibility with PHP 7.4
+= 3.4.1 =
+* OTP Verification: Compatibility with WordPress 5.3
+= 3.4 =
+* OTP Verification: New Form & Improvements
+ * WP Client Registration Form
+ * Visual Tour
+ * Updated Documents
+ * Security improvement
+= 3.2.70 =
+* OTP Verification: Fixes
+ * Fix for WooCommerce Registration form
+ * Ultimate Member Reset Password Fix
+= 3.2.69 =
+* OTP Verification: Support form and security improvement
+= 3.2.68 =
+* OTP Verification: Feedback email changes
+= 3.2.67 =
+* OTP Verification: Endpoints migration
+= 3.2.66 =
+* OTP Verification: UI Changes
+= 3.2.65 =
+* OTP Verification: UI Changes
+= 3.2.64 =
+* OTP Verification: Fixes
+ * Multisite Form Fix
+ * Fix for WooCommerce billing form
+= 3.2.63 =
+* OTP Verification: WooCommerce Improvements
+ * Updated the compatibility with the WooCommerce social login form
+ * Fix for WooCommerce checkout form
+= 3.2.62 =
+* OTP Verification: Contact Form 7 fix
+= 3.2.61 =
+* OTP Verification: Security Fix
+= 3.2.60 =
+ * Merged Ultimate Member and Default Login form
+ * Updates: MemberPress, WooCommerce Registration, Contact Form 7 Forms
+ * Added support for Formidable Form, Visual Form Builder, WC Billing
+ * Fixes:WC Registration, User Ultra Form, Caldera Form, FormCraft form, Translation for WPML
+= 3.2.50 =
+* OTP Verification: Fix for PHP version 5.5 and below
+= 3.2.49 =
+* Default Login Form– Added a fallback option for Passwordless Login
+ * Removed jQuery dependency for Country Code Dropdowns
+ * Fixes for Ninja & Gravity Forms
+ * WooCommerce Notification AddOn Fixes
+ * Custom SMS AddOn Fixes
+ * Added "Let User Choose" option for MemberPress plugin 
+= 3.2.48 =
+ * Fixes:WC Checkout,MemberPress Form
+ * OTP for FormMaker,UM Profile, Account page,Login Page,WC Product Vendor Registration Form
+ * Added options:Ajax form verification option & New user notification for UM,Email+OTP/Phone+OTP for Default Login Form,Ultimate Member password reset via OTP
+= 3.2.47 =
+* Fixes: WC for custom payment types & Checkout Form, Gravity Form, Popup Templates
+ * OTP for MemberPress, Paid Membership, Reales7 Pro, MultiSite, WC Vendor registration Forms
+ * Added option to restrict phone numbers for UM, Email Verification for WP Default Login Form & feedback form
+= 3.2.46 =
+* OTP Verification: Timestamp bug fixes
+= 3.2.45 =
+* OTP Verification: Timestamp fix for lower versions
+= 3.2.44 =
+* OTP Verification: Timestamp Fixes
+= 3.2.43 =
+* OTP Verification: Pricing Plan Changes
+= 3.2.42 =
+* OTP Verification: WooCommerce Compatibility checks
+= 3.2.41 =
+* OTP Verification: Bug fixes
+= 3.2.40 =
+* OTP Verification: Bug fixes
+= 3.2.39 =
+* Fixes:Formcraft Premium,Ninja,Gravity,Registration Magic Forms,Customized blocked email & phone messages
+* SMS OTP for Profile Builder Form
+* Added option to modify OTP popups & customize WC Verification Button Text
+* OTP for WP Forms & Caldera Forms
+* Compatibility:WordPress 4.9
+= 3.2.38 =
+* OTP Verification: Fixes
+ * WooCommerce Registration Fixes – Existing Phone Number
+ * Default Registration Fixes – Existing Phone Number
+ * Default Login Form Fixes – Existing Phone Number
+ * WooCommerce Checkout Form Fixes
+= 3.2.37 =
+* OTP Verification: Country Code fixes
+= 3.2.36 =
+* OTP Verification: Improvements
+ * Bug Fixes for Country Code dropdown
+ * Changing the Translation Text-Domain
+= 3.2.35 =
+* OTP Verification: Fixes
+ * Added support for DocDirect Theme
+ * Bug Fixes for the default registration page.
+ * Bug fixes for Country Code DropDown.
+ * Bug fixes for Ninja Forms.
+ * Bug fixes for WooCommerce Checkout Form
+ * Translation Fixes
+= 3.2.34 =
+* Fixes & enhancement of WC Checkout Form
+* OTP for WP eMember,FormCraft,WordPress Comment Form
+* Added:Country Dropdown in phone field,admins setup OTP length & validity,Unique phone number registration WordPress & WC registration
+* Translation Support:PolyLang Plugin,WordPress Standand
+= 3.2.33 =
+* OTP Verification: Image Fixes
+= 3.2.32 =
+* OTP Verification: Option to hide Remaining Transactions message in the admin dashboard
+= 3.2.31 =
+* OTP Verification: PHP 5.3 fixes
+= 3.2.29 =
+* OTP Verification: Bug Fixes
+= 3.2.2 =
+* OTP Verification: Bug Fixes
+= 3.2.1 =
+* OTP Verification: Bug Fixes
+= 3.2.0 =
+* Added:Option to log in using phone number,support for Hindi Language,hooks & filters in the plugin to allow developers to be able to extend the plugin functionality,Option to allow admin to block email domains & phone numbers.
+* Fixes:Session-related bug fixes,resend OTP
+= 3.1.9 =
+* OTP Verification: Fixes
+ * Fixed an issue where you were not able to see the validate OTP field after users entered an invalid OTP.
+= 3.1.8 =
+* OTP Verification: Fixes
+ * Bug fixes while saving settings for Ultimate Membership Pro and the WP Members form.
+= 3.1.7 =
+ * OTP for Ninja Forms Version 3.0+, Classify Theme Registration form
+ * Added an option to show a pop-up on the WooCommerce checkout page to enter OTP rather than a link or a button.
+ * Bug Fixes for WP Members plugin, WordPress Default Login Page
+= 3.1.6 =
+* OTP Verification: UserUltra reCAPTCHA fixes
+= 3.1.5 =
+* OTP Verification: Bug Fixes
+= 3.1.4 =
+ * Added support for Ultimate Membership Pro
+ * Added feature where you can select a default country code, allowing users to enter their phone number without their country code.
+ * Added a few more customizable messages under the Message Tab
+ * Bug Fixes for Gravity Form
+= 3.1.1 =
+* OTP Verification: Bug Fixes
+= 3.1.0 =
+* OTP Verification: New Form and Fixes
+ * Added support for WP-Members
+ * Added support for OTP Verification during WordPress Default Login Form
+ * Fix for Gravity Forms
+= 3.0.9 =
+* OTP Verification: Fix for older versions of PHP
+= 3.0.8 =
+* OTP Verification: New Forms and Fixes
+ * Added Support For Gravity Forms
+ * Fixed an issue with the WooCommerce Checkout Form
+ * Some additional bug fixes.
+= 3.0.7 =
+* OTP Verification: Bug Fixes
+ * Fixed an issue with Contact Form 7 version 4.6. ( Deprecated Function )
+ * Fixed an issue where plugin JS files were conflicting with another plugin.
+= 3.0.6 =
+* OTP Verification: Bug Fixes
+ * Fixed an issue with invalid mail sent messaging
+ * Fixed an issue with BuddyPress Form
+ * Fix for default Registration Form
+= 3.0.5 =
+* OTP Verification: New Form and Fixes
+ * Added OTP Verification for UserPro Plugin.
+ * Fix for UserUltra Form.
+= 3.0.2 =
+* OTP Verification: Form Hook priority fixes
+= 3.0.1 =
+* OTP Verification: Compatibility changes.
+ * Compatibility with WordPress 4.7
+ * Fix while accessing Media in the admin dashboard.
+ * Added option to customize the invalid phone number message.
+= 3.0 =
+ * Fixes OTP Verification for Registration Magic Form,WooCommerce Checkout Form,User Profile Made Easy Form
+ * Fixes related to a session when more than 1 form was enabled
+ * Added Phone Number validation for BuddyPress
+ * 500 error fix when OTP Verification was enabled for Woocommerce Social Login
+= 2.8.4 =
+* OTP Verification: Minor Fix
+ * Bug Fix for Profile Builder Registration Form
+= 2.8.3 =
+* OTP Verification: Minor Fix.
+ * Bug Fixes for older PHP Versions
+= 2.8.2 =
+* OTP Verification
+ * More customizable options for Ninja Form
+= 2.8.1 =
+* OTP verification
+ * BuddyPress Bug Fixes
+= 2.8 =
+* OTP verification
+ * Added SMS Verification for the default form
+ * Added support for Theme My Login Form
+ * Bug fixes for Ninja Form
+ * UI fixes for Woocommerce Registration Form
+= 2.7.5 =
+* OTP verification
+ * Fixed issue with the support form
+= 2.7.4=
+* OTP verification
+ * Added Support for Ninja Form
+= 2.7.3=
+* OTP verification
+ * Contact Form 7 Major Bug Fix
+= 2.7.2 =
+* OTP verification
+ * Registration Magic Form bug Fixes
+= 2.7.1 =
+* OTP verification
+ * Ultimate Member – Social Login Bug Fix
+ * Registration Magic Bug Fixes
+= 2.7 =
+* OTP verification
+ * Registration Bug Fix
+= 2.6 =
+* Woocommerce Checkout Bug Fix
+= 2.5 =
+* Contact Form 7 Bug Fixes
+* Notification fixes for Woocommerce Social Login and Woocommerce Registration forms.
+= 2.4 =
+* Bug Fixes
+= 2.3 =
+* Added Support for WooCommerce Social Login
+* Option to edit the Messages shown to users
+= 2.1 =
+* Phone Number Pattern Fix
+= 2.0 =
+* Bug Fix – User Profile Made Easy Form
+= 1.9.8 =
+* Bug Fixes and compatibility with Brute Force Login Security, Spam Protection & Limit Login Attempts Plugin
+= 1.9.7 =
+* Bug fixes for BuddyPress and User Ultra registration forms
+= 1.9.6 =
+* UI improvement
+= 1.9.5 =
+* UI improvement and fix for WP 4.5
+= 1.9.4 =
+* Changes for WordPress 4.5
+= 1.9.3 =
+* Bug Fix for Support Query Form
+= 1.9.2 =
+* Bug Fix for Simplr Registration Form
+= 1.9.1 =
+* Bug Fix for Resend OTP
+= 1.9 =
+* Bug Fix for Default Registration Form
+= 1.8 =
+* Added option to choose mobile or phone number on resend OTP
+= 1.7 =
+* Bug Fixes for Profile Builder Registration Form
+* Phone Number validation check fixes
+= 1.6 =
+* Major Security Fix
+= 1.5 =
+* Bug fixes in WooCommerce Checkout Form
+* Added support for Contact Form 7
+= 1.4 =
+* Bug Fixes
+= 1.3 =
+* More options for WooCommerce Checkout Form.
+* Added support for Pie Registration Form
+* Options to Track your Transactions and License.
+* Detailed Instructions on how to customize your Template and Gateway
+= 1.2 =
+* Added support for User Profiles Made Easy, WooCommerce Checkout, and Users Ultra forms.
+* Made the plugin mobile responsive
+* Added option for custom redirection after registration
+= 1.1.1 =
+* Added extra options for licensing
+= 1.1.0 =
+* Added support for BuddyPress, Custom User Registration Form Builder [ RegistrationMagic ].
+* Added mobile number verification option for WooCommerce registration form.
+* Added the option to allow users to select verification method(Email/SMS) during registration.
+= 1.0.0 =
+* First version of the plugin.

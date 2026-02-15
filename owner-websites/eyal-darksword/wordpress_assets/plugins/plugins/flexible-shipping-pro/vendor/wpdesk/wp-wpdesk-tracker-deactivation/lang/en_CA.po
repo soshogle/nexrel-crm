@@ -1,0 +1,85 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WP Desk Tracker Deactivation\n"
+"POT-Creation-Date: 2022-04-12 13:47+0200\n"
+"PO-Revision-Date: 2022-08-16 10:06+0200\n"
+"Last-Translator: Łukasz Spryszak <lukasz.spryszak@octolize.com>\n"
+"Language-Team: Łukasz Spryszak <lspryszak@gmail.com>\n"
+"Language: en_CA\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.1.1\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;"
+"esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;"
+"_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: vendor\n"
+
+#: src/WPDesk/Tracker/Deactivation/views/scripts.php:36
+msgid "Plugin deactivation"
+msgstr "Plugin deactivation"
+
+#: src/WPDesk/Tracker/Deactivation/views/scripts.php:85
+msgid "Submit &amp; Deactivate"
+msgstr "Submit &amp; Deactivate"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:14
+#, php-format
+msgid "You are deactivating %s plugin."
+msgstr "You are deactivating %s plugin."
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:19
+msgid ""
+"If you have a moment, please let us know why you are deactivating the plugin "
+"(anonymous feedback):"
+msgstr ""
+"If you have a moment, please let us know why you are deactivating the plugin "
+"(anonymous feedback):"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:26
+msgid "The plugin suddenly stopped working"
+msgstr "The plugin suddenly stopped working"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:34
+msgid "The plugin broke my site"
+msgstr "The plugin broke my site"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:42
+msgid "I have found a better plugin"
+msgstr "I have found a better plugin"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:45
+msgid "What's the plugin's name?"
+msgstr "What’s the plugin’s name?"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:53
+msgid "I only needed the plugin for a short period"
+msgstr "I only needed the plugin for a short time period"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:61
+msgid "I no longer need the plugin"
+msgstr "I don’t need the plugin any more"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:69
+msgid "It's a temporary deactivation. I'm just debugging an issue."
+msgstr "It’s a temporary deactivation. I’m just debugging an issue."
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:77
+msgid "Other"
+msgstr "Other"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:80
+msgid "Please let us know how we can improve our plugin"
+msgstr "Please let us know how we can improve our plugin"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:87
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/WPDesk/Tracker/Deactivation/views/thickbox.php:88
+msgid "Skip &amp; Deactivate"
+msgstr "Skip &amp; Deactivate"

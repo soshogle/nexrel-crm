@@ -1,0 +1,54 @@
+.wpb_vc_flexbox_container_item {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: @vc_column_bg;
+
+  > .wpb_element_wrapper > .vc_container_for_children {
+    margin: 0 10px;
+  }
+
+  .wpb_flexbox_container_item_container {
+    margin: 0 10px 0;
+  }
+
+  >  .wpb_element_wrapper:last-of-type {
+    margin-bottom: 5px;
+  }
+
+  >  .vc_controls.vc_controls-visible {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5px 0;
+    height: 24px;
+    line-height: 1;
+  }
+
+  > .bottom-controls {
+    margin-top: auto;
+  }
+
+  > .bottom-controls .vc-c-icon-add {
+    font-size: 14px;
+  }
+
+  > .vc_controls .vc_control .vc-composer-icon {
+    position: relative;
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+  }
+
+  > .vc_controls .vc_control .vc-composer-icon::before {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    font-family: 'vcpb-plugin-icons' !important;
+    transform: translate(-50%, -50%);
+  }
+
+  > .vc_controls .vc_control .vc-c-icon-delete_empty {
+    font-size: 11px;
+  }
+}

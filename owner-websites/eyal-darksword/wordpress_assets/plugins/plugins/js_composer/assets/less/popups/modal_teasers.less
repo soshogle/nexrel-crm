@@ -1,0 +1,123 @@
+.wpb-teasers-wrapper {
+  display: none;
+  
+  .wpb-teasers-description {
+    padding: 0 12px;
+    margin: 0;
+    margin-bottom: 24px;
+    font-family: Open Sans, sans-serif;
+    font-weight: 600;
+    font-style: italic;
+    color: #999999;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  
+  .wpb-teasers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 0 12px;
+    list-style: none;
+    margin: 0;
+    
+    @media (max-width: @screen-sm-max) {
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      padding: 0;
+      gap: 12px;
+    }
+    
+    .wpb-teaser-item {
+      display: block;
+      margin: 0;
+      
+      .wpb-teaser-content {
+        padding: 24px 20px;
+        border: 1.5px solid #E6E6E7;
+        border-radius: 3px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        
+        .wpb-teaser-content-inner {
+          display: flex;
+          flex-direction: column;
+          overflow-wrap: break-word;
+        }
+        
+        a.wpb-teaser-icon-link {
+          width: fit-content;
+          align-items: start;
+          padding: 0;
+        }
+        
+        .wpb-teaser-icon {
+          width: 64px;
+          height: 64px;
+          border-radius: 10px;
+          margin-bottom: 10px;
+        }
+        
+        .wpb-teaser-title {
+          color: #34444B;
+          font-family: Sora, sans-serif;
+          font-size: 15px;
+          font-weight: 600;
+          line-height: 1.4;
+          margin:0;
+          padding: 7px 0;
+        }
+        
+        .wpb-teaser-description {
+          color: #34444B;
+          font-family: Inter, sans-serif;
+          font-size: 13px;
+          line-height: 1.5;
+          margin: 0;
+          padding: 0;
+          flex-grow: 1;
+        }
+        
+        .wpb-teaser-action {
+          margin-top: 10px;
+          font-family: Inter, sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+          line-height: 1.2;
+      
+
+          .vc_ui-button {
+            width: 100%;
+            padding: 11px 21px;
+            
+            &.wpb-teaser-installed {
+              background: #2C3339;
+              color: #fff;
+              cursor: default;
+              pointer-events: none;
+              
+              &:hover, &:active, &:focus {
+                background: #2C3339;
+                color: #fff;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.vc_ui-panel-window .wpb-teasers-wrapper .wpb-content-layouts.wpb-teasers-grid {
+  li {
+    overflow: visible;
+    &:hover {
+      background: none;
+    }
+  }
+  
+  .vc_visible {
+    display: block;
+  }
+}
