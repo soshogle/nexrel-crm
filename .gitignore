@@ -1,6 +1,10 @@
 # Backup data (sensitive, large - keep locally only)
 backups/
 owner-websites/**/data/xml/
+
+# Owner websites - developed in their own repos (e.g. soshogle/darksword-armory)
+# Do NOT commit website code to nexrel-crm; commits go to the owner's GitHub repo
+darksword-armory/
 *.backup
 *.bak
 node_modules

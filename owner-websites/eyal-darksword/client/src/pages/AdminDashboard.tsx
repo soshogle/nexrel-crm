@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { Link, useParams } from 'wouter';
 import {
   BarChart3, Package, ShoppingCart, Users, DollarSign,
   ChevronRight, Eye, Truck, CheckCircle, Clock, XCircle,
-  Search, ArrowLeft, Settings
+  Search, ArrowLeft, Settings, Pencil, X
 } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
@@ -18,6 +18,138 @@ const statusColors: Record<string, string> = {
   paid: 'bg-green-500/20 text-green-400',
 };
 
+function ProductEditModal({
+  product,
+  onClose,
+  onSave,
+  isSaving,
+}: {
+  product: { id: number; name: string; price: string; salePrice?: string | null; description?: string | null; metaTitle?: string | null; metaDescription?: string | null };
+  onClose: () => void;
+  onSave: (data: { name?: string; price?: string; salePrice?: string; description?: string; metaTitle?: string | null; metaDescription?: string | null }) => void;
+  isSaving: boolean;
+}) {
+  const [name, setName] = useState(product.name);
+  const [price, setPrice] = useState(product.price || '');
+  const [salePrice, setSalePrice] = useState(product.salePrice || '');
+  const [description, setDescription] = useState(product.description || '');
+  const [metaTitle, setMetaTitle] = useState(product.metaTitle || '');
+  const [metaDescription, setMetaDescription] = useState(product.metaDescription || '');
+
+  useEffect(() => {
+    setName(product.name);
+    setPrice(product.price || '');
+    setSalePrice(product.salePrice || '');
+    setDescription(product.description || '');
+    setMetaTitle(product.metaTitle || '');
+    setMetaDescription(product.metaDescription || '');
+  }, [product.id, product.name, product.price, product.salePrice, product.description, product.metaTitle, product.metaDescription]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      name: name || undefined,
+      price: price || undefined,
+      salePrice: salePrice || undefined,
+      description: description || undefined,
+      metaTitle: metaTitle || null,
+      metaDescription: metaDescription || null,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="bg-[#1A1A1A] border border-[#C9A84C]/20 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-[#C9A84C]/20 flex items-center justify-between">
+          <h3 className="text-lg font-serif text-[#C9A84C]">Edit Product</h3>
+          <button onClick={onClose} className="p-2 text-[#FAF3E0]/60 hover:text-[#FAF3E0] rounded">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm text-[#FAF3E0]/70 mb-1">Name</label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="w-full px-4 py-2 bg-[#0D0D0D] border border-[#C9A84C]/20 rounded text-[#FAF3E0] text-sm"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-[#FAF3E0]/70 mb-1">Price</label>
+              <input
+                type="text"
+                value={price}
+                onChange={e => setPrice(e.target.value)}
+                className="w-full px-4 py-2 bg-[#0D0D0D] border border-[#C9A84C]/20 rounded text-[#FAF3E0] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-[#FAF3E0]/70 mb-1">Sale Price</label>
+              <input
+                type="text"
+                value={salePrice}
+                onChange={e => setSalePrice(e.target.value)}
+                className="w-full px-4 py-2 bg-[#0D0D0D] border border-[#C9A84C]/20 rounded text-[#FAF3E0] text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm text-[#FAF3E0]/70 mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              rows={4}
+              className="w-full px-4 py-2 bg-[#0D0D0D] border border-[#C9A84C]/20 rounded text-[#FAF3E0] text-sm"
+            />
+          </div>
+          <div className="border-t border-[#C9A84C]/20 pt-4">
+            <h4 className="text-sm font-medium text-[#C9A84C] mb-3">SEO Meta</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-[#FAF3E0]/70 mb-1">Meta Title</label>
+                <input
+                  value={metaTitle}
+                  onChange={e => setMetaTitle(e.target.value)}
+                  placeholder="Custom page title for search engines"
+                  className="w-full px-4 py-2 bg-[#0D0D0D] border border-[#C9A84C]/20 rounded text-[#FAF3E0] text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[#FAF3E0]/70 mb-1">Meta Description</label>
+                <textarea
+                  value={metaDescription}
+                  onChange={e => setMetaDescription(e.target.value)}
+                  placeholder="Short description for search results (max ~160 chars)"
+                  rows={2}
+                  className="w-full px-4 py-2 bg-[#0D0D0D] border border-[#C9A84C]/20 rounded text-[#FAF3E0] text-sm"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-[#C9A84C]/20 text-[#FAF3E0]/80 rounded hover:bg-white/5"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="px-4 py-2 bg-[#C9A84C] text-[#0D0D0D] font-medium rounded hover:bg-[#d4b85c] disabled:opacity-50"
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
   const params = useParams<{ tab?: string }>();
@@ -27,6 +159,7 @@ export default function AdminDashboard() {
   const [productSearch, setProductSearch] = useState('');
   const [productPage, setProductPage] = useState(1);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
 
   const statsQuery = trpc.admin.stats.useQuery(undefined, {
     enabled: user?.role === 'admin',
@@ -58,6 +191,18 @@ export default function AdminDashboard() {
     onSuccess: () => {
       ordersQuery.refetch();
       if (selectedOrderId) orderDetailQuery.refetch();
+    },
+  });
+
+  const productDetailQuery = trpc.admin.products.getById.useQuery(
+    { id: selectedProductId! },
+    { enabled: !!selectedProductId && user?.role === 'admin' }
+  );
+
+  const updateProductMutation = trpc.admin.products.update.useMutation({
+    onSuccess: () => {
+      productsQuery.refetch();
+      setSelectedProductId(null);
     },
   });
 
@@ -477,6 +622,7 @@ export default function AdminDashboard() {
                     <th className="text-left p-4 text-sm text-[#FAF3E0]/50 font-medium">Price</th>
                     <th className="text-left p-4 text-sm text-[#FAF3E0]/50 font-medium">Stock</th>
                     <th className="text-left p-4 text-sm text-[#FAF3E0]/50 font-medium">Categories</th>
+                    <th className="text-right p-4 text-sm text-[#FAF3E0]/50 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -505,6 +651,15 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td className="p-4 text-sm text-[#FAF3E0]/50 max-w-[200px] truncate">{product.categories}</td>
+                      <td className="p-4 text-right">
+                        <button
+                          onClick={() => setSelectedProductId(product.id)}
+                          className="p-2 text-[#C9A84C] hover:bg-[#C9A84C]/20 rounded transition-colors"
+                          title="Edit product"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -536,6 +691,16 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Product Edit Modal */}
+        {activeTab === 'products' && selectedProductId && productDetailQuery.data && (
+          <ProductEditModal
+            product={productDetailQuery.data}
+            onClose={() => setSelectedProductId(null)}
+            onSave={(data) => updateProductMutation.mutate({ id: selectedProductId, ...data })}
+            isSaving={updateProductMutation.isPending}
+          />
         )}
 
         {/* Settings Tab */}

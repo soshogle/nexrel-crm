@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useParams } from "wouter";
 import Layout from "@/components/Layout";
+import ProductOptionsWizard from "@/components/ProductOptionsWizard";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
 import { ChevronRight, Minus, Plus, ShoppingCart, Heart, Share2, Loader2 } from "lucide-react";
@@ -44,6 +45,45 @@ export default function ProductPage() {
   const variations = variationsQuery.data || [];
   const attributes = attributesQuery.data || [];
   const relatedProducts = relatedQuery.data || [];
+
+  // SEO: Set document title and meta description from Yoast meta
+  useEffect(() => {
+    if (!product) return;
+    const title = product.metaTitle || product.name;
+    const desc = product.metaDescription || product.shortDescription || product.description?.replace(/<[^>]+>/g, "").slice(0, 160) || "";
+    document.title = title;
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement("meta");
+      metaDesc.setAttribute("name", "description");
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute("content", desc.slice(0, 160));
+    return () => {
+      document.title = "Medieval Swords, Daggers and Armors Hand Forged and Battle Ready";
+      if (metaDesc) metaDesc.setAttribute("content", "Darksword Armory's Battle Ready Medieval swords, daggers and medieval weapons are individually hand forged in Canada to look, feel and handle as the originals.");
+    };
+  }, [product?.id, product?.metaTitle, product?.metaDescription, product?.name, product?.shortDescription, product?.description]);
+
+  // Set default attribute values when attributes load (including auto-select for single-option attributes)
+  useEffect(() => {
+    if (attributes.length === 0) return;
+    setSelectedAttributes((prev) => {
+      const next = { ...prev };
+      for (const attr of attributes) {
+        const opts = attr.options as Array<{ value: string; isDefault?: boolean }>;
+        const defaultOpt = opts.find((o) => o.isDefault);
+        if (defaultOpt && !next[attr.attributeKey]) {
+          next[attr.attributeKey] = defaultOpt.value;
+        }
+        // Auto-select single-option attributes so Add to Cart is enabled without extra clicks
+        if (opts.length === 1 && !next[attr.attributeKey]) {
+          next[attr.attributeKey] = opts[0].value;
+        }
+      }
+      return next;
+    });
+  }, [attributes]);
 
   // Group variations by type
   const variationGroups = useMemo(() => {
@@ -142,14 +182,27 @@ export default function ProductPage() {
     }
 
     try {
-      // Find the selected variation ID if any
+      // Find the selected variation ID (prefer Package type for price lookup; otherwise first match)
       let variationId: number | undefined;
-      const selectedTypes = Object.entries(selectedVariations);
-      if (selectedTypes.length > 0) {
-        const [type, name] = selectedTypes[0];
+      const priceTypes = ["Package", "package", "Size", "size", "Option", "option"];
+      for (const type of priceTypes) {
+        const name = selectedVariations[type];
+        if (name) {
+          const group = variationGroups[type];
+          if (group) {
+            const found = group.find(v => (v.name || "").trim() === (name || "").trim());
+            if (found) {
+              variationId = found.id;
+              break;
+            }
+          }
+        }
+      }
+      if (!variationId && Object.keys(selectedVariations).length > 0) {
+        const [type, name] = Object.entries(selectedVariations)[0];
         const group = variationGroups[type];
         if (group) {
-          const found = group.find(v => v.name === name);
+          const found = group.find(v => (v.name || "").trim() === (name || "").trim());
           if (found) variationId = found.id;
         }
       }
@@ -160,7 +213,8 @@ export default function ProductPage() {
       toast.success(`${product.name} added to cart`);
       setIsOpen(true);
     } catch (err) {
-      toast.error("Failed to add to cart");
+      const msg = err instanceof Error ? err.message : "Failed to add to cart";
+      toast.error(msg.includes("Product not found") ? "Product not found" : "Failed to add to cart");
     }
   };
 
@@ -233,7 +287,7 @@ export default function ProductPage() {
 
             {/* Short description */}
             {product.shortDescription && (
-              <div className="text-sm text-muted-foreground leading-relaxed mb-6 [&_p]:mb-2 [&_span]:!font-sans [&_span]:!text-sm"
+              <div className="text-sm text-muted-foreground leading-relaxed mb-6 [&_p]:mb-2 [&_span]:!font-sans [&_span]:!text-sm [&_img]:max-w-full [&_img]:h-auto [&_img]:max-h-[300px] [&_img]:object-contain [&_img]:rounded"
                 dangerouslySetInnerHTML={{ __html: product.shortDescription }}
               />
             )}
@@ -257,129 +311,27 @@ export default function ProductPage() {
               )}
             </div>
 
-            {/* === VARIATION SELECTORS (Package dropdown - matches original site) === */}
-            {Object.keys(variationGroups).length > 0 && (
-              <div className="space-y-5 mb-6">
-                {Object.entries(variationGroups).map(([type, options]) => (
-                  <div key={type} className="flex items-start gap-4">
-                    <label className="text-sm font-medium text-[#FAF3E0]/80 pt-2.5 min-w-[80px] shrink-0">
-                      {type}:
-                    </label>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={selectedVariations[type] || ""}
-                          onChange={(e) => setSelectedVariations(prev => ({ ...prev, [type]: e.target.value }))}
-                          className="w-full bg-[#1A1A1A] border border-[#333] text-[#FAF3E0] text-sm px-3 py-2.5 focus:border-[#C9A84C] focus:outline-none transition-colors appearance-none cursor-pointer"
-                          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                        >
-                          <option value="">Choose an option</option>
-                          {options.map(option => {
-                            const varPrice = option.salePrice && parseFloat(option.salePrice) > 0
-                              ? parseFloat(option.salePrice)
-                              : option.price && parseFloat(option.price) > 0
-                                ? parseFloat(option.price)
-                                : null;
-                            return (
-                              <option key={option.id} value={option.name} disabled={option.stockStatus === 'outofstock'}>
-                                {option.name}{varPrice ? ` : $${varPrice.toFixed(2)}` : ''}{option.stockStatus === 'outofstock' ? ' (Out of Stock)' : ''}
-                              </option>
-                            );
-                          })}
-                        </select>
-                        {selectedVariations[type] && (
-                          <button
-                            onClick={() => setSelectedVariations(prev => { const next = { ...prev }; delete next[type]; return next; })}
-                            className="text-xs text-[#FAF3E0]/40 hover:text-[#C9A84C] transition-colors uppercase tracking-wider whitespace-nowrap"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* === PRODUCT ATTRIBUTES (Grip swatches, Scabbard swatches, Blade Finish dropdown, Guard & Pommel Finish dropdown) === */}
-            {attributes.length > 0 && (
-              <div className="space-y-5 mb-6">
-                {attributes.map((attr: any) => {
-                  const options = attr.options as Array<{ value: string; colorHex?: string; isDefault?: boolean }>;
-                  const defaultOption = options.find(o => o.isDefault);
-                  const currentValue = selectedAttributes[attr.attributeKey] || defaultOption?.value || "";
-
-                  if (attr.displayType === "color_swatch") {
-                    return (
-                      <div key={attr.id} className="flex items-start gap-4">
-                        <label className="text-sm font-medium text-[#FAF3E0]/80 pt-1 min-w-[80px] shrink-0">
-                          {attr.attributeName}
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {options.map((opt, i) => {
-                            const isSelected = currentValue === opt.value;
-                            return (
-                              <button
-                                key={i}
-                                onClick={() => setSelectedAttributes(prev => ({ ...prev, [attr.attributeKey]: opt.value }))}
-                                title={opt.value}
-                                className={`w-9 h-9 rounded-full border-2 transition-all duration-200 ${
-                                  isSelected
-                                    ? "border-[#C9A84C] ring-2 ring-[#C9A84C]/30 scale-110"
-                                    : "border-[#444] hover:border-[#666]"
-                                }`}
-                                style={{ backgroundColor: opt.colorHex || '#666' }}
-                              />
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  // Dropdown display type
-                  return (
-                    <div key={attr.id} className="flex items-start gap-4">
-                      <label className="text-sm font-medium text-[#FAF3E0]/80 pt-2.5 min-w-[80px] shrink-0">
-                        {attr.attributeName}
-                      </label>
-                      <select
-                        value={currentValue}
-                        onChange={(e) => setSelectedAttributes(prev => ({ ...prev, [attr.attributeKey]: e.target.value }))}
-                        className="flex-1 bg-[#1A1A1A] border border-[#333] text-[#FAF3E0] text-sm px-3 py-2.5 focus:border-[#C9A84C] focus:outline-none transition-colors appearance-none cursor-pointer"
-                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                      >
-                        <option value="">Choose an option</option>
-                        {options.map((opt, i) => (
-                          <option key={i} value={opt.value}>{opt.value}</option>
-                        ))}
-                      </select>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Quantity & Add to cart */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className="flex items-center border border-border">
-                <button onClick={() => setQty(Math.max(1, qty - 1))} className="p-3 hover:bg-secondary transition-colors">
-                  <Minus className="w-4 h-4" />
-                </button>
-                <span className="w-12 text-center text-sm font-medium">{qty}</span>
-                <button onClick={() => setQty(qty + 1)} className="p-3 hover:bg-secondary transition-colors">
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-              <button
-                onClick={handleAddToCart}
-                disabled={product.stockStatus === "outofstock"}
-                className="flex-1 flex items-center justify-center gap-2 px-8 py-3.5 bg-gold text-[#0D0D0D] text-sm font-semibold tracking-[0.1em] uppercase hover:bg-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            {/* === STEP-BY-STEP OPTIONS WIZARD (always shown; step 1 for simple products, ready for future attributes) === */}
+            <div className="mb-6">
+              <ProductOptionsWizard
+                variationGroups={variationGroups}
+                attributes={attributes}
+                selectedVariations={selectedVariations}
+                setSelectedVariations={setSelectedVariations}
+                selectedAttributes={selectedAttributes}
+                setSelectedAttributes={setSelectedAttributes}
+                onAddToCart={handleAddToCart}
+                displayPrice={displayPrice}
+                isOutOfStock={product.stockStatus === "outofstock"}
+                qty={qty}
+                onQtyChange={setQty}
+              />
+              <Link
+                href="/cart"
+                className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition-colors"
               >
-                <ShoppingCart className="w-4 h-4" />
-                {product.stockStatus === "outofstock" ? "Out of Stock" : "Add to Cart"}
-              </button>
+                View Cart
+              </Link>
             </div>
 
             <div className="flex gap-4 mb-8">
@@ -426,7 +378,8 @@ export default function ProductPage() {
           </div>
           <div className="py-8">
             {activeTab === "description" && (
-              <div className="prose prose-invert max-w-none text-sm text-muted-foreground leading-relaxed"
+              <div
+                className="prose prose-invert max-w-none text-sm text-muted-foreground leading-relaxed [&_img]:max-w-full [&_img]:h-auto [&_img]:max-h-[400px] [&_img]:object-contain [&_img]:rounded"
                 dangerouslySetInnerHTML={{ __html: product.description || "No description available for this product." }}
               />
             )}

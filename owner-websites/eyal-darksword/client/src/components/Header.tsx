@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Search, User, ShoppingCart, Menu, X, Heart } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
 
 const navLinks = [
   { label: "MEDIEVAL SWORDS", href: "/category/medieval-swords" },
@@ -19,6 +20,7 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [location, navigate] = useLocation();
+  const { count, setIsOpen } = useCart();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,16 +94,18 @@ export default function Header() {
           >
             <User className="w-5 h-5" />
           </Link>
-          <Link
-            href="/cart"
+          <button
+            onClick={() => setIsOpen(true)}
             className="p-2 hover:text-gold transition-colors relative"
             aria-label="Cart"
           >
             <ShoppingCart className="w-5 h-5" />
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-gold text-[#0D0D0D] text-[10px] font-bold rounded-full flex items-center justify-center">
-              0
-            </span>
-          </Link>
+            {count > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[1rem] h-4 px-1 bg-gold text-[#0D0D0D] text-[10px] font-bold rounded-full flex items-center justify-center">
+                {count > 99 ? "99+" : count}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 

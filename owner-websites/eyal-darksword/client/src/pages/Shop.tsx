@@ -143,67 +143,22 @@ export default function Shop() {
                     const category = product.categories?.[0] || "";
                     const hasVariations = (product.variationCount || 0) > 0;
                     const isOnSale = product.salePrice && product.salePrice !== product.price && parseFloat(product.salePrice) > 0;
+                    const gallery = product.galleryImages || [];
+                    const mainUrl = product.imageUrl || "";
+                    const hoverImage = gallery.find((url: string) => url && url !== mainUrl) ?? (gallery.length > 1 ? gallery[1] : null);
                     return (
-                      <Link
+                      <ShopListCard
                         key={product.id}
-                        href={`/product/${product.slug}`}
-                        className="group flex gap-6 p-4 bg-card border border-border hover:border-gold/30 transition-colors"
-                      >
-                        <div className="w-32 h-32 bg-[#f5f0eb] overflow-hidden shrink-0">
-                          {product.imageUrl ? (
-                            <img
-                              src={product.imageUrl}
-                              alt={product.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-[#1a1510]">
-                              <span className="text-gold/30 text-xs text-center px-2 font-serif">{product.name}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          {category && (
-                            <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-muted-foreground mb-1">
-                              {category}
-                            </p>
-                          )}
-                          <h3 className="text-sm font-medium text-foreground group-hover:text-gold transition-colors line-clamp-2">
-                            {product.name}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            {hasVariations && product.minVariationPrice && product.maxVariationPrice ? (
-                              <span className="text-sm font-semibold text-foreground">
-                                USD${parseFloat(product.minVariationPrice).toFixed(2)} &ndash; USD${parseFloat(product.maxVariationPrice).toFixed(2)}
-                              </span>
-                            ) : isOnSale ? (
-                              <>
-                                <span className="text-sm font-semibold text-[#8B0000]">USD${parseFloat(product.salePrice).toFixed(2)}</span>
-                                <span className="text-xs text-muted-foreground line-through">USD${parseFloat(product.price).toFixed(2)}</span>
-                              </>
-                            ) : product.price && parseFloat(product.price) > 0 ? (
-                              <span className="text-sm font-semibold text-foreground">USD${parseFloat(product.price).toFixed(2)}</span>
-                            ) : (
-                              <span className="text-sm text-muted-foreground italic">Contact for price</span>
-                            )}
-                          </div>
-                          {product.shortDescription && (
-                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{product.shortDescription}</p>
-                          )}
-                          <div className="mt-2">
-                            <span className="text-xs font-semibold tracking-wider uppercase text-gold">
-                              {hasVariations ? "Select Options" : "Add to Cart"}
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
+                        product={product}
+                        category={category}
+                        hasVariations={hasVariations}
+                        isOnSale={isOnSale}
+                        hoverImage={hoverImage}
+                      />
                     );
                   })}
                 </div>
               )}
-
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-12">
                   <button
@@ -247,5 +202,66 @@ export default function Shop() {
         </div>
       </section>
     </Layout>
+  );
+}
+
+function ShopListCard({ product, category, hasVariations, isOnSale, hoverImage }: { product: any; category: string; hasVariations: boolean; isOnSale: boolean; hoverImage: string | null }) {
+  const [isHovered, setIsHovered] = useState(false);
+  return (
+    <Link
+      href={`/product/${product.slug}`}
+      className="group flex gap-6 p-4 bg-card border border-border hover:border-gold/30 transition-colors"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative w-32 h-32 bg-[#f5f0eb] overflow-hidden shrink-0">
+        {product.imageUrl ? (
+          <>
+            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-500" style={{ transform: isHovered ? "scale(1.1)" : "scale(1)" }} loading="lazy" />
+            {hoverImage && (
+              <img src={hoverImage} alt="" className="absolute inset-0 w-full h-full object-cover transition-all duration-500" style={{ opacity: isHovered ? 1 : 0, transform: isHovered ? "scale(1.1)" : "scale(1)" }} loading="lazy" />
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-[#1a1510]">
+            <span className="text-gold/30 text-xs text-center px-2 font-serif">{product.name}</span>
+          </div>
+        )}
+      </div>
+                        <div className="flex-1">
+                          {category && (
+                            <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-muted-foreground mb-1">
+                              {category}
+                            </p>
+                          )}
+                          <h3 className="text-sm font-medium text-foreground group-hover:text-gold transition-colors line-clamp-2">
+                            {product.name}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            {hasVariations && product.minVariationPrice && product.maxVariationPrice ? (
+                              <span className="text-sm font-semibold text-foreground">
+                                USD${parseFloat(product.minVariationPrice).toFixed(2)} &ndash; USD${parseFloat(product.maxVariationPrice).toFixed(2)}
+                              </span>
+                            ) : isOnSale ? (
+                              <>
+                                <span className="text-sm font-semibold text-[#8B0000]">USD${parseFloat(product.salePrice).toFixed(2)}</span>
+                                <span className="text-xs text-muted-foreground line-through">USD${parseFloat(product.price).toFixed(2)}</span>
+                              </>
+                            ) : product.price && parseFloat(product.price) > 0 ? (
+                              <span className="text-sm font-semibold text-foreground">USD${parseFloat(product.price).toFixed(2)}</span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground italic">Contact for price</span>
+                            )}
+                          </div>
+                          {product.shortDescription && (
+                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{product.shortDescription}</p>
+                          )}
+                          <div className="mt-2">
+                            <span className="text-xs font-semibold tracking-wider uppercase text-gold">
+                              {hasVariations ? "Select Options" : "Add to Cart"}
+                            </span>
+                          </div>
+                        </div>
+    </Link>
   );
 }

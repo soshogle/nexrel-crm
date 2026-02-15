@@ -1,10 +1,53 @@
 import { useState } from "react";
 import { Link, useParams } from "wouter";
 import Layout from "@/components/Layout";
+import ProductCard from "@/components/ProductCard";
 import { trpc } from "@/lib/trpc";
 import { ChevronDown, Grid, List, Loader2 } from "lucide-react";
 
 const ITEMS_PER_PAGE = 24;
+
+function CategoryListCard({ product }: { product: any }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const gallery = product.galleryImages || [];
+  const mainUrl = product.imageUrl || "";
+  const hoverImage = gallery.find((url: string) => url && url !== mainUrl) ?? (gallery.length > 1 ? gallery[1] : null);
+  return (
+    <Link
+      href={`/product/${product.slug}`}
+      className="group flex gap-6 p-4 bg-card border border-border hover:border-gold/30 transition-colors"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative w-32 h-32 bg-[#f5f0eb] overflow-hidden shrink-0">
+        {product.imageUrl && (
+          <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-500" style={{ transform: isHovered ? "scale(1.1)" : "scale(1)" }} loading="lazy" />
+        )}
+        {hoverImage && (
+          <img src={hoverImage} alt="" className="absolute inset-0 w-full h-full object-cover transition-all duration-500" style={{ opacity: isHovered ? 1 : 0, transform: isHovered ? "scale(1.1)" : "scale(1)" }} loading="lazy" />
+        )}
+        {!product.imageUrl && (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-[#C9A84C]/30 text-xs text-center px-2 font-serif">{product.name}</span>
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-medium transition-colors line-clamp-2" style={{ color: isHovered ? "var(--color-gold)" : "var(--foreground)" }}>{product.name}</h3>
+        <div className="flex items-center gap-2 mt-1.5">
+          {product.salePrice && product.salePrice !== product.price && parseFloat(product.salePrice) > 0 ? (
+            <><span className="text-sm font-semibold text-gold">USD${parseFloat(product.salePrice).toFixed(2)}</span><span className="text-xs text-muted-foreground line-through">USD${parseFloat(product.price).toFixed(2)}</span></>
+          ) : product.price && parseFloat(product.price) > 0 ? (
+            <span className="text-sm font-semibold text-gold">USD${parseFloat(product.price).toFixed(2)}</span>
+          ) : (
+            <span className="text-sm text-muted-foreground">Contact for price</span>
+          )}
+        </div>
+        {product.shortDescription && <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{product.shortDescription}</p>}
+      </div>
+    </Link>
+  );
+}
 
 export default function CategoryPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -111,47 +154,16 @@ export default function CategoryPage() {
             <div className="text-center py-24">
               <p className="text-muted-foreground">No products found in this category.</p>
             </div>
-          ) : (
-            <div className={viewMode === "grid" ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6" : "space-y-4"}>
+          ) : viewMode === "grid" ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
               {products.map((product: any) => (
-                <Link key={product.id} href={`/product/${product.slug}`} className={viewMode === "grid" ? "group block" : "group flex gap-6 p-4 bg-card border border-border hover:border-gold/30 transition-colors"}>
-                  <div className={viewMode === "grid" ? "aspect-square bg-[#111] overflow-hidden mb-3" : "w-32 h-32 bg-[#111] overflow-hidden shrink-0"}>
-                    {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          const parent = (e.target as HTMLImageElement).parentElement!;
-                          parent.classList.add('flex', 'items-center', 'justify-center');
-                          const span = document.createElement('span');
-                          span.className = 'text-[#C9A84C]/30 text-xs text-center px-4 font-serif';
-                          span.textContent = product.name;
-                          parent.appendChild(span);
-                        }} />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-[#C9A84C]/30 text-xs text-center px-4 font-serif">{product.name}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className={viewMode === "list" ? "flex-1" : ""}>
-                    <h3 className="text-sm font-medium text-foreground group-hover:text-gold transition-colors line-clamp-2">{product.name}</h3>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      {product.salePrice && product.salePrice !== product.price && parseFloat(product.salePrice) > 0 ? (
-                        <>
-                          <span className="text-sm font-semibold text-gold">USD${parseFloat(product.salePrice).toFixed(2)}</span>
-                          <span className="text-xs text-muted-foreground line-through">USD${parseFloat(product.price).toFixed(2)}</span>
-                        </>
-                      ) : product.price && parseFloat(product.price) > 0 ? (
-                        <span className="text-sm font-semibold text-gold">USD${parseFloat(product.price).toFixed(2)}</span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Contact for price</span>
-                      )}
-                    </div>
-                    {viewMode === "list" && product.shortDescription && (
-                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{product.shortDescription}</p>
-                    )}
-                  </div>
-                </Link>
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {products.map((product: any) => (
+                <CategoryListCard key={product.id} product={product} />
               ))}
             </div>
           )}

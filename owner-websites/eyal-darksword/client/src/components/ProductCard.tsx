@@ -40,9 +40,10 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
       ? product.categories[0]
       : "";
 
-  // Get the second image for hover swap
+  // Get the first gallery image that differs from main (Flatsome back-image hover reveal)
   const gallery = product.galleryImages || [];
-  const hoverImage = gallery.length > 0 ? gallery[0] : null;
+  const mainUrl = product.imageUrl || "";
+  const hoverImage = gallery.find((url) => url && url !== mainUrl) ?? (gallery.length > 1 ? gallery[1] : null);
 
   // Price display logic
   const priceDisplay = () => {

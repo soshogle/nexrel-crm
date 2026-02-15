@@ -1,35 +1,43 @@
 # Deploy Owner Website to Vercel (Darksword Armory)
 
-This guide walks you through deploying the Darksword Armory clone using the monorepo structure.
+**Architecture:** Owner websites are **separate from nexrel-crm**. Each website has its own GitHub repo. Commits and deployments happen in the owner's repo, not in nexrel-crm.
+
+- **nexrel-crm** = CRM only (do not touch for website changes)
+- **Darksword Armory** = `https://github.com/soshogle/darksword-armory` (all website commits go here)
 
 ---
 
 ## Prerequisites
 
 - [x] Neon database created and seeded (367 products, 62 categories, etc.)
-- [x] GitHub repo: `soshogle/nexrel-crm`
-- [x] Site code at: `owner-websites/eyal-darksword/`
+- [x] GitHub repo: `soshogle/darksword-armory` (owner's repo, not nexrel-crm)
+- [x] Site code: clone and work from the darksword-armory repo
 
 ---
 
-## Step 1: Push to GitHub
+## Step 1: Work in the Owner's Repo
 
-Ensure your latest changes are pushed:
+All commits must go to the website owner's GitHub repo:
 
 ```bash
-cd /Users/cyclerun/Desktop/nexrel-crm
-git add owner-websites/
-git status   # Verify eyal-darksword is included
-git commit -m "Add owner-websites structure, Darksword Armory"
+# Clone the owner's repo (if not already)
+git clone https://github.com/soshogle/darksword-armory.git
+cd darksword-armory
+
+# Make changes, then commit and push
+git add .
+git commit -m "Your change description"
 git push origin main
 ```
+
+**Do NOT** commit website code to nexrel-crm. The website is separate.
 
 ---
 
 ## Step 2: Import to Vercel
 
 1. Go to **[vercel.com/new](https://vercel.com/new)**
-2. Click **Import** next to your `nexrel-crm` repository (or paste `https://github.com/soshogle/nexrel-crm`)
+2. Click **Import** next to `soshogle/darksword-armory` (or paste the repo URL)
 3. Click **Import**
 
 ---
@@ -41,12 +49,10 @@ Before deploying, set these:
 | Setting | Value |
 |---------|-------|
 | **Framework Preset** | Other |
-| **Root Directory** | `owner-websites/eyal-darksword` ← **Important** |
+| **Root Directory** | (leave empty – repo root is the site) |
 | **Build Command** | `npm run build` |
 | **Output Directory** | `dist` |
 | **Install Command** | `npm install --legacy-peer-deps` |
-
-To set Root Directory: click **Edit** next to it, then enter `owner-websites/eyal-darksword`.
 
 ---
 
@@ -96,9 +102,9 @@ Select **Production**, **Preview**, and **Development** for each.
 
 To add another owner site:
 
-1. Copy `owner-websites/eyal-darksword` to `owner-websites/owner2-site`
-2. Replace `data/` with new owner's product data
+1. Create a new GitHub repo for the owner (e.g. `soshogle/owner2-website`)
+2. Clone/copy the darksword-armory template, replace `data/` with new owner's product data
 3. Create a new Neon database for the owner
-4. Run `db:push` and `seed-db.mjs` in the new folder
-5. Create a **new Vercel project** for the same repo, Root Directory = `owner-websites/owner2-site`
+4. Run `db:push` and `seed-db.mjs` in the new repo
+5. Create a **new Vercel project** connected to the owner's repo
 6. Add the new owner's env vars (different DATABASE_URL, branding)

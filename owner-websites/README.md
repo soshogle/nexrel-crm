@@ -1,24 +1,30 @@
 # Owner Websites
 
-Each owner gets their own e-commerce site in a subdirectory. All sites share the same codebase; each has its own data and branding.
+**Architecture:** Owner websites are **separate from nexrel-crm**. Each website has its own GitHub repo. Commits and deployments happen in the owner's repo.
 
-## Structure
+- **nexrel-crm** = CRM only (do not commit website code here)
+- **Darksword Armory** = [soshogle/darksword-armory](https://github.com/soshogle/darksword-armory) — all commits go there
+
+## Structure (Reference/Template)
+
+The `owner-websites/` folder in nexrel-crm may contain templates or references. The actual deployment source is the owner's repo:
 
 ```
 owner-websites/
-├── eyal-darksword/     # Darksword Armory (eyal@darksword-armory.com)
-├── owner2-site/        # Future owner
-└── owner3-site/       # Future owner
+├── eyal-darksword/     # Template/reference (deployed from soshogle/darksword-armory)
+└── ...
 ```
 
 ## Adding a New Owner
 
-1. Copy an existing site folder (e.g. `eyal-darksword`) to a new folder (e.g. `owner2-site`)
-2. Replace the `data/` folder with the new owner's product data
+1. Create a new GitHub repo for the owner (e.g. `soshogle/owner2-website`)
+2. Clone the darksword-armory template, replace `data/` with new owner's product data
 3. Update `.env` with the new owner's Neon database URL and branding
 4. Run `pnpm db:push` and `node seed-db.mjs` for the new database
-5. Create a new Vercel project pointing to this subdirectory
+5. Create a new Vercel project connected to the owner's repo
 
 ## Deployment
 
-See [eyal-darksword/DEPLOYMENT.md](eyal-darksword/DEPLOYMENT.md) for Darksword Armory deployment steps.
+See [../docs/OWNER_WEBSITE_DEPLOYMENT.md](../docs/OWNER_WEBSITE_DEPLOYMENT.md) for Darksword Armory deployment steps.
+
+**Important:** Commits for the website must be made in the owner's repo (`soshogle/darksword-armory`), not in nexrel-crm.
