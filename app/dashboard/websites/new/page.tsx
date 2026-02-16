@@ -158,6 +158,7 @@ export default function NewWebsitePage() {
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [enableVoiceAI, setEnableVoiceAI] = useState(true);
+  const [enableTavusAvatar, setEnableTavusAvatar] = useState(true);
   const [generatingDescription, setGeneratingDescription] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
@@ -464,6 +465,7 @@ export default function NewWebsitePage() {
           templateType: rebuildTemplateType,
           templateId: rebuildSelectedTemplateId || undefined,
           enableVoiceAI,
+          enableTavusAvatar,
           questionnaireAnswers: enableBlog ? {
             blog: {
               enabled: true,
@@ -557,6 +559,7 @@ export default function NewWebsitePage() {
           templateId: selectedTemplateId || undefined, // Use selected template if available
           questionnaireAnswers,
           enableVoiceAI,
+          enableTavusAvatar,
           // Include Google tokens if available
           ...(googleTokens && {
             googleSearchConsoleAccessToken: googleTokens.accessToken,
@@ -1550,15 +1553,27 @@ export default function NewWebsitePage() {
             </CardContent>
           </Card>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="voiceAI"
-              checked={enableVoiceAI}
-              onCheckedChange={(checked) => setEnableVoiceAI(!!checked)}
-            />
-            <Label htmlFor="voiceAI" className="cursor-pointer">
-              Enable Voice AI Assistant (like on nexrel.soshogle.com)
-            </Label>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="voiceAI"
+                checked={enableVoiceAI}
+                onCheckedChange={(checked) => setEnableVoiceAI(!!checked)}
+              />
+              <Label htmlFor="voiceAI" className="cursor-pointer">
+                Enable Voice AI Assistant (like on nexrel.soshogle.com)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="tavusAvatar"
+                checked={enableTavusAvatar}
+                onCheckedChange={(checked) => setEnableTavusAvatar(!!checked)}
+              />
+              <Label htmlFor="tavusAvatar" className="cursor-pointer">
+                Enable AI Avatar (video assistant)
+              </Label>
+            </div>
           </div>
 
           <Button

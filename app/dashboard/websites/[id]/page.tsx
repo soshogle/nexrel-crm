@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
@@ -53,6 +54,7 @@ interface Website {
   voiceAIEnabled: boolean;
   voiceAIConfig?: any;
   elevenLabsAgentId?: string;
+  enableTavusAvatar?: boolean;
   pendingChanges?: any;
   createdAt: string;
   updatedAt: string;
@@ -1086,6 +1088,32 @@ export default function WebsiteEditorPage() {
               <Package className="h-4 w-4 mr-2" />
               Stock & Inventory
             </Button>
+            <div className="pt-4 border-t space-y-3">
+              <p className="text-sm font-medium">Voice & Avatar</p>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="enableTavusAvatar"
+                  checked={website.enableTavusAvatar !== false}
+                  onCheckedChange={async (checked) => {
+                    try {
+                      const res = await fetch(`/api/websites/${website.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ enableTavusAvatar: !!checked }),
+                      });
+                      if (!res.ok) throw new Error('Failed to update');
+                      setWebsite((w) => (w ? { ...w, enableTavusAvatar: !!checked } : null));
+                      toast.success(checked ? 'AI Avatar enabled' : 'AI Avatar disabled');
+                    } catch {
+                      toast.error('Failed to update');
+                    }
+                  }}
+                />
+                <Label htmlFor="enableTavusAvatar" className="cursor-pointer text-sm">
+                  Enable AI Avatar (video assistant)
+                </Label>
+              </div>
+            </div>
           </div>
         </SheetContent>
       </Sheet>

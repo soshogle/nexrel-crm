@@ -101,7 +101,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name, structure, seoData, voiceAIEnabled, voiceAIConfig, status } = body;
+    const { name, structure, seoData, voiceAIEnabled, voiceAIConfig, enableTavusAvatar, status } = body;
 
     const website = await prisma.website.update({
       where: {
@@ -114,6 +114,7 @@ export async function PATCH(
         ...(seoData && { seoData }),
         ...(voiceAIEnabled !== undefined && { voiceAIEnabled }),
         ...(voiceAIConfig && { voiceAIConfig }),
+        ...(enableTavusAvatar !== undefined && { enableTavusAvatar }),
         ...(status && ['BUILDING', 'READY', 'PUBLISHED', 'FAILED'].includes(status) && { status }),
       },
     });

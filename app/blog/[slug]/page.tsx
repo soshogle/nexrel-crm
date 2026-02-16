@@ -72,11 +72,6 @@ export default function BlogPostPage() {
     );
   }
 
-  const baseUrl =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : process.env.NEXTAUTH_URL || "https://www.nexrel.soshogle.com";
-
   return (
     <div className="dark min-h-screen bg-black text-white">
       <MobileNav
@@ -103,35 +98,9 @@ export default function BlogPostPage() {
             <p className="text-sm text-muted-foreground">{post.readTime}</p>
           </header>
 
-          {post.problemImage && (
-            <figure className="mb-12 rounded-2xl overflow-hidden border border-white/10">
-              <img
-                src={post.problemImage}
-                alt={`${post.industry} problem illustration`}
-                className="w-full h-auto"
-              />
-              <figcaption className="text-sm text-muted-foreground p-4 bg-white/5">
-                The problem: {post.industry} businesses face this daily
-              </figcaption>
-            </figure>
-          )}
-
           <div className="prose prose-invert prose-lg max-w-none [&_h2]:text-2xl [&_h2]:mt-12 [&_h2]:mb-4 [&_h3]:text-xl [&_h3]:mt-8 [&_h3]:mb-3 [&_p]:leading-relaxed [&_ul]:my-4 [&_li]:my-1">
             <ReactMarkdown>{post.content}</ReactMarkdown>
           </div>
-
-          {post.solutionImage && (
-            <figure className="mt-12 mb-12 rounded-2xl overflow-hidden border border-white/10">
-              <img
-                src={post.solutionImage.startsWith("http") ? post.solutionImage : `${baseUrl}${post.solutionImage}`}
-                alt="Soshogle AI / Nexrel solution"
-                className="w-full h-auto"
-              />
-              <figcaption className="text-sm text-muted-foreground p-4 bg-white/5">
-                Soshogle AI solution: Nexrel dashboard and AI-powered automation
-              </figcaption>
-            </figure>
-          )}
 
           <div className="mt-16 p-6 rounded-2xl border border-primary/30 bg-primary/5">
             <h3 className="text-xl font-bold mb-2">Ready to transform your business?</h3>

@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
       questionnaireAnswers, // Required if type is template; can be pre-filled from user
       prefillFromUser, // If true and questionnaireAnswers empty, fill from onboarding/user
       enableVoiceAI = false,
+      enableTavusAvatar = true,
       // Google Search Console credentials (optional)
       googleSearchConsoleAccessToken,
       googleSearchConsoleRefreshToken,
@@ -117,6 +118,7 @@ export async function POST(request: NextRequest) {
       templateId, // Include templateId in config
       questionnaireAnswers,
       enableVoiceAI,
+      enableTavusAvatar: enableTavusAvatar ?? true,
     };
 
     // Create website record
@@ -133,6 +135,7 @@ export async function POST(request: NextRequest) {
         seoData: {},
         questionnaireAnswers: questionnaireAnswers || null,
         voiceAIEnabled: enableVoiceAI,
+        enableTavusAvatar: enableTavusAvatar ?? true,
         // Google Search Console credentials (if provided)
         ...(googleSearchConsoleAccessToken && {
           googleSearchConsoleAccessToken,
@@ -205,6 +208,7 @@ async function processWebsiteBuild(
     templateId?: string;
     questionnaireAnswers?: any;
     enableVoiceAI: boolean;
+    enableTavusAvatar?: boolean;
   }
 ) {
   try {

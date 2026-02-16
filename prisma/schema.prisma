@@ -9471,8 +9471,9 @@ model Website {
   vercelDeploymentUrl String?
 
   // Voice AI
-  voiceAIEnabled Boolean @default(false)
-  voiceAIConfig  Json? // Voice AI settings
+  voiceAIEnabled    Boolean @default(false)
+  voiceAIConfig     Json? // Voice AI settings
+  enableTavusAvatar Boolean @default(true) // Tavus video avatar (Abacus) - enable/disable in website builder
 
   // Approval Queue
   pendingChanges Json? // Changes awaiting approval
