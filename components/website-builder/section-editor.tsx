@@ -25,6 +25,7 @@ import { MediaPicker } from './media-picker';
 import { SectionLayoutEditor } from './section-layout-editor';
 import { PopupChatConfigEditor } from './popup-chat-config-editor';
 import { VideoEmbedEditor } from './video-embed-editor';
+import { ImageMotionConfigEditor } from './image-motion-config-editor';
 
 interface Component {
   id: string;
@@ -275,7 +276,8 @@ export function SectionEditor({
             const hasImageProp = imageProps.some((p) => comp.props?.[p]);
             const hasConfigEditor =
               !!onUpdateProps &&
-              (comp.type === 'PopupSection' || comp.type === 'ChatWidget' || comp.type === 'VideoSection' || comp.props?.videoUrl);
+              (comp.type === 'PopupSection' || comp.type === 'ChatWidget' || comp.type === 'VideoSection' || comp.props?.videoUrl ||
+                (hasImageProp && comp.props?.imageUrl));
             return (
               <SortableSectionCard
                 key={comp.id}
@@ -325,6 +327,17 @@ export function SectionEditor({
           )}
           {(configEditorFor.type === 'VideoSection' || configEditorFor.comp.props?.videoUrl) && configEditorFor.type !== 'PopupSection' && configEditorFor.type !== 'ChatWidget' && (
             <VideoEmbedEditor
+              sectionType={configEditorFor.type}
+              comp={configEditorFor.comp}
+              onSave={async (props) => {
+                await onUpdateProps(configEditorFor.type, props);
+                setConfigEditorFor(null);
+              }}
+              onClose={() => setConfigEditorFor(null)}
+            />
+          )}
+          {configEditorFor.comp.props?.imageUrl && configEditorFor.type !== 'PopupSection' && configEditorFor.type !== 'ChatWidget' && configEditorFor.type !== 'VideoSection' && !configEditorFor.comp.props?.videoUrl && (
+            <ImageMotionConfigEditor
               sectionType={configEditorFor.type}
               comp={configEditorFor.comp}
               onSave={async (props) => {

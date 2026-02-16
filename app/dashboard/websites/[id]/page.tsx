@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent';
 import { StockDashboard } from '@/components/websites/stock-dashboard';
+import { PropertyListings } from '@/components/websites/property-listings';
 import { AnalyticsSettings } from '@/components/websites/analytics-settings';
 import { SectionEditor } from '@/components/website-builder/section-editor';
 import { GlobalStylesEditor } from '@/components/website-builder/global-styles-editor';
@@ -43,6 +44,7 @@ interface Website {
   id: string;
   name: string;
   type: string;
+  templateType?: string;
   status: string;
   buildProgress: number;
   structure: any;
@@ -516,6 +518,9 @@ export default function WebsiteEditorPage() {
         <TabsList>
           <TabsTrigger value="editor">Editor</TabsTrigger>
           <TabsTrigger value="chat">AI Chat</TabsTrigger>
+          {website.templateType === 'SERVICE' && (
+            <TabsTrigger value="listings">Listings</TabsTrigger>
+          )}
           <TabsTrigger value="stock">Stock & Inventory</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="approval">
@@ -962,6 +967,12 @@ export default function WebsiteEditorPage() {
             </div>
           )}
         </TabsContent>
+
+        {website.templateType === 'SERVICE' && (
+          <TabsContent value="listings" className="space-y-4">
+            <PropertyListings websiteId={params.id as string} />
+          </TabsContent>
+        )}
 
         <TabsContent value="stock" className="space-y-4">
           <StockDashboard websiteId={params.id as string} />
