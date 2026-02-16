@@ -37,6 +37,25 @@ When an owner deploys a template (nexrel-service-template or nexrel-ecommerce-te
 
 When `NEXREL_CRM_URL` and `NEXREL_WEBSITE_ID` are set, the template fetches voice config from the CRM. Otherwise it falls back to env vars (`NEXREL_ELEVENLABS_AGENT_ID`, etc.).
 
+## Owner-Customizable Voice AI Prompt (Automatic)
+
+Each owner can customize the Voice AI behavior for their business:
+
+1. In **Website Builder** → open **Website Settings** (gear icon)
+2. Under **Voice & Avatar**, find **Voice AI Custom Prompt**
+3. Enter instructions for how the assistant should greet visitors, describe your agency, and handle requests
+4. **Automatic sync:** When saved, the CRM immediately updates the ElevenLabs agent's system prompt via API. No manual setup in the ElevenLabs dashboard is required.
+
+The owner's text is appended to a base prompt and synced to the agent. Leave blank to use the default assistant behavior.
+
+## Workflow & Campaign Triggers
+
+Voice AI leads trigger:
+
+- **Workflow Builder** — Use **Website Voice AI Lead** as an enrollment trigger. When a visitor provides contact info via Voice AI, they are auto-enrolled in matching workflows.
+- **Campaign Builder** — Use **When Website Voice AI Captures Lead** as the trigger type for email/SMS drip campaigns.
+- **Real Estate Workflows** — Buyer/seller workflows continue to run for Voice AI leads when industry is REAL_ESTATE.
+
 ## CRM Integration
 
 Voice AI conversations push to the CRM:
@@ -45,5 +64,6 @@ Voice AI conversations push to the CRM:
 - **Notes** — Transcript attached to the lead
 - **Appointments** — If the agent captures booking intent
 - **Workflows** — Real estate workflows triggered for new leads
+- **Drip Campaigns** — Auto-enrollment in campaigns with WEBSITE_VOICE_AI_LEAD trigger
 
 Webhook: `POST /api/webhooks/website-voice-lead` (called by template, which proxies to CRM)

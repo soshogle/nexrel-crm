@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { websiteVoiceAI } from '@/lib/website-builder/voice-ai';
 
 export async function GET(
   request: NextRequest,
@@ -129,6 +130,28 @@ export async function PATCH(
         ...(status && ['BUILDING', 'READY', 'PUBLISHED', 'FAILED'].includes(status) && { status }),
       },
     });
+
+    // Auto-sync owner's custom prompt to ElevenLabs agent (no manual {{custom_prompt}} setup needed)
+    const customPrompt = (finalVoiceAIConfig as { customPrompt?: string })?.customPrompt;
+    if (
+      voiceAIConfig !== undefined &&
+      customPrompt !== undefined &&
+      website.elevenLabsAgentId
+    ) {
+      websiteVoiceAI
+        .syncCustomPromptToAgent(
+          website.elevenLabsAgentId,
+          website.name,
+          customPrompt,
+          website.userId
+        )
+        .then((result) => {
+          if (!result.success) {
+            console.warn('[Website PATCH] ElevenLabs prompt sync failed:', result.error);
+          }
+        })
+        .catch((err) => console.warn('[Website PATCH] ElevenLabs prompt sync error:', err));
+    }
 
     return NextResponse.json({ website });
   } catch (error: any) {

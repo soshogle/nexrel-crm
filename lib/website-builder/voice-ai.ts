@@ -4,7 +4,10 @@
  */
 
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
+import { voiceAIPlatform } from '@/lib/voice-ai-platform';
 import type { VoiceAIConfig, QuestionnaireAnswers } from './types';
+
+const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
 export class WebsiteVoiceAIService {
   /**
@@ -95,6 +98,62 @@ If you don't know something, politely direct them to our contact form or website
     return `Hello! Welcome to ${businessName}. How can I help you today?`;
   }
 
+  /** Delimiter for owner customization section in system prompt */
+  private readonly OWNER_CUSTOMIZATION_DELIMITER = '\n\n--- OWNER CUSTOMIZATION ---\n';
+
+  /**
+   * Sync owner's custom prompt to ElevenLabs agent.
+   * Preserves existing base prompt (from creation) and appends/replaces owner section.
+   * No manual {{custom_prompt}} setup needed in ElevenLabs dashboard.
+   */
+  async syncCustomPromptToAgent(
+    agentId: string,
+    websiteName: string,
+    customPrompt: string | null | undefined,
+    userId: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const ownerSection = customPrompt?.trim() || '';
+
+      const apiKey = (await voiceAIPlatform.getMasterApiKey()) || process.env.ELEVENLABS_API_KEY || '';
+      if (!apiKey) {
+        return { success: false, error: 'ElevenLabs API key not configured' };
+      }
+
+      // Fetch current agent to preserve existing prompt (business info from creation)
+      const getRes = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${agentId}`, {
+        headers: { 'xi-api-key': apiKey },
+      });
+
+      let basePrompt: string;
+      if (getRes.ok) {
+        const agent = await getRes.json();
+        const currentPrompt = agent?.conversation_config?.agent?.prompt?.prompt || '';
+        const delimIdx = currentPrompt.indexOf(this.OWNER_CUSTOMIZATION_DELIMITER);
+        basePrompt = delimIdx >= 0
+          ? currentPrompt.slice(0, delimIdx).trim()
+          : currentPrompt || `You are a friendly voice assistant for ${websiteName}. Help visitors with properties and collect contact info when interested.`;
+      } else {
+        basePrompt = `You are a friendly voice assistant for ${websiteName}. Help visitors find properties, answer questions, and collect contact info when interested.`;
+      }
+
+      const fullPrompt = ownerSection
+        ? `${basePrompt}${this.OWNER_CUSTOMIZATION_DELIMITER}${ownerSection}`
+        : basePrompt;
+
+      const result = await elevenLabsProvisioning.updateAgent(
+        agentId,
+        { systemPrompt: fullPrompt },
+        userId
+      );
+
+      return result;
+    } catch (error: any) {
+      console.error('[WebsiteVoiceAI] syncCustomPromptToAgent failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   /**
    * Update voice AI agent configuration
    */
@@ -102,8 +161,7 @@ If you don't know something, politely direct them to our contact form or website
     agentId: string,
     config: Partial<VoiceAIConfig>
   ): Promise<void> {
-    // TODO: Implement agent update via ElevenLabs API
-    // This would update the agent's prompt, greeting, etc.
+    // Implement other updates (greeting, etc.) if needed
   }
 
   /**
