@@ -22,7 +22,7 @@ import { Clock, Plus, X, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface EnrollmentTrigger {
-  type: 'LEAD_CREATED' | 'STATUS_CHANGED' | 'TAG_ADDED' | 'SCORE_REACHED' | 'MANUAL' | 'REFERRAL_CREATED' | 'REFERRAL_CONVERTED' | 'SERVICE_COMPLETED' | 'FEEDBACK_POSITIVE' | 'WEBSITE_FORM_SUBMITTED' | 'WEBSITE_VISITOR' | 'WEBSITE_VISITOR_RETURNING' | 'WEBSITE_CTA_CLICKED' | 'WEBSITE_BOOKING_CREATED';
+  type: 'LEAD_CREATED' | 'STATUS_CHANGED' | 'TAG_ADDED' | 'SCORE_REACHED' | 'MANUAL' | 'REFERRAL_CREATED' | 'REFERRAL_CONVERTED' | 'SERVICE_COMPLETED' | 'FEEDBACK_POSITIVE' | 'WEBSITE_FORM_SUBMITTED' | 'WEBSITE_VISITOR' | 'WEBSITE_VISITOR_RETURNING' | 'WEBSITE_CTA_CLICKED' | 'WEBSITE_BOOKING_CREATED' | 'WEBSITE_VOICE_AI_LEAD';
   conditions?: {
     status?: string[];
     tags?: string[];
@@ -181,6 +181,7 @@ export function EnrollmentPanel({
                             <SelectItem value="SERVICE_COMPLETED">When Service/Appointment is Completed</SelectItem>
                             <SelectItem value="FEEDBACK_POSITIVE">When Feedback is Positive (Rating ≥ 4)</SelectItem>
                             <SelectItem value="WEBSITE_FORM_SUBMITTED">When Website Form is Submitted</SelectItem>
+                            <SelectItem value="WEBSITE_VOICE_AI_LEAD">When Website Voice AI Captures Lead</SelectItem>
                             <SelectItem value="WEBSITE_VISITOR">When Website Visitor Arrives</SelectItem>
                             <SelectItem value="WEBSITE_VISITOR_RETURNING">When Returning Visitor Arrives</SelectItem>
                             <SelectItem value="WEBSITE_CTA_CLICKED">When Website CTA is Clicked</SelectItem>

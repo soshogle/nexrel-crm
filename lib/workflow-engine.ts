@@ -124,6 +124,7 @@ export class WorkflowEngine {
       
       case 'WEBSITE_VISITOR':
       case 'WEBSITE_FORM_SUBMITTED':
+      case 'WEBSITE_VOICE_AI_LEAD':
       case 'WEBSITE_PAYMENT_RECEIVED':
       case 'WEBSITE_BOOKING_CREATED':
       case 'WEBSITE_CTA_CLICKED':

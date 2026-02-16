@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
+import { processWebsiteTriggers } from '@/lib/website-triggers';
+import { processCampaignTriggers } from '@/lib/campaign-triggers';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -101,7 +103,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Trigger workflows
+    // Trigger workflows: drip campaigns with WEBSITE_VOICE_AI_LEAD trigger
+    try {
+      await processWebsiteTriggers(leadOwnerId, lead.id, 'WEBSITE_VOICE_AI_LEAD', { websiteId });
+    } catch (wfErr) {
+      console.warn('[website-voice-lead] processWebsiteTriggers error:', wfErr);
+    }
+
+    // Trigger email/SMS drip campaigns with WEBSITE_VOICE_AI_LEAD trigger
+    try {
+      await processCampaignTriggers({
+        leadId: lead.id,
+        userId: leadOwnerId,
+        triggerType: 'WEBSITE_VOICE_AI_LEAD',
+        metadata: { websiteId },
+      });
+    } catch (campErr) {
+      console.warn('[website-voice-lead] processCampaignTriggers error:', campErr);
+    }
+
+    // Trigger real estate workflows (buyer/seller)
     try {
       const user = await prisma.user.findUnique({
         where: { id: leadOwnerId },

@@ -39,6 +39,7 @@ export async function GET(
         elevenLabsAgentId: true,
         voiceAIEnabled: true,
         enableTavusAvatar: true,
+        voiceAIConfig: true,
       },
     });
 
@@ -51,11 +52,13 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const voiceAIConfig = (website.voiceAIConfig as { customPrompt?: string } | null) || {};
     return NextResponse.json({
       agentId: website.elevenLabsAgentId,
       enableVoiceAI: website.voiceAIEnabled,
       enableTavusAvatar: website.enableTavusAvatar !== false,
       websiteId: website.id,
+      customPrompt: voiceAIConfig.customPrompt || null,
     });
   } catch (error: any) {
     console.error('[voice-config] Error:', error);

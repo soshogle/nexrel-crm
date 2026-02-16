@@ -1090,6 +1090,43 @@ export default function WebsiteEditorPage() {
             </Button>
             <div className="pt-4 border-t space-y-3">
               <p className="text-sm font-medium">Voice & Avatar</p>
+              {website.voiceAIEnabled && website.elevenLabsAgentId && (
+                <div className="space-y-2">
+                  <Label htmlFor="voiceAIPrompt" className="text-sm">
+                    Voice AI Custom Prompt
+                  </Label>
+                  <Textarea
+                    id="voiceAIPrompt"
+                    placeholder="Customize how the Voice AI introduces your business, services, and tone. Leave blank to use default."
+                    className="min-h-[100px] text-sm"
+                    defaultValue={(website.voiceAIConfig as { customPrompt?: string })?.customPrompt ?? ''}
+                    onBlur={async (e) => {
+                      const customPrompt = e.target.value.trim();
+                      const current = (website.voiceAIConfig as { customPrompt?: string })?.customPrompt ?? '';
+                      if (customPrompt === current) return;
+                      try {
+                        const voiceAIConfig = {
+                          ...(typeof website.voiceAIConfig === 'object' && website.voiceAIConfig ? website.voiceAIConfig : {}),
+                          customPrompt: customPrompt || undefined,
+                        };
+                        const res = await fetch(`/api/websites/${website.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ voiceAIConfig }),
+                        });
+                        if (!res.ok) throw new Error('Failed to update');
+                        setWebsite((w) => (w ? { ...w, voiceAIConfig } : null));
+                        toast.success('Voice AI prompt saved');
+                      } catch {
+                        toast.error('Failed to save prompt');
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This prompt is sent to the Voice AI agent. Use it to describe your agency, specialties, and how you want the assistant to greet visitors.
+                  </p>
+                </div>
+              )}
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="enableTavusAvatar"

@@ -103,6 +103,17 @@ export async function PATCH(
     const body = await request.json();
     const { name, structure, seoData, voiceAIEnabled, voiceAIConfig, enableTavusAvatar, status } = body;
 
+    // Merge voiceAIConfig with existing if partial update
+    let finalVoiceAIConfig = voiceAIConfig;
+    if (voiceAIConfig !== undefined) {
+      const existing = await prisma.website.findUnique({
+        where: { id: params.id, userId: session.user.id },
+        select: { voiceAIConfig: true },
+      });
+      const existingConfig = (existing?.voiceAIConfig as Record<string, unknown>) || {};
+      finalVoiceAIConfig = { ...existingConfig, ...voiceAIConfig };
+    }
+
     const website = await prisma.website.update({
       where: {
         id: params.id,
@@ -113,7 +124,7 @@ export async function PATCH(
         ...(structure && { structure }),
         ...(seoData && { seoData }),
         ...(voiceAIEnabled !== undefined && { voiceAIEnabled }),
-        ...(voiceAIConfig && { voiceAIConfig }),
+        ...(finalVoiceAIConfig !== undefined && { voiceAIConfig: finalVoiceAIConfig }),
         ...(enableTavusAvatar !== undefined && { enableTavusAvatar }),
         ...(status && ['BUILDING', 'READY', 'PUBLISHED', 'FAILED'].includes(status) && { status }),
       },

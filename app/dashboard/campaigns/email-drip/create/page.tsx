@@ -267,6 +267,7 @@ export default function CreateDripCampaignPage() {
                       <SelectItem value="LEAD_CREATED">When Lead is Created</SelectItem>
                       <SelectItem value="LEAD_STATUS">When Lead Status Changes</SelectItem>
                       <SelectItem value="TAG_ADDED">When Tag is Added</SelectItem>
+                      <SelectItem value="WEBSITE_VOICE_AI_LEAD">When Website Voice AI Captures Lead</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

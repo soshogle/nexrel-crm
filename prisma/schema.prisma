@@ -5003,6 +5003,7 @@ enum WorkflowTriggerType {
   WEBSITE_REVENUE_MILESTONE
   WEBSITE_ORDER_COUNT_MILESTONE
   WEBSITE_DAILY_REVENUE_THRESHOLD
+  WEBSITE_VOICE_AI_LEAD
 }
 
 enum WorkflowActionType {
@@ -6368,6 +6369,7 @@ enum DripTriggerType {
   REFERRAL_CONVERTED // Trigger when a referral is converted to lead (enrolls new lead)
   SERVICE_COMPLETED // Trigger when appointment/service is completed (enrolls client lead)
   FEEDBACK_POSITIVE // Trigger when feedback is positive (rating >= 4) - for referral ask flow
+  WEBSITE_VOICE_AI_LEAD // Trigger when user provides contact info via website Voice AI
 }
 
 enum DripEnrollmentStatus {

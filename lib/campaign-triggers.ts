@@ -12,13 +12,15 @@ interface TriggerContext {
     | 'REFERRAL_CREATED'
     | 'REFERRAL_CONVERTED'
     | 'SERVICE_COMPLETED'
-    | 'FEEDBACK_POSITIVE';
+    | 'FEEDBACK_POSITIVE'
+    | 'WEBSITE_VOICE_AI_LEAD';
   metadata?: {
     oldStatus?: string;
     newStatus?: string;
     tagName?: string;
     formId?: string;
     dealId?: string;
+    websiteId?: string;
   };
 }
 
