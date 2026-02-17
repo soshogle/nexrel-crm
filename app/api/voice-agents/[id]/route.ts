@@ -343,7 +343,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
   } catch (error: any) {
     console.error('Error updating voice agent:', error);
     return NextResponse.json(
-      { error: 'Failed to update voice agent' },
+      { error: 'We couldn\'t save your changes. Please try again.' },
       { status: 500 }
     );
   }

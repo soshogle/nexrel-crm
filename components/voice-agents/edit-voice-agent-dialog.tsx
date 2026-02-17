@@ -301,12 +301,15 @@ export function EditVoiceAgentDialog({
         onAgentUpdated();
         onOpenChange(false);
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to update voice agent');
+        const { data: errorData, error: parseError } = await import('@/lib/api-error-utils').then(
+          (m) => m.safeParseJsonResponse<{ error?: string }>(response, 'Failed to update voice agent')
+        );
+        setError(errorData?.error || parseError || 'Failed to update voice agent');
       }
     } catch (err: any) {
       console.error('Error updating agent:', err);
-      setError(err.message || 'Failed to update voice agent');
+      const { getUserFriendlyError } = await import('@/lib/api-error-utils');
+      setError(getUserFriendlyError(err, 'Failed to update voice agent'));
     } finally {
       setLoading(false);
     }

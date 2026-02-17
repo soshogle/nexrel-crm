@@ -622,10 +622,18 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error executing action:", error);
+    const message = error?.message || "";
+    const userFriendly =
+      message.includes("not found") ? "We couldn't find what you're looking for."
+      : message.includes("required") ? "Some required information is missing."
+      : message.includes("permission") || message.includes("Unauthorized") ? "You don't have permission to do that."
+      : message.includes("JSON") || message.includes("parse") ? "We received an unexpected response. Please try again."
+      : message.length > 100 ? "Something went wrong. Please try again."
+      : message || "Something went wrong. Please try again.";
     return NextResponse.json(
       {
-        error: "Failed to execute action",
-        details: error.message || "Unknown error",
+        error: userFriendly,
+        details: process.env.NODE_ENV === "development" ? message : undefined,
       },
       { status: 500 }
     );

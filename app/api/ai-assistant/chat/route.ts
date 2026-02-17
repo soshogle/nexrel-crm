@@ -1045,7 +1045,12 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
           console.log(`📡 [Chat] Action endpoint response status:`, actionResponse.status);
           
           if (actionResponse.ok) {
-            const actionResponseData = await actionResponse.json();
+            const { data: actionResponseData, error: parseErr } = await import("@/lib/api-error-utils").then(
+              (m) => m.safeParseJsonResponse<{ success?: boolean; action?: string; result?: any }>(actionResponse)
+            );
+            if (parseErr || !actionResponseData) {
+              throw new Error(parseErr || "Invalid response from server");
+            }
             console.log("═══════════════════════════════════════════════════════");
             console.log(`✅ [Chat] Action ${action} executed successfully`);
             console.log(`📋 [Chat] Action response structure:`, {
@@ -1081,27 +1086,34 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
               }),
             });
           } else {
-            const errorData = await actionResponse.json().catch(() => ({ error: "Unknown error" }));
-            console.error(`❌ [Chat] Action ${action} failed:`, errorData);
+            const { safeParseJsonResponse, getUserFriendlyError } = await import("@/lib/api-error-utils");
+            const { data: errorData } = await safeParseJsonResponse<{ error?: string; details?: string }>(
+              actionResponse,
+              "Something went wrong. Please try again."
+            );
+            const userMessage = errorData?.error || errorData?.details || "Something went wrong. Please try again.";
+            console.error(`❌ [Chat] Action ${action} failed:`, userMessage);
             toolResults.push({
               tool_call_id: toolCall.id,
               role: "tool",
               name: functionName,
               content: JSON.stringify({
                 success: false,
-                error: errorData.error || "Action failed",
+                error: userMessage,
               }),
             });
           }
         } catch (error: any) {
           console.error(`❌ [Chat] Error executing action ${action}:`, error);
+          const { getUserFriendlyError } = await import("@/lib/api-error-utils");
+          const userMessage = getUserFriendlyError(error, "Something went wrong. Please try again.");
           toolResults.push({
             tool_call_id: toolCall.id,
             role: "tool",
             name: functionName,
             content: JSON.stringify({
               success: false,
-              error: error.message || "Execution error",
+              error: userMessage,
             }),
           });
         }
