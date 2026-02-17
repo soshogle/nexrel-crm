@@ -5,9 +5,11 @@ import { useEffect, useRef } from "react";
 interface GeometricShapesProps {
   audioLevel?: number;
   isAgentSpeaking?: boolean;
+  /** When true, waves only — no center mic (for frameless overlay with tap-to-start) */
+  bare?: boolean;
 }
 
-export function GeometricShapes({ audioLevel = 0, isAgentSpeaking = false }: GeometricShapesProps) {
+export function GeometricShapes({ audioLevel = 0, isAgentSpeaking = false, bare = false }: GeometricShapesProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -156,11 +158,15 @@ export function GeometricShapes({ audioLevel = 0, isAgentSpeaking = false }: Geo
       />
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div
-          className="w-64 h-64 md:w-96 md:h-96 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full blur-3xl transition-opacity duration-300"
-          style={{ opacity: isAgentSpeaking ? (0.5 + (audioLevel * 0.5)) : 0.5 }}
+          className={`rounded-full blur-3xl transition-opacity duration-300 ${bare ? 'w-48 h-48' : 'w-64 h-64 md:w-96 md:h-96'} ${!bare ? 'bg-gradient-to-br from-primary/20 to-secondary/20' : ''}`}
+          style={{
+            ...(bare && { background: 'linear-gradient(to bottom right, rgba(34, 211, 238, 0.2), rgba(139, 92, 246, 0.2))' }),
+            opacity: isAgentSpeaking ? (0.5 + (audioLevel * 0.5)) : 0.5,
+          }}
         />
       </div>
-      {/* Centered Microphone Icon - Matches landing page design */}
+      {!bare && (
+      /* Centered Microphone Icon - Matches landing page design */
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
         <div className="relative">
           {/* Blue circle outline around mic */}
@@ -202,6 +208,7 @@ export function GeometricShapes({ audioLevel = 0, isAgentSpeaking = false }: Geo
           </svg>
         </div>
       </div>
+      )}
     </div>
   );
 }

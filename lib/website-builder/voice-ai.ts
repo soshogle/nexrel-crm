@@ -59,7 +59,8 @@ export class WebsiteVoiceAIService {
   }
 
   /**
-   * Generate system prompt for website voice AI
+   * Generate system prompt for website voice AI.
+   * Note: Confidentiality guard is appended by elevenLabsProvisioning.createAgent.
    */
   private generateSystemPrompt(
     businessName: string,

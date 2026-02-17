@@ -17,7 +17,7 @@ dotenv.config({ path: path.join(process.cwd(), '.env') });
 const prisma = new PrismaClient();
 
 const THEODORA_EMAIL = 'theodora.stavropoulos@remax-quebec.com';
-const NEW_VERCEL_URL = 'https://theodora-stavropoulos-remax.vercel.app';
+const NEW_VERCEL_URL = process.env.NEW_VERCEL_URL || 'https://theodora-stavropoulos-remax.vercel.app';
 
 async function main() {
   console.log('🔄 Updating Theodora\'s website deployment URL\n');

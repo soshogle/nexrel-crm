@@ -4,16 +4,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { 
   MessageCircle, 
   X, 
   Send, 
   Loader2, 
-  Sparkles, 
   Minimize2,
   Bot,
   User,
@@ -24,6 +21,7 @@ import {
   Mic,
   BarChart3
 } from "lucide-react";
+import { GeometricShapes } from "@/components/landing/soshogle/geometric-shapes";
 import { toast } from "sonner";
 import { ElevenLabsAgent } from "@/components/landing/soshogle/elevenlabs-agent";
 import { ChatMarkdown } from "@/components/dashboard/chat-markdown";
@@ -369,67 +367,67 @@ export function AIChatAssistant() {
     }
   };
 
+  const CHAT_COLORS = { cyan: '#22d3ee', purple: '#8b5cf6' };
+
   if (!isOpen) {
     return (
-      <Button
+      <button
         onClick={() => setIsOpen(true)}
-        size="lg"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 z-[9999] p-0"
+        className="fixed bottom-6 right-6 z-[9999] flex h-16 w-16 items-center justify-center rounded-full shadow-xl transition-all hover:scale-110"
+        style={{
+          background: 'rgba(139, 92, 246, 0.1)',
+          border: '2px solid rgba(34, 211, 238, 0.3)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)';
+          e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)';
+          e.currentTarget.style.borderColor = 'rgba(34, 211, 238, 0.3)';
+        }}
+        aria-label="Open AI chat"
       >
-        <div className="relative">
-          <MessageCircle className="h-6 w-6 text-white" />
-          <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
-        </div>
-      </Button>
+        <MessageCircle className="h-8 w-8" style={{ color: CHAT_COLORS.cyan }} />
+      </button>
     );
   }
 
   return (
-    <div className={`fixed bottom-6 right-6 z-[9999] transition-all duration-300 ${
+    <div className={`fixed bottom-6 right-6 z-[9999] flex flex-col items-end transition-all duration-300 ${
       isMinimized ? "w-80" : "w-96"
     }`}>
-      <Card className="shadow-2xl border-2 border-primary/20">
-        <CardHeader className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  Soshogle Agent
-                  <Badge variant="secondary" className="bg-white/20 text-white text-[10px] px-1.5 py-0 h-4">
-                    AI
-                  </Badge>
-                </CardTitle>
-                <p className="text-xs text-white/80 mt-0.5">Your CRM Assistant</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsMinimized(!isMinimized)}
-                className="h-8 w-8 p-0 hover:bg-white/20 text-white"
-              >
-                <Minimize2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsOpen(false)}
-                className="h-8 w-8 p-0 hover:bg-white/20 text-white"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
+      <div
+        className="flex flex-col overflow-hidden rounded-2xl shadow-2xl bg-black/10 relative"
+        style={{ width: isMinimized ? 320 : 384, minHeight: isMinimized ? 120 : 520 }}
+      >
+        {/* Frameless background - GeometricShapes */}
+        <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+          <GeometricShapes audioLevel={0} isAgentSpeaking={false} bare />
+        </div>
+
+        {/* Overlay buttons - top right */}
+        <div className="absolute top-3 right-3 flex items-center gap-1 z-20">
+          <button
+            onClick={() => setIsMinimized(!isMinimized)}
+            className="p-2 rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/40 transition-colors"
+            aria-label={isMinimized ? "Expand" : "Minimize"}
+          >
+            <Minimize2 className="h-5 w-5 text-white" />
+          </button>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-2 rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/40 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+        </div>
 
         {!isMinimized && (
-          <CardContent className="p-0">
-            {/* Messages Area */}
-            <ScrollArea className="h-96 p-4" ref={scrollRef}>
+          <>
+            {/* Messages Area - semi-transparent overlay for readability */}
+            <ScrollArea className="h-80 p-4 pt-14" ref={scrollRef}>
               <div className="space-y-4">
                 {messages.map((message, index) => (
                   <div
@@ -439,20 +437,20 @@ export function AIChatAssistant() {
                     <div
                       className={`max-w-[85%] rounded-2xl p-3 ${
                         message.role === "user"
-                          ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                          : "bg-muted"
+                          ? "bg-white/20 backdrop-blur-sm border border-white/30 text-white"
+                          : "bg-black/20 backdrop-blur-sm border border-white/10 text-white"
                       }`}
                     >
                       <div className="flex items-start gap-2">
                         {message.role === "assistant" && (
-                          <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                          <div className="h-6 w-6 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
                             <Bot className="h-3.5 w-3.5 text-white" />
                           </div>
                         )}
                         <div className="flex-1 space-y-2">
                           {message.file && (
                             <div className={`flex items-center gap-2 p-2 rounded-lg ${
-                              message.role === "user" ? "bg-white/20" : "bg-background"
+                              message.role === "user" ? "bg-white/20" : "bg-black/20"
                             }`}>
                               <FileSpreadsheet className="h-4 w-4" />
                               <span className="text-xs font-medium">{message.file.name}</span>
@@ -464,6 +462,7 @@ export function AIChatAssistant() {
                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                           )}
                           {message.emailDraft && message.role === "assistant" && (
+                            <div className="mt-2 rounded-lg bg-black/30 p-2 border border-white/10">
                             <EmailPreviewCard
                               draft={message.emailDraft}
                               onSend={async () => {
@@ -505,8 +504,10 @@ export function AIChatAssistant() {
                                 );
                               }}
                             />
+                            </div>
                           )}
                           {message.smsDraft && message.role === "assistant" && (
+                            <div className="mt-2 rounded-lg bg-black/30 p-2 border border-white/10">
                             <SmsPreviewCard
                               draft={message.smsDraft}
                               onSend={async () => {
@@ -548,12 +549,13 @@ export function AIChatAssistant() {
                                 );
                               }}
                             />
+                            </div>
                           )}
                           {message.navigateTo && message.role === "assistant" && !message.emailDraft && !message.smsDraft && (
                             <Button
                               variant="default"
                               size="sm"
-                              className="mt-2 gap-2"
+                              className="mt-2 gap-2 bg-white/30 border-white/30 text-white hover:bg-white/40"
                               onClick={() => {
                                 router.push(message.navigateTo!);
                                 toast.success("Taking you there now!");
@@ -566,7 +568,7 @@ export function AIChatAssistant() {
                         </div>
                         {message.role === "user" && (
                           <div className="h-6 w-6 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                            <User className="h-3.5 w-3.5" />
+                            <User className="h-3.5 w-3.5 text-white" />
                           </div>
                         )}
                       </div>
@@ -576,12 +578,12 @@ export function AIChatAssistant() {
 
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="max-w-[85%] rounded-2xl p-3 bg-muted">
+                    <div className="max-w-[85%] rounded-2xl p-3 bg-black/20 backdrop-blur-sm border border-white/10 text-white">
                       <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        <div className="h-6 w-6 rounded-lg bg-white/20 flex items-center justify-center">
                           <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
                         </div>
-                        <p className="text-sm text-muted-foreground">Thinking...</p>
+                        <p className="text-sm text-white/90">Thinking...</p>
                       </div>
                     </div>
                   </div>
@@ -589,11 +591,11 @@ export function AIChatAssistant() {
               </div>
             </ScrollArea>
 
-            {/* Input Area */}
-            <div className="p-4 border-t bg-background">
+            {/* Input Area - semi-transparent overlay */}
+            <div className="p-4 border-t border-white/10 bg-black/20 backdrop-blur-sm">
               {/* File Upload Preview */}
               {selectedFile && (
-                <div className="mb-2 flex items-center gap-2 p-2 bg-muted rounded-lg">
+                <div className="mb-2 flex items-center gap-2 p-2 bg-black/30 rounded-lg text-white">
                   <FileSpreadsheet className="h-4 w-4 text-blue-600" />
                   <span className="text-sm flex-1 truncate">{selectedFile.name}</span>
                   <Button
@@ -625,6 +627,7 @@ export function AIChatAssistant() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isLoading || voiceMode}
                   title="Upload CSV file"
+                  className="border-white/30 text-white hover:bg-white/20"
                 >
                   <Paperclip className="h-4 w-4" />
                 </Button>
@@ -643,9 +646,9 @@ export function AIChatAssistant() {
                   }}
                   disabled={isLoading || voiceLoading || !crmAgentId}
                   title={voiceMode ? "Exit voice mode" : "Enable voice mode"}
-                  className={voiceMode ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" : ""}
+                  className={voiceMode ? "bg-white/30 border-white/30 text-white hover:bg-white/40" : "border-white/30 text-white hover:bg-white/20"}
                 >
-                  <Mic className={`h-4 w-4 ${voiceMode ? 'text-white' : ''}`} />
+                  <Mic className="h-4 w-4" />
                 </Button>
 
                 {/* Text Input - Hidden when voice mode is active */}
@@ -657,14 +660,14 @@ export function AIChatAssistant() {
                     onKeyPress={handleKeyPress}
                     placeholder={selectedFile ? "Add a message (optional)..." : "Ask me anything about your CRM..."}
                     disabled={isLoading}
-                    className="flex-1"
+                    className="flex-1 bg-black/30 border-white/20 text-white placeholder:text-white/60"
                   />
                 )}
 
                 {/* Voice Agent Display - Show when voice mode is active */}
                 {voiceMode && crmAgentId && (
-                  <div className="flex-1 flex items-center justify-center p-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-2 text-sm text-blue-700">
+                  <div className="flex-1 flex items-center justify-center p-2 bg-black/30 rounded-lg border border-white/20">
+                    <div className="flex items-center gap-2 text-sm text-white/90">
                       <Mic className="h-4 w-4 animate-pulse" />
                       <span>Voice mode active - Speak now</span>
                     </div>
@@ -678,7 +681,7 @@ export function AIChatAssistant() {
                     onClick={handleSend}
                     disabled={isLoading || (!input.trim() && !selectedFile)}
                     size="icon"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    className="bg-white/30 border-white/30 text-white hover:bg-white/40"
                   >
                     {isLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -691,7 +694,7 @@ export function AIChatAssistant() {
 
               {/* Voice Agent Component - Render when voice mode is active */}
               {voiceMode && crmAgentId && !isMinimized && (
-                <div className="mt-2 p-2 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                <div className="mt-2 p-2 bg-black/30 rounded-lg border border-white/20">
                   <ElevenLabsAgent
                     agentId={crmAgentId}
                     autoStart={false}
@@ -758,13 +761,14 @@ export function AIChatAssistant() {
                   />
                 </div>
               )}
-              <p className="text-[10px] text-muted-foreground mt-2 text-center">
+              <p className="text-[10px] text-white/50 mt-2 text-center">
                 Press Enter to send • Upload CSV for bulk imports • AI-powered assistance
               </p>
             </div>
-          </CardContent>
+          </>
         )}
-      </Card>
+      </div>
+      <p className="text-white/40 text-xs tracking-widest uppercase mt-1.5 mr-1 font-light">Chat</p>
     </div>
   );
 }

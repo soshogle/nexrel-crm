@@ -121,6 +121,9 @@ export function CircularWorkflowCanvas({
     setDraggedPosition({ x, y });
   }, [dragState]);
   
+  // Minimum drag distance (px) before reorder - prevents accidental swap on click
+  const MIN_DRAG_DISTANCE = 15;
+
   // Handle drag end
   const handleMouseUp = useCallback(() => {
     if (!dragState.isDragging || !dragState.taskId || !draggedPosition) {
@@ -128,80 +131,90 @@ export function CircularWorkflowCanvas({
       setDraggedPosition(null);
       return;
     }
-    
-    const { displayOrder: newDisplayOrder } = getGridFromPosition(draggedPosition.x, draggedPosition.y);
+
     const task = workflow.tasks.find(t => t.id === dragState.taskId);
-    
-    if (task) {
-      // Find the closest task to swap with, or insert at new position
-      const otherTasks = workflow.tasks.filter(t => t.id !== task.id);
-      let closestTask: WorkflowTask | null = null;
-      let minDistance = Infinity;
-      
-      for (const other of otherTasks) {
-        const otherPos = getGridPosition(other.displayOrder);
-        const distance = Math.sqrt(
-          Math.pow(draggedPosition.x - otherPos.x, 2) +
-          Math.pow(draggedPosition.y - otherPos.y, 2)
-        );
-        
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestTask = other;
-        }
-      }
-      
-      // If dropped close to another task, swap positions
-      if (closestTask && minDistance < 100) {
-        const updatedTasks = workflow.tasks.map(t => {
-          if (t.id === task.id) {
-            return { ...t, displayOrder: closestTask!.displayOrder };
-          }
-          if (t.id === closestTask!.id) {
-            return { ...t, displayOrder: task.displayOrder };
-          }
-          return t;
-        });
-        // Ensure all displayOrders are valid (1 to tasks.length)
-        const sorted = [...updatedTasks].sort((a, b) => a.displayOrder - b.displayOrder);
-        const finalTasks = sorted.map((t, index) => ({ ...t, displayOrder: index + 1 }));
-        onReorderTasks(finalTasks);
-      } else {
-        // Update to new position, reordering other tasks if needed
-        const clampedOrder = Math.max(1, Math.min(newDisplayOrder, workflow.tasks.length));
-        const oldOrder = task.displayOrder;
-        
-        // Create updated tasks array
-        const updatedTasks = workflow.tasks.map(t => {
-          if (t.id === task.id) {
-            return { ...t, displayOrder: clampedOrder };
-          }
-          // Shift other tasks to make room
-          if (oldOrder < clampedOrder) {
-            // Moving forward: shift tasks between old and new position backward
-            if (t.displayOrder > oldOrder && t.displayOrder <= clampedOrder) {
-              return { ...t, displayOrder: t.displayOrder - 1 };
-            }
-          } else if (oldOrder > clampedOrder) {
-            // Moving backward: shift tasks between new and old position forward
-            if (t.displayOrder >= clampedOrder && t.displayOrder < oldOrder) {
-              return { ...t, displayOrder: t.displayOrder + 1 };
-            }
-          }
-          return t;
-        });
-        
-        // Ensure all displayOrders are valid and sequential (1 to tasks.length)
-        const sorted = [...updatedTasks].sort((a, b) => {
-          if (a.id === task.id) return clampedOrder - b.displayOrder;
-          if (b.id === task.id) return a.displayOrder - clampedOrder;
-          return a.displayOrder - b.displayOrder;
-        });
-        const finalTasks = sorted.map((t, index) => ({ ...t, displayOrder: index + 1 }));
-        onReorderTasks(finalTasks);
+    if (!task) {
+      setDragState({ isDragging: false, taskId: null, startAngle: 0, startRadius: 0 });
+      setDraggedPosition(null);
+      return;
+    }
+
+    // Only reorder if user actually dragged - prevents accidental swap on click
+    const startPos = getGridPosition(task.displayOrder);
+    const dragDistance = Math.sqrt(
+      Math.pow(draggedPosition.x - startPos.x, 2) +
+      Math.pow(draggedPosition.y - startPos.y, 2)
+    );
+    if (dragDistance < MIN_DRAG_DISTANCE) {
+      setDragState({ isDragging: false, taskId: null, startAngle: 0, startRadius: 0 });
+      setDraggedPosition(null);
+      return;
+    }
+
+    const { displayOrder: newDisplayOrder } = getGridFromPosition(draggedPosition.x, draggedPosition.y);
+
+    // Find the closest task to swap with, or insert at new position
+    const otherTasks = workflow.tasks.filter(t => t.id !== task.id);
+    let closestTask: WorkflowTask | null = null;
+    let minDistance = Infinity;
+
+    for (const other of otherTasks) {
+      const otherPos = getGridPosition(other.displayOrder);
+      const distance = Math.sqrt(
+        Math.pow(draggedPosition.x - otherPos.x, 2) +
+        Math.pow(draggedPosition.y - otherPos.y, 2)
+      );
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestTask = other;
       }
     }
-    
+
+    // If dropped close to another task, swap positions
+    if (closestTask && minDistance < 100) {
+      const updatedTasks = workflow.tasks.map(t => {
+        if (t.id === task.id) {
+          return { ...t, displayOrder: closestTask!.displayOrder };
+        }
+        if (t.id === closestTask!.id) {
+          return { ...t, displayOrder: task.displayOrder };
+        }
+        return t;
+      });
+      const sorted = [...updatedTasks].sort((a, b) => a.displayOrder - b.displayOrder);
+      const finalTasks = sorted.map((t, index) => ({ ...t, displayOrder: index + 1 }));
+      onReorderTasks(finalTasks);
+    } else {
+      // Update to new position, reordering other tasks if needed
+      const clampedOrder = Math.max(1, Math.min(newDisplayOrder, workflow.tasks.length));
+      const oldOrder = task.displayOrder;
+
+      const updatedTasks = workflow.tasks.map(t => {
+        if (t.id === task.id) {
+          return { ...t, displayOrder: clampedOrder };
+        }
+        if (oldOrder < clampedOrder) {
+          if (t.displayOrder > oldOrder && t.displayOrder <= clampedOrder) {
+            return { ...t, displayOrder: t.displayOrder - 1 };
+          }
+        } else if (oldOrder > clampedOrder) {
+          if (t.displayOrder >= clampedOrder && t.displayOrder < oldOrder) {
+            return { ...t, displayOrder: t.displayOrder + 1 };
+          }
+        }
+        return t;
+      });
+
+      const sorted = [...updatedTasks].sort((a, b) => {
+        if (a.id === task.id) return clampedOrder - b.displayOrder;
+        if (b.id === task.id) return a.displayOrder - clampedOrder;
+        return a.displayOrder - b.displayOrder;
+      });
+      const finalTasks = sorted.map((t, index) => ({ ...t, displayOrder: index + 1 }));
+      onReorderTasks(finalTasks);
+    }
+
     setDragState({ isDragging: false, taskId: null, startAngle: 0, startRadius: 0 });
     setDraggedPosition(null);
   }, [dragState, draggedPosition, workflow.tasks, getGridFromPosition, getGridPosition, onUpdateTask, onReorderTasks]);
