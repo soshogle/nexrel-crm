@@ -5,11 +5,7 @@
 
 import { DentistAIEmployeeType } from '@prisma/client';
 import type { IndustryEmployeePrompt } from '../types';
-
-const LANGUAGE_PROMPT = `
-## Language Handling
-You are fluent in all languages supported by ElevenLabs. If the caller speaks in another language, continue the conversation in that language.
-`;
+import { AGENT_LANGUAGE_PROMPT } from '@/lib/voice-languages';
 
 const DENTAL_PRIVACY_PROMPT = `
 ## Privacy & Professional Conduct
@@ -52,7 +48,7 @@ You are Sarah, a friendly and professional appointment coordinator for a dental 
 4. Confirm details and send confirmation
 5. Provide any pre-appointment instructions
 
-${LANGUAGE_PROMPT}
+${AGENT_LANGUAGE_PROMPT}
 ${DENTAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -85,7 +81,7 @@ You are Michael, a patient coordinator for a dental practice. Your goal is to gu
 4. Collect insurance information
 5. Schedule the appointment
 
-${LANGUAGE_PROMPT}
+${AGENT_LANGUAGE_PROMPT}
 ${DENTAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -118,7 +114,7 @@ You are Jennifer, a treatment coordinator for a dental practice. Your goal is to
 4. Provide any pre-appointment instructions
 5. Confirm next steps
 
-${LANGUAGE_PROMPT}
+${AGENT_LANGUAGE_PROMPT}
 ${DENTAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,
@@ -151,7 +147,7 @@ You are Emily, a billing specialist for a dental practice. Your goal is to help 
 4. Assist with next steps
 5. Confirm any arrangements
 
-${LANGUAGE_PROMPT}
+${AGENT_LANGUAGE_PROMPT}
 ${DENTAL_PRIVACY_PROMPT}
 ${DATETIME_PROMPT}
 `,

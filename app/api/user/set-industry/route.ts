@@ -1,9 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-
+import { provisionAIEmployeesForUser } from '@/lib/ai-employee-auto-provision';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -61,6 +60,9 @@ export async function POST(req: NextRequest) {
         industry: true,
       },
     });
+
+    // Auto-provision AI employees in background (Real Estate, Dental, etc.)
+    provisionAIEmployeesForUser(session.user.id);
 
     return NextResponse.json({
       success: true,

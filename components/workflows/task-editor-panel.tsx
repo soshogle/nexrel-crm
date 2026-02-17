@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { WorkflowTask } from './types';
 import { getIndustryConfig, IndustryAIAgent } from '@/lib/workflows/industry-configs';
 import { Industry } from '@prisma/client';
@@ -91,8 +91,31 @@ export function TaskEditorPanel({
   const [showEnhancedTiming, setShowEnhancedTiming] = useState(false);
   const [skipConditions, setSkipConditions] = useState<any[]>([]);
   const [aiEmployees, setAiEmployees] = useState<AIEmployee[]>([]);
-  
+  const lastSavedRef = useRef<string>('');
+
   const industryConfig = getIndustryConfig(industry);
+
+  // Build effective task for comparison (includes selectedActions, skipConditions)
+  const buildEffectiveTask = useCallback(() => {
+    if (!editedTask) return null;
+    const ac = (editedTask as any).actionConfig || {};
+    return {
+      ...editedTask,
+      actionConfig: { ...ac, actions: selectedActions },
+      skipConditions: skipConditions.length > 0 ? skipConditions : null,
+    };
+  }, [editedTask, selectedActions, skipConditions]);
+
+  const hasUnsavedChanges = (() => {
+    const effective = buildEffectiveTask();
+    if (!effective) return false;
+    const current = JSON.stringify(effective);
+    if (!lastSavedRef.current) {
+      lastSavedRef.current = current;
+      return false;
+    }
+    return current !== lastSavedRef.current;
+  })();
 
   // Fetch user's AI Team
   useEffect(() => {
@@ -105,24 +128,29 @@ export function TaskEditorPanel({
   useEffect(() => {
     setEditedTask(task);
     setShowBranching(task?.parentTaskId !== null && task?.parentTaskId !== undefined);
-    
-    // Load actions from task's actionConfig
+
     if (task) {
       const actionConfig = (task as any).actionConfig || {};
       setSelectedActions(actionConfig.actions || []);
-      
-      // Load skip conditions
+
       const taskAny = task as any;
       if (taskAny.skipConditions && Array.isArray(taskAny.skipConditions)) {
         setSkipConditions(taskAny.skipConditions);
       } else {
         setSkipConditions([]);
       }
-      
-      // Show enhanced timing if in DRIP mode or if enhanced fields are set
+
       if (executionMode === 'DRIP' || taskAny.delayDays || taskAny.delayHours || taskAny.preferredSendTime) {
         setShowEnhancedTiming(true);
       }
+
+      // Initialize lastSaved for change detection
+      const effective = {
+        ...task,
+        actionConfig: { ...actionConfig, actions: actionConfig.actions || [] },
+        skipConditions: taskAny.skipConditions && Array.isArray(taskAny.skipConditions) ? taskAny.skipConditions : null,
+      };
+      lastSavedRef.current = JSON.stringify(effective);
     }
   }, [task, executionMode]);
   
@@ -899,23 +927,26 @@ export function TaskEditorPanel({
             <Trash2 className="w-4 h-4 mr-2" />
             Delete
           </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              // Ensure skip conditions are included in saved task
-              const taskToSave = {
-                ...editedTask,
-                ...(editedTask as any),
-                skipConditions: skipConditions.length > 0 ? skipConditions : null,
-              };
-              onSave(taskToSave);
-              onClose();
-            }}
-            className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save
-          </Button>
+          {hasUnsavedChanges && (
+            <Button
+              size="sm"
+              onClick={() => {
+                const ac = (editedTask as any).actionConfig || {};
+                const taskToSave = {
+                  ...editedTask,
+                  ...(editedTask as any),
+                  actionConfig: { ...ac, actions: selectedActions },
+                  skipConditions: skipConditions.length > 0 ? skipConditions : null,
+                };
+                onSave(taskToSave);
+                lastSavedRef.current = JSON.stringify(taskToSave);
+              }}
+              className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save
+            </Button>
+          )}
         </div>
       </div>
     </div>

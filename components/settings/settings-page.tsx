@@ -78,7 +78,6 @@ export function SettingsPage({ session }: SettingsPageProps) {
   const [address, setAddress] = useState('')
   const [website, setWebsite] = useState('')
   const [businessDescription, setBusinessDescription] = useState('')
-  const [industry, setIndustry] = useState('')
   const [timezone, setTimezone] = useState('America/New_York')
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
@@ -113,7 +112,6 @@ export function SettingsPage({ session }: SettingsPageProps) {
         setAddress(data.address || '')
         setWebsite(data.website || '')
         setBusinessDescription(data.businessDescription || '')
-        setIndustry(data.industry || '')
         setTimezone(data.timezone || 'America/New_York')
       }
     } catch (error) {
@@ -145,7 +143,6 @@ export function SettingsPage({ session }: SettingsPageProps) {
           address: address.trim(),
           website: website.trim(),
           businessDescription: businessDescription.trim(),
-          industry: industry.trim(),
           timezone: timezone,
         }),
       })
@@ -370,40 +367,6 @@ export function SettingsPage({ session }: SettingsPageProps) {
                   />
                   <p className="text-sm text-muted-foreground">
                     Your complete business address
-                  </p>
-                </div>
-
-                {/* Industry */}
-                <div className="space-y-2">
-                  <Label htmlFor="industry">Industry</Label>
-                  <Select
-                    value={industry}
-                    onValueChange={setIndustry}
-                    disabled={isLoadingProfile}
-                  >
-                    <SelectTrigger id="industry">
-                      <SelectValue placeholder="Select your industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="real_estate">Real Estate</SelectItem>
-                      <SelectItem value="healthcare">Healthcare</SelectItem>
-                      <SelectItem value="legal">Legal Services</SelectItem>
-                      <SelectItem value="finance">Finance & Insurance</SelectItem>
-                      <SelectItem value="retail">Retail</SelectItem>
-                      <SelectItem value="hospitality">Hospitality</SelectItem>
-                      <SelectItem value="technology">Technology</SelectItem>
-                      <SelectItem value="education">Education</SelectItem>
-                      <SelectItem value="marketing">Marketing & Advertising</SelectItem>
-                      <SelectItem value="consulting">Consulting</SelectItem>
-                      <SelectItem value="construction">Construction</SelectItem>
-                      <SelectItem value="automotive">Automotive</SelectItem>
-                      <SelectItem value="fitness">Fitness & Wellness</SelectItem>
-                      <SelectItem value="beauty">Beauty & Spa</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground">
-                    Select the industry your business operates in
                   </p>
                 </div>
 

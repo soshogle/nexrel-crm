@@ -9,15 +9,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Globe } from "lucide-react";
 import { LANDING_LANGUAGE_CHANGE_EVENT } from "@/hooks/use-landing-language";
+import { LANDING_LANGUAGES } from "@/lib/voice-languages";
 
-const languages = [
-  { code: "en", name: "English", flag: "🇺🇸" },
-  { code: "es", name: "Español", flag: "🇪🇸" },
-  { code: "fr", name: "Français", flag: "🇫🇷" },
-  { code: "de", name: "Deutsch", flag: "🇩🇪" },
-  { code: "zh", name: "中文", flag: "🇨🇳" },
-  { code: "ar", name: "العربية", flag: "🇸🇦" },
-];
+const FLAGS: Record<string, string> = {
+  en: "🇺🇸", es: "🇪🇸", fr: "🇫🇷", de: "🇩🇪", zh: "🇨🇳", ar: "🇸🇦",
+};
+
+const languages = LANDING_LANGUAGES.map((l) => ({
+  code: l.value,
+  name: l.label,
+  flag: FLAGS[l.value] || "🌐",
+}));
 
 export function LanguageSwitcher() {
   const [language, setLanguage] = useState(languages[0]);

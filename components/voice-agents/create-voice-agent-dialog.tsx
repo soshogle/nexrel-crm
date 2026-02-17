@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Info, ShoppingCart, FileText, Upload, Trash2 } from 'lucide-react';
 import PurchasePhoneNumberDialog from './purchase-phone-number-dialog';
+import { VOICE_AGENT_LANGUAGES } from '@/lib/voice-languages';
 
 interface Voice {
   voice_id: string;
@@ -1079,41 +1080,9 @@ export function CreateVoiceAgentDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="max-h-[300px]">
-                      <SelectItem value="all">All Languages (Multilingual)</SelectItem>
-                      <SelectItem value="none">None (Language Detection)</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="ar">Arabic</SelectItem>
-                      <SelectItem value="bg">Bulgarian</SelectItem>
-                      <SelectItem value="zh">Chinese (Mandarin)</SelectItem>
-                      <SelectItem value="hr">Croatian</SelectItem>
-                      <SelectItem value="cs">Czech</SelectItem>
-                      <SelectItem value="da">Danish</SelectItem>
-                      <SelectItem value="nl">Dutch</SelectItem>
-                      <SelectItem value="fil">Filipino</SelectItem>
-                      <SelectItem value="fi">Finnish</SelectItem>
-                      <SelectItem value="fr">French</SelectItem>
-                      <SelectItem value="de">German</SelectItem>
-                      <SelectItem value="el">Greek</SelectItem>
-                      <SelectItem value="hi">Hindi</SelectItem>
-                      <SelectItem value="hu">Hungarian</SelectItem>
-                      <SelectItem value="id">Indonesian</SelectItem>
-                      <SelectItem value="it">Italian</SelectItem>
-                      <SelectItem value="ja">Japanese</SelectItem>
-                      <SelectItem value="ko">Korean</SelectItem>
-                      <SelectItem value="ms">Malay</SelectItem>
-                      <SelectItem value="no">Norwegian</SelectItem>
-                      <SelectItem value="pl">Polish</SelectItem>
-                      <SelectItem value="pt-BR">Portuguese (Brazilian)</SelectItem>
-                      <SelectItem value="pt">Portuguese (European)</SelectItem>
-                      <SelectItem value="ro">Romanian</SelectItem>
-                      <SelectItem value="ru">Russian</SelectItem>
-                      <SelectItem value="sk">Slovak</SelectItem>
-                      <SelectItem value="es">Spanish</SelectItem>
-                      <SelectItem value="sv">Swedish</SelectItem>
-                      <SelectItem value="ta">Tamil</SelectItem>
-                      <SelectItem value="tr">Turkish</SelectItem>
-                      <SelectItem value="uk">Ukrainian</SelectItem>
-                      <SelectItem value="vi">Vietnamese</SelectItem>
+                      {VOICE_AGENT_LANGUAGES.map((l) => (
+                        <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

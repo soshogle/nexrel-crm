@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { WorkflowTask, RE_AGENTS, TASK_TYPE_ICONS } from './types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -85,6 +85,27 @@ export function TaskEditorPanel({
   const [showBranching, setShowBranching] = useState(false);
   const [selectedActions, setSelectedActions] = useState<string[]>([]);
   const [aiEmployees, setAiEmployees] = useState<AIEmployee[]>([]);
+  const lastSavedRef = useRef<string>('');
+
+  const buildEffectiveTask = useCallback(() => {
+    if (!editedTask) return null;
+    const ac = (editedTask as any).actionConfig || {};
+    return {
+      ...editedTask,
+      actionConfig: { ...ac, actions: selectedActions },
+    };
+  }, [editedTask, selectedActions]);
+
+  const hasUnsavedChanges = (() => {
+    const effective = buildEffectiveTask();
+    if (!effective) return false;
+    const current = JSON.stringify(effective);
+    if (!lastSavedRef.current) {
+      lastSavedRef.current = current;
+      return false;
+    }
+    return current !== lastSavedRef.current;
+  })();
 
   useEffect(() => {
     fetch('/api/ai-employees/user')
@@ -96,11 +117,16 @@ export function TaskEditorPanel({
   useEffect(() => {
     setEditedTask(task);
     setShowBranching(task?.parentTaskId !== null && task?.parentTaskId !== undefined);
-    
-    // Load actions from task's actionConfig
+
     if (task) {
       const actionConfig = (task as any).actionConfig || {};
       setSelectedActions(actionConfig.actions || []);
+
+      const effective = {
+        ...task,
+        actionConfig: { ...actionConfig, actions: actionConfig.actions || [] },
+      };
+      lastSavedRef.current = JSON.stringify(effective);
     }
   }, [task]);
   
@@ -655,24 +681,26 @@ export function TaskEditorPanel({
             <Trash2 className="w-4 h-4 mr-2" />
             Delete
           </Button>
-          <Button
-            size="sm"
-            className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
-            onClick={() => {
-              // Ensure actionConfig is included when saving
-              const taskToSave = {
-                ...editedTask,
-                actionConfig: {
-                  ...((editedTask as any).actionConfig || {}),
-                  actions: selectedActions,
+          {hasUnsavedChanges && (
+            <Button
+              size="sm"
+              className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
+              onClick={() => {
+                const taskToSave = {
+                  ...editedTask,
+                  actionConfig: {
+                    ...((editedTask as any).actionConfig || {}),
+                    actions: selectedActions,
                 },
-              };
-              onSave(taskToSave as WorkflowTask);
-            }}
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save
-          </Button>
+                };
+                onSave(taskToSave as WorkflowTask);
+                lastSavedRef.current = JSON.stringify(taskToSave);
+              }}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save
+            </Button>
+          )}
         </div>
       </div>
     </div>
