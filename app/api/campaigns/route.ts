@@ -89,6 +89,12 @@ export async function POST(request: NextRequest) {
       recurringDays,
       aiGenerated,
       aiPrompt,
+      minLeadScore,
+      maxCallsPerDay,
+      callWindowStart,
+      callWindowEnd,
+      retryFailedCalls,
+      maxRetries,
     } = body;
 
     // Validation
@@ -126,9 +132,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (type === 'VOICE_CALL' || type === 'MULTI_CHANNEL') {
-      if (!voiceAgentId || !callScript) {
+      if (!voiceAgentId) {
         return NextResponse.json(
-          { error: 'Voice campaigns require a voice agent and call script' },
+          { error: 'Voice campaigns require a voice agent' },
           { status: 400 }
         );
       }
@@ -153,6 +159,14 @@ export async function POST(request: NextRequest) {
         recurringDays: recurringDays || [],
         aiGenerated: aiGenerated || false,
         aiPrompt,
+        ...(type === 'VOICE_CALL' && {
+          minLeadScore: minLeadScore ?? 75,
+          maxCallsPerDay: maxCallsPerDay ?? 50,
+          callWindowStart: callWindowStart ?? '09:00',
+          callWindowEnd: callWindowEnd ?? '17:00',
+          retryFailedCalls: retryFailedCalls ?? true,
+          maxRetries: maxRetries ?? 2,
+        }),
       },
       include: {
         _count: {

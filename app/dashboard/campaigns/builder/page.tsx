@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Save, Plus } from 'lucide-react';
+import { VoiceCampaignForm } from '@/components/campaigns/voice-campaign-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -244,6 +245,11 @@ export default function CampaignBuilderPage() {
       setSaving(false);
     }
   };
+
+  // Voice campaigns use a form-based flow (different from drip canvas)
+  if (typeParam === 'voice') {
+    return <VoiceCampaignForm />;
+  }
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">

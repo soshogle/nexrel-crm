@@ -3,8 +3,10 @@
 
 import { ReactNode, useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { SidebarNav } from './sidebar-nav'
+import { Settings } from 'lucide-react'
 import { AIChatAssistant } from './ai-chat-assistant'
 import { GlobalVoiceAssistant } from './global-voice-assistant'
 import { AIBrainVoiceProvider } from '@/lib/ai-brain-voice-context'
@@ -109,6 +111,17 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
               <div className="w-96">
                 <GlobalSearchTrigger />
               </div>
+              {/* Admin Settings - Only for AGENCY_ADMIN or SUPER_ADMIN */}
+              {mounted && ((session?.user as any)?.role === 'AGENCY_ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN') && (
+                <Link
+                  href="/dashboard/admin"
+                  className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  title="Admin"
+                  aria-label="Admin settings"
+                >
+                  <Settings className="h-5 w-5" />
+                </Link>
+              )}
             </div>
           </div>
         </div>

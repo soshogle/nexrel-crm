@@ -24,6 +24,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { 
   Users, 
   Plus, 
@@ -478,22 +479,38 @@ export function LeadsList({ leads }: LeadsListProps) {
                   <List className="h-4 w-4" />
                 </Button>
               </div>
-              <Button 
-                variant="outline"
-                disabled
-                className="opacity-50 cursor-not-allowed bg-gray-700 border-gray-600 text-gray-400"
-              >
-                <Linkedin className="h-4 w-4 mr-2" />
-                LinkedIn
-              </Button>
-              <Button 
-                variant="outline"
-                disabled
-                className="opacity-50 cursor-not-allowed bg-gray-700 border-gray-600 text-gray-400"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Social Media
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline"
+                      disabled
+                      className="opacity-50 cursor-not-allowed bg-gray-700 border-gray-600 text-gray-400"
+                    >
+                      <Linkedin className="h-4 w-4 mr-2" />
+                      LinkedIn
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Upgrade - Contact Sales</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline"
+                      disabled
+                      className="opacity-50 cursor-not-allowed bg-gray-700 border-gray-600 text-gray-400"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Social Media
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Upgrade - Contact Sales</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Button asChild>
                 <Link href="/dashboard/leads/new">
                   <Plus className="h-4 w-4 mr-2" />
@@ -515,14 +532,30 @@ export function LeadsList({ leads }: LeadsListProps) {
             <Globe className="h-4 w-4" />
             Website ({websiteLeads.length})
           </TabsTrigger>
-          <TabsTrigger value="social" className="gap-2 opacity-60 data-[state=inactive]:opacity-60">
-            <Sparkles className="h-4 w-4" />
-            Social Media ({socialMediaLeads.length})
-          </TabsTrigger>
-          <TabsTrigger value="lead-finder" className="gap-2 opacity-60 data-[state=inactive]:opacity-60">
-            <Search className="h-4 w-4" />
-            Lead Finder
-          </TabsTrigger>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="social" className="gap-2 opacity-60 data-[state=inactive]:opacity-60">
+                  <Sparkles className="h-4 w-4" />
+                  Social Media ({socialMediaLeads.length})
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Upgrade - Contact Sales</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="lead-finder" className="gap-2 opacity-60 data-[state=inactive]:opacity-60">
+                  <Search className="h-4 w-4" />
+                  Lead Finder
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Upgrade - Contact Sales</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </TabsList>
 
         {/* All Leads Tab */}

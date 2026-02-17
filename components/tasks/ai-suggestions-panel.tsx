@@ -164,22 +164,22 @@ export default function AISuggestionsPanel({
 
   if (visibleSuggestions.length === 0) {
     return (
-      <Card className="bg-gray-900 border-gray-800">
+      <Card className="bg-primary border-primary-foreground/20">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-500" />
-            <CardTitle className="text-white">AI Task Suggestions</CardTitle>
+            <CardTitle className="text-primary-foreground">AI Task Suggestions</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <Lightbulb className="h-12 w-12 mx-auto text-gray-600 mb-4" />
-            <p className="text-gray-400">No AI suggestions available at the moment</p>
+            <Lightbulb className="h-12 w-12 mx-auto text-primary-foreground/60 mb-4" />
+            <p className="text-primary-foreground/80">No AI suggestions available at the moment</p>
             <Button
               variant="outline"
               size="sm"
               onClick={fetchSuggestions}
-              className="mt-4 border-gray-700 text-gray-400 hover:text-white"
+              className="mt-4 border-primary-foreground/30 text-primary-foreground/90 hover:text-primary-foreground hover:bg-primary-foreground/10"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh Suggestions
@@ -191,21 +191,21 @@ export default function AISuggestionsPanel({
   }
 
   return (
-    <Card className="bg-gray-900 border-gray-800">
+    <Card className="bg-primary border-primary-foreground/20">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-purple-500/10 rounded-lg">
-              <Sparkles className="h-5 w-5 text-purple-500" />
+            <div className="p-2 bg-primary-foreground/10 rounded-lg">
+              <Sparkles className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="text-primary-foreground flex items-center gap-2">
                 AI Task Suggestions
-                <Badge variant="outline" className="border-purple-500/20 text-purple-400">
+                <Badge variant="outline" className="border-primary-foreground/30 text-primary-foreground">
                   {visibleSuggestions.length}
                 </Badge>
               </CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardDescription className="text-primary-foreground/80">
                 Intelligent recommendations based on your activity
               </CardDescription>
             </div>
@@ -225,7 +225,7 @@ export default function AISuggestionsPanel({
           {visibleSuggestions.map((suggestion, index) => (
             <div
               key={index}
-              className="p-4 bg-gray-800/50 border border-gray-700 hover:border-purple-500/50 rounded-lg transition-all"
+              className="p-4 bg-primary-foreground/10 border border-primary-foreground/20 hover:border-primary-foreground/40 rounded-lg transition-all"
             >
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div className="flex-1">
@@ -234,7 +234,7 @@ export default function AISuggestionsPanel({
                       {suggestion.priority}
                     </Badge>
                     {suggestion.category && (
-                      <Badge variant="outline" className="border-gray-700 text-gray-400">
+                      <Badge variant="outline" className="border-primary-foreground/20 text-primary-foreground/80">
                         {suggestion.category}
                       </Badge>
                     )}
@@ -245,15 +245,15 @@ export default function AISuggestionsPanel({
                       </span>
                     </div>
                   </div>
-                  <h4 className="font-medium text-white mb-1">{suggestion.title}</h4>
-                  <p className="text-sm text-gray-400 line-clamp-2">{suggestion.description}</p>
+                  <h4 className="font-medium text-primary-foreground mb-1">{suggestion.title}</h4>
+                  <p className="text-sm text-primary-foreground/80 line-clamp-2">{suggestion.description}</p>
                   
                   {suggestion.tags && suggestion.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {suggestion.tags.map((tag, tagIndex) => (
                         <span
                           key={tagIndex}
-                          className="text-xs px-2 py-0.5 bg-gray-700/50 text-gray-300 rounded"
+                          className="text-xs px-2 py-0.5 bg-primary-foreground/20 text-primary-foreground rounded"
                         >
                           #{tag}
                         </span>
@@ -261,7 +261,7 @@ export default function AISuggestionsPanel({
                     </div>
                   )}
 
-                  <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                  <div className="flex items-center gap-4 mt-3 text-xs text-primary-foreground/70">
                     {suggestion.estimatedHours && (
                       <span>⏱️ {suggestion.estimatedHours}h</span>
                     )}
@@ -272,8 +272,8 @@ export default function AISuggestionsPanel({
                     )}
                   </div>
 
-                  <div className="mt-2 p-2 bg-purple-500/5 border border-purple-500/10 rounded text-xs text-gray-400">
-                    <span className="font-medium text-purple-400">AI Insight:</span> {suggestion.reasoning}
+                  <div className="mt-2 p-2 bg-primary-foreground/10 border border-primary-foreground/20 rounded text-xs text-primary-foreground/80">
+                    <span className="font-medium text-primary-foreground">AI Insight:</span> {suggestion.reasoning}
                   </div>
                 </div>
 

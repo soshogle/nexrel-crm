@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -351,31 +352,31 @@ function TasksEmbed() {
       </Card>
 
       {/* Tasks List */}
-      <Card className="bg-gray-900 border-gray-800">
+      <Card className="bg-primary border-primary-foreground/20">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-white">Your Tasks</CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardTitle className="text-primary-foreground">Your Tasks</CardTitle>
+              <CardDescription className="text-primary-foreground/80">
                 {tasks.length} task{tasks.length !== 1 ? 's' : ''} found
               </CardDescription>
             </div>
             <Tabs value={view} onValueChange={(v: any) => setView(v)}>
-              <TabsList className="bg-gray-800">
-                <TabsTrigger value="monday" className="data-[state=active]:bg-purple-600">
+              <TabsList className="bg-primary-foreground/10">
+                <TabsTrigger value="monday" className="data-[state=active]:bg-primary-foreground/20 text-primary-foreground">
                   📋 Board
                 </TabsTrigger>
-                <TabsTrigger value="list" className="data-[state=active]:bg-gray-700">
+                <TabsTrigger value="list" className="data-[state=active]:bg-primary-foreground/20 text-primary-foreground">
                   List
                 </TabsTrigger>
-                <TabsTrigger value="kanban" className="data-[state=active]:bg-gray-700">
+                <TabsTrigger value="kanban" className="data-[state=active]:bg-primary-foreground/20 text-primary-foreground">
                   Kanban
                 </TabsTrigger>
-                <TabsTrigger value="calendar" className="data-[state=active]:bg-gray-700">
+                <TabsTrigger value="calendar" className="data-[state=active]:bg-primary-foreground/20 text-primary-foreground">
                   <Calendar className="h-4 w-4 mr-2" />
                   Calendar
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className="data-[state=active]:bg-gray-700">
+                <TabsTrigger value="analytics" className="data-[state=active]:bg-primary-foreground/20 text-primary-foreground">
                   Analytics
                 </TabsTrigger>
               </TabsList>
@@ -389,9 +390,9 @@ function TasksEmbed() {
             </div>
           ) : tasks.length === 0 ? (
             <div className="text-center py-12">
-              <ListTodo className="h-12 w-12 mx-auto text-gray-600 mb-4" />
-              <p className="text-gray-400">No tasks found</p>
-              <p className="text-gray-500 text-sm mt-1">
+              <ListTodo className="h-12 w-12 mx-auto text-primary-foreground/60 mb-4" />
+              <p className="text-primary-foreground/80">No tasks found</p>
+              <p className="text-primary-foreground/70 text-sm mt-1">
                 Create your first task to get started
               </p>
             </div>
@@ -1262,19 +1263,25 @@ export default function AIEmployeesPage() {
       </div>
 
       <Tabs defaultValue={defaultTab} className="space-y-6">
-        <TabsList className={`grid w-full bg-gray-800/80 ${
+        <TabsList className={`grid w-full bg-black ${
           isRealEstateUser && hasIndustryTeam ? 'grid-cols-7' :
           isRealEstateUser ? 'grid-cols-6' : 
           hasIndustryTeam ? 'grid-cols-6' :
           hasWorkflowSystem ? 'grid-cols-5' : 
           'grid-cols-4'
         }`}>
-          <TabsTrigger
-            value="trigger"
-            className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
-          >
-            Lead Search
-          </TabsTrigger>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium opacity-50 cursor-not-allowed bg-gray-700 border border-gray-600 text-gray-400">
+                  Lead Search
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Upgrade - Contact Sales</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <TabsTrigger
             value="ai-team"
             className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
@@ -1570,11 +1577,7 @@ export default function AIEmployeesPage() {
 
         <TabsContent value="tasks" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Task Manager</CardTitle>
-              <CardDescription>Manage your tasks and track progress</CardDescription>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <TasksEmbed />
             </CardContent>
           </Card>
