@@ -1,0 +1,515 @@
+'use client';
+
+export const dynamic = 'force-dynamic';
+
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import {
+  ArrowLeft,
+  Play,
+  Pause,
+  Trash2,
+  Users,
+  MessageSquare,
+  TrendingUp,
+  BarChart3,
+  Settings,
+  UserPlus,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'react-hot-toast';
+import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import EnrollLeadsDialog from './EnrollLeadsDialog';
+
+interface Campaign {
+  id: string;
+  name: string;
+  status: string;
+  triggerType?: string;
+  fromNumber?: string;
+  totalEnrolled: number;
+  totalCompleted: number;
+  avgReplyRate: number;
+  tags?: string;
+  createdAt: string;
+  sequences: Array<{
+    id: string;
+    name: string;
+    message: string;
+    sequenceOrder: number;
+    delayDays: number;
+    delayHours: number;
+    totalSent: number;
+    totalDelivered: number;
+    totalReplied: number;
+    totalFailed: number;
+  }>;
+  enrollments: Array<{
+    id: string;
+    leadId: string;
+    status: string;
+    currentStep: number;
+    nextSendAt?: string;
+    lead?: { contactPerson?: string; businessName?: string; phone?: string };
+  }>;
+}
+
+const statusColors: Record<string, string> = {
+  DRAFT: 'bg-gray-100 text-gray-800',
+  ACTIVE: 'bg-green-100 text-green-800',
+  PAUSED: 'bg-yellow-100 text-yellow-800',
+  COMPLETED: 'bg-blue-100 text-blue-800',
+  ARCHIVED: 'bg-gray-100 text-gray-600',
+  SCHEDULED: 'bg-blue-100 text-blue-800',
+  SENT: 'bg-green-100 text-green-800',
+  CANCELLED: 'bg-red-100 text-red-800',
+};
+
+export default function SmsDripCampaignDetailPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = params?.id as string;
+
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEnrollDialog, setShowEnrollDialog] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [analytics, setAnalytics] = useState<{
+    totalSent: number;
+    totalDelivered: number;
+    totalReplied: number;
+    deliveryRate: number;
+    replyRate: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (id) {
+      fetchCampaign();
+      fetchAnalytics();
+    }
+  }, [id]);
+
+  const fetchCampaign = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/campaigns/sms-drip/${id}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch campaign');
+      }
+
+      const data = await response.json();
+      setCampaign(data.campaign);
+    } catch (error) {
+      console.error('Error fetching campaign:', error);
+      toast.error('Failed to load campaign details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      const response = await fetch(`/api/campaigns/sms-drip/${id}/analytics`);
+      if (response.ok) {
+        const data = await response.json();
+        setAnalytics(data.analytics);
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: 'ACTIVE' | 'PAUSED') => {
+    try {
+      setActionLoading(true);
+      const endpoint = newStatus === 'PAUSED' ? 'pause' : 'activate';
+      const response = await fetch(`/api/campaigns/sms-drip/${id}/${endpoint}`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to ${endpoint} campaign`);
+      }
+
+      toast.success(`Campaign ${newStatus === 'PAUSED' ? 'paused' : 'activated'} successfully`);
+      await fetchCampaign();
+    } catch (error: unknown) {
+      console.error('Error updating campaign status:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update campaign status');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setActionLoading(true);
+      const response = await fetch(`/api/campaigns/sms-drip/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete campaign');
+      }
+
+      toast.success('Campaign deleted successfully');
+      router.push('/dashboard/campaigns/sms-drip');
+    } catch (error: unknown) {
+      console.error('Error deleting campaign:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete campaign');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6 max-w-7xl">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          <p className="text-gray-500 mt-4">Loading campaign...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!campaign) {
+    return (
+      <div className="container mx-auto p-6 max-w-7xl">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-gray-500">Campaign not found</p>
+            <Button
+              onClick={() => router.push('/dashboard/campaigns/sms-drip')}
+              className="mt-4"
+            >
+              Back to Campaigns
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const deliveryRate = analytics?.deliveryRate ?? 0;
+  const replyRate = analytics?.replyRate ?? campaign.avgReplyRate ?? 0;
+
+  return (
+    <div className="container mx-auto p-6 max-w-7xl">
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => router.push('/dashboard/campaigns/sms-drip')}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Campaigns
+        </Button>
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold text-gray-900">{campaign.name}</h1>
+              <Badge className={statusColors[campaign.status] || 'bg-gray-100 text-gray-800'}>
+                {campaign.status}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {(campaign.status === 'DRAFT' || campaign.status === 'PAUSED') && (
+              <Button
+                onClick={() => handleStatusChange('ACTIVE')}
+                disabled={actionLoading}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                {campaign.status === 'DRAFT' ? 'Activate' : 'Resume'}
+              </Button>
+            )}
+            {campaign.status === 'ACTIVE' && (
+              <Button
+                variant="outline"
+                onClick={() => handleStatusChange('PAUSED')}
+                disabled={actionLoading}
+              >
+                <Pause className="h-4 w-4 mr-2" />
+                Pause
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => setShowEnrollDialog(true)}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Enroll Leads
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(true)}
+              className="text-red-600 hover:text-red-700"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Enrolled Leads</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{campaign.totalEnrolled}</div>
+            <p className="text-xs text-muted-foreground">
+              {campaign.totalCompleted} completed
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Delivered</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {analytics?.totalDelivered ?? campaign.sequences?.reduce((s, seq) => s + seq.totalDelivered, 0) ?? 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {deliveryRate.toFixed(1)}% delivery rate
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Replies</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {analytics?.totalReplied ?? campaign.sequences?.reduce((s, seq) => s + seq.totalReplied, 0) ?? 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {replyRate.toFixed(1)}% reply rate
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Reply Rate</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{replyRate.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">
+              Direct responses
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="sequences" className="w-full">
+        <TabsList>
+          <TabsTrigger value="sequences">SMS Sequences ({campaign.sequences?.length || 0})</TabsTrigger>
+          <TabsTrigger value="enrollments">Enrollments ({campaign.totalEnrolled})</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="sequences" className="mt-6">
+          <div className="space-y-4">
+            {!campaign.sequences?.length ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No SMS sequences configured yet</p>
+                </CardContent>
+              </Card>
+            ) : (
+              campaign.sequences?.map((sequence) => (
+                <Card key={sequence.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">
+                          {sequence.name}
+                          {sequence.sequenceOrder > 1 && (
+                            <span className="text-sm font-normal text-gray-500 ml-2">
+                              (Day {sequence.delayDays}, +{sequence.delayHours}h)
+                            </span>
+                          )}
+                        </CardTitle>
+                        <CardDescription className="mt-1 line-clamp-2">
+                          {sequence.message}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="outline">Step {sequence.sequenceOrder}</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500">Sent</p>
+                        <p className="font-semibold">{sequence.totalSent}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Delivered</p>
+                        <p className="font-semibold">{sequence.totalDelivered}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Replied</p>
+                        <p className="font-semibold">{sequence.totalReplied}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Failed</p>
+                        <p className="font-semibold">{sequence.totalFailed}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="enrollments" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Enrolled Leads</CardTitle>
+              <CardDescription>
+                Leads currently enrolled in this campaign
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!campaign.enrollments?.length ? (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">No leads enrolled yet</p>
+                  <Button onClick={() => setShowEnrollDialog(true)}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Enroll Leads
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {campaign.enrollments?.slice(0, 10).map((enrollment) => (
+                    <div
+                      key={enrollment.id}
+                      className="flex justify-between items-center p-3 border rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium">
+                          {enrollment.lead?.contactPerson || enrollment.lead?.businessName || `Lead #${enrollment.leadId}`}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Step {enrollment.currentStep}
+                          {enrollment.nextSendAt && (
+                            <> • Next: {format(new Date(enrollment.nextSendAt), 'MMM d, h:mm a')}</>
+                          )}
+                        </p>
+                      </div>
+                      <Badge variant="outline">{enrollment.status}</Badge>
+                    </div>
+                  ))}
+                  {campaign.enrollments && campaign.enrollments.length > 10 && (
+                    <p className="text-sm text-gray-500 text-center pt-2">
+                      And {campaign.enrollments.length - 10} more...
+                    </p>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Campaign Settings</CardTitle>
+              <CardDescription>
+                Configuration and sender information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Trigger Type</p>
+                  <p className="font-medium">{campaign.triggerType || 'MANUAL'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">From Number</p>
+                  <p className="font-medium">{campaign.fromNumber || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Tags</p>
+                  <p className="font-medium">{campaign.tags || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Created</p>
+                  <p className="font-medium">{format(new Date(campaign.createdAt), 'MMM d, yyyy')}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <EnrollLeadsDialog
+        campaignId={id}
+        isOpen={showEnrollDialog}
+        onClose={() => setShowEnrollDialog(false)}
+        onSuccess={() => {
+          fetchCampaign();
+          setShowEnrollDialog(false);
+        }}
+      />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Campaign?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the campaign &quot;{campaign.name}&quot; and all its data.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Campaign
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
