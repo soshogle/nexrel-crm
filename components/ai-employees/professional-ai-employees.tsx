@@ -200,7 +200,7 @@ export function ProfessionalAIEmployees() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h2 className="text-2xl font-bold flex items-center gap-2 bg-gradient-to-r from-purple-400 via-violet-400 to-purple-500 bg-clip-text text-transparent">
             <Bot className="w-7 h-7 text-purple-400" />
             Professional AI Experts
           </h2>

@@ -612,7 +612,7 @@ export default function AIEmployeesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const defaultTab = tabParam && ['trigger', 'ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'trigger';
+  const defaultTab = tabParam && ['trigger', 'ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'ai-team';
 
   useEffect(() => {
     fetchJobs();

@@ -61,8 +61,10 @@ export function VoiceAgentsPage() {
     totalCalls: 0,
   });
   const [recentCalls, setRecentCalls] = useState<any[]>([]);
+  const [callCountInPeriod, setCallCountInPeriod] = useState(0);
   const [loadingCalls, setLoadingCalls] = useState(false);
   const [summarizingId, setSummarizingId] = useState<string | null>(null);
+  const [historyTimeSpan, setHistoryTimeSpan] = useState<'7d' | '30d' | '90d'>('30d');
 
   useEffect(() => {
     fetchAgents();
@@ -72,18 +74,37 @@ export function VoiceAgentsPage() {
     fetchStats();
   }, [agents]);
 
+  const getDateRangeForSpan = (span: '7d' | '30d' | '90d') => {
+    const to = new Date();
+    const from = new Date();
+    if (span === '7d') from.setDate(from.getDate() - 7);
+    else if (span === '30d') from.setDate(from.getDate() - 30);
+    else from.setDate(from.getDate() - 90);
+    return { from: from.toISOString(), to: to.toISOString() };
+  };
+
   useEffect(() => {
-    if (selectedAgent?.id) {
+    if (selectedAgent?.id && selectedAgent?.source !== 'industry') {
       setLoadingCalls(true);
-      fetch(`/api/calls?voiceAgentId=${selectedAgent.id}&limit=10`)
-        .then((r) => r.json())
-        .then((c) => setRecentCalls(Array.isArray(c) ? c : []))
-        .catch(() => setRecentCalls([]))
+      const { from, to } = getDateRangeForSpan(historyTimeSpan);
+      Promise.all([
+        fetch(`/api/calls?voiceAgentId=${selectedAgent.id}&limit=100&from=${from}&to=${to}`).then((r) => r.json()),
+        fetch(`/api/calls?voiceAgentId=${selectedAgent.id}&countOnly=true&from=${from}&to=${to}`).then((r) => r.json()),
+      ])
+        .then(([calls, countData]) => {
+          setRecentCalls(Array.isArray(calls) ? calls : []);
+          setCallCountInPeriod(countData?.count ?? 0);
+        })
+        .catch(() => {
+          setRecentCalls([]);
+          setCallCountInPeriod(0);
+        })
         .finally(() => setLoadingCalls(false));
     } else {
       setRecentCalls([]);
+      setCallCountInPeriod(0);
     }
-  }, [selectedAgent?.id]);
+  }, [selectedAgent?.id, selectedAgent?.source, historyTimeSpan]);
 
   useEffect(() => {
     const action = searchParams?.get('action');
@@ -114,9 +135,12 @@ export function VoiceAgentsPage() {
       ]);
       const callsData = await callsRes.json();
       const totalCalls = callsData?.count ?? 0;
+      const activeCount = agents.filter((a) =>
+        a.status === 'ACTIVE' || a.status === 'active' || a.source === 'industry'
+      ).length;
       setStats({
         totalAgents: agents.length,
-        activeAgents: agents.filter((a) => a.status === 'ACTIVE').length,
+        activeAgents: activeCount,
         totalCalls,
       });
     } catch (error) {
@@ -308,22 +332,22 @@ export function VoiceAgentsPage() {
           </TabsList>
 
           <TabsContent value="agents" className="mt-6">
-            {agents.length === 0 ? (
-              <div className="text-center py-24 border-2 border-dashed border-purple-200 rounded-xl bg-white/50">
-                <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-4">
-                  <Phone className="w-10 h-10 text-purple-500" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left: Agent list - always visible */}
+              <div className="space-y-3">
+                <div className="text-sm font-medium text-gray-600 mb-4">
+                  Your Agents {agents.length > 0 && `(${agents.length})`}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Voice Agents</h3>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  Voice agents are created when you add AI employees or workflows. Your agents will appear here.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left: Agent list */}
-                <div className="space-y-3">
-                  <div className="text-sm font-medium text-gray-600 mb-4">Your Agents</div>
-                  {agents.map((agent) => {
+                {agents.length === 0 ? (
+                  <div className="p-6 border-2 border-dashed border-purple-200 rounded-xl bg-white/50 text-center">
+                    <Phone className="w-10 h-10 text-purple-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">No voice agents yet</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Create one via AI Employees or add a phone number
+                    </p>
+                  </div>
+                ) : (
+                  agents.map((agent) => {
                     const isActive = agent.status === 'ACTIVE' && (agent.aiEmployeeCount > 0 || agent._count?.campaigns > 0 || agent._count?.callLogs > 0);
                     return (
                       <button
@@ -360,10 +384,11 @@ export function VoiceAgentsPage() {
                         </div>
                       </button>
                     );
-                  })}
-                </div>
+                  })
+                )}
+              </div>
 
-                {/* Center: Selected agent card (like Sara Davis card in image) */}
+              {/* Center: Selected agent card (like Sara Davis card in image) */}
                 <div className="lg:col-span-2">
                   {selectedAgent ? (
                     <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm overflow-hidden shadow-sm">
@@ -498,10 +523,29 @@ export function VoiceAgentsPage() {
                             </div>
                           </TabsContent>
                           <TabsContent value="performance" className="space-y-4">
+                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                              <p className="text-sm font-medium text-gray-700">Voice AI History</p>
+                              <div className="flex gap-1 p-1 rounded-lg bg-purple-50 border border-purple-200">
+                                {(['7d', '30d', '90d'] as const).map((span) => (
+                                  <button
+                                    key={span}
+                                    onClick={() => setHistoryTimeSpan(span)}
+                                    className={cn(
+                                      'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                                      historyTimeSpan === span
+                                        ? 'bg-purple-600 text-white'
+                                        : 'text-gray-600 hover:bg-purple-100'
+                                    )}
+                                  >
+                                    {span === '7d' ? '7 days' : span === '30d' ? '30 days' : '90 days'}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30">
                                 <p className="text-sm text-gray-500">Total Calls</p>
-                                <p className="text-2xl font-bold text-gray-900">{selectedAgent._count?.callLogs ?? 0}</p>
+                                <p className="text-2xl font-bold text-gray-900">{loadingCalls ? '…' : callCountInPeriod}</p>
                               </div>
                               <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30">
                                 <p className="text-sm text-gray-500">Outbound</p>
@@ -509,7 +553,7 @@ export function VoiceAgentsPage() {
                               </div>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-700 mb-2">Recent Calls</p>
+                              <p className="text-sm font-medium text-gray-700 mb-2">Action breakdown — calls in selected period</p>
                               {loadingCalls ? (
                                 <p className="text-sm text-gray-500">Loading...</p>
                               ) : recentCalls.length === 0 ? (

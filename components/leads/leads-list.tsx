@@ -226,7 +226,7 @@ export function LeadsList({ leads }: LeadsListProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card className="bg-gray-900 border-gray-800 hover:border-gray-700 transition-colors h-full flex flex-col">
+                <Card className="bg-gradient-to-r from-purple-900/80 to-purple-800/80 border-purple-700/50 hover:border-purple-600/50 transition-colors h-full flex flex-col">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
