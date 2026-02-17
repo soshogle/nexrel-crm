@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json().catch(() => ());
+    const body = await request.json().catch(() => undefined);
     const { employeeTypes, forceRefresh } = body || {};
 
     let apiKey: string;

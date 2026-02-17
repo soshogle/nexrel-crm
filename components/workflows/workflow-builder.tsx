@@ -121,7 +121,7 @@ export const WorkflowBuilder = forwardRef<WorkflowBuilderHandle, WorkflowBuilder
         assignedAIEmployeeId: task.assignedAIEmployeeId ?? ac.assignedAIEmployeeId ?? null,
         displayOrder: task.displayOrder || 0,
         isHITL: task.isHITL || false,
-        delayMinutes: task.delayValue ?? task.delayMinutes || 0,
+        delayMinutes: (task.delayValue ?? task.delayMinutes) ?? 0,
         delayUnit: task.delayUnit || 'MINUTES',
         delayDays: task.delayDays || 0,
         delayHours: task.delayHours || 0,
