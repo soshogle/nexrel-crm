@@ -489,14 +489,6 @@ export default function AIEmployeesPage() {
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [loadingJobDetails, setLoadingJobDetails] = useState(false);
 
-  // Lead Research Form
-  const [leadBusinessName, setLeadBusinessName] = useState('');
-  const [leadWebsite, setLeadWebsite] = useState('');
-  const [leadIndustry, setLeadIndustry] = useState('');
-  const [researchLoading, setResearchLoading] = useState(false);
-  const [activeResearchJobId, setActiveResearchJobId] = useState<string | null>(null);
-  const [activeResearchJob, setActiveResearchJob] = useState<{ progress: number; progressMessage: string | null; status: string } | null>(null);
-
   // Workflow Form
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -650,52 +642,6 @@ export default function AIEmployeesPage() {
       setLoadingVoices(false);
     }
   };
-
-  // Poll active lead research job for live progress
-  useEffect(() => {
-    if (!activeResearchJobId) return;
-
-    const poll = async () => {
-      try {
-        const res = await fetch(`/api/ai-employees/jobs/${activeResearchJobId}`);
-        const data = await res.json();
-        if (!data.success || !data.data) return;
-
-        const job = data.data;
-        const progress = job.progress ?? 0;
-        const progressMessage = job.logs?.[0]?.message ?? null;
-        const status = job.status;
-
-        setActiveResearchJob({ progress, progressMessage, status });
-
-        if (status === 'COMPLETED' || status === 'FAILED') {
-          setActiveResearchJobId(null);
-          setActiveResearchJob(null);
-          fetchJobs();
-
-          if (status === 'COMPLETED' && job.output) {
-            const jobForDialog = {
-              ...job,
-              employee: job.employee || { name: 'Lead Researcher', type: 'LEAD_RESEARCHER' },
-              createdAt: typeof job.createdAt === 'string' ? job.createdAt : job.createdAt?.toISOString?.(),
-              completedAt: job.completedAt ? (typeof job.completedAt === 'string' ? job.completedAt : job.completedAt?.toISOString?.()) : undefined,
-            };
-            setSelectedJob(jobForDialog as AIJob);
-            setShowResultsDialog(true);
-            toast.success('Research complete! View results below.');
-          } else if (status === 'FAILED') {
-            toast.error('Research failed. Check Monitor Jobs for details.');
-          }
-        }
-      } catch (e) {
-        console.error('Failed to poll research job:', e);
-      }
-    };
-
-    poll();
-    const interval = setInterval(poll, 2000);
-    return () => clearInterval(interval);
-  }, [activeResearchJobId]);
 
   // Fetch provisioned professional agents (for phone selection in Setup)
   const fetchProvisionedProfessionalAgents = async () => {
@@ -1024,57 +970,7 @@ export default function AIEmployeesPage() {
     }
   };
 
-  const handleLeadResearch = async () => {
-    console.log('[Lead Research] Button clicked');
-    console.log('[Lead Research] Business name:', leadBusinessName);
-    
-    if (!leadBusinessName) {
-      toast.error('Business name is required');
-      return;
-    }
-
-    setResearchLoading(true);
-    toast.info('Starting lead research...');
-    
-    try {
-      console.log('[Lead Research] Making API call...');
-      const response = await fetch('/api/ai-employees/lead-research', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessName: leadBusinessName,
-          website: leadWebsite || undefined,
-          industry: leadIndustry || undefined
-        })
-      });
-
-      console.log('[Lead Research] Response status:', response.status);
-      const data = await response.json();
-      console.log('[Lead Research] Response data:', data);
-      
-      if (data.success) {
-        toast.success(data.message || 'Lead research started! Track progress in AI Jobs below.');
-        setLeadBusinessName('');
-        setLeadWebsite('');
-        setLeadIndustry('');
-        if (data.jobId) {
-          setActiveResearchJobId(data.jobId);
-          setActiveResearchJob({ progress: 0, progressMessage: 'Starting research...', status: 'RUNNING' });
-        }
-        fetchJobs();
-      } else {
-        toast.error(data.error || 'Failed to start lead research');
-        console.error('[Lead Research] Error:', data.error);
-      }
-    } catch (error: any) {
-      console.error('[Lead Research] Catch error:', error);
-      toast.error(error.message || 'Failed to start lead research');
-    } finally {
-      setResearchLoading(false);
-    }
-  };
-
-  // Get completed lead research jobs
+  // Get completed lead research jobs (from Monitor Jobs - used to populate workflow form)
   const completedLeadJobs = jobs.filter(
     j => j.jobType === 'lead_enrichment' && j.status === 'COMPLETED' && j.output
   );
@@ -1424,77 +1320,7 @@ export default function AIEmployeesPage() {
         </TabsList>
 
         <TabsContent value="trigger" className="space-y-6">
-          {/* Lead Research Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Lead Research & Enrichment
-              </CardTitle>
-              <CardDescription>
-                AI Employee: Sarah - Lead Researcher | Estimated time: 3-4 minutes
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="businessName">Business Name *</Label>
-                  <Input
-                    id="businessName"
-                    placeholder="e.g., Acme Corp"
-                    value={leadBusinessName}
-                    onChange={(e) => setLeadBusinessName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    placeholder="e.g., acmecorp.com"
-                    value={leadWebsite}
-                    onChange={(e) => setLeadWebsite(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="industry">Industry</Label>
-                  <Input
-                    id="industry"
-                    placeholder="e.g., Technology"
-                    value={leadIndustry}
-                    onChange={(e) => setLeadIndustry(e.target.value)}
-                  />
-                </div>
-              </div>
-              <Button 
-                onClick={handleLeadResearch} 
-                disabled={researchLoading || !!activeResearchJobId}
-                className="w-full"
-              >
-                {researchLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Researching...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 mr-2" />
-                    Start Lead Research
-                  </>
-                )}
-              </Button>
-              {activeResearchJobId && activeResearchJob && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {activeResearchJob.progressMessage || 'Researching...'}
-                    </span>
-                    <span className="font-medium">{activeResearchJob.progress}%</span>
-                  </div>
-                  <Progress value={activeResearchJob.progress} className="h-2" />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Lead Research & Enrichment moved to Leads page → Lead Finder tab */}
 
           {/* Note: Simple workflow builder removed - use the Workflows tab for visual workflow builder */}
 

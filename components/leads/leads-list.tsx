@@ -52,6 +52,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { MakeCallDialog } from '@/components/voice-agents/make-call-dialog'
 import LinkedInScraperDialog from '@/components/linkedin-scraper/linkedin-scraper-dialog'
 import SocialMediaScraperDialog from '@/components/leads/social-media-scraper-dialog'
+import { LeadResearchCard } from '@/components/leads/lead-research-card'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -479,16 +480,16 @@ export function LeadsList({ leads }: LeadsListProps) {
               </div>
               <Button 
                 variant="outline"
-                onClick={() => setLinkedInDialogOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 border-blue-500"
+                disabled
+                className="opacity-50 cursor-not-allowed bg-gray-700 border-gray-600 text-gray-400"
               >
                 <Linkedin className="h-4 w-4 mr-2" />
                 LinkedIn
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => setSocialMediaDialogOpen(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0"
+                disabled
+                className="opacity-50 cursor-not-allowed bg-gray-700 border-gray-600 text-gray-400"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 Social Media
@@ -505,7 +506,7 @@ export function LeadsList({ leads }: LeadsListProps) {
       </Card>
       {/* Tabbed Content */}
       <Tabs defaultValue="all" className="space-y-6">
-        <TabsList className="grid w-full max-w-[800px] grid-cols-3">
+        <TabsList className="grid w-full max-w-[1000px] grid-cols-4">
           <TabsTrigger value="all" className="gap-2">
             <Users className="h-4 w-4" />
             All Leads ({filteredLeads.length})
@@ -514,9 +515,13 @@ export function LeadsList({ leads }: LeadsListProps) {
             <Globe className="h-4 w-4" />
             Website ({websiteLeads.length})
           </TabsTrigger>
-          <TabsTrigger value="social" className="gap-2">
+          <TabsTrigger value="social" className="gap-2 opacity-60 data-[state=inactive]:opacity-60">
             <Sparkles className="h-4 w-4" />
             Social Media ({socialMediaLeads.length})
+          </TabsTrigger>
+          <TabsTrigger value="lead-finder" className="gap-2 opacity-60 data-[state=inactive]:opacity-60">
+            <Search className="h-4 w-4" />
+            Lead Finder
           </TabsTrigger>
         </TabsList>
 
@@ -530,48 +535,36 @@ export function LeadsList({ leads }: LeadsListProps) {
           {renderLeadsContent(websiteLeads, 'No website leads yet. Add a form to your website to capture leads.')}
         </TabsContent>
 
-        {/* Social Media Leads Tab */}
+        {/* Social Media Leads Tab - Greyed out for all industries */}
         <TabsContent value="social" className="space-y-6">
-          {/* Quick Launch Buttons */}
-          <Card className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-purple-500/30">
+          {/* Quick Launch Buttons - disabled */}
+          <Card className="bg-gradient-to-r from-purple-900/20 to-pink-900/20 border-purple-500/30 opacity-60">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-purple-300">
                 <Sparkles className="h-5 w-5" />
                 Quick Launch Soshogle Lead Finders
               </CardTitle>
               <CardDescription>
-                Find leads directly from top social platforms
+                Find leads directly from top social platforms (Coming soon)
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-purple-900/40 to-pink-900/40 border-purple-500/40 hover:border-purple-500 hover:bg-purple-900/60"
-                  onClick={() => setSocialMediaDialogOpen(true)}
-                >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 opacity-50 pointer-events-none">
+                <Button variant="outline" className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-purple-900/40 to-pink-900/40 border-purple-500/40" disabled>
                   <Instagram className="h-8 w-8 text-pink-400" />
                   <div>
                     <div className="font-semibold">Instagram</div>
                     <div className="text-xs text-gray-400">{socialMediaStats.instagram} leads</div>
                   </div>
                 </Button>
-                <Button
-                  variant="outline"
-                  className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border-blue-500/40 hover:border-blue-500 hover:bg-blue-900/60"
-                  onClick={() => setSocialMediaDialogOpen(true)}
-                >
+                <Button variant="outline" className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border-blue-500/40" disabled>
                   <Facebook className="h-8 w-8 text-blue-400" />
                   <div>
                     <div className="font-semibold">Facebook</div>
                     <div className="text-xs text-gray-400">{socialMediaStats.facebook} leads</div>
                   </div>
                 </Button>
-                <Button
-                  variant="outline"
-                  className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-gray-900/40 to-gray-800/40 border-gray-500/40 hover:border-gray-400 hover:bg-gray-900/60"
-                  onClick={() => setSocialMediaDialogOpen(true)}
-                >
+                <Button variant="outline" className="h-auto py-4 flex-col gap-2 bg-gradient-to-br from-gray-900/40 to-gray-800/40 border-gray-500/40" disabled>
                   <Music className="h-8 w-8 text-gray-300" />
                   <div>
                     <div className="font-semibold">TikTok</div>
@@ -583,6 +576,14 @@ export function LeadsList({ leads }: LeadsListProps) {
           </Card>
 
           {renderLeadsContent(socialMediaLeads, 'No social media leads yet')}
+        </TabsContent>
+
+        {/* Lead Finder Tab - Greyed out for all industries, contains Lead Research & Enrichment */}
+        <TabsContent value="lead-finder" className="space-y-6">
+          <div className="opacity-60 pointer-events-none">
+            <LeadResearchCard />
+          </div>
+          <p className="text-sm text-muted-foreground text-center">Lead Finder (Coming soon)</p>
         </TabsContent>
       </Tabs>
       {/* Voice AI Call Dialog */}
