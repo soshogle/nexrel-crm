@@ -24,6 +24,8 @@ interface ElevenLabsAgentProps {
   autoStart?: boolean;
   compactMode?: boolean;
   hideWhenIdle?: boolean;
+  /** Theodora-style: frameless, GeometricShapes with bare, minimal overlay */
+  variant?: 'default' | 'frameless';
 }
 
 type AgentStatus = "idle" | "connecting" | "listening" | "speaking" | "processing";
@@ -37,7 +39,9 @@ export function ElevenLabsAgent({
   dynamicVariables,
   compactMode = false,
   hideWhenIdle = false,
+  variant = 'default',
 }: ElevenLabsAgentProps) {
+  const isFrameless = variant === 'frameless';
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -251,6 +255,72 @@ export function ElevenLabsAgent({
 
   if (hideWhenIdle && !isConnected && !isLoading) {
     return <div className="hidden" aria-hidden="true" />;
+  }
+
+  if (isFrameless) {
+    return (
+      <div className="relative w-full h-full min-h-[320px] flex flex-col items-center justify-center rounded-2xl overflow-hidden bg-black/10">
+        <div className="absolute inset-0">
+          <GeometricShapes audioLevel={audioLevel} isAgentSpeaking={isAgentSpeaking} bare />
+        </div>
+        {!isConnected && !isLoading && !error && (
+          <button
+            onClick={() => agentId && startConversation()}
+            className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer group"
+            aria-label="Start conversation"
+          >
+            <div
+              className="flex h-20 w-20 items-center justify-center rounded-full transition-transform group-hover:scale-110"
+              style={{
+                background: "rgba(139, 92, 246, 0.2)",
+                border: "2px solid rgba(34, 211, 238, 0.4)",
+              }}
+            >
+              <Mic className="w-10 h-10 animate-pulse" style={{ color: "#22d3ee" }} />
+            </div>
+          </button>
+        )}
+        {isLoading && !error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-2xl z-10">
+            <p className="text-sm font-medium text-white/90">Connecting...</p>
+          </div>
+        )}
+        {error && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 rounded-2xl z-10 p-4">
+            <p className="text-sm text-red-300 mb-2">{error}</p>
+            <Button size="sm" onClick={startConversation} className="bg-primary hover:bg-primary/90">
+              Retry
+            </Button>
+          </div>
+        )}
+        {isConnected && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10">
+            <div className="flex items-center gap-2">
+              {status === "listening" && (
+                <>
+                  <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-sm font-medium text-green-400">Listening</span>
+                </>
+              )}
+              {status === "speaking" && (
+                <>
+                  <div className="flex gap-1">
+                    <div className="w-1 h-4 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: "0ms" }} />
+                    <div className="w-1 h-4 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: "150ms" }} />
+                    <div className="w-1 h-4 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: "300ms" }} />
+                  </div>
+                  <span className="text-sm font-medium text-purple-300">Speaking</span>
+                </>
+              )}
+            </div>
+            <Button size="sm" variant="outline" onClick={stopConversation} className="gap-2 bg-black/20 border-white/20 text-white hover:bg-black/40">
+              <MicOff className="w-4 h-4" />
+              End Conversation
+            </Button>
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (

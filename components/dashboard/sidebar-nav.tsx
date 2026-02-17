@@ -726,7 +726,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200',
                   isActive
-                    ? 'bg-purple-600 text-white font-medium'
+                    ? 'bg-primary text-primary-foreground font-medium'
                     : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 )}
                 title={!isExpanded ? translatedTitle : undefined}
@@ -744,7 +744,7 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 text-sm transition-all duration-200 w-full',
                 isAdminSectionActive
-                  ? 'bg-purple-600 text-white font-medium'
+                  ? 'bg-primary text-primary-foreground font-medium'
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white'
               )}
               title={!isExpanded ? translateMenuItem('admin', 'Admin') : undefined}

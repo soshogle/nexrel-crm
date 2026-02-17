@@ -226,15 +226,15 @@ export function LeadsList({ leads }: LeadsListProps) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card className="bg-purple-600 border-purple-500/50 hover:border-purple-400/50 transition-colors h-full flex flex-col">
+                <Card className="bg-primary border-primary-foreground/20 hover:border-primary-foreground/40 transition-colors h-full flex flex-col">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <CardTitle className="text-lg text-white mb-2">
+                        <CardTitle className="text-lg text-primary-foreground mb-2">
                           {lead.businessName}
                         </CardTitle>
                         {lead.contactPerson && (
-                          <p className="text-sm text-gray-400">{lead.contactPerson}</p>
+                          <p className="text-sm text-primary-foreground/80">{lead.contactPerson}</p>
                         )}
                       </div>
                       <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
@@ -243,39 +243,39 @@ export function LeadsList({ leads }: LeadsListProps) {
                   <CardContent className="flex-1 flex flex-col justify-between">
                     <div className="space-y-2 mb-4">
                       {lead.email && (
-                        <div className="flex items-center text-sm text-gray-300">
-                          <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                        <div className="flex items-center text-sm text-primary-foreground/90">
+                          <Mail className="h-4 w-4 mr-2 text-primary-foreground/60" />
                           {lead.email}
                         </div>
                       )}
                       {lead.phone && (
-                        <div className="flex items-center text-sm text-gray-300">
-                          <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                        <div className="flex items-center text-sm text-primary-foreground/90">
+                          <Phone className="h-4 w-4 mr-2 text-primary-foreground/60" />
                           {lead.phone}
                         </div>
                       )}
                       {lead.website && (
-                        <div className="flex items-center text-sm text-gray-300">
-                          <Globe className="h-4 w-4 mr-2 text-gray-400" />
+                        <div className="flex items-center text-sm text-primary-foreground/90">
+                          <Globe className="h-4 w-4 mr-2 text-primary-foreground/60" />
                           <a
                             href={lead.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="hover:text-white hover:underline truncate"
+                            className="hover:text-primary-foreground hover:underline truncate"
                           >
                             {lead.website}
                           </a>
                         </div>
                       )}
                       {(lead.city || lead.address) && (
-                        <div className="flex items-center text-sm text-gray-300">
-                          <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                        <div className="flex items-center text-sm text-primary-foreground/90">
+                          <MapPin className="h-4 w-4 mr-2 text-primary-foreground/60" />
                           {lead.city && lead.address
                             ? `${lead.city}, ${lead.address}`
                             : lead.city || lead.address}
                         </div>
                       )}
-                      <div className="flex items-center justify-between text-xs text-gray-400 pt-2">
+                      <div className="flex items-center justify-between text-xs text-primary-foreground/70 pt-2">
                         <div className="flex items-center gap-1">
                           <SourceIcon className="h-3 w-3" />
                           {lead.source}
@@ -285,7 +285,7 @@ export function LeadsList({ leads }: LeadsListProps) {
                           {formatDistanceToNow(new Date(lead.createdAt), { addSuffix: true })}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-400 pt-1">
+                      <div className="flex items-center gap-3 text-xs text-primary-foreground/70 pt-1">
                         <div className="flex items-center gap-1">
                           <MessageSquare className="h-3 w-3" />
                           {lead.messages.length} messages

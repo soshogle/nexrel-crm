@@ -110,11 +110,11 @@ export function ConversationList({
   };
 
   return (
-    <div className="flex flex-col h-full border-r border-gray-700 bg-gray-900">
+    <div className="flex flex-col h-full border-r border-primary/30 bg-primary">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
+        <div className="p-4 border-b border-primary-foreground/20">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2 text-white">
+          <h2 className="text-lg font-semibold flex items-center gap-2 text-primary-foreground">
             <Inbox className="h-5 w-5 text-primary" />
             Messages
           </h2>
@@ -123,7 +123,7 @@ export function ConversationList({
               variant="ghost" 
               size="sm" 
               onClick={onSync}
-              className="text-white hover:bg-gray-800"
+              className="text-primary-foreground hover:bg-primary/80"
               title="Sync messages"
             >
               <RefreshCw className="h-4 w-4" />
@@ -138,13 +138,13 @@ export function ConversationList({
             placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+            className="pl-9 bg-primary/80 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60"
           />
         </div>
 
         {/* Channel Filter */}
         <Select value={channelFilter} onValueChange={setChannelFilter}>
-          <SelectTrigger className="w-full bg-gray-800 border-gray-700 text-white">
+          <SelectTrigger className="w-full bg-primary/80 border-primary-foreground/20 text-primary-foreground">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -176,8 +176,8 @@ export function ConversationList({
           </div>
         ) : filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center">
-            <MessageCircle className="h-12 w-12 text-gray-400 mb-3" />
-            <p className="text-gray-400">
+            <MessageCircle className="h-12 w-12 text-primary-foreground/60 mb-3" />
+            <p className="text-primary-foreground/80">
               {searchQuery ? 'No conversations found' : 'No conversations yet'}
             </p>
           </div>
@@ -189,14 +189,14 @@ export function ConversationList({
                 onClick={() => onSelectConversation(conversation.id)}
                 className={`w-full flex items-start gap-3 p-3 rounded-lg transition-colors ${
                   selectedConversationId === conversation.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-gray-800'
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'hover:bg-primary/80'
                 }`}
               >
                 <div className="relative">
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={conversation.contactAvatar} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
+                    <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground">
                       {getInitials(conversation.contactName)}
                     </AvatarFallback>
                   </Avatar>
@@ -212,7 +212,7 @@ export function ConversationList({
 
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between mb-1">
-                    <p className={`font-semibold truncate ${selectedConversationId === conversation.id ? 'text-primary-foreground' : 'text-white'}`}>
+                    <p className={`font-semibold truncate ${selectedConversationId === conversation.id ? 'text-primary-foreground' : 'text-primary-foreground'}`}>
                       {conversation.contactName}
                     </p>
                     {conversation.lastMessageAt && (
@@ -228,7 +228,7 @@ export function ConversationList({
                       {conversation.lastMessagePreview || 'No messages yet'}
                     </p>
                     {conversation.unreadCount > 0 && (
-                      <Badge className="ml-2 bg-primary text-primary-foreground">
+                      <Badge className="ml-2 bg-primary-foreground text-primary">
                         {conversation.unreadCount}
                       </Badge>
                     )}
