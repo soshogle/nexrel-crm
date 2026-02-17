@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card } from '@/components/ui/card';
-import { X, Save, Sparkles, GitBranch, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Save, Sparkles, GitBranch, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { VoiceAgentSelect } from './voice-agent-select';
 import { toast } from 'sonner';
 
 interface CampaignStepEditorPanelProps {
@@ -161,10 +162,13 @@ export function CampaignStepEditorPanel({
               <Textarea
                 value={edited.htmlContent || ''}
                 onChange={(e) => update({ htmlContent: e.target.value })}
-                placeholder="Enter HTML content..."
+                placeholder="Hi {{firstName}}, ... Use {{lastName}}, {{company}}, {{notes}} for personalization"
                 rows={8}
                 className="font-mono text-sm"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Personalize: {'{{firstName}}'}, {'{{lastName}}'}, {'{{company}}'}, {'{{notes}}'}, {'{{lastCallSummary}}'}, {'{{lastEmailSubject}}'}
+              </p>
             </div>
             <div>
               <Label>Plain Text (Fallback)</Label>
@@ -206,9 +210,12 @@ export function CampaignStepEditorPanel({
               <Textarea
                 value={edited.message || ''}
                 onChange={(e) => update({ message: e.target.value })}
-                placeholder="Enter SMS message..."
+                placeholder="Hi {{firstName}}, ... Use {{lastName}}, {{company}}, {{notes}} for personalization"
                 rows={6}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Personalize: {'{{firstName}}'}, {'{{lastName}}'}, {'{{company}}'}, {'{{notes}}'}
+              </p>
               <p className="text-xs text-gray-500 mt-1">
                 {edited.message?.length || 0} chars
                 {(edited.message?.length || 0) > 160 &&
@@ -224,6 +231,40 @@ export function CampaignStepEditorPanel({
                 checked={edited.skipIfReplied ?? false}
                 onCheckedChange={(c) => update({ skipIfReplied: c })}
               />
+            </div>
+          </>
+        )}
+
+        {edited.type === 'VOICE' && (
+          <>
+            <div>
+              <Label>Voice Agent *</Label>
+              <VoiceAgentSelect
+                value={edited.voiceAgentId || ''}
+                onChange={(v) => update({ voiceAgentId: v })}
+                placeholder="Select voice agent for this step"
+              />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Label>Call Script / Instructions</Label>
+                <span
+                  className="text-xs text-muted-foreground flex items-center gap-1"
+                  title="Use {{firstName}}, {{lastName}}, {{company}}, {{notes}}, {{lastCallSummary}}, {{lastEmailSubject}} to personalize per contact"
+                >
+                  <Info className="h-3 w-3" />
+                  Personalization
+                </span>
+              </div>
+              <Textarea
+                value={edited.callScript || ''}
+                onChange={(e) => update({ callScript: e.target.value })}
+                placeholder="Hi {{firstName}}, this is... Reference {{notes}} or {{lastCallSummary}} for context."
+                rows={6}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Tokens: {'{{firstName}}'}, {'{{lastName}}'}, {'{{company}}'}, {'{{notes}}'}, {'{{lastCallSummary}}'}, {'{{lastEmailSubject}}'}
+              </p>
             </div>
           </>
         )}

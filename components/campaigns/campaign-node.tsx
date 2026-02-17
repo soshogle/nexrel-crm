@@ -3,12 +3,13 @@
 import React from 'react';
 import { CampaignStep } from './campaign-builder-types';
 import { cn } from '@/lib/utils';
-import { GripVertical, Mail, MessageSquare, Clock, GitBranch } from 'lucide-react';
+import { GripVertical, Mail, MessageSquare, Clock, GitBranch, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const STEP_CONFIG: Record<string, { icon: typeof Mail; color: string; label: string }> = {
   EMAIL: { icon: Mail, color: '#8b5cf6', label: 'Email' },
   SMS: { icon: MessageSquare, color: '#06b6d4', label: 'SMS' },
+  VOICE: { icon: Phone, color: '#10b981', label: 'Voice' },
   DELAY: { icon: Clock, color: '#f59e0b', label: 'Delay' },
 };
 
@@ -114,6 +115,7 @@ export function CampaignNode({
           <div className="mt-1 text-[10px] text-gray-500 line-clamp-2 font-normal">
             {step.type === 'EMAIL' && (step.subject || '(no subject)')}
             {step.type === 'SMS' && (step.message || '(no message)')}
+            {step.type === 'VOICE' && (step.callScript ? 'Call script set' : '(no script)')}
             {step.type === 'DELAY' && `Wait ${step.delayDays ?? 0}d ${step.delayHours ?? 0}h`}
           </div>
         )}

@@ -9,12 +9,15 @@ interface TriggerContext {
     | 'TAG_ADDED'
     | 'FORM_SUBMITTED'
     | 'DEAL_CREATED'
+    | 'DEAL_WON'
     | 'REFERRAL_CREATED'
     | 'REFERRAL_CONVERTED'
     | 'SERVICE_COMPLETED'
     | 'FEEDBACK_POSITIVE'
     | 'WEBSITE_VOICE_AI_LEAD'
-    | 'WEBSITE_SECRET_REPORT_LEAD';
+    | 'WEBSITE_SECRET_REPORT_LEAD'
+    | 'TRIAL_ENDED'
+    | 'WORKFLOW_TASK_COMPLETED';
   metadata?: {
     oldStatus?: string;
     newStatus?: string;
@@ -22,6 +25,8 @@ interface TriggerContext {
     formId?: string;
     dealId?: string;
     websiteId?: string;
+    workflowId?: string;
+    taskId?: string;
   };
 }
 
@@ -229,6 +234,21 @@ function shouldEnrollInCampaign(
   // For FORM_SUBMITTED trigger, check if form matches
   if (triggerType === 'FORM_SUBMITTED' && triggerConfig.targetFormId) {
     return metadata?.formId === triggerConfig.targetFormId;
+  }
+
+  // For DEAL_WON trigger, check if deal stage matches
+  if (triggerType === 'DEAL_WON' && triggerConfig.targetDealStage) {
+    return metadata?.newStatus === triggerConfig.targetDealStage;
+  }
+
+  // For WORKFLOW_TASK_COMPLETED trigger, check if workflow/task matches
+  if (triggerType === 'WORKFLOW_TASK_COMPLETED') {
+    if (triggerConfig.targetWorkflowId && metadata?.workflowId !== triggerConfig.targetWorkflowId) {
+      return false;
+    }
+    if (triggerConfig.targetTaskId && metadata?.taskId !== triggerConfig.targetTaskId) {
+      return false;
+    }
   }
 
   return true; // Default to enrolling if no specific conditions

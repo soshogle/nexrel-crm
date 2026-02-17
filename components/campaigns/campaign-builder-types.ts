@@ -4,7 +4,7 @@
  * Mirrors workflow builder: branching, conditions, expandable steps
  */
 
-export type CampaignStepType = 'EMAIL' | 'SMS' | 'DELAY';
+export type CampaignStepType = 'EMAIL' | 'SMS' | 'VOICE' | 'DELAY';
 
 export interface CampaignStep {
   id: string;
@@ -18,6 +18,9 @@ export interface CampaignStep {
   textContent?: string;
   // SMS
   message?: string;
+  // VOICE
+  voiceAgentId?: string;
+  callScript?: string;
   // DELAY
   delayDays?: number;
   delayHours?: number;
@@ -46,7 +49,7 @@ export interface CampaignBuilderState {
   id?: string;
   name: string;
   description: string;
-  campaignType: 'email-drip' | 'sms-drip';
+  campaignType: 'email-drip' | 'sms-drip' | 'voice';
   triggerType: string;
   steps: CampaignStep[];
   // Sender info
@@ -55,6 +58,28 @@ export interface CampaignBuilderState {
   replyTo?: string;
   fromNumber?: string;
   tags?: string;
+  // Voice campaign settings
+  voiceAgentId?: string;
+  minLeadScore?: number;
+  maxCallsPerDay?: number;
+  callWindowStart?: string;
+  callWindowEnd?: string;
+  maxRetries?: number;
+  // Audience (bulk targeting)
+  audience?: {
+    type: 'SINGLE' | 'FILTERED' | 'MANUAL' | 'WEBSITE_LEADS';
+    filters?: {
+      minLeadScore?: number;
+      statuses?: string[];
+      tags?: string[];
+      hasPhone?: boolean;
+      hasEmail?: boolean;
+    };
+  };
+  // Campaign settings (rate limits, scheduling)
+  dailyLimit?: number;
+  weeklyLimit?: number;
+  scheduledFor?: string;
 }
 
 export interface DragState {

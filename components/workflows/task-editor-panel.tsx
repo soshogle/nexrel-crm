@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS, PROFESSIONAL_EMPLOYEE_TYPES } from '@/lib/professional-ai-employees/config';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { CalendarConfigSection } from './calendar-config-section';
 
 interface TaskEditorPanelProps {
   task: WorkflowTask | null;
@@ -64,6 +65,7 @@ const AVAILABLE_ACTIONS = [
   { value: 'email', label: 'Email', icon: '📧', description: 'Send email via Soshogle AI' },
   { value: 'task', label: 'Create Task', icon: '✅', description: 'Create a task in CRM' },
   { value: 'calendar', label: 'Calendar Event', icon: '📅', description: 'Create calendar appointment' },
+  { value: 'document', label: 'Generate Document', icon: '📄', description: 'Generate document with style options' },
   { value: 'lead_research', label: 'Lead Research', icon: '🔍', description: 'Research lead/customer information' },
   // Website actions (for workflows triggered by or targeting website)
   { value: 'create_lead_from_website', label: 'Create Lead from Form', icon: '🌐', description: 'Create lead from website form submission' },
@@ -502,6 +504,221 @@ export function TaskEditorPanel({
             </div>
           </Card>
           </>
+        )}
+
+        {/* SMS Message - when SMS action is selected */}
+        {selectedActions.includes('sms') && (
+          <Card className="p-4 border-cyan-200 bg-cyan-50/50">
+            <div className="flex items-center gap-2 mb-2">
+              <MessageSquare className="w-4 h-4 text-cyan-600" />
+              <Label className="text-sm font-semibold">SMS Message</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              What message to send. Use {'{{firstName}}'}, {'{{lastName}}'} for personalization.
+            </p>
+            <Textarea
+              value={(editedTask as any).actionConfig?.smsMessage ?? ''}
+              onChange={(e) => {
+                const ac = (editedTask as any).actionConfig || {};
+                setEditedTask({ ...editedTask, actionConfig: { ...ac, smsMessage: e.target.value || undefined } } as WorkflowTask);
+              }}
+              placeholder="e.g. Hi {{firstName}}, just following up on your inquiry..."
+              rows={4}
+              className="bg-white border-cyan-200"
+            />
+          </Card>
+        )}
+
+        {/* Email Content - when Email action is selected */}
+        {selectedActions.includes('email') && (
+          <Card className="p-4 border-blue-200 bg-blue-50/50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">📧</span>
+              <Label className="text-sm font-semibold">Email Content</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Subject and body for the email. Use {'{{firstName}}'} for personalization.
+            </p>
+            <div className="space-y-2">
+              <Input
+                value={(editedTask as any).actionConfig?.emailSubject ?? ''}
+                onChange={(e) => {
+                  const ac = (editedTask as any).actionConfig || {};
+                  setEditedTask({ ...editedTask, actionConfig: { ...ac, emailSubject: e.target.value || undefined } } as WorkflowTask);
+                }}
+                placeholder="Email subject"
+                className="bg-white border-blue-200"
+              />
+              <Textarea
+                value={(editedTask as any).actionConfig?.emailBody ?? ''}
+                onChange={(e) => {
+                  const ac = (editedTask as any).actionConfig || {};
+                  setEditedTask({ ...editedTask, actionConfig: { ...ac, emailBody: e.target.value || undefined } } as WorkflowTask);
+                }}
+                placeholder="Email body (plain text or HTML)"
+                rows={6}
+                className="bg-white border-blue-200"
+              />
+            </div>
+          </Card>
+        )}
+
+        {/* CRM Task - when Create Task action is selected */}
+        {selectedActions.includes('task') && (
+          <Card className="p-4 border-green-200 bg-green-50/50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">✅</span>
+              <Label className="text-sm font-semibold">CRM Task Details</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              What task to create and who it&apos;s assigned to.
+            </p>
+            <div className="space-y-2">
+              <div>
+                <Label className="text-xs">Task Type</Label>
+                <Select
+                  value={(editedTask as any).actionConfig?.crmTaskType ?? 'follow_up'}
+                  onValueChange={(v) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, crmTaskType: v } } as WorkflowTask);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-green-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="follow_up">Follow Up</SelectItem>
+                    <SelectItem value="call">Call</SelectItem>
+                    <SelectItem value="email">Email</SelectItem>
+                    <SelectItem value="meeting">Meeting</SelectItem>
+                    <SelectItem value="demo">Demo</SelectItem>
+                    <SelectItem value="proposal">Proposal</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Assigned To</Label>
+                <Select
+                  value={(editedTask as any).actionConfig?.crmTaskAssignee ?? 'unassigned'}
+                  onValueChange={(v) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, crmTaskAssignee: v === 'unassigned' ? undefined : v } } as WorkflowTask);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-green-200">
+                    <SelectValue placeholder="Select assignee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {aiEmployees.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.customName || emp.profession}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* HITL - Who (assignee) when human-in-the-loop */}
+        {editedTask.isHITL && (
+          <Card className="p-4 border-amber-200 bg-amber-50/50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">👤</span>
+              <Label className="text-sm font-semibold">Assign to Human</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Who should this task be assigned to for human review?
+            </p>
+            <Select
+              value={(editedTask as any).actionConfig?.hitlAssignee ?? 'unassigned'}
+              onValueChange={(v) => {
+                const ac = (editedTask as any).actionConfig || {};
+                setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlAssignee: v === 'unassigned' ? undefined : v } } as WorkflowTask);
+              }}
+            >
+              <SelectTrigger className="bg-white border-amber-200">
+                <SelectValue placeholder="Select person" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {aiEmployees.map((emp) => (
+                  <SelectItem key={emp.id} value={emp.id}>
+                    {emp.customName || emp.profession}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Card>
+        )}
+
+        {/* Calendar - when Calendar action is selected */}
+        {selectedActions.includes('calendar') && (
+          <Card className="p-4 border-violet-200 bg-violet-50/50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">📅</span>
+              <Label className="text-sm font-semibold">Calendar</Label>
+            </div>
+            <CalendarConfigSection
+              actionConfig={(editedTask as any).actionConfig || {}}
+              onConfigChange={(updates) => {
+                const ac = (editedTask as any).actionConfig || {};
+                setEditedTask({ ...editedTask, actionConfig: { ...ac, ...updates } } as WorkflowTask);
+              }}
+            />
+          </Card>
+        )}
+
+        {/* Generate Document - when document action exists */}
+        {selectedActions.includes('document') && (
+          <Card className="p-4 border-slate-200 bg-slate-50/50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">📄</span>
+              <Label className="text-sm font-semibold">Generate Document</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Document type and content to generate.
+            </p>
+            <div className="space-y-2">
+              <div>
+                <Label className="text-xs">Document Type</Label>
+                <Select
+                  value={(editedTask as any).actionConfig?.documentType ?? 'proposal'}
+                  onValueChange={(v) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, documentType: v } } as WorkflowTask);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="proposal">Proposal</SelectItem>
+                    <SelectItem value="contract">Contract</SelectItem>
+                    <SelectItem value="report">Report</SelectItem>
+                    <SelectItem value="presentation">Presentation</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Instructions / Style</Label>
+                <Textarea
+                  value={(editedTask as any).actionConfig?.documentInstructions ?? ''}
+                  onChange={(e) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, documentInstructions: e.target.value || undefined } } as WorkflowTask);
+                  }}
+                  placeholder="What to include, tone, style..."
+                  rows={3}
+                  className="bg-white border-slate-200"
+                />
+              </div>
+            </div>
+          </Card>
         )}
         
         {/* Delay Settings */}

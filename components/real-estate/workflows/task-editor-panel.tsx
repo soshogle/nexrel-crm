@@ -18,6 +18,7 @@ import { X, Trash2, Save, Shield, Clock, User, GitBranch, Settings, Globe, Messa
 import { VOICE_LANGUAGES } from '@/lib/voice-languages';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { CalendarConfigSection } from '@/components/workflows/calendar-config-section';
 
 interface TaskEditorPanelProps {
   task: WorkflowTask | null;
@@ -443,6 +444,192 @@ export function TaskEditorPanel({
             </div>
           </Card>
           </>
+        )}
+
+        {/* SMS Message - when SMS action is selected */}
+        {selectedActions.includes('sms') && (
+          <Card className="p-4 bg-gradient-to-br from-cyan-50 to-white border-2 border-cyan-200">
+            <Label className="text-sm font-semibold text-gray-900">SMS Message</Label>
+            <p className="text-xs text-gray-600 mb-2">What message to send. Use {'{{firstName}}'} for personalization.</p>
+            <Textarea
+              value={(editedTask as any).actionConfig?.smsMessage ?? ''}
+              onChange={(e) => {
+                const ac = (editedTask as any).actionConfig || {};
+                setEditedTask({ ...editedTask, actionConfig: { ...ac, smsMessage: e.target.value || undefined } } as WorkflowTask);
+              }}
+              placeholder="e.g. Hi {{firstName}}, just following up..."
+              rows={4}
+              className="bg-white border-cyan-200"
+            />
+          </Card>
+        )}
+
+        {/* Email Content - when Email action is selected */}
+        {selectedActions.includes('email') && (
+          <Card className="p-4 bg-gradient-to-br from-blue-50 to-white border-2 border-blue-200">
+            <Label className="text-sm font-semibold text-gray-900">Email Content</Label>
+            <p className="text-xs text-gray-600 mb-2">Subject and body for the email.</p>
+            <div className="space-y-2 mt-2">
+              <Input
+                value={(editedTask as any).actionConfig?.emailSubject ?? ''}
+                onChange={(e) => {
+                  const ac = (editedTask as any).actionConfig || {};
+                  setEditedTask({ ...editedTask, actionConfig: { ...ac, emailSubject: e.target.value || undefined } } as WorkflowTask);
+                }}
+                placeholder="Email subject"
+                className="bg-white border-blue-200"
+              />
+              <Textarea
+                value={(editedTask as any).actionConfig?.emailBody ?? ''}
+                onChange={(e) => {
+                  const ac = (editedTask as any).actionConfig || {};
+                  setEditedTask({ ...editedTask, actionConfig: { ...ac, emailBody: e.target.value || undefined } } as WorkflowTask);
+                }}
+                placeholder="Email body"
+                rows={5}
+                className="bg-white border-blue-200"
+              />
+            </div>
+          </Card>
+        )}
+
+        {/* Generate CMA - config for CMA component */}
+        {selectedActions.includes('cma_generation') && (
+          <Card className="p-4 bg-gradient-to-br from-emerald-50 to-white border-2 border-emerald-200">
+            <Label className="text-sm font-semibold text-gray-900">Generate CMA</Label>
+            <p className="text-xs text-gray-600 mb-2">CMA-comparable info will be sent to the Real Estate Command Center.</p>
+            <Textarea
+              value={(editedTask as any).actionConfig?.cmaInstructions ?? ''}
+              onChange={(e) => {
+                const ac = (editedTask as any).actionConfig || {};
+                setEditedTask({ ...editedTask, actionConfig: { ...ac, cmaInstructions: e.target.value || undefined } } as WorkflowTask);
+              }}
+              placeholder="Additional instructions for CMA generation..."
+              rows={3}
+              className="bg-white border-emerald-200"
+            />
+          </Card>
+        )}
+
+        {/* Market Research - config */}
+        {selectedActions.includes('market_research') && (
+          <Card className="p-4 bg-gradient-to-br from-amber-50 to-white border-2 border-amber-200">
+            <Label className="text-sm font-semibold text-gray-900">Market Research</Label>
+            <p className="text-xs text-gray-600 mb-2">Buyer/seller market report settings.</p>
+            <Select
+              value={(editedTask as any).actionConfig?.marketResearchType ?? 'buyer'}
+              onValueChange={(v) => {
+                const ac = (editedTask as any).actionConfig || {};
+                setEditedTask({ ...editedTask, actionConfig: { ...ac, marketResearchType: v } } as WorkflowTask);
+              }}
+            >
+              <SelectTrigger className="bg-white border-amber-200">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="buyer">Buyer Market Report</SelectItem>
+                <SelectItem value="seller">Seller Market Report</SelectItem>
+                <SelectItem value="both">Both</SelectItem>
+              </SelectContent>
+            </Select>
+          </Card>
+        )}
+
+        {/* Generate Presentation - config */}
+        {selectedActions.includes('presentation_generation') && (
+          <Card className="p-4 bg-gradient-to-br from-violet-50 to-white border-2 border-violet-200">
+            <Label className="text-sm font-semibold text-gray-900">Generate Presentation</Label>
+            <p className="text-xs text-gray-600 mb-2">Property presentation settings.</p>
+            <Textarea
+              value={(editedTask as any).actionConfig?.presentationInstructions ?? ''}
+              onChange={(e) => {
+                const ac = (editedTask as any).actionConfig || {};
+                setEditedTask({ ...editedTask, actionConfig: { ...ac, presentationInstructions: e.target.value || undefined } } as WorkflowTask);
+              }}
+              placeholder="What to include in the presentation..."
+              rows={3}
+              className="bg-white border-violet-200"
+            />
+          </Card>
+        )}
+
+        {/* Generate Document - config */}
+        {selectedActions.includes('document') && (
+          <Card className="p-4 bg-gradient-to-br from-slate-50 to-white border-2 border-slate-200">
+            <Label className="text-sm font-semibold text-gray-900">Generate Document</Label>
+            <p className="text-xs text-gray-600 mb-2">Document type and style.</p>
+            <div className="space-y-2">
+              <Select
+                value={(editedTask as any).actionConfig?.documentType ?? 'proposal'}
+                onValueChange={(v) => {
+                  const ac = (editedTask as any).actionConfig || {};
+                  setEditedTask({ ...editedTask, actionConfig: { ...ac, documentType: v } } as WorkflowTask);
+                }}
+              >
+                <SelectTrigger className="bg-white border-slate-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="proposal">Proposal</SelectItem>
+                  <SelectItem value="contract">Contract</SelectItem>
+                  <SelectItem value="report">Report</SelectItem>
+                  <SelectItem value="presentation">Presentation</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              <Textarea
+                value={(editedTask as any).actionConfig?.documentInstructions ?? ''}
+                onChange={(e) => {
+                  const ac = (editedTask as any).actionConfig || {};
+                  setEditedTask({ ...editedTask, actionConfig: { ...ac, documentInstructions: e.target.value || undefined } } as WorkflowTask);
+                }}
+                placeholder="Instructions, style, what to include..."
+                rows={3}
+                className="bg-white border-slate-200"
+              />
+            </div>
+          </Card>
+        )}
+
+        {/* Calendar - when Calendar action is selected */}
+        {selectedActions.includes('calendar') && (
+          <Card className="p-4 bg-gradient-to-br from-violet-50 to-white border-2 border-violet-200">
+            <Label className="text-sm font-semibold text-gray-900">Calendar</Label>
+            <CalendarConfigSection
+              actionConfig={(editedTask as any).actionConfig || {}}
+              onConfigChange={(updates) => {
+                const ac = (editedTask as any).actionConfig || {};
+                setEditedTask({ ...editedTask, actionConfig: { ...ac, ...updates } } as WorkflowTask);
+              }}
+            />
+          </Card>
+        )}
+
+        {/* HITL - Who when human-in-the-loop */}
+        {editedTask.isHITL && (
+          <Card className="p-4 bg-gradient-to-br from-amber-50 to-white border-2 border-amber-200">
+            <Label className="text-sm font-semibold text-gray-900">Assign to Human</Label>
+            <p className="text-xs text-gray-600 mb-2">Who should review this task?</p>
+            <Select
+              value={(editedTask as any).actionConfig?.hitlAssignee ?? 'unassigned'}
+              onValueChange={(v) => {
+                const ac = (editedTask as any).actionConfig || {};
+                setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlAssignee: v === 'unassigned' ? undefined : v } } as WorkflowTask);
+              }}
+            >
+              <SelectTrigger className="bg-white border-amber-200">
+                <SelectValue placeholder="Select person" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {aiEmployees.map((emp) => (
+                  <SelectItem key={emp.id} value={emp.id}>
+                    {emp.customName || emp.profession}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Card>
         )}
         
         {/* HITL Gate Toggle */}

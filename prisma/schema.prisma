@@ -6377,6 +6377,9 @@ enum DripTriggerType {
   SERVICE_COMPLETED // Trigger when appointment/service is completed (enrolls client lead)
   FEEDBACK_POSITIVE // Trigger when feedback is positive (rating >= 4) - for referral ask flow
   WEBSITE_VOICE_AI_LEAD // Trigger when user provides contact info via website Voice AI
+  TRIAL_ENDED // Trigger when user trial ends (auto-enroll in retention campaign)
+  DEAL_WON // Trigger when deal is closed won (enroll lead in post-sale campaign)
+  WORKFLOW_TASK_COMPLETED // Trigger when workflow task completes (enroll based on workflow)
 }
 
 enum DripEnrollmentStatus {

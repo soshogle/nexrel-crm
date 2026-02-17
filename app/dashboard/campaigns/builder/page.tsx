@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Save, Plus } from 'lucide-react';
-import { VoiceCampaignForm } from '@/components/campaigns/voice-campaign-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,17 +26,24 @@ import {
 import { toast } from 'sonner';
 import { CampaignCanvas } from '@/components/campaigns/campaign-canvas';
 import { CampaignStepEditorPanel } from '@/components/campaigns/campaign-step-editor-panel';
+import { VoiceAgentSelect } from '@/components/campaigns/voice-agent-select';
 import {
   CampaignStep,
   CampaignBuilderState,
 } from '@/components/campaigns/campaign-builder-types';
 
 function createStep(type: CampaignStep['type'], order: number): CampaignStep {
+  const names: Record<string, string> = {
+    EMAIL: `Email ${order}`,
+    SMS: `SMS ${order}`,
+    VOICE: `Voice Call ${order}`,
+    DELAY: `Wait ${order}d`,
+  };
   return {
     id: `step-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     type,
     displayOrder: order,
-    name: type === 'EMAIL' ? `Email ${order}` : type === 'SMS' ? `SMS ${order}` : `Wait ${order}d`,
+    name: names[type] || `Step ${order}`,
     delayDays: order > 1 ? 1 : 0,
     delayHours: 0,
     sendTime: '',
@@ -63,17 +69,36 @@ export default function CampaignBuilderPage() {
         ...c,
         campaignType: 'sms-drip',
         steps: [createStep('SMS', 1)],
+        audience: c.audience || { type: 'FILTERED', filters: { minLeadScore: 75 } },
       }));
     } else if (typeParam === 'email-drip') {
       setCampaign((c) => ({
         ...c,
         campaignType: 'email-drip',
         steps: [createStep('EMAIL', 1)],
+        audience: c.audience || { type: 'FILTERED', filters: { minLeadScore: 75 } },
+      }));
+    } else if (typeParam === 'voice') {
+      setCampaign((c) => ({
+        ...c,
+        campaignType: 'voice',
+        steps: [createStep('VOICE', 1)],
+        minLeadScore: c.minLeadScore ?? 75,
+        maxCallsPerDay: c.maxCallsPerDay ?? 50,
+        callWindowStart: c.callWindowStart ?? '09:00',
+        callWindowEnd: c.callWindowEnd ?? '17:00',
+        maxRetries: c.maxRetries ?? 2,
+        audience: c.audience || { type: 'FILTERED', filters: { minLeadScore: 75, hasPhone: true } },
       }));
     }
   }, [typeParam]);
 
-  const allowedStepTypes = campaign.campaignType === 'email-drip' ? (['EMAIL', 'DELAY'] as const) : (['SMS', 'DELAY'] as const);
+  const allowedStepTypes =
+    campaign.campaignType === 'voice'
+      ? (['VOICE', 'DELAY'] as const)
+      : campaign.campaignType === 'email-drip'
+        ? (['EMAIL', 'DELAY'] as const)
+        : (['SMS', 'DELAY'] as const);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [showAddStepDialog, setShowAddStepDialog] = useState(false);
   const [newStepType, setNewStepType] = useState<CampaignStep['type']>('EMAIL');
@@ -132,14 +157,63 @@ export default function CampaignBuilderPage() {
     }
     const steps = [...campaign.steps].sort((a, b) => a.displayOrder - b.displayOrder).filter((s) => s.type !== 'DELAY');
     if (steps.length === 0) {
-      toast.error('Add at least one Email or SMS step');
+      toast.error('Add at least one Email, SMS, or Voice step');
       return;
     }
+    const isVoice = campaign.campaignType === 'voice';
     const isEmailDrip = campaign.campaignType === 'email-drip';
+    if (isVoice) {
+      const voiceStep = steps.find((s) => s.type === 'VOICE');
+      const voiceAgentId = voiceStep?.voiceAgentId || campaign.voiceAgentId;
+      if (!voiceAgentId?.trim()) {
+        toast.error('Voice campaigns require a voice agent. Select one in the step or campaign details.');
+        return;
+      }
+    }
     if (isEmailDrip && !campaign.fromEmail?.trim()) {
       toast.error('From Email is required for email campaigns');
       return;
     }
+
+    // Voice campaigns use /api/campaigns
+    if (isVoice) {
+      try {
+        setSaving(true);
+        const voiceStep = steps.find((s) => s.type === 'VOICE');
+        const voiceAgentId = voiceStep?.voiceAgentId || campaign.voiceAgentId;
+        const res = await fetch('/api/campaigns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: campaign.name.trim(),
+            description: campaign.description || undefined,
+            type: 'VOICE_CALL',
+            voiceAgentId,
+            callScript: voiceStep?.callScript || undefined,
+            minLeadScore: campaign.minLeadScore ?? campaign.audience?.filters?.minLeadScore ?? 75,
+            maxCallsPerDay: campaign.maxCallsPerDay ?? 50,
+            callWindowStart: campaign.callWindowStart ?? '09:00',
+            callWindowEnd: campaign.callWindowEnd ?? '17:00',
+            maxRetries: campaign.maxRetries ?? 2,
+            targetAudience: campaign.audience?.filters || { minScore: campaign.minLeadScore ?? 75 },
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to create voice campaign');
+        }
+        const data = await res.json();
+        toast.success('Voice campaign created!');
+        router.push(`/dashboard/campaigns/${data.campaign?.id || data.id}`);
+      } catch (e: unknown) {
+        console.error(e);
+        toast.error(e instanceof Error ? e.message : 'Failed to create voice campaign');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const apiBase = isEmailDrip ? '/api/campaigns/drip' : '/api/campaigns/sms-drip';
 
     try {
@@ -246,11 +320,6 @@ export default function CampaignBuilderPage() {
     }
   };
 
-  // Voice campaigns use a form-based flow (different from drip canvas)
-  if (typeParam === 'voice') {
-    return <VoiceCampaignForm />;
-  }
-
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       <div className="flex items-center justify-between p-4 border-b bg-white">
@@ -262,7 +331,7 @@ export default function CampaignBuilderPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Campaign Builder</h1>
             <p className="text-sm text-gray-500">
-              Drag-and-drop canvas. Add Email, SMS, or Delay steps.
+              Drag-and-drop canvas. Add Email, SMS, Voice, or Delay steps.
             </p>
           </div>
         </div>
@@ -298,6 +367,9 @@ export default function CampaignBuilderPage() {
                       {allowedStepTypes.includes('SMS') && (
                         <SelectItem value="SMS">💬 SMS</SelectItem>
                       )}
+                      {allowedStepTypes.includes('VOICE') && (
+                        <SelectItem value="VOICE">📞 Voice</SelectItem>
+                      )}
                       {allowedStepTypes.includes('DELAY') && (
                         <SelectItem value="DELAY">⏱️ Delay</SelectItem>
                       )}
@@ -307,7 +379,15 @@ export default function CampaignBuilderPage() {
                 <div>
                   <Label>Step Name (optional)</Label>
                   <Input
-                    placeholder={newStepType === 'EMAIL' ? 'e.g., Welcome Email' : newStepType === 'SMS' ? 'e.g., Follow-up SMS' : 'e.g., Wait 3 days'}
+                    placeholder={
+                      newStepType === 'EMAIL'
+                        ? 'e.g., Welcome Email'
+                        : newStepType === 'SMS'
+                          ? 'e.g., Follow-up SMS'
+                          : newStepType === 'VOICE'
+                            ? 'e.g., Initial Call'
+                            : 'e.g., Wait 3 days'
+                    }
                     value={newStepName}
                     onChange={(e) => setNewStepName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddStepFromDialog()}
@@ -346,11 +426,12 @@ export default function CampaignBuilderPage() {
               <Label>Campaign Type</Label>
               <Select
                 value={campaign.campaignType}
-                onValueChange={(v: 'email-drip' | 'sms-drip') => {
+                onValueChange={(v: 'email-drip' | 'sms-drip' | 'voice') => {
+                  const stepType = v === 'email-drip' ? 'EMAIL' : v === 'sms-drip' ? 'SMS' : 'VOICE';
                   setCampaign((c) => ({
                     ...c,
                     campaignType: v,
-                    steps: [createStep(v === 'email-drip' ? 'EMAIL' : 'SMS', 1)],
+                    steps: [createStep(stepType, 1)],
                   }));
                   setSelectedStepId(null);
                 }}
@@ -361,6 +442,7 @@ export default function CampaignBuilderPage() {
                 <SelectContent>
                   <SelectItem value="email-drip">Email Drip</SelectItem>
                   <SelectItem value="sms-drip">SMS Drip</SelectItem>
+                  <SelectItem value="voice">Voice Campaign</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -387,7 +469,12 @@ export default function CampaignBuilderPage() {
                   <SelectItem value="LEAD_CREATED">When Lead is Created</SelectItem>
                   <SelectItem value="LEAD_STATUS">When Lead Status Changes</SelectItem>
                   <SelectItem value="TAG_ADDED">When Tag is Added</SelectItem>
+                  <SelectItem value="FORM_SUBMITTED">When Form is Submitted</SelectItem>
                   <SelectItem value="WEBSITE_VOICE_AI_LEAD">Website Voice AI Lead</SelectItem>
+                  <SelectItem value="TRIAL_ENDED">When Trial Ends</SelectItem>
+                  <SelectItem value="DEAL_WON">When Deal is Won</SelectItem>
+                  <SelectItem value="SERVICE_COMPLETED">When Service/Appointment Completed</SelectItem>
+                  <SelectItem value="WORKFLOW_TASK_COMPLETED">When Workflow Task Completes</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -421,6 +508,141 @@ export default function CampaignBuilderPage() {
                 />
               </div>
             )}
+            {campaign.campaignType === 'voice' && (
+              <>
+                <div>
+                  <Label>Default Voice Agent</Label>
+                  <VoiceAgentSelect
+                    value={campaign.voiceAgentId || ''}
+                    onChange={(v) => setCampaign((c) => ({ ...c, voiceAgentId: v }))}
+                    placeholder="Select voice agent"
+                  />
+                </div>
+                <div>
+                  <Label>Min Lead Score</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={campaign.minLeadScore ?? 75}
+                    onChange={(e) => setCampaign((c) => ({ ...c, minLeadScore: parseInt(e.target.value) || 75 }))}
+                  />
+                </div>
+                <div>
+                  <Label>Max Calls Per Day</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={campaign.maxCallsPerDay ?? 50}
+                    onChange={(e) => setCampaign((c) => ({ ...c, maxCallsPerDay: parseInt(e.target.value) || 50 }))}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label>Call Window Start</Label>
+                    <Input
+                      type="time"
+                      value={campaign.callWindowStart || '09:00'}
+                      onChange={(e) => setCampaign((c) => ({ ...c, callWindowStart: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Call Window End</Label>
+                    <Input
+                      type="time"
+                      value={campaign.callWindowEnd || '17:00'}
+                      onChange={(e) => setCampaign((c) => ({ ...c, callWindowEnd: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Max Retry Attempts</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={5}
+                    value={campaign.maxRetries ?? 2}
+                    onChange={(e) => setCampaign((c) => ({ ...c, maxRetries: parseInt(e.target.value) || 2 }))}
+                  />
+                </div>
+              </>
+            )}
+            <div className="border-t pt-3 mt-3">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">Target Audience (Bulk)</h4>
+              <p className="text-xs text-muted-foreground mb-2">
+                Filters applied when sending to contacts. Personalize with {'{{firstName}}'}, {'{{notes}}'}, etc.
+              </p>
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs">Min Lead Score</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={campaign.audience?.filters?.minLeadScore ?? campaign.minLeadScore ?? 75}
+                    onChange={(e) =>
+                      setCampaign((c) => ({
+                        ...c,
+                        audience: {
+                          ...c.audience,
+                          type: c.audience?.type || 'FILTERED',
+                          filters: {
+                            ...c.audience?.filters,
+                            minLeadScore: parseInt(e.target.value) || 75,
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </div>
+                {campaign.campaignType === 'voice' && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={campaign.audience?.filters?.hasPhone ?? true}
+                      onChange={(e) =>
+                        setCampaign((c) => ({
+                          ...c,
+                          audience: {
+                            ...c.audience,
+                            type: c.audience?.type || 'FILTERED',
+                            filters: {
+                              ...c.audience?.filters,
+                              hasPhone: e.target.checked,
+                            },
+                          },
+                        }))
+                      }
+                      className="rounded"
+                    />
+                    <span className="text-xs">Has phone number</span>
+                  </label>
+                )}
+                {(campaign.campaignType === 'email-drip' || campaign.campaignType === 'sms-drip') && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={campaign.audience?.filters?.hasEmail ?? false}
+                      onChange={(e) =>
+                        setCampaign((c) => ({
+                          ...c,
+                          audience: {
+                            ...c.audience,
+                            type: c.audience?.type || 'FILTERED',
+                            filters: {
+                              ...c.audience?.filters,
+                              hasEmail: e.target.checked,
+                            },
+                          },
+                        }))
+                      }
+                      className="rounded"
+                    />
+                    <span className="text-xs">Has email</span>
+                  </label>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

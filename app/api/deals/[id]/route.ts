@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { detectDealStageWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
+import { processCampaignTriggers } from '@/lib/campaign-triggers';
 
 // GET /api/deals/[id] - Get single deal
 
@@ -153,6 +154,16 @@ export async function PATCH(
             contactName: updatedDeal.lead?.contactPerson || updatedDeal.lead?.businessName,
           },
         }).catch(err => console.error('Deal won workflow trigger failed:', err));
+
+        // Trigger campaign enrollment for DEAL_WON campaigns
+        if (updatedDeal.leadId) {
+          processCampaignTriggers({
+            leadId: updatedDeal.leadId,
+            userId: user.id,
+            triggerType: 'DEAL_WON',
+            metadata: { dealId: params.id, newStatus: newStage?.name },
+          }).catch(err => console.error('Deal won campaign trigger failed:', err));
+        }
       }
     } else if (data.value && data.value !== existingDeal.value) {
       await prisma.dealActivity.create({
