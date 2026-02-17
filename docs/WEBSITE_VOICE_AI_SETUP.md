@@ -37,6 +37,8 @@ When an owner deploys a template (nexrel-service-template or nexrel-ecommerce-te
 
 When `NEXREL_CRM_URL` and `NEXREL_WEBSITE_ID` are set, the template fetches voice config from the CRM. Otherwise it falls back to env vars (`NEXREL_ELEVENLABS_AGENT_ID`, etc.).
 
+**If the voice bubble doesn't show:** See `nexrel-service-template/docs/ELEVENLABS_VOICE_AI_SETUP.md` for a checklist. Common causes: missing env vars in Vercel, Website not linked, or Voice AI not enabled on the Website record.
+
 ## Owner-Customizable Voice AI Prompt (Automatic)
 
 Each owner can customize the Voice AI behavior for their business:
