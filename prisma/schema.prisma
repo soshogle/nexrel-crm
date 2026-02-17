@@ -1314,6 +1314,7 @@ model SmsSequence {
 
   // Conditions
   skipIfReplied Boolean @default(false) // Skip if lead replied to previous SMS
+  sendConditions Json? // skipConditions, branchFromSequenceOrder, branchCondition (like workflow)
 
   // Analytics
   totalSent      Int @default(0)

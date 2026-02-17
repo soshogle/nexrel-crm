@@ -5,7 +5,7 @@ import { CampaignStep, CampaignBuilderState, DragState } from './campaign-builde
 import { CampaignNode } from './campaign-node';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Info, Plus } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface CampaignCanvasProps {
   campaign: CampaignBuilderState;
@@ -219,6 +219,33 @@ export function CampaignCanvas({
         );
       }
     }
+    // Draw branch connections (from parent to child steps)
+    steps.forEach((step) => {
+      if (step.parentStepId) {
+        const parentStep = steps.find((s) => s.id === step.parentStepId);
+        if (!parentStep) return;
+        const parentPos = getActualPosition(parentStep);
+        const childPos = getActualPosition(step);
+        const isHovered = hoveredStepId === parentStep.id || hoveredStepId === step.id;
+        const midX = (parentPos.x + childPos.x) / 2;
+        const midY = (parentPos.y + childPos.y) / 2;
+        const ctrlY = midY - 50;
+        lines.push(
+          <motion.path
+            key={`branch-${parentStep.id}-${step.id}`}
+            d={`M ${parentPos.x} ${parentPos.y} Q ${midX} ${ctrlY} ${childPos.x} ${childPos.y}`}
+            stroke={isHovered ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.4)'}
+            strokeWidth={isHovered ? '2.5' : '2'}
+            strokeDasharray="4 4"
+            fill="none"
+            className="transition-all duration-300"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          />
+        );
+      }
+    });
     return lines;
   };
 
@@ -280,18 +307,6 @@ export function CampaignCanvas({
         <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
           <div className="text-gray-500">Steps</div>
           <div className="text-gray-900 font-bold">{steps.length}</div>
-        </div>
-        <div className="flex gap-1">
-          {allowedStepTypes.map((type) => (
-            <button
-              key={type}
-              onClick={() => onAddStep(type)}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg border border-purple-200 bg-white hover:bg-purple-50 text-purple-700 text-xs font-medium"
-            >
-              <Plus className="w-3 h-3" />
-              {type}
-            </button>
-          ))}
         </div>
       </div>
     </div>

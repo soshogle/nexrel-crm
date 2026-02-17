@@ -34,6 +34,7 @@ export async function POST(
       delayHours,
       sendTime,
       skipIfReplied,
+      sendConditions,
     } = body;
 
     // Verify campaign exists and belongs to user
@@ -58,6 +59,7 @@ export async function POST(
         delayHours: delayHours || 0,
         sendTime,
         skipIfReplied: skipIfReplied || false,
+        sendConditions: sendConditions ?? undefined,
       },
     });
 

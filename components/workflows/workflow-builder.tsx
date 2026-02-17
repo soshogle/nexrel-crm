@@ -88,6 +88,8 @@ export const WorkflowBuilder = forwardRef<WorkflowBuilderHandle, WorkflowBuilder
   const [revertPoint, setRevertPoint] = useState<WorkflowTemplate | null>(null);
   const [showCloseDialog, setShowCloseDialog] = useState(false);
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
+  const [showNamePromptDialog, setShowNamePromptDialog] = useState(false);
+  const [saveNameValue, setSaveNameValue] = useState('');
   const closeResolverRef = useRef<((value: boolean) => void) | null>(null);
 
   // Load workflow and clear unsaved state (used when loading from template/fetch/select)
@@ -427,19 +429,39 @@ export const WorkflowBuilder = forwardRef<WorkflowBuilderHandle, WorkflowBuilder
   }), [hasUnsavedChanges]);
 
   const handleCloseDialogChoice = async (choice: 'save' | 'discard' | 'cancel') => {
-    setShowCloseDialog(false);
-    const resolve = closeResolverRef.current;
-    closeResolverRef.current = null;
     if (choice === 'cancel') {
-      resolve?.(false);
+      setShowCloseDialog(false);
+      closeResolverRef.current?.(false);
+      closeResolverRef.current = null;
+      return;
+    }
+    if (choice === 'discard') {
+      setShowCloseDialog(false);
+      closeResolverRef.current?.(true);
+      closeResolverRef.current = null;
       return;
     }
     if (choice === 'save') {
-      const saved = await handleSaveWorkflow();
-      resolve?.(saved);
-    } else {
-      resolve?.(true);
+      // Always prompt to name/rename before save
+      setShowCloseDialog(false);
+      setSaveNameValue(workflow?.name?.trim() || '');
+      setShowNamePromptDialog(true);
     }
+  };
+
+  const handleNamePromptSave = async () => {
+    const name = saveNameValue.trim();
+    if (!name) {
+      toast.error('Please enter a name for your workflow');
+      return;
+    }
+    if (!workflow) return;
+    setWorkflow({ ...workflow, name });
+    setShowNamePromptDialog(false);
+    setSaveNameValue('');
+    const saved = await handleSaveWorkflow();
+    closeResolverRef.current?.(saved);
+    closeResolverRef.current = null;
   };
   
   const selectedTask = workflow?.tasks?.find(t => t.id === selectedTaskId) || null;
@@ -785,6 +807,63 @@ export const WorkflowBuilder = forwardRef<WorkflowBuilderHandle, WorkflowBuilder
               className="bg-purple-600 hover:bg-purple-700"
               onClick={() => handleCloseDialogChoice('save')}
               disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save workflow'
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Name project before save dialog */}
+      <AlertDialog
+        open={showNamePromptDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowNamePromptDialog(false);
+            setSaveNameValue('');
+            closeResolverRef.current?.(false);
+            closeResolverRef.current = null;
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Name your workflow</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter a name for your workflow before saving. You can rename it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Input
+              value={saveNameValue}
+              onChange={(e) => setSaveNameValue(e.target.value)}
+              placeholder="e.g., Lead Nurture Campaign"
+              className="w-full"
+              onKeyDown={(e) => e.key === 'Enter' && handleNamePromptSave()}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setShowNamePromptDialog(false);
+                setSaveNameValue('');
+                closeResolverRef.current?.(false);
+                closeResolverRef.current = null;
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              className="bg-purple-600 hover:bg-purple-700"
+              onClick={handleNamePromptSave}
+              disabled={isSaving || !saveNameValue.trim()}
             >
               {isSaving ? (
                 <>

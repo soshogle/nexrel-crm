@@ -1,6 +1,7 @@
 /**
  * Campaign Builder Types
  * Canvas-based drip campaign builder (email, SMS, delay steps)
+ * Mirrors workflow builder: branching, conditions, expandable steps
  */
 
 export type CampaignStepType = 'EMAIL' | 'SMS' | 'DELAY';
@@ -24,6 +25,21 @@ export interface CampaignStep {
   // Skip conditions
   skipIfEngaged?: boolean; // email: skip if opened/clicked previous
   skipIfReplied?: boolean; // sms: skip if replied to previous
+  // Conditional branching (like workflow builder)
+  parentStepId?: string | null;
+  branchCondition?: {
+    field: string;
+    operator: string;
+    value: string;
+  } | null;
+  // Skip conditions (like workflow builder - skip if any met)
+  skipConditions?: Array<{
+    field: string;
+    operator: string;
+    value: string;
+  }> | null;
+  // Expandable state (for UI)
+  isExpanded?: boolean;
 }
 
 export interface CampaignBuilderState {

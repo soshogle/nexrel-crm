@@ -68,7 +68,7 @@ export default function CampaignsPage() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/campaigns/email-drip')}>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/campaigns/builder?type=email-drip')}>
           <CardHeader>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-2">
               <Mail className="h-6 w-6 text-green-600" />
@@ -78,19 +78,15 @@ export default function CampaignsPage() {
               Multi-step email sequences with triggers and A/B testing
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Button variant="ghost" className="w-full justify-between" onClick={(e) => { e.stopPropagation(); router.push('/dashboard/campaigns/builder'); }}>
-              Canvas Builder
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" className="w-full justify-between" onClick={(e) => { e.stopPropagation(); router.push('/dashboard/campaigns/email-drip/create'); }}>
-              Form-based Create
+          <CardContent>
+            <Button variant="ghost" className="w-full justify-between">
+              Open Canvas Builder
               <ArrowRight className="h-4 w-4" />
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/campaigns/sms-drip')}>
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/campaigns/builder?type=sms-drip')}>
           <CardHeader>
             <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-2">
               <MessageSquare className="h-6 w-6 text-orange-600" />
@@ -100,13 +96,9 @@ export default function CampaignsPage() {
               Automated SMS sequences with reply tracking
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Button variant="ghost" className="w-full justify-between" onClick={(e) => { e.stopPropagation(); router.push('/dashboard/campaigns/builder'); }}>
-              Canvas Builder
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" className="w-full justify-between" onClick={(e) => { e.stopPropagation(); router.push('/dashboard/campaigns/sms-drip/create'); }}>
-              Form-based Create
+          <CardContent>
+            <Button variant="ghost" className="w-full justify-between">
+              Open Canvas Builder
               <ArrowRight className="h-4 w-4" />
             </Button>
           </CardContent>

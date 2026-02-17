@@ -3,7 +3,7 @@
 import React from 'react';
 import { CampaignStep } from './campaign-builder-types';
 import { cn } from '@/lib/utils';
-import { GripVertical, Mail, MessageSquare, Clock } from 'lucide-react';
+import { GripVertical, Mail, MessageSquare, Clock, GitBranch } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const STEP_CONFIG: Record<string, { icon: typeof Mail; color: string; label: string }> = {
@@ -35,6 +35,7 @@ export function CampaignNode({
 }: CampaignNodeProps) {
   const config = STEP_CONFIG[step.type] || STEP_CONFIG.EMAIL;
   const Icon = config.icon;
+  const hasBranching = step.parentStepId != null;
 
   return (
     <motion.div
@@ -86,6 +87,17 @@ export function CampaignNode({
         >
           <GripVertical className="w-3 h-3 text-purple-600" />
         </motion.div>
+        {hasBranching && (
+          <motion.div
+            className="absolute -bottom-1 -left-1 bg-green-500 rounded-full p-1.5 shadow-lg border-2 border-white"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2 }}
+            title="Conditional branch"
+          >
+            <GitBranch className="w-3.5 h-3.5 text-white" />
+          </motion.div>
+        )}
       </motion.div>
       <motion.div
         className={cn(
@@ -98,6 +110,13 @@ export function CampaignNode({
         transition={{ delay: 0.1 }}
       >
         <div className="line-clamp-2">{step.name || config.label}</div>
+        {step.isExpanded && (
+          <div className="mt-1 text-[10px] text-gray-500 line-clamp-2 font-normal">
+            {step.type === 'EMAIL' && (step.subject || '(no subject)')}
+            {step.type === 'SMS' && (step.message || '(no message)')}
+            {step.type === 'DELAY' && `Wait ${step.delayDays ?? 0}d ${step.delayHours ?? 0}h`}
+          </div>
+        )}
       </motion.div>
       <motion.div
         className="absolute -top-3 -left-3 w-7 h-7 rounded-full bg-gradient-to-br from-purple-600 to-purple-500 border-2 border-white shadow-md flex items-center justify-center text-xs font-bold text-white"

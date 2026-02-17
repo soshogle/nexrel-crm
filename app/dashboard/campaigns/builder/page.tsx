@@ -2,9 +2,9 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, Save, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { CampaignCanvas } from '@/components/campaigns/campaign-canvas';
 import { CampaignStepEditorPanel } from '@/components/campaigns/campaign-step-editor-panel';
@@ -38,6 +45,8 @@ function createStep(type: CampaignStep['type'], order: number): CampaignStep {
 
 export default function CampaignBuilderPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const typeParam = searchParams.get('type');
   const [saving, setSaving] = useState(false);
   const [campaign, setCampaign] = useState<CampaignBuilderState>({
     name: '',
@@ -47,20 +56,48 @@ export default function CampaignBuilderPage() {
     steps: [createStep('EMAIL', 1)],
   });
 
+  useEffect(() => {
+    if (typeParam === 'sms-drip') {
+      setCampaign((c) => ({
+        ...c,
+        campaignType: 'sms-drip',
+        steps: [createStep('SMS', 1)],
+      }));
+    } else if (typeParam === 'email-drip') {
+      setCampaign((c) => ({
+        ...c,
+        campaignType: 'email-drip',
+        steps: [createStep('EMAIL', 1)],
+      }));
+    }
+  }, [typeParam]);
+
   const allowedStepTypes = campaign.campaignType === 'email-drip' ? (['EMAIL', 'DELAY'] as const) : (['SMS', 'DELAY'] as const);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+  const [showAddStepDialog, setShowAddStepDialog] = useState(false);
+  const [newStepType, setNewStepType] = useState<CampaignStep['type']>('EMAIL');
+  const [newStepName, setNewStepName] = useState('');
 
   const selectedStep = campaign.steps.find((s) => s.id === selectedStepId) || null;
 
-  const addStep = (type: CampaignStep['type']) => {
+  const addStep = (type: CampaignStep['type'], customName?: string) => {
     if (!allowedStepTypes.includes(type)) return;
     const nextOrder = campaign.steps.length + 1;
     const step = createStep(type, nextOrder);
+    if (customName?.trim()) {
+      step.name = customName.trim();
+    }
     setCampaign((c) => ({
       ...c,
       steps: [...c.steps, step].map((s, i) => ({ ...s, displayOrder: i + 1 })),
     }));
     setSelectedStepId(step.id);
+    setShowAddStepDialog(false);
+    setNewStepName('');
+  };
+
+  const handleAddStepFromDialog = () => {
+    addStep(newStepType, newStepName || undefined);
   };
 
   const updateStep = (step: CampaignStep) => {
@@ -137,6 +174,15 @@ export default function CampaignBuilderPage() {
         : `/api/campaigns/sms-drip/${created.id}/sequences`;
 
       const orderedSteps = [...campaign.steps].sort((a, b) => a.displayOrder - b.displayOrder);
+      // Map stepId -> sequenceOrder (1-based) for non-DELAY steps
+      const stepIdToSeqOrder: Record<string, number> = {};
+      let seqIdx = 0;
+      for (const st of orderedSteps) {
+        if (st.type === 'DELAY') continue;
+        seqIdx++;
+        stepIdToSeqOrder[st.id] = seqIdx;
+      }
+
       let seqIndex = 0;
       let accumulatedDelayDays = 0;
       let accumulatedDelayHours = 0;
@@ -169,6 +215,16 @@ export default function CampaignBuilderPage() {
           seqBody.message = s.message;
           seqBody.skipIfReplied = s.skipIfReplied;
         }
+        // Persist skip conditions, branching (like workflow builder)
+        const hasSkip = s.skipConditions && Array.isArray(s.skipConditions) && s.skipConditions.length > 0;
+        const hasBranch = s.parentStepId && stepIdToSeqOrder[s.parentStepId] != null;
+        if (hasSkip || hasBranch) {
+          seqBody.sendConditions = {
+            skipConditions: hasSkip ? s.skipConditions : undefined,
+            branchFromSequenceOrder: hasBranch ? stepIdToSeqOrder[s.parentStepId!] : undefined,
+            branchCondition: hasBranch && s.branchCondition ? s.branchCondition : undefined,
+          };
+        }
         await fetch(seqApiBase, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -193,7 +249,7 @@ export default function CampaignBuilderPage() {
     <div className="h-[calc(100vh-4rem)] flex flex-col">
       <div className="flex items-center justify-between p-4 border-b bg-white">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()}>
+          <Button variant="ghost" onClick={() => router.push('/dashboard/campaigns')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -205,6 +261,59 @@ export default function CampaignBuilderPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Dialog open={showAddStepDialog} onOpenChange={setShowAddStepDialog}>
+            <DialogTrigger asChild>
+              <Button
+                size="sm"
+                className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Step
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Step</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div>
+                  <Label>Step Type</Label>
+                  <Select
+                    value={newStepType}
+                    onValueChange={(v) => setNewStepType(v as CampaignStep['type'])}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allowedStepTypes.includes('EMAIL') && (
+                        <SelectItem value="EMAIL">📧 Email</SelectItem>
+                      )}
+                      {allowedStepTypes.includes('SMS') && (
+                        <SelectItem value="SMS">💬 SMS</SelectItem>
+                      )}
+                      {allowedStepTypes.includes('DELAY') && (
+                        <SelectItem value="DELAY">⏱️ Delay</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Step Name (optional)</Label>
+                  <Input
+                    placeholder={newStepType === 'EMAIL' ? 'e.g., Welcome Email' : newStepType === 'SMS' ? 'e.g., Follow-up SMS' : 'e.g., Wait 3 days'}
+                    value={newStepName}
+                    onChange={(e) => setNewStepName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddStepFromDialog()}
+                  />
+                </div>
+                <Button onClick={handleAddStepFromDialog} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Step
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Button variant="outline" onClick={() => handleSave('DRAFT')} disabled={saving}>
             <Save className="h-4 w-4 mr-2" />
             Save Draft
@@ -324,12 +433,21 @@ export default function CampaignBuilderPage() {
         {selectedStep && (
           <CampaignStepEditorPanel
             step={selectedStep}
+            steps={campaign.steps}
             onClose={() => setSelectedStepId(null)}
             onSave={(s) => {
               updateStep(s);
               setSelectedStepId(null);
             }}
             onDelete={removeStep}
+            onToggleExpand={(stepId) => {
+              setCampaign((c) => ({
+                ...c,
+                steps: c.steps.map((s) =>
+                  s.id === stepId ? { ...s, isExpanded: !s.isExpanded } : s
+                ),
+              }));
+            }}
           />
         )}
       </div>
