@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { WorkflowBuilder } from './workflow-builder';
+import { WorkflowBuilder, type REWorkflowBuilderHandle } from './workflow-builder';
 import { HITLApprovalPanel } from './hitl-approval-panel';
 import { WorkflowInstanceMonitor } from './workflow-instance-monitor';
 import { ScheduledWorkflowsList } from '@/components/workflows/scheduled-workflows-list';
@@ -36,6 +36,7 @@ export function REWorkflowsTab() {
   const [activeSubTab, setActiveSubTab] = useState('overview');
   const [workflows, setWorkflows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const workflowBuilderRef = useRef<REWorkflowBuilderHandle>(null);
 
   useEffect(() => {
     if (searchParams?.get('openBuilder') === '1') {
@@ -134,20 +135,23 @@ export function REWorkflowsTab() {
           </h2>
           <Button
             variant="outline"
-            onClick={() => {
-              setShowBuilder(false);
-              setDraftId(undefined);
-              if (typeof window !== 'undefined') {
-                sessionStorage.removeItem('activeWorkflowDraftId');
-                fetch('/api/workflows/active-draft', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ draftId: null }),
-                }).catch(() => {});
-                const url = new URL(window.location.href);
-                url.searchParams.delete('openBuilder');
-                url.searchParams.delete('draftId');
-                window.history.replaceState({}, '', url.pathname + (url.search || '') || url.pathname);
+            onClick={async () => {
+              const shouldClose = await workflowBuilderRef.current?.requestBack();
+              if (shouldClose) {
+                setShowBuilder(false);
+                setDraftId(undefined);
+                if (typeof window !== 'undefined') {
+                  sessionStorage.removeItem('activeWorkflowDraftId');
+                  fetch('/api/workflows/active-draft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ draftId: null }),
+                  }).catch(() => {});
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('openBuilder');
+                  url.searchParams.delete('draftId');
+                  window.history.replaceState({}, '', url.pathname + (url.search || '') || url.pathname);
+                }
               }
             }}
             className="border-purple-200 text-gray-700 hover:bg-purple-50"
@@ -156,7 +160,7 @@ export function REWorkflowsTab() {
           </Button>
         </div>
         <div className="flex-1 bg-white rounded-xl overflow-hidden">
-          <WorkflowBuilder initialWorkflowId={draftId} />
+          <WorkflowBuilder ref={workflowBuilderRef} initialWorkflowId={draftId} />
         </div>
       </div>
     );
@@ -248,6 +252,16 @@ export function REWorkflowsTab() {
               workflows={workflows}
               onToggleStatus={toggleWorkflowStatus}
               onDelete={deleteWorkflow}
+              onOpenInBuilder={(id) => {
+                setDraftId(id);
+                setShowBuilder(true);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('openBuilder', '1');
+                  url.searchParams.set('draftId', id);
+                  window.history.replaceState({}, '', url.pathname + url.search);
+                }
+              }}
             />
           )}
         </TabsContent>

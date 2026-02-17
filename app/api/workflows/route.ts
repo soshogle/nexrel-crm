@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
       description: w.description || '',
       workflowType: w.type,
       industry: w.industry,
+      status: w.isActive ? 'ACTIVE' : 'PAUSED',
       executionMode: (w as any).executionMode || 'WORKFLOW',
       audience: (w as any).audience || null,
       campaignSettings: (w as any).campaignSettings || null,

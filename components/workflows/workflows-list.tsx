@@ -10,15 +10,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Play, Pause, Trash2, MoreVertical, Zap, CheckCircle2, Clock } from 'lucide-react';
+import { Play, Pause, Trash2, MoreVertical, Zap, CheckCircle2, Clock, Pencil } from 'lucide-react';
 
 interface WorkflowsListProps {
   workflows: any[];
   onToggleStatus: (id: string, currentStatus: string) => void;
   onDelete: (id: string) => void;
+  onOpenInBuilder?: (id: string) => void;
 }
 
-export function WorkflowsList({ workflows, onToggleStatus, onDelete }: WorkflowsListProps) {
+export function WorkflowsList({ workflows, onToggleStatus, onDelete, onOpenInBuilder }: WorkflowsListProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE':
@@ -58,6 +59,12 @@ export function WorkflowsList({ workflows, onToggleStatus, onDelete }: Workflows
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {onOpenInBuilder && (
+                    <DropdownMenuItem onClick={() => onOpenInBuilder(workflow.id)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Open in Builder
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={() => onToggleStatus(workflow.id, workflow.status)}
                   >

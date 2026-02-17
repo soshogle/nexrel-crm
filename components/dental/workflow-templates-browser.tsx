@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useSession } from 'next-auth/react';
 import { Workflow, Play, Stethoscope, ClipboardList, Phone, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { WorkflowBuilder } from '@/components/workflows/workflow-builder';
+import { WorkflowBuilder, type WorkflowBuilderHandle } from '@/components/workflows/workflow-builder';
 import { Industry } from '@prisma/client';
 
 interface WorkflowTemplate {
@@ -33,6 +33,17 @@ export function DentalWorkflowTemplatesBrowser() {
   const [selectedTemplate, setSelectedTemplate] = useState<WorkflowTemplate | null>(null);
   const [createdWorkflowId, setCreatedWorkflowId] = useState<string | undefined>(undefined);
   const [showWorkflowBuilder, setShowWorkflowBuilder] = useState(false);
+  const workflowBuilderRef = useRef<WorkflowBuilderHandle>(null);
+
+  const handleCloseBuilder = async () => {
+    const shouldClose = await workflowBuilderRef.current?.requestBack();
+    if (shouldClose) {
+      setShowWorkflowBuilder(false);
+      setCreatedWorkflowId(undefined);
+      setSelectedTemplate(null);
+      fetchTemplates();
+    }
+  };
 
   useEffect(() => {
     fetchTemplates();
@@ -243,13 +254,10 @@ export function DentalWorkflowTemplatesBrowser() {
 
       {/* Workflow Builder Dialog */}
       <Dialog open={showWorkflowBuilder} onOpenChange={(open) => {
-        setShowWorkflowBuilder(open);
-        if (!open) {
-          // Reset when dialog closes
-          setCreatedWorkflowId(undefined);
-          setSelectedTemplate(null);
-          // Refresh templates when dialog closes
-          fetchTemplates();
+        if (open) {
+          setShowWorkflowBuilder(true);
+        } else {
+          handleCloseBuilder();
         }
       }}>
         <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0">
@@ -266,7 +274,7 @@ export function DentalWorkflowTemplatesBrowser() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowWorkflowBuilder(false)}
+                onClick={handleCloseBuilder}
                 className="h-8 w-8 p-0"
               >
                 <X className="h-4 w-4" />
@@ -275,6 +283,7 @@ export function DentalWorkflowTemplatesBrowser() {
           </DialogHeader>
           <div className="flex-1 overflow-hidden p-6">
             <WorkflowBuilder
+              ref={workflowBuilderRef}
               industry="DENTIST"
               initialWorkflowId={createdWorkflowId}
             />

@@ -5,9 +5,9 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { WorkflowBuilder } from './workflow-builder';
+import { WorkflowBuilder, type WorkflowBuilderHandle } from './workflow-builder';
 import { ScheduledWorkflowsList } from './scheduled-workflows-list';
 import { WorkflowsList } from './workflows-list';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
@@ -45,6 +45,7 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
   const [loading, setLoading] = useState(true);
   
   const industryConfig = getIndustryConfig(industry);
+  const workflowBuilderRef = useRef<WorkflowBuilderHandle>(null);
 
   // Phase 1+2: Auto-open builder when navigating from voice/chat "create workflow"
   // Keep openBuilder in URL so voice context knows we're in builder (avoids navigating away on "contacts"/"pipeline")
@@ -139,19 +140,22 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
           </h2>
           <Button
             variant="outline"
-            onClick={() => {
-              setShowBuilder(false);
-              if (typeof window !== 'undefined') {
-                sessionStorage.removeItem('activeWorkflowDraftId');
-                fetch('/api/workflows/active-draft', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ draftId: null }),
-                }).catch(() => {});
-                const url = new URL(window.location.href);
-                url.searchParams.delete('openBuilder');
-                url.searchParams.delete('draftId');
-                window.history.replaceState({}, '', url.pathname + (url.search || '') || url.pathname);
+            onClick={async () => {
+              const shouldClose = await workflowBuilderRef.current?.requestBack();
+              if (shouldClose) {
+                setShowBuilder(false);
+                if (typeof window !== 'undefined') {
+                  sessionStorage.removeItem('activeWorkflowDraftId');
+                  fetch('/api/workflows/active-draft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ draftId: null }),
+                  }).catch(() => {});
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('openBuilder');
+                  url.searchParams.delete('draftId');
+                  window.history.replaceState({}, '', url.pathname + (url.search || '') || url.pathname);
+                }
               }
             }}
             className="border-purple-200 text-gray-700 hover:bg-purple-50"
@@ -160,7 +164,7 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
           </Button>
         </div>
         <div className="flex-1 bg-white rounded-xl overflow-hidden">
-          <WorkflowBuilder industry={industry} initialWorkflowId={draftId} />
+          <WorkflowBuilder ref={workflowBuilderRef} industry={industry} initialWorkflowId={draftId} />
         </div>
       </div>
     );
@@ -272,6 +276,16 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
               workflows={workflows}
               onToggleStatus={toggleWorkflowStatus}
               onDelete={deleteWorkflow}
+              onOpenInBuilder={(id) => {
+                setDraftId(id);
+                setShowBuilder(true);
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('openBuilder', '1');
+                  url.searchParams.set('draftId', id);
+                  window.history.replaceState({}, '', url.pathname + url.search);
+                }
+              }}
             />
           )}
         </TabsContent>

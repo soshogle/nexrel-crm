@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { WorkflowTask, WorkflowTemplate, RE_AGENTS, TASK_TYPE_ICONS } from './types';
 import { CircularWorkflowCanvas } from './circular-workflow-canvas';
 import { TaskEditorPanel } from './task-editor-panel';
@@ -25,19 +25,33 @@ import { toast } from 'sonner';
 import {
   Plus,
   Save,
-  RotateCcw,
+  Undo2,
   Play,
   FileText,
   Home,
   Users,
   Loader2,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface WorkflowBuilderProps {
   initialWorkflowId?: string;
 }
 
-export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
+export interface REWorkflowBuilderHandle {
+  requestBack: () => Promise<boolean>;
+}
+
+export const WorkflowBuilder = forwardRef<REWorkflowBuilderHandle, WorkflowBuilderProps>(
+  function WorkflowBuilder({ initialWorkflowId }, ref) {
   const [workflow, setWorkflow] = useState<WorkflowTemplate | null>(null);
   const [workflows, setWorkflows] = useState<WorkflowTemplate[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -48,9 +62,15 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
   const [showTemplateGallery, setShowTemplateGallery] = useState(!initialWorkflowId);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  const [revertPoint, setRevertPoint] = useState<WorkflowTemplate | null>(null);
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
+  const closeResolverRef = useRef<((value: boolean) => void) | null>(null);
+
   const loadWorkflow = (w: WorkflowTemplate | null) => {
     setWorkflow(w);
     setHasUnsavedChanges(false);
+    setRevertPoint(w ? JSON.parse(JSON.stringify(w)) : null);
   };
 
   const isSavedWorkflowId = (id: string) =>
@@ -210,8 +230,8 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
     });
   };
   
-  const handleSaveWorkflow = async () => {
-    if (!workflow) return;
+  const handleSaveWorkflow = async (): Promise<boolean> => {
+    if (!workflow) return false;
     
     setIsSaving(true);
     try {
@@ -240,6 +260,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
         loadWorkflow(data.workflow);
         toast.success('Workflow saved successfully');
         fetchWorkflows();
+        return true;
       } else {
         const errorMsg = data?.error || `Failed to save (${res.status})`;
         throw new Error(errorMsg);
@@ -247,6 +268,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
     } catch (error) {
       console.error('Error saving workflow:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to save workflow');
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -315,6 +337,54 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
     setShowNewTaskDialog(false);
     setSelectedTaskId(newTask.id);
     toast.success('Task added');
+  };
+
+  const handleRevertClick = () => {
+    if (!workflow) return;
+    setShowResetConfirmDialog(true);
+  };
+
+  const handleResetConfirm = (confirmed: boolean) => {
+    setShowResetConfirmDialog(false);
+    if (!confirmed || !workflow) return;
+    // Clear to empty canvas, stay on screen
+    const emptyWorkflow: WorkflowTemplate = {
+      ...workflow,
+      tasks: [],
+      name: workflow.id === 'new' ? 'New Custom Workflow' : workflow.name,
+    };
+    loadWorkflow(emptyWorkflow);
+    setSelectedTaskId(null);
+    setShowTemplateGallery(false);
+    toast.success('Workflow reset');
+  };
+
+  useImperativeHandle(ref, () => ({
+    requestBack: () =>
+      new Promise<boolean>((resolve) => {
+        if (!hasUnsavedChanges) {
+          resolve(true);
+          return;
+        }
+        closeResolverRef.current = resolve;
+        setShowCloseDialog(true);
+      }),
+  }), [hasUnsavedChanges]);
+
+  const handleCloseDialogChoice = async (choice: 'save' | 'discard' | 'cancel') => {
+    setShowCloseDialog(false);
+    const resolve = closeResolverRef.current;
+    closeResolverRef.current = null;
+    if (choice === 'cancel') {
+      resolve?.(false);
+      return;
+    }
+    if (choice === 'save') {
+      const saved = await handleSaveWorkflow();
+      resolve?.(saved);
+    } else {
+      resolve?.(true);
+    }
   };
   
   const selectedTask = workflow?.tasks.find(t => t.id === selectedTaskId) || null;
@@ -408,9 +478,10 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => workflow && loadTemplate(workflow.workflowType as 'BUYER_PIPELINE' | 'SELLER_PIPELINE')}
+            onClick={handleRevertClick}
+            title="Reset workflow to empty"
           >
-            <RotateCcw className="w-4 h-4 mr-2" />
+            <Undo2 className="w-4 h-4 mr-2" />
             Reset
           </Button>
           
@@ -502,6 +573,56 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
           </div>
         </div>
       )}
+
+      {/* Reset confirmation dialog */}
+      <AlertDialog open={showResetConfirmDialog} onOpenChange={(open) => !open && handleResetConfirm(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset workflow?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reset the workflow? All tasks will be removed and you will start with an empty canvas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => handleResetConfirm(false)}>No</AlertDialogCancel>
+            <Button onClick={() => handleResetConfirm(true)} className="bg-purple-600 hover:bg-purple-700">
+              Yes
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Save before close dialog */}
+      <AlertDialog open={showCloseDialog} onOpenChange={(open) => !open && handleCloseDialogChoice('cancel')}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Do you want to save the workflow before leaving?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button variant="outline" onClick={() => handleCloseDialogChoice('discard')}>
+              Don&apos;t save
+            </Button>
+            <Button
+              className="bg-purple-600 hover:bg-purple-700"
+              onClick={() => handleCloseDialogChoice('save')}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save workflow'
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
-}
+});
