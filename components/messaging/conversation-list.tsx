@@ -187,10 +187,10 @@ export function ConversationList({
               <button
                 key={conversation.id}
                 onClick={() => onSelectConversation(conversation.id)}
-                className={`w-full flex items-start gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors ${
+                className={`w-full flex items-start gap-3 p-3 rounded-lg transition-colors ${
                   selectedConversationId === conversation.id
-                    ? 'bg-gray-800'
-                    : ''
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-gray-800'
                 }`}
               >
                 <div className="relative">
@@ -212,11 +212,11 @@ export function ConversationList({
 
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="font-semibold truncate text-white">
+                    <p className={`font-semibold truncate ${selectedConversationId === conversation.id ? 'text-primary-foreground' : 'text-white'}`}>
                       {conversation.contactName}
                     </p>
                     {conversation.lastMessageAt && (
-                      <span className="text-xs text-gray-400">
+                      <span className={`text-xs ${selectedConversationId === conversation.id ? 'text-primary-foreground/80' : 'text-gray-400'}`}>
                         {formatDistanceToNow(new Date(conversation.lastMessageAt), {
                           addSuffix: true,
                         })}
@@ -224,7 +224,7 @@ export function ConversationList({
                     )}
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-400 truncate">
+                    <p className={`text-sm truncate ${selectedConversationId === conversation.id ? 'text-primary-foreground/90' : 'text-gray-400'}`}>
                       {conversation.lastMessagePreview || 'No messages yet'}
                     </p>
                     {conversation.unreadCount > 0 && (

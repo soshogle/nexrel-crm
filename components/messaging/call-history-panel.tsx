@@ -30,6 +30,7 @@ import {
   Search, 
   RefreshCw, 
   X,
+  ArrowLeft,
   Play,
   Pause,
   SkipBack,
@@ -405,8 +406,8 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
               onClick={handleBackToList}
               className="text-gray-600 hover:text-gray-900"
             >
-              <X className="h-4 w-4 mr-2" />
-              Close
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
             </Button>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
