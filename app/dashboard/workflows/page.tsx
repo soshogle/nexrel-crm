@@ -15,7 +15,7 @@ import { HealthClinicWorkflowsTab } from '@/components/health-clinic/workflows/h
 import { HospitalWorkflowsTab } from '@/components/hospital/workflows/hospital-workflows-tab';
 import { TechnologyWorkflowsTab } from '@/components/technology/workflows/technology-workflows-tab';
 import { SportsClubWorkflowsTab } from '@/components/sports-club/workflows/sports-club-workflows-tab';
-import { getIndustryConfig } from '@/lib/workflows/industry-configs';
+import { WorkflowsPageWrapper } from '@/components/workflows/workflows-page-wrapper';
 
 export default async function WorkflowsPageRoute() {
   const session = await getServerSession(authOptions);
@@ -42,41 +42,86 @@ export default async function WorkflowsPageRoute() {
 
   // Render appropriate workflow tab based on industry
   if (userIndustry === 'REAL_ESTATE') {
-    return <REWorkflowsTab />;
+    return (
+      <WorkflowsPageWrapper>
+        <REWorkflowsTab />
+      </WorkflowsPageWrapper>
+    );
   }
-
-  // Check for industry-specific workflow tabs
   if (userIndustry === 'MEDICAL') {
-    return <MedicalWorkflowsTab />;
+    return (
+      <WorkflowsPageWrapper>
+        <MedicalWorkflowsTab />
+      </WorkflowsPageWrapper>
+    );
   }
   if (userIndustry === 'RESTAURANT') {
-    return <RestaurantWorkflowsTab />;
+    return (
+      <WorkflowsPageWrapper>
+        <RestaurantWorkflowsTab />
+      </WorkflowsPageWrapper>
+    );
   }
   if (userIndustry === 'CONSTRUCTION') {
-    return <ConstructionWorkflowsTab />;
+    return (
+      <WorkflowsPageWrapper>
+        <ConstructionWorkflowsTab />
+      </WorkflowsPageWrapper>
+    );
   }
   if (userIndustry === 'DENTIST') {
-    return <DentistWorkflowsTab />;
+    return (
+      <WorkflowsPageWrapper>
+        <DentistWorkflowsTab />
+      </WorkflowsPageWrapper>
+    );
   }
   if (userIndustry === 'MEDICAL_SPA') {
-    return <MedicalSpaWorkflowsTab />;
+    return (
+      <WorkflowsPageWrapper>
+        <MedicalSpaWorkflowsTab />
+      </WorkflowsPageWrapper>
+    );
   }
   if (userIndustry === 'OPTOMETRIST') {
-    return <OptometristWorkflowsTab />;
+    return (
+      <WorkflowsPageWrapper>
+        <OptometristWorkflowsTab />
+      </WorkflowsPageWrapper>
+    );
   }
   if (userIndustry === 'HEALTH_CLINIC') {
-    return <HealthClinicWorkflowsTab />;
+    return (
+      <WorkflowsPageWrapper>
+        <HealthClinicWorkflowsTab />
+      </WorkflowsPageWrapper>
+    );
   }
   if (userIndustry === 'HOSPITAL') {
-    return <HospitalWorkflowsTab />;
+    return (
+      <WorkflowsPageWrapper>
+        <HospitalWorkflowsTab />
+      </WorkflowsPageWrapper>
+    );
   }
   if (userIndustry === 'TECHNOLOGY') {
-    return <TechnologyWorkflowsTab />;
+    return (
+      <WorkflowsPageWrapper>
+        <TechnologyWorkflowsTab />
+      </WorkflowsPageWrapper>
+    );
   }
   if (userIndustry === 'SPORTS_CLUB') {
-    return <SportsClubWorkflowsTab />;
+    return (
+      <WorkflowsPageWrapper>
+        <SportsClubWorkflowsTab />
+      </WorkflowsPageWrapper>
+    );
   }
 
-  // Default to generic industry workflow tab
-  return <IndustryWorkflowsTab industry={userIndustry} />;
+  return (
+    <WorkflowsPageWrapper>
+      <IndustryWorkflowsTab industry={userIndustry} />
+    </WorkflowsPageWrapper>
+  );
 }

@@ -243,12 +243,6 @@ const merchantItems = [
   },
   // Voice Agents moved to admin section - only business owner can configure
   {
-    id: 'ai-automations' as MenuItemId,
-    title: 'AI Automations',
-    href: '/dashboard/ai-automations',
-    icon: Sparkles,
-  },
-  {
     id: 'campaigns' as MenuItemId,
     title: 'Campaigns',
     href: '/dashboard/campaigns',
@@ -474,7 +468,6 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       'general-inventory': 'inventory',
       'payments': 'payments',
       'ecommerce': 'ecommerce',
-      'ai-automations': 'aiAutomations',
       'workflows': 'workflows',
       'reports': 'reports',
       'reviews': 'reviews',

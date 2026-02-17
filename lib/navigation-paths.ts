@@ -57,7 +57,6 @@ export const VALID_NAVIGATION_PATHS = [
   '/dashboard/payments',
   '/dashboard/ecommerce',
   // AI & Workflows
-  '/dashboard/ai-automations',
   '/dashboard/workflows',
   '/dashboard/reviews',
   '/dashboard/referrals',

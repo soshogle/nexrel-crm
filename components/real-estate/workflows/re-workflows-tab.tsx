@@ -318,133 +318,105 @@ export function REWorkflowsTab() {
             </Card>
           </div>
       
-      {/* Pipeline Templates */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Buyer Pipeline */}
-        <Card className="bg-white border-2 border-purple-200 hover:border-purple-400 transition-all cursor-pointer shadow-md hover:shadow-lg" onClick={() => setShowBuilder(true)}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center border-2 border-purple-300">
-                  <Home className="w-6 h-6 text-purple-600" />
+      {/* Workflow Templates */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <Wrench className="w-5 h-5 text-purple-600" />
+          Workflow Templates
+        </h3>
+        <p className="text-sm text-gray-600">Start with a pre-built template or create your own custom workflow.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="bg-white border-2 border-purple-200 hover:border-purple-400 transition-all shadow-md">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center border-2 border-purple-300">
+                    <Home className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-gray-900">Buyer Pipeline</CardTitle>
+                    <CardDescription className="text-gray-600">Complete buyer journey from lead qualification to closing</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-gray-900">Buyer Pipeline</CardTitle>
-                  <CardDescription className="text-gray-600">Lead to close automation</CardDescription>
+                <Badge className="bg-purple-100 text-purple-700 border-purple-300">12 Tasks</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge variant="outline" className="text-xs">4 HITL Gates</Badge>
+                <Badge variant="outline" className="text-xs">8 AI Agents</Badge>
+                <Badge variant="outline" className="text-xs">30-45 days</Badge>
+              </div>
+              <ul className="text-sm text-gray-600 space-y-1 mb-4">
+                <li>• Lead Qualification</li>
+                <li>• MLS Search Setup</li>
+                <li>• Property Shortlist</li>
+                <li>• Schedule Showings</li>
+                <li>• +5 more steps</li>
+              </ul>
+              <Button
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
+                onClick={() => setShowBuilder(true)}
+              >
+                Use Buyer Pipeline Template
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-2 border-purple-200 hover:border-purple-400 transition-all shadow-md">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center border-2 border-purple-300">
+                    <FileText className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-gray-900">Seller Pipeline</CardTitle>
+                    <CardDescription className="text-gray-600">Complete seller journey from lead to listing and post-close</CardDescription>
+                  </div>
                 </div>
+                <Badge className="bg-purple-100 text-purple-700 border-purple-300">10 Tasks</Badge>
               </div>
-              <Badge className="bg-purple-100 text-purple-700 border-purple-300">
-                12 Tasks
-              </Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Badge variant="outline" className="text-xs">3 HITL Gates</Badge>
+                <Badge variant="outline" className="text-xs">7 AI Agents</Badge>
+                <Badge variant="outline" className="text-xs">60-90 days</Badge>
+              </div>
+              <ul className="text-sm text-gray-600 space-y-1 mb-4">
+                <li>• Seller Qualification</li>
+                <li>• Book Evaluation</li>
+                <li>• Prepare CMA</li>
+                <li>• Schedule Photography</li>
+                <li>• +4 more steps</li>
+              </ul>
+              <Button
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
+                onClick={() => setShowBuilder(true)}
+              >
+                Use Seller Pipeline Template
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+        <Card className="bg-white border-2 border-purple-200">
+          <CardContent className="flex items-center justify-between p-4">
+            <div>
+              <h4 className="font-semibold text-gray-900">Create Custom Workflow</h4>
+              <p className="text-sm text-gray-600">Build your own workflow from scratch with full control.</p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Shield className="w-4 h-4 text-amber-600" />
-                <span>4 HITL approval gates</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Users className="w-4 h-4 text-purple-600" />
-                <span>8 AI agents assigned</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Clock className="w-4 h-4 text-green-600" />
-                <span>Est. 30-45 days cycle</span>
-              </div>
-              <div className="pt-3 border-t border-purple-200">
-                <p className="text-xs text-gray-600">
-                  Qualification → Showings → Offer → Negotiation → Inspection → Closing
-                </p>
-              </div>
-            </div>
+            <Button
+              variant="outline"
+              className="border-purple-200 text-gray-700 hover:bg-purple-50"
+              onClick={() => setShowBuilder(true)}
+            >
+              Create Custom
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </CardContent>
         </Card>
-        
-        {/* Seller Pipeline */}
-        <Card className="bg-white border-2 border-purple-200 hover:border-purple-400 transition-all cursor-pointer shadow-md hover:shadow-lg" onClick={() => setShowBuilder(true)}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center border-2 border-purple-300">
-                  <FileText className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-gray-900">Seller Pipeline</CardTitle>
-                  <CardDescription className="text-gray-600">Listing to close automation</CardDescription>
-                </div>
-              </div>
-              <Badge className="bg-purple-100 text-purple-700 border-purple-300">
-                10 Tasks
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Shield className="w-4 h-4 text-amber-600" />
-                <span>3 HITL approval gates</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Users className="w-4 h-4 text-purple-600" />
-                <span>7 AI agents assigned</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Clock className="w-4 h-4 text-green-600" />
-                <span>Est. 60-90 days cycle</span>
-              </div>
-              <div className="pt-3 border-t border-purple-200">
-                <p className="text-xs text-gray-600">
-                  Valuation → Listing → Marketing → Showings → Offers → Closing
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Features Overview */}
-      <Card className="bg-gradient-to-br from-purple-50 to-white border-2 border-purple-200 shadow-md">
-        <CardHeader>
-          <CardTitle className="text-gray-900">Circular Workflow Builder Features</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-white border-2 border-purple-200 rounded-lg shadow-sm">
-              <h4 className="font-bold text-gray-900 mb-2">Visual Drag & Drop</h4>
-              <p className="text-sm text-gray-600">
-                Arrange tasks in a circular layout. Drag to reposition, drop on another task to swap positions.
-              </p>
-            </div>
-            <div className="p-4 bg-white border-2 border-purple-200 rounded-lg shadow-sm">
-              <h4 className="font-bold text-gray-900 mb-2">AI Agent Assignment</h4>
-              <p className="text-sm text-gray-600">
-                Assign any of the 12 specialized RE AI employees to handle specific tasks automatically.
-              </p>
-            </div>
-            <div className="p-4 bg-white border-2 border-purple-200 rounded-lg shadow-sm">
-              <h4 className="font-bold text-gray-900 mb-2">HITL Gates</h4>
-              <p className="text-sm text-gray-600">
-                Add human approval checkpoints. Get notified via dashboard, SMS, or email when action is needed.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Quick Actions */}
-      <div className="flex items-center gap-4 bg-white p-4 rounded-xl border-2 border-purple-200">
-        <Button
-          variant="outline"
-          className="border-purple-200 text-gray-700 hover:bg-purple-50"
-          onClick={() => setShowBuilder(true)}
-        >
-          Create Custom Workflow
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-        <span className="text-sm text-gray-600">
-          or start with a template above
-        </span>
       </div>
         </TabsContent>
       </Tabs>

@@ -43,7 +43,7 @@ const navigation = [
   { name: 'Leads', href: '/dashboard/leads', icon: Users },
   { name: 'Voice AI', href: '/dashboard/voice-agents', icon: Phone },
   { name: 'Conversation Intelligence', href: '/dashboard/conversation-intelligence', icon: Activity },
-  { name: 'AI Automations', href: '/dashboard/ai-automations', icon: Send },
+  { name: 'Workflows', href: '/dashboard/workflows', icon: Send },
   { name: 'Referrals', href: '/dashboard/referrals', icon: UserPlus },
   { name: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },

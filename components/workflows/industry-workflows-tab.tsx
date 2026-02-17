@@ -342,107 +342,78 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
             </Card>
           </div>
 
-          {/* Pipeline Templates */}
-          {templates.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {templates.map((template) => {
-                const tasks = template.tasks || [];
-                const taskCount = tasks.length;
-                const hitlGates = tasks.filter(t => t.isHITL).length;
-                const agentsAssigned = new Set(
-                  tasks
-                    .map(t => t.agentName)
-                    .filter(Boolean)
-                ).size;
-                
-                return (
-                  <Card 
-                    key={template.id}
-                    className="bg-white border-2 border-purple-200 hover:border-purple-400 transition-all cursor-pointer shadow-md hover:shadow-lg" 
-                    onClick={() => setShowBuilder(true)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center border-2 border-purple-300">
-                            <GitBranch className="w-6 h-6 text-purple-600" />
+          {/* Workflow Templates */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Wrench className="w-5 h-5 text-purple-600" />
+              Workflow Templates
+            </h3>
+            <p className="text-sm text-gray-600">Start with a pre-built template or create your own custom workflow.</p>
+            {templates.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {templates.map((template) => {
+                  const tasks = template.tasks || [];
+                  const taskCount = tasks.length;
+                  const hitlGates = tasks.filter(t => t.isHITL).length;
+                  const agentsAssigned = new Set(
+                    tasks.map(t => t.agentName).filter(Boolean)
+                  ).size;
+                  return (
+                    <Card key={template.id} className="bg-white border-2 border-purple-200 hover:border-purple-400 transition-all shadow-md">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center border-2 border-purple-300">
+                              <GitBranch className="w-6 h-6 text-purple-600" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-gray-900">{template.name}</CardTitle>
+                              <CardDescription className="text-gray-600">{template.description}</CardDescription>
+                            </div>
                           </div>
-                          <div>
-                            <CardTitle className="text-gray-900">{template.name}</CardTitle>
-                            <CardDescription className="text-gray-600">{template.description}</CardDescription>
-                          </div>
+                          <Badge className="bg-purple-100 text-purple-700 border-purple-300">{taskCount} Tasks</Badge>
                         </div>
-                        <Badge className="bg-purple-100 text-purple-700 border-purple-300">
-                          {taskCount} Tasks
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <Shield className="w-4 h-4 text-amber-600" />
-                          <span>{hitlGates} HITL approval gates</span>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <Badge variant="outline" className="text-xs">{hitlGates} HITL Gates</Badge>
+                          <Badge variant="outline" className="text-xs">{agentsAssigned} AI Agents</Badge>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <Users className="w-4 h-4 text-purple-600" />
-                          <span>{agentsAssigned} AI agents assigned</span>
-                        </div>
-                        <div className="pt-3 border-t border-purple-200">
-                          <p className="text-xs text-gray-600">
-                            {tasks.slice(0, 5).map(t => t.name).join(' → ')}
-                            {tasks.length > 5 && ' → ...'}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-          
-          {/* Features Overview */}
-          <Card className="bg-gradient-to-br from-purple-50 to-white border-2 border-purple-200 shadow-md mt-6">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Workflow Builder Features</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-white border-2 border-purple-200 rounded-lg shadow-sm">
-                  <h4 className="font-bold text-gray-900 mb-2">Visual Drag & Drop</h4>
-                  <p className="text-sm text-gray-600">
-                    Arrange tasks in a serpentine layout. Drag to reposition, drop on another task to swap positions.
-                  </p>
-                </div>
-                <div className="p-4 bg-white border-2 border-purple-200 rounded-lg shadow-sm">
-                  <h4 className="font-bold text-gray-900 mb-2">AI Agent Assignment</h4>
-                  <p className="text-sm text-gray-600">
-                    Assign specialized AI agents to handle specific tasks automatically.
-                  </p>
-                </div>
-                <div className="p-4 bg-white border-2 border-purple-200 rounded-lg shadow-sm">
-                  <h4 className="font-bold text-gray-900 mb-2">HITL Gates</h4>
-                  <p className="text-sm text-gray-600">
-                    Add human approval checkpoints. Get notified via dashboard, SMS, or email when action is needed.
-                  </p>
-                </div>
+                        <ul className="text-sm text-gray-600 space-y-1 mb-4">
+                          {tasks.slice(0, 5).map((t, i) => (
+                            <li key={t.id || i}>• {t.name}</li>
+                          ))}
+                          {tasks.length > 5 && <li>• +{tasks.length - 5} more steps</li>}
+                        </ul>
+                        <Button
+                          className="w-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
+                          onClick={() => setShowBuilder(true)}
+                        >
+                          Use {template.name} Template
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
-            </CardContent>
-          </Card>
-          
-          {/* Quick Actions */}
-          <div className="flex items-center gap-4 bg-white p-4 rounded-xl border-2 border-purple-200 mt-6">
-            <Button
-              variant="outline"
-              className="border-purple-200 text-gray-700 hover:bg-purple-50"
-              onClick={() => setShowBuilder(true)}
-            >
-              Create Custom Workflow
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-            <span className="text-sm text-gray-600">
-              or start with a template above
-            </span>
+            ) : null}
+            <Card className="bg-white border-2 border-purple-200">
+              <CardContent className="flex items-center justify-between p-4">
+                <div>
+                  <h4 className="font-semibold text-gray-900">Create Custom Workflow</h4>
+                  <p className="text-sm text-gray-600">Build your own workflow from scratch with full control.</p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="border-purple-200 text-gray-700 hover:bg-purple-50"
+                  onClick={() => setShowBuilder(true)}
+                >
+                  Create Custom
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>
