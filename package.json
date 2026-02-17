@@ -26,7 +26,10 @@
     "seed:award-templates": "tsx scripts/seed-award-winning-templates.ts",
     "verify:elevenlabs-overrides": "tsx scripts/verify-elevenlabs-call-overrides.ts",
     "verify:elevenlabs-quick": "tsx scripts/verify-elevenlabs-quick-test.ts",
-    "clear-stale-voice-agent": "tsx scripts/clear-stale-crm-voice-agent.ts"
+    "clear-stale-voice-agent": "tsx scripts/clear-stale-crm-voice-agent.ts",
+    "enable-first-message-override-existing": "tsx scripts/enable-first-message-override-existing-agents.ts",
+    "verify:listings-setup": "tsx scripts/verify-listings-setup.ts",
+    "set-theodora-neon-db": "tsx scripts/set-theodora-neon-database-url.ts"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/seed.ts"

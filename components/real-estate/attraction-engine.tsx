@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Users,
   Home,
@@ -93,6 +93,8 @@ const PROPERTY_FEATURES = [
 export function AttractionEngine() {
   const [activeTab, setActiveTab] = useState('buyer');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [websiteId, setWebsiteId] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [buyerReport, setBuyerReport] = useState<BuyerReport | null>(null);
   const [sellerReport, setSellerReport] = useState<SellerReport | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -209,6 +211,48 @@ export function AttractionEngine() {
       toast.error('Failed to generate report');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  useEffect(() => {
+    fetch('/api/websites')
+      .then((r) => r.json())
+      .then((d) => {
+        const sites = d?.websites ?? [];
+        if (sites.length > 0) setWebsiteId(sites[0].id);
+      })
+      .catch(() => {});
+  }, []);
+
+  const publishToSecretProperties = async (reportType: 'BUYER_ATTRACTION' | 'SELLER_ATTRACTION', report: BuyerReport | SellerReport) => {
+    if (!websiteId) {
+      toast.error('No website found. Create a website first.');
+      return;
+    }
+    setIsPublishing(true);
+    try {
+      const res = await fetch(`/api/websites/${websiteId}/secret-reports/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reportType,
+          title: report.title,
+          region: placeData?.city || region || null,
+          content: report,
+          executiveSummary: reportType === 'BUYER_ATTRACTION'
+            ? (report as BuyerReport).marketInsight
+            : (report as SellerReport).equityEstimate,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to publish');
+      }
+      toast.success('Report published to Secret Properties page!');
+    } catch (e: unknown) {
+      toast.error((e as Error)?.message || 'Failed to publish');
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -471,7 +515,19 @@ export function AttractionEngine() {
               {/* Results */}
               {buyerReport && (
                 <div className="space-y-6 pt-6 border-t">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">{buyerReport.title}</h3>
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{buyerReport.title}</h3>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => publishToSecretProperties('BUYER_ATTRACTION', buyerReport)}
+                      disabled={!websiteId || isPublishing}
+                      className="border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/30"
+                    >
+                      {isPublishing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Share2 className="w-4 h-4 mr-1" />}
+                      Publish to Secret Properties
+                    </Button>
+                  </div>
                   
                   {/* Opportunities */}
                   <div className="space-y-3">
@@ -711,7 +767,19 @@ export function AttractionEngine() {
               {/* Results */}
               {sellerReport && (
                 <div className="space-y-6 pt-6 border-t">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">{sellerReport.title}</h3>
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{sellerReport.title}</h3>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => publishToSecretProperties('SELLER_ATTRACTION', sellerReport)}
+                      disabled={!websiteId || isPublishing}
+                      className="border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                    >
+                      {isPublishing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Share2 className="w-4 h-4 mr-1" />}
+                      Publish to Secret Properties
+                    </Button>
+                  </div>
                   
                   {/* Demand Indicators */}
                   <div className="space-y-3">

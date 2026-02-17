@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { enableFirstMessageOverride } from '@/lib/elevenlabs-overrides';
 import { Industry } from '@prisma/client';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
 
@@ -65,6 +66,9 @@ async function createElevenLabsAgent(
         auth: {
           enable_auth: false,
         },
+        allowed_overrides: {
+          agent: ['first_message', 'prompt', 'language'],
+        },
       },
     }),
   });
@@ -76,7 +80,14 @@ async function createElevenLabsAgent(
   }
 
   const data = await response.json();
-  return { agentId: data.agent_id };
+  const agentId = data.agent_id;
+
+  const overrideResult = await enableFirstMessageOverride(agentId, apiKey);
+  if (!overrideResult.success) {
+    console.warn('⚠️ First message override not enabled (non-fatal):', overrideResult.error);
+  }
+
+  return { agentId };
 }
 
 async function getExistingAgents(userId: string, industry: Industry) {

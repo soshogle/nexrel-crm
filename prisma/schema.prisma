@@ -279,6 +279,7 @@ model User {
   reScrapingJobs              REScrapingJob[]              @relation("REScrapingJobUser")
   reMarketStats               REMarketStats[]              @relation("REMarketStatsUser")
   reMarketReports             REMarketReport[]             @relation("REMarketReportUser")
+  reWebsiteReports            REWebsiteReport[]            @relation("REWebsiteReportUser")
   reStaleDiagnostics          REStaleDiagnostic[]          @relation("REStaleDiagnosticUser")
   reListingPresentations      REListingPresentation[]      @relation("REListingPresentationUser")
   reSellerNetSheets           RESellerNetSheet[]           @relation("RESellerNetSheetUser")
@@ -9477,6 +9478,9 @@ model Website {
   voiceAIConfig     Json? // Voice AI settings
   enableTavusAvatar Boolean @default(true) // Tavus video avatar (Abacus) - enable/disable in website builder
 
+  // Agency config for owner-deployed sites (logo, name, contact, etc.) — overrides template defaults
+  agencyConfig Json?
+
   // Approval Queue
   pendingChanges Json? // Changes awaiting approval
 
@@ -9495,6 +9499,7 @@ model Website {
   websiteOrders       WebsiteOrder[]
   stockSettings       WebsiteStockSettings?
   media               WebsiteMedia[]
+  secretReports       REWebsiteReport[]
 
   @@index([userId])
   @@index([status])
@@ -9670,8 +9675,29 @@ model WebsiteMedia {
   @@index([type])
 }
 
-// ==========================================
-// TWILIO FAILOVER SYSTEM
+// REWebsiteReport - Reports published to Secret Properties page (buyer/seller attraction, market insight)
+model REWebsiteReport {
+  id             String   @id @default(cuid())
+  websiteId      String
+  userId         String
+  reportType     String   // BUYER_ATTRACTION | SELLER_ATTRACTION | MARKET_INSIGHT
+  title          String
+  region         String?
+  content        Json     // Full report data (opportunities, demandIndicators, etc.)
+  executiveSummary String?
+  pdfUrl         String?
+  sourceReportId String?  // Links to REMarketReport.id if from market reports
+  displayOrder   Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  user    User    @relation("REWebsiteReportUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([websiteId])
+  @@index([userId])
+  @@index([reportType])
+}
+
 // ==========================================
 
 // Twilio Account Management - Multiple accounts for failover

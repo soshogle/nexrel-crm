@@ -13,7 +13,8 @@ interface TriggerContext {
     | 'REFERRAL_CONVERTED'
     | 'SERVICE_COMPLETED'
     | 'FEEDBACK_POSITIVE'
-    | 'WEBSITE_VOICE_AI_LEAD';
+    | 'WEBSITE_VOICE_AI_LEAD'
+    | 'WEBSITE_SECRET_REPORT_LEAD';
   metadata?: {
     oldStatus?: string;
     newStatus?: string;

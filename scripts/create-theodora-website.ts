@@ -1,6 +1,6 @@
 /**
  * Create or update Website record for Theodora Stavropoulos with Voice AI enabled.
- * Use this when her site (nexrel-service-template) needs the ElevenLabs voice bubble.
+ * Use this when her site (theodora-stavropoulos-remaxlate) needs the ElevenLabs voice bubble.
  *
  * Run: npx tsx scripts/create-theodora-website.ts
  */
@@ -61,7 +61,7 @@ async function main() {
     console.log('   Name:', existing.name);
     console.log('   Voice AI:', existing.voiceAIEnabled);
     console.log('   Agent ID:', existing.elevenLabsAgentId);
-    console.log('\n📋 Add these to Theodora\'s Vercel project (nexrel-service-temp):');
+    console.log('\n📋 Add these to Theodora\'s Vercel project (theodora-stavropoulos-remax):');
     console.log('   NEXREL_CRM_URL=https://www.nexrel.soshogle.com');
     console.log('   NEXREL_WEBSITE_ID=' + existing.id);
     console.log('   WEBSITE_VOICE_CONFIG_SECRET=<same as CRM>');
@@ -82,7 +82,7 @@ async function main() {
       },
     });
     console.log('✅ Updated. Voice AI enabled.');
-    console.log('\n📋 Add these to Theodora\'s Vercel project (nexrel-service-temp):');
+    console.log('\n📋 Add these to Theodora\'s Vercel project (theodora-stavropoulos-remax):');
     console.log('   NEXREL_CRM_URL=https://www.nexrel.soshogle.com');
     console.log('   NEXREL_WEBSITE_ID=' + updated.id);
     console.log('   WEBSITE_VOICE_CONFIG_SECRET=<same as CRM>');
@@ -112,7 +112,7 @@ async function main() {
 
   console.log('✅ Created Website:', website.name);
   console.log('   ID:', website.id);
-  console.log('\n📋 Add these to Theodora\'s Vercel project (nexrel-service-temp):');
+  console.log('\n📋 Add these to Theodora\'s Vercel project (theodora-stavropoulos-remax):');
   console.log('   NEXREL_CRM_URL=https://www.nexrel.soshogle.com');
   console.log('   NEXREL_WEBSITE_ID=' + website.id);
   console.log('   WEBSITE_VOICE_CONFIG_SECRET=<same as CRM>');

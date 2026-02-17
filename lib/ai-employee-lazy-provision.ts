@@ -5,6 +5,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { enableFirstMessageOverride } from '@/lib/elevenlabs-overrides';
 import { Industry } from '@prisma/client';
 import { REAIEmployeeType } from '@prisma/client';
 import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
@@ -49,7 +50,10 @@ async function createElevenLabsAgent(
         turn: { mode: 'turn_based' },
       },
       name: config.name,
-      platform_settings: { auth: { enable_auth: false } },
+      platform_settings: {
+        auth: { enable_auth: false },
+        allowed_overrides: { agent: ['first_message', 'prompt', 'language'] },
+      },
     }),
   });
 
@@ -59,7 +63,14 @@ async function createElevenLabsAgent(
   }
 
   const data = await response.json();
-  return data.agent_id;
+  const agentId = data.agent_id;
+
+  const overrideResult = await enableFirstMessageOverride(agentId, apiKey);
+  if (!overrideResult.success) {
+    console.warn('[LazyProvision] First message override not enabled (non-fatal):', overrideResult.error);
+  }
+
+  return agentId;
 }
 
 /**

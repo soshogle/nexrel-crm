@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { enableFirstMessageOverride } from '@/lib/elevenlabs-overrides';
 
 export interface CrmVoiceAgentConfig {
   userId: string;
@@ -132,6 +133,9 @@ export class CrmVoiceAgentService {
         auth: {
           enable_auth: false,
         },
+        allowed_overrides: {
+          agent: ['first_message', 'prompt', 'language'],
+        },
       },
       tools: crmFunctions.map(func => ({
         type: 'function',
@@ -182,6 +186,13 @@ export class CrmVoiceAgentService {
     }
 
     console.log('✅ CRM voice agent created successfully:', agentId);
+
+    // Enable first_message override for time-aware greetings
+    const overrideResult = await enableFirstMessageOverride(agentId, apiKey);
+    if (!overrideResult.success) {
+      console.warn('⚠️  First message override not enabled (non-fatal):', overrideResult.error);
+    }
+
     console.log('📋 Agent details:', {
       agentId,
       name: agentData.name,

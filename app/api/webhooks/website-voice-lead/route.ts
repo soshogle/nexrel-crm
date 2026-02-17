@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { websiteId, name, email, phone, transcript, notes, appointmentRequest } = body;
+    const { websiteId, name, email, phone, transcript, notes, appointmentRequest, source } = body;
 
     if (!websiteId) {
       return NextResponse.json({ error: 'websiteId required' }, { status: 400 });
@@ -46,20 +46,22 @@ export async function POST(request: NextRequest) {
 
     const leadOwnerId = website.userId;
 
+    const leadSource = source || 'Website Voice AI';
     const lead = await prisma.lead.create({
       data: {
         userId: leadOwnerId,
-        businessName: name || 'Voice AI Visitor',
+        businessName: name || (leadSource.includes('Report') ? 'Secret Properties Visitor' : 'Voice AI Visitor'),
         contactPerson: name || null,
         email: email || null,
         phone: phone || null,
-        source: 'Website Voice AI',
+        source: leadSource,
         status: 'NEW',
         enrichedData: {
-          source: 'website_voice_ai',
+          source: leadSource.includes('Report') ? 'website_secret_report' : 'website_voice_ai',
           websiteId,
           receivedAt: new Date().toISOString(),
           appointmentRequest: appointmentRequest || null,
+          notes: notes || null,
         },
       },
     });
@@ -103,19 +105,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Trigger workflows: drip campaigns with WEBSITE_VOICE_AI_LEAD trigger
+    const triggerType = leadSource.includes('Report') ? 'WEBSITE_SECRET_REPORT_LEAD' : 'WEBSITE_VOICE_AI_LEAD';
+    // Trigger workflows: drip campaigns
     try {
-      await processWebsiteTriggers(leadOwnerId, lead.id, 'WEBSITE_VOICE_AI_LEAD', { websiteId });
+      await processWebsiteTriggers(leadOwnerId, lead.id, triggerType, { websiteId });
     } catch (wfErr) {
       console.warn('[website-voice-lead] processWebsiteTriggers error:', wfErr);
     }
 
-    // Trigger email/SMS drip campaigns with WEBSITE_VOICE_AI_LEAD trigger
+    // Trigger email/SMS drip campaigns
     try {
       await processCampaignTriggers({
         leadId: lead.id,
         userId: leadOwnerId,
-        triggerType: 'WEBSITE_VOICE_AI_LEAD',
+        triggerType,
         metadata: { websiteId },
       });
     } catch (campErr) {

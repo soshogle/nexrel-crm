@@ -4,9 +4,9 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /**
- * GET /api/elevenlabs/signed-url?agentId=xxx
+ * GET /api/elevenlabs/signed-url?agentId=xxx&page_context=...&...
  * Fetches signed WebSocket URL - connects to api.elevenlabs.io (NOT LiveKit).
- * Bypasses the LiveKit error_type crash on the landing page.
+ * Supports dynamic variables as query params (e.g. page_context, selected_listing).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +20,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "ElevenLabs API key not configured" }, { status: 500 });
     }
 
-    const url = `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${encodeURIComponent(agentId)}`;
+    const params = new URLSearchParams({ agent_id: agentId });
+    // Forward dynamic variables (page_context, selected_listing, etc.)
+    for (const [key, value] of request.nextUrl.searchParams) {
+      if (key !== "agentId" && value) params.append(key, value);
+    }
+
+    const url = `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?${params.toString()}`;
     const response = await fetch(url, {
       method: "GET",
       headers: {

@@ -11,7 +11,8 @@ export type WebsiteTriggerType =
   | 'WEBSITE_VISITOR_RETURNING'
   | 'WEBSITE_CTA_CLICKED'
   | 'WEBSITE_BOOKING_CREATED'
-  | 'WEBSITE_VOICE_AI_LEAD';
+  | 'WEBSITE_VOICE_AI_LEAD'
+  | 'WEBSITE_SECRET_REPORT_LEAD';
 
 /**
  * Process website-related triggers: auto-enroll leads in WorkflowTemplates

@@ -18,6 +18,10 @@
 
 import { prisma } from './db';
 import { voiceAIPlatform } from './voice-ai-platform';
+import {
+  enableFirstMessageOverride,
+  PLATFORM_SETTINGS_WITH_OVERRIDES,
+} from './elevenlabs-overrides';
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
@@ -344,6 +348,7 @@ class ElevenLabsProvisioningService {
         platform_settings: {
           // Enable widget embedding (required for phone calls AND browser preview)
           widget_enabled: true,
+          ...PLATFORM_SETTINGS_WITH_OVERRIDES,
         },
         // 🎯 AUTO-ADD THE 3 CUSTOM BOOKING FUNCTIONS
         // This eliminates the need to manually add them in the ElevenLabs dashboard!
@@ -376,6 +381,12 @@ class ElevenLabsProvisioningService {
       const agent: ElevenLabsAgent = await response.json();
 
       console.log('✅ ElevenLabs agent created:', agent.agent_id);
+
+      // Enable first_message override so website/widget can inject time-aware greetings
+      const overrideResult = await enableFirstMessageOverride(agent.agent_id, apiKey);
+      if (!overrideResult.success) {
+        console.warn('⚠️  First message override not enabled (non-fatal):', overrideResult.error);
+      }
 
       let phoneNumberId: string | undefined;
 
@@ -577,6 +588,7 @@ class ElevenLabsProvisioningService {
         },
         platform_settings: {
           widget_enabled: true,
+          ...PLATFORM_SETTINGS_WITH_OVERRIDES,
         },
         // 🎯 AUTO-ADD THE 3 CUSTOM BOOKING FUNCTIONS
         // This eliminates the need to manually add them in the ElevenLabs dashboard!

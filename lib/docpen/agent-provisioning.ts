@@ -7,6 +7,7 @@
 
 import { prisma } from '@/lib/db';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
+import { enableFirstMessageOverride } from '@/lib/elevenlabs-overrides';
 import { VOICE_AGENT_PROMPTS } from './voice-prompts';
 import type { DocpenProfessionType } from './prompts';
 
@@ -229,6 +230,9 @@ class DocpenAgentProvisioning {
       },
       platform_settings: {
         widget_enabled: true,
+        allowed_overrides: {
+          agent: ['first_message', 'prompt', 'language'],
+        },
       },
       tools: medicalFunctions.map(func => ({
         type: 'function',
@@ -316,6 +320,12 @@ class DocpenAgentProvisioning {
       // If verification fails, don't save to DB - the agent doesn't actually exist
       console.error(`❌ [Docpen] Agent verification failed:`, verifyError.message);
       throw verifyError;
+    }
+
+    // Enable first_message override for time-aware greetings
+    const overrideResult = await enableFirstMessageOverride(agentId, apiKey);
+    if (!overrideResult.success) {
+      console.warn('⚠️ [Docpen] First message override not enabled (non-fatal):', overrideResult.error);
     }
 
     // Save to database only after successful verification
