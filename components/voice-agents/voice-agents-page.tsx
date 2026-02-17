@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Plus,
   Phone,
   Users,
   TrendingUp,
@@ -22,6 +21,7 @@ import {
   ExternalLink,
   FileText,
   Loader2,
+  ArrowLeft,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,7 @@ import { cn } from '@/lib/utils';
 import { VOICE_AGENT_LIMIT } from '@/lib/voice-agent-templates';
 
 export function VoiceAgentsPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const [agents, setAgents] = useState<any[]>([]);
@@ -68,9 +69,7 @@ export function VoiceAgentsPage() {
   }, []);
 
   useEffect(() => {
-    if (agents.length > 0) {
-      fetchStats();
-    }
+    fetchStats();
   }, [agents]);
 
   useEffect(() => {
@@ -110,12 +109,15 @@ export function VoiceAgentsPage() {
 
   const fetchStats = async () => {
     try {
-      const callsRes = await fetch('/api/calls');
-      const calls = await callsRes.json();
+      const [callsRes] = await Promise.all([
+        fetch('/api/calls?countOnly=true'),
+      ]);
+      const callsData = await callsRes.json();
+      const totalCalls = callsData?.count ?? 0;
       setStats({
         totalAgents: agents.length,
         activeAgents: agents.filter((a) => a.status === 'ACTIVE').length,
-        totalCalls: calls?.length || 0,
+        totalCalls,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -184,8 +186,6 @@ export function VoiceAgentsPage() {
     }
   };
 
-  const canCreateMore = agents.length < VOICE_AGENT_LIMIT;
-  const userIndustry = (session?.user?.industry as string) || null;
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN' || (session?.user?.isImpersonating && session?.user?.superAdminId);
 
   // Avatar URL - use ui-avatars for consistent placeholder
@@ -214,7 +214,11 @@ export function VoiceAgentsPage() {
       <div className="relative z-10 p-8 space-y-8">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
             <h1 className="text-4xl font-bold flex items-center gap-3">
               <span className="text-gray-700">My</span>
               <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent">
@@ -224,6 +228,7 @@ export function VoiceAgentsPage() {
             <p className="text-gray-600 mt-1">
               {agents.length} / {VOICE_AGENT_LIMIT} agents · Industry-geared prompts
             </p>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {isSuperAdmin && (
@@ -241,12 +246,6 @@ export function VoiceAgentsPage() {
                   Buy Number
                 </Button>
               </>
-            )}
-            {canCreateMore && (
-              <Button onClick={() => setShowCreateDialog(true)} className="bg-purple-600 hover:bg-purple-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Agent
-              </Button>
             )}
           </div>
         </div>
@@ -314,14 +313,10 @@ export function VoiceAgentsPage() {
                 <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-4">
                   <Phone className="w-10 h-10 text-purple-500" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Voice Agents Yet</h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                  Create your first agent to handle calls. Agents are created automatically when you add AI employees or workflows—or add one now.
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Voice Agents</h3>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  Voice agents are created when you add AI employees or workflows. Your agents will appear here.
                 </p>
-                <Button onClick={() => setShowCreateDialog(true)} className="bg-purple-600 hover:bg-purple-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create First Agent
-                </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -506,11 +501,11 @@ export function VoiceAgentsPage() {
                             <div className="grid grid-cols-2 gap-4">
                               <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30">
                                 <p className="text-sm text-gray-500">Total Calls</p>
-                                <p className="text-2xl font-bold text-gray-900">{selectedAgent._count?.callLogs || 0}</p>
+                                <p className="text-2xl font-bold text-gray-900">{selectedAgent._count?.callLogs ?? 0}</p>
                               </div>
                               <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/30">
                                 <p className="text-sm text-gray-500">Outbound</p>
-                                <p className="text-2xl font-bold text-gray-900">{selectedAgent._count?.outboundCalls || 0}</p>
+                                <p className="text-2xl font-bold text-gray-900">{selectedAgent._count?.outboundCalls ?? 0}</p>
                               </div>
                             </div>
                             <div>

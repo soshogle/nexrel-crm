@@ -249,6 +249,12 @@ const merchantItems = [
     icon: Sparkles,
   },
   {
+    id: 'campaigns' as MenuItemId,
+    title: 'Campaigns',
+    href: '/dashboard/campaigns',
+    icon: Mail,
+  },
+  {
     id: 'workflows' as MenuItemId,
     title: 'Workflows',
     href: '/dashboard/workflows',

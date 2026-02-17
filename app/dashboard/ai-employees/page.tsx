@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,9 @@ import {
   ListTodo,
   Filter,
   ChevronDown,
+  Settings,
+  PhoneCall,
+  ArrowLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
@@ -72,6 +75,7 @@ import { HospitalWorkflowsTab } from '@/components/hospital/workflows/hospital-w
 import { TechnologyWorkflowsTab } from '@/components/technology/workflows/technology-workflows-tab';
 import { SportsClubWorkflowsTab } from '@/components/sports-club/workflows/sports-club-workflows-tab';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
+import { PROFESSIONAL_EMPLOYEE_CONFIGS, PROFESSIONAL_EMPLOYEE_TYPES } from '@/lib/professional-ai-employees/config';
 import { UnifiedMonitor } from '@/components/workflows/unified-monitor';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -587,14 +591,19 @@ export default function AIEmployeesPage() {
     createdAt: string;
   }>>([]);
   
-  // Dialog state for creating AI employees
-  const [showCreateAiEmployee, setShowCreateAiEmployee] = useState(false);
-  const [newAiEmployee, setNewAiEmployee] = useState({
-    profession: '',
+  // Setup dialog - select pro, name, phone, workflow vs one-off
+  const [showSetupDialog, setShowSetupDialog] = useState(false);
+  const [setupForm, setSetupForm] = useState({
+    professionalType: '' as string,
     customName: '',
-    voiceAgentId: '',
-    voiceConfig: null as { voiceId?: string; language?: string; stability?: number; speed?: number; similarityBoost?: number } | null,
+    selectedTwilioPhone: '' as string,
+    useCase: 'workflow' as 'workflow' | 'oneoff',
+    contactName: '',
+    contactPhone: '',
   });
+  const [provisionedProfessionalAgents, setProvisionedProfessionalAgents] = useState<Array<{ id: string; employeeType: string; name: string; twilioPhoneNumber?: string | null }>>([]);
+  const [twilioOwnedNumbers, setTwilioOwnedNumbers] = useState<Array<{ phoneNumber: string; friendlyName?: string }>>([]);
+  const [setupSubmitting, setSetupSubmitting] = useState(false);
   
   // ElevenLabs voices for voice customization
   const [elevenLabsVoices, setElevenLabsVoices] = useState<Array<{ voice_id: string; name: string; category?: string }>>([]);
@@ -608,6 +617,7 @@ export default function AIEmployeesPage() {
   const hasIndustryTeam = hasIndustryAIEmployees(userIndustry);
 
   // Tab parameter from URL
+  const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
   const defaultTab = tabParam && ['trigger', 'ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'trigger';
@@ -617,7 +627,7 @@ export default function AIEmployeesPage() {
     fetchVoiceAgents();
     fetchAppointments();
     fetchTeamMembers();
-    fetchAiTeam();
+    fetchProvisionedProfessionalAgents();
     fetchElevenLabsVoices();
     const interval = setInterval(() => {
       fetchJobs(true);
@@ -687,7 +697,20 @@ export default function AIEmployeesPage() {
     return () => clearInterval(interval);
   }, [activeResearchJobId]);
 
-  // Fetch AI Team from API (with migration from localStorage if needed)
+  // Fetch provisioned professional agents (for phone selection in Setup)
+  const fetchProvisionedProfessionalAgents = async () => {
+    try {
+      const res = await fetch('/api/professional-ai-employees/provision');
+      if (res.ok) {
+        const data = await res.json();
+        setProvisionedProfessionalAgents(data.agents || []);
+      }
+    } catch (e) {
+      console.error('Failed to fetch professional agents', e);
+    }
+  };
+
+  // Legacy: Fetch AI Team from API (kept for potential future use)
   const fetchAiTeam = async () => {
     try {
       const res = await fetch('/api/ai-employees/user');
@@ -1320,14 +1343,19 @@ export default function AIEmployeesPage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Bot className="h-8 w-8" />
-            AI Employees
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Automated assistants working 24/7 for your business
-          </p>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} title="Back">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Bot className="h-8 w-8" />
+              AI Employees
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Automated assistants working 24/7 for your business
+            </p>
+          </div>
         </div>
         <Button onClick={() => fetchJobs()} disabled={refreshing}>
           {refreshing ? (
@@ -1338,41 +1366,61 @@ export default function AIEmployeesPage() {
       </div>
 
       <Tabs defaultValue={defaultTab} className="space-y-6">
-        <TabsList className={`grid w-full ${
+        <TabsList className={`grid w-full bg-gray-800/80 ${
           isRealEstateUser && hasIndustryTeam ? 'grid-cols-7' :
           isRealEstateUser ? 'grid-cols-6' : 
           hasIndustryTeam ? 'grid-cols-6' :
           hasWorkflowSystem ? 'grid-cols-5' : 
           'grid-cols-4'
         }`}>
-          <TabsTrigger value="trigger">Lead Search</TabsTrigger>
-          <TabsTrigger value="ai-team">AI Team</TabsTrigger>
+          <TabsTrigger
+            value="trigger"
+            className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+          >
+            Lead Search
+          </TabsTrigger>
+          <TabsTrigger
+            value="ai-team"
+            className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+          >
+            AI Team
+          </TabsTrigger>
           {isRealEstateUser && (
-            <TabsTrigger 
+            <TabsTrigger
               value="re-team"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+              className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
             >
               RE Team
             </TabsTrigger>
           )}
           {hasIndustryTeam && (
-            <TabsTrigger 
+            <TabsTrigger
               value="industry-team"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+              className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
             >
               {userIndustry === 'DENTIST' ? 'Dental Team' : 'Industry Team'}
             </TabsTrigger>
           )}
           {(isRealEstateUser || hasWorkflowSystem) && (
-            <TabsTrigger 
+            <TabsTrigger
               value="workflows"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+              className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
             >
               Workflows
             </TabsTrigger>
           )}
-          <TabsTrigger value="monitor">Monitor Jobs</TabsTrigger>
-          <TabsTrigger value="tasks">Manage Tasks</TabsTrigger>
+          <TabsTrigger
+            value="monitor"
+            className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+          >
+            Monitor Jobs
+          </TabsTrigger>
+          <TabsTrigger
+            value="tasks"
+            className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+          >
+            Manage Tasks
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="trigger" className="space-y-6">
@@ -1454,360 +1502,234 @@ export default function AIEmployeesPage() {
 
         {/* AI Team Tab */}
         <TabsContent value="ai-team" className="space-y-4">
-          {/* Professional AI Experts - 12 roles, RE-style cards, available to ALL users */}
-          <ProfessionalAIEmployees />
-
+          {/* Setup CTA - replaces Hire AI Employee */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    Your AI Team
+                    <Settings className="h-5 w-5 text-primary" />
+                    Professional AI Setup
                   </CardTitle>
                   <CardDescription>
-                    Build your virtual workforce - AI professionals that can automate tasks and communicate via Voice AI
+                    Select a professional AI employee, assign a name and phone (if needed), then use in a workflow, campaign, or one-off call
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  <Button asChild variant="outline" className="gap-2">
-                    <Link href="/dashboard/voice-agents">
-                      <Phone className="h-4 w-4" />
-                      Create Voice AI Agent
-                    </Link>
-                  </Button>
-                  <Button onClick={() => setShowCreateAiEmployee(true)} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Hire AI Employee
-                  </Button>
-                </div>
+                <Button onClick={() => setShowSetupDialog(true)} className="gap-2">
+                  <Settings className="h-4 w-4" />
+                  Setup
+                </Button>
               </div>
             </CardHeader>
-            <CardContent>
-              {aiTeam.length === 0 ? (
-                <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                  <Bot className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-semibold text-lg mb-2">No AI Employees Yet</h3>
-                  <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                    Hire AI employees to automate tasks. Choose from accountants, developers, copywriters, and more.
-                    Each can be assigned a Voice AI agent for phone communications.
-                  </p>
-                  <div className="flex gap-2 justify-center flex-wrap">
-                    <Button asChild variant="outline">
-                      <Link href="/dashboard/voice-agents">
-                        <Phone className="h-4 w-4 mr-2" />
-                        Create Voice AI Agent First
-                      </Link>
-                    </Button>
-                    <Button onClick={() => setShowCreateAiEmployee(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Hire Your First AI Employee
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {aiTeam.map((employee) => {
-                    const profession = getProfessionInfo(employee.profession);
-                    const assignedVoiceAgent = voiceAgents.find(v => v.id === employee.voiceAgentId);
-                    return (
-                      <Card key={employee.id} className={`transition-all ${employee.isActive ? '' : 'opacity-50'}`}>
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <div className="text-3xl">{profession?.icon || '🤖'}</div>
-                              <div>
-                                <h4 className="font-semibold">{employee.customName}</h4>
-                                <p className="text-xs text-muted-foreground">{profession?.name}</p>
-                              </div>
-                            </div>
-                            <Badge variant={employee.isActive ? 'default' : 'secondary'}>
-                              {employee.isActive ? 'Active' : 'Inactive'}
-                            </Badge>
-                          </div>
-                          
-                          <p className="text-sm text-muted-foreground mb-4">
-                            {profession?.description}
-                          </p>
-                          
-                          {/* Voice Agent Assignment */}
-                          <div className="space-y-2 mb-4">
-                            <Label className="text-xs font-medium">Voice AI Agent</Label>
-                            <select
-                              value={employee.voiceAgentId || ''}
-                              onChange={(e) => updateAiEmployeeVoiceAgent(employee.id, e.target.value || null)}
-                              className="w-full p-2 text-sm border rounded bg-background"
-                            >
-                              <option value="">No voice agent (text only)</option>
-                              {voiceAgents.map(va => (
-                                <option key={va.id} value={va.id}>📞 {va.name}</option>
-                              ))}
-                            </select>
-                            {voiceAgents.length === 0 && (
-                              <p className="text-xs text-amber-600 dark:text-amber-500">
-                                <a href="/dashboard/voice-agents" className="underline hover:no-underline">Create a Voice AI Agent</a> to enable phone calls
-                              </p>
-                            )}
-                            {assignedVoiceAgent && (
-                              <>
-                                <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  Can make/receive phone calls
-                                </p>
-                                <Collapsible>
-                                  <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-1">
-                                    <ChevronDown className="h-3 w-3" />
-                                    Voice customization
-                                  </CollapsibleTrigger>
-                                  <CollapsibleContent className="space-y-2 pt-2 mt-1 border-t">
-                                    <div>
-                                      <Label className="text-xs">Language</Label>
-                                      <select
-                                        value={employee.voiceConfig?.language || ''}
-                                        onChange={(e) => {
-                                          const lang = e.target.value || undefined;
-                                          updateAiEmployeeVoiceConfig(employee.id, { ...(employee.voiceConfig || {}), language: lang });
-                                        }}
-                                        className="w-full p-1.5 text-xs border rounded bg-background mt-0.5"
-                                      >
-                                        <option value="">Default</option>
-                                        {VOICE_LANGUAGES.map(l => (
-                                          <option key={l.value} value={l.value}>{l.label}</option>
-                                        ))}
-                                      </select>
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs">Voice</Label>
-                                      <select
-                                        value={employee.voiceConfig?.voiceId || ''}
-                                        onChange={(e) => {
-                                          const vid = e.target.value || undefined;
-                                          updateAiEmployeeVoiceConfig(employee.id, { ...(employee.voiceConfig || {}), voiceId: vid });
-                                        }}
-                                        className="w-full p-1.5 text-xs border rounded bg-background mt-0.5"
-                                      >
-                                        <option value="">Default</option>
-                                        {loadingVoices ? (
-                                          <option disabled>Loading...</option>
-                                        ) : (
-                                          elevenLabsVoices.map(v => (
-                                            <option key={v.voice_id} value={v.voice_id}>
-                                              {v.name} {v.category ? `(${v.category})` : ''}
-                                            </option>
-                                          ))
-                                        )}
-                                      </select>
-                                    </div>
-                                  </CollapsibleContent>
-                                </Collapsible>
-                              </>
-                            )}
-                          </div>
-                          
-                          {/* Actions */}
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1"
-                              onClick={() => toggleAiEmployee(employee.id)}
-                            >
-                              {employee.isActive ? 'Deactivate' : 'Activate'}
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => removeAiEmployee(employee.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
           </Card>
-          
-          {/* Available Professions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Available AI Professions</CardTitle>
-              <CardDescription>Click on any profession to hire an AI employee</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-2 md:grid-cols-3 lg:grid-cols-5">
-                {AI_PROFESSIONS.map((prof) => {
-                  const hired = aiTeam.filter(e => e.profession === prof.id).length;
-                  return (
-                    <button
-                      key={prof.id}
-                      onClick={() => {
-                        setNewAiEmployee({ profession: prof.id, customName: '', voiceAgentId: '', voiceConfig: null });
-                        setShowCreateAiEmployee(true);
-                      }}
-                      className="flex items-center gap-2 p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition-all text-left"
-                    >
-                      <span className="text-2xl">{prof.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{prof.name.replace('AI ', '')}</p>
-                        {hired > 0 && (
-                          <Badge variant="secondary" className="text-xs">{hired} hired</Badge>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+
+          {/* Professional AI Experts - 12 roles, RE-style cards */}
+          <ProfessionalAIEmployees />
         </TabsContent>
 
-        {/* Create AI Employee Dialog */}
-        <Dialog open={showCreateAiEmployee} onOpenChange={setShowCreateAiEmployee}>
+        {/* Setup Dialog - Select pro, name, phone, workflow vs one-off */}
+        <Dialog open={showSetupDialog} onOpenChange={(open) => {
+          setShowSetupDialog(open);
+          if (open) {
+            fetchProvisionedProfessionalAgents();
+            fetch('/api/twilio/phone-numbers/owned').then((r) => r.ok ? r.json() : {}).then((d) => setTwilioOwnedNumbers(d.numbers || []));
+          }
+        }}>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
-                Hire AI Employee
+                <Settings className="h-5 w-5" />
+                Setup Professional AI
               </DialogTitle>
               <DialogDescription>
-                Add a new AI professional to your virtual team
+                Select a professional AI employee, assign a name and phone (if needed), then choose how to use it
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
-              {/* Profession Selection */}
+              {/* Professional Type */}
               <div className="space-y-2">
-                <Label>Profession *</Label>
+                <Label>Professional AI Employee *</Label>
                 <select
-                  value={newAiEmployee.profession}
+                  value={setupForm.professionalType}
                   onChange={(e) => {
-                    const prof = AI_PROFESSIONS.find(p => p.id === e.target.value);
-                    setNewAiEmployee({
-                      ...newAiEmployee,
-                      profession: e.target.value,
-                      customName: prof?.name || '',
+                    const config = Object.values(PROFESSIONAL_EMPLOYEE_CONFIGS).find(c => c.type === e.target.value);
+                    setSetupForm({
+                      ...setupForm,
+                      professionalType: e.target.value,
+                      customName: config?.name || '',
                     });
                   }}
                   className="w-full p-2 border rounded bg-background"
                 >
-                  <option value="">Select a profession...</option>
-                  {AI_PROFESSIONS.map((prof) => (
-                    <option key={prof.id} value={prof.id}>
-                      {prof.icon} {prof.name}
-                    </option>
-                  ))}
+                  <option value="">Select a professional...</option>
+                  {PROFESSIONAL_EMPLOYEE_TYPES.map((type) => {
+                    const config = PROFESSIONAL_EMPLOYEE_CONFIGS[type];
+                    return (
+                      <option key={type} value={type}>
+                        {config?.title || type}
+                      </option>
+                    );
+                  })}
                 </select>
-                {newAiEmployee.profession && (
-                  <p className="text-sm text-muted-foreground">
-                    {AI_PROFESSIONS.find(p => p.id === newAiEmployee.profession)?.description}
-                  </p>
-                )}
               </div>
               
               {/* Custom Name */}
               <div className="space-y-2">
-                <Label>Custom Name (optional)</Label>
+                <Label>Name (optional)</Label>
                 <Input
-                  placeholder="e.g., Sarah the Accountant"
-                  value={newAiEmployee.customName}
-                  onChange={(e) => setNewAiEmployee({ ...newAiEmployee, customName: e.target.value })}
+                  placeholder="e.g., Sarah"
+                  value={setupForm.customName}
+                  onChange={(e) => setSetupForm({ ...setupForm, customName: e.target.value })}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Give your AI employee a memorable name
-                </p>
               </div>
               
-              {/* Voice Agent Assignment */}
+              {/* Use Case */}
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  Assign Voice AI Agent (optional)
-                </Label>
-                <select
-                  value={newAiEmployee.voiceAgentId}
-                  onChange={(e) => setNewAiEmployee({ ...newAiEmployee, voiceAgentId: e.target.value })}
-                  className="w-full p-2 border rounded bg-background"
-                >
-                  <option value="">No voice agent (text/email only)</option>
-                  {voiceAgents.map(va => (
-                    <option key={va.id} value={va.id}>📞 {va.name}</option>
-                  ))}
-                </select>
-                {voiceAgents.length === 0 && (
-                  <p className="text-xs text-amber-600 dark:text-amber-500">
-                    No voice agents yet.{' '}
-                    <a href="/dashboard/voice-agents" className="underline hover:no-underline">Create your first Voice AI Agent</a>
-                  </p>
-                )}
-                {voiceAgents.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Enable phone call capabilities for this AI employee
-                  </p>
-                )}
+                <Label>How do you want to use this?</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSetupForm({ ...setupForm, useCase: 'workflow' })}
+                    className={`p-4 rounded-lg border-2 text-left transition-all ${
+                      setupForm.useCase === 'workflow'
+                        ? 'border-primary bg-primary/10'
+                        : 'border-muted hover:border-muted-foreground/50'
+                    }`}
+                  >
+                    <Workflow className="h-5 w-5 mb-2" />
+                    <p className="font-medium text-sm">Workflow or Campaign</p>
+                    <p className="text-xs text-muted-foreground">Use in automated workflows</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSetupForm({ ...setupForm, useCase: 'oneoff' })}
+                    className={`p-4 rounded-lg border-2 text-left transition-all ${
+                      setupForm.useCase === 'oneoff'
+                        ? 'border-primary bg-primary/10'
+                        : 'border-muted hover:border-muted-foreground/50'
+                    }`}
+                  >
+                    <PhoneCall className="h-5 w-5 mb-2" />
+                    <p className="font-medium text-sm">One-off Call</p>
+                    <p className="text-xs text-muted-foreground">Make a call to someone now</p>
+                  </button>
+                </div>
               </div>
               
-              {/* Voice Customization - shown when voice agent assigned */}
-              {newAiEmployee.voiceAgentId && (
-                <Collapsible defaultOpen>
-                  <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                    <ChevronDown className="h-4 w-4" />
-                    Voice customization (language, voice)
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-3 pt-3">
-                    <div className="space-y-2">
-                      <Label>Language</Label>
-                      <select
-                        value={newAiEmployee.voiceConfig?.language || ''}
-                        onChange={(e) => setNewAiEmployee({
-                          ...newAiEmployee,
-                          voiceConfig: { ...newAiEmployee.voiceConfig, language: e.target.value || undefined },
-                        })}
-                        className="w-full p-2 border rounded bg-background"
-                      >
-                        <option value="">Default (agent setting)</option>
-                        {VOICE_LANGUAGES.map(l => (
-                          <option key={l.value} value={l.value}>{l.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Voice</Label>
-                      <select
-                        value={newAiEmployee.voiceConfig?.voiceId || ''}
-                        onChange={(e) => setNewAiEmployee({
-                          ...newAiEmployee,
-                          voiceConfig: { ...newAiEmployee.voiceConfig, voiceId: e.target.value || undefined },
-                        })}
-                        className="w-full p-2 border rounded bg-background"
-                      >
-                        <option value="">Default (agent voice)</option>
-                        {loadingVoices ? (
-                          <option disabled>Loading...</option>
-                        ) : (
-                          elevenLabsVoices.map(v => (
-                            <option key={v.voice_id} value={v.voice_id}>
-                              {v.name} {v.category ? `(${v.category})` : ''}
-                            </option>
-                          ))
-                        )}
-                      </select>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+              {/* One-off: Twilio phone + contact details */}
+              {setupForm.useCase === 'oneoff' && (
+                <div className="space-y-3 p-4 rounded-lg bg-muted/50 border">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                      <Phone className="h-4 w-4" />
+                      Select Twilio Phone Number *
+                    </Label>
+                    <select
+                      value={setupForm.selectedTwilioPhone}
+                      onChange={(e) => setSetupForm({ ...setupForm, selectedTwilioPhone: e.target.value })}
+                      className="w-full p-2 border rounded bg-background"
+                      required
+                    >
+                      <option value="">Select a phone number...</option>
+                      {twilioOwnedNumbers.map((n) => (
+                        <option key={n.phoneNumber} value={n.phoneNumber}>
+                          📞 {n.phoneNumber} {n.friendlyName ? `(${n.friendlyName})` : ''}
+                        </option>
+                      ))}
+                      {twilioOwnedNumbers.length === 0 && (
+                        <option disabled>No phone numbers found. Purchase one in Settings.</option>
+                      )}
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      Required. Select from your Twilio account. The system will assign it to this agent in ElevenLabs.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Who should we call?</p>
+                    <Input
+                      placeholder="Contact name"
+                      value={setupForm.contactName}
+                      onChange={(e) => setSetupForm({ ...setupForm, contactName: e.target.value })}
+                    />
+                    <Input
+                      placeholder="Phone number (e.g. +1 555 123 4567)"
+                      value={setupForm.contactPhone}
+                      onChange={(e) => setSetupForm({ ...setupForm, contactPhone: e.target.value })}
+                    />
+                  </div>
+                </div>
               )}
             </div>
             
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowCreateAiEmployee(false)}>
+              <Button variant="outline" onClick={() => setShowSetupDialog(false)}>
                 Cancel
               </Button>
-              <Button onClick={addAiEmployee} disabled={!newAiEmployee.profession}>
-                <Plus className="h-4 w-4 mr-2" />
-                Hire Employee
+              <Button
+                onClick={async () => {
+                  if (!setupForm.professionalType) {
+                    toast.error('Please select a professional AI employee');
+                    return;
+                  }
+                  if (setupForm.useCase === 'workflow') {
+                    setShowSetupDialog(false);
+                    toast.success('Opening Workflows...');
+                    router.push(`/dashboard/ai-employees?tab=workflows&agent=${setupForm.professionalType}`);
+                    return;
+                  }
+                  if (setupForm.useCase === 'oneoff') {
+                    if (!setupForm.selectedTwilioPhone) {
+                      toast.error('Please select a Twilio phone number');
+                      return;
+                    }
+                    if (!setupForm.contactName || !setupForm.contactPhone) {
+                      toast.error('Please enter contact name and phone');
+                      return;
+                    }
+                    setSetupSubmitting(true);
+                    try {
+                      const agent = provisionedProfessionalAgents.find((a) => a.employeeType === setupForm.professionalType);
+                      const needsAssign = !agent?.twilioPhoneNumber || agent.twilioPhoneNumber !== setupForm.selectedTwilioPhone;
+                      if (needsAssign) {
+                        const assignRes = await fetch('/api/professional-ai-employees/assign-phone', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            employeeType: setupForm.professionalType,
+                            phoneNumber: setupForm.selectedTwilioPhone,
+                          }),
+                        });
+                        const assignData = await assignRes.json().catch(() => ({}));
+                        if (!assignRes.ok) throw new Error(assignData.error || 'Failed to assign phone to agent');
+                        toast.success('Phone assigned. Initiating call...');
+                        fetchProvisionedProfessionalAgents();
+                      }
+                      const res = await fetch('/api/professional-ai-employees/one-off-call', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          employeeType: setupForm.professionalType,
+                          contactName: setupForm.contactName,
+                          contactPhone: setupForm.contactPhone,
+                        }),
+                      });
+                      const data = await res.json().catch(() => ({}));
+                      if (!res.ok) throw new Error(data.error || 'Failed to initiate call');
+                      toast.success(data.message || 'Call initiated!');
+                      setShowSetupDialog(false);
+                      setSetupForm({ professionalType: '', customName: '', selectedTwilioPhone: '', useCase: 'workflow', contactName: '', contactPhone: '' });
+                    } catch (e: any) {
+                      toast.error(e.message || 'Failed to initiate call');
+                    } finally {
+                      setSetupSubmitting(false);
+                    }
+                  }
+                }}
+                disabled={!setupForm.professionalType || (setupForm.useCase === 'oneoff' && (!setupForm.selectedTwilioPhone || !setupForm.contactName || !setupForm.contactPhone)) || setupSubmitting}
+              >
+                {setupSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {setupForm.useCase === 'workflow' ? 'Open Workflows' : 'Make Call'}
               </Button>
             </div>
           </DialogContent>
@@ -1889,7 +1811,7 @@ export default function AIEmployeesPage() {
               {selectedJob?.employee.name} - Results
             </DialogTitle>
             <DialogDescription suppressHydrationWarning>
-              {selectedJob?.jobType.replace(/_/g, ' ')} • 
+              {(selectedJob?.jobType || '').replace(/_/g, ' ')} • 
               {selectedJob?.status === 'COMPLETED' ? ' Completed' : ' Failed'} on{' '}
               {selectedJob?.completedAt && (typeof selectedJob.completedAt === 'string' ? new Date(selectedJob.completedAt).toLocaleString() : String(selectedJob.completedAt))}
             </DialogDescription>

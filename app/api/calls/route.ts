@@ -27,10 +27,23 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const voiceAgentId = searchParams.get('voiceAgentId');
     const limit = parseInt(searchParams.get('limit') || '50');
+    const countOnly = searchParams.get('countOnly') === 'true';
+    const fromDate = searchParams.get('from');
+    const toDate = searchParams.get('to');
 
     const whereClause: any = { userId: user.id };
     if (voiceAgentId) {
       whereClause.voiceAgentId = voiceAgentId;
+    }
+    if (fromDate || toDate) {
+      whereClause.createdAt = {};
+      if (fromDate) whereClause.createdAt.gte = new Date(fromDate);
+      if (toDate) whereClause.createdAt.lte = new Date(toDate);
+    }
+
+    if (countOnly) {
+      const count = await prisma.callLog.count({ where: whereClause });
+      return NextResponse.json({ count });
     }
 
     const calls = await prisma.callLog.findMany({

@@ -669,7 +669,7 @@ export function CreateWorkflowDialog({ open, onOpenChange, onSuccess, template }
                       <span className="font-medium">Trigger:</span>
                       <Badge variant="secondary">
                         {triggerTypes.find(t => t.value === generatedWorkflow.triggerType)?.label || 
-                         generatedWorkflow.triggerType.replace(/_/g, ' ')}
+                         (generatedWorkflow.triggerType || '').replace(/_/g, ' ')}
                       </Badge>
                     </div>
 

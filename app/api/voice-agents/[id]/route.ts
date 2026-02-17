@@ -159,6 +159,10 @@ ${enhancedKnowledgeBase || 'Answer customer questions professionally and helpful
 ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : ''}`;
     }
 
+    const originalAgent = await prisma.voiceAgent.findFirst({
+      where: { id: params.id, userId: user.id },
+    });
+
     const agent = await prisma.voiceAgent.updateMany({
       where: {
         id: params.id,
@@ -244,10 +248,44 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
       return NextResponse.json({ error: 'Voice agent not found' }, { status: 404 });
     }
 
-    // Fetch updated agent
     const updatedAgent = await prisma.voiceAgent.findUnique({
       where: { id: params.id },
     });
+
+    // 📞 ASSIGN PHONE TO ELEVENLABS: When phone number changes, import and assign
+    const phoneChanged =
+      body.twilioPhoneNumber !== undefined &&
+      body.twilioPhoneNumber !== originalAgent?.twilioPhoneNumber &&
+      body.twilioPhoneNumber?.trim();
+    if (
+      phoneChanged &&
+      updatedAgent?.elevenLabsAgentId &&
+      body.twilioPhoneNumber?.trim()
+    ) {
+      try {
+        const formattedPhone = body.twilioPhoneNumber.trim().startsWith('+')
+          ? body.twilioPhoneNumber.trim()
+          : body.twilioPhoneNumber.replace(/\D/g, '').length === 10
+            ? '+1' + body.twilioPhoneNumber.replace(/\D/g, '')
+            : '+' + body.twilioPhoneNumber.replace(/\D/g, '');
+        const importResult = await elevenLabsProvisioning.importPhoneNumber(
+          formattedPhone,
+          updatedAgent.elevenLabsAgentId,
+          user.id
+        );
+        if (importResult.success) {
+          await prisma.voiceAgent.update({
+            where: { id: params.id },
+            data: { elevenLabsPhoneNumberId: importResult.phoneNumberId },
+          });
+          console.log('✅ Phone assigned to ElevenLabs agent');
+        } else {
+          console.warn('⚠️ ElevenLabs phone import failed:', importResult.error);
+        }
+      } catch (phoneErr: any) {
+        console.warn('⚠️ ElevenLabs phone assignment error:', phoneErr?.message);
+      }
+    }
 
     // 🔄 SYNC WITH ELEVENLABS: Update the agent in ElevenLabs if it exists
     if (updatedAgent?.elevenLabsAgentId) {

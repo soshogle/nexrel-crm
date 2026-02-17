@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Info, ShoppingCart, FileText, Upload, Trash2 } from 'lucide-react';
 import PurchasePhoneNumberDialog from './purchase-phone-number-dialog';
+import { TwilioPhoneSelector } from '@/components/shared/twilio-phone-selector';
 import { VOICE_AGENT_LANGUAGES } from '@/lib/voice-languages';
 
 interface Voice {
@@ -104,13 +105,11 @@ export function CreateVoiceAgentDialog({
   
   const { data: session } = useSession() || {};
   const [voices, setVoices] = useState<Voice[]>([]);
-  const [ownedPhoneNumbers, setOwnedPhoneNumbers] = useState<Array<{phoneNumber: string; friendlyName: string}>>([]);
   const [loading, setLoading] = useState(false);
   const [loadingVoices, setLoadingVoices] = useState(false);
-  const [loadingPhoneNumbers, setLoadingPhoneNumbers] = useState(false);
   const [error, setError] = useState('');
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
-  const [phoneInputMode, setPhoneInputMode] = useState<'select' | 'manual'>('select');
+  const [phoneRefreshTrigger, setPhoneRefreshTrigger] = useState(0);
   const [autoConfigureAfterCreation, setAutoConfigureAfterCreation] = useState(true);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [knowledgeBaseFiles, setKnowledgeBaseFiles] = useState<any[]>([]);
@@ -156,11 +155,10 @@ export function CreateVoiceAgentDialog({
     }
   };
 
-  // Fetch available voices, owned phone numbers, and CLEAR knowledge base files for new agent
+  // Fetch available voices and CLEAR knowledge base files for new agent
   useEffect(() => {
     if (open) {
       fetchVoices();
-      fetchOwnedPhoneNumbers();
       // Clear knowledge base files when creating a NEW agent
       // Files will only be shown if uploaded during this session
       setKnowledgeBaseFiles([]);
@@ -197,39 +195,6 @@ export function CreateVoiceAgentDialog({
       console.error('Failed to fetch voices:', err);
     } finally {
       setLoadingVoices(false);
-    }
-  };
-
-  const fetchOwnedPhoneNumbers = async () => {
-    setLoadingPhoneNumbers(true);
-    try {
-      const response = await fetch('/api/twilio/phone-numbers/owned');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('📞 Fetched phone numbers:', data);
-        if (data.success && data.numbers) {
-          setOwnedPhoneNumbers(data.numbers);
-          // If user has owned numbers, default to select mode
-          if (data.numbers.length > 0) {
-            setPhoneInputMode('select');
-          } else {
-            setPhoneInputMode('manual');
-            console.warn('⚠️ No phone numbers found. User needs to sync or purchase numbers.');
-          }
-        } else {
-          console.warn('⚠️ Invalid response structure:', data);
-          setPhoneInputMode('manual');
-        }
-      } else {
-        const errorText = await response.text();
-        console.error('❌ Failed to fetch phone numbers. Status:', response.status, 'Response:', errorText);
-        setPhoneInputMode('manual');
-      }
-    } catch (err) {
-      console.error('❌ Failed to fetch owned phone numbers:', err);
-      setPhoneInputMode('manual');
-    } finally {
-      setLoadingPhoneNumbers(false);
     }
   };
 
@@ -356,7 +321,7 @@ export function CreateVoiceAgentDialog({
       setError('Please select or enter a phone number. Phone number is required for voice agents.');
       setLoading(false);
       toast.error('Phone number required', {
-        description: 'Click "Sync Phone Numbers" to import your Twilio numbers, or purchase a new one.',
+        description: 'Select a number from the dropdown or purchase one.',
       });
       return;
     }
@@ -1179,113 +1144,16 @@ export function CreateVoiceAgentDialog({
               </Alert>
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="twilioPhoneNumber">
-                    Phone Number
-                    {session?.user?.role === 'SUPER_ADMIN' && (
-                      <span className="ml-2 text-xs font-normal text-purple-600">
-                        (Optional for Super Admin)
-                      </span>
-                    )}
-                  </Label>
-                  {loadingPhoneNumbers && (
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Loading numbers...
-                    </span>
-                  )}
-                </div>
-                {session?.user?.role === 'SUPER_ADMIN' && (
-                  <Alert className="py-2">
-                    <Info className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      As a super admin, you can create voice agents without assigning a phone number. The agent will be created but won't be able to receive calls until a phone number is configured.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Toggle between Select and Manual Input */}
-                {ownedPhoneNumbers.length > 0 && (
-                  <div className="flex gap-2 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setPhoneInputMode('select')}
-                      className={`px-3 py-1 rounded-md transition-colors ${
-                        phoneInputMode === 'select'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      }`}
-                    >
-                      Select from My Numbers ({ownedPhoneNumbers.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPhoneInputMode('manual')}
-                      className={`px-3 py-1 rounded-md transition-colors ${
-                        phoneInputMode === 'manual'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      }`}
-                    >
-                      Enter Manually
-                    </button>
-                  </div>
-                )}
-
-                {/* Dropdown for owned numbers */}
-                {phoneInputMode === 'select' && ownedPhoneNumbers.length > 0 ? (
-                  <div className="flex gap-2">
-                    <Select
-                      value={formData.twilioPhoneNumber}
-                      onValueChange={(value) => setFormData({ ...formData, twilioPhoneNumber: value })}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Select a phone number" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ownedPhoneNumbers.map((number) => (
-                          <SelectItem key={number.phoneNumber} value={number.phoneNumber}>
-                            {number.phoneNumber} {number.friendlyName && `(${number.friendlyName})`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowPurchaseDialog(true)}
-                      className="gap-2 whitespace-nowrap"
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      Buy More
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Input
-                      id="twilioPhoneNumber"
-                      value={formData.twilioPhoneNumber}
-                      onChange={(e) => setFormData({ ...formData, twilioPhoneNumber: e.target.value })}
-                      placeholder="+14155551234"
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowPurchaseDialog(true)}
-                      className="gap-2 whitespace-nowrap"
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      Buy Number
-                    </Button>
-                  </div>
-                )}
-
-                <p className="text-xs text-muted-foreground">
-                  {ownedPhoneNumbers.length > 0
-                    ? "Select from your purchased numbers or buy a new one"
-                    : "Don't have a phone number? Click 'Buy Number' to purchase one instantly!"}
-                </p>
+                <TwilioPhoneSelector
+                  value={formData.twilioPhoneNumber}
+                  onChange={(v) => setFormData({ ...formData, twilioPhoneNumber: v })}
+                  required={session?.user?.role !== 'SUPER_ADMIN'}
+                  onPurchaseClick={() => setShowPurchaseDialog(true)}
+                  showPurchaseButton={true}
+                  refreshTrigger={phoneRefreshTrigger}
+                  label="Phone Number"
+                  description="Required for calls. Select from your Twilio account. The system assigns it to the agent in ElevenLabs."
+                />
               </div>
 
               <div>
@@ -1598,10 +1466,9 @@ export function CreateVoiceAgentDialog({
         onClose={() => setShowPurchaseDialog(false)}
         onSuccess={(phoneNumber) => {
           console.log('Phone number purchased:', phoneNumber);
-          setFormData({ ...formData, twilioPhoneNumber: phoneNumber });
+          setFormData((prev) => ({ ...prev, twilioPhoneNumber: phoneNumber }));
           setShowPurchaseDialog(false);
-          // Refresh the owned numbers list
-          fetchOwnedPhoneNumbers();
+          setPhoneRefreshTrigger((n) => n + 1);
         }}
       />
     </Dialog>

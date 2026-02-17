@@ -66,9 +66,9 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
         dripEnrollmentsRes,
       ] = await Promise.all([
         fetch('/api/ai-employees/jobs?limit=50'),
-        fetch('/api/workflows/instances/active?limit=50').catch(() => ({ ok: false, json: () => ({ instances: [] }) })),
+        fetch('/api/workflows/instances/active?limit=50&status=all').catch(() => ({ ok: false, json: () => ({ instances: [] }) })),
         isRE ? fetch('/api/real-estate/workflows/instances?limit=50').catch(() => ({ ok: false, json: () => ({ instances: [] }) })) : Promise.resolve({ ok: false, json: () => ({ instances: [] }) }),
-        fetch('/api/workflows/enrollments/active?limit=50').catch(() => ({ ok: false, json: () => ({ enrollments: [] }) })),
+        fetch('/api/workflows/enrollments/active?limit=50&status=all').catch(() => ({ ok: false, json: () => ({ enrollments: [] }) })),
       ]);
 
       const aiJobsData = aiJobsRes.ok ? await aiJobsRes.json() : { data: [] };
@@ -105,7 +105,7 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
       const aiJobItems: MonitoringItem[] = (aiJobsData.data || []).map((job: any) => ({
         id: job.id,
         type: 'ai_job' as const,
-        title: `${job.employee?.name || 'AI Employee'} - ${job.jobType.replace(/_/g, ' ')}`,
+        title: `${job.employee?.name || 'AI Employee'} - ${(job.jobType || '').replace(/_/g, ' ')}`,
         status: job.status,
         progress: job.progress,
         startedAt: job.startedAt,
@@ -231,7 +231,7 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
 
     return (
       <Badge className={statusColors[status] || 'bg-gray-500'}>
-        {status.replace(/_/g, ' ')}
+        {(status || '').replace(/_/g, ' ')}
       </Badge>
     );
   };
@@ -300,24 +300,24 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <Tabs value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-              <TabsList>
-                <TabsTrigger value="all">All Types</TabsTrigger>
-                <TabsTrigger value="ai_job">AI Jobs</TabsTrigger>
-                <TabsTrigger value="workflow_instance">Workflows</TabsTrigger>
-                <TabsTrigger value="task_execution">Tasks</TabsTrigger>
-                <TabsTrigger value="drip_enrollment">Drip Campaigns</TabsTrigger>
+              <TabsList className="bg-gray-800/80">
+                <TabsTrigger value="all" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">All Types</TabsTrigger>
+                <TabsTrigger value="ai_job" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">AI Jobs</TabsTrigger>
+                <TabsTrigger value="workflow_instance" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Workflows</TabsTrigger>
+                <TabsTrigger value="task_execution" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Tasks</TabsTrigger>
+                <TabsTrigger value="drip_enrollment" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Drip Campaigns</TabsTrigger>
               </TabsList>
             </Tabs>
             
             <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
-              <TabsList>
-                <TabsTrigger value="all">All Status</TabsTrigger>
-                <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="running">Running</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
+              <TabsList className="bg-gray-800/80">
+                <TabsTrigger value="all" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">All Status</TabsTrigger>
+                <TabsTrigger value="active" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Active</TabsTrigger>
+                <TabsTrigger value="pending" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Pending</TabsTrigger>
+                <TabsTrigger value="running" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Running</TabsTrigger>
+                <TabsTrigger value="completed" className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg">Completed</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -445,7 +445,7 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
             <Clock className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="font-semibold text-lg mb-2">No Activity</h3>
             <p className="text-muted-foreground text-center">
-              No {filter !== 'all' ? filter : ''} {typeFilter !== 'all' ? typeFilter.replace('_', ' ') : 'items'} found
+              No {filter !== 'all' ? filter : ''} {typeFilter !== 'all' ? (typeFilter || '').replace('_', ' ') : 'items'} found
             </p>
           </CardContent>
         </Card>

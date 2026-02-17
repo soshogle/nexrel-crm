@@ -33,8 +33,8 @@ export function WorkflowsList({ workflows, onToggleStatus, onDelete, onOpenInBui
     }
   };
 
-  const getTriggerLabel = (triggerType: string) => {
-    return triggerType
+  const getTriggerLabel = (triggerType: string | undefined) => {
+    return (triggerType || '')
       .replace(/_/g, ' ')
       .toLowerCase()
       .replace(/\b\w/g, (l) => l.toUpperCase());

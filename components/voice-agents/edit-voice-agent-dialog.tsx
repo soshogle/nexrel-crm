@@ -13,6 +13,8 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Info, FileText, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import PurchasePhoneNumberDialog from './purchase-phone-number-dialog';
+import { TwilioPhoneSelector } from '@/components/shared/twilio-phone-selector';
 import { VOICE_AGENT_LANGUAGES } from '@/lib/voice-languages';
 
 interface Voice {
@@ -105,6 +107,8 @@ export function EditVoiceAgentDialog({
   const [error, setError] = useState('');
   const [uploadingFile, setUploadingFile] = useState(false);
   const [knowledgeBaseFiles, setKnowledgeBaseFiles] = useState<any[]>([]);
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
+  const [phoneRefreshTrigger, setPhoneRefreshTrigger] = useState(0);
 
   // Load agent data when dialog opens
   useEffect(() => {
@@ -909,15 +913,16 @@ export function EditVoiceAgentDialog({
                 </AlertDescription>
               </Alert>
 
-              <div>
-                <Label htmlFor="twilioPhoneNumber">Phone Number</Label>
-                <Input
-                  id="twilioPhoneNumber"
-                  value={formData.twilioPhoneNumber}
-                  onChange={(e) => setFormData({ ...formData, twilioPhoneNumber: e.target.value })}
-                  placeholder="+14155551234"
-                />
-              </div>
+              <TwilioPhoneSelector
+                value={formData.twilioPhoneNumber}
+                onChange={(v) => setFormData({ ...formData, twilioPhoneNumber: v })}
+                required={true}
+                onPurchaseClick={() => setShowPurchaseDialog(true)}
+                showPurchaseButton={true}
+                refreshTrigger={phoneRefreshTrigger}
+                label="Phone Number"
+                description="Select from your Twilio account. The system assigns it to the agent in ElevenLabs."
+              />
 
               <div>
                 <Label htmlFor="transferPhone">Transfer Phone (Optional)</Label>
@@ -1199,6 +1204,16 @@ export function EditVoiceAgentDialog({
           </div>
         </form>
       </DialogContent>
+
+      <PurchasePhoneNumberDialog
+        open={showPurchaseDialog}
+        onClose={() => setShowPurchaseDialog(false)}
+        onSuccess={(phoneNumber) => {
+          setFormData((prev) => ({ ...prev, twilioPhoneNumber: phoneNumber }));
+          setShowPurchaseDialog(false);
+          setPhoneRefreshTrigger((n) => n + 1);
+        }}
+      />
     </Dialog>
   );
 }

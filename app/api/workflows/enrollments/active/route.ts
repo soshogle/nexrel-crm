@@ -20,16 +20,18 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
-    const status = searchParams.get('status') || 'ACTIVE';
+    const statusParam = searchParams.get('status') || 'all';
 
-    // Get all active enrollments for user's workflows
+    // Build where: 'all' = no status filter (for Monitor Jobs)
+    const whereClause: { workflow: { userId: string }; status?: any } = {
+      workflow: { userId: session.user.id },
+    };
+    if (statusParam !== 'all') {
+      whereClause.status = statusParam as any;
+    }
+
     const enrollments = await prisma.workflowTemplateEnrollment.findMany({
-      where: {
-        workflow: {
-          userId: session.user.id,
-        },
-        status: status as any,
-      },
+      where: whereClause,
       include: {
         workflow: {
           select: {

@@ -84,23 +84,28 @@ export async function GET(request: NextRequest) {
     }
 
     const agents = await getExistingAgents(session.user.id);
-    const enrichedAgents = agents.map((agent) => ({
-      ...agent,
-      description: PROFESSIONAL_EMPLOYEE_CONFIGS[agent.employeeType]?.description || '',
-    }));
+    const enrichedAgents = agents
+      .filter((agent) => agent?.employeeType && typeof agent.employeeType === 'string')
+      .map((agent) => ({
+        ...agent,
+        description: PROFESSIONAL_EMPLOYEE_CONFIGS[agent.employeeType as ProfessionalAIEmployeeType]?.description || '',
+      }));
 
     return NextResponse.json({
       success: true,
       agents: enrichedAgents,
       totalTypes: 12,
-      provisionedCount: agents.length,
+      provisionedCount: enrichedAgents.length,
     });
   } catch (error) {
     console.error('Error fetching professional AI employees:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch agents' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: true,
+      agents: [],
+      totalTypes: 12,
+      provisionedCount: 0,
+      error: error instanceof Error ? error.message : 'Failed to fetch agents',
+    });
   }
 }
 

@@ -48,6 +48,8 @@ import {
   Mic
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { TwilioPhoneSelector } from '@/components/shared/twilio-phone-selector';
+import PurchasePhoneNumberDialog from '@/components/voice-agents/purchase-phone-number-dialog';
 
 // Types for provisioned agents
 interface ProvisionedAgent {
@@ -276,6 +278,9 @@ export function RealEstateAIEmployees() {
   const [testingAgentId, setTestingAgentId] = useState<string | null>(null);
   const [autoRunSettings, setAutoRunSettings] = useState<Record<string, boolean>>({});
   const [autoRunUpdating, setAutoRunUpdating] = useState<string | null>(null);
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
+  const [phoneRefreshTrigger, setPhoneRefreshTrigger] = useState(0);
+  const [assigningPhone, setAssigningPhone] = useState<string | null>(null);
 
   // Fetch provisioned agents on mount
   useEffect(() => {
@@ -424,6 +429,35 @@ export function RealEstateAIEmployees() {
       toast.error('Failed to run AI Employee');
     } finally {
       setRunningEmployee(null);
+    }
+  };
+
+  const handleAssignPhone = async (employeeId: string, phoneNumber: string) => {
+    if (!phoneNumber?.trim()) return;
+    const current = getProvisionedAgent(employeeId)?.twilioPhoneNumber;
+    if (current === phoneNumber.trim()) return;
+    setAssigningPhone(employeeId);
+    try {
+      const res = await fetch('/api/real-estate/ai-employees/assign-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeType: employeeId, phoneNumber: phoneNumber.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('Phone number assigned');
+        setProvisionedAgents((prev) =>
+          prev.map((a) =>
+            a.employeeType === employeeId ? { ...a, twilioPhoneNumber: data.twilioPhoneNumber } : a
+          )
+        );
+      } else {
+        toast.error(data.error || 'Failed to assign phone');
+      }
+    } catch {
+      toast.error('Failed to assign phone');
+    } finally {
+      setAssigningPhone(null);
     }
   };
 
@@ -658,16 +692,38 @@ export function RealEstateAIEmployees() {
                         ? 'Voice AI agent configured with OACIQ compliance and multi-language support.'
                         : 'Click Test Agent to set up automatically on first use.'}
                     </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-green-500/30 text-green-400 hover:bg-green-500/10"
-                      onClick={(e) => { e.stopPropagation(); handleTestAgent(selectedEmployee.id); }}
-                      disabled={testingAgentId === selectedEmployee.id}
-                    >
-                      {testingAgentId === selectedEmployee.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Settings className="w-3 h-3 mr-1" />}
-                      Test Agent
-                    </Button>
+                    {isAgentProvisioned(selectedEmployee.id) && (
+                      <div className="mt-3 pt-3 border-t border-slate-600">
+                        <TwilioPhoneSelector
+                          value={getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber || ''}
+                          onChange={(v) => handleAssignPhone(selectedEmployee.id, v)}
+                          required={true}
+                          onPurchaseClick={() => setShowPurchaseDialog(true)}
+                          showPurchaseButton={true}
+                          refreshTrigger={phoneRefreshTrigger}
+                          label="Phone Number"
+                          description="Select from your Twilio account. Assigned to agent in ElevenLabs."
+                        />
+                        {assigningPhone === selectedEmployee.id && (
+                          <div className="flex items-center gap-2 mt-2 text-sm text-slate-400">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Assigning...
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {!isAgentProvisioned(selectedEmployee.id) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                        onClick={(e) => { e.stopPropagation(); handleTestAgent(selectedEmployee.id); }}
+                        disabled={testingAgentId === selectedEmployee.id}
+                      >
+                        {testingAgentId === selectedEmployee.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Settings className="w-3 h-3 mr-1" />}
+                        Test Agent
+                      </Button>
+                    )}
                   </div>
                 )}
                 
@@ -702,6 +758,18 @@ export function RealEstateAIEmployees() {
           )}
         </DialogContent>
       </Dialog>
+
+      <PurchasePhoneNumberDialog
+        open={showPurchaseDialog}
+        onClose={() => setShowPurchaseDialog(false)}
+        onSuccess={(phoneNumber) => {
+          setShowPurchaseDialog(false);
+          setPhoneRefreshTrigger((n) => n + 1);
+          if (selectedEmployee?.voiceEnabled && isAgentProvisioned(selectedEmployee.id)) {
+            handleAssignPhone(selectedEmployee.id, phoneNumber);
+          }
+        }}
+      />
     </div>
   );
 }
