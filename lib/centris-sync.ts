@@ -11,6 +11,7 @@ const CENTRIS_URLS = [
   "https://www.centris.ca/en/for-rent~montreal",
   "https://www.centris.ca/en/condos-apartments~for-rent~montreal-island",
   "https://www.centris.ca/en/houses~for-sale~montreal-island",
+  "https://www.centris.ca/fr/propriete~a-vendre~berthierville?uc=0",
 ];
 
 function parsePrice(priceStr: string | undefined): number | null {
