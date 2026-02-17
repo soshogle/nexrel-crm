@@ -12,9 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 
 const INDUSTRIES = [
+  { value: 'ACCOUNTING', label: 'Accounting' },
   { value: 'RESTAURANT', label: 'Restaurant' },
   { value: 'SPORTS_CLUB', label: 'Sports Club' },
   { value: 'CONSTRUCTION', label: 'Construction' },
+  { value: 'LAW', label: 'Law' },
   { value: 'MEDICAL', label: 'Medical' },
   { value: 'DENTIST', label: 'Dentist' },
   { value: 'MEDICAL_SPA', label: 'Medical Spa' },
@@ -23,6 +25,7 @@ const INDUSTRIES = [
   { value: 'REAL_ESTATE', label: 'Real Estate' },
   { value: 'HOSPITAL', label: 'Hospital' },
   { value: 'TECHNOLOGY', label: 'Technology' },
+  { value: 'ORTHODONTIST', label: 'Orthodontist' },
 ];
 
 export default function WelcomePage() {

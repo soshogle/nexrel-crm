@@ -92,6 +92,7 @@ export async function GET(
           variantOf: (t as any).variantOf || null,
           parentTaskId: t.parentTaskId || null,
           branchCondition: t.branchCondition as any || null,
+          actionConfig: t.actionConfig as object,
         };
       }),
       isDefault: workflow.isDefault,
@@ -241,6 +242,7 @@ export async function PUT(
           variantOf: (t as any).variantOf || null,
           parentTaskId: t.parentTaskId || null,
           branchCondition: t.branchCondition as any || null,
+          actionConfig: t.actionConfig as object,
         };
       }),
       isDefault: workflow.isDefault,

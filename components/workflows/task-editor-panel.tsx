@@ -24,6 +24,7 @@ import {
 import { X, Trash2, Save, Shield, Clock, GitBranch, BarChart3, ChevronDown, ChevronUp, Beaker, Globe, MessageSquare } from 'lucide-react';
 import { VOICE_LANGUAGES } from '@/lib/voice-languages';
 import { Badge } from '@/components/ui/badge';
+import { PROFESSIONAL_EMPLOYEE_CONFIGS, PROFESSIONAL_EMPLOYEE_TYPES } from '@/lib/professional-ai-employees/config';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -177,6 +178,7 @@ export function TaskEditorPanel({
   };
   
   const handleAgentChange = (value: string) => {
+    const currentActionConfig = (editedTask as any).actionConfig || {};
     if (value === 'unassigned') {
       setEditedTask({
         ...editedTask,
@@ -184,7 +186,8 @@ export function TaskEditorPanel({
         assignedAgentName: null,
         agentColor: '#6B7280',
         assignedAIEmployeeId: null,
-      });
+        actionConfig: { ...currentActionConfig, assignedProfessionalType: undefined, jurisdiction: undefined },
+      } as WorkflowTask);
       return;
     }
     if (value.startsWith('ai_team:')) {
@@ -196,7 +199,21 @@ export function TaskEditorPanel({
         assignedAgentName: employee?.customName || employee?.profession || null,
         agentColor: '#8b5cf6',
         assignedAIEmployeeId: employeeId,
-      });
+        actionConfig: { ...currentActionConfig, assignedProfessionalType: undefined, jurisdiction: undefined },
+      } as WorkflowTask);
+      return;
+    }
+    if (value.startsWith('professional:')) {
+      const profType = value.slice(13);
+      const config = PROFESSIONAL_EMPLOYEE_CONFIGS[profType as keyof typeof PROFESSIONAL_EMPLOYEE_CONFIGS];
+      setEditedTask({
+        ...editedTask,
+        assignedAgentId: null,
+        assignedAgentName: config?.name || profType,
+        agentColor: '#0ea5e9',
+        assignedAIEmployeeId: null,
+        actionConfig: { ...currentActionConfig, assignedProfessionalType: profType },
+      } as WorkflowTask);
       return;
     }
     const agent = industryConfig.aiAgents.find((a) => a.id === value);
@@ -206,13 +223,18 @@ export function TaskEditorPanel({
       assignedAgentName: agent?.name || null,
       agentColor: agent?.color || '#8b5cf6',
       assignedAIEmployeeId: null,
-    });
+      actionConfig: { ...currentActionConfig, assignedProfessionalType: undefined, jurisdiction: undefined },
+    } as WorkflowTask);
   };
 
+  const actionConfig = (editedTask as any).actionConfig || {};
+  const assignedProfessionalType = actionConfig.assignedProfessionalType;
   const agentSelectValue =
     editedTask.assignedAIEmployeeId
       ? `ai_team:${editedTask.assignedAIEmployeeId}`
-      : (editedTask.assignedAgentId || 'unassigned');
+      : assignedProfessionalType
+        ? `professional:${assignedProfessionalType}`
+        : (editedTask.assignedAgentId || 'unassigned');
   
   const handleBranchConditionChange = (field: string, value: any) => {
     const currentCondition = editedTask.branchCondition || { field: '', operator: 'equals', value: '' };
@@ -329,12 +351,27 @@ export function TaskEditorPanel({
                   ))}
                 </>
               )}
+              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1 pt-2">
+                Professional AI Experts
+              </div>
+              {PROFESSIONAL_EMPLOYEE_TYPES.map((type) => {
+                const config = PROFESSIONAL_EMPLOYEE_CONFIGS[type];
+                return (
+                  <SelectItem key={type} value={`professional:${type}`}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-sky-500" />
+                      <span>{config.name}</span>
+                      <span className="text-xs text-gray-500">- {config.title}</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
 
         {/* Voice Call Language - when voice call is selected and agent assigned */}
-        {selectedActions.includes('voice_call') && (editedTask.assignedAIEmployeeId || editedTask.assignedAgentId) && (
+        {selectedActions.includes('voice_call') && (editedTask.assignedAIEmployeeId || editedTask.assignedAgentId || assignedProfessionalType) && (
           <>
           <Card className="p-4 border-purple-200 bg-purple-50/50">
             <div className="flex items-center gap-2 mb-2">
@@ -369,6 +406,46 @@ export function TaskEditorPanel({
               </SelectContent>
             </Select>
           </Card>
+
+          {/* Jurisdiction - for Professional AI (Accountant, Legal, etc.) */}
+          {assignedProfessionalType && (
+            <Card className="p-4 border-sky-200 bg-sky-50/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="w-4 h-4 text-sky-600" />
+                <Label className="text-sm font-semibold">Jurisdiction / Region</Label>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">
+                Set region for tax, legal, or compliance (e.g. Quebec, Ontario). Applies to Accountant, Legal Assistant, HR.
+              </p>
+              <Select
+                value={(editedTask as any).actionConfig?.jurisdiction || '__default__'}
+                onValueChange={(value) => {
+                  const currentActionConfig = (editedTask as any).actionConfig || {};
+                  setEditedTask({
+                    ...editedTask,
+                    ...(editedTask as any),
+                    actionConfig: {
+                      ...currentActionConfig,
+                      jurisdiction: value === '__default__' ? undefined : value,
+                    },
+                  } as WorkflowTask);
+                }}
+              >
+                <SelectTrigger className="border-sky-200">
+                  <SelectValue placeholder="Default (general)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__default__">Default (general)</SelectItem>
+                  <SelectItem value="QUEBEC">Quebec</SelectItem>
+                  <SelectItem value="ONTARIO">Ontario</SelectItem>
+                  <SelectItem value="BC">British Columbia</SelectItem>
+                  <SelectItem value="ALBERTA">Alberta</SelectItem>
+                  <SelectItem value="US">United States</SelectItem>
+                  <SelectItem value="US_FEDERAL">US Federal</SelectItem>
+                </SelectContent>
+              </Select>
+            </Card>
+          )}
 
           {/* Per-task prompt override - same agent, different script per task */}
           <Card className="p-4 border-indigo-200 bg-indigo-50/50">

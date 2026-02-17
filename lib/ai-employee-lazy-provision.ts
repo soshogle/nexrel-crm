@@ -10,6 +10,8 @@ import { Industry } from '@prisma/client';
 import { REAIEmployeeType } from '@prisma/client';
 import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
+import { PROFESSIONAL_EMPLOYEE_PROMPTS } from '@/lib/professional-ai-employees/prompts';
+import type { ProfessionalAIEmployeeType } from '@/lib/professional-ai-employees/config';
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
@@ -29,6 +31,8 @@ async function createElevenLabsAgent(
   apiKey: string,
   config: { name: string; systemPrompt: string; firstMessage: string; voiceId?: string }
 ): Promise<string> {
+  const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+  const fullPrompt = config.systemPrompt + getConfidentialityGuard();
   const response = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
     method: 'POST',
     headers: {
@@ -38,7 +42,7 @@ async function createElevenLabsAgent(
     body: JSON.stringify({
       conversation_config: {
         agent: {
-          prompt: { prompt: config.systemPrompt },
+          prompt: { prompt: fullPrompt },
           first_message: config.firstMessage,
           language: 'en',
         },
@@ -184,6 +188,73 @@ export async function ensureIndustryAgentProvisioned(
     return { id: created.id, elevenLabsAgentId: created.elevenLabsAgentId };
   } catch (error) {
     console.error(`[LazyProvision] Failed to provision ${industry}.${employeeType}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Ensure Professional AI Employee agent is provisioned. Provision on first use if not.
+ * Used for: AI Team (12 professional roles), Workflows, Campaigns.
+ */
+export async function ensureProfessionalAgentProvisioned(
+  userId: string,
+  employeeType: ProfessionalAIEmployeeType,
+  jurisdiction?: string
+): Promise<{ id: string; elevenLabsAgentId: string } | null> {
+  const existing = await prisma.professionalAIEmployeeAgent.findUnique({
+    where: {
+      userId_employeeType: { userId, employeeType },
+    },
+  });
+
+  if (existing?.elevenLabsAgentId) {
+    return { id: existing.id, elevenLabsAgentId: existing.elevenLabsAgentId };
+  }
+
+  const promptConfig = PROFESSIONAL_EMPLOYEE_PROMPTS[employeeType];
+  if (!promptConfig) return null;
+
+  try {
+    const apiKey = getIndustryApiKey();
+    let systemPrompt = promptConfig.systemPrompt;
+    if (jurisdiction) {
+      systemPrompt = systemPrompt.replace(/\{\{jurisdiction\}\}/g, jurisdiction);
+    } else {
+      systemPrompt = systemPrompt.replace(/\{\{jurisdiction\}\}/g, 'General');
+    }
+    systemPrompt = systemPrompt.replace(/\{\{current_datetime\}\}/g, new Date().toISOString());
+
+    const agentId = await createElevenLabsAgent(apiKey, {
+      name: promptConfig.name,
+      systemPrompt,
+      firstMessage: promptConfig.firstMessage,
+      voiceId: promptConfig.voiceId,
+    });
+
+    const created = await prisma.professionalAIEmployeeAgent.upsert({
+      where: {
+        userId_employeeType: { userId, employeeType },
+      },
+      create: {
+        userId,
+        employeeType,
+        name: promptConfig.name,
+        elevenLabsAgentId: agentId,
+        voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+        jurisdiction: jurisdiction || null,
+      },
+      update: {
+        elevenLabsAgentId: agentId,
+        name: promptConfig.name,
+        voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+        jurisdiction: jurisdiction || null,
+        updatedAt: new Date(),
+      },
+    });
+
+    return { id: created.id, elevenLabsAgentId: created.elevenLabsAgentId };
+  } catch (error) {
+    console.error(`[LazyProvision] Failed to provision professional ${employeeType}:`, error);
     return null;
   }
 }

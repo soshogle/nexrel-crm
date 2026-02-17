@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
       apiKey: process.env.OPENAI_API_KEY || '',
     });
 
+    const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
     const systemPrompt = `${languageInstruction}
 
 You are a voice assistant for a CRM system. Users speak to you, and you respond verbally.
@@ -82,7 +83,7 @@ When users ask you to do something:
 
 Available functions: ${getAIAssistantFunctions().map(f => f.function.name).join(', ')}
 
-Remember: You're speaking, not typing. Keep it brief!`;
+Remember: You're speaking, not typing. Keep it brief!${getConfidentialityGuard()}`;
 
     const messages: any[] = [
       { role: 'system', content: systemPrompt },

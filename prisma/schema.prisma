@@ -290,6 +290,7 @@ model User {
   reAIEmployeeExecutions      REAIEmployeeExecution[]      @relation("REAIEmployeeExecutionUser")
   reAIEmployeeAgents          REAIEmployeeAgent[]          @relation("REAIEmployeeAgentUser")
   industryAIEmployeeAgents    IndustryAIEmployeeAgent[]    @relation("IndustryAIEmployeeAgentUser")
+  professionalAIEmployeeAgents ProfessionalAIEmployeeAgent[] @relation("ProfessionalAIEmployeeAgentUser")
   aiEmployeeAutoRuns          AIEmployeeAutoRun[]          @relation("AIEmployeeAutoRunUser")
   // Real Estate Workflow Relations
   reWorkflowTemplates         REWorkflowTemplate[]         @relation("UserREWorkflowTemplates")
@@ -4755,9 +4756,11 @@ enum UserRole {
 }
 
 enum Industry {
+  ACCOUNTING
   RESTAURANT
   SPORTS_CLUB
   CONSTRUCTION
+  LAW
   MEDICAL
   DENTIST
   MEDICAL_SPA
@@ -4766,6 +4769,7 @@ enum Industry {
   REAL_ESTATE
   HOSPITAL
   TECHNOLOGY
+  ORTHODONTIST
 }
 
 enum LeadStatus {
@@ -7607,6 +7611,46 @@ model IndustryAIEmployeeAgent {
   @@index([userId])
   @@index([industry])
   @@index([elevenLabsAgentId])
+}
+
+// Professional AI Experts - 12 roles with deep domain expertise (Accountant, Developer, Legal Assistant, etc.)
+// Available to ALL users, usable in workflows and campaigns. Voice + text/chat. Region configurable.
+model ProfessionalAIEmployeeAgent {
+  id                String    @id @default(cuid())
+  userId            String
+  employeeType      ProfessionalAIEmployeeType
+  name              String
+  elevenLabsAgentId String
+  twilioPhoneNumber String?
+  voiceId           String?
+  status            String    @default("active")
+  lastUsedAt        DateTime?
+  callCount         Int       @default(0)
+  jurisdiction      String?   // e.g. "QUEBEC", "ONTARIO", "US" for region-specific expertise
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation("ProfessionalAIEmployeeAgentUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, employeeType])
+  @@index([userId])
+  @@index([employeeType])
+  @@index([elevenLabsAgentId])
+}
+
+enum ProfessionalAIEmployeeType {
+  ACCOUNTANT
+  DEVELOPER
+  LEGAL_ASSISTANT
+  RESEARCHER
+  MARKETING_SPECIALIST
+  SALES_REPRESENTATIVE
+  CUSTOMER_SUPPORT
+  HR_SPECIALIST
+  DATA_ANALYST
+  CONTENT_WRITER
+  FINANCIAL_ADVISOR
+  PROJECT_MANAGER
 }
 
 // ==========================================

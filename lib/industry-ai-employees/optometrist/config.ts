@@ -1,0 +1,68 @@
+/**
+ * Optometrist Industry AI Employee Configurations
+ */
+
+import type { IndustryEmployeeConfig } from '../types';
+
+export const OPTOMETRIST_EMPLOYEE_CONFIGS: Record<string, IndustryEmployeeConfig> = {
+  APPOINTMENT_SCHEDULER: {
+    type: 'APPOINTMENT_SCHEDULER',
+    name: 'Sarah',
+    title: 'Appointment Coordinator',
+    description: 'Schedules and confirms eye care appointments',
+    fullDescription: 'Handles appointment booking, confirmations, and rescheduling for exams and follow-ups.',
+    capabilities: ['Appointment booking', 'Confirmations', 'Rescheduling', 'Reminders'],
+    voiceEnabled: true,
+    defaultPriority: 'HIGH',
+    category: 'scheduling',
+    color: 'from-blue-500 to-indigo-500',
+    bgColor: 'bg-blue-500/10',
+    borderColor: 'border-blue-500/30',
+    icon: 'Calendar',
+  },
+  PATIENT_COORDINATOR: {
+    type: 'PATIENT_COORDINATOR',
+    name: 'Michael',
+    title: 'Patient Coordinator',
+    description: 'New patient intake and coordination',
+    fullDescription: 'Guides new patients through intake, collects health history, explains first-visit process.',
+    capabilities: ['Intake coordination', 'Health history', 'First-visit prep', 'Insurance pre-verification'],
+    voiceEnabled: true,
+    defaultPriority: 'HIGH',
+    category: 'intake',
+    color: 'from-green-500 to-emerald-500',
+    bgColor: 'bg-green-500/10',
+    borderColor: 'border-green-500/30',
+    icon: 'Users',
+  },
+  TREATMENT_FOLLOWUP: {
+    type: 'TREATMENT_FOLLOWUP',
+    name: 'Jennifer',
+    title: 'Treatment Follow-up Coordinator',
+    description: 'Follow-up on prescriptions and care plans',
+    fullDescription: 'Follows up on prescriptions, contact lens fittings, and care plan adherence.',
+    capabilities: ['Prescription follow-up', 'Contact lens fitting', 'Care plan adherence', 'Referral coordination'],
+    voiceEnabled: true,
+    defaultPriority: 'MEDIUM',
+    category: 'treatment',
+    color: 'from-purple-500 to-violet-500',
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/30',
+    icon: 'FileText',
+  },
+  BILLING_SPECIALIST: {
+    type: 'BILLING_SPECIALIST',
+    name: 'Emily',
+    title: 'Billing Specialist',
+    description: 'Insurance and payment coordination',
+    fullDescription: 'Handles vision insurance verification, payment arrangements, and billing questions.',
+    capabilities: ['Vision insurance', 'Payment plans', 'Billing questions', 'Claims assistance'],
+    voiceEnabled: true,
+    defaultPriority: 'MEDIUM',
+    category: 'billing',
+    color: 'from-amber-500 to-yellow-500',
+    bgColor: 'bg-amber-500/10',
+    borderColor: 'border-amber-500/30',
+    icon: 'CreditCard',
+  },
+};

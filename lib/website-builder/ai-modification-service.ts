@@ -37,8 +37,10 @@ export class AIModificationService {
    */
   async generateChanges(request: ModificationRequest): Promise<ModificationResult> {
     try {
-      // Build system prompt with website structure context
-      const systemPrompt = this.buildSystemPrompt(request.websiteStructure, request.extractedData);
+      // Build system prompt with website structure context + confidentiality guard
+      const basePrompt = this.buildSystemPrompt(request.websiteStructure, request.extractedData);
+      const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+      const systemPrompt = basePrompt + getConfidentialityGuard();
       
       // Call OpenAI to interpret the request
       const response = await chatCompletion({

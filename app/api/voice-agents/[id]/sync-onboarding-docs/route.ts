@@ -210,13 +210,15 @@ ${
           console.log('📋 Current ElevenLabs config retrieved');
 
           // Update the ElevenLabs agent prompt while preserving other settings
+          const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+          const promptWithGuard = finalSystemPrompt + getConfidentialityGuard();
           const updatePayload = {
             conversation_config: {
               ...currentConfig.conversation_config,
               agent: {
                 ...currentConfig.conversation_config?.agent,
                 prompt: {
-                  prompt: finalSystemPrompt,
+                  prompt: promptWithGuard,
                 },
                 first_message: agent.greetingMessage || agent.firstMessage || currentConfig.conversation_config?.agent?.first_message,
                 language: agent.language || currentConfig.conversation_config?.agent?.language,

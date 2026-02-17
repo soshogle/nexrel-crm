@@ -1,0 +1,68 @@
+/**
+ * Hospital Industry AI Employee Configurations
+ */
+
+import type { IndustryEmployeeConfig } from '../types';
+
+export const HOSPITAL_EMPLOYEE_CONFIGS: Record<string, IndustryEmployeeConfig> = {
+  APPOINTMENT_SCHEDULER: {
+    type: 'APPOINTMENT_SCHEDULER',
+    name: 'Sarah',
+    title: 'Appointment Coordinator',
+    description: 'Schedules and confirms hospital appointments',
+    fullDescription: 'Handles appointment booking for outpatient services, procedures, and specialist visits.',
+    capabilities: ['Appointment booking', 'Confirmations', 'Rescheduling', 'Pre-procedure instructions'],
+    voiceEnabled: true,
+    defaultPriority: 'HIGH',
+    category: 'scheduling',
+    color: 'from-red-500 to-rose-500',
+    bgColor: 'bg-red-500/10',
+    borderColor: 'border-red-500/30',
+    icon: 'Calendar',
+  },
+  PATIENT_COORDINATOR: {
+    type: 'PATIENT_COORDINATOR',
+    name: 'Michael',
+    title: 'Patient Coordinator',
+    description: 'Patient intake and pre-admission coordination',
+    fullDescription: 'Guides patients through pre-admission, collects information, and coordinates with departments.',
+    capabilities: ['Pre-admission', 'Intake coordination', 'Department coordination', 'Patient orientation'],
+    voiceEnabled: true,
+    defaultPriority: 'HIGH',
+    category: 'intake',
+    color: 'from-blue-500 to-indigo-500',
+    bgColor: 'bg-blue-500/10',
+    borderColor: 'border-blue-500/30',
+    icon: 'Users',
+  },
+  DISCHARGE_FOLLOWUP: {
+    type: 'DISCHARGE_FOLLOWUP',
+    name: 'Jennifer',
+    title: 'Discharge Follow-up Coordinator',
+    description: 'Post-discharge follow-up and care coordination',
+    fullDescription: 'Follows up after discharge, coordinates follow-up appointments, and answers care questions.',
+    capabilities: ['Discharge follow-up', 'Follow-up scheduling', 'Care coordination', 'Medication reminders'],
+    voiceEnabled: true,
+    defaultPriority: 'HIGH',
+    category: 'treatment',
+    color: 'from-green-500 to-emerald-500',
+    bgColor: 'bg-green-500/10',
+    borderColor: 'border-green-500/30',
+    icon: 'FileText',
+  },
+  BILLING_SPECIALIST: {
+    type: 'BILLING_SPECIALIST',
+    name: 'Emily',
+    title: 'Patient Financial Services',
+    description: 'Insurance verification and payment coordination',
+    fullDescription: 'Handles insurance verification, payment arrangements, and billing questions for hospital services.',
+    capabilities: ['Insurance verification', 'Payment plans', 'Billing questions', 'Financial assistance'],
+    voiceEnabled: true,
+    defaultPriority: 'MEDIUM',
+    category: 'billing',
+    color: 'from-amber-500 to-yellow-500',
+    bgColor: 'bg-amber-500/10',
+    borderColor: 'border-amber-500/30',
+    icon: 'CreditCard',
+  },
+};

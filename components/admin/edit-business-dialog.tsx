@@ -214,17 +214,20 @@ export default function EditBusinessDialog({
                   <SelectValue placeholder="Select industry" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="ACCOUNTING">Accounting</SelectItem>
                   <SelectItem value="RESTAURANT">Restaurant</SelectItem>
+                  <SelectItem value="SPORTS_CLUB">Sports Club</SelectItem>
+                  <SelectItem value="CONSTRUCTION">Construction</SelectItem>
+                  <SelectItem value="LAW">Law</SelectItem>
                   <SelectItem value="DENTIST">Dentist</SelectItem>
                   <SelectItem value="MEDICAL">Medical</SelectItem>
                   <SelectItem value="MEDICAL_SPA">Medical Spa</SelectItem>
                   <SelectItem value="OPTOMETRIST">Optometrist</SelectItem>
                   <SelectItem value="HEALTH_CLINIC">Health Clinic</SelectItem>
-                  <SelectItem value="HOSPITAL">Hospital</SelectItem>
                   <SelectItem value="REAL_ESTATE">Real Estate</SelectItem>
-                  <SelectItem value="CONSTRUCTION">Construction</SelectItem>
+                  <SelectItem value="HOSPITAL">Hospital</SelectItem>
                   <SelectItem value="TECHNOLOGY">Technology</SelectItem>
-                  <SelectItem value="SPORTS_CLUB">Sports Club</SelectItem>
+                  <SelectItem value="ORTHODONTIST">Orthodontist</SelectItem>
                 </SelectContent>
               </Select>
             </div>

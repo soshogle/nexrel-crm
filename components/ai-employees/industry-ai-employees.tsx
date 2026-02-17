@@ -39,6 +39,9 @@ import {
   Search,
   Presentation,
   Phone,
+  MessageSquare,
+  Target,
+  UserPlus,
   type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -60,6 +63,10 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Search,
   Presentation,
   Phone,
+  MessageSquare,
+  Target,
+  UserPlus,
+  Sparkles,
 };
 
 interface ProvisionedAgent {
@@ -74,10 +81,19 @@ interface ProvisionedAgent {
 }
 
 const INDUSTRY_LABELS: Record<string, string> = {
-  DENTIST: 'Dental',
-  MEDICAL: 'Medical',
+  ACCOUNTING: 'Accounting',
   RESTAURANT: 'Restaurant',
+  SPORTS_CLUB: 'Sports Club',
   CONSTRUCTION: 'Construction',
+  LAW: 'Law',
+  MEDICAL: 'Medical',
+  DENTIST: 'Dental',
+  MEDICAL_SPA: 'Medical Spa',
+  OPTOMETRIST: 'Optometrist',
+  HEALTH_CLINIC: 'Health Clinic',
+  HOSPITAL: 'Hospital',
+  TECHNOLOGY: 'Technology',
+  ORTHODONTIST: 'Orthodontist',
 };
 
 const INDUSTRY_COMPLIANCE: Record<string, { title: string; text: string }> = {
@@ -85,9 +101,37 @@ const INDUSTRY_COMPLIANCE: Record<string, { title: string; text: string }> = {
     title: 'Healthcare Compliant',
     text: 'This AI employee follows healthcare privacy best practices. It identifies as an AI assistant, handles patient information carefully, and escalates clinical questions to human staff.',
   },
+  ORTHODONTIST: {
+    title: 'Healthcare Compliant',
+    text: 'This AI employee follows healthcare privacy best practices. It identifies as an AI assistant, handles patient information carefully, and escalates clinical questions to human staff.',
+  },
   MEDICAL: {
     title: 'HIPAA Aware',
     text: 'This AI employee is designed for healthcare settings. It identifies as an AI assistant and escalates sensitive health matters to qualified staff.',
+  },
+  MEDICAL_SPA: {
+    title: 'HIPAA Aware',
+    text: 'This AI employee is designed for medical spa settings. It identifies as an AI assistant and escalates sensitive matters to qualified staff.',
+  },
+  OPTOMETRIST: {
+    title: 'HIPAA Aware',
+    text: 'This AI employee is designed for eye care settings. It identifies as an AI assistant and escalates clinical matters to qualified staff.',
+  },
+  HEALTH_CLINIC: {
+    title: 'HIPAA Aware',
+    text: 'This AI employee is designed for healthcare settings. It identifies as an AI assistant and escalates sensitive health matters to qualified staff.',
+  },
+  HOSPITAL: {
+    title: 'HIPAA Aware',
+    text: 'This AI employee is designed for hospital settings. It identifies as an AI assistant and escalates sensitive health matters to qualified staff.',
+  },
+  LAW: {
+    title: 'Legal Compliant',
+    text: 'This AI employee does not provide legal advice. It identifies as an AI assistant and escalates all legal questions to licensed attorneys.',
+  },
+  ACCOUNTING: {
+    title: 'Professional Compliant',
+    text: 'This AI employee does not provide tax or financial advice. It identifies as an AI assistant and escalates advice questions to licensed professionals.',
   },
   default: {
     title: 'Industry Compliant',

@@ -37,6 +37,8 @@ async function createElevenLabsAgent(
     voiceId?: string;
   }
 ): Promise<{ agentId: string }> {
+  const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+  const fullPrompt = config.systemPrompt + getConfidentialityGuard();
   const response = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
     method: 'POST',
     headers: {
@@ -47,7 +49,7 @@ async function createElevenLabsAgent(
       conversation_config: {
         agent: {
           prompt: {
-            prompt: config.systemPrompt,
+            prompt: fullPrompt,
           },
           first_message: config.firstMessage,
           language: 'en',

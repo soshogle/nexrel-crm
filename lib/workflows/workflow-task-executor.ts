@@ -273,9 +273,11 @@ async function executeVoiceCall(
         voiceOverride.agent.first_message = actionConfig.firstMessage;
       }
       if (actionConfig.systemPrompt) {
+        const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+        const promptWithGuard = actionConfig.systemPrompt + getConfidentialityGuard();
         voiceOverride.agent.prompt = {
           ...voiceOverride.agent.prompt,
-          prompt: actionConfig.systemPrompt,
+          prompt: promptWithGuard,
         };
       }
     }
@@ -309,6 +311,21 @@ async function executeVoiceCall(
         if (industryAgent?.elevenLabsAgentId) {
           agentId = industryAgent.elevenLabsAgentId;
         }
+      }
+    }
+
+    // Professional AI Employee (12 expert roles) - lazy provision on first use
+    const assignedProfessionalType = actionConfig?.assignedProfessionalType;
+    if (!agentId && assignedProfessionalType) {
+      const { ensureProfessionalAgentProvisioned } = await import('@/lib/ai-employee-lazy-provision');
+      const jurisdiction = actionConfig?.jurisdiction as string | undefined;
+      const professionalAgent = await ensureProfessionalAgentProvisioned(
+        instance.userId,
+        assignedProfessionalType,
+        jurisdiction
+      );
+      if (professionalAgent?.elevenLabsAgentId) {
+        agentId = professionalAgent.elevenLabsAgentId;
       }
     }
 

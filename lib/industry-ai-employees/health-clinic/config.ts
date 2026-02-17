@@ -1,0 +1,68 @@
+/**
+ * Health Clinic Industry AI Employee Configurations
+ */
+
+import type { IndustryEmployeeConfig } from '../types';
+
+export const HEALTH_CLINIC_EMPLOYEE_CONFIGS: Record<string, IndustryEmployeeConfig> = {
+  APPOINTMENT_SCHEDULER: {
+    type: 'APPOINTMENT_SCHEDULER',
+    name: 'Sarah',
+    title: 'Appointment Coordinator',
+    description: 'Schedules and confirms clinic appointments',
+    fullDescription: 'Handles appointment booking, confirmations, and rescheduling.',
+    capabilities: ['Appointment booking', 'Confirmations', 'Rescheduling', 'Reminders'],
+    voiceEnabled: true,
+    defaultPriority: 'HIGH',
+    category: 'scheduling',
+    color: 'from-teal-500 to-cyan-500',
+    bgColor: 'bg-teal-500/10',
+    borderColor: 'border-teal-500/30',
+    icon: 'Calendar',
+  },
+  PATIENT_COORDINATOR: {
+    type: 'PATIENT_COORDINATOR',
+    name: 'Michael',
+    title: 'Patient Coordinator',
+    description: 'New patient intake and coordination',
+    fullDescription: 'Guides new patients through intake and prepares them for their first visit.',
+    capabilities: ['Intake coordination', 'Health history', 'First-visit prep', 'Insurance verification'],
+    voiceEnabled: true,
+    defaultPriority: 'HIGH',
+    category: 'intake',
+    color: 'from-green-500 to-emerald-500',
+    bgColor: 'bg-green-500/10',
+    borderColor: 'border-green-500/30',
+    icon: 'Users',
+  },
+  TREATMENT_FOLLOWUP: {
+    type: 'TREATMENT_FOLLOWUP',
+    name: 'Jennifer',
+    title: 'Care Follow-up Coordinator',
+    description: 'Follow-up on care plans and referrals',
+    fullDescription: 'Follows up on care plans, coordinates referrals, and schedules follow-up visits.',
+    capabilities: ['Care follow-up', 'Referral coordination', 'Follow-up scheduling', 'Care plan adherence'],
+    voiceEnabled: true,
+    defaultPriority: 'MEDIUM',
+    category: 'treatment',
+    color: 'from-purple-500 to-violet-500',
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/30',
+    icon: 'FileText',
+  },
+  BILLING_SPECIALIST: {
+    type: 'BILLING_SPECIALIST',
+    name: 'Emily',
+    title: 'Billing Specialist',
+    description: 'Insurance and payment coordination',
+    fullDescription: 'Handles insurance verification, payment arrangements, and billing questions.',
+    capabilities: ['Insurance verification', 'Payment plans', 'Billing questions', 'Claims assistance'],
+    voiceEnabled: true,
+    defaultPriority: 'MEDIUM',
+    category: 'billing',
+    color: 'from-amber-500 to-yellow-500',
+    bgColor: 'bg-amber-500/10',
+    borderColor: 'border-amber-500/30',
+    icon: 'CreditCard',
+  },
+};

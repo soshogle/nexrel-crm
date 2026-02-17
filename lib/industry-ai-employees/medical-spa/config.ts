@@ -1,0 +1,68 @@
+/**
+ * Medical Spa Industry AI Employee Configurations
+ */
+
+import type { IndustryEmployeeConfig } from '../types';
+
+export const MEDICAL_SPA_EMPLOYEE_CONFIGS: Record<string, IndustryEmployeeConfig> = {
+  APPOINTMENT_SCHEDULER: {
+    type: 'APPOINTMENT_SCHEDULER',
+    name: 'Sarah',
+    title: 'Appointment Coordinator',
+    description: 'Schedules and confirms spa appointments',
+    fullDescription: 'Handles appointment booking, confirmations, and rescheduling for treatments and consultations.',
+    capabilities: ['Appointment booking', 'Confirmations', 'Rescheduling', 'Reminders'],
+    voiceEnabled: true,
+    defaultPriority: 'HIGH',
+    category: 'scheduling',
+    color: 'from-pink-500 to-rose-500',
+    bgColor: 'bg-pink-500/10',
+    borderColor: 'border-pink-500/30',
+    icon: 'Calendar',
+  },
+  CLIENT_COORDINATOR: {
+    type: 'CLIENT_COORDINATOR',
+    name: 'Jessica',
+    title: 'Client Coordinator',
+    description: 'New client intake and consultation scheduling',
+    fullDescription: 'Welcomes new clients, explains services, schedules consultations, and coordinates with aesthetic providers.',
+    capabilities: ['Client intake', 'Consultation scheduling', 'Service information', 'Pre-treatment prep'],
+    voiceEnabled: true,
+    defaultPriority: 'HIGH',
+    category: 'intake',
+    color: 'from-purple-500 to-violet-500',
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/30',
+    icon: 'Users',
+  },
+  TREATMENT_FOLLOWUP: {
+    type: 'TREATMENT_FOLLOWUP',
+    name: 'Nicole',
+    title: 'Treatment Follow-up Coordinator',
+    description: 'Post-treatment follow-up and package promotion',
+    fullDescription: 'Follows up after treatments, answers questions about results, promotes packages and memberships.',
+    capabilities: ['Post-treatment follow-up', 'Package promotion', 'Membership renewal', 'Results questions'],
+    voiceEnabled: true,
+    defaultPriority: 'MEDIUM',
+    category: 'treatment',
+    color: 'from-amber-500 to-orange-500',
+    bgColor: 'bg-amber-500/10',
+    borderColor: 'border-amber-500/30',
+    icon: 'Sparkles',
+  },
+  BILLING_SPECIALIST: {
+    type: 'BILLING_SPECIALIST',
+    name: 'Emily',
+    title: 'Billing Specialist',
+    description: 'Payment and package coordination',
+    fullDescription: 'Handles payment arrangements, package purchases, and membership billing questions.',
+    capabilities: ['Payment plans', 'Package pricing', 'Membership billing', 'Financial arrangements'],
+    voiceEnabled: true,
+    defaultPriority: 'MEDIUM',
+    category: 'billing',
+    color: 'from-emerald-500 to-teal-500',
+    bgColor: 'bg-emerald-500/10',
+    borderColor: 'border-emerald-500/30',
+    icon: 'CreditCard',
+  },
+};

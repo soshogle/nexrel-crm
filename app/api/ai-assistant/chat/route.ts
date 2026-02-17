@@ -870,9 +870,12 @@ CRITICAL RULES
 
 Remember: You're not just a chatbot - you're an AI assistant with REAL powers to execute actions, diagnose problems, fix configurations, and create records in the CRM. You have the same capabilities as a senior support engineer. Act like it! USE THE FUNCTIONS!`;
 
+    const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+    const systemContextWithGuard = systemContext + getConfidentialityGuard();
+
     // Prepare conversation for AI
     const conversationMessages: any[] = [
-      { role: "system", content: systemContext },
+      { role: "system", content: systemContextWithGuard },
       ...(conversationHistory || []).map((msg: any) => ({
         role: msg.role === "user" ? "user" : "assistant",
         content: msg.content,

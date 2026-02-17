@@ -260,10 +260,13 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
           ? (updatedAgent.outboundGreeting || updatedAgent.greetingMessage)
           : (updatedAgent.inboundGreeting || updatedAgent.greetingMessage);
         
+        const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+        const systemPromptWithGuard = systemPrompt + getConfidentialityGuard();
+        
         const elevenLabsUpdates: any = {
           name: updatedAgent.name,
           prompt: {
-            prompt: systemPrompt,
+            prompt: systemPromptWithGuard,
             llm: updatedAgent.llmModel || 'gpt-4',
             temperature: updatedAgent.temperature ?? 0.7,
             max_tokens: updatedAgent.maxTokens || 500,

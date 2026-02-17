@@ -8,9 +8,11 @@
 import { prisma } from '@/lib/db';
 
 export type Industry =
+  | 'ACCOUNTING'
   | 'RESTAURANT'
   | 'SPORTS_CLUB'
   | 'CONSTRUCTION'
+  | 'LAW'
   | 'MEDICAL'
   | 'DENTIST'
   | 'MEDICAL_SPA'
@@ -18,7 +20,8 @@ export type Industry =
   | 'HEALTH_CLINIC'
   | 'REAL_ESTATE'
   | 'HOSPITAL'
-  | 'TECHNOLOGY';
+  | 'TECHNOLOGY'
+  | 'ORTHODONTIST';
 
 export type MenuItemId =
   | 'dashboard'

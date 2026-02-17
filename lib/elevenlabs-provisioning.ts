@@ -221,8 +221,10 @@ class ElevenLabsProvisioningService {
       });
       const userLanguage = user?.language || options.language || 'en';
 
-      // Build the system prompt with business context
-      const systemPrompt = options.systemPrompt || this.buildDefaultPrompt(options, userLanguage);
+      // Build the system prompt with business context + confidentiality guard
+      const basePrompt = options.systemPrompt || this.buildDefaultPrompt(options, userLanguage);
+      const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+      const systemPrompt = basePrompt + getConfidentialityGuard();
       
       // Build the greeting message
       const greetingMessage = options.greetingMessage || 
@@ -468,8 +470,10 @@ class ElevenLabsProvisioningService {
       });
       const userLanguage = user?.language || options.language || 'en';
 
-      // Build the system prompt with business context
-      const systemPrompt = options.systemPrompt || this.buildDefaultPrompt(options, userLanguage);
+      // Build the system prompt with business context + confidentiality guard
+      const basePrompt = options.systemPrompt || this.buildDefaultPrompt(options, userLanguage);
+      const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+      const systemPrompt = basePrompt + getConfidentialityGuard();
       
       // Build the greeting message
       const greetingMessage = options.greetingMessage || 
@@ -967,15 +971,22 @@ class ElevenLabsProvisioningService {
 
       const currentAgent: ElevenLabsAgent = await getResponse.json();
 
+      // Append confidentiality guard when updating system prompt (website, voice agents, etc.)
+      let promptToUse = updates.systemPrompt;
+      if (promptToUse) {
+        const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
+        promptToUse = promptToUse + getConfidentialityGuard();
+      }
+
       // Build updated configuration
       const updatedConfig = {
         conversation_config: {
           ...currentAgent.conversation_config,
           agent: {
             ...currentAgent.conversation_config.agent,
-            ...(updates.systemPrompt && {
+            ...(promptToUse && {
               prompt: {
-                prompt: updates.systemPrompt,
+                prompt: promptToUse,
               },
             }),
             ...(updates.greetingMessage && {

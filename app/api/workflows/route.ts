@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
           variantOf: (t as any).variantOf || null,
           parentTaskId: t.parentTaskId || null,
           branchCondition: t.branchCondition as any || null,
+          actionConfig: t.actionConfig as object,
         };
       }),
       isDefault: w.isDefault,

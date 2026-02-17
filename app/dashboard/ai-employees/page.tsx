@@ -56,6 +56,7 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { RealEstateAIEmployees } from '@/components/ai-employees/real-estate-employees';
 import { IndustryAIEmployees } from '@/components/ai-employees/industry-ai-employees';
+import { ProfessionalAIEmployees } from '@/components/ai-employees/professional-ai-employees';
 import { hasIndustryAIEmployees } from '@/lib/industry-ai-employees/registry';
 import { REWorkflowsTab } from '@/components/real-estate/workflows/re-workflows-tab';
 // Generic Multi-Industry Workflow Tabs
@@ -1453,6 +1454,9 @@ export default function AIEmployeesPage() {
 
         {/* AI Team Tab */}
         <TabsContent value="ai-team" className="space-y-4">
+          {/* Professional AI Experts - 12 roles, RE-style cards, available to ALL users */}
+          <ProfessionalAIEmployees />
+
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -1867,6 +1871,8 @@ export default function AIEmployeesPage() {
               <TechnologyWorkflowsTab />
             ) : userIndustry === 'SPORTS_CLUB' ? (
               <SportsClubWorkflowsTab />
+            ) : userIndustry === 'ORTHODONTIST' ? (
+              <DentistWorkflowsTab />
             ) : (
               <IndustryWorkflowsTab industry={userIndustry} />
             )}

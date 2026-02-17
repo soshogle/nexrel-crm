@@ -206,6 +206,7 @@ export class CrmVoiceAgentService {
    * Build CRM-specific system prompt
    */
   private buildCrmSystemPrompt(user: any, language: string): string {
+    const { getConfidentialityGuard } = require('@/lib/ai-confidentiality-guard');
     const languageInstructions: Record<string, string> = {
       'en': 'IMPORTANT: Respond in English. Keep responses concise and conversational for voice interaction.',
       'fr': 'IMPORTANT: Répondez en français. Gardez les réponses concises et conversationnelles pour l\'interaction vocale.',
@@ -292,7 +293,7 @@ CONTEXT AWARENESS: Use current_path, active_lead_id, active_deal_id when availab
 For calling: "call John and tell him about the promo" → make_outbound_call. "call all leads from today with 10% off" → call_leads. If user has a preference for which agent ("use Sarah"), pass voiceAgentName. If unsure, use list_voice_agents and ask which agent they want.
 
 Remember: You're speaking, not typing. Keep it brief and natural. When reporting statistics, speak clearly and highlight the most important numbers.
-`;
+${getConfidentialityGuard()}`;
   }
 
   /**

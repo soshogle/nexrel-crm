@@ -209,17 +209,20 @@ export const CONSTRUCTION_CONFIG: IndustryConfig = {
 // ==========================================
 
 export const INDUSTRY_CONFIGS: Record<Industry, IndustryConfig> = {
-  MEDICAL: MEDICAL_CONFIG,
+  ACCOUNTING: MEDICAL_CONFIG, // Similar structure - appointments, client follow-up
   RESTAURANT: RESTAURANT_CONFIG,
+  SPORTS_CLUB: RESTAURANT_CONFIG, // Similar structure
   CONSTRUCTION: CONSTRUCTION_CONFIG,
+  LAW: MEDICAL_CONFIG, // Similar structure - intake, appointments, case follow-up
+  MEDICAL: MEDICAL_CONFIG,
   DENTIST: MEDICAL_CONFIG, // Similar to Medical
   MEDICAL_SPA: MEDICAL_CONFIG, // Similar to Medical
   OPTOMETRIST: MEDICAL_CONFIG, // Similar to Medical
   HEALTH_CLINIC: MEDICAL_CONFIG, // Similar to Medical
-  HOSPITAL: MEDICAL_CONFIG, // Similar to Medical
-  TECHNOLOGY: RESTAURANT_CONFIG, // Similar structure, will customize later
-  SPORTS_CLUB: RESTAURANT_CONFIG, // Similar structure, will customize later
   REAL_ESTATE: MEDICAL_CONFIG, // Placeholder - Real Estate has its own system
+  HOSPITAL: MEDICAL_CONFIG, // Similar to Medical
+  TECHNOLOGY: RESTAURANT_CONFIG, // Similar structure
+  ORTHODONTIST: MEDICAL_CONFIG, // Similar to Dental/Medical
 };
 
 /**

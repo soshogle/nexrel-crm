@@ -29,9 +29,11 @@ export async function POST(req: NextRequest) {
 
     // Validate industry enum value
     const validIndustries = [
+      'ACCOUNTING',
       'RESTAURANT',
       'SPORTS_CLUB',
       'CONSTRUCTION',
+      'LAW',
       'MEDICAL',
       'DENTIST',
       'MEDICAL_SPA',
@@ -40,6 +42,7 @@ export async function POST(req: NextRequest) {
       'REAL_ESTATE',
       'HOSPITAL',
       'TECHNOLOGY',
+      'ORTHODONTIST',
     ];
 
     if (!validIndustries.includes(industry)) {

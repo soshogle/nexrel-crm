@@ -119,6 +119,7 @@ export class VoiceConversationEngine {
     const businessName = voiceAgent.businessName;
     const industry = voiceAgent.businessIndustry || 'general business';
 
+    const { getConfidentialityGuard } = require('@/lib/ai-confidentiality-guard');
     return `You are an AI receptionist for ${businessName}, a ${industry} business.
 
 Your responsibilities:
@@ -143,7 +144,8 @@ Instructions:
 - For appointment booking, collect: name, phone, preferred date/time
 - Always be helpful and courteous
 
-Remember: You are speaking to someone on the phone, so keep it conversational and concise.`;
+Remember: You are speaking to someone on the phone, so keep it conversational and concise.
+${getConfidentialityGuard()}`;
   }
 
   /**
