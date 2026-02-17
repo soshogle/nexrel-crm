@@ -325,6 +325,7 @@ export function IndustryAIEmployees({ industry }: { industry: Industry }) {
             {industryLabel} AI Team
           </h2>
           <p className="text-slate-400 mt-1">{employees.length} specialized AI employees for {industryLabel.toLowerCase()} practices</p>
+          <p className="text-xs text-slate-500 mt-1">Auto-provisioned when you set your industry</p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400">

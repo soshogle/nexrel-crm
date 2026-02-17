@@ -53,17 +53,53 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
   const fetchMonitoringData = async () => {
     try {
       setLoading(true);
-      
+
+      const isRE = industry === 'REAL_ESTATE' || !industry;
+
       // Fetch all data sources in parallel
-      const [aiJobsRes, workflowInstancesRes, dripEnrollmentsRes] = await Promise.all([
+      // RE users: fetch RE workflow instances (auto-run uses these)
+      // Industry users: fetch industry workflow instances
+      const [
+        aiJobsRes,
+        workflowInstancesRes,
+        reWorkflowInstancesRes,
+        dripEnrollmentsRes,
+      ] = await Promise.all([
         fetch('/api/ai-employees/jobs?limit=50'),
         fetch('/api/workflows/instances/active?limit=50').catch(() => ({ ok: false, json: () => ({ instances: [] }) })),
+        isRE ? fetch('/api/real-estate/workflows/instances?limit=50').catch(() => ({ ok: false, json: () => ({ instances: [] }) })) : Promise.resolve({ ok: false, json: () => ({ instances: [] }) }),
         fetch('/api/workflows/enrollments/active?limit=50').catch(() => ({ ok: false, json: () => ({ enrollments: [] }) })),
       ]);
 
       const aiJobsData = aiJobsRes.ok ? await aiJobsRes.json() : { data: [] };
       const workflowInstancesData = workflowInstancesRes.ok ? await workflowInstancesRes.json() : { instances: [] };
+      const reWorkflowInstancesData = reWorkflowInstancesRes.ok ? await reWorkflowInstancesRes.json() : { instances: [] };
       const dripEnrollmentsData = dripEnrollmentsRes.ok ? await dripEnrollmentsRes.json() : { enrollments: [] };
+
+      // Normalize RE workflow instances to same format as industry (for Monitor display)
+      const normalizedREInstances = (reWorkflowInstancesData.instances || []).map((inst: any) => ({
+        id: inst.id,
+        templateId: inst.templateId,
+        workflowName: inst.template?.name || 'Workflow',
+        status: inst.status,
+        startedAt: inst.startedAt,
+        completedAt: inst.completedAt,
+        lead: inst.lead,
+        deal: inst.deal,
+        totalTasks: inst.template?.tasks?.length || 0,
+        executions: (inst.executions || []).map((e: any) => ({
+          id: e.id,
+          taskId: e.taskId,
+          taskName: e.task?.name || 'Task',
+          status: e.status,
+          scheduledFor: e.scheduledFor || e.startedAt,
+          startedAt: e.startedAt,
+          completedAt: e.completedAt,
+        })),
+      }));
+
+      // Merge workflow instances (RE + industry)
+      const allWorkflowInstances = [...normalizedREInstances, ...(workflowInstancesData.instances || [])];
 
       // Transform AI Jobs
       const aiJobItems: MonitoringItem[] = (aiJobsData.data || []).map((job: any) => ({
@@ -81,8 +117,8 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
         },
       }));
 
-      // Transform Workflow Instances
-      const workflowItems: MonitoringItem[] = (workflowInstancesData.instances || []).flatMap((instance: any) => {
+      // Transform Workflow Instances (RE + industry)
+      const workflowItems: MonitoringItem[] = allWorkflowInstances.flatMap((instance: any) => {
         const items: MonitoringItem[] = [];
         
         // Main instance
@@ -161,7 +197,7 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
     fetchMonitoringData();
     const interval = setInterval(fetchMonitoringData, 5000); // Refresh every 5 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [industry]);
 
   // Calculate countdown timer
   const getCountdown = (nextActionAt: Date | string | null | undefined) => {

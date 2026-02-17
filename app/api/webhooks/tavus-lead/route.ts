@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
         console.error('[Tavus webhook] RE workflow trigger failed:', err);
       });
     } else if (user.industry) {
-      const { triggerIndustryAutoRunOnLeadCreated } = await import('@/lib/ai-employees/auto-run-triggers');
-      triggerIndustryAutoRunOnLeadCreated(leadOwnerId, lead.id, user.industry).catch((err) => {
+      const { detectIndustryLeadWorkflowTriggers } = await import('@/lib/industry-workflows/lead-triggers');
+      detectIndustryLeadWorkflowTriggers(leadOwnerId, lead.id, user.industry).catch((err) => {
         console.error('[Tavus webhook] Industry workflow trigger failed:', err);
       });
     }

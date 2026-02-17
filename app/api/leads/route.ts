@@ -90,9 +90,9 @@ export async function POST(request: NextRequest) {
         console.error('[RE Workflow] Failed to trigger workflow for lead:', err);
       });
     } else if (user?.industry) {
-      const { triggerIndustryAutoRunOnLeadCreated } = await import('@/lib/ai-employees/auto-run-triggers');
-      triggerIndustryAutoRunOnLeadCreated(session.user.id, lead.id, user.industry).catch(err => {
-        console.error('[Auto-Run] Failed to trigger industry workflow for lead:', err);
+      const { detectIndustryLeadWorkflowTriggers } = await import('@/lib/industry-workflows/lead-triggers');
+      detectIndustryLeadWorkflowTriggers(session.user.id, lead.id, user.industry).catch(err => {
+        console.error('[Industry Workflow] Failed to trigger workflows for lead:', err);
       });
     }
 

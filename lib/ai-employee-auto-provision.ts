@@ -5,10 +5,12 @@
  */
 
 import { prisma } from '@/lib/db';
-import { Industry, REAIEmployeeType } from '@prisma/client';
+import { Industry, ProfessionalAIEmployeeType, REAIEmployeeType } from '@prisma/client';
 import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
 import { enableFirstMessageOverride } from '@/lib/elevenlabs-overrides';
+import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
+import { PROFESSIONAL_EMPLOYEE_PROMPTS } from '@/lib/professional-ai-employees/prompts';
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
@@ -203,6 +205,73 @@ async function provisionIndustryAgents(
   return { success, failed };
 }
 
+async function provisionProfessionalAgents(userId: string): Promise<{ success: number; failed: number }> {
+  const apiKey = getIndustryApiKey();
+  if (!apiKey) {
+    console.warn('[AutoProvision] API key not configured, skipping professional agents');
+    return { success: 0, failed: 0 };
+  }
+
+  const existing = await prisma.professionalAIEmployeeAgent.findMany({
+    where: { userId },
+    select: { employeeType: true },
+  });
+  const existingTypes = new Set(existing.map((a) => a.employeeType));
+  const typesToCreate = (Object.values(ProfessionalAIEmployeeType) as ProfessionalAIEmployeeType[]).filter(
+    (t) => !existingTypes.has(t)
+  );
+
+  if (typesToCreate.length === 0) {
+    return { success: 0, failed: 0 };
+  }
+
+  let success = 0;
+  let failed = 0;
+
+  for (const employeeType of typesToCreate) {
+    try {
+      const promptConfig = PROFESSIONAL_EMPLOYEE_PROMPTS[employeeType];
+      const config = PROFESSIONAL_EMPLOYEE_CONFIGS[employeeType];
+      if (!promptConfig || !config) continue;
+
+      const agentId = await createElevenLabsAgent(apiKey, {
+        name: `Professional - ${promptConfig.name}`,
+        systemPrompt: promptConfig.systemPrompt,
+        firstMessage: promptConfig.firstMessage,
+        voiceId: promptConfig.voiceId,
+      });
+
+      await enableFirstMessageOverride(agentId, apiKey).catch(() => {});
+
+      await prisma.professionalAIEmployeeAgent.upsert({
+        where: { userId_employeeType: { userId, employeeType } },
+        create: {
+          userId,
+          employeeType,
+          name: config.name,
+          elevenLabsAgentId: agentId,
+          voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+        },
+        update: {
+          elevenLabsAgentId: agentId,
+          name: config.name,
+          voiceId: promptConfig.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+          updatedAt: new Date(),
+        },
+      });
+
+      success++;
+      console.log(`[AutoProvision] Professional ${employeeType} provisioned`);
+    } catch (err) {
+      failed++;
+      console.error(`[AutoProvision] Professional ${employeeType} failed:`, err);
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
+  return { success, failed };
+}
+
 /**
  * Provision all AI employees for a user based on their industry.
  * Fire-and-forget: call and return immediately; provisioning runs in background.
@@ -221,6 +290,12 @@ export function provisionAIEmployeesForUser(userId: string): void {
       }
 
       const industry = user.industry as Industry;
+
+      // Professional agents: available to ALL users, provisioned on industry set
+      const { success: profSuccess, failed: profFailed } = await provisionProfessionalAgents(userId);
+      if (profSuccess > 0 || profFailed > 0) {
+        console.log(`[AutoProvision] Professional: ${profSuccess} provisioned, ${profFailed} failed`);
+      }
 
       if (industry === 'REAL_ESTATE') {
         const { success, failed } = await provisionREAgents(userId);

@@ -116,9 +116,9 @@ export async function POST(request: NextRequest) {
         console.error('[Widget] Failed to trigger workflow for lead:', err);
       });
     } else if (user.industry) {
-      const { triggerIndustryAutoRunOnLeadCreated } = await import('@/lib/ai-employees/auto-run-triggers');
-      triggerIndustryAutoRunOnLeadCreated(userId, lead.id, user.industry).catch((err) => {
-        console.error('[Widget] Failed to trigger industry workflow for lead:', err);
+      const { detectIndustryLeadWorkflowTriggers } = await import('@/lib/industry-workflows/lead-triggers');
+      detectIndustryLeadWorkflowTriggers(userId, lead.id, user.industry).catch((err) => {
+        console.error('[Widget] Failed to trigger industry workflows for lead:', err);
       });
     }
 

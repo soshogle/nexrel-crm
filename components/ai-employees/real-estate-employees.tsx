@@ -447,6 +447,7 @@ export function RealEstateAIEmployees() {
             Real Estate AI Team
           </h2>
           <p className="text-slate-400 mt-1">12 specialized AI employees with OACIQ compliance and multi-language support</p>
+          <p className="text-xs text-slate-500 mt-1">Auto-provisioned when you set Real Estate as your industry</p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="bg-green-500/10 border-green-500/30 text-green-400">
