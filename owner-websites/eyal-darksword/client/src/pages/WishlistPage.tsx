@@ -14,8 +14,13 @@ export default function WishlistPage() {
         <div className="container max-w-3xl text-center">
           <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
           <h2 className="font-serif text-2xl font-semibold mb-3">Your wishlist is empty</h2>
-          <p className="text-muted-foreground mb-8">Browse our collection and add items you love to your wishlist.</p>
-          <Link href="/shop" className="inline-flex items-center px-8 py-3.5 bg-gold text-[#0D0D0D] text-sm font-semibold tracking-[0.1em] uppercase hover:bg-gold-light transition-colors">
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            Save items you love for later. Browse our collection of hand-forged medieval swords, daggers, and armor — add products to your wishlist to keep track of pieces you're considering.
+          </p>
+          <Link
+            href="/shop"
+            className="inline-flex items-center px-8 py-3.5 bg-gold text-[#0D0D0D] text-sm font-semibold tracking-[0.1em] uppercase hover:bg-gold-light transition-colors"
+          >
             Browse Products
           </Link>
         </div>
