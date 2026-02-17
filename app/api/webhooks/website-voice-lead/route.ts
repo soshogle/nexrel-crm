@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       console.warn('[website-voice-lead] processCampaignTriggers error:', campErr);
     }
 
-    // Trigger real estate workflows (buyer/seller)
+    // Trigger workflows on lead creation (RE and industry auto-run)
     try {
       const user = await prisma.user.findUnique({
         where: { id: leadOwnerId },
@@ -134,6 +134,11 @@ export async function POST(request: NextRequest) {
       if (user?.industry === 'REAL_ESTATE') {
         detectLeadWorkflowTriggers(leadOwnerId, lead.id).catch((err) => {
           console.error('[website-voice-lead] Workflow trigger failed:', err);
+        });
+      } else if (user?.industry) {
+        const { triggerIndustryAutoRunOnLeadCreated } = await import('@/lib/ai-employees/auto-run-triggers');
+        triggerIndustryAutoRunOnLeadCreated(leadOwnerId, lead.id, user.industry).catch((err) => {
+          console.error('[website-voice-lead] Industry workflow trigger failed:', err);
         });
       }
     } catch (wfErr) {

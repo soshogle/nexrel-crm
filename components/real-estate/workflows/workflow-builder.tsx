@@ -46,6 +46,15 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
   const [showNewTaskDialog, setShowNewTaskDialog] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
   const [showTemplateGallery, setShowTemplateGallery] = useState(!initialWorkflowId);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const loadWorkflow = (w: WorkflowTemplate | null) => {
+    setWorkflow(w);
+    setHasUnsavedChanges(false);
+  };
+
+  const isSavedWorkflowId = (id: string) =>
+    id !== 'new' && !id.includes('-') && id.length >= 20;
   
   // Fetch workflows on mount
   useEffect(() => {
@@ -58,7 +67,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
       if (initialWorkflowId) {
         const found = workflows.find(w => w.id === initialWorkflowId);
         if (found) {
-          setWorkflow(found);
+          loadWorkflow(found);
           setShowTemplateGallery(false);
         }
       }
@@ -161,7 +170,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
       if (res.ok) {
         const data = await res.json();
         if (data.template) {
-          setWorkflow(data.template);
+          loadWorkflow(data.template);
           setSelectedTaskId(null);
           toast.success(`Loaded ${type === 'BUYER_PIPELINE' ? 'Buyer' : 'Seller'} template`);
         } else {
@@ -189,7 +198,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
 
   const handleCreateCustom = () => {
     setShowTemplateGallery(false);
-    setWorkflow({
+    loadWorkflow({
       id: 'new',
       name: 'New Custom Workflow',
       description: '',
@@ -206,28 +215,38 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
     
     setIsSaving(true);
     try {
-      const method = workflow.id && !workflow.id.startsWith('template-') ? 'PUT' : 'POST';
-      const url = method === 'PUT'
-        ? `/api/real-estate/workflows/${workflow.id}`
-        : '/api/real-estate/workflows';
+      const usePut = isSavedWorkflowId(workflow.id);
+      const method = usePut ? 'PUT' : 'POST';
+      const url = usePut ? `/api/real-estate/workflows/${workflow.id}` : '/api/real-estate/workflows';
+      
+      // API expects 'type' (BUYER|SELLER|CUSTOM); workflow has workflowType (BUYER_PIPELINE|SELLER_PIPELINE|CUSTOM)
+      const mapWorkflowTypeToApiType = (wt: string) =>
+        wt === 'BUYER_PIPELINE' ? 'BUYER' : wt === 'SELLER_PIPELINE' ? 'SELLER' : 'CUSTOM';
+      
+      const payload = usePut ? workflow : {
+        ...workflow,
+        type: mapWorkflowTypeToApiType(workflow.workflowType),
+      };
       
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(workflow),
+        body: JSON.stringify(payload),
       });
       
+      const data = await res.json().catch(() => ({}));
+      
       if (res.ok) {
-        const data = await res.json();
-        setWorkflow(data.workflow);
+        loadWorkflow(data.workflow);
         toast.success('Workflow saved successfully');
-        fetchWorkflows(); // Refresh list
+        fetchWorkflows();
       } else {
-        throw new Error('Failed to save');
+        const errorMsg = data?.error || `Failed to save (${res.status})`;
+        throw new Error(errorMsg);
       }
     } catch (error) {
       console.error('Error saving workflow:', error);
-      toast.error('Failed to save workflow');
+      toast.error(error instanceof Error ? error.message : 'Failed to save workflow');
     } finally {
       setIsSaving(false);
     }
@@ -235,7 +254,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
   
   const handleUpdateTask = (updatedTask: WorkflowTask) => {
     if (!workflow) return;
-    
+    setHasUnsavedChanges(true);
     setWorkflow({
       ...workflow,
       tasks: workflow.tasks.map(t =>
@@ -246,12 +265,13 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
   
   const handleReorderTasks = (updatedTasks: WorkflowTask[]) => {
     if (!workflow) return;
+    setHasUnsavedChanges(true);
     setWorkflow({ ...workflow, tasks: updatedTasks });
   };
   
   const handleDeleteTask = (taskId: string) => {
     if (!workflow) return;
-    
+    setHasUnsavedChanges(true);
     setWorkflow({
       ...workflow,
       tasks: workflow.tasks
@@ -264,7 +284,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
   
   const handleAddTask = () => {
     if (!workflow || !newTaskName.trim()) return;
-    
+    setHasUnsavedChanges(true);
     const newOrder = workflow.tasks.length + 1;
     const angle = (360 / (workflow.tasks.length + 1)) * newOrder;
     
@@ -317,7 +337,7 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
             value={workflow?.id || undefined}
             onValueChange={(id) => {
               const found = workflows.find(w => w.id === id);
-              if (found) setWorkflow(found);
+              if (found) loadWorkflow(found);
             }}
           >
             <SelectTrigger className="w-[200px] bg-white border-purple-200 text-gray-900">
@@ -394,20 +414,22 @@ export function WorkflowBuilder({ initialWorkflowId }: WorkflowBuilderProps) {
             Reset
           </Button>
           
-          {/* Save */}
-          <Button
-            size="sm"
-            onClick={handleSaveWorkflow}
-            disabled={isSaving}
-            className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
-          >
-            {isSaving ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
-            Save Workflow
-          </Button>
+          {/* Save - only show when there are unsaved changes */}
+          {hasUnsavedChanges && (
+            <Button
+              size="sm"
+              onClick={handleSaveWorkflow}
+              disabled={isSaving}
+              className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
+            >
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              Save Workflow
+            </Button>
+          )}
         </div>
       </div>
       

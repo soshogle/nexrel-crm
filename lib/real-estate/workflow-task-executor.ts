@@ -92,7 +92,14 @@ async function executeVoiceCall(
 
   // Resolve ElevenLabs agent and voice override: AI Team > RE industry agent
   let elevenLabsAgentId: string | null = null;
-  let voiceOverride: { agent?: { language?: string }; tts?: { voice_id?: string; stability?: number; speed?: number; similarity_boost?: number } } | undefined;
+  let voiceOverride: {
+    agent?: {
+      language?: string;
+      first_message?: string;
+      prompt?: { prompt?: string; llm?: string };
+    };
+    tts?: { voice_id?: string; stability?: number; speed?: number; similarity_boost?: number };
+  } | undefined;
 
     if (actionConfig?.assignedAIEmployeeId) {
       const aiEmployee = await prisma.userAIEmployee.findFirst({
@@ -151,6 +158,21 @@ async function executeVoiceCall(
       }
     }
 
+  // Per-task prompt overrides: firstMessage and systemPrompt from actionConfig
+  if (actionConfig?.firstMessage || actionConfig?.systemPrompt) {
+    voiceOverride = voiceOverride || {};
+    voiceOverride.agent = voiceOverride.agent || {};
+    if (actionConfig.firstMessage) {
+      voiceOverride.agent.first_message = actionConfig.firstMessage;
+    }
+    if (actionConfig.systemPrompt) {
+      voiceOverride.agent.prompt = {
+        ...voiceOverride.agent.prompt,
+        prompt: actionConfig.systemPrompt,
+      };
+    }
+  }
+
   if (!elevenLabsAgentId && task.assignedAgentType) {
     // Lazy provision: create agent on first use if not yet provisioned
     const { ensureREAgentProvisioned } = await import('@/lib/ai-employee-lazy-provision');
@@ -171,6 +193,21 @@ async function executeVoiceCall(
 
   if (!lead?.phone) {
     return { success: false, error: 'No phone number available' };
+  }
+
+  // Personalize firstMessage and systemPrompt with lead data before call
+  if (voiceOverride?.agent && lead) {
+    const personalize = (s: string) =>
+      s
+        .replace(/\{contactPerson\}/g, lead.contactPerson || 'there')
+        .replace(/\{firstName\}/g, lead.contactPerson?.split(' ')[0] || 'there')
+        .replace(/\{businessName\}/g, lead.businessName || '');
+    if (voiceOverride.agent.first_message) {
+      voiceOverride.agent.first_message = personalize(voiceOverride.agent.first_message);
+    }
+    if (voiceOverride.agent.prompt?.prompt) {
+      voiceOverride.agent.prompt.prompt = personalize(voiceOverride.agent.prompt.prompt);
+    }
   }
 
   try {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { processReferralTriggers } from '@/lib/referral-triggers';
+import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest) {
     // Validate that the user exists
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: { id: true, industry: true },
     });
 
     if (!user) {
@@ -106,6 +108,18 @@ export async function POST(request: NextRequest) {
       } catch (triggerError) {
         console.error('Referral trigger processing failed:', triggerError);
       }
+    }
+
+    // Trigger workflows on lead creation (RE and industry auto-run)
+    if (user.industry === 'REAL_ESTATE') {
+      detectLeadWorkflowTriggers(userId, lead.id).catch((err) => {
+        console.error('[Widget] Failed to trigger workflow for lead:', err);
+      });
+    } else if (user.industry) {
+      const { triggerIndustryAutoRunOnLeadCreated } = await import('@/lib/ai-employees/auto-run-triggers');
+      triggerIndustryAutoRunOnLeadCreated(userId, lead.id, user.industry).catch((err) => {
+        console.error('[Widget] Failed to trigger industry workflow for lead:', err);
+      });
     }
 
     console.log(`✅ New lead created from widget: ${lead.id}`);

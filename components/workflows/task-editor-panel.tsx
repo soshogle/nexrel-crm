@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Trash2, Save, Shield, Clock, GitBranch, BarChart3, ChevronDown, ChevronUp, Beaker, Globe } from 'lucide-react';
+import { X, Trash2, Save, Shield, Clock, GitBranch, BarChart3, ChevronDown, ChevronUp, Beaker, Globe, MessageSquare } from 'lucide-react';
 import { VOICE_LANGUAGES } from '@/lib/voice-languages';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -307,6 +307,7 @@ export function TaskEditorPanel({
 
         {/* Voice Call Language - when voice call is selected and agent assigned */}
         {selectedActions.includes('voice_call') && (editedTask.assignedAIEmployeeId || editedTask.assignedAgentId) && (
+          <>
           <Card className="p-4 border-purple-200 bg-purple-50/50">
             <div className="flex items-center gap-2 mb-2">
               <Globe className="w-4 h-4 text-purple-600" />
@@ -316,7 +317,7 @@ export function TaskEditorPanel({
               Override language for this task. Leave as Default to use the AI employee&apos;s setting.
             </p>
             <Select
-              value={(editedTask as any).actionConfig?.voiceLanguage || ''}
+              value={(editedTask as any).actionConfig?.voiceLanguage || '__default__'}
               onValueChange={(value) => {
                 const currentActionConfig = (editedTask as any).actionConfig || {};
                 setEditedTask({
@@ -324,7 +325,7 @@ export function TaskEditorPanel({
                   ...(editedTask as any),
                   actionConfig: {
                     ...currentActionConfig,
-                    voiceLanguage: value || undefined,
+                    voiceLanguage: value === '__default__' ? undefined : value,
                   },
                 } as WorkflowTask);
               }}
@@ -333,13 +334,69 @@ export function TaskEditorPanel({
                 <SelectValue placeholder="Default (use employee setting)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Default</SelectItem>
+                <SelectItem value="__default__">Default</SelectItem>
                 {VOICE_LANGUAGES.map((l) => (
                   <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </Card>
+
+          {/* Per-task prompt override - same agent, different script per task */}
+          <Card className="p-4 border-indigo-200 bg-indigo-50/50">
+            <div className="flex items-center gap-2 mb-2">
+              <MessageSquare className="w-4 h-4 text-indigo-600" />
+              <Label className="text-sm font-semibold">Customize Agent for This Task</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Override what this agent says for this specific task. Use when the same agent appears in multiple steps (e.g. intro call vs follow-up call).
+            </p>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">First Message (greeting)</Label>
+                <Textarea
+                  value={(editedTask as any).actionConfig?.firstMessage ?? ''}
+                  onChange={(e) => {
+                    const currentActionConfig = (editedTask as any).actionConfig || {};
+                    setEditedTask({
+                      ...editedTask,
+                      ...(editedTask as any),
+                      actionConfig: {
+                        ...currentActionConfig,
+                        firstMessage: e.target.value || undefined,
+                      },
+                    } as WorkflowTask);
+                  }}
+                  className="bg-white border-indigo-200 text-sm min-h-[60px] focus:border-indigo-500"
+                  placeholder="e.g. Hi, this is Sarah. I saw you inquired about properties. Do you have a moment to chat?"
+                  rows={2}
+                />
+                <p className="text-xs text-muted-foreground">What the agent says when the call connects. Leave empty to use default.</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium">System Prompt (optional)</Label>
+                <Textarea
+                  value={(editedTask as any).actionConfig?.systemPrompt ?? ''}
+                  onChange={(e) => {
+                    const currentActionConfig = (editedTask as any).actionConfig || {};
+                    setEditedTask({
+                      ...editedTask,
+                      ...(editedTask as any),
+                      actionConfig: {
+                        ...currentActionConfig,
+                        systemPrompt: e.target.value || undefined,
+                      },
+                    } as WorkflowTask);
+                  }}
+                  className="bg-white border-indigo-200 text-sm min-h-[100px] focus:border-indigo-500"
+                  placeholder="e.g. Focus on scheduling a showing. You already qualified this lead in a previous call."
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">Override the agent&apos;s full instructions for this task. Leave empty to use default.</p>
+              </div>
+            </div>
+          </Card>
+          </>
         )}
         
         {/* Delay Settings */}
@@ -737,13 +794,14 @@ export function TaskEditorPanel({
               <div>
                 <Label className="text-xs">Branch From Task</Label>
                 <Select
-                  value={editedTask.parentTaskId || ''}
-                  onValueChange={(value) => handleParentTaskChange(value || null)}
+                  value={editedTask.parentTaskId || '__none__'}
+                  onValueChange={(value) => handleParentTaskChange(value === '__none__' ? null : value)}
                 >
                   <SelectTrigger className="mt-1 border-purple-200">
                     <SelectValue placeholder="Select parent task" />
                   </SelectTrigger>
                   <SelectContent className="z-50">
+                    <SelectItem value="__none__">None</SelectItem>
                     {workflowTasks
                       .filter(t => t.id !== editedTask.id)
                       .map((t) => (

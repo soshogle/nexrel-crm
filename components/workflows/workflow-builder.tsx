@@ -57,6 +57,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskType, setNewTaskType] = useState<string>('CREATE_TASK');
   const [showTemplateGallery, setShowTemplateGallery] = useState(!initialWorkflowId);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Execution mode state (Workflow, Campaign, or Drip)
   const [executionMode, setExecutionMode] = useState<'WORKFLOW' | 'CAMPAIGN' | 'DRIP'>('WORKFLOW');
@@ -70,7 +71,17 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   const [abTestConfig, setAbTestConfig] = useState<any>(null);
   
   const industryConfig = getIndustryConfig(industry);
-  
+
+  // Load workflow and clear unsaved state (used when loading from template/fetch/select)
+  const loadWorkflow = (w: WorkflowTemplate | null) => {
+    setWorkflow(w);
+    setHasUnsavedChanges(false);
+  };
+
+  // Check if workflow id is a saved DB id (cuid) vs template id or 'new'
+  const isSavedWorkflowId = (id: string) =>
+    id !== 'new' && !id.includes('-') && id.length >= 20;
+
   // Transform API response to WorkflowTemplate shape
   const transformWorkflow = (t: any) => ({
     id: t.id,
@@ -119,7 +130,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
         found = (await fetchSingleWorkflow(initialWorkflowId)) || undefined;
       }
       if (found) {
-        setWorkflow(found);
+        loadWorkflow(found);
         setShowTemplateGallery(false);
       }
     };
@@ -197,7 +208,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
       if (res.ok) {
         const data = await res.json();
         if (data.template) {
-          setWorkflow(data.template);
+          loadWorkflow(data.template);
           setSelectedTaskId(null);
           toast.success(`Loaded template: ${data.template.name}`);
         } else {
@@ -224,7 +235,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   
   const handleCreateCustom = () => {
     setShowTemplateGallery(false);
-    setWorkflow({
+    loadWorkflow({
       id: 'new',
       name: 'New Custom Workflow',
       description: '',
@@ -242,30 +253,34 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
     
     setIsSaving(true);
     try {
-      const method = workflow.id && workflow.id !== 'new' ? 'PUT' : 'POST';
-      const url = method === 'PUT'
-        ? `/api/workflows/${workflow.id}`
-        : '/api/workflows';
+      // Use POST for new workflows or template-based (template ids contain hyphens); PUT for saved DB workflows
+      const usePut = isSavedWorkflowId(workflow.id);
+      const method = usePut ? 'PUT' : 'POST';
+      const url = usePut ? `/api/workflows/${workflow.id}` : '/api/workflows';
+      
+      const payload = {
+        ...workflow,
+        type: workflow.workflowType,
+        industry,
+        executionMode,
+        audience,
+        campaignSettings,
+        enrollmentMode: executionMode === 'DRIP' ? true : false,
+        enrollmentTriggers: executionMode === 'DRIP' ? enrollmentTriggers : null,
+        enableAbTesting: executionMode === 'DRIP' && enrollmentMode ? enableAbTesting : false,
+        abTestConfig: executionMode === 'DRIP' && enrollmentMode && enableAbTesting ? abTestConfig : null,
+      };
       
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...workflow,
-          industry,
-          executionMode,
-          audience,
-          campaignSettings,
-          enrollmentMode: executionMode === 'DRIP' ? true : false,
-          enrollmentTriggers: executionMode === 'DRIP' ? enrollmentTriggers : null,
-          enableAbTesting: executionMode === 'DRIP' && enrollmentMode ? enableAbTesting : false,
-          abTestConfig: executionMode === 'DRIP' && enrollmentMode && enableAbTesting ? abTestConfig : null,
-        }),
+        body: JSON.stringify(payload),
       });
       
+      const data = await res.json().catch(() => ({}));
+      
       if (res.ok) {
-        const data = await res.json();
-        setWorkflow(data.workflow);
+        loadWorkflow(data.workflow ? transformWorkflow(data.workflow) : data.workflow);
         const successMessage = 
           executionMode === 'CAMPAIGN' ? 'Campaign saved successfully' :
           executionMode === 'DRIP' ? 'Drip campaign saved successfully' :
@@ -273,11 +288,12 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
         toast.success(successMessage);
         fetchWorkflows(); // Refresh list
       } else {
-        throw new Error('Failed to save');
+        const errorMsg = data?.error || `Failed to save (${res.status})`;
+        throw new Error(errorMsg);
       }
     } catch (error) {
       console.error('Error saving workflow:', error);
-      toast.error('Failed to save workflow');
+      toast.error(error instanceof Error ? error.message : 'Failed to save workflow');
     } finally {
       setIsSaving(false);
     }
@@ -285,7 +301,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   
   const handleUpdateTask = (updatedTask: WorkflowTask) => {
     if (!workflow) return;
-    
+    setHasUnsavedChanges(true);
     const currentTasks = workflow.tasks || [];
     setWorkflow({
       ...workflow,
@@ -297,12 +313,13 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   
   const handleReorderTasks = (updatedTasks: WorkflowTask[]) => {
     if (!workflow) return;
+    setHasUnsavedChanges(true);
     setWorkflow({ ...workflow, tasks: updatedTasks });
   };
   
   const handleDeleteTask = (taskId: string) => {
     if (!workflow) return;
-    
+    setHasUnsavedChanges(true);
     const currentTasks = workflow.tasks || [];
     setWorkflow({
       ...workflow,
@@ -316,7 +333,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   
   const handleAddTask = () => {
     if (!workflow || !newTaskName.trim()) return;
-    
+    setHasUnsavedChanges(true);
     const currentTasks = workflow.tasks || [];
     const newOrder = currentTasks.length + 1;
     
@@ -344,6 +361,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
   
   const handleReset = () => {
     if (!workflow) return;
+    setHasUnsavedChanges(true);
     const currentTasks = workflow.tasks || [];
     setWorkflow({
       ...workflow,
@@ -373,7 +391,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
             onValueChange={(value) => {
               const found = workflows.find(w => w.id === value);
               if (found) {
-                setWorkflow(found);
+                loadWorkflow(found);
                 setShowTemplateGallery(false);
               }
             }}
@@ -405,6 +423,7 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
               <ExecutionModeSelector
                 mode={executionMode}
                 onModeChange={(mode) => {
+                  setHasUnsavedChanges(true);
                   setExecutionMode(mode);
                   // Reset settings when switching modes
                   if (mode === 'WORKFLOW') {
@@ -534,19 +553,21 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
                 </DialogContent>
               </Dialog>
               
-              <Button
-                size="sm"
-                onClick={handleSaveWorkflow}
-                disabled={isSaving}
-                className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
-              >
-                {isSaving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                Save Workflow
-              </Button>
+              {hasUnsavedChanges && (
+                <Button
+                  size="sm"
+                  onClick={handleSaveWorkflow}
+                  disabled={isSaving}
+                  className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Save Workflow
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -580,12 +601,12 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
                 <div className="space-y-4 mt-6">
                   <AudiencePanel
                     audience={audience}
-                    onAudienceChange={setAudience}
+                    onAudienceChange={(a) => { setHasUnsavedChanges(true); setAudience(a); }}
                     executionMode={executionMode}
                   />
                   <CampaignSettingsPanel
                     settings={campaignSettings}
-                    onSettingsChange={setCampaignSettings}
+                    onSettingsChange={(s) => { setHasUnsavedChanges(true); setCampaignSettings(s); }}
                     executionMode={executionMode}
                   />
                 </div>
@@ -597,16 +618,16 @@ export function WorkflowBuilder({ industry, initialWorkflowId }: WorkflowBuilder
                   <EnrollmentPanel
                     enrollmentMode={enrollmentMode}
                     enrollmentTriggers={enrollmentTriggers}
-                    onEnrollmentModeChange={setEnrollmentMode}
-                    onEnrollmentTriggersChange={setEnrollmentTriggers}
+                    onEnrollmentModeChange={(m) => { setHasUnsavedChanges(true); setEnrollmentMode(m); }}
+                    onEnrollmentTriggersChange={(t) => { setHasUnsavedChanges(true); setEnrollmentTriggers(t); }}
                   />
                   {/* A/B Testing Panel - Only show when enrollment mode is enabled */}
                   {enrollmentMode && (
                     <ABTestPanel
                       enableAbTesting={enableAbTesting}
                       abTestConfig={abTestConfig}
-                      onEnableAbTestingChange={setEnableAbTesting}
-                      onABTestConfigChange={setAbTestConfig}
+                      onEnableAbTestingChange={(v) => { setHasUnsavedChanges(true); setEnableAbTesting(v); }}
+                      onABTestConfigChange={(c) => { setHasUnsavedChanges(true); setAbTestConfig(c); }}
                     />
                   )}
                 </div>

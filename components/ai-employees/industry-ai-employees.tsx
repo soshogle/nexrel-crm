@@ -7,6 +7,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -120,10 +121,49 @@ export function IndustryAIEmployees({ industry }: { industry: Industry }) {
   const [provisioningProgress, setProvisioningProgress] = useState(0);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   const [testingAgentId, setTestingAgentId] = useState<string | null>(null);
+  const [autoRunSettings, setAutoRunSettings] = useState<Record<string, boolean>>({});
+  const [autoRunUpdating, setAutoRunUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProvisionedAgents();
   }, [industry]);
+
+  useEffect(() => {
+    fetch(`/api/ai-employees/auto-run?industry=${industry}`)
+      .then((res) => res.ok ? res.json() : { settings: {} })
+      .then((data) => setAutoRunSettings(data.settings || {}))
+      .catch(() => setAutoRunSettings({}));
+  }, [industry]);
+
+  const getAutoRunKey = (employeeType: string) => `${employeeType}:${industry}`;
+  const isAutoRunEnabled = (employeeType: string) => !!autoRunSettings[getAutoRunKey(employeeType)];
+
+  const router = useRouter();
+
+  const handleAutoRunChange = async (employeeType: string, enabled: boolean) => {
+    setAutoRunUpdating(employeeType);
+    try {
+      const res = await fetch('/api/ai-employees/auto-run', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeType, industry, autoRunEnabled: enabled }),
+      });
+      const data = res.ok ? await res.json() : null;
+      if (res.ok) {
+        setAutoRunSettings((prev) => ({ ...prev, [getAutoRunKey(employeeType)]: enabled }));
+        toast.success(enabled ? 'Auto-run enabled' : 'Auto-run disabled');
+        if (enabled && data?.createdWorkflowId) {
+          router.push(`/dashboard/ai-employees?tab=workflows&openBuilder=1&draftId=${data.createdWorkflowId}`);
+        }
+      } else {
+        toast.error('Failed to update auto-run');
+      }
+    } catch {
+      toast.error('Failed to update auto-run');
+    } finally {
+      setAutoRunUpdating(null);
+    }
+  };
 
   const fetchProvisionedAgents = async () => {
     try {
@@ -376,7 +416,11 @@ export function IndustryAIEmployees({ industry }: { industry: Industry }) {
                       <p className="text-xs text-slate-400">Automatically trigger on events</p>
                     </div>
                   </div>
-                  <Switch />
+                  <Switch
+                    checked={selectedEmployee ? isAutoRunEnabled(selectedEmployee.id) : false}
+                    onCheckedChange={(checked) => selectedEmployee && handleAutoRunChange(selectedEmployee.id, !!checked)}
+                    disabled={!!autoRunUpdating}
+                  />
                 </div>
                 {selectedEmployee.voiceEnabled && (
                   <div className={`p-4 rounded-lg border ${isAgentProvisioned(selectedEmployee.id) ? 'bg-green-500/10 border-green-500/30' : 'bg-slate-800/50 border-slate-600'}`}>

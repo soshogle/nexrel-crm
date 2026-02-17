@@ -290,6 +290,7 @@ model User {
   reAIEmployeeExecutions      REAIEmployeeExecution[]      @relation("REAIEmployeeExecutionUser")
   reAIEmployeeAgents          REAIEmployeeAgent[]          @relation("REAIEmployeeAgentUser")
   industryAIEmployeeAgents    IndustryAIEmployeeAgent[]    @relation("IndustryAIEmployeeAgentUser")
+  aiEmployeeAutoRuns          AIEmployeeAutoRun[]          @relation("AIEmployeeAutoRunUser")
   // Real Estate Workflow Relations
   reWorkflowTemplates         REWorkflowTemplate[]         @relation("UserREWorkflowTemplates")
   reWorkflowInstances         REWorkflowInstance[]         @relation("UserREWorkflowInstances")
@@ -7563,6 +7564,24 @@ model REAIEmployeeAgent {
   @@index([userId])
   @@index([employeeType])
   @@index([elevenLabsAgentId])
+}
+
+// AI Employee Auto-Run - per-user, per-employee-type setting to auto-trigger on events
+model AIEmployeeAutoRun {
+  id              String    @id @default(cuid())
+  userId          String
+  employeeType    String    // e.g. RE_SPEED_TO_LEAD, APPOINTMENT_SCHEDULER
+  industry        Industry? // null for RE employees, set for industry employees
+  autoRunEnabled  Boolean   @default(false)
+  workflowId      String?   // For RE_SPEED_TO_LEAD: links to the workflow to trigger
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user User @relation("AIEmployeeAutoRunUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, employeeType, industry])
+  @@index([userId])
+  @@index([employeeType])
 }
 
 // Industry AI Employee Voice Agents (Dental, Medical, Restaurant, etc.)

@@ -79,16 +79,20 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Check if user is in real estate industry and trigger workflows
+    // Trigger workflows on lead creation (RE and industry auto-run)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { industry: true },
     });
 
     if (user?.industry === 'REAL_ESTATE') {
-      // Trigger RE workflow detection asynchronously
       detectLeadWorkflowTriggers(session.user.id, lead.id).catch(err => {
         console.error('[RE Workflow] Failed to trigger workflow for lead:', err);
+      });
+    } else if (user?.industry) {
+      const { triggerIndustryAutoRunOnLeadCreated } = await import('@/lib/ai-employees/auto-run-triggers');
+      triggerIndustryAutoRunOnLeadCreated(session.user.id, lead.id, user.industry).catch(err => {
+        console.error('[Auto-Run] Failed to trigger industry workflow for lead:', err);
       });
     }
 

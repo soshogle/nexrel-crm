@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db';
 import { startWorkflowInstance } from './workflow-engine';
+import { triggerAutoRunOnLeadCreated } from '@/lib/ai-employees/auto-run-triggers';
 
 /**
  * Detect and trigger RE workflows when a new lead is created
@@ -36,11 +37,22 @@ export async function detectLeadWorkflowTriggers(
     const workflowType = leadType?.toLowerCase().includes('seller') ? 'SELLER' : 'BUYER';
 
     // Find active workflow templates for this type
+    // Exclude workflows linked to auto-run (those are started by triggerAutoRunOnLeadCreated)
+    const autoRunWorkflowIds = await prisma.aIEmployeeAutoRun.findMany({
+      where: {
+        userId,
+        autoRunEnabled: true,
+        workflowId: { not: null },
+      },
+      select: { workflowId: true },
+    }).then((rows) => rows.map((r) => r.workflowId).filter(Boolean) as string[]);
+
     const templates = await prisma.rEWorkflowTemplate.findMany({
       where: {
         userId,
         type: workflowType,
         isActive: true,
+        ...(autoRunWorkflowIds.length > 0 ? { id: { notIn: autoRunWorkflowIds } } : {}),
       },
       orderBy: { createdAt: 'desc' },
       take: 1, // Use most recent template
@@ -62,6 +74,11 @@ export async function detectLeadWorkflowTriggers(
         console.error(`[RE Workflow] Failed to start workflow ${template.id}:`, error);
       }
     }
+
+    // Trigger auto-run AI employees (e.g. RE_SPEED_TO_LEAD)
+    triggerAutoRunOnLeadCreated(userId, leadId).catch((err) => {
+      console.error('[RE Workflow] Auto-run trigger failed:', err);
+    });
   } catch (error) {
     console.error('[RE Workflow] Error detecting lead triggers:', error);
   }

@@ -74,10 +74,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Trigger RE workflows if user is in real estate
+    // Trigger workflows on lead creation (RE and industry auto-run)
     if (user.industry === 'REAL_ESTATE') {
       detectLeadWorkflowTriggers(leadOwnerId, lead.id).catch((err) => {
         console.error('[Tavus webhook] RE workflow trigger failed:', err);
+      });
+    } else if (user.industry) {
+      const { triggerIndustryAutoRunOnLeadCreated } = await import('@/lib/ai-employees/auto-run-triggers');
+      triggerIndustryAutoRunOnLeadCreated(leadOwnerId, lead.id, user.industry).catch((err) => {
+        console.error('[Tavus webhook] Industry workflow trigger failed:', err);
       });
     }
 

@@ -199,7 +199,14 @@ async function executeVoiceCall(
 
     // Resolve ElevenLabs agent ID and voice override: AI Team > task config > env default
     let agentId: string | null = null;
-    let voiceOverride: { agent?: { language?: string }; tts?: { voice_id?: string; stability?: number; speed?: number; similarity_boost?: number } } | undefined;
+    let voiceOverride: {
+      agent?: {
+        language?: string;
+        first_message?: string;
+        prompt?: { prompt?: string; llm?: string };
+      };
+      tts?: { voice_id?: string; stability?: number; speed?: number; similarity_boost?: number };
+    } | undefined;
 
     if (actionConfig?.assignedAIEmployeeId) {
       const aiEmployee = await prisma.userAIEmployee.findFirst({
@@ -255,6 +262,36 @@ async function executeVoiceCall(
       if (userLang !== 'en') {
         voiceOverride = voiceOverride || {};
         voiceOverride.agent = { ...voiceOverride.agent, language: userLang };
+      }
+    }
+
+    // Per-task prompt overrides: firstMessage and systemPrompt from actionConfig
+    if (actionConfig?.firstMessage || actionConfig?.systemPrompt) {
+      voiceOverride = voiceOverride || {};
+      voiceOverride.agent = voiceOverride.agent || {};
+      if (actionConfig.firstMessage) {
+        voiceOverride.agent.first_message = actionConfig.firstMessage;
+      }
+      if (actionConfig.systemPrompt) {
+        voiceOverride.agent.prompt = {
+          ...voiceOverride.agent.prompt,
+          prompt: actionConfig.systemPrompt,
+        };
+      }
+    }
+
+    // Personalize firstMessage and systemPrompt with lead data before call
+    if (voiceOverride?.agent && lead) {
+      const personalize = (s: string) =>
+        s
+          .replace(/\{contactPerson\}/g, lead.contactPerson || 'there')
+          .replace(/\{firstName\}/g, lead.contactPerson?.split(' ')[0] || 'there')
+          .replace(/\{businessName\}/g, lead.businessName || '');
+      if (voiceOverride.agent.first_message) {
+        voiceOverride.agent.first_message = personalize(voiceOverride.agent.first_message);
+      }
+      if (voiceOverride.agent.prompt?.prompt) {
+        voiceOverride.agent.prompt.prompt = personalize(voiceOverride.agent.prompt.prompt);
       }
     }
 
