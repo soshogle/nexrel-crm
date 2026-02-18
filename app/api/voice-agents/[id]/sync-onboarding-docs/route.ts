@@ -218,6 +218,7 @@ ${
           const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
           const promptWithGuard =
             multilingualPrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
+          const { PLATFORM_SETTINGS_WITH_OVERRIDES } = await import('@/lib/elevenlabs-overrides');
           const updatePayload = {
             conversation_config: {
               ...currentConfig.conversation_config,
@@ -229,6 +230,10 @@ ${
                 first_message: agent.greetingMessage || agent.firstMessage || currentConfig.conversation_config?.agent?.first_message,
                 language: currentConfig.conversation_config?.agent?.language || 'en',
               },
+            },
+            platform_settings: {
+              ...(currentConfig.platform_settings || {}),
+              ...PLATFORM_SETTINGS_WITH_OVERRIDES,
             },
           };
 

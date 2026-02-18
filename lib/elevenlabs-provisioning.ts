@@ -74,6 +74,7 @@ export interface ElevenLabsAgent {
       voice_id?: string;
     };
   };
+  platform_settings?: Record<string, unknown>;
 }
 
 class ElevenLabsProvisioningService {
@@ -983,7 +984,7 @@ class ElevenLabsProvisioningService {
         promptToUse = promptToUse + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
       }
 
-      // Build updated configuration
+      // Build updated configuration (preserve platform_settings with allowed_overrides)
       const updatedConfig = {
         conversation_config: {
           ...currentAgent.conversation_config,
@@ -1007,6 +1008,10 @@ class ElevenLabsProvisioningService {
               voice_id: updates.voiceId,
             },
           }),
+        },
+        platform_settings: {
+          ...(currentAgent.platform_settings || {}),
+          ...PLATFORM_SETTINGS_WITH_OVERRIDES,
         },
       };
 

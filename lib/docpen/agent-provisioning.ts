@@ -457,7 +457,10 @@ class DocpenAgentProvisioning {
           // Preserve ASR settings
           asr: currentAgent.conversation_config?.asr,
         },
-        platform_settings: currentAgent.platform_settings || { widget_enabled: true },
+        platform_settings: {
+          ...(currentAgent.platform_settings || { widget_enabled: true }),
+          allowed_overrides: { agent: ['first_message', 'prompt', 'language'] },
+        },
         // Update tools with latest function configurations
         tools: medicalFunctions.map(func => ({
           type: 'function',

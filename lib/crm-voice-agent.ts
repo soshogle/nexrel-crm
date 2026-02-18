@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '@/lib/db';
-import { enableFirstMessageOverride } from '@/lib/elevenlabs-overrides';
+import { enableFirstMessageOverride, PLATFORM_SETTINGS_WITH_OVERRIDES } from '@/lib/elevenlabs-overrides';
 import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
 import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
 
@@ -987,7 +987,10 @@ ${getConfidentialityGuard()}`;
           // Preserve turn settings
           turn: currentAgent.conversation_config?.turn,
         },
-        platform_settings: currentAgent.platform_settings || {},
+        platform_settings: {
+          ...(currentAgent.platform_settings || {}),
+          ...PLATFORM_SETTINGS_WITH_OVERRIDES,
+        },
         tools: crmFunctions.map(func => ({
           type: 'function',
           function: func,
