@@ -8,7 +8,6 @@ import { prisma } from '@/lib/db';
 import { Industry, ProfessionalAIEmployeeType, REAIEmployeeType } from '@prisma/client';
 import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
-import { enableFirstMessageOverride } from '@/lib/elevenlabs-overrides';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
 import { PROFESSIONAL_EMPLOYEE_PROMPTS } from '@/lib/professional-ai-employees/prompts';
 
@@ -52,7 +51,7 @@ async function createElevenLabsAgent(
       name: config.name,
       platform_settings: {
         auth: { enable_auth: false },
-        allowed_overrides: { agent: ['first_message', 'prompt', 'language'] },
+        allowed_overrides: { agent: ['prompt', 'language'] },
       },
     }),
   });
@@ -100,8 +99,6 @@ async function provisionREAgents(userId: string): Promise<{ success: number; fai
         firstMessage: promptConfig.firstMessage,
         voiceId: promptConfig.voiceId,
       });
-
-      await enableFirstMessageOverride(agentId, apiKey).catch(() => {});
 
       await prisma.rEAIEmployeeAgent.upsert({
         where: { userId_employeeType: { userId, employeeType } },
@@ -172,8 +169,6 @@ async function provisionIndustryAgents(
         voiceId: promptConfig.voiceId,
       });
 
-      await enableFirstMessageOverride(agentId, apiKey).catch(() => {});
-
       await prisma.industryAIEmployeeAgent.upsert({
         where: {
           userId_industry_employeeType: { userId, industry, employeeType },
@@ -241,8 +236,6 @@ async function provisionProfessionalAgents(userId: string): Promise<{ success: n
         firstMessage: promptConfig.firstMessage,
         voiceId: promptConfig.voiceId,
       });
-
-      await enableFirstMessageOverride(agentId, apiKey).catch(() => {});
 
       await prisma.professionalAIEmployeeAgent.upsert({
         where: { userId_employeeType: { userId, employeeType } },

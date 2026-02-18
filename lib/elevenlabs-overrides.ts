@@ -12,13 +12,12 @@
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
 /**
- * Platform settings to enable first_message override (and prompt/language for flexibility).
- * Use when creating agents - include in platform_settings.
+ * Platform settings for agent overrides (prompt/language). first_message excluded -
+ * clients don't override it; agent uses conversation_config.agent.first_message.
  */
 export const PLATFORM_SETTINGS_WITH_OVERRIDES = {
-  /** Enable first_message override so clients can pass custom greetings (e.g. time-aware) */
   allowed_overrides: {
-    agent: ['first_message', 'prompt', 'language'] as const,
+    agent: ['prompt', 'language'] as const,
   },
 } as const;
 

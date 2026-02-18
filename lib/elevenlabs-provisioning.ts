@@ -18,10 +18,7 @@
 
 import { prisma } from './db';
 import { voiceAIPlatform } from './voice-ai-platform';
-import {
-  enableFirstMessageOverride,
-  PLATFORM_SETTINGS_WITH_OVERRIDES,
-} from './elevenlabs-overrides';
+import { PLATFORM_SETTINGS_WITH_OVERRIDES } from './elevenlabs-overrides';
 import { EASTERN_TIME_SYSTEM_INSTRUCTION } from './voice-time-context';
 import { LANGUAGE_PROMPT_SECTION, ensureMultilingualPrompt } from './voice-languages';
 
@@ -387,12 +384,6 @@ class ElevenLabsProvisioningService {
       const agent: ElevenLabsAgent = await response.json();
 
       console.log('✅ ElevenLabs agent created:', agent.agent_id);
-
-      // Enable first_message override so website/widget can inject time-aware greetings
-      const overrideResult = await enableFirstMessageOverride(agent.agent_id, apiKey);
-      if (!overrideResult.success) {
-        console.warn('⚠️  First message override not enabled (non-fatal):', overrideResult.error);
-      }
 
       let phoneNumberId: string | undefined;
 

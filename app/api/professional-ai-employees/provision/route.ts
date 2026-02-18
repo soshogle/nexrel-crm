@@ -8,7 +8,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { enableFirstMessageOverride } from '@/lib/elevenlabs-overrides';
 import { ProfessionalAIEmployeeType } from '@prisma/client';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
 import { PROFESSIONAL_EMPLOYEE_PROMPTS } from '@/lib/professional-ai-employees/prompts';
@@ -56,7 +55,7 @@ async function createElevenLabsAgent(
       name: config.name,
       platform_settings: {
         auth: { enable_auth: false },
-        allowed_overrides: { agent: ['first_message', 'prompt', 'language'] },
+        allowed_overrides: { agent: ['prompt', 'language'] },
       },
     }),
   });
@@ -165,8 +164,6 @@ export async function POST(request: NextRequest) {
           firstMessage: promptConfig.firstMessage,
           voiceId: promptConfig.voiceId,
         });
-
-        await enableFirstMessageOverride(agentId, apiKey).catch(() => {});
 
         await prisma.professionalAIEmployeeAgent.upsert({
           where: {
