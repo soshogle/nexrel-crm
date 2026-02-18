@@ -21,7 +21,6 @@ import {
   Mic,
   BarChart3
 } from "lucide-react";
-import { GeometricShapes } from "@/components/landing/soshogle/geometric-shapes";
 import { toast } from "sonner";
 import { ElevenLabsAgent } from "@/components/landing/soshogle/elevenlabs-agent";
 import { ChatMarkdown } from "@/components/dashboard/chat-markdown";
@@ -373,7 +372,7 @@ export function AIChatAssistant() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-24 z-[9998] flex h-16 w-16 items-center justify-center rounded-full shadow-xl transition-all hover:scale-110"
+        className="fixed bottom-24 right-6 z-[9998] flex h-16 w-16 items-center justify-center rounded-full shadow-xl transition-all hover:scale-110"
         style={{
           background: 'rgba(139, 92, 246, 0.1)',
           border: '2px solid rgba(34, 211, 238, 0.3)',
@@ -394,18 +393,17 @@ export function AIChatAssistant() {
   }
 
   return (
-    <div className={`fixed bottom-6 right-24 z-[9998] flex flex-col items-end transition-all duration-300 ${
-      isMinimized ? "w-80" : "w-96"
-    }`}>
+    <div className="fixed bottom-24 right-6 z-[9998] flex flex-col items-end transition-all duration-300 min-w-[240px] max-w-[384px] w-fit">
       <div
-        className="flex flex-col overflow-hidden rounded-2xl shadow-2xl bg-black/10 relative"
-        style={{ width: isMinimized ? 320 : 384, minHeight: isMinimized ? 120 : 520 }}
+        className="flex flex-col overflow-hidden rounded-2xl shadow-2xl bg-black/10 backdrop-blur-sm relative border border-white/10"
+        style={{
+          minWidth: isMinimized ? 200 : 240,
+          maxWidth: 384,
+          width: 'fit-content',
+          minHeight: isMinimized ? 80 : undefined,
+          maxHeight: 520,
+        }}
       >
-        {/* Frameless background - GeometricShapes */}
-        <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-          <GeometricShapes audioLevel={0} isAgentSpeaking={false} bare />
-        </div>
-
         {/* Overlay buttons - top right */}
         <div className="absolute top-3 right-3 flex items-center gap-1 z-20">
           <button
@@ -426,8 +424,8 @@ export function AIChatAssistant() {
 
         {!isMinimized && (
           <>
-            {/* Messages Area - semi-transparent overlay for readability */}
-            <ScrollArea className="h-80 p-4 pt-14" ref={scrollRef}>
+            {/* Messages Area - grows with content, scrolls when needed */}
+            <ScrollArea className="max-h-[320px] min-h-[120px] p-4 pt-14" ref={scrollRef}>
               <div className="space-y-4">
                 {messages.map((message, index) => (
                   <div
