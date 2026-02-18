@@ -61,6 +61,7 @@ export function ElevenLabsAgent({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioStreamRef = useRef<MediaStream | null>(null);
+  const audioConnectedRef = useRef<boolean>(false);
 
   const startConversation = async () => {
     // If you see this in console, the new signed-URL flow is deployed (WebSocket, not LiveKit)
@@ -137,13 +138,16 @@ export function ElevenLabsAgent({
           } catch {}
           setStatus("listening");
           // Route SDK audio element to speakers (SDK may create it after first chunk)
+          // Only connect once - createMediaElementSource fails if element already connected
           const tryConnectAudio = () => {
+            if (audioConnectedRef.current) return true;
             try {
               const audioElement = document.querySelector("audio");
               if (audioElement && audioContextRef.current && analyserRef.current) {
                 const source = audioContextRef.current.createMediaElementSource(audioElement);
                 source.connect(analyserRef.current);
                 analyserRef.current.connect(audioContextRef.current.destination);
+                audioConnectedRef.current = true;
                 console.log("[Voice] Audio routed to speakers");
                 return true;
               }
@@ -167,6 +171,7 @@ export function ElevenLabsAgent({
         },
         onDisconnect: (details?: any) => {
           console.log("[Voice] Disconnected", details ? JSON.stringify(details) : "");
+          audioConnectedRef.current = false;
           setIsConnected(false);
           setIsAgentSpeaking(false);
           setStatus("idle");

@@ -373,7 +373,7 @@ export function AIChatAssistant() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-[9999] flex h-16 w-16 items-center justify-center rounded-full shadow-xl transition-all hover:scale-110"
+        className="fixed bottom-6 right-24 z-[9998] flex h-16 w-16 items-center justify-center rounded-full shadow-xl transition-all hover:scale-110"
         style={{
           background: 'rgba(139, 92, 246, 0.1)',
           border: '2px solid rgba(34, 211, 238, 0.3)',
@@ -394,7 +394,7 @@ export function AIChatAssistant() {
   }
 
   return (
-    <div className={`fixed bottom-6 right-6 z-[9999] flex flex-col items-end transition-all duration-300 ${
+    <div className={`fixed bottom-6 right-24 z-[9998] flex flex-col items-end transition-all duration-300 ${
       isMinimized ? "w-80" : "w-96"
     }`}>
       <div

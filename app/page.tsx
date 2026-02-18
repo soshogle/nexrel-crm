@@ -468,7 +468,13 @@ function HomePage() {
                   onAudioLevel={setAiStaffAudioLevel}
                   onAgentSpeakingChange={setIsAiStaffSpeaking}
                   onConversationEnd={() => undefined}
-                  dynamicVariables={{ preferred_language: preferredLanguage }}
+                  dynamicVariables={{
+                    company_name: "Soshogle",
+                    website_url: "https://www.soshogle.com",
+                    user_name: "Visitor",
+                    industry: "Technology",
+                    preferred_language: preferredLanguage,
+                  }}
                 />
                 <button
                   onClick={(e) => {
