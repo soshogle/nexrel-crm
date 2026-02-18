@@ -88,7 +88,7 @@ export async function GET(
 
     // Fetch the signed WebSocket URL from ElevenLabs
     const elevenLabsResponse = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${elevenLabsAgentId}`,
+      `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${elevenLabsAgentId}`,
       {
         method: 'GET',
         headers: {

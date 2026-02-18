@@ -514,7 +514,7 @@ class DocpenAgentProvisioning {
     });
 
     const response = await fetch(
-      `${ELEVENLABS_BASE_URL}/convai/conversation/get_signed_url?${params.toString()}`,
+      `${ELEVENLABS_BASE_URL}/convai/conversation/get-signed-url?${params.toString()}`,
       {
         headers: {
           'xi-api-key': apiKey,

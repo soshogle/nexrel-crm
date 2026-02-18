@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       if (key !== "agentId" && value) params.set(key, value);
     }
 
-    const url = `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?${params.toString()}`;
+    const url = `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?${params.toString()}`;
     const response = await fetch(url, {
       method: "GET",
       headers: {

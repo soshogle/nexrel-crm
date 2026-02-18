@@ -513,7 +513,7 @@ export class ElevenLabsService {
    */
   async getConversationSignedUrl(agentId: string) {
     const response = await fetch(
-      `${this.baseUrl}/convai/conversation/get_signed_url?agent_id=${agentId}`,
+      `${this.baseUrl}/convai/conversation/get-signed-url?agent_id=${agentId}`,
       {
         headers: {
           'xi-api-key': this.apiKey,
