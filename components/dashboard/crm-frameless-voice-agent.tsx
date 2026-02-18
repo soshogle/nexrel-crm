@@ -52,6 +52,8 @@ export function CrmFramelessVoiceAgent({ agentId, loading, error }: CrmFrameless
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioPulseRef = useRef<number>(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
   const [activeWorkflowDraftId, setActiveWorkflowDraftId] = useState<string | null>(null);
   const [websiteBuilderContext, setWebsiteBuilderContextState] = useState<ReturnType<typeof getWebsiteBuilderContext>>(null);
   const [screenContext, setScreenContext] = useState('');
@@ -143,13 +145,45 @@ export function CrmFramelessVoiceAgent({ agentId, loading, error }: CrmFrameless
       const { signedUrl } = await urlRes.json();
       if (!signedUrl) throw new Error('No connection URL');
 
+      audioContextRef.current = new AudioContext();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      audioContextRef.current.resume?.().catch(() => {});
+
       conversationRef.current = await Conversation.startSession({
         signedUrl,
         connectionType: 'websocket',
+        connectionDelay: { android: 3000, ios: 1000, default: 1000 },
         ...(Object.keys(vars).length > 0 && { dynamicVariables: vars } as any),
         onConnect: () => {
           setIsConnected(true);
           setIsLoading(false);
+          try {
+            conversationRef.current?.setVolume?.({ volume: 1 });
+          } catch {}
+          const tryConnectAudio = () => {
+            try {
+              const audioElement = document.querySelector('audio');
+              if (audioElement && audioContextRef.current && analyserRef.current) {
+                const source = audioContextRef.current.createMediaElementSource(audioElement);
+                source.connect(analyserRef.current);
+                analyserRef.current.connect(audioContextRef.current.destination);
+                return true;
+              }
+            } catch (e) {
+              console.warn('[CRM Voice] Audio connect:', e);
+            }
+            return false;
+          };
+          const attempt = (delay: number) => {
+            setTimeout(() => {
+              if (tryConnectAudio()) return;
+              if (delay < 2000) attempt(delay + 500);
+            }, delay);
+          };
+          attempt(0);
+          attempt(600);
+          attempt(1200);
         },
         onDisconnect: () => {
           setIsConnected(false);
@@ -157,6 +191,11 @@ export function CrmFramelessVoiceAgent({ agentId, loading, error }: CrmFrameless
           setAudioLevel(0);
           if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current.stop();
           streamRef.current?.getTracks().forEach((t) => t.stop());
+          if (audioContextRef.current) {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+          }
+          analyserRef.current = null;
           conversationRef.current = null;
         },
         onError: (e: unknown) => {
@@ -200,6 +239,11 @@ export function CrmFramelessVoiceAgent({ agentId, loading, error }: CrmFrameless
   const stopConversation = () => {
     if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current.stop();
     streamRef.current?.getTracks().forEach((t) => t.stop());
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
     if (conversationRef.current) {
       try {
         conversationRef.current.endSession();
