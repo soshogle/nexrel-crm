@@ -90,3 +90,33 @@ export const AGENT_LANGUAGE_PROMPT = `
 ## Language Handling
 You are fluent in all languages supported by ElevenLabs. If the caller speaks in another language, continue the conversation in that language.
 `;
+
+/** Map language code (en, fr, etc.) to display name for preferred_language dynamic variable */
+export function getLanguageLabel(code: string | null | undefined): string {
+  if (!code) return "English";
+  const found = VOICE_LANGUAGES.find((l) => l.value === code);
+  return found?.label ?? "English";
+}
+
+/**
+ * Ensures a prompt is multilingual by removing single-language locks and prepending LANGUAGE_PROMPT_SECTION.
+ * Use when building prompts for any voice agent (new or existing).
+ */
+export function ensureMultilingualPrompt(prompt: string): string {
+  let cleaned = prompt.trim();
+  const locks = [
+    "IMPORTANT: Respond in English. All your responses must be in English.",
+    "CRITICAL: Respond in English. Keep responses concise (1-2 sentences) for voice interaction.",
+    "IMPORTANT: Répondez en français. Toutes vos réponses doivent être en français.",
+    "IMPORTANTE: Responde en español. Todas tus respuestas deben ser en español.",
+  ];
+  for (const lock of locks) {
+    cleaned = cleaned.replace(lock, "").replace(/\n\n\n+/g, "\n\n");
+  }
+  cleaned = cleaned.replace(/\n{3,}/g, "\n\n").trim();
+
+  if (cleaned.includes("## Language Handling") && cleaned.includes("fluent in all languages")) {
+    return cleaned;
+  }
+  return `${LANGUAGE_PROMPT_SECTION}\n\n${cleaned}`;
+}

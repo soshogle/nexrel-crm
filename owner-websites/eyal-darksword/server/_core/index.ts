@@ -43,6 +43,32 @@ async function startServer() {
       createContext,
     })
   );
+
+  // E-commerce content from CRM (when NEXREL_CRM_URL + NEXREL_WEBSITE_ID are set)
+  app.get("/api/ecommerce-content", async (_req, res) => {
+    const crmUrl = process.env.NEXREL_CRM_URL;
+    const websiteId = process.env.NEXREL_WEBSITE_ID;
+    const secret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
+    if (!crmUrl || !websiteId) {
+      res.status(503).json({ error: "CRM not configured", products: [], pages: [], videos: [], policies: {} });
+      return;
+    }
+    try {
+      const headers: Record<string, string> = {};
+      if (secret) headers["x-website-secret"] = secret;
+      const resp = await fetch(`${crmUrl.replace(/\/$/, "")}/api/websites/${websiteId}/ecommerce-content`, { headers });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        res.status(resp.status).json(data);
+        return;
+      }
+      res.json(data);
+    } catch (err) {
+      console.error("[ecommerce-content] CRM fetch failed:", err);
+      res.status(502).json({ error: "Failed to fetch content", products: [], pages: [], videos: [], policies: {} });
+    }
+  });
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

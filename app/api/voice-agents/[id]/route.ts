@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { generateReservationSystemPrompt } from '@/lib/voice-reservation-helper';
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
+import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
 
 // GET /api/voice-agents/[id] - Get single voice agent
 
@@ -151,12 +152,18 @@ export async function PUT(
         knowledgeBase: enhancedKnowledgeBase,
       });
     } else if (!systemPrompt) {
-      // Default prompt if no custom prompt provided
-      systemPrompt = `You are an AI voice assistant for ${body.businessName}${body.businessIndustry ? ` in the ${body.businessIndustry} industry` : ''}.
+      const { LANGUAGE_PROMPT_SECTION } = await import('@/lib/voice-languages');
+      // Default prompt if no custom prompt provided - multilingual like landing page
+      systemPrompt = `${LANGUAGE_PROMPT_SECTION}
+
+You are an AI voice assistant for ${body.businessName}${body.businessIndustry ? ` in the ${body.businessIndustry} industry` : ''}.
 
 ${enhancedKnowledgeBase || 'Answer customer questions professionally and helpfully.'}
 
 ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : ''}`;
+    } else {
+      const { LANGUAGE_PROMPT_SECTION } = await import('@/lib/voice-languages');
+      systemPrompt = `${LANGUAGE_PROMPT_SECTION}\n\n${systemPrompt}`;
     }
 
     const originalAgent = await prisma.voiceAgent.findFirst({
@@ -298,30 +305,19 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
           ? (updatedAgent.outboundGreeting || updatedAgent.greetingMessage)
           : (updatedAgent.inboundGreeting || updatedAgent.greetingMessage);
         
-        const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
-        const systemPromptWithGuard = systemPrompt + getConfidentialityGuard();
+        const { ensureMultilingualPrompt } = await import('@/lib/voice-languages');
+        const multilingualPrompt = ensureMultilingualPrompt(systemPrompt);
         
         const elevenLabsUpdates: any = {
           name: updatedAgent.name,
-          prompt: {
-            prompt: systemPromptWithGuard,
-            llm: updatedAgent.llmModel || 'gpt-4',
-            temperature: updatedAgent.temperature ?? 0.7,
-            max_tokens: updatedAgent.maxTokens || 500,
-          },
-          first_message: greetingForElevenLabs || updatedAgent.firstMessage || '',
-          language: updatedAgent.language || 'en',
+          systemPrompt: multilingualPrompt,
+          greetingMessage: greetingForElevenLabs || updatedAgent.firstMessage || '',
+          language: body.language || 'en',
         };
 
         // Include voice settings if voiceId is set
         if (updatedAgent.voiceId) {
-          elevenLabsUpdates.voice = {
-            voice_id: updatedAgent.voiceId,
-            stability: updatedAgent.stability ?? 0.5,
-            similarity_boost: updatedAgent.similarityBoost ?? 0.75,
-            style: updatedAgent.style ?? 0.0,
-            use_speaker_boost: updatedAgent.useSpeakerBoost ?? true,
-          };
+          elevenLabsUpdates.voiceId = updatedAgent.voiceId;
         }
 
         // Update the agent in ElevenLabs

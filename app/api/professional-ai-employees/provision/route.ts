@@ -31,7 +31,8 @@ async function createElevenLabsAgent(
   config: { name: string; systemPrompt: string; firstMessage: string; voiceId?: string }
 ): Promise<{ agentId: string }> {
   const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
-  const fullPrompt = config.systemPrompt + getConfidentialityGuard();
+  const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import('@/lib/voice-time-context');
+  const fullPrompt = config.systemPrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
   const response = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
     method: 'POST',
     headers: {
@@ -43,7 +44,7 @@ async function createElevenLabsAgent(
         agent: {
           prompt: { prompt: fullPrompt },
           first_message: config.firstMessage,
-          language: 'en',
+          language: 'en', // API only accepts single codes. Multilingual via prompt.
         },
         asr: { quality: 'high', provider: 'elevenlabs' },
         tts: {

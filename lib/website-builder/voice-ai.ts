@@ -4,6 +4,7 @@
  */
 
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
+import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
 import { voiceAIPlatform } from '@/lib/voice-ai-platform';
 import type { VoiceAIConfig, QuestionnaireAnswers } from './types';
 
@@ -50,7 +51,7 @@ export class WebsiteVoiceAIService {
         greeting: greetingMessage,
         systemPrompt,
         voiceId: 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
-        language: 'en',
+        language: 'en', // API only accepts single codes. Multilingual via prompt.
       };
     } catch (error: any) {
       console.error('Voice AI agent creation failed:', error);
@@ -71,7 +72,9 @@ export class WebsiteVoiceAIService {
     const products = businessInfo.products?.join(', ') || '';
     const contactInfo = businessInfo.contactInfo || {};
     
-    return `You are a friendly and professional voice assistant for ${businessName}.
+    return `${LANGUAGE_PROMPT_SECTION}
+
+You are a friendly and professional voice assistant for ${businessName}.
 
 ${businessDescription ? `About ${businessName}: ${businessDescription}` : ''}
 

@@ -22,6 +22,8 @@ import {
   enableFirstMessageOverride,
   PLATFORM_SETTINGS_WITH_OVERRIDES,
 } from './elevenlabs-overrides';
+import { EASTERN_TIME_SYSTEM_INSTRUCTION } from './voice-time-context';
+import { LANGUAGE_PROMPT_SECTION, ensureMultilingualPrompt } from './voice-languages';
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
@@ -221,10 +223,11 @@ class ElevenLabsProvisioningService {
       });
       const userLanguage = user?.language || options.language || 'en';
 
-      // Build the system prompt with business context + confidentiality guard
-      const basePrompt = options.systemPrompt || this.buildDefaultPrompt(options, userLanguage);
+      // Build the system prompt - always ensure multilingual (strips old "Respond in English" locks)
+      const rawPrompt = options.systemPrompt || this.buildDefaultPrompt(options, userLanguage);
+      const basePrompt = ensureMultilingualPrompt(rawPrompt);
       const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
-      const systemPrompt = basePrompt + getConfidentialityGuard();
+      const systemPrompt = basePrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
       
       // Build the greeting message
       const greetingMessage = options.greetingMessage || 
@@ -331,7 +334,7 @@ class ElevenLabsProvisioningService {
               prompt: systemPrompt,
             },
             first_message: greetingMessage, // REQUIRED for conversations to start
-            language: userLanguage, // Use user's language preference
+            language: 'en', // API only accepts single codes. Multilingual via LANGUAGE_PROMPT_SECTION in prompt.
           },
           tts: {
             voice_id: options.voiceId || 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
@@ -470,10 +473,11 @@ class ElevenLabsProvisioningService {
       });
       const userLanguage = user?.language || options.language || 'en';
 
-      // Build the system prompt with business context + confidentiality guard
-      const basePrompt = options.systemPrompt || this.buildDefaultPrompt(options, userLanguage);
+      // Build the system prompt - always ensure multilingual (strips old "Respond in English" locks)
+      const rawPrompt = options.systemPrompt || this.buildDefaultPrompt(options, userLanguage);
+      const basePrompt = ensureMultilingualPrompt(rawPrompt);
       const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
-      const systemPrompt = basePrompt + getConfidentialityGuard();
+      const systemPrompt = basePrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
       
       // Build the greeting message
       const greetingMessage = options.greetingMessage || 
@@ -575,7 +579,7 @@ class ElevenLabsProvisioningService {
               prompt: systemPrompt,
             },
             first_message: greetingMessage, // REQUIRED for conversations to start
-            language: userLanguage, // Use user's language preference
+            language: 'en', // API only accepts single codes. Multilingual via LANGUAGE_PROMPT_SECTION in prompt.
           },
           tts: {
             voice_id: options.voiceId || 'EXAVITQu4vr4xnSDxMaL',
@@ -971,11 +975,12 @@ class ElevenLabsProvisioningService {
 
       const currentAgent: ElevenLabsAgent = await getResponse.json();
 
-      // Append confidentiality guard when updating system prompt (website, voice agents, etc.)
+      // Append Eastern time + confidentiality guard when updating - always ensure multilingual
       let promptToUse = updates.systemPrompt;
       if (promptToUse) {
+        promptToUse = ensureMultilingualPrompt(promptToUse);
         const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
-        promptToUse = promptToUse + getConfidentialityGuard();
+        promptToUse = promptToUse + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
       }
 
       // Build updated configuration
@@ -992,9 +997,10 @@ class ElevenLabsProvisioningService {
             ...(updates.greetingMessage && {
               first_message: updates.greetingMessage,
             }),
-            ...(updates.language && {
-              language: updates.language,
-            }),
+            // API only accepts single codes (en, es, etc). Use updates.language if valid, else preserve.
+            language: (updates.language && updates.language !== 'multilingual')
+              ? updates.language
+              : (currentAgent.conversation_config?.agent?.language || 'en'),
           },
           ...(updates.voiceId && {
             tts: {
@@ -1111,16 +1117,7 @@ class ElevenLabsProvisioningService {
       ? `\n\nCompany Information:\n${options.knowledgeBase}`
       : '';
 
-    // Language instruction based on user preference
-    const languageInstructions: Record<string, string> = {
-      'en': 'IMPORTANT: Respond in English. All your responses must be in English.',
-      'fr': 'IMPORTANT: Répondez en français. Toutes vos réponses doivent être en français.',
-      'es': 'IMPORTANTE: Responde en español. Todas tus respuestas deben ser en español.',
-      'zh': '重要提示：请用中文回复。您的所有回复必须使用中文。',
-    };
-    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
-
-    return `${languageInstruction}
+    return `${LANGUAGE_PROMPT_SECTION}
 
 You are a professional AI assistant representing ${options.businessName}, a ${industry} company.
 

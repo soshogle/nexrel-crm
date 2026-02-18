@@ -9548,6 +9548,9 @@ model Website {
   // Agency config for owner-deployed sites (logo, name, contact, etc.) — overrides template defaults
   agencyConfig Json?
 
+  // E-commerce content for PRODUCT template sites (products, pages, policies, videos) — fetched at runtime
+  ecommerceContent Json?
+
   // Approval Queue
   pendingChanges Json? // Changes awaiting approval
 

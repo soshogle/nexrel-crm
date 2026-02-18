@@ -8,6 +8,7 @@
 import { prisma } from '@/lib/db';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 import { enableFirstMessageOverride } from '@/lib/elevenlabs-overrides';
+import { ensureMultilingualPrompt } from '@/lib/voice-languages';
 import { VOICE_AGENT_PROMPTS } from './voice-prompts';
 import type { DocpenProfessionType } from './prompts';
 
@@ -195,8 +196,10 @@ class DocpenAgentProvisioning {
     // Get profession-specific prompt
     const promptTemplate = VOICE_AGENT_PROMPTS[professionKey] || VOICE_AGENT_PROMPTS.GENERAL_PRACTICE;
     
-    // Build the full system prompt with context
-    const systemPrompt = this.buildSystemPrompt(promptTemplate, config, userLanguage, userIndustry);
+    // Build the full system prompt with context + Eastern time (ensure multilingual)
+    const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import('@/lib/voice-time-context');
+    const rawPrompt = this.buildSystemPrompt(promptTemplate, config, userLanguage, userIndustry);
+    const systemPrompt = ensureMultilingualPrompt(rawPrompt) + EASTERN_TIME_SYSTEM_INSTRUCTION;
     
     // Select voice based on preference
     const voiceId = MEDICAL_VOICE_IDS[config.voiceGender || 'neutral'];
@@ -212,11 +215,11 @@ class DocpenAgentProvisioning {
             prompt: systemPrompt,
           },
           first_message: `Hello${config.practitionerName ? ` ${config.practitionerName}` : ''}${userIndustry ? ` from the ${userIndustry.toLowerCase().replace(/_/g, ' ')} industry` : ''}. I'm your Docpen assistant ready to help with ${this.getProfessionDisplayName(config.profession, config.customProfession)} consultations. Just say "Docpen" followed by your question anytime.`,
-          language: userLanguage, // Use user's language preference
+          language: 'en', // API only accepts single codes. Multilingual via prompt.
         },
         tts: {
           voice_id: voiceId,
-          model_id: userLanguage !== 'en' ? 'eleven_turbo_v2_5' : 'eleven_turbo_v2', // Non-English requires v2_5
+          model_id: 'eleven_turbo_v2_5', // Required for multilingual
           stability: 0.6, // Slightly higher for professional tone
           similarity_boost: 0.8,
           optimize_streaming_latency: 3,
@@ -364,7 +367,9 @@ class DocpenAgentProvisioning {
 
     const professionKey = config.profession === 'CUSTOM' ? 'CUSTOM' : config.profession;
     const promptTemplate = VOICE_AGENT_PROMPTS[professionKey] || VOICE_AGENT_PROMPTS.GENERAL_PRACTICE;
-    const systemPrompt = this.buildSystemPrompt(promptTemplate, config, userLanguage, userIndustry);
+    const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import('@/lib/voice-time-context');
+    const rawPrompt = this.buildSystemPrompt(promptTemplate, config, userLanguage, userIndustry);
+    const systemPrompt = ensureMultilingualPrompt(rawPrompt) + EASTERN_TIME_SYSTEM_INSTRUCTION;
 
     try {
       await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${agentId}`, {
@@ -379,6 +384,7 @@ class DocpenAgentProvisioning {
               prompt: {
                 prompt: systemPrompt,
               },
+              language: 'en',
             },
           },
         }),
@@ -528,16 +534,9 @@ class DocpenAgentProvisioning {
   /**
    * Build system prompt with context
    */
-  private buildSystemPrompt(template: string, config: DocpenAgentConfig, userLanguage: string = 'en', userIndustry: string | null = null): string {
-    // Language instruction based on user preference
-    const languageInstructions: Record<string, string> = {
-      'en': 'IMPORTANT: Respond in English. All your responses must be in English.',
-      'fr': 'IMPORTANT: Répondez en français. Toutes vos réponses doivent être en français.',
-      'es': 'IMPORTANTE: Responde en español. Todas tus respuestas deben ser en español.',
-      'zh': '重要提示：请用中文回复。您的所有回复必须使用中文。',
-    };
-    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
-    let prompt = `${languageInstruction}\n\n${template}`;
+  private buildSystemPrompt(template: string, config: DocpenAgentConfig, _userLanguage: string = 'en', userIndustry: string | null = null): string {
+    const { LANGUAGE_PROMPT_SECTION } = require('@/lib/voice-languages');
+    let prompt = `${LANGUAGE_PROMPT_SECTION}\n\n${template}`;
 
     // Add practitioner context
     if (config.practitionerName) {

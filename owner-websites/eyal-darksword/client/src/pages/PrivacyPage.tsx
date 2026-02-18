@@ -1,12 +1,14 @@
 import Layout from "@/components/Layout";
 import { getPageBySlug } from "@/data/pages";
+import { useEcommerceContent } from "@/contexts/EcommerceContentContext";
 
 function stripWpComments(text: string): string {
   return text.replace(/<!-- \/?(?:wp:[^>]+) -->/g, "").trim();
 }
 
 export default function PrivacyPage() {
-  const page = getPageBySlug("privacy-policy-for-darksword-armory-inc");
+  const ecommerce = useEcommerceContent();
+  const page = ecommerce?.getPageBySlug?.("privacy-policy-for-darksword-armory-inc") ?? getPageBySlug("privacy-policy-for-darksword-armory-inc");
   const rawContent = page?.content ?? "";
   const cleaned = stripWpComments(rawContent)
     .replace(/&nbsp;/g, " ")

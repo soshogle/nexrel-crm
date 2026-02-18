@@ -193,15 +193,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch user's language preference
     const userLanguage = user.language || body.language || 'en';
-    
-    // Language instruction based on user preference
-    const languageInstructions: Record<string, string> = {
-      'en': 'IMPORTANT: Respond in English. All your responses must be in English.',
-      'fr': 'IMPORTANT: Répondez en français. Toutes vos réponses doivent être en français.',
-      'es': 'IMPORTANTE: Responde en español. Todas tus respuestas deben ser en español.',
-      'zh': '重要提示：请用中文回复。您的所有回复必须使用中文。',
-    };
-    const languageInstruction = languageInstructions[userLanguage] || languageInstructions['en'];
+    const { LANGUAGE_PROMPT_SECTION, ensureMultilingualPrompt } = await import('@/lib/voice-languages');
 
     // Build system prompt from knowledge base and business info
     let systemPrompt = body.systemPrompt;
@@ -214,8 +206,8 @@ export async function POST(request: NextRequest) {
         knowledgeBase: body.knowledgeBase,
       });
     } else if (!systemPrompt) {
-      // Default prompt if no custom prompt provided
-      systemPrompt = `${languageInstruction}
+      // Default prompt if no custom prompt provided - multilingual like landing page
+      systemPrompt = `${LANGUAGE_PROMPT_SECTION}
 
 You are an AI voice assistant for ${body.businessName}${body.businessIndustry ? ` in the ${body.businessIndustry} industry` : ''}.
 
@@ -223,8 +215,8 @@ ${body.knowledgeBase || 'Answer customer questions professionally and helpfully.
 
 ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : ''}`;
     } else {
-      // Add language instruction to custom prompt if provided
-      systemPrompt = `${languageInstruction}\n\n${systemPrompt}`;
+      // Add multilingual language instruction to custom prompt if provided
+      systemPrompt = ensureMultilingualPrompt(systemPrompt);
     }
 
     console.log('💾 Creating agent in database...');
@@ -568,7 +560,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
         systemPrompt: finalSystemPrompt, // Use the rebuilt prompt with onboarding docs
         knowledgeBase: enhancedKnowledgeBase, // Use enhanced knowledge base with onboarding docs
         voiceId: body.voiceId,
-        language: userLanguage, // Use user's language preference
+        language: 'en', // API only accepts single codes. Multilingual via prompt.
         maxCallDuration: body.maxCallDuration,
         twilioPhoneNumber: body.twilioPhoneNumber, // Pass phone number for import/assignment
         userId: user.id,

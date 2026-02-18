@@ -167,7 +167,8 @@ async function executeVoiceCall(
     }
     if (actionConfig.systemPrompt) {
       const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
-      const promptWithGuard = actionConfig.systemPrompt + getConfidentialityGuard();
+      const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import('@/lib/voice-time-context');
+      const promptWithGuard = actionConfig.systemPrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
       voiceOverride.agent.prompt = {
         ...voiceOverride.agent.prompt,
         prompt: promptWithGuard,

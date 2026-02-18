@@ -1,5 +1,13 @@
 # Voice Agent Language Configuration
 
+## Multilingual Support (All Agents)
+
+All voice agents are now configured for multilingual support, matching the landing page behavior:
+
+- **System prompt**: Every agent includes `LANGUAGE_PROMPT_SECTION` — "You are fluent in all languages supported by ElevenLabs. If the user has selected a preferred language ({{preferred_language}}), use that language. Otherwise, if the user speaks to you in another language, respond in that same language immediately."
+- **Agent language**: Set to `multilingual` when creating/updating agents (ElevenLabs API).
+- **preferred_language**: Injected by `/api/elevenlabs/signed-url` from the logged-in user's profile when available. Clients can also pass it as a query param.
+
 ## Landing Page
 
 The landing page (soshogle.com) uses ElevenLabs Conversational AI agents for the hero demo and AI Staff section. These agents are configured in the ElevenLabs dashboard.

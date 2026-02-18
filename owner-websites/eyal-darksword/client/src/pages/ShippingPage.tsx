@@ -1,5 +1,6 @@
 import Layout from "@/components/Layout";
 import { getPageBySlug } from "@/data/pages";
+import { useEcommerceContent } from "@/contexts/EcommerceContentContext";
 
 function stripShortcodes(text: string): string {
   return text
@@ -10,7 +11,8 @@ function stripShortcodes(text: string): string {
 }
 
 export default function ShippingPage() {
-  const page = getPageBySlug("shipping-and-returns");
+  const ecommerce = useEcommerceContent();
+  const page = ecommerce?.getPageBySlug?.("shipping-and-returns") ?? getPageBySlug("shipping-and-returns");
   const rawContent = page?.content ?? "";
   let cleaned = stripShortcodes(rawContent);
   // Complete truncated content (WordPress export cut off at "Via FedEx w")

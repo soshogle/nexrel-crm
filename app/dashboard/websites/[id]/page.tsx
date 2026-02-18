@@ -20,6 +20,7 @@ import { ElevenLabsAgent } from '@/components/landing/soshogle/elevenlabs-agent'
 import { StockDashboard } from '@/components/websites/stock-dashboard';
 import { PropertyListings } from '@/components/websites/property-listings';
 import { AnalyticsSettings } from '@/components/websites/analytics-settings';
+import { EcommerceContentEditor } from '@/components/websites/ecommerce-content-editor';
 import { SectionEditor } from '@/components/website-builder/section-editor';
 import { GlobalStylesEditor } from '@/components/website-builder/global-styles-editor';
 import { WebsiteFilesManager } from '@/components/website-builder/website-files-manager';
@@ -523,6 +524,9 @@ export default function WebsiteEditorPage() {
           {website.templateType === 'SERVICE' && (
             <TabsTrigger value="listings">Listings</TabsTrigger>
           )}
+          {website.templateType === 'PRODUCT' && (
+            <TabsTrigger value="content">Content</TabsTrigger>
+          )}
           <TabsTrigger value="stock">Stock & Inventory</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="approval">
@@ -973,6 +977,12 @@ export default function WebsiteEditorPage() {
         {website.templateType === 'SERVICE' && (
           <TabsContent value="listings" className="space-y-4">
             <PropertyListings websiteId={params.id as string} />
+          </TabsContent>
+        )}
+
+        {website.templateType === 'PRODUCT' && (
+          <TabsContent value="content" className="space-y-4">
+            <EcommerceContentEditor websiteId={params.id as string} />
           </TabsContent>
         )}
 

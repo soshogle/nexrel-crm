@@ -24,6 +24,7 @@
     "restore": "tsx scripts/backup/import-database.mjs",
     "migrate:create": "npx prisma migrate dev --create-only",
     "seed:award-templates": "tsx scripts/seed-award-winning-templates.ts",
+    "seed:darksword-ecommerce": "tsx owner-websites/eyal-darksword/scripts/export-ecommerce-data.ts && tsx scripts/seed-darksword-ecommerce-content.ts",
     "verify:elevenlabs-overrides": "tsx scripts/verify-elevenlabs-call-overrides.ts",
     "verify:elevenlabs-quick": "tsx scripts/verify-elevenlabs-quick-test.ts",
     "clear-stale-voice-agent": "tsx scripts/clear-stale-crm-voice-agent.ts",

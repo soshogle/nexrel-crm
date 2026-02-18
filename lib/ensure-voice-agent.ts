@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db';
 import { getTemplateById } from '@/lib/voice-agent-templates';
+import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
 import type { Industry } from '@/lib/industry-menu-config';
 
 export interface EnsureVoiceAgentResult {
@@ -66,10 +67,10 @@ export async function ensureUserHasVoiceAgent(
       businessIndustry: user.industry || undefined,
       greetingMessage: `Hello! This is ${agentName} from ${businessName}. How can I help you today?`,
       systemPrompt: template
-        ? `You are ${agentName}. ${template.promptSnippet}`
-        : `You are a professional voice assistant for ${businessName}. Answer calls politely and help callers with their inquiries.`,
+        ? `${LANGUAGE_PROMPT_SECTION}\n\nYou are ${agentName}. ${template.promptSnippet}`
+        : `${LANGUAGE_PROMPT_SECTION}\n\nYou are a professional voice assistant for ${businessName}. Answer calls politely and help callers with their inquiries.`,
       voiceId: 'EXAVITQu4vr4xnSDxMaL',
-      language: user.language || 'en',
+      language: 'en', // API only accepts single codes. Multilingual via prompt.
     },
   });
 

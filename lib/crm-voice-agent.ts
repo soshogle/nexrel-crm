@@ -5,6 +5,8 @@
 
 import { prisma } from '@/lib/db';
 import { enableFirstMessageOverride } from '@/lib/elevenlabs-overrides';
+import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
+import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
 
 export interface CrmVoiceAgentConfig {
   userId: string;
@@ -115,7 +117,7 @@ export class CrmVoiceAgentService {
             prompt: systemPrompt,
           },
           first_message: this.getGreetingMessage(language),
-          language: language || 'en',
+          language: 'en', // API only accepts single codes. Multilingual via prompt.
         },
         asr: {
           quality: 'high',
@@ -123,7 +125,7 @@ export class CrmVoiceAgentService {
         },
         tts: {
           voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL', // Default voice (Sarah)
-          model_id: language !== 'en' ? 'eleven_turbo_v2_5' : 'eleven_turbo_v2', // English requires v2, non-English requires v2_5
+          model_id: 'eleven_turbo_v2_5', // v2_5 required for multilingual
         },
         turn: {
           mode: 'turn',
@@ -205,17 +207,10 @@ export class CrmVoiceAgentService {
   /**
    * Build CRM-specific system prompt
    */
-  private buildCrmSystemPrompt(user: any, language: string): string {
+  private buildCrmSystemPrompt(user: any, _language: string): string {
     const { getConfidentialityGuard } = require('@/lib/ai-confidentiality-guard');
-    const languageInstructions: Record<string, string> = {
-      'en': 'IMPORTANT: Respond in English. Keep responses concise and conversational for voice interaction.',
-      'fr': 'IMPORTANT: Répondez en français. Gardez les réponses concises et conversationnelles pour l\'interaction vocale.',
-      'es': 'IMPORTANTE: Responde en español. Mantén las respuestas concisas y conversacionales para la interacción por voz.',
-      'zh': '重要提示：请用中文回复。保持回复简洁且适合语音交互。',
-    };
-    const languageInstruction = languageInstructions[language] || languageInstructions['en'];
 
-    return `${languageInstruction}
+    return `${LANGUAGE_PROMPT_SECTION}
 
 You are an AI assistant for ${user.name || 'the CRM'}. You help users manage their CRM through voice commands and provide real-time insights about their business data.
 
@@ -293,6 +288,7 @@ CONTEXT AWARENESS: Use current_path, active_lead_id, active_deal_id when availab
 For calling: "call John and tell him about the promo" → make_outbound_call. "call all leads from today with 10% off" → call_leads. If user has a preference for which agent ("use Sarah"), pass voiceAgentName. If unsure, use list_voice_agents and ask which agent they want.
 
 Remember: You're speaking, not typing. Keep it brief and natural. When reporting statistics, speak clearly and highlight the most important numbers.
+${EASTERN_TIME_SYSTEM_INSTRUCTION}
 ${getConfidentialityGuard()}`;
   }
 

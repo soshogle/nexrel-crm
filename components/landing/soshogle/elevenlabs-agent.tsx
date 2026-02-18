@@ -5,6 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { GeometricShapes } from "./geometric-shapes";
 import { Conversation } from "@elevenlabs/client";
+import {
+  getEasternTimeContext,
+  getEasternGreeting,
+  getEasternDateTime,
+  getEasternDay,
+} from "@/lib/voice-time-context";
 
 const APP_LOGO = "/soshogle-logo.png";
 
@@ -101,10 +107,24 @@ export function ElevenLabsAgent({
       conversationRef.current = await Conversation.startSession({
         signedUrl,
         connectionType: "websocket",
-        ...(dynamicVariables && { dynamicVariables }),
+        connectionDelay: { android: 3000, ios: 1000, default: 1000 },
+        overrides: { agent: { firstMessage: getEasternGreeting("How can I help you today?") } },
+        dynamicVariables: {
+          ...(dynamicVariables || {}),
+          current_datetime: getEasternDateTime(),
+          current_day: getEasternDay(),
+          timezone: "America/New_York",
+          current_date_time_eastern: getEasternTimeContext(),
+        },
         onConnect: () => {
           setIsConnected(true);
           setIsLoading(false);
+          try {
+            conversationRef.current?.setVolume?.({ volume: 1 });
+          } catch {}
+          try {
+            conversationRef.current?.sendContextualUpdate?.(getEasternTimeContext());
+          } catch {}
           setStatus("listening");
         },
         onDisconnect: () => {
@@ -175,16 +195,22 @@ export function ElevenLabsAgent({
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
 
-      try {
-        const audioElement = document.querySelector("audio");
-        if (audioElement && audioContextRef.current && analyserRef.current) {
-          const source = audioContextRef.current.createMediaElementSource(audioElement);
-          source.connect(analyserRef.current);
-          analyserRef.current.connect(audioContextRef.current.destination);
+      // Defer audio connection to onConnect so SDK has time to create the element.
+      // Connecting too early can break playback; skip visualization if element not found.
+      const tryConnectAudio = () => {
+        try {
+          const audioElement = document.querySelector("audio");
+          if (audioElement && audioContextRef.current && analyserRef.current) {
+            const source = audioContextRef.current.createMediaElementSource(audioElement);
+            source.connect(analyserRef.current);
+            analyserRef.current.connect(audioContextRef.current.destination);
+          }
+        } catch (e) {
+          console.log("Could not connect to audio element:", e);
         }
-      } catch (e) {
-        console.log("Could not connect to audio element:", e);
-      }
+      };
+      // Run after connect (SDK creates audio element when connection establishes)
+      setTimeout(tryConnectAudio, 800);
 
       const dataArray = new Uint8Array(analyserRef.current!.frequencyBinCount);
 

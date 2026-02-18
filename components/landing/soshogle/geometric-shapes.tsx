@@ -154,7 +154,6 @@ export function GeometricShapes({ audioLevel = 0, isAgentSpeaking = false, bare 
       <canvas
         ref={canvasRef}
         className="w-full h-full"
-        style={{ filter: "blur(0.5px)" }}
       />
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div

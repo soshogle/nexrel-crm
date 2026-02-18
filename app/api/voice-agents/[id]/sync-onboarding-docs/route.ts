@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { generateReservationSystemPrompt } from '@/lib/voice-reservation-helper';
+import { ensureMultilingualPrompt } from '@/lib/voice-languages';
+import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -145,12 +147,15 @@ ${
         }`;
       }
 
+      // Ensure multilingual prompt (removes "Respond in English" etc.)
+      const multilingualPrompt = ensureMultilingualPrompt(finalSystemPrompt);
+
       // Update the agent in database
       const updatedAgent = await prisma.voiceAgent.update({
         where: { id: agent.id },
         data: {
           knowledgeBase: enhancedKnowledgeBase,
-          systemPrompt: finalSystemPrompt,
+          systemPrompt: multilingualPrompt,
           knowledgeBaseSources: {
             texts: knowledgeBaseSources.texts || [],
             urls: knowledgeBaseSources.urls || [],
@@ -211,7 +216,8 @@ ${
 
           // Update the ElevenLabs agent prompt while preserving other settings
           const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
-          const promptWithGuard = finalSystemPrompt + getConfidentialityGuard();
+          const promptWithGuard =
+            multilingualPrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
           const updatePayload = {
             conversation_config: {
               ...currentConfig.conversation_config,
@@ -221,7 +227,7 @@ ${
                   prompt: promptWithGuard,
                 },
                 first_message: agent.greetingMessage || agent.firstMessage || currentConfig.conversation_config?.agent?.first_message,
-                language: agent.language || currentConfig.conversation_config?.agent?.language,
+                language: currentConfig.conversation_config?.agent?.language || 'en',
               },
             },
           };
@@ -257,7 +263,7 @@ ${
 
           const updatedElevenLabsAgent = await response.json();
           console.log('✅ ElevenLabs agent updated successfully');
-          console.log('✅ Updated prompt length:', finalSystemPrompt.length, 'characters');
+          console.log('✅ Updated prompt length:', multilingualPrompt.length, 'characters');
 
           return NextResponse.json({
             success: true,
@@ -266,7 +272,7 @@ ${
             message: 'Onboarding documents synced successfully to both database and ElevenLabs',
             details: {
               documentsCount: progress.uploadedDocuments.length,
-              promptLength: finalSystemPrompt.length,
+              promptLength: multilingualPrompt.length,
             },
           });
         } catch (error: any) {

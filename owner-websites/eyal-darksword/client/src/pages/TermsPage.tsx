@@ -1,12 +1,14 @@
 import Layout from "@/components/Layout";
 import { getPageBySlug } from "@/data/pages";
+import { useEcommerceContent } from "@/contexts/EcommerceContentContext";
 
 function stripWpComments(text: string): string {
   return text.replace(/<!-- \/?(?:wp:[^>]+) -->/g, "").trim();
 }
 
 export default function TermsPage() {
-  const page = getPageBySlug("terms-and-conditions");
+  const ecommerce = useEcommerceContent();
+  const page = ecommerce?.getPageBySlug?.("terms-and-conditions") ?? getPageBySlug("terms-and-conditions");
   const rawContent = page?.content ?? "";
   const cleaned = stripWpComments(rawContent)
     .replace(/&nbsp;/g, " ")

@@ -354,12 +354,16 @@ export async function createVoiceReservation(params: VoiceReservationRequest): P
 /**
  * Generate reservation-aware system prompt for Voice AI agents
  */
+import { LANGUAGE_PROMPT_SECTION } from './voice-languages';
+
 export function generateReservationSystemPrompt(options: {
   businessName: string;
   businessIndustry?: string;
   knowledgeBase?: string;
 }): string {
-  return `You are a professional and friendly AI receptionist for ${options.businessName}${options.businessIndustry ? `, a ${options.businessIndustry} business` : ''}. Your primary role is to help customers make restaurant reservations over the phone.
+  return `${LANGUAGE_PROMPT_SECTION}
+
+You are a professional and friendly AI receptionist for ${options.businessName}${options.businessIndustry ? `, a ${options.businessIndustry} business` : ''}. Your primary role is to help customers make restaurant reservations over the phone.
 
 RESERVATION HANDLING INSTRUCTIONS:
 

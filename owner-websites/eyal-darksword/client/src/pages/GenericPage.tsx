@@ -1,10 +1,12 @@
 import { useParams } from "wouter";
 import Layout from "@/components/Layout";
 import { getPageBySlug } from "@/data/pages";
+import { useEcommerceContent } from "@/contexts/EcommerceContentContext";
 
 export default function GenericPage() {
   const { slug } = useParams<{ slug: string }>();
-  const page = getPageBySlug(slug || "");
+  const ecommerce = useEcommerceContent();
+  const page = ecommerce?.getPageBySlug?.(slug || "") ?? getPageBySlug(slug || "");
 
   return (
     <Layout>
