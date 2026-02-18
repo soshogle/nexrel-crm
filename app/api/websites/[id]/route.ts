@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { websiteVoiceAI } from '@/lib/website-builder/voice-ai';
+import { triggerWebsiteDeploy } from '@/lib/website-builder/deploy-trigger';
 
 export async function GET(
   request: NextRequest,
@@ -163,6 +164,13 @@ export async function PATCH(
           }
         })
         .catch((err) => console.warn('[Website PATCH] ElevenLabs prompt sync error:', err));
+    }
+
+    // Trigger deploy when structure changes (Eyal, Theodora, future sites)
+    if (structure) {
+      triggerWebsiteDeploy(params.id).then((r) => {
+        if (!r.ok) console.warn('[Website PATCH] Deploy trigger:', r.error);
+      });
     }
 
     return NextResponse.json({ website });

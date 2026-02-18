@@ -102,6 +102,9 @@ async function processImportInBackground(
       data: { structure: structureToSave },
     });
 
+    const { triggerWebsiteDeploy } = await import('@/lib/website-builder/deploy-trigger');
+    triggerWebsiteDeploy(websiteId).catch((e) => console.warn('[Import from URL] Deploy:', e));
+
     await prisma.websiteBuild.update({
       where: { id: buildId },
       data: {

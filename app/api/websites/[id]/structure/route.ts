@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { updateSectionLayout } from '@/lib/website-builder/granular-tools';
+import { triggerWebsiteDeploy } from '@/lib/website-builder/deploy-trigger';
 
 export async function PATCH(
   request: NextRequest,
@@ -49,6 +50,7 @@ export async function PATCH(
             where: { id: params.id },
             data: { structure: newStructure },
           });
+          triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
           return NextResponse.json({ success: true });
         }
       }
@@ -72,7 +74,7 @@ export async function PATCH(
         where: { id: params.id },
         data: { structure: newStructure },
       });
-
+      triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
       return NextResponse.json({ success: true });
     }
 
@@ -88,7 +90,7 @@ export async function PATCH(
         where: { id: params.id },
         data: { structure: newStructure },
       });
-
+      triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
       return NextResponse.json({ success: true });
     }
 

@@ -97,6 +97,9 @@ export async function POST(
       data: { structure: newStructure },
     });
 
+    const { triggerWebsiteDeploy } = await import('@/lib/website-builder/deploy-trigger');
+    triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Apply template] Deploy:', e));
+
     return NextResponse.json({
       success: true,
       addedCount: newComponents.length,

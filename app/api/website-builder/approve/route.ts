@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { changeApproval } from '@/lib/website-builder/approval';
+import { triggerWebsiteDeploy } from '@/lib/website-builder/deploy-trigger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -66,6 +67,8 @@ export async function POST(request: NextRequest) {
           approvedAt: new Date(),
         },
       });
+
+      triggerWebsiteDeploy(websiteId).catch((e) => console.warn('[Approve] Deploy:', e));
 
       return NextResponse.json({ success: true, structure: newStructure });
     } else if (action === 'reject') {
