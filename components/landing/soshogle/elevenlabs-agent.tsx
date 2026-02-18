@@ -108,12 +108,18 @@ export function ElevenLabsAgent({
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
-      audioContextRef.current.resume?.().catch(() => {});
+      if (audioContextRef.current.state === "suspended") {
+        try {
+          await audioContextRef.current.resume();
+        } catch (e) {
+          console.warn("[Voice] AudioContext resume:", e);
+        }
+      }
 
       conversationRef.current = await Conversation.startSession({
         signedUrl,
         connectionType: "websocket",
-        connectionDelay: { android: 3000, ios: 1000, default: 1000 },
+        connectionDelay: { android: 3000, ios: 2000, default: 2000 },
         overrides: { agent: { firstMessage: getEasternGreeting("How can I help you today?") } },
         dynamicVariables: {
           ...(dynamicVariables || {}),
@@ -132,7 +138,7 @@ export function ElevenLabsAgent({
             conversationRef.current?.sendContextualUpdate?.(getEasternTimeContext());
           } catch {}
           setStatus("listening");
-          // Connect SDK audio element to Web Audio API (must run after connection — SDK creates element then)
+          // Route SDK audio element to speakers (SDK may create it after first chunk)
           const tryConnectAudio = () => {
             try {
               const audioElement = document.querySelector("audio");
@@ -140,6 +146,7 @@ export function ElevenLabsAgent({
                 const source = audioContextRef.current.createMediaElementSource(audioElement);
                 source.connect(analyserRef.current);
                 analyserRef.current.connect(audioContextRef.current.destination);
+                console.log("[Voice] Audio routed to speakers");
                 return true;
               }
             } catch (e) {
@@ -150,14 +157,18 @@ export function ElevenLabsAgent({
           const attempt = (delay: number) => {
             setTimeout(() => {
               if (tryConnectAudio()) return;
-              if (delay < 2000) attempt(delay + 500);
+              if (delay < 4000) attempt(delay + 400);
             }, delay);
           };
           attempt(0);
-          attempt(600);
+          attempt(400);
+          attempt(800);
           attempt(1200);
+          attempt(2000);
+          attempt(3000);
         },
-        onDisconnect: () => {
+        onDisconnect: (details?: any) => {
+          console.log("[Voice] Disconnected", details ? JSON.stringify(details) : "");
           setIsConnected(false);
           setIsAgentSpeaking(false);
           setStatus("idle");
@@ -190,10 +201,13 @@ export function ElevenLabsAgent({
           }
         },
         onError: (error: any) => {
-          console.error("ElevenLabs error:", error);
+          console.error("[Voice] ElevenLabs error:", error);
           setError("Connection error. Please try again.");
           setIsLoading(false);
           setStatus("idle");
+        },
+        onStatusChange: (status: string) => {
+          console.log("[Voice] Status:", status);
         },
         onMessage: (message: any) => {
           if (message.message) {
