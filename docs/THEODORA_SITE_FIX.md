@@ -58,10 +58,25 @@ curl -H "x-website-secret: YOUR_SECRET" "https://www.nexrel.soshogle.com/api/web
 
 ---
 
+## Voice AI: No sound
+
+If the voice bubble connects but you can't hear the agent:
+
+1. **Deployment source** — Theodora's Vercel project must deploy from **nexrel-service-template** (the submodule in nexrel-crm). If it deploys from nexrel-service-temp (a separate repo), the audio fix won't be there. Either:
+   - Connect Vercel to the nexrel-crm repo and set the root to `nexrel-service-template`, or
+   - Merge the latest nexrel-service-template into nexrel-service-temp and redeploy.
+
+2. **Redeploy** — After pulling the latest nexrel-service-template (with the audio connection fix), trigger a new deployment on Theodora's Vercel project.
+
+3. **Browser** — Try a different browser or device. Some browsers block audio until the user has interacted with the page.
+
+---
+
 ## Summary
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
 | No voice AI | CRM DB broken → voice-config API fails | Fix CRM DATABASE_URL in Vercel |
+| Voice connects but no sound | Old template / wrong deployment source | Deploy from nexrel-service-template, redeploy |
 | Logo missing | CRM DB broken → agency-config API fails | Same |
 | No listings | Wrong DATABASE_URL in Theodora's Vercel | Use Theodora's Neon URL (ep-delicate-bar), not CRM's |
