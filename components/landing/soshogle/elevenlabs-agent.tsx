@@ -7,7 +7,6 @@ import { GeometricShapes } from "./geometric-shapes";
 import { Conversation } from "@elevenlabs/client";
 import {
   getEasternTimeContext,
-  getEasternGreeting,
   getEasternDateTime,
   getEasternDay,
 } from "@/lib/voice-time-context";
@@ -120,7 +119,6 @@ export function ElevenLabsAgent({
         signedUrl,
         connectionType: "websocket",
         connectionDelay: { android: 3000, ios: 2000, default: 2000 },
-        overrides: { agent: { firstMessage: getEasternGreeting("How can I help you today?") } },
         dynamicVariables: {
           ...(dynamicVariables || {}),
           current_datetime: getEasternDateTime(),
