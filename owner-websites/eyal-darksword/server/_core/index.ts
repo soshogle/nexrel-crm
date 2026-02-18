@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { registerNexrelProductsRoutes } from "../nexrel-products-api";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -43,6 +44,9 @@ async function startServer() {
       createContext,
     })
   );
+
+  // Nexrel products API (CRM website builder → proxy → here)
+  registerNexrelProductsRoutes(app);
 
   // E-commerce content from CRM (when NEXREL_CRM_URL + NEXREL_WEBSITE_ID are set)
   app.get("/api/ecommerce-content", async (_req, res) => {

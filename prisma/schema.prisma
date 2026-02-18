@@ -9551,6 +9551,9 @@ model Website {
   // E-commerce content for PRODUCT template sites (products, pages, policies, videos) — fetched at runtime
   ecommerceContent Json?
 
+  // Per-website secret for CRM → owner site API calls (products, etc.). When provisioning, we generate and store.
+  websiteSecret String?
+
   // Approval Queue
   pendingChanges Json? // Changes awaiting approval
 

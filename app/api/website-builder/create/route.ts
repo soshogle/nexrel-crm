@@ -318,12 +318,31 @@ async function processWebsiteBuild(
       data: { buildProgress: 50 },
     });
 
+    // Generate websiteSecret for PRODUCT sites (CRM → /api/nexrel/products auth)
+    const website = await prisma.website.findUnique({ where: { id: websiteId } });
+    if (!website) throw new Error('Website not found');
+    const templateType = (config.templateType || 'SERVICE') as 'SERVICE' | 'PRODUCT';
+    let websiteSecret: string | undefined;
+    if (templateType === 'PRODUCT') {
+      const crypto = await import('crypto');
+      websiteSecret = crypto.randomBytes(32).toString('hex');
+      await prisma.website.update({
+        where: { id: websiteId },
+        data: { websiteSecret },
+      });
+    }
+
     // Provision resources (GitHub, Neon, Vercel) - with 3min timeout to avoid stuck builds
     const provisioningResult = await Promise.race([
       resourceProvisioning.provisionResources(
         websiteId,
         `website-${websiteId}`,
-        (await prisma.website.findUnique({ where: { id: websiteId } }))!.userId
+        website.userId,
+        {
+          templateType,
+          websiteSecret,
+          websiteName: website.name,
+        }
       ),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Provisioning timed out after 3 minutes')), 180000)
@@ -375,12 +394,7 @@ async function processWebsiteBuild(
       data: { buildProgress: 85 },
     });
 
-    // Get website to access Google credentials
-    const website = await prisma.website.findUnique({ where: { id: websiteId } });
-    if (!website) {
-      throw new Error('Website not found');
-    }
-
+    // website already fetched above for provisioning
     // SEO Automation (if Google credentials are provided)
     let seoFiles: { sitemap?: string; robots?: string; structuredData?: any } = {};
     try {

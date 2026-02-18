@@ -234,10 +234,16 @@ export interface WebsiteBuildConfig {
 }
 
 export interface ProvisioningResult {
-  githubRepoUrl: string;
-  neonDatabaseUrl: string;
-  vercelProjectId: string;
+  githubRepoUrl?: string;
+  neonDatabaseUrl?: string;
+  vercelProjectId?: string;
   vercelDeploymentUrl?: string;
+}
+
+export interface ProvisioningOptions {
+  templateType?: 'SERVICE' | 'PRODUCT';
+  websiteSecret?: string;
+  websiteName?: string;
 }
 
 export interface VoiceAIConfig {

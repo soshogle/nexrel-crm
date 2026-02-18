@@ -243,6 +243,19 @@ export async function updateProduct(id: number, data: Partial<InsertProduct>) {
   await db.update(products).set(data).where(eq(products.id, id));
 }
 
+export async function createProduct(data: InsertProduct): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [row] = await db.insert(products).values(data).returning({ id: products.id });
+  return row.id;
+}
+
+export async function deleteProduct(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(products).where(eq(products.id, id));
+}
+
 // ============ CATEGORY QUERIES ============
 
 export async function getAllCategories() {

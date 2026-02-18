@@ -1339,11 +1339,23 @@ export class WorkflowEngine {
       templateType as any
     );
 
+    // Generate websiteSecret for PRODUCT sites
+    let websiteSecret: string | undefined;
+    if (templateType === 'PRODUCT') {
+      const crypto = await import('crypto');
+      websiteSecret = crypto.randomBytes(32).toString('hex');
+      await prisma.website.update({
+        where: { id: website.id },
+        data: { websiteSecret },
+      });
+    }
+
     // Provision resources
     const provisioningResult = await resourceProvisioning.provisionResources(
       website.id,
       websiteName,
-      context.userId
+      context.userId,
+      { templateType, websiteSecret, websiteName }
     );
 
     // Update website

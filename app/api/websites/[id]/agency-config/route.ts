@@ -79,7 +79,11 @@ export async function GET(
       fullAgencyMode: (stored.fullAgencyMode as boolean) ?? true,
     };
 
-    return NextResponse.json(config);
+    return NextResponse.json(config, {
+      headers: {
+        'Cache-Control': 'public, max-age=30, s-maxage=30, stale-while-revalidate=60',
+      },
+    });
   } catch (error: any) {
     console.error('[agency-config] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -8,6 +8,27 @@ The **CRM's** `DATABASE_URL` in Vercel was corrupted (contains `psql '...'` pref
 
 ## Fix checklist
 
+### Option A: Automated (Vercel API)
+
+If you have `VERCEL_TOKEN` in `.env` (from [Vercel tokens](https://vercel.com/account/tokens)):
+
+```bash
+# Dry run first (no changes)
+DRY_RUN=1 npx tsx scripts/fix-theodora-voice-ai-vercel.ts
+
+# Apply changes and trigger redeploy
+npx tsx scripts/fix-theodora-voice-ai-vercel.ts
+```
+
+This script will:
+1. Fix `DATABASE_URL` in nexrel-crm (removes `psql` prefix if corrupted)
+2. Set `NEXREL_CRM_URL`, `NEXREL_WEBSITE_ID`, `WEBSITE_VOICE_CONFIG_SECRET` in theodora-stavropoulos-remax
+3. Trigger redeploy for both projects
+
+**Note:** The script does NOT change Theodora's `DATABASE_URL` (her listings DB). That must stay as her Neon URL (ep-delicate-bar). The script only sets the three Voice AI vars on her project.
+
+### Option B: Manual (Vercel dashboard)
+
 ### 1. Fix CRM's DATABASE_URL (Vercel)
 
 **Project:** nexrel-crm (www.nexrel.soshogle.com)

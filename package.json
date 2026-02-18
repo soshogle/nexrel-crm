@@ -30,7 +30,10 @@
     "clear-stale-voice-agent": "tsx scripts/clear-stale-crm-voice-agent.ts",
     "enable-first-message-override-existing": "tsx scripts/enable-first-message-override-existing-agents.ts",
     "verify:listings-setup": "tsx scripts/verify-listings-setup.ts",
-    "set-theodora-neon-db": "tsx scripts/set-theodora-neon-database-url.ts"
+    "set-theodora-neon-db": "tsx scripts/set-theodora-neon-database-url.ts",
+    "publish:templates": "tsx scripts/publish-templates-to-github.ts",
+    "phase4a:eyal-secret": "tsx scripts/phase4a-eyal-website-secret.ts",
+    "phase0:backup-eyal": "tsx scripts/phase0-backup-eyal-darksword.ts"
   },
   "prisma": {
     "seed": "tsx --require dotenv/config scripts/seed.ts"

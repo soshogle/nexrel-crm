@@ -21,6 +21,8 @@ import { StockDashboard } from '@/components/websites/stock-dashboard';
 import { PropertyListings } from '@/components/websites/property-listings';
 import { AnalyticsSettings } from '@/components/websites/analytics-settings';
 import { EcommerceContentEditor } from '@/components/websites/ecommerce-content-editor';
+import { ProductsEditor } from '@/components/websites/products-editor';
+import { AgencyConfigEditor, type AgencyConfigForm } from '@/components/websites/agency-config-editor';
 import { SectionEditor } from '@/components/website-builder/section-editor';
 import { GlobalStylesEditor } from '@/components/website-builder/global-styles-editor';
 import { WebsiteFilesManager } from '@/components/website-builder/website-files-manager';
@@ -56,6 +58,7 @@ interface Website {
   voiceAIConfig?: any;
   elevenLabsAgentId?: string;
   enableTavusAvatar?: boolean;
+  agencyConfig?: Record<string, unknown> | null;
   pendingChanges?: any;
   createdAt: string;
   updatedAt: string;
@@ -525,7 +528,10 @@ export default function WebsiteEditorPage() {
             <TabsTrigger value="listings">Listings</TabsTrigger>
           )}
           {website.templateType === 'PRODUCT' && (
-            <TabsTrigger value="content">Content</TabsTrigger>
+            <>
+              <TabsTrigger value="products">Products</TabsTrigger>
+              <TabsTrigger value="content">Content</TabsTrigger>
+            </>
           )}
           <TabsTrigger value="stock">Stock & Inventory</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -981,9 +987,17 @@ export default function WebsiteEditorPage() {
         )}
 
         {website.templateType === 'PRODUCT' && (
-          <TabsContent value="content" className="space-y-4">
-            <EcommerceContentEditor websiteId={params.id as string} />
-          </TabsContent>
+          <>
+            <TabsContent value="products" className="space-y-4">
+              <ProductsEditor
+                websiteId={params.id as string}
+                vercelDeploymentUrl={website.vercelDeploymentUrl}
+              />
+            </TabsContent>
+            <TabsContent value="content" className="space-y-4">
+              <EcommerceContentEditor websiteId={params.id as string} />
+            </TabsContent>
+          </>
         )}
 
         <TabsContent value="stock" className="space-y-4">
@@ -1044,14 +1058,14 @@ export default function WebsiteEditorPage() {
       </Tabs>
 
       <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <SheetContent className="sm:max-w-md">
+        <SheetContent className="sm:max-w-md overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Website Settings</SheetTitle>
             <SheetDescription>
               Quick actions and links for {website.name}
             </SheetDescription>
           </SheetHeader>
-          <div className="mt-6 space-y-4">
+          <div className="mt-6 space-y-6">
             {website.vercelDeploymentUrl && (
               <a
                 href={website.vercelDeploymentUrl}
@@ -1098,6 +1112,51 @@ export default function WebsiteEditorPage() {
               <Package className="h-4 w-4 mr-2" />
               Stock & Inventory
             </Button>
+            <div className="pt-4 border-t space-y-4">
+              <p className="text-sm font-medium">Agency / Brand</p>
+              <AgencyConfigEditor
+                websiteId={website.id}
+                agencyConfig={website.agencyConfig ?? null}
+                onSave={async (config: AgencyConfigForm) => {
+                  const res = await fetch(`/api/websites/${website.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      agencyConfig: {
+                        brokerName: config.brokerName || undefined,
+                        name: config.name || undefined,
+                        tagline: config.tagline || undefined,
+                        logoUrl: config.logoUrl || undefined,
+                        phone: config.phone || undefined,
+                        email: config.email || undefined,
+                        address: config.address || undefined,
+                        fullAddress: config.address || undefined,
+                      },
+                    }),
+                  });
+                  if (!res.ok) throw new Error('Failed to save');
+                  setWebsite((w) =>
+                    w
+                      ? {
+                          ...w,
+                          agencyConfig: {
+                            ...(w.agencyConfig as Record<string, unknown> || {}),
+                            brokerName: config.brokerName,
+                            name: config.name,
+                            tagline: config.tagline,
+                            logoUrl: config.logoUrl,
+                            phone: config.phone,
+                            email: config.email,
+                            address: config.address,
+                            fullAddress: config.address,
+                          },
+                        }
+                      : null
+                  );
+                }}
+                onUpdateLocal={() => {}}
+              />
+            </div>
             <div className="pt-4 border-t space-y-3">
               <p className="text-sm font-medium">Voice & Avatar</p>
               {website.voiceAIEnabled && website.elevenLabsAgentId && (

@@ -102,7 +102,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name, structure, seoData, voiceAIEnabled, voiceAIConfig, enableTavusAvatar, status } = body;
+    const { name, structure, seoData, voiceAIEnabled, voiceAIConfig, enableTavusAvatar, status, agencyConfig } = body;
 
     // Merge voiceAIConfig with existing if partial update
     let finalVoiceAIConfig = voiceAIConfig;
@@ -113,6 +113,17 @@ export async function PATCH(
       });
       const existingConfig = (existing?.voiceAIConfig as Record<string, unknown>) || {};
       finalVoiceAIConfig = { ...existingConfig, ...voiceAIConfig };
+    }
+
+    // Merge agencyConfig with existing if partial update
+    let finalAgencyConfig = agencyConfig;
+    if (agencyConfig !== undefined) {
+      const existing = await prisma.website.findUnique({
+        where: { id: params.id, userId: session.user.id },
+        select: { agencyConfig: true },
+      });
+      const existingConfig = (existing?.agencyConfig as Record<string, unknown>) || {};
+      finalAgencyConfig = { ...existingConfig, ...agencyConfig };
     }
 
     const website = await prisma.website.update({
@@ -128,6 +139,7 @@ export async function PATCH(
         ...(finalVoiceAIConfig !== undefined && { voiceAIConfig: finalVoiceAIConfig }),
         ...(enableTavusAvatar !== undefined && { enableTavusAvatar }),
         ...(status && ['BUILDING', 'READY', 'PUBLISHED', 'FAILED'].includes(status) && { status }),
+        ...(finalAgencyConfig !== undefined && { agencyConfig: finalAgencyConfig }),
       },
     });
 
