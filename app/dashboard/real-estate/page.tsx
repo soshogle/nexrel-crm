@@ -39,6 +39,7 @@ import {
   CheckCircle2,
   Timer,
   Megaphone,
+  Calculator,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,6 +57,7 @@ import { FSBOLeadsWidget } from '@/components/real-estate/fsbo-leads-widget';
 import { StaleListingsWidget } from '@/components/real-estate/stale-listings-widget';
 import { RealEstateAITeamWidget } from '@/components/ai-employees/real-estate-employees';
 import { AttractionEngine } from '@/components/real-estate/attraction-engine';
+import { PropertyEvaluationPanel } from '@/components/real-estate/property-evaluation-panel';
 
 interface MarketStat {
   label: string;
@@ -360,6 +362,10 @@ export default function RealEstateDashboard() {
               <Target className="w-4 h-4 mr-2" />
               Attraction
             </TabsTrigger>
+            <TabsTrigger value="evaluation" className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300">
+              <Calculator className="w-4 h-4 mr-2" />
+              Property Evaluation
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -430,6 +436,9 @@ export default function RealEstateDashboard() {
 
           <TabsContent value="attraction">
             <AttractionEngine />
+          </TabsContent>
+          <TabsContent value="evaluation">
+            <PropertyEvaluationPanel />
           </TabsContent>
         </Tabs>
       </div>

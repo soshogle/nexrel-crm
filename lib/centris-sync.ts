@@ -5,6 +5,7 @@
  */
 import pg from "pg";
 import { ApifyClient } from "apify-client";
+import { verifyAndUpdateListings } from "@/lib/listing-verification";
 
 const CENTRIS_URLS = [
   "https://www.centris.ca/en/properties~for-sale~montreal-island",
@@ -50,6 +51,12 @@ function mapApifyItemToProperty(item: Record<string, unknown>): Record<string, u
   const beds = detail?.bed ? parseInt(detail.bed, 10) : null;
   const baths = detail?.bath ? parseFloat(detail.bath) : null;
 
+  const location = item.location as Record<string, string> | undefined;
+  const latStr = location?.lat ?? (item as Record<string, unknown>).latitude ?? (item as Record<string, unknown>).lat;
+  const lngStr = location?.lng ?? (item as Record<string, unknown>).longitude ?? (item as Record<string, unknown>).lng;
+  const latitude = latStr != null ? parseFloat(String(latStr)) : null;
+  const longitude = lngStr != null ? parseFloat(String(lngStr)) : null;
+
   return {
     mls_number: mls,
     title: title.slice(0, 500),
@@ -77,6 +84,8 @@ function mapApifyItemToProperty(item: Record<string, unknown>): Record<string, u
     room_details: null,
     is_featured: false,
     original_url: item.url || `https://www.centris.ca/en/property/${mls}`,
+    latitude: Number.isFinite(latitude) ? latitude : null,
+    longitude: Number.isFinite(longitude) ? longitude : null,
   };
 }
 
@@ -88,6 +97,7 @@ async function importToDatabase(
     "mls_number", "title", "slug", "property_type", "listing_type", "status", "price", "price_label",
     "address", "neighborhood", "city", "province", "bedrooms", "bathrooms", "area", "area_unit",
     "description", "main_image_url", "gallery_images", "is_featured", "room_details", "original_url",
+    "latitude", "longitude",
   ];
   const updateCols = cols.filter((c) => c !== "mls_number");
   const updateSet = updateCols.map((c) => `${c} = EXCLUDED.${c}`).join(", ");
@@ -120,6 +130,8 @@ async function importToDatabase(
         p.is_featured,
         p.room_details ? JSON.stringify(p.room_details) : null,
         p.original_url,
+        p.latitude ?? null,
+        p.longitude ?? null,
       ];
       const placeholders = vals.map((_, i) => `$${i + 1}`).join(", ");
       await client.query(
@@ -139,19 +151,30 @@ async function importToDatabase(
 
 export type SyncResult = {
   fetched: number;
-  databases: { urlPreview: string; imported: number; brokerFeatured?: number; error?: string }[];
+  databases: {
+    urlPreview: string;
+    imported: number;
+    brokerFeatured?: number;
+    error?: string;
+    verification?: { verified: number; updated: number; unknown: number };
+  }[];
 };
 
-/** Per-website broker URL override: fetch from this Centris URL and mark as featured in that DB */
-export type BrokerOverride = { databaseUrl: string; centrisBrokerUrl: string };
+/** Per-website broker URL override: fetch from Centris URLs and mark as featured/sold in that DB */
+export type BrokerOverride = {
+  databaseUrl: string;
+  centrisBrokerUrl?: string;
+  centrisBrokerSoldUrl?: string;
+};
 
 function mapApifyItemToPropertyWithFeatured(
   item: Record<string, unknown>,
-  isFeatured: boolean
+  isFeatured: boolean,
+  status: "active" | "sold" = "active"
 ): Record<string, unknown> | null {
   const p = mapApifyItemToProperty(item);
   if (!p) return null;
-  return { ...p, is_featured: isFeatured };
+  return { ...p, is_featured: isFeatured, status };
 }
 
 /**
@@ -184,6 +207,12 @@ export async function runCentralCentrisSync(
     .map((item: Record<string, unknown>) => mapApifyItemToProperty(item))
     .filter(Boolean) as Record<string, unknown>[];
 
+  const mainCentrisMls = new Set(properties.map((p) => String(p.mls_number)));
+  const activeCentrisByDb = new Map<string, Set<string>>();
+  for (const url of databaseUrls) {
+    activeCentrisByDb.set(url, new Set(mainCentrisMls));
+  }
+
   const databases: SyncResult["databases"] = [];
   for (const url of databaseUrls) {
     const preview = url.replace(/:[^:@]+@/, ":****@").slice(0, 50) + "...";
@@ -195,29 +224,62 @@ export async function runCentralCentrisSync(
     });
   }
 
-  // Broker-specific sync: fetch from broker URLs and mark as featured
+  // Broker-specific sync: fetch from broker URLs and mark as featured; optionally fetch sold listings
   if (brokerOverrides && brokerOverrides.length > 0) {
-    for (const { databaseUrl, centrisBrokerUrl } of brokerOverrides) {
-      if (!centrisBrokerUrl?.trim()) continue;
-      try {
-        const brokerRun = await client.actor("ecomscrape/centris-property-search-scraper").call({
-          urls: [centrisBrokerUrl.trim()],
-          max_items_per_url: 20,
-          max_retries_per_url: 2,
-          proxy: { useApifyProxy: true, apifyProxyCountry: "CA" },
-        });
-        const { items: brokerItems } = await client.dataset(brokerRun.defaultDatasetId).listItems();
-        const brokerProperties = brokerItems
-          .map((item: Record<string, unknown>) =>
-            mapApifyItemToPropertyWithFeatured(item, true)
-          )
-          .filter(Boolean) as Record<string, unknown>[];
-        const brokerResult = await importToDatabase(databaseUrl, brokerProperties);
-        const idx = databaseUrls.indexOf(databaseUrl);
-        if (idx >= 0) databases[idx].brokerFeatured = brokerResult.count;
-      } catch (err) {
-        console.warn("[centris-sync] Broker URL fetch failed:", centrisBrokerUrl, err);
+    for (const { databaseUrl, centrisBrokerUrl, centrisBrokerSoldUrl } of brokerOverrides) {
+      if (centrisBrokerUrl?.trim()) {
+        try {
+          const brokerRun = await client.actor("ecomscrape/centris-property-search-scraper").call({
+            urls: [centrisBrokerUrl.trim()],
+            max_items_per_url: 20,
+            max_retries_per_url: 2,
+            proxy: { useApifyProxy: true, apifyProxyCountry: "CA" },
+          });
+          const { items: brokerItems } = await client.dataset(brokerRun.defaultDatasetId).listItems();
+          const brokerProperties = brokerItems
+            .map((item: Record<string, unknown>) =>
+              mapApifyItemToPropertyWithFeatured(item, true, "active")
+            )
+            .filter(Boolean) as Record<string, unknown>[];
+          const brokerResult = await importToDatabase(databaseUrl, brokerProperties);
+          const idx = databaseUrls.indexOf(databaseUrl);
+          if (idx >= 0) databases[idx].brokerFeatured = brokerResult.count;
+          const active = activeCentrisByDb.get(databaseUrl) ?? new Set(mainCentrisMls);
+          brokerProperties.forEach((p) => active.add(String(p.mls_number)));
+          activeCentrisByDb.set(databaseUrl, active);
+        } catch (err) {
+          console.warn("[centris-sync] Broker URL fetch failed:", centrisBrokerUrl, err);
+        }
       }
+      if (centrisBrokerSoldUrl?.trim()) {
+        try {
+          const soldRun = await client.actor("ecomscrape/centris-property-search-scraper").call({
+            urls: [centrisBrokerSoldUrl.trim()],
+            max_items_per_url: 30,
+            max_retries_per_url: 2,
+            proxy: { useApifyProxy: true, apifyProxyCountry: "CA" },
+          });
+          const { items: soldItems } = await client.dataset(soldRun.defaultDatasetId).listItems();
+          const soldProperties = soldItems
+            .map((item: Record<string, unknown>) =>
+              mapApifyItemToPropertyWithFeatured(item, false, "sold")
+            )
+            .filter(Boolean) as Record<string, unknown>[];
+          await importToDatabase(databaseUrl, soldProperties);
+        } catch (err) {
+          console.warn("[centris-sync] Broker sold URL fetch failed:", centrisBrokerSoldUrl, err);
+        }
+      }
+    }
+  }
+
+  // Verify listings that disappeared from scrape (fetch source pages, update only when confirmed)
+  for (let i = 0; i < databaseUrls.length; i++) {
+    const url = databaseUrls[i];
+    const activeMls = Array.from(activeCentrisByDb.get(url) ?? mainCentrisMls);
+    if (activeMls.length > 0) {
+      const verification = await verifyAndUpdateListings(url, "centris", activeMls);
+      if (databases[i]) databases[i].verification = verification;
     }
   }
 

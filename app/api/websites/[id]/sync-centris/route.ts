@@ -73,14 +73,19 @@ export async function POST(
         .map((w) => w.neonDatabaseUrl)
         .filter((u): u is string => !!u && u.startsWith('postgresql://'));
 
-      // Build broker overrides from agencyConfig.centrisBrokerUrl
+      // Build broker overrides from agencyConfig.centrisBrokerUrl / centrisBrokerSoldUrl
       for (const w of websites) {
         const url = w.neonDatabaseUrl;
         if (!url?.startsWith('postgresql://')) continue;
         const ac = w.agencyConfig as Record<string, unknown> | null;
         const brokerUrl = ac?.centrisBrokerUrl as string | undefined;
-        if (brokerUrl?.trim()) {
-          brokerOverrides.push({ databaseUrl: url, centrisBrokerUrl: brokerUrl.trim() });
+        const brokerSoldUrl = ac?.centrisBrokerSoldUrl as string | undefined;
+        if (brokerUrl?.trim() || brokerSoldUrl?.trim()) {
+          brokerOverrides.push({
+            databaseUrl: url,
+            centrisBrokerUrl: brokerUrl?.trim(),
+            centrisBrokerSoldUrl: brokerSoldUrl?.trim(),
+          });
         }
       }
     }
@@ -104,7 +109,8 @@ export async function POST(
         try {
           realtorResult = await runRealtorSync(realtorUrl.trim(), website.neonDatabaseUrl);
         } catch (err) {
-          realtorResult = { fetched: 0, imported: 0, error: String(err) };
+          const msg = err instanceof Error ? err.message : String(err);
+          realtorResult = { fetched: 0, imported: 0, error: msg };
         }
       }
     }

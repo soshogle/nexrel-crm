@@ -1,13 +1,14 @@
 /**
- * Cron: Sync Centris listings to all real estate broker databases.
- * Fetches from Apify ONCE, then writes the same listings to each broker's DB.
+ * Cron: Sync Centris + Realtor.ca listings to all real estate broker databases.
+ * Centris: Fetches from Apify ONCE, writes same listings to each broker's DB.
+ * Realtor: For brokers with realtorBrokerUrl, fetches their agent page and imports to their DB.
  *
  * Env: APIFY_TOKEN, CENTRIS_REALTOR_DATABASE_URLS (JSON array of connection strings)
- * Add each broker's DATABASE_URL when they onboard.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { runCentralCentrisSync, type BrokerOverride } from "@/lib/centris-sync";
+import { runRealtorSync } from "@/lib/realtor-sync";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -55,8 +56,13 @@ export async function GET(req: NextRequest) {
       if (!url?.startsWith("postgresql://")) continue;
       const ac = w.agencyConfig as Record<string, unknown> | null;
       const brokerUrl = ac?.centrisBrokerUrl as string | undefined;
-      if (brokerUrl?.trim()) {
-        brokerOverrides.push({ databaseUrl: url, centrisBrokerUrl: brokerUrl.trim() });
+      const brokerSoldUrl = ac?.centrisBrokerSoldUrl as string | undefined;
+      if (brokerUrl?.trim() || brokerSoldUrl?.trim()) {
+        brokerOverrides.push({
+          databaseUrl: url,
+          centrisBrokerUrl: brokerUrl?.trim(),
+          centrisBrokerSoldUrl: brokerSoldUrl?.trim(),
+        });
       }
     }
   }
@@ -68,17 +74,58 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Realtor.ca sync for brokers with realtorBrokerUrl
+  const realtorOverrides: { databaseUrl: string; realtorBrokerUrl: string }[] = [];
+  const websites = await prisma.website.findMany({
+    where: {
+      templateType: "SERVICE",
+      status: "READY",
+      neonDatabaseUrl: { not: null },
+    },
+    select: { neonDatabaseUrl: true, agencyConfig: true },
+  });
+  for (const w of websites) {
+    const url = w.neonDatabaseUrl;
+    if (!url?.startsWith("postgresql://")) continue;
+    const ac = w.agencyConfig as Record<string, unknown> | null;
+    const realtorUrl = ac?.realtorBrokerUrl as string | undefined;
+    if (realtorUrl?.trim()) {
+      realtorOverrides.push({ databaseUrl: url, realtorBrokerUrl: realtorUrl.trim() });
+    }
+  }
+
   try {
     const result = await runCentralCentrisSync(
       databaseUrls,
       25,
       brokerOverrides.length > 0 ? brokerOverrides : undefined
     );
+
+    const realtorResults: { urlPreview: string; fetched: number; imported: number; error?: string }[] = [];
+    for (const { databaseUrl, realtorBrokerUrl } of realtorOverrides) {
+      try {
+        const r = await runRealtorSync(realtorBrokerUrl, databaseUrl);
+        realtorResults.push({
+          urlPreview: databaseUrl.replace(/:[^:@]+@/, ":****@").slice(0, 50) + "...",
+          fetched: r.fetched,
+          imported: r.imported,
+          error: r.error,
+        });
+      } catch (err) {
+        console.warn("[sync-realtor] Failed:", realtorBrokerUrl, err);
+        realtorResults.push({
+          urlPreview: databaseUrl.replace(/:[^:@]+@/, ":****@").slice(0, 50) + "...",
+          fetched: 0,
+          imported: 0,
+          error: String(err),
+        });
+      }
+    }
+
     return NextResponse.json({
       ok: true,
-      fetched: result.fetched,
-      databases: result.databases.length,
-      details: result.databases,
+      centris: { fetched: result.fetched, databases: result.databases.length, details: result.databases },
+      realtor: realtorResults,
     });
   } catch (err) {
     console.error("[sync-centris]", err);

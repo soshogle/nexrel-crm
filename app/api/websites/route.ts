@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         type: true,
+        templateType: true,
         status: true,
         buildProgress: true,
         vercelDeploymentUrl: true,

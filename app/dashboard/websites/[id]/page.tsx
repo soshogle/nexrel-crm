@@ -1204,6 +1204,39 @@ export default function WebsiteEditorPage() {
                   </p>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="centrisBrokerSoldUrl" className="text-xs">Centris sold listings URL (optional)</Label>
+                  <Input
+                    id="centrisBrokerSoldUrl"
+                    placeholder="https://www.centris.ca/.../sold or broker sold page"
+                    className="text-sm"
+                    defaultValue={(website.agencyConfig as { centrisBrokerSoldUrl?: string })?.centrisBrokerSoldUrl ?? ''}
+                    onBlur={async (e) => {
+                      const val = e.target.value.trim();
+                      const current = (website.agencyConfig as { centrisBrokerSoldUrl?: string })?.centrisBrokerSoldUrl ?? '';
+                      if (val === current) return;
+                      try {
+                        const agencyConfig = {
+                          ...(typeof website.agencyConfig === 'object' && website.agencyConfig ? website.agencyConfig : {}),
+                          centrisBrokerSoldUrl: val || undefined,
+                        };
+                        const res = await fetch(`/api/websites/${website.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ agencyConfig }),
+                        });
+                        if (!res.ok) throw new Error('Failed to save');
+                        setWebsite((w) => (w ? { ...w, agencyConfig } : null));
+                        toast.success(val ? 'Sold listings URL saved. Run Sync to import sold comparables.' : 'Sold listings URL cleared');
+                      } catch {
+                        toast.error('Failed to save');
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If your broker profile has a sold listings page URL, paste it here. Sold listings are used as comparables for property evaluation.
+                  </p>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="realtorBrokerUrl" className="text-xs">Your Realtor.ca agent URL (optional)</Label>
                   <Input
                     id="realtorBrokerUrl"
@@ -1260,7 +1293,11 @@ export default function WebsiteEditorPage() {
                         if (data.realtor?.imported != null && data.realtor.imported > 0) {
                           msg += `, ${data.realtor.imported} Realtor.ca`;
                         }
-                        toast.success(msg);
+                        if (data.realtor?.error) {
+                          toast.warning(`${msg}. Realtor.ca failed: ${data.realtor.error}`);
+                        } else {
+                          toast.success(msg);
+                        }
                         fetchListingsCount();
                       } catch (e) {
                         toast.error((e as Error).message || 'Sync failed');
