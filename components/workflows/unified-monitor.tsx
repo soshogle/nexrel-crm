@@ -97,15 +97,17 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
           lead: inst.lead,
           deal: inst.deal,
           totalTasks: inst.template?.tasks?.length || 0,
-          executions: executions.map((e) => ({
-            id: e.id,
-            taskId: e.taskId,
-            taskName: e.task?.name || 'Task',
-            status: e.status,
-            scheduledFor: e.scheduledFor || e.startedAt,
-            startedAt: e.startedAt,
-            completedAt: e.completedAt,
-          })),
+          executions: (executions ?? [])
+            .filter((e): e is NonNullable<typeof e> => e != null)
+            .map((e) => ({
+              id: e.id,
+              taskId: e.taskId,
+              taskName: e?.task?.name || 'Task',
+              status: e.status,
+              scheduledFor: e.scheduledFor || e.startedAt,
+              startedAt: e.startedAt,
+              completedAt: e.completedAt,
+            })),
         };
       });
 
@@ -121,15 +123,17 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
         lead: inst.lead,
         deal: inst.deal,
         totalTasks: inst.totalTasks ?? 0,
-        executions: (inst.executions || []).map((e) => ({
-          id: e.id,
-          taskId: e.taskId,
-          taskName: e.taskName || 'Task',
-          status: e.status,
-          scheduledFor: e.scheduledFor || e.startedAt,
-          startedAt: e.startedAt,
-          completedAt: e.completedAt,
-        })),
+        executions: (inst.executions || [])
+          .filter((e): e is NonNullable<typeof e> => e != null)
+          .map((e) => ({
+            id: e.id,
+            taskId: e.taskId,
+            taskName: e.taskName || 'Task',
+            status: e.status,
+            scheduledFor: e.scheduledFor || e.startedAt,
+            startedAt: e.startedAt,
+            completedAt: e.completedAt,
+          })),
       }));
 
       // Merge workflow instances (RE + industry)

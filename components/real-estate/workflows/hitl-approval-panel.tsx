@@ -195,7 +195,7 @@ export function HITLApprovalPanel() {
       ) : (
         <div className="grid gap-4">
           {notifications
-            .filter((n) => n?.taskExecution?.task)
+            .filter((n) => n && n.taskExecution && n.taskExecution.task)
             .map((notification) => (
             <Card
               key={notification.id}

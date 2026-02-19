@@ -94,18 +94,20 @@ export function WorkflowInstanceMonitor() {
               },
               lead: inst.lead as WorkflowInstance['lead'],
               deal: inst.deal as WorkflowInstance['deal'],
-              executions: executions.map((e) => ({
-                id: e.id ?? '',
-                status: e.status ?? 'PENDING',
-                startedAt: e.startedAt ?? null,
-                completedAt: e.completedAt ?? null,
-                task: {
-                  id: e.task?.id ?? e.taskId ?? '',
-                  name: e.task?.name ?? 'Task',
-                  order: e.task?.displayOrder ?? 0,
-                  isHITL: e.task?.isHITL ?? false,
-                },
-              })),
+              executions: executions
+                .filter((e): e is NonNullable<typeof e> => e != null)
+                .map((e) => ({
+                  id: e.id ?? '',
+                  status: e.status ?? 'PENDING',
+                  startedAt: e.startedAt ?? null,
+                  completedAt: e.completedAt ?? null,
+                  task: {
+                    id: e.task?.id ?? e.taskId ?? '',
+                    name: e.task?.name ?? 'Task',
+                    order: e.task?.displayOrder ?? 0,
+                    isHITL: e.task?.isHITL ?? false,
+                  },
+                })),
             };
           });
         if (!signal?.aborted) setInstances(normalized);
