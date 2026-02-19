@@ -206,11 +206,21 @@ function BusinessAIPageContent() {
   const loadAnalyticalDashboardData = useCallback(async () => {
     setIsRefreshing(true);
     try {
+      const fetchOne = async (url: string, key: string) => {
+        try {
+          return await import('@/lib/circuit-breaker').then(({ withCircuitBreaker }) =>
+            withCircuitBreaker(key, () => fetch(url), { failureThreshold: 3, resetTimeout: 60_000 })
+          );
+        } catch {
+          return { ok: false, json: () => Promise.resolve({ success: false }) } as Response;
+        }
+      };
+
       const [insightsRes, predictionsRes, workflowsRes, comprehensiveRes] = await Promise.all([
-        fetch('/api/ai-brain/insights').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
-        fetch('/api/ai-brain/predictions').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
-        fetch('/api/ai-brain/workflows').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
-        fetch('/api/ai-brain/comprehensive').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
+        fetchOne('/api/ai-brain/insights', 'ai-brain-insights'),
+        fetchOne('/api/ai-brain/predictions', 'ai-brain-predictions'),
+        fetchOne('/api/ai-brain/workflows', 'ai-brain-workflows'),
+        fetchOne('/api/ai-brain/comprehensive', 'ai-brain-comprehensive'),
       ]);
 
       const insightsData = await insightsRes.json();
@@ -221,14 +231,13 @@ function BusinessAIPageContent() {
       if (insightsData.success) setDetailedInsights(insightsData.insights || []);
       if (predictionsData.success) setEnhancedPredictions(predictionsData.predictions);
       if (workflowsData.success) setWorkflowRecommendations(workflowsData.workflows || []);
-      if (comprehensiveData.success) {
-        setComprehensiveData(comprehensiveData.data);
-      } else {
-        console.error('[AI Brain] Comprehensive data failed:', comprehensiveData.error);
-      }
+      if (comprehensiveData.success) setComprehensiveData(comprehensiveData.data);
+
+      const hasAny = insightsData.success || predictionsData.success || workflowsData.success || comprehensiveData.success;
+      if (!hasAny) toast.error('AI insights temporarily unavailable. Please try again later.');
     } catch (error: any) {
       console.error('[AI Brain] Error fetching analytical data:', error);
-      toast.error('Failed to load analytical insights');
+      toast.error('AI insights temporarily unavailable. Please try again later.');
     } finally {
       setLoading(false);
       setIsRefreshing(false);

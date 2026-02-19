@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { withCircuitBreaker } from '@/lib/circuit-breaker';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -88,14 +89,29 @@ export function AIBrainDashboard() {
 
   const abortRef = useRef<AbortController | null>(null);
 
+  const [degraded, setDegraded] = useState(false);
+
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     setIsRefreshing(true);
+    setDegraded(false);
     try {
+      const fetchOne = async (url: string, key: string) => {
+        try {
+          return await withCircuitBreaker(
+            key,
+            () => fetch(url, { signal }),
+            { failureThreshold: 3, resetTimeout: 60_000 }
+          );
+        } catch {
+          return { ok: false, json: () => Promise.resolve({ success: false }) };
+        }
+      };
+
       const [insightsRes, predictionsRes, workflowsRes, comprehensiveRes] = await Promise.all([
-        fetch('/api/ai-brain/insights', { signal }).catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
-        fetch('/api/ai-brain/predictions', { signal }).catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
-        fetch('/api/ai-brain/workflows', { signal }).catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
-        fetch('/api/ai-brain/comprehensive', { signal }).catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
+        fetchOne('/api/ai-brain/insights', 'ai-brain-insights'),
+        fetchOne('/api/ai-brain/predictions', 'ai-brain-predictions'),
+        fetchOne('/api/ai-brain/workflows', 'ai-brain-workflows'),
+        fetchOne('/api/ai-brain/comprehensive', 'ai-brain-comprehensive'),
       ]);
 
       if (signal?.aborted) return;
@@ -105,34 +121,33 @@ export function AIBrainDashboard() {
       const workflowsData = await workflowsRes.json();
       const comprehensiveData = await comprehensiveRes.json();
 
-      console.log('[AI Brain Dashboard] Data received:', {
-        insights: insightsData.success,
-        predictions: predictionsData.success,
-        workflows: workflowsData.success,
-        comprehensive: comprehensiveData.success,
-        comprehensiveDataPoints: comprehensiveData.success ? comprehensiveData.data?.leftHemisphere?.dataPoints?.length : 0,
-      });
-
       if (signal?.aborted) return;
 
-      if (insightsData.success) setInsights((insightsData.insights || []).filter(Boolean));
-      if (predictionsData.success) setPredictions(predictionsData.predictions ?? null);
-      if (workflowsData.success) setWorkflows((workflowsData.workflows || []).filter(Boolean));
+      let hasAny = false;
+      if (insightsData.success) {
+        setInsights((insightsData.insights || []).filter(Boolean));
+        hasAny = true;
+      }
+      if (predictionsData.success) {
+        setPredictions(predictionsData.predictions ?? null);
+        hasAny = true;
+      }
+      if (workflowsData.success) {
+        setWorkflows((workflowsData.workflows || []).filter(Boolean));
+        hasAny = true;
+      }
       if (comprehensiveData.success) {
         setComprehensiveData(comprehensiveData.data);
-        console.log('[AI Brain Dashboard] Comprehensive data set:', {
-          coreHealth: comprehensiveData.data?.core?.overallHealth,
-          leftPoints: comprehensiveData.data?.leftHemisphere?.dataPoints?.length,
-          rightPoints: comprehensiveData.data?.rightHemisphere?.dataPoints?.length,
-        });
-      } else {
-        console.error('[AI Brain Dashboard] Comprehensive data failed:', comprehensiveData.error);
-        toast.error('Failed to load comprehensive brain data: ' + (comprehensiveData.error || 'Unknown error'));
+        hasAny = true;
+      }
+      if (!hasAny) {
+        setDegraded(true);
+        toast.error('AI insights temporarily unavailable. Please try again later.');
       }
     } catch (error: any) {
       if ((error as Error)?.name !== 'AbortError') {
-        console.error('[AI Brain Dashboard] Error fetching AI Brain data:', error);
-        toast.error('Failed to load AI insights: ' + (error?.message || 'Unknown error'));
+        setDegraded(true);
+        toast.error('AI insights temporarily unavailable. Please try again later.');
       }
     } finally {
       if (!signal?.aborted) {
@@ -275,9 +290,20 @@ export function AIBrainDashboard() {
               data={comprehensiveData}
               onDataPointClick={(dataPoint) => {
                 console.log('Data point clicked:', dataPoint);
-                // Could open a detail modal or navigate to related page
               }}
             />
+          ) : degraded ? (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-600">
+              <AlertTriangle className="h-16 w-16 mb-4 text-amber-500" />
+              <p className="text-lg font-medium text-gray-700">Insights temporarily unavailable</p>
+              <p className="text-sm mt-2 text-gray-500 max-w-md text-center">
+                AI Brain services are having trouble. The rest of your dashboard works normally.
+              </p>
+              <Button onClick={() => fetchData()} className="mt-4" disabled={isRefreshing}>
+                {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                Try again
+              </Button>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-purple-600">
               <Brain className="h-16 w-16 mb-4 opacity-50 animate-pulse" />

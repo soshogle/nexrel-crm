@@ -4,6 +4,7 @@
  */
 
 import { parseHITLApprovals, parseHITLNotifications } from './api-validation';
+import { withCircuitBreaker } from './circuit-breaker';
 
 export const hitlQueryKeys = {
   all: ['hitl'] as const,
@@ -18,11 +19,15 @@ export interface HITLPendingResponse {
 }
 
 async function fetchHITLPending(): Promise<HITLPendingResponse> {
-  const res = await fetch('/api/real-estate/workflows/hitl/pending');
-  if (!res.ok) {
-    throw new Error('Failed to fetch HITL pending');
-  }
-  return res.json();
+  return withCircuitBreaker(
+    'hitl-pending',
+    async () => {
+      const res = await fetch('/api/real-estate/workflows/hitl/pending');
+      if (!res.ok) throw new Error('Failed to fetch HITL pending');
+      return res.json();
+    },
+    { failureThreshold: 5, resetTimeout: 60_000 }
+  );
 }
 
 /** Parsed pending approvals for banner (from pendingApprovals) */
