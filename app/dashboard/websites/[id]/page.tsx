@@ -26,6 +26,7 @@ import { ProductsEditor } from '@/components/websites/products-editor';
 import { AgencyConfigEditor, type AgencyConfigForm } from '@/components/websites/agency-config-editor';
 import { MenuPagesEditor } from '@/components/websites/menu-pages-editor';
 import { SectionEditor } from '@/components/website-builder/section-editor';
+import { SectionRewriteEditor } from '@/components/website-builder/section-rewrite-editor';
 import { GlobalStylesEditor } from '@/components/website-builder/global-styles-editor';
 import { WebsiteFilesManager } from '@/components/website-builder/website-files-manager';
 import { StructurePreview } from '@/components/website-builder/structure-preview';
@@ -611,6 +612,25 @@ export default function WebsiteEditorPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <SectionRewriteEditor
+                    websiteId={website.id}
+                    pages={website.structure?.pages || []}
+                    selectedPageIndex={selectedPageIndex}
+                    onSave={async (pagePath, sectionType, props) => {
+                      const res = await fetch(`/api/websites/${website.id}/structure`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          type: 'section_props',
+                          sectionType,
+                          pagePath,
+                          props,
+                        }),
+                      });
+                      if (!res.ok) throw new Error((await res.json()).error);
+                      await fetchWebsite();
+                    }}
+                  />
                   <Dialog open={importUrlOpen} onOpenChange={setImportUrlOpen}>
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm" className="gap-1.5">

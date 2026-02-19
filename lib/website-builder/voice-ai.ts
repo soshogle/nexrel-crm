@@ -193,7 +193,7 @@ If you don't know something, politely direct them to our contact form or website
         type: 'client',
         name: 'searchListings',
         description:
-          'Search for property listings by criteria. Use when the user asks to see listings (e.g. "show me 2 bedroom houses in Saint-Laurent between 400000 and 500000", "find rentals in Ville Saint-Laurent", "2 bedroom 2 bath apartments for rent under 2000"). Updates the page to show results on screen. Works for both for sale and for rent.',
+          'Search for property listings by criteria. Use when the user asks to see listings (e.g. "show me listings in Montreal", "2 bedroom houses in Saint-Laurent between 400000 and 500000", "find rentals in Ville Saint-Laurent", "properties on Sherbrooke Street", "2 bedroom 2 bath apartments for rent under 2000"). Updates the page to show results on screen. Works for both for sale and for rent. Always call this when the user wants to see properties — pass city for area (e.g. Montreal, Ville Saint-Laurent), search for address/street/neighborhood.',
         parameters: {
           type: 'object',
           description: 'Search criteria for property listings',
@@ -210,7 +210,12 @@ If you don't know something, politely direct them to our contact form or website
             city: {
               type: 'string',
               description:
-                'City or neighborhood (e.g. Ville Saint-Laurent, Montreal)',
+                'City or area (e.g. Montreal, Ville Saint-Laurent, Westmount). Use for "in Montreal", "Montreal area", "Saint-Laurent".',
+            },
+            search: {
+              type: 'string',
+              description:
+                'Free-text search for address, street name, neighborhood (e.g. "Sherbrooke", "123 Main St", "Plateau"). Use when user mentions a street, address, or neighborhood.',
             },
             listing_type: {
               type: 'string',
@@ -306,15 +311,17 @@ If you don't know something, politely direct them to our contact form or website
       const currentAgent = await getRes.json();
       const tools = this.getRealEstateClientTools();
 
-      // ElevenLabs API: tools can be at conversation_config level or in prompt
+      // ElevenLabs API: cannot specify both tools and tool_ids — use tools only
       const conv = currentAgent.conversation_config?.conversation || {};
+      const existingPrompt = currentAgent.conversation_config?.agent?.prompt || {};
+      const { tool_ids: _omit, ...promptWithoutToolIds } = existingPrompt;
       const updatePayload = {
         conversation_config: {
           ...currentAgent.conversation_config,
           agent: {
             ...currentAgent.conversation_config?.agent,
             prompt: {
-              ...currentAgent.conversation_config?.agent?.prompt,
+              ...promptWithoutToolIds,
               tools,
             },
           },
