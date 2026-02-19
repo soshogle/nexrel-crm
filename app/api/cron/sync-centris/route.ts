@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { runCentralCentrisSync } from "@/lib/centris-sync";
+import { runCentralCentrisSync, type BrokerOverride } from "@/lib/centris-sync";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
   }
 
   let databaseUrls: string[] = [];
+  let brokerOverrides: BrokerOverride[] = [];
 
   // 1. From env: CENTRIS_REALTOR_DATABASE_URLS (JSON array)
   const envUrls = process.env.CENTRIS_REALTOR_DATABASE_URLS;
@@ -43,11 +44,21 @@ export async function GET(req: NextRequest) {
         status: "READY",
         neonDatabaseUrl: { not: null },
       },
-      select: { neonDatabaseUrl: true },
+      select: { neonDatabaseUrl: true, agencyConfig: true },
     });
     databaseUrls = websites
       .map((w) => w.neonDatabaseUrl)
       .filter((u): u is string => !!u && u.startsWith("postgresql://"));
+
+    for (const w of websites) {
+      const url = w.neonDatabaseUrl;
+      if (!url?.startsWith("postgresql://")) continue;
+      const ac = w.agencyConfig as Record<string, unknown> | null;
+      const brokerUrl = ac?.centrisBrokerUrl as string | undefined;
+      if (brokerUrl?.trim()) {
+        brokerOverrides.push({ databaseUrl: url, centrisBrokerUrl: brokerUrl.trim() });
+      }
+    }
   }
 
   if (databaseUrls.length === 0) {
@@ -58,7 +69,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await runCentralCentrisSync(databaseUrls, 25);
+    const result = await runCentralCentrisSync(
+      databaseUrls,
+      25,
+      brokerOverrides.length > 0 ? brokerOverrides : undefined
+    );
     return NextResponse.json({
       ok: true,
       fetched: result.fetched,

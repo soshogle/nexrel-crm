@@ -139,16 +139,30 @@ async function importToDatabase(
 
 export type SyncResult = {
   fetched: number;
-  databases: { urlPreview: string; imported: number; error?: string }[];
+  databases: { urlPreview: string; imported: number; brokerFeatured?: number; error?: string }[];
 };
+
+/** Per-website broker URL override: fetch from this Centris URL and mark as featured in that DB */
+export type BrokerOverride = { databaseUrl: string; centrisBrokerUrl: string };
+
+function mapApifyItemToPropertyWithFeatured(
+  item: Record<string, unknown>,
+  isFeatured: boolean
+): Record<string, unknown> | null {
+  const p = mapApifyItemToProperty(item);
+  if (!p) return null;
+  return { ...p, is_featured: isFeatured };
+}
 
 /**
  * Fetch from Apify once, then write to all broker databases.
  * @param databaseUrls - Array of PostgreSQL connection strings (from CENTRIS_REALTOR_DATABASE_URLS)
+ * @param brokerOverrides - Optional: for each entry, fetch from centrisBrokerUrl and mark those listings as featured in that DB
  */
 export async function runCentralCentrisSync(
   databaseUrls: string[],
-  maxPerUrl = 25
+  maxPerUrl = 25,
+  brokerOverrides?: BrokerOverride[]
 ): Promise<SyncResult> {
   const APIFY_TOKEN = process.env.APIFY_TOKEN;
   if (!APIFY_TOKEN) {
@@ -179,6 +193,32 @@ export async function runCentralCentrisSync(
       imported: result.count,
       error: result.error,
     });
+  }
+
+  // Broker-specific sync: fetch from broker URLs and mark as featured
+  if (brokerOverrides && brokerOverrides.length > 0) {
+    for (const { databaseUrl, centrisBrokerUrl } of brokerOverrides) {
+      if (!centrisBrokerUrl?.trim()) continue;
+      try {
+        const brokerRun = await client.actor("ecomscrape/centris-property-search-scraper").call({
+          urls: [centrisBrokerUrl.trim()],
+          max_items_per_url: 20,
+          max_retries_per_url: 2,
+          proxy: { useApifyProxy: true, apifyProxyCountry: "CA" },
+        });
+        const { items: brokerItems } = await client.dataset(brokerRun.defaultDatasetId).listItems();
+        const brokerProperties = brokerItems
+          .map((item: Record<string, unknown>) =>
+            mapApifyItemToPropertyWithFeatured(item, true)
+          )
+          .filter(Boolean) as Record<string, unknown>[];
+        const brokerResult = await importToDatabase(databaseUrl, brokerProperties);
+        const idx = databaseUrls.indexOf(databaseUrl);
+        if (idx >= 0) databases[idx].brokerFeatured = brokerResult.count;
+      } catch (err) {
+        console.warn("[centris-sync] Broker URL fetch failed:", centrisBrokerUrl, err);
+      }
+    }
   }
 
   return { fetched: properties.length, databases };

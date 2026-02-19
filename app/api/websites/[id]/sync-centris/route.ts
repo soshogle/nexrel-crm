@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { runCentralCentrisSync } from '@/lib/centris-sync';
+import { runCentralCentrisSync, type BrokerOverride } from '@/lib/centris-sync';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -41,6 +41,7 @@ export async function POST(
     }
 
     let databaseUrls: string[] = [];
+    let brokerOverrides: BrokerOverride[] = [];
 
     // 1. From env: CENTRIS_REALTOR_DATABASE_URLS
     const envUrls = process.env.CENTRIS_REALTOR_DATABASE_URLS;
@@ -65,11 +66,22 @@ export async function POST(
           status: 'READY',
           neonDatabaseUrl: { not: null },
         },
-        select: { neonDatabaseUrl: true },
+        select: { neonDatabaseUrl: true, agencyConfig: true },
       });
       databaseUrls = websites
         .map((w) => w.neonDatabaseUrl)
         .filter((u): u is string => !!u && u.startsWith('postgresql://'));
+
+      // Build broker overrides from agencyConfig.centrisBrokerUrl
+      for (const w of websites) {
+        const url = w.neonDatabaseUrl;
+        if (!url?.startsWith('postgresql://')) continue;
+        const ac = w.agencyConfig as Record<string, unknown> | null;
+        const brokerUrl = ac?.centrisBrokerUrl as string | undefined;
+        if (brokerUrl?.trim()) {
+          brokerOverrides.push({ databaseUrl: url, centrisBrokerUrl: brokerUrl.trim() });
+        }
+      }
     }
 
     if (databaseUrls.length === 0) {
@@ -80,7 +92,7 @@ export async function POST(
       });
     }
 
-    const result = await runCentralCentrisSync(databaseUrls, 25);
+    const result = await runCentralCentrisSync(databaseUrls, 25, brokerOverrides.length > 0 ? brokerOverrides : undefined);
     return NextResponse.json({
       ok: true,
       fetched: result.fetched,

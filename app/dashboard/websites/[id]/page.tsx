@@ -1131,7 +1131,40 @@ export default function WebsiteEditorPage() {
             {website.templateType === 'SERVICE' && (
               <div className="space-y-2 pt-2 border-t">
                 <p className="text-sm font-medium">Centris Listings</p>
-                <div className="flex items-center gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="centrisBrokerUrl" className="text-xs">Your Centris broker URL (optional)</Label>
+                  <Input
+                    id="centrisBrokerUrl"
+                    placeholder="https://www.centris.ca/en/broker/your-name/..."
+                    className="text-sm"
+                    defaultValue={(website.agencyConfig as { centrisBrokerUrl?: string })?.centrisBrokerUrl ?? ''}
+                    onBlur={async (e) => {
+                      const val = e.target.value.trim();
+                      const current = (website.agencyConfig as { centrisBrokerUrl?: string })?.centrisBrokerUrl ?? '';
+                      if (val === current) return;
+                      try {
+                        const agencyConfig = {
+                          ...(typeof website.agencyConfig === 'object' && website.agencyConfig ? website.agencyConfig : {}),
+                          centrisBrokerUrl: val || undefined,
+                        };
+                        const res = await fetch(`/api/websites/${website.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ agencyConfig }),
+                        });
+                        if (!res.ok) throw new Error('Failed to save');
+                        setWebsite((w) => (w ? { ...w, agencyConfig } : null));
+                        toast.success(val ? 'Broker URL saved. Run Sync to prioritize your listings.' : 'Broker URL cleared');
+                      } catch {
+                        toast.error('Failed to save');
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Paste your Centris.ca broker profile URL. When syncing, your listings will be marked featured and shown first on the home page.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 pt-2">
                   {listingsCountLoading ? (
                     <span className="text-sm text-muted-foreground">Checking...</span>
                   ) : (

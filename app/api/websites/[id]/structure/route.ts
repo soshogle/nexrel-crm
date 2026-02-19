@@ -83,6 +83,7 @@ export async function PATCH(
       newStructure.globalStyles = {
         ...(newStructure.globalStyles || {}),
         ...(globalStyles.fonts && { fonts: { ...(newStructure.globalStyles?.fonts || {}), ...globalStyles.fonts } }),
+        ...(globalStyles.colors && { colors: { ...(newStructure.globalStyles?.colors || {}), ...globalStyles.colors } }),
         ...(globalStyles.spacing && { spacing: { ...(newStructure.globalStyles?.spacing || {}), ...globalStyles.spacing } }),
       };
 

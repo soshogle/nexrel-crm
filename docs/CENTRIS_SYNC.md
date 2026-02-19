@@ -44,3 +44,15 @@ curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
 ## Fallback: Website table
 
 If `CENTRIS_REALTOR_DATABASE_URLS` is empty, the cron queries the `Website` table for `templateType=SERVICE` and `status=READY` sites that have `neonDatabaseUrl` set. Use this if brokers are created via the website builder.
+
+## Prioritize broker's own listings (featured)
+
+To show a broker's **own** listings first on the home page:
+
+1. In the CRM dashboard → Website → Settings → **Centris Listings** section
+2. Paste the broker's **Centris.ca broker profile URL** in "Your Centris broker URL"
+3. Run **Sync now** (or wait for the daily cron)
+
+When syncing, listings from that broker URL are imported with `is_featured=true`. The home page featured carousel orders by `is_featured` first, then newest.
+
+**Finding the broker URL:** On Centris.ca, go to the broker's profile page (e.g. search for the broker name) and copy the full URL from the address bar. Example format: `https://www.centris.ca/en/broker/name/12345` or a search URL filtered by that broker.
