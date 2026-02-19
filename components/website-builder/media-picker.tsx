@@ -202,6 +202,7 @@ export function MediaPicker({ websiteId, open, onClose, onSelect, type }: MediaP
           </TabsContent>
         </Tabs>
       </DialogContent>
+    </Dialog>
 
       {/* Image metadata editor (alt, description) for SEO */}
       <Dialog open={!!editingItem} onOpenChange={(v) => !v && setEditingItem(null)}>
