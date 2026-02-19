@@ -5,6 +5,58 @@
 
 import { z } from 'zod';
 
+// ─── Leads ───────────────────────────────────────────────────────────────────
+
+const LEAD_STATUSES = ['NEW', 'CONTACTED', 'RESPONDED', 'QUALIFIED', 'CONVERTED', 'LOST'] as const;
+
+export const LeadCreateBodySchema = z
+  .object({
+    businessName: z.string().optional().default(''),
+    contactPerson: z.string().optional().default(''),
+    email: z.union([z.string().email(), z.literal('')]).optional().default(''),
+    phone: z.string().max(50).optional().default(''),
+    website: z.union([z.string().url(), z.literal('')]).optional().default(''),
+    address: z.string().max(500).optional().default(''),
+    city: z.string().max(100).optional().default(''),
+    state: z.string().max(100).optional().default(''),
+    zipCode: z.string().max(20).optional().default(''),
+    country: z.string().max(100).optional().default(''),
+    businessCategory: z.string().max(200).optional().default(''),
+    status: z.enum(LEAD_STATUSES).optional().default('NEW'),
+    source: z.string().max(50).optional().default('manual'),
+  })
+  .refine(
+    (data) => (data.businessName?.trim() || data.contactPerson?.trim()) !== '',
+    { message: 'Either business name or contact person is required' }
+  )
+  .transform((data) => {
+    // Prisma requires businessName; use contactPerson when businessName is empty
+    const businessName =
+      data.businessName?.trim() || data.contactPerson?.trim() || 'Unknown';
+    return { ...data, businessName };
+  });
+
+export type LeadCreateBody = z.infer<typeof LeadCreateBodySchema>;
+
+export const LeadsGetQuerySchema = z.object({
+  status: z.string().max(20).optional(),
+  search: z.string().max(200).optional(),
+});
+
+export type LeadsGetQuery = z.infer<typeof LeadsGetQuerySchema>;
+
+// ─── Workflow Instances Query ──────────────────────────────────────────────
+
+export const WorkflowInstancesQuerySchema = z.object({
+  status: z.string().max(50).optional(),
+  leadId: z.string().max(50).optional(),
+  dealId: z.string().max(50).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(50),
+  cursor: z.string().max(100).optional(),
+});
+
+export type WorkflowInstancesQuery = z.infer<typeof WorkflowInstancesQuerySchema>;
+
 // ─── HITL Request Bodies ───────────────────────────────────────────────────
 
 export const HITLApproveBodySchema = z.object({
@@ -66,7 +118,7 @@ export type HITLApproval = z.infer<typeof HITLApprovalSchema>;
 export function parseHITLApprovals(data: unknown): HITLApproval[] {
   const arr = Array.isArray(data) ? data : [];
   return arr
-    .filter((item): item is HITLApproval => HITLApprovalSchema.safeParse(item).success)
+    .filter((item): item is HITLApproval => item != null && HITLApprovalSchema.safeParse(item).success)
     .map((item) => HITLApprovalSchema.parse(item));
 }
 
@@ -95,7 +147,7 @@ export type WorkflowExecution = z.infer<typeof WorkflowExecutionSchema>;
 export function parseWorkflowExecutions(data: unknown): WorkflowExecution[] {
   const arr = Array.isArray(data) ? data : [];
   return arr
-    .filter((item): item is WorkflowExecution => WorkflowExecutionSchema.safeParse(item).success)
+    .filter((item): item is WorkflowExecution => item != null && WorkflowExecutionSchema.safeParse(item).success)
     .map((item) => WorkflowExecutionSchema.parse(item));
 }
 
@@ -209,7 +261,8 @@ export function parseHITLNotifications(data: unknown): HITLNotification[] {
   const arr = Array.isArray(data) ? data : [];
   return arr
     .filter(
-      (item): item is HITLNotification => HITLNotificationSchema.safeParse(item).success
+      (item): item is HITLNotification =>
+        item != null && HITLNotificationSchema.safeParse(item).success
     )
     .map((item) => HITLNotificationSchema.parse(item));
 }
