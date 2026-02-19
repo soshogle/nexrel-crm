@@ -27,8 +27,7 @@
 
 **Usage:** Client sends `Idempotency-Key: <uuid>` on retries to avoid duplicate approvals.
 
-## Next Steps (Phase 7+)
+## Next Steps (Phase 8+)
 
-- E2E tests for critical flows
 - Performance monitoring
 - Input validation on all API routes
