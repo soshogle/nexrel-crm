@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -86,15 +86,19 @@ export function AIBrainDashboard() {
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'radial' | 'traditional'>('radial');
 
-  const fetchData = useCallback(async () => {
+  const abortRef = useRef<AbortController | null>(null);
+
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
     setIsRefreshing(true);
     try {
       const [insightsRes, predictionsRes, workflowsRes, comprehensiveRes] = await Promise.all([
-        fetch('/api/ai-brain/insights').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
-        fetch('/api/ai-brain/predictions').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
-        fetch('/api/ai-brain/workflows').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
-        fetch('/api/ai-brain/comprehensive').catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
+        fetch('/api/ai-brain/insights', { signal }).catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
+        fetch('/api/ai-brain/predictions', { signal }).catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
+        fetch('/api/ai-brain/workflows', { signal }).catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
+        fetch('/api/ai-brain/comprehensive', { signal }).catch(err => ({ ok: false, json: () => Promise.resolve({ success: false, error: err.message }) })),
       ]);
+
+      if (signal?.aborted) return;
 
       const insightsData = await insightsRes.json();
       const predictionsData = await predictionsRes.json();
@@ -109,9 +113,11 @@ export function AIBrainDashboard() {
         comprehensiveDataPoints: comprehensiveData.success ? comprehensiveData.data?.leftHemisphere?.dataPoints?.length : 0,
       });
 
-      if (insightsData.success) setInsights(insightsData.insights || []);
-      if (predictionsData.success) setPredictions(predictionsData.predictions);
-      if (workflowsData.success) setWorkflows(workflowsData.workflows || []);
+      if (signal?.aborted) return;
+
+      if (insightsData.success) setInsights((insightsData.insights || []).filter(Boolean));
+      if (predictionsData.success) setPredictions(predictionsData.predictions ?? null);
+      if (workflowsData.success) setWorkflows((workflowsData.workflows || []).filter(Boolean));
       if (comprehensiveData.success) {
         setComprehensiveData(comprehensiveData.data);
         console.log('[AI Brain Dashboard] Comprehensive data set:', {
@@ -124,23 +130,27 @@ export function AIBrainDashboard() {
         toast.error('Failed to load comprehensive brain data: ' + (comprehensiveData.error || 'Unknown error'));
       }
     } catch (error: any) {
-      console.error('[AI Brain Dashboard] Error fetching AI Brain data:', error);
-      toast.error('Failed to load AI insights: ' + (error?.message || 'Unknown error'));
+      if ((error as Error)?.name !== 'AbortError') {
+        console.error('[AI Brain Dashboard] Error fetching AI Brain data:', error);
+        toast.error('Failed to load AI insights: ' + (error?.message || 'Unknown error'));
+      }
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    fetchData();
-    
-    // Auto-refresh every 30 seconds for real-time updates
-    const interval = setInterval(() => {
-      fetchData();
-    }, 30000);
-    
-    return () => clearInterval(interval);
+    abortRef.current = new AbortController();
+    const ac = abortRef.current;
+    fetchData(ac.signal);
+    const interval = setInterval(() => fetchData(ac.signal), 30000);
+    return () => {
+      clearInterval(interval);
+      ac.abort();
+    };
   }, [fetchData]);
 
   const getInsightIcon = (type: string) => {

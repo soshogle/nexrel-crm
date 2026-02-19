@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { setWebsiteBuilderContext } from '@/lib/website-builder-context';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Globe, Settings, Loader2, MessageSquare, Eye, Check, X, Upload, Image as ImageIcon, AlertCircle, BarChart3, Package, Link2 } from 'lucide-react';
+import { ArrowLeft, Globe, Settings, Loader2, MessageSquare, Eye, Check, X, Upload, Image as ImageIcon, AlertCircle, BarChart3, Package, Link2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +49,7 @@ interface Website {
   name: string;
   type: string;
   templateType?: string;
+  neonDatabaseUrl?: string | null;
   status: string;
   buildProgress: number;
   structure: any;
@@ -101,6 +102,9 @@ export default function WebsiteEditorPage() {
   const [templateFallbackOpen, setTemplateFallbackOpen] = useState(false);
   const [fallbackTemplates, setFallbackTemplates] = useState<any[]>([]);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
+  const [listingsCount, setListingsCount] = useState<number | null>(null);
+  const [listingsCountLoading, setListingsCountLoading] = useState(false);
+  const [syncCentrisLoading, setSyncCentrisLoading] = useState(false);
 
   useEffect(() => {
     if (session && params.id) {
@@ -142,6 +146,26 @@ export default function WebsiteEditorPage() {
     }
     prevImportInProgressRef.current = isImportInProgress;
   }, [isImportInProgress, importBuild?.status, importBuild?.buildData?.addedCount]);
+
+  // Fetch listings count when opening settings (SERVICE template only)
+  const fetchListingsCount = useCallback(async () => {
+    if (!website?.id || website.templateType !== 'SERVICE') return;
+    setListingsCountLoading(true);
+    try {
+      const res = await fetch(`/api/websites/${website.id}/listings/status`);
+      const data = await res.json();
+      setListingsCount(data.count ?? 0);
+    } catch {
+      setListingsCount(null);
+    } finally {
+      setListingsCountLoading(false);
+    }
+  }, [website?.id, website?.templateType]);
+  useEffect(() => {
+    if (settingsOpen && website?.templateType === 'SERVICE') {
+      fetchListingsCount();
+    }
+  }, [settingsOpen, website?.templateType, fetchListingsCount]);
 
   // Sync website builder context so voice/chat AI sees what user sees
   useEffect(() => {
@@ -1101,6 +1125,51 @@ export default function WebsiteEditorPage() {
               <BarChart3 className="h-4 w-4 mr-2" />
               Analytics
             </Button>
+            {website.templateType === 'SERVICE' && (
+              <div className="space-y-2 pt-2 border-t">
+                <p className="text-sm font-medium">Centris Listings</p>
+                <div className="flex items-center gap-2">
+                  {listingsCountLoading ? (
+                    <span className="text-sm text-muted-foreground">Checking...</span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      {listingsCount !== null ? `${listingsCount} listing(s)` : '—'}
+                    </span>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={syncCentrisLoading || !website.neonDatabaseUrl}
+                    onClick={async () => {
+                      setSyncCentrisLoading(true);
+                      try {
+                        const res = await fetch(`/api/websites/${website.id}/sync-centris`, {
+                          method: 'POST',
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Sync failed');
+                        toast.success(`Synced ${data.fetched ?? 0} listings to ${data.databases ?? 1} database(s)`);
+                        fetchListingsCount();
+                      } catch (e) {
+                        toast.error((e as Error).message || 'Sync failed');
+                      } finally {
+                        setSyncCentrisLoading(false);
+                      }
+                    }}
+                  >
+                    {syncCentrisLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                    )}
+                    Sync now
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Fetches Montreal listings from Centris via Apify and writes to this site&apos;s database.
+                </p>
+              </div>
+            )}
             <Button
               variant="outline"
               className="w-full justify-start"

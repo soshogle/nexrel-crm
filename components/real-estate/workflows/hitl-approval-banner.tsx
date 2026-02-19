@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { Shield, X, AlertTriangle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Shield, X, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { parseHITLApprovals } from '@/lib/api-validation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,37 +29,44 @@ export function HITLApprovalBanner() {
 
   const isRealEstateUser = (session?.user as any)?.industry === 'REAL_ESTATE';
 
-  const fetchNotifications = async () => {
+  const abortRef = useRef<AbortController | null>(null);
+
+  const fetchNotifications = async (signal?: AbortSignal) => {
     if (!isRealEstateUser) return;
-    
     try {
-      const res = await fetch('/api/real-estate/workflows/hitl/pending');
+      const res = await fetch('/api/real-estate/workflows/hitl/pending', { signal });
       if (res.ok) {
         const data = await res.json();
-        // Transform pendingApprovals to banner format
-        const bannerNotifications = (data.pendingApprovals || []).slice(0, 1).map((approval: any) => ({
-          id: approval.id,
-          executionId: approval.id,
+        const approvals = parseHITLApprovals(data.pendingApprovals);
+        const bannerNotifications = approvals.slice(0, 1).map((approval) => ({
+          id: approval.id ?? '',
+          executionId: approval.id ?? '',
           taskName: approval.task?.name || 'Unknown Task',
           contactName: approval.instance?.lead?.businessName || approval.instance?.lead?.contactPerson,
           dealAddress: approval.instance?.deal?.title,
           message: approval.task?.description || 'Requires your approval',
-          urgency: 'HIGH',
-          createdAt: approval.createdAt,
+          urgency: 'HIGH' as const,
+          createdAt: approval.createdAt ?? '',
         }));
-        setNotifications(bannerNotifications);
+        if (!signal?.aborted) setNotifications(bannerNotifications);
       }
-    } catch (error) {
-      console.error('Error fetching HITL notifications:', error);
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        console.error('Error fetching HITL notifications:', err);
+      }
     }
   };
 
   useEffect(() => {
-    if (isRealEstateUser) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
-    }
+    if (!isRealEstateUser) return;
+    abortRef.current = new AbortController();
+    const ac = abortRef.current;
+    fetchNotifications(ac.signal);
+    const interval = setInterval(() => fetchNotifications(ac.signal), 30000);
+    return () => {
+      clearInterval(interval);
+      ac.abort();
+    };
   }, [isRealEstateUser]);
 
   const handleApprove = async (executionId: string) => {

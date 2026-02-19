@@ -6,7 +6,12 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  parseWorkflowInstances,
+  parseWorkflowExecutions,
+  parseIndustryWorkflowInstances,
+} from '@/lib/api-validation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -50,47 +55,76 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
   const [filter, setFilter] = useState<'all' | 'active' | 'pending' | 'running' | 'completed'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'ai_job' | 'workflow_instance' | 'task_execution' | 'drip_enrollment'>('all');
 
-  const fetchMonitoringData = async () => {
+  const abortRef = useRef<AbortController | null>(null);
+
+  const fetchMonitoringData = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
 
       const isRE = industry === 'REAL_ESTATE' || !industry;
 
-      // Fetch all data sources in parallel
-      // RE users: fetch RE workflow instances (auto-run uses these)
-      // Industry users: fetch industry workflow instances
+      // Fetch all data sources in parallel (with AbortController for cleanup)
       const [
         aiJobsRes,
         workflowInstancesRes,
         reWorkflowInstancesRes,
         dripEnrollmentsRes,
       ] = await Promise.all([
-        fetch('/api/ai-employees/jobs?limit=50'),
-        fetch('/api/workflows/instances/active?limit=50&status=all').catch(() => ({ ok: false, json: () => ({ instances: [] }) })),
-        isRE ? fetch('/api/real-estate/workflows/instances?limit=50').catch(() => ({ ok: false, json: () => ({ instances: [] }) })) : Promise.resolve({ ok: false, json: () => ({ instances: [] }) }),
-        fetch('/api/workflows/enrollments/active?limit=50&status=all').catch(() => ({ ok: false, json: () => ({ enrollments: [] }) })),
+        fetch('/api/ai-employees/jobs?limit=50', { signal }),
+        fetch('/api/workflows/instances/active?limit=50&status=all', { signal }).catch(() => ({ ok: false, json: () => ({ instances: [] }) })),
+        isRE ? fetch('/api/real-estate/workflows/instances?limit=50', { signal }).catch(() => ({ ok: false, json: () => ({ instances: [] }) })) : Promise.resolve({ ok: false, json: () => ({ instances: [] }) }),
+        fetch('/api/workflows/enrollments/active?limit=50&status=all', { signal }).catch(() => ({ ok: false, json: () => ({ enrollments: [] }) })),
       ]);
+
+      if (signal?.aborted) return;
 
       const aiJobsData = aiJobsRes.ok ? await aiJobsRes.json() : { data: [] };
       const workflowInstancesData = workflowInstancesRes.ok ? await workflowInstancesRes.json() : { instances: [] };
       const reWorkflowInstancesData = reWorkflowInstancesRes.ok ? await reWorkflowInstancesRes.json() : { instances: [] };
       const dripEnrollmentsData = dripEnrollmentsRes.ok ? await dripEnrollmentsRes.json() : { enrollments: [] };
 
-      // Normalize RE workflow instances to same format as industry (for Monitor display)
-      const normalizedREInstances = (reWorkflowInstancesData.instances || []).map((inst: any) => ({
+      // Normalize RE workflow instances (with Zod validation for safety)
+      const reInstances = parseWorkflowInstances(reWorkflowInstancesData.instances);
+      const normalizedREInstances = reInstances.map((inst) => {
+        const executions = parseWorkflowExecutions(inst.executions);
+        return {
+          id: inst.id,
+          templateId: inst.templateId,
+          workflowName: inst.template?.name || 'Workflow',
+          status: inst.status,
+          startedAt: inst.startedAt,
+          completedAt: inst.completedAt,
+          lead: inst.lead,
+          deal: inst.deal,
+          totalTasks: inst.template?.tasks?.length || 0,
+          executions: executions.map((e) => ({
+            id: e.id,
+            taskId: e.taskId,
+            taskName: e.task?.name || 'Task',
+            status: e.status,
+            scheduledFor: e.scheduledFor || e.startedAt,
+            startedAt: e.startedAt,
+            completedAt: e.completedAt,
+          })),
+        };
+      });
+
+      // Normalize industry workflow instances (with Zod validation)
+      const industryInstances = parseIndustryWorkflowInstances(workflowInstancesData.instances);
+      const normalizedIndustryInstances = industryInstances.map((inst) => ({
         id: inst.id,
         templateId: inst.templateId,
-        workflowName: inst.template?.name || 'Workflow',
+        workflowName: inst.workflowName || 'Workflow',
         status: inst.status,
         startedAt: inst.startedAt,
         completedAt: inst.completedAt,
         lead: inst.lead,
         deal: inst.deal,
-        totalTasks: inst.template?.tasks?.length || 0,
-        executions: (inst.executions || []).map((e: any) => ({
+        totalTasks: inst.totalTasks ?? 0,
+        executions: (inst.executions || []).map((e) => ({
           id: e.id,
           taskId: e.taskId,
-          taskName: e.task?.name || 'Task',
+          taskName: e.taskName || 'Task',
           status: e.status,
           scheduledFor: e.scheduledFor || e.startedAt,
           startedAt: e.startedAt,
@@ -99,59 +133,59 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
       }));
 
       // Merge workflow instances (RE + industry)
-      const allWorkflowInstances = [...normalizedREInstances, ...(workflowInstancesData.instances || [])];
+      const allWorkflowInstances = [...normalizedREInstances, ...normalizedIndustryInstances];
 
       // Transform AI Jobs
-      const aiJobItems: MonitoringItem[] = (aiJobsData.data || []).map((job: any) => ({
-        id: job.id,
+      const aiJobItems: MonitoringItem[] = (aiJobsData.data || []).filter(Boolean).map((job: any) => ({
+        id: job?.id,
         type: 'ai_job' as const,
-        title: `${job.employee?.name || 'AI Employee'} - ${(job.jobType || '').replace(/_/g, ' ')}`,
-        status: job.status,
-        progress: job.progress,
-        startedAt: job.startedAt,
-        completedAt: job.completedAt,
+        title: `${job?.employee?.name || 'AI Employee'} - ${(job?.jobType || '').replace(/_/g, ' ')}`,
+        status: job?.status,
+        progress: job?.progress,
+        startedAt: job?.startedAt,
+        completedAt: job?.completedAt,
         metadata: {
-          jobType: job.jobType,
-          input: job.input,
-          employee: job.employee,
+          jobType: job?.jobType,
+          input: job?.input,
+          employee: job?.employee,
         },
       }));
 
       // Transform Workflow Instances (RE + industry)
-      const workflowItems: MonitoringItem[] = allWorkflowInstances.flatMap((instance: any) => {
+      const workflowItems: MonitoringItem[] = allWorkflowInstances.filter(Boolean).flatMap((instance: any) => {
         const items: MonitoringItem[] = [];
         
         // Main instance
         items.push({
-          id: instance.id,
+          id: instance?.id,
           type: 'workflow_instance' as const,
-          title: `${instance.workflowName} - ${instance.lead?.businessName || instance.deal?.title || 'Workflow'}`,
-          status: instance.status,
-          startedAt: instance.startedAt,
-          completedAt: instance.completedAt,
+          title: `${instance?.workflowName} - ${instance?.lead?.businessName || instance?.deal?.title || 'Workflow'}`,
+          status: instance?.status,
+          startedAt: instance?.startedAt,
+          completedAt: instance?.completedAt,
           metadata: {
-            workflowId: instance.templateId,
-            lead: instance.lead,
-            deal: instance.deal,
-            totalTasks: instance.totalTasks,
-            currentTask: instance.executions?.find((e: any) => e.status === 'IN_PROGRESS'),
+            workflowId: instance?.templateId,
+            lead: instance?.lead,
+            deal: instance?.deal,
+            totalTasks: instance?.totalTasks,
+            currentTask: instance?.executions?.find((e: any) => e?.status === 'IN_PROGRESS'),
           },
         });
 
         // Add pending/upcoming task executions
-        instance.executions?.forEach((execution: any) => {
-          if (execution.status === 'PENDING' || execution.status === 'IN_PROGRESS') {
+        instance?.executions?.forEach((execution: any) => {
+          if (execution?.status === 'PENDING' || execution?.status === 'IN_PROGRESS') {
             items.push({
-              id: execution.id,
+              id: execution?.id,
               type: 'task_execution' as const,
-              title: `${execution.taskName} - ${instance.workflowName}`,
-              status: execution.status,
-              nextActionAt: execution.scheduledFor,
-              startedAt: execution.startedAt,
+              title: `${execution?.taskName} - ${instance?.workflowName}`,
+              status: execution?.status,
+              nextActionAt: execution?.scheduledFor,
+              startedAt: execution?.startedAt,
               metadata: {
-                workflowInstanceId: instance.id,
-                workflowName: instance.workflowName,
-                taskId: execution.taskId,
+                workflowInstanceId: instance?.id,
+                workflowName: instance?.workflowName,
+                taskId: execution?.taskId,
               },
             });
           }
@@ -161,20 +195,20 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
       });
 
       // Transform Drip Enrollments
-      const dripItems: MonitoringItem[] = (dripEnrollmentsData.enrollments || []).map((enrollment: any) => ({
-        id: enrollment.id,
+      const dripItems: MonitoringItem[] = (dripEnrollmentsData.enrollments || []).filter(Boolean).map((enrollment: any) => ({
+        id: enrollment?.id,
         type: 'drip_enrollment' as const,
-        title: `${enrollment.workflowName} - ${enrollment.lead?.businessName || 'Lead'}`,
-        status: enrollment.status,
-        nextActionAt: enrollment.nextSendAt,
-        startedAt: enrollment.enrolledAt,
-        completedAt: enrollment.completedAt,
+        title: `${enrollment?.workflowName} - ${enrollment?.lead?.businessName || 'Lead'}`,
+        status: enrollment?.status,
+        nextActionAt: enrollment?.nextSendAt,
+        startedAt: enrollment?.enrolledAt,
+        completedAt: enrollment?.completedAt,
         metadata: {
-          workflowId: enrollment.workflowId,
-          workflowName: enrollment.workflowName,
-          lead: enrollment.lead,
-          currentStep: enrollment.currentStep,
-          abTestGroup: enrollment.abTestGroup,
+          workflowId: enrollment?.workflowId,
+          workflowName: enrollment?.workflowName,
+          lead: enrollment?.lead,
+          currentStep: enrollment?.currentStep,
+          abTestGroup: enrollment?.abTestGroup,
         },
       }));
 
@@ -185,18 +219,25 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
         return aTime - bTime;
       });
 
-      setItems(allItems);
-    } catch (error) {
-      console.error('Error fetching monitoring data:', error);
+      if (!signal?.aborted) setItems(allItems);
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        console.error('Error fetching monitoring data:', err);
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMonitoringData();
-    const interval = setInterval(fetchMonitoringData, 5000); // Refresh every 5 seconds
-    return () => clearInterval(interval);
+    abortRef.current = new AbortController();
+    const ac = abortRef.current;
+    fetchMonitoringData(ac.signal);
+    const interval = setInterval(() => fetchMonitoringData(ac.signal), 5000);
+    return () => {
+      clearInterval(interval);
+      ac.abort();
+    };
   }, [industry]);
 
   // Calculate countdown timer

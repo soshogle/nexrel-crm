@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { Bell, Shield, Clock, User, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { parseHITLNotifications } from '@/lib/api-validation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -44,37 +45,47 @@ export function HITLNotificationBell() {
   // Check if user is in real estate industry
   const isRealEstateUser = (session?.user as any)?.industry === 'REAL_ESTATE';
 
+  const abortRef = useRef<AbortController | null>(null);
+
   // Fetch pending HITL notifications
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (signal?: AbortSignal) => {
     if (!isRealEstateUser) return;
-    
     setLoading(true);
     try {
-      const res = await fetch('/api/real-estate/workflows/hitl/pending');
+      const res = await fetch('/api/real-estate/workflows/hitl/pending', { signal });
       if (res.ok) {
         const data = await res.json();
-        setNotifications(data.notifications || []);
+        const parsed = parseHITLNotifications(data.notifications);
+        if (!signal?.aborted) setNotifications(parsed);
       }
-    } catch (error) {
-      console.error('Error fetching HITL notifications:', error);
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        console.error('Error fetching HITL notifications:', err);
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
   // Poll for notifications every 30 seconds
   useEffect(() => {
-    if (isRealEstateUser) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
-    }
+    if (!isRealEstateUser) return;
+    abortRef.current = new AbortController();
+    const ac = abortRef.current;
+    fetchNotifications(ac.signal);
+    const interval = setInterval(() => fetchNotifications(ac.signal), 30000);
+    return () => {
+      clearInterval(interval);
+      ac.abort();
+    };
   }, [isRealEstateUser]);
 
   // Fetch when popover opens
   useEffect(() => {
     if (open && isRealEstateUser) {
-      fetchNotifications();
+      const ac = new AbortController();
+      fetchNotifications(ac.signal);
+      return () => ac.abort();
     }
   }, [open, isRealEstateUser]);
 
@@ -166,7 +177,7 @@ export function HITLNotificationBell() {
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.map((notification) => (
+              {notifications.filter((n) => n?.taskExecution?.task).map((notification) => (
                 <div key={notification.id} className="p-4 hover:bg-gray-50">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
@@ -174,26 +185,26 @@ export function HITLNotificationBell() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">
-                        {notification.taskExecution.task.name}
+                        {notification.taskExecution?.task?.name ?? 'Task'}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {notification.message}
                       </p>
                       
                       {/* Context: Lead or Deal */}
-                      {notification.taskExecution.workflowInstance.lead && (
+                      {notification.taskExecution?.workflowInstance?.lead && (
                         <div className="flex items-center gap-1 mt-2 text-xs text-blue-600">
                           <User className="h-3 w-3" />
                           <span>
-                            {notification.taskExecution.workflowInstance.lead.businessName}{' '}
-                            {notification.taskExecution.workflowInstance.lead.contactPerson || ''}
+                            {notification.taskExecution?.workflowInstance?.lead?.businessName}{' '}
+                            {notification.taskExecution?.workflowInstance?.lead?.contactPerson || ''}
                           </span>
                         </div>
                       )}
-                      {notification.taskExecution.workflowInstance.deal && (
+                      {notification.taskExecution?.workflowInstance?.deal && (
                         <div className="flex items-center gap-1 mt-2 text-xs text-green-600">
                           <span className="font-medium">
-                            Deal: {notification.taskExecution.workflowInstance.deal.title}
+                            Deal: {notification.taskExecution?.workflowInstance?.deal?.title}
                           </span>
                         </div>
                       )}

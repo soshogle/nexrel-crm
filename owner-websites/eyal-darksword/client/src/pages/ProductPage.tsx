@@ -5,6 +5,7 @@ import ProductOptionsWizard from "@/components/ProductOptionsWizard";
 import { trpc } from "@/lib/trpc";
 import { useCart } from "@/contexts/CartContext";
 import { ChevronRight, Minus, Plus, ShoppingCart, Heart, Share2, Loader2 } from "lucide-react";
+import MotionImage from "@/components/MotionImage";
 import { toast } from "sonner";
 
 export default function ProductPage() {
@@ -243,19 +244,15 @@ export default function ProductPage() {
           {/* Image gallery */}
           <div>
             <div className="aspect-square bg-[#111] overflow-hidden mb-4">
-              <img
+              <MotionImage
                 src={currentImage}
                 alt={product.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                  const parent = (e.target as HTMLImageElement).parentElement!;
-                  parent.classList.add('flex', 'items-center', 'justify-center');
-                  const span = document.createElement('span');
-                  span.className = 'text-[#C9A84C]/30 text-lg text-center px-8 font-serif';
-                  span.textContent = product.name;
-                  parent.appendChild(span);
-                }}
+                index={selectedImage}
+                duration={10}
+                className="w-full h-full aspect-square"
+                fallback={
+                  <span className="text-[#C9A84C]/30 text-lg text-center px-8 font-serif">{product.name}</span>
+                }
               />
             </div>
             {allImages.length > 1 && (

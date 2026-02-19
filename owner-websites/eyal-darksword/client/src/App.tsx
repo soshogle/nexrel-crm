@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./contexts/CartContext";
 import { EcommerceContentProvider } from "./contexts/EcommerceContentContext";
 import CartDrawer from "./components/CartDrawer";
+import VoiceAIOrchestrator from "./components/VoiceAIOrchestrator";
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import CategoryPage from "./pages/CategoryPage";
@@ -73,6 +74,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <CartDrawer />
+            <VoiceAIOrchestrator />
             <Router />
           </TooltipProvider>
         </CartProvider>

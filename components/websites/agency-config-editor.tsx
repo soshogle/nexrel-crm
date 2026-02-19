@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Hourglass, Image as ImageIcon, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { PlaceAutocomplete } from '@/components/ui/place-autocomplete';
 
 const LIVE_SECONDS = 30;
 
@@ -222,13 +223,11 @@ export function AgencyConfigEditor({
 
       <div className="grid gap-2">
         <Label htmlFor="agency-address">Address</Label>
-        <Textarea
-          id="agency-address"
+        <PlaceAutocomplete
           value={form.address}
-          onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-          placeholder="Full address"
-          rows={2}
-          className="resize-none"
+          onChange={(val) => setForm((f) => ({ ...f, address: val }))}
+          placeholder="Start typing to search for an address..."
+          types="address"
         />
       </div>
 

@@ -327,8 +327,8 @@ export function AttractionEngine() {
                 <PlaceAutocomplete
                   value={region}
                   onChange={handleLocationChange}
-                  placeholder="Search city, neighborhood, or area..."
-                  types="(cities)"
+                  placeholder="Search city, neighborhood, or address..."
+                  types="geocode"
                 />
                 {placeData?.city && (
                   <p className="text-xs text-gray-500">
@@ -628,8 +628,8 @@ export function AttractionEngine() {
                 <PlaceAutocomplete
                   value={region}
                   onChange={handleLocationChange}
-                  placeholder="Search city, neighborhood, or area..."
-                  types="(cities)"
+                  placeholder="Search city, neighborhood, or address..."
+                  types="geocode"
                 />
                 {placeData?.city && (
                   <p className="text-xs text-gray-500">

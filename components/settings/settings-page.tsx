@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { PlaceAutocomplete } from '@/components/ui/place-autocomplete'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
@@ -357,16 +358,15 @@ export function SettingsPage({ session }: SettingsPageProps) {
                 {/* Address */}
                 <div className="space-y-2">
                   <Label htmlFor="address">Business Address</Label>
-                  <Textarea
-                    id="address"
+                  <PlaceAutocomplete
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="123 Main St, Suite 100&#10;City, State 12345&#10;Country"
+                    onChange={(val) => setAddress(val)}
+                    placeholder="Start typing to search for your address..."
+                    types="address"
                     disabled={isLoadingProfile}
-                    rows={3}
                   />
                   <p className="text-sm text-muted-foreground">
-                    Your complete business address
+                    Your complete business address (start typing for suggestions)
                   </p>
                 </div>
 

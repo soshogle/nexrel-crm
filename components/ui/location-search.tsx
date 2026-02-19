@@ -150,7 +150,7 @@ export function LocationSearch({
     
     const request: google.maps.places.AutocompletionRequest = {
       input,
-      types: ['(cities)'],
+      types: ['geocode'],
     };
 
     if (countryRestriction && countryRestriction.length > 0) {
@@ -165,6 +165,9 @@ export function LocationSearch({
           setPredictions(results);
           setShowDropdown(true);
         } else {
+          if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+            console.warn('[LocationSearch] Places API status:', status);
+          }
           setPredictions([]);
           setShowDropdown(false);
         }

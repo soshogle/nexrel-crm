@@ -14,6 +14,7 @@ import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
 import { GlobalSearchTrigger } from '@/app/components/unified-search'
 import { HITLNotificationBell } from '@/components/real-estate/workflows/hitl-notification-bell'
 import { HITLApprovalBanner } from '@/components/real-estate/workflows/hitl-approval-banner'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 interface DashboardWrapperProps {
   children: ReactNode
@@ -90,7 +91,9 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
       </aside>
 
       {/* HITL Approval Banner - Fixed at top */}
-      <HITLApprovalBanner />
+      <ErrorBoundary>
+        <HITLApprovalBanner />
+      </ErrorBoundary>
 
       {/* Main Content */}
       <main 
@@ -107,7 +110,11 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
             </h2>
             <div className="flex items-center gap-4">
               {/* HITL Notification Bell - Only for Real Estate users */}
-              {mounted && <HITLNotificationBell />}
+              {mounted && (
+                <ErrorBoundary>
+                  <HITLNotificationBell />
+                </ErrorBoundary>
+              )}
               <div className="w-96">
                 <GlobalSearchTrigger />
               </div>
@@ -127,15 +134,25 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
         </div>
 
         <div className="px-8 py-6">
-          {children}
+          <ErrorBoundary fallback={<div className="p-6 text-center text-gray-600">Something went wrong loading this page. Please refresh or try again.</div>}>
+            {children}
+          </ErrorBoundary>
         </div>
       </main>
 
       {/* AI Assistant */}
-      {mounted && <AIChatAssistant />}
+      {mounted && (
+        <ErrorBoundary>
+          <AIChatAssistant />
+        </ErrorBoundary>
+      )}
 
       {/* Global Voice Assistant */}
-      {mounted && <GlobalVoiceAssistant />}
+      {mounted && (
+        <ErrorBoundary>
+          <GlobalVoiceAssistant />
+        </ErrorBoundary>
+      )}
     </div>
     </AIBrainVoiceProvider>
   )

@@ -48,6 +48,52 @@ async function startServer() {
   // Nexrel products API (CRM website builder → proxy → here)
   registerNexrelProductsRoutes(app);
 
+  // ElevenLabs signed URL proxy (voice AI)
+  app.get("/api/voice/signed-url", async (req, res) => {
+    const agentId = req.query.agentId as string;
+    const crmUrl = process.env.NEXREL_CRM_URL;
+    const secret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
+    if (!agentId || !crmUrl) {
+      res.status(400).json({ error: "agentId required; NEXREL_CRM_URL not configured" });
+      return;
+    }
+    try {
+      const url = `${crmUrl.replace(/\/$/, "")}/api/elevenlabs/signed-url?agentId=${encodeURIComponent(agentId)}`;
+      const headers: Record<string, string> = {};
+      if (secret) headers["x-website-secret"] = secret;
+      const resp = await fetch(url, { headers });
+      const data = await resp.json();
+      res.status(resp.ok ? 200 : resp.status).json(data);
+    } catch (err) {
+      console.error("[voice/signed-url]", err);
+      res.status(502).json({ error: "Failed to get signed URL" });
+    }
+  });
+
+  // Website voice lead proxy (forwards to CRM)
+  app.post("/api/webhooks/website-voice-lead", async (req, res) => {
+    const crmUrl = process.env.NEXREL_CRM_URL;
+    const secret = process.env.WEBSITE_VOICE_CONFIG_SECRET || process.env.WEBSITE_SECRET;
+    if (!crmUrl) {
+      res.status(503).json({ error: "CRM not configured" });
+      return;
+    }
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (secret) headers["x-website-voice-secret"] = secret;
+      const proxyRes = await fetch(`${crmUrl.replace(/\/$/, "")}/api/webhooks/website-voice-lead`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(req.body),
+      });
+      const data = await proxyRes.json().catch(() => ({}));
+      res.status(proxyRes.status).json(data);
+    } catch (err) {
+      console.error("[website-voice-lead proxy]", err);
+      res.status(502).json({ error: "Failed to forward lead" });
+    }
+  });
+
   // E-commerce content from CRM (when NEXREL_CRM_URL + NEXREL_WEBSITE_ID are set)
   app.get("/api/ecommerce-content", async (_req, res) => {
     const crmUrl = process.env.NEXREL_CRM_URL;

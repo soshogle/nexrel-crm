@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Activity,
   CheckCircle,
@@ -20,6 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { formatDistanceToNow, format } from 'date-fns';
+import { parseWorkflowInstances, parseWorkflowExecutions } from '@/lib/api-validation';
 
 interface WorkflowInstance {
   id: string;
@@ -62,24 +63,71 @@ export function WorkflowInstanceMonitor() {
   const [loading, setLoading] = useState(true);
   const [expandedInstance, setExpandedInstance] = useState<string | null>(null);
 
-  const fetchInstances = async () => {
+  const abortRef = useRef<AbortController | null>(null);
+
+  const fetchInstances = async (signal?: AbortSignal) => {
     try {
-      const res = await fetch('/api/real-estate/workflows/instances');
+      const res = await fetch('/api/real-estate/workflows/instances', { signal });
       if (res.ok) {
         const data = await res.json();
-        setInstances(data.instances || []);
+        const parsed = parseWorkflowInstances(data.instances);
+        // Normalize template -> workflow for display (API returns template)
+        const normalized = parsed
+          .filter((inst) => inst?.id)
+          .map((inst) => {
+            const executions = parseWorkflowExecutions(inst.executions);
+            const tasks = (inst.template?.tasks ?? []).map((t: { id?: string; name?: string; displayOrder?: number }) => ({
+              id: t.id ?? '',
+              name: t.name ?? 'Task',
+              order: t.displayOrder ?? 0,
+            }));
+            return {
+              id: inst.id ?? '',
+              status: inst.status ?? 'UNKNOWN',
+              startedAt: inst.startedAt ?? '',
+              completedAt: inst.completedAt ?? null,
+              workflow: {
+                id: inst.templateId ?? '',
+                name: inst.template?.name ?? 'Workflow',
+                workflowType: 'BUYER_PIPELINE' as const,
+                tasks,
+              },
+              lead: inst.lead as WorkflowInstance['lead'],
+              deal: inst.deal as WorkflowInstance['deal'],
+              executions: executions.map((e) => ({
+                id: e.id ?? '',
+                status: e.status ?? 'PENDING',
+                startedAt: e.startedAt ?? null,
+                completedAt: e.completedAt ?? null,
+                task: {
+                  id: e.task?.id ?? e.taskId ?? '',
+                  name: e.task?.name ?? 'Task',
+                  order: e.task?.displayOrder ?? 0,
+                  isHITL: e.task?.isHITL ?? false,
+                },
+              })),
+            };
+          });
+        if (!signal?.aborted) setInstances(normalized);
       }
-    } catch (error) {
-      console.error('Error fetching workflow instances:', error);
+    } catch (err) {
+      if ((err as Error).name !== 'AbortError') {
+        console.error('Error fetching workflow instances:', err);
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchInstances();
-    const interval = setInterval(fetchInstances, 15000);
-    return () => clearInterval(interval);
+    abortRef.current = new AbortController();
+    const ac = abortRef.current;
+    fetchInstances(ac.signal);
+    const interval = setInterval(() => fetchInstances(ac.signal), 15000);
+    return () => {
+      clearInterval(interval);
+      ac.abort();
+    };
   }, []);
 
   const getStatusColor = (status: string) => {

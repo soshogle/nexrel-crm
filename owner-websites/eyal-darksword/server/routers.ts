@@ -15,6 +15,42 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 export const appRouter = router({
   system: systemRouter,
 
+  // Voice AI config (ElevenLabs) — fetches from CRM when NEXREL_CRM_URL + NEXREL_WEBSITE_ID set
+  voice: router({
+    getConfig: publicProcedure.query(async () => {
+      const crmUrl = process.env.NEXREL_CRM_URL;
+      const websiteId = process.env.NEXREL_WEBSITE_ID;
+      const secret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
+
+      if (crmUrl && websiteId) {
+        try {
+          const res = await fetch(`${crmUrl.replace(/\/$/, "")}/api/websites/${websiteId}/voice-config`, {
+            headers: secret ? { "x-website-secret": secret } : {},
+          });
+          if (res.ok) {
+            const data = (await res.json()) as { agentId?: string; enableVoiceAI?: boolean; enableTavusAvatar?: boolean; websiteId?: string };
+            return {
+              enableVoiceAI: data.enableVoiceAI ?? false,
+              enableTavusAvatar: false,
+              elevenLabsAgentId: data.agentId || null,
+              websiteId: data.websiteId || websiteId || null,
+              crmUrl: crmUrl?.replace(/\/$/, "") || null,
+            };
+          }
+        } catch (err) {
+          console.warn("[voice.getConfig] CRM fetch failed:", err);
+        }
+      }
+      return {
+        enableVoiceAI: !!process.env.NEXREL_ELEVENLABS_AGENT_ID,
+        enableTavusAvatar: false,
+        elevenLabsAgentId: process.env.NEXREL_ELEVENLABS_AGENT_ID || null,
+        websiteId: process.env.NEXREL_WEBSITE_ID || null,
+        crmUrl: process.env.NEXREL_CRM_URL?.replace(/\/$/, "") || null,
+      };
+    }),
+  }),
+
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

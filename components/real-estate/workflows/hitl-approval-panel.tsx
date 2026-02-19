@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { parseHITLNotifications } from '@/lib/api-validation';
 import {
   Shield,
   Clock,
@@ -77,14 +78,21 @@ export function HITLApprovalPanel() {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
 
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchNotifications = async () => {
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const signal = abortRef.current.signal;
     try {
-      const res = await fetch('/api/real-estate/workflows/hitl/pending');
+      const res = await fetch('/api/real-estate/workflows/hitl/pending', { signal });
       if (res.ok) {
         const data = await res.json();
-        setNotifications(data.notifications || []);
+        const parsed = parseHITLNotifications(data.notifications);
+        setNotifications(parsed as HITLNotification[]);
       }
     } catch (error) {
+      if ((error as Error).name === 'AbortError') return;
       console.error('Error fetching HITL notifications:', error);
     } finally {
       setLoading(false);
@@ -94,7 +102,10 @@ export function HITLApprovalPanel() {
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      abortRef.current?.abort();
+    };
   }, []);
 
   const handleApprove = async (notificationId: string) => {
@@ -197,7 +208,9 @@ export function HITLApprovalPanel() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {notifications.map((notification) => (
+          {notifications
+            .filter((n) => n?.taskExecution?.task)
+            .map((notification) => (
             <Card
               key={notification.id}
               className="bg-white border-2 border-purple-200 hover:border-amber-400 transition-all cursor-pointer shadow-md hover:shadow-lg"
@@ -213,18 +226,18 @@ export function HITLApprovalPanel() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      {getWorkflowTypeIcon(notification.taskExecution.workflowInstance.workflow.workflowType)}
+                      {getWorkflowTypeIcon(notification.taskExecution?.workflowInstance?.workflow?.workflowType)}
                       <span className="text-sm text-gray-600 font-medium">
-                        {notification.taskExecution.workflowInstance.workflow.name}
+                        {notification.taskExecution?.workflowInstance?.workflow?.name ?? 'Workflow'}
                       </span>
                       <span className="text-gray-400">•</span>
                       <span className="text-sm text-gray-500">
-                        Step {notification.taskExecution.task.order}
+                        Step {notification.taskExecution?.task?.order ?? 0}
                       </span>
                     </div>
 
                     <h3 className="text-lg font-bold text-gray-900">
-                      {notification.taskExecution.task.name}
+                      {notification.taskExecution?.task?.name ?? 'Task'}
                     </h3>
 
                     <p className="text-gray-600 text-sm mt-1">
@@ -233,19 +246,19 @@ export function HITLApprovalPanel() {
 
                     {/* Context */}
                     <div className="flex items-center gap-4 mt-3">
-                      {notification.taskExecution.workflowInstance.lead && (
+                      {notification.taskExecution?.workflowInstance?.lead && (
                         <div className="flex items-center gap-1 text-sm text-purple-600 font-medium">
                           <User className="h-4 w-4" />
                           <span>
-                            {notification.taskExecution.workflowInstance.lead.businessName}{' '}
-                            {notification.taskExecution.workflowInstance.lead.contactPerson || ''}
+                            {(notification.taskExecution.workflowInstance.lead as { businessName?: string; contactPerson?: string | null }).businessName}{' '}
+                            {(notification.taskExecution.workflowInstance.lead as { businessName?: string; contactPerson?: string | null }).contactPerson || ''}
                           </span>
                         </div>
                       )}
-                      {notification.taskExecution.workflowInstance.deal && (
+                      {notification.taskExecution?.workflowInstance?.deal && (
                         <div className="flex items-center gap-1 text-sm text-green-600 font-medium">
                           <span>
-                            ${notification.taskExecution.workflowInstance.deal.value?.toLocaleString()}
+                            ${notification.taskExecution?.workflowInstance?.deal?.value?.toLocaleString()}
                           </span>
                         </div>
                       )}
@@ -310,7 +323,7 @@ export function HITLApprovalPanel() {
               <DialogHeader className="bg-gradient-to-r from-purple-50 to-white p-4 -m-6 mb-4 rounded-t-lg border-b-2 border-purple-200">
                 <DialogTitle className="text-gray-900 flex items-center gap-2">
                   <Shield className="h-5 w-5 text-amber-600" />
-                  {selectedNotification.taskExecution.task.name}
+                  {selectedNotification.taskExecution?.task?.name ?? 'Task'}
                 </DialogTitle>
                 <DialogDescription className="text-gray-600">
                   Review the details below before approving or rejecting this task.
@@ -321,13 +334,13 @@ export function HITLApprovalPanel() {
                 {/* Task Description */}
                 <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
                   <h4 className="text-sm font-bold text-gray-900 mb-2">Task Description</h4>
-                  <p className="text-gray-700">
-                    {selectedNotification.taskExecution.task.description || 'No description provided.'}
+                    <p className="text-gray-700">
+                    {selectedNotification.taskExecution?.task?.description || 'No description provided.'}
                   </p>
                 </div>
 
                 {/* Lead/Deal Info */}
-                {selectedNotification.taskExecution.workflowInstance.lead && (
+                {selectedNotification.taskExecution?.workflowInstance?.lead && (
                   <div className="p-4 bg-purple-50 border-2 border-purple-200 rounded-lg">
                     <h4 className="text-sm font-bold text-purple-700 mb-2 flex items-center gap-2">
                       <User className="h-4 w-4" />
@@ -337,21 +350,21 @@ export function HITLApprovalPanel() {
                       <div>
                         <span className="text-gray-600">Name: </span>
                         <span className="text-gray-900 font-medium">
-                          {selectedNotification.taskExecution.workflowInstance.lead.businessName}{' '}
-                          {selectedNotification.taskExecution.workflowInstance.lead.contactPerson || ''}
+                          {(selectedNotification.taskExecution.workflowInstance.lead as { businessName?: string; contactPerson?: string | null }).businessName}{' '}
+                          {(selectedNotification.taskExecution.workflowInstance.lead as { businessName?: string; contactPerson?: string | null }).contactPerson || ''}
                         </span>
                       </div>
                       <div>
                         <span className="text-gray-600">Email: </span>
                         <span className="text-gray-900 font-medium">
-                          {selectedNotification.taskExecution.workflowInstance.lead.email}
+                          {selectedNotification.taskExecution?.workflowInstance?.lead?.email}
                         </span>
                       </div>
-                      {selectedNotification.taskExecution.workflowInstance.lead.phone && (
+                      {selectedNotification.taskExecution?.workflowInstance?.lead?.phone && (
                         <div>
                           <span className="text-gray-600">Phone: </span>
                           <span className="text-gray-900 font-medium">
-                            {selectedNotification.taskExecution.workflowInstance.lead.phone}
+                            {selectedNotification.taskExecution?.workflowInstance?.lead?.phone}
                           </span>
                         </div>
                       )}

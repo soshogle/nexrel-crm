@@ -10,7 +10,8 @@ interface PlaceAutocompleteProps {
   onChange: (value: string, placeData?: PlaceData) => void;
   placeholder?: string;
   className?: string;
-  types?: string; // e.g., '(cities)', '(regions)', 'address'
+  types?: string; // e.g., 'geocode', 'address', '(cities)', '(regions)'
+  disabled?: boolean;
 }
 
 export interface PlaceData {
@@ -75,7 +76,8 @@ export function PlaceAutocomplete({
   onChange,
   placeholder = 'Search location...',
   className,
-  types = '(cities)',
+  types = 'geocode',
+  disabled = false,
 }: PlaceAutocompleteProps) {
   const [inputValue, setInputValue] = useState(value);
   const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
@@ -146,6 +148,9 @@ export function PlaceAutocomplete({
           setPredictions(results);
           setShowDropdown(true);
         } else {
+          if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+            console.warn('[PlaceAutocomplete] Places API status:', status);
+          }
           setPredictions([]);
           setShowDropdown(false);
         }
@@ -236,7 +241,7 @@ export function PlaceAutocomplete({
           onFocus={() => predictions.length > 0 && setShowDropdown(true)}
           onBlur={handleBlur}
           placeholder={isGoogleLoaded ? placeholder : 'Loading...'}
-          disabled={!isGoogleLoaded}
+          disabled={disabled || !isGoogleLoaded}
           className={cn('pl-10 pr-8', className)}
           autoComplete="off"
         />

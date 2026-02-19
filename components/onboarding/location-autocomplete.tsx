@@ -113,13 +113,16 @@ export function LocationAutocomplete({ value, onChange, onTimezoneDetected }: Lo
     setIsLoading(true);
     
     autocompleteServiceRef.current.getPlacePredictions(
-      { input, types: ['(cities)'] },
+      { input, types: ['geocode'] },
       (results, status) => {
         setIsLoading(false);
         if (status === google.maps.places.PlacesServiceStatus.OK && results) {
           setPredictions(results);
           setShowDropdown(true);
         } else {
+          if (status !== google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+            console.warn('[LocationAutocomplete] Places API status:', status);
+          }
           setPredictions([]);
           setShowDropdown(false);
         }

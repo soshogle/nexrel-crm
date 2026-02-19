@@ -28,6 +28,26 @@ function getPool(connectionString: string): Pool {
   return pool;
 }
 
+export async function getWebsiteListingsCount(websiteId: string): Promise<{ count: number; error?: string }> {
+  try {
+    const website = await prisma.website.findFirst({
+      where: { id: websiteId },
+      select: { neonDatabaseUrl: true, templateType: true },
+    });
+
+    if (!website?.neonDatabaseUrl || website.templateType !== 'SERVICE') {
+      return { count: 0 };
+    }
+
+    const pool = getPool(website.neonDatabaseUrl);
+    const result = await pool.query('SELECT COUNT(*)::int as c FROM properties');
+    const count = result.rows[0]?.c ?? 0;
+    return { count };
+  } catch (e) {
+    return { count: 0, error: (e as Error).message };
+  }
+}
+
 export async function getWebsiteListings(websiteId: string): Promise<PropertyListing[]> {
   const website = await prisma.website.findFirst({
     where: { id: websiteId },
