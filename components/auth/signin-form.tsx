@@ -205,7 +205,11 @@ export function SignInForm() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <Alert variant="destructive" className="border-destructive/50 bg-red-900/20">
+                <Alert
+                  variant="destructive"
+                  className="border-destructive/50 bg-red-900/20"
+                  data-testid="signin-error"
+                >
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>

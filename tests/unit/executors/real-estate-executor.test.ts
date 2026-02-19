@@ -49,6 +49,11 @@ describe('Real Estate Executor', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (prisma.lead.findUnique as any).mockResolvedValue(mockLead);
+    // ensureREAgentProvisioned uses findUnique (compound key userId_employeeType)
+    (prisma.rEAIEmployeeAgent.findUnique as any).mockResolvedValue({
+      id: 'agent-1',
+      elevenLabsAgentId: 'elevenlabs-agent-1',
+    });
     (prisma.rEAIEmployeeAgent.findFirst as any).mockResolvedValue({
       id: 'agent-1',
       elevenLabsAgentId: 'elevenlabs-agent-1',
