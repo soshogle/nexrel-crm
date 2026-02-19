@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Users, CheckCircle2, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function ParentSignupPage() {
+function ParentSignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const codeFromUrl = searchParams?.get('code') || '';
@@ -430,5 +430,17 @@ export default function ParentSignupPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function ParentSignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-500 via-purple-600 to-pink-500">
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      </div>
+    }>
+      <ParentSignupForm />
+    </Suspense>
   );
 }
