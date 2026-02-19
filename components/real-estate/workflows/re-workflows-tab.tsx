@@ -1,8 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { WorkflowBuilder, type REWorkflowBuilderHandle } from './workflow-builder';
+import type { REWorkflowBuilderHandle } from './workflow-builder';
+
+const WorkflowBuilder = dynamic(
+  () => import('./workflow-builder').then((mod) => mod.WorkflowBuilder),
+  { ssr: false, loading: () => <div className="flex items-center justify-center h-96"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600" /></div> }
+);
 import { HITLApprovalPanel } from './hitl-approval-panel';
 import { WorkflowInstanceMonitor } from './workflow-instance-monitor';
 import { ScheduledWorkflowsList } from '@/components/workflows/scheduled-workflows-list';

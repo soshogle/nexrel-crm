@@ -6,6 +6,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useSession } from 'next-auth/react';
 import { Workflow, Play, Stethoscope, ClipboardList, Phone, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { WorkflowBuilder, type WorkflowBuilderHandle } from '@/components/workflows/workflow-builder';
+import type { WorkflowBuilderHandle } from '@/components/workflows/workflow-builder';
+
+const WorkflowBuilder = dynamic(
+  () => import('@/components/workflows/workflow-builder').then((mod) => mod.WorkflowBuilder),
+  { ssr: false, loading: () => <div className="flex items-center justify-center h-96"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600" /></div> }
+);
 import { Industry } from '@prisma/client';
 
 interface WorkflowTemplate {
