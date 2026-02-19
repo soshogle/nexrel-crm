@@ -3,7 +3,11 @@
  * Shared across HITL banner, notification bell, and approval panel.
  */
 
-import { parseHITLApprovals, parseHITLNotifications } from './api-validation';
+import {
+  parseHITLApprovals,
+  parseHITLNotifications,
+  type HITLPendingResponse,
+} from './api-validation';
 import { withCircuitBreaker } from './circuit-breaker';
 
 export const hitlQueryKeys = {
@@ -11,12 +15,7 @@ export const hitlQueryKeys = {
   pending: () => [...hitlQueryKeys.all, 'pending'] as const,
 };
 
-export interface HITLPendingResponse {
-  success: boolean;
-  notifications: unknown[];
-  pendingApprovals: unknown[];
-  totalPending?: number;
-}
+export type { HITLPendingResponse };
 
 async function fetchHITLPending(): Promise<HITLPendingResponse> {
   return withCircuitBreaker(

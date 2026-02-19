@@ -16,6 +16,17 @@ export const HITLRejectBodySchema = z.object({
   pauseWorkflow: z.boolean().optional(),
 });
 
+// ─── HITL Pending Response (full API response) ──────────────────────────────
+
+export const HITLPendingResponseSchema = z.object({
+  success: z.boolean().optional(),
+  notifications: z.array(z.unknown()).optional(),
+  pendingApprovals: z.array(z.unknown()).optional(),
+  totalPending: z.number().optional(),
+});
+
+export type HITLPendingResponse = z.infer<typeof HITLPendingResponseSchema>;
+
 // ─── HITL Pending Approvals ────────────────────────────────────────────────
 
 export const HITLApprovalSchema = z.object({
