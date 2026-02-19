@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Collapsible,
@@ -71,6 +71,7 @@ export function MenuPagesEditor({
   const [labels, setLabels] = useState<Record<string, string>>({ ...DEFAULT_PAGE_LABELS });
   const [nav, setNav] = useState<NavConfig>(DEFAULT_NAV);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
@@ -92,10 +93,13 @@ export function MenuPagesEditor({
 
   const handleSave = async () => {
     setSaving(true);
+    setSaved(false);
     try {
       await onSave({ navConfig: nav, pageLabels: labels });
       onUpdateLocal({ navConfig: nav, pageLabels: labels });
+      setSaved(true);
       toast.success('Menu & page labels saved');
+      setTimeout(() => setSaved(false), 3000);
     } catch {
       toast.error('Failed to save');
     } finally {
@@ -237,8 +241,22 @@ export function MenuPagesEditor({
         </CollapsibleContent>
       </Collapsible>
 
-      <Button size="sm" onClick={handleSave} disabled={saving}>
-        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Menu & Pages'}
+      <Button
+        size="sm"
+        onClick={handleSave}
+        disabled={saving}
+        className={saved ? 'bg-emerald-600 hover:bg-emerald-600' : ''}
+      >
+        {saving ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : saved ? (
+          <>
+            <Check className="h-4 w-4 mr-1" />
+            Saved
+          </>
+        ) : (
+          'Save Menu & Pages'
+        )}
       </Button>
     </div>
   );
