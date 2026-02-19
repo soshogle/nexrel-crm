@@ -129,6 +129,11 @@ export class CrmVoiceAgentService {
         },
         turn: {
           mode: 'turn',
+          turn_timeout_seconds: 30, // Max — prevents premature cutoff when user pauses
+        },
+        conversation: {
+          max_duration_seconds: 1800, // 30 min
+          turn_timeout_seconds: 30,
         },
       },
       platform_settings: {

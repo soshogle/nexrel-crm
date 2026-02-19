@@ -109,10 +109,18 @@ export async function GET(
       ? { ...DEFAULT_PAGE_LABELS, ...storedLabels }
       : DEFAULT_PAGE_LABELS;
 
+    // Maps script URL — broker sites load from CRM so they don't need GOOGLE_MAPS_API_KEY per deployment
+    const crmOrigin = request.nextUrl?.origin || process.env.NEXREL_PUBLIC_URL || process.env.NEXREL_CRM_URL || "";
+    const mapsScriptUrl =
+      process.env.GOOGLE_MAPS_API_KEY && crmOrigin
+        ? `${crmOrigin.replace(/\/$/, "")}/api/maps/js`
+        : null;
+
     const config = {
       brokerName: (stored.brokerName as string) || user?.name || 'Real Estate Professional',
       name: (stored.name as string) || website.name || user?.legalEntityName || 'Real Estate Agency',
       logoUrl: (stored.logoUrl as string) || user?.companyLogoUrl || '/placeholder-logo.svg',
+      mapsScriptUrl: (stored.mapsScriptUrl as string) || mapsScriptUrl,
       tagline: (stored.tagline as string) || 'Your trusted real estate partner',
       address: (stored.address as string) || user?.address || '',
       neighborhood: (stored.neighborhood as string) || '',

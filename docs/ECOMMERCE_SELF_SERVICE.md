@@ -1,6 +1,6 @@
 # E-commerce Self-Service
 
-Owners can edit content (products, pages, policies) in the website builder and see changes on the live site without redeploying.
+Owners can edit content (products, pages, policies) in the website builder and see changes on the live site without redeploying. For products, they can update **prices**, **sizes**, **colors**, and **product definitions** (title, description, images, etc.).
 
 ## Architecture
 
@@ -47,7 +47,7 @@ WEBSITE_VOICE_CONFIG_SECRET=<same_as_crm>
 
 1. Go to Dashboard → Websites → [Your site]
 2. Open the **Content** tab (PRODUCT template only)
-3. Edit Shipping, Privacy, Terms pages
+3. Edit products (prices, sizes, colors, product definitions), Shipping, Privacy, Terms pages
 4. Save — changes appear on the live site immediately
 
 ## API

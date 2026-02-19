@@ -35,6 +35,7 @@ export async function GET(
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
+    // List only — do not expose full content until user unlocks with email/phone
     const reports = await prisma.rEWebsiteReport.findMany({
       where: { websiteId },
       orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
@@ -44,8 +45,6 @@ export async function GET(
         title: true,
         region: true,
         executiveSummary: true,
-        content: true,
-        pdfUrl: true,
         createdAt: true,
       },
     });

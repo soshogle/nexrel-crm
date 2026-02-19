@@ -33,6 +33,8 @@ function mapApifyItemToProperty(item: Record<string, unknown>): Record<string, u
   const listingType =
     category.toLowerCase().includes("rent") || fromUrl.includes("rent") ? "rent" : "sale";
   const priceLabel = listingType === "rent" ? "mo" : "";
+  const priceVal = priceNum ?? 0;
+  const isPrestige = listingType === "sale" && priceVal >= 1_000_000;
 
   let city = "Montréal";
   let neighborhood: string | null = null;
@@ -68,7 +70,7 @@ function mapApifyItemToProperty(item: Record<string, unknown>): Record<string, u
         : "apartment",
     listing_type: listingType,
     status: "active",
-    price: String(priceNum || 0),
+    price: String(priceVal),
     price_label: priceLabel,
     address: title.slice(0, 500),
     neighborhood,
@@ -83,6 +85,7 @@ function mapApifyItemToProperty(item: Record<string, unknown>): Record<string, u
     gallery_images: item.image ? [item.image] : [],
     room_details: null,
     is_featured: false,
+    is_prestige: isPrestige,
     original_url: item.url || `https://www.centris.ca/en/property/${mls}`,
     latitude: Number.isFinite(latitude) ? latitude : null,
     longitude: Number.isFinite(longitude) ? longitude : null,
@@ -96,7 +99,7 @@ async function importToDatabase(
   const cols = [
     "mls_number", "title", "slug", "property_type", "listing_type", "status", "price", "price_label",
     "address", "neighborhood", "city", "province", "bedrooms", "bathrooms", "area", "area_unit",
-    "description", "main_image_url", "gallery_images", "is_featured", "room_details", "original_url",
+    "description", "main_image_url", "gallery_images", "is_featured", "is_prestige", "room_details", "original_url",
     "latitude", "longitude",
   ];
   const updateCols = cols.filter((c) => c !== "mls_number");
@@ -128,6 +131,7 @@ async function importToDatabase(
         p.main_image_url,
         JSON.stringify(p.gallery_images),
         p.is_featured,
+        p.is_prestige ?? false,
         p.room_details ? JSON.stringify(p.room_details) : null,
         p.original_url,
         p.latitude ?? null,

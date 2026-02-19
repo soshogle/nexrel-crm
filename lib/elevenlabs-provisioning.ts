@@ -342,6 +342,7 @@ class ElevenLabsProvisioningService {
           },
           conversation: {
             max_duration_seconds: options.maxCallDuration || 1800, // 30 minutes default
+            turn_timeout_seconds: 30, // Max — prevents premature cutoff when user pauses
           },
           asr: {
             // Automatic Speech Recognition settings
@@ -581,6 +582,7 @@ class ElevenLabsProvisioningService {
           },
           conversation: {
             max_duration_seconds: options.maxCallDuration || 1800,
+            turn_timeout_seconds: 30, // Max — prevents premature cutoff when user pauses
           },
           asr: {
             quality: 'high', // FIXED: ElevenLabs API only accepts 'high' (not 'standard')

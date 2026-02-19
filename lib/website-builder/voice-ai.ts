@@ -169,6 +169,194 @@ If you don't know something, politely direct them to our contact form or website
   }
 
   /**
+   * Real estate client tools schema for ElevenLabs.
+   * Matches the client implementation in ElevenLabsVoiceAgent.tsx.
+   * Used so the LLM knows to pass bathrooms, min_price, max_price, property_type, etc.
+   */
+  private getRealEstateClientTools(): Array<{
+    type: 'client';
+    name: string;
+    description: string;
+    parameters: {
+      type: 'object';
+      description?: string;
+      required?: string[];
+      properties: Record<
+        string,
+        { type: string; description: string; enum?: string[] }
+      >;
+    };
+    expects_response?: boolean;
+  }> {
+    return [
+      {
+        type: 'client',
+        name: 'searchListings',
+        description:
+          'Search for property listings by criteria. Use when the user asks to see listings (e.g. "show me 2 bedroom houses in Saint-Laurent between 400000 and 500000", "find rentals in Ville Saint-Laurent", "2 bedroom 2 bath apartments for rent under 2000"). Updates the page to show results on screen. Works for both for sale and for rent.',
+        parameters: {
+          type: 'object',
+          description: 'Search criteria for property listings',
+          required: [],
+          properties: {
+            bedrooms: {
+              type: 'integer',
+              description: 'Number of bedrooms (e.g. 2)',
+            },
+            bathrooms: {
+              type: 'integer',
+              description: 'Number of bathrooms (e.g. 2)',
+            },
+            city: {
+              type: 'string',
+              description:
+                'City or neighborhood (e.g. Ville Saint-Laurent, Montreal)',
+            },
+            listing_type: {
+              type: 'string',
+              description:
+                'sale (for-sale) or rent (for-lease). Always pass rent when the user wants rentals.',
+              enum: ['sale', 'rent'],
+            },
+            property_type: {
+              type: 'string',
+              description:
+                'One of: house, condo, apartment, townhouse',
+              enum: ['house', 'condo', 'apartment', 'townhouse'],
+            },
+            min_price: {
+              type: 'number',
+              description: 'Minimum price (e.g. 400000)',
+            },
+            max_price: {
+              type: 'number',
+              description: 'Maximum price (e.g. 500000)',
+            },
+          },
+        },
+        expects_response: true,
+      },
+      {
+        type: 'client',
+        name: 'showListing',
+        description:
+          'Navigate to and display a specific property. Use when the user wants to see a particular listing (e.g. "show me that one", "open the first result").',
+        parameters: {
+          type: 'object',
+          required: ['slug'],
+          properties: {
+            slug: {
+              type: 'string',
+              description: 'Property slug (e.g. centris-12345)',
+            },
+          },
+        },
+        expects_response: false,
+      },
+      {
+        type: 'client',
+        name: 'getListingDetails',
+        description:
+          'Get full details of a property to describe to the user. Use when the user asks about a specific listing (e.g. "tell me more about this one", "what are the features?").',
+        parameters: {
+          type: 'object',
+          required: ['slug'],
+          properties: {
+            slug: {
+              type: 'string',
+              description: 'Property slug',
+            },
+          },
+        },
+        expects_response: true,
+      },
+    ];
+  }
+
+  /**
+   * Update a real estate website agent with the searchListings, showListing,
+   * and getListingDetails client tools (including bathrooms, min_price, max_price,
+   * property_type). Call this after agent creation or when adding new tool params.
+   */
+  async updateRealEstateAgentTools(
+    agentId: string,
+    userId?: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const apiKey =
+        (await voiceAIPlatform.getMasterApiKey()) ||
+        process.env.ELEVENLABS_API_KEY ||
+        '';
+      if (!apiKey) {
+        return { success: false, error: 'ElevenLabs API key not configured' };
+      }
+
+      const getRes = await fetch(
+        `${ELEVENLABS_BASE_URL}/convai/agents/${agentId}`,
+        { headers: { 'xi-api-key': apiKey } }
+      );
+      if (!getRes.ok) {
+        const err = await getRes.text();
+        return {
+          success: false,
+          error: `Failed to fetch agent: ${err}`,
+        };
+      }
+
+      const currentAgent = await getRes.json();
+      const tools = this.getRealEstateClientTools();
+
+      // ElevenLabs API: tools can be at conversation_config level or in prompt
+      const conv = currentAgent.conversation_config?.conversation || {};
+      const updatePayload = {
+        conversation_config: {
+          ...currentAgent.conversation_config,
+          agent: {
+            ...currentAgent.conversation_config?.agent,
+            prompt: {
+              ...currentAgent.conversation_config?.agent?.prompt,
+              tools,
+            },
+          },
+          conversation: {
+            ...conv,
+            max_duration_seconds: conv.max_duration_seconds ?? 1800,
+            turn_timeout_seconds: 30, // Max — prevents premature cutoff
+          },
+        },
+      };
+
+      const patchRes = await fetch(
+        `${ELEVENLABS_BASE_URL}/convai/agents/${agentId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'xi-api-key': apiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updatePayload),
+        }
+      );
+
+      if (!patchRes.ok) {
+        const err = await patchRes.text();
+        return {
+          success: false,
+          error: `Failed to update agent tools: ${err}`,
+        };
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('[WebsiteVoiceAI] updateRealEstateAgentTools failed:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
    * Delete voice AI agent
    */
   async deleteVoiceAIAgent(agentId: string): Promise<void> {
