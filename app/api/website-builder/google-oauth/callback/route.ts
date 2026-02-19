@@ -3,6 +3,8 @@
  * Handles OAuth callback and stores tokens in localStorage via postMessage
  */
 
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { googleSearchConsole } from '@/lib/website-builder/google-search-console';
 
