@@ -132,7 +132,7 @@ export function MediaPicker({ websiteId, open, onClose, onSelect, type }: MediaP
   };
 
   return (
-    <>
+    <div className="contents">
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -246,6 +246,6 @@ export function MediaPicker({ websiteId, open, onClose, onSelect, type }: MediaP
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
