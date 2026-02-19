@@ -11,6 +11,8 @@ import { rejectHITLGate } from '@/lib/real-estate/workflow-engine';
 import { apiErrors } from '@/lib/api-error';
 import { logger } from '@/lib/logger';
 import { HITLRejectBodySchema } from '@/lib/api-validation';
+import { getIdempotentResponse, setIdempotentResponse } from '@/lib/idempotency';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,9 +28,23 @@ export async function POST(
       return apiErrors.unauthorized();
     }
 
+    const rateKey = `hitl-reject:${session.user.id}`;
+    const rate = checkRateLimit(rateKey, 20, 60_000); // 20/min per user
+    if (!rate.success) {
+      return apiErrors.rateLimited('Too many rejection requests. Please wait a moment.');
+    }
+
     const body = await request.json().catch(() => ({}));
     const parsed = HITLRejectBodySchema.safeParse(body);
-    const { notes, pauseWorkflow } = parsed.success ? parsed.data : { notes: undefined, pauseWorkflow: undefined };
+    const { notes, pauseWorkflow, idempotencyKey: bodyKey } = parsed.success ? parsed.data : { notes: undefined, pauseWorkflow: undefined, idempotencyKey: undefined };
+    const key = bodyKey || request.headers.get('Idempotency-Key');
+
+    if (key) {
+      const cached = getIdempotentResponse(key, `hitl-reject:${params.id}`);
+      if (cached) {
+        return NextResponse.json(cached.body, { status: cached.status });
+      }
+    }
 
     // Find the task execution
     const execution = await prisma.rETaskExecution.findFirst({
@@ -69,12 +85,18 @@ export async function POST(
       }
     });
 
-    return NextResponse.json({
+    const responseBody = {
       success: true,
       execution: updatedExecution,
       message: pauseWorkflow ? 'Task rejected and workflow paused' : 'Task rejected',
       workflowPaused: pauseWorkflow
-    });
+    };
+
+    if (key) {
+      setIdempotentResponse(key, `hitl-reject:${params.id}`, 200, responseBody);
+    }
+
+    return NextResponse.json(responseBody);
   } catch (error) {
     logger.error('Error rejecting HITL', { component: 'hitl-reject', error: String(error) });
     return apiErrors.internal('Failed to reject task');

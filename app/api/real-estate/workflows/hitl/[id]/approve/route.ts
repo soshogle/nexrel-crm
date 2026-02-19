@@ -11,6 +11,8 @@ import { approveHITLGate } from '@/lib/real-estate/workflow-engine';
 import { apiErrors } from '@/lib/api-error';
 import { logger } from '@/lib/logger';
 import { HITLApproveBodySchema } from '@/lib/api-validation';
+import { getIdempotentResponse, setIdempotentResponse } from '@/lib/idempotency';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,9 +28,24 @@ export async function POST(
       return apiErrors.unauthorized();
     }
 
+    const rateKey = `hitl-approve:${session.user.id}`;
+    const rate = checkRateLimit(rateKey, 20, 60_000); // 20/min per user
+    if (!rate.success) {
+      return apiErrors.rateLimited('Too many approval requests. Please wait a moment.');
+    }
+
     const body = await request.json().catch(() => ({}));
     const parsed = HITLApproveBodySchema.safeParse(body);
     const notes = parsed.success ? parsed.data.notes : undefined;
+    const idempotencyKey = parsed.success ? parsed.data.idempotencyKey : undefined;
+    const key = idempotencyKey || request.headers.get('Idempotency-Key');
+
+    if (key) {
+      const cached = getIdempotentResponse(key, `hitl-approve:${params.id}`);
+      if (cached) {
+        return NextResponse.json(cached.body, { status: cached.status });
+      }
+    }
 
     // Find the task execution
     const execution = await prisma.rETaskExecution.findFirst({
@@ -85,13 +102,18 @@ export async function POST(
     const tasks = updatedExecution?.instance.template.tasks || [];
     const currentTaskIndex = tasks.findIndex((t: { id: string }) => t.id === updatedExecution?.taskId);
     const nextTask = tasks[currentTaskIndex + 1];
-
-    return NextResponse.json({
+    const responseBody = {
       success: true,
       execution: updatedExecution,
       message: 'Task approved successfully',
       nextTask: nextTask ? nextTask.name : null
-    });
+    };
+
+    if (key) {
+      setIdempotentResponse(key, `hitl-approve:${params.id}`, 200, responseBody);
+    }
+
+    return NextResponse.json(responseBody);
   } catch (error) {
     logger.error('Error approving HITL', { component: 'hitl-approve', error: String(error) });
     return apiErrors.internal('Failed to approve task');

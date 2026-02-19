@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const leadId = searchParams.get('leadId');
     const dealId = searchParams.get('dealId');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50') || 50, 100);
+    const cursor = searchParams.get('cursor');
 
     const where: any = {
       template: {
@@ -40,7 +41,8 @@ export async function GET(request: NextRequest) {
 
     const instances = await prisma.rEWorkflowInstance.findMany({
       where,
-      take: limit,
+      take: limit + 1, // Fetch one extra to check if there's a next page
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       orderBy: { startedAt: 'desc' },
       include: {
         template: {
@@ -87,7 +89,15 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ instances });
+    const hasMore = instances.length > limit;
+    const items = hasMore ? instances.slice(0, limit) : instances;
+    const nextCursor = hasMore ? items[items.length - 1]?.id : null;
+
+    return NextResponse.json({
+      instances: items,
+      nextCursor,
+      hasMore: !!nextCursor,
+    });
   } catch (error) {
     logger.error('Error fetching workflow instances', { component: 'workflow-instances', error: String(error) });
     return apiErrors.internal('Failed to fetch workflow instances');

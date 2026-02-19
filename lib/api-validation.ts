@@ -9,11 +9,13 @@ import { z } from 'zod';
 
 export const HITLApproveBodySchema = z.object({
   notes: z.string().optional(),
+  idempotencyKey: z.string().optional(),
 });
 
 export const HITLRejectBodySchema = z.object({
   notes: z.string().optional(),
   pauseWorkflow: z.boolean().optional(),
+  idempotencyKey: z.string().optional(),
 });
 
 // ─── HITL Pending Response (full API response) ──────────────────────────────
