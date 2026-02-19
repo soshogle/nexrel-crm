@@ -30,7 +30,7 @@ const CITY_TO_REGION: Record<string, string> = {
   gatineau: "gatineau",
   sherbrooke: "sherbrooke",
   saguenay: "saguenay",
-  trois rivieres: "trois_rivieres",
+  "trois rivieres": "trois_rivieres",
   "trois-rivieres": "trois_rivieres",
 };
 
