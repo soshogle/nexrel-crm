@@ -1,8 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { parseHITLNotifications } from '@/lib/api-validation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  hitlQueryKeys,
+  fetchHITLPendingData,
+  parsePanelNotifications,
+} from '@/lib/hitl-queries';
 import {
   Shield,
   Clock,
@@ -70,43 +75,24 @@ interface HITLNotification {
 
 export function HITLApprovalPanel() {
   const { data: session } = useSession() || {};
-  const [notifications, setNotifications] = useState<HITLNotification[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedNotification, setSelectedNotification] = useState<HITLNotification | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const queryClient = useQueryClient();
 
-  const abortRef = useRef<AbortController | null>(null);
+  const { data, isLoading } = useQuery({
+    queryKey: hitlQueryKeys.pending(),
+    queryFn: fetchHITLPendingData,
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
 
-  const fetchNotifications = async () => {
-    abortRef.current?.abort();
-    abortRef.current = new AbortController();
-    const signal = abortRef.current.signal;
-    try {
-      const res = await fetch('/api/real-estate/workflows/hitl/pending', { signal });
-      if (res.ok) {
-        const data = await res.json();
-        const parsed = parseHITLNotifications(data.notifications);
-        setNotifications(parsed as HITLNotification[]);
-      }
-    } catch (error) {
-      if ((error as Error).name === 'AbortError') return;
-      console.error('Error fetching HITL notifications:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => {
-      clearInterval(interval);
-      abortRef.current?.abort();
-    };
-  }, []);
+  const notifications: HITLNotification[] = data
+    ? (parsePanelNotifications(data) as HITLNotification[])
+    : [];
+  const loading = isLoading;
 
   const handleApprove = async (notificationId: string) => {
     setProcessingId(notificationId);
@@ -119,12 +105,12 @@ export function HITLApprovalPanel() {
 
       if (res.ok) {
         toast.success('Task approved! Workflow will continue.');
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        await queryClient.invalidateQueries({ queryKey: hitlQueryKeys.pending() });
         setSelectedNotification(null);
         setNotes('');
       } else {
-        const error = await res.json();
-        toast.error(error.error || 'Failed to approve');
+        const err = await res.json();
+        toast.error(err.message ?? err.error ?? 'Failed to approve');
       }
     } catch (error) {
       toast.error('Failed to approve task');
@@ -149,13 +135,13 @@ export function HITLApprovalPanel() {
 
       if (res.ok) {
         toast.success('Task rejected. Workflow paused.');
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        await queryClient.invalidateQueries({ queryKey: hitlQueryKeys.pending() });
         setSelectedNotification(null);
         setShowRejectDialog(false);
         setRejectReason('');
       } else {
-        const error = await res.json();
-        toast.error(error.error || 'Failed to reject');
+        const err = await res.json();
+        toast.error(err.message ?? err.error ?? 'Failed to reject');
       }
     } catch (error) {
       toast.error('Failed to reject task');

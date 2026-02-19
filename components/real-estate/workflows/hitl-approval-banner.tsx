@@ -1,73 +1,39 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Shield, X, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { parseHITLApprovals } from '@/lib/api-validation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
-
-interface HITLNotification {
-  id: string;
-  executionId: string;
-  taskName: string;
-  contactName?: string;
-  dealAddress?: string;
-  message: string;
-  urgency: string;
-  createdAt: string;
-}
+import {
+  hitlQueryKeys,
+  fetchHITLPendingData,
+  parseBannerNotifications,
+  type BannerNotification,
+} from '@/lib/hitl-queries';
 
 export function HITLApprovalBanner() {
   const { data: session } = useSession() || {};
-  const [notifications, setNotifications] = useState<HITLNotification[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const isRealEstateUser = (session?.user as any)?.industry === 'REAL_ESTATE';
 
-  const abortRef = useRef<AbortController | null>(null);
+  const { data, isLoading } = useQuery({
+    queryKey: hitlQueryKeys.pending(),
+    queryFn: fetchHITLPendingData,
+    enabled: !!isRealEstateUser,
+    refetchInterval: 30_000, // 30s poll
+    staleTime: 15_000, // 15s - show cached while refetching (stale-while-revalidate)
+  });
 
-  const fetchNotifications = async (signal?: AbortSignal) => {
-    if (!isRealEstateUser) return;
-    try {
-      const res = await fetch('/api/real-estate/workflows/hitl/pending', { signal });
-      if (res.ok) {
-        const data = await res.json();
-        const approvals = parseHITLApprovals(data.pendingApprovals);
-        const bannerNotifications = approvals.slice(0, 1).map((approval) => ({
-          id: approval.id ?? '',
-          executionId: approval.id ?? '',
-          taskName: approval.task?.name || 'Unknown Task',
-          contactName: approval.instance?.lead?.businessName || approval.instance?.lead?.contactPerson,
-          dealAddress: approval.instance?.deal?.title,
-          message: approval.task?.description || 'Requires your approval',
-          urgency: 'HIGH' as const,
-          createdAt: approval.createdAt ?? '',
-        }));
-        if (!signal?.aborted) setNotifications(bannerNotifications);
-      }
-    } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        console.error('Error fetching HITL notifications:', err);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (!isRealEstateUser) return;
-    abortRef.current = new AbortController();
-    const ac = abortRef.current;
-    fetchNotifications(ac.signal);
-    const interval = setInterval(() => fetchNotifications(ac.signal), 30000);
-    return () => {
-      clearInterval(interval);
-      ac.abort();
-    };
-  }, [isRealEstateUser]);
+  const notifications: BannerNotification[] = data
+    ? parseBannerNotifications(data)
+    : [];
 
   const handleApprove = async (executionId: string) => {
     setProcessingId(executionId);
@@ -80,11 +46,12 @@ export function HITLApprovalBanner() {
 
       if (res.ok) {
         toast.success('Task approved! Workflow will continue.');
-        setNotifications(prev => prev.filter(n => n.executionId !== executionId));
+        await queryClient.invalidateQueries({ queryKey: hitlQueryKeys.pending() });
       } else {
-        toast.error('Failed to approve');
+        const err = await res.json();
+        toast.error(err.message ?? err.error ?? 'Failed to approve');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to approve task');
     } finally {
       setProcessingId(null);
@@ -102,18 +69,19 @@ export function HITLApprovalBanner() {
 
       if (res.ok) {
         toast.success('Task rejected');
-        setNotifications(prev => prev.filter(n => n.executionId !== executionId));
+        await queryClient.invalidateQueries({ queryKey: hitlQueryKeys.pending() });
       } else {
-        toast.error('Failed to reject');
+        const err = await res.json();
+        toast.error(err.message ?? err.error ?? 'Failed to reject');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to reject task');
     } finally {
       setProcessingId(null);
     }
   };
 
-  const visibleNotifications = notifications.filter(n => !dismissedIds.has(n.id));
+  const visibleNotifications = notifications.filter((n) => !dismissedIds.has(n.id));
 
   if (!isRealEstateUser || visibleNotifications.length === 0) {
     return null;
@@ -153,7 +121,7 @@ export function HITLApprovalBanner() {
                   )}
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Button
                   size="sm"
@@ -183,7 +151,7 @@ export function HITLApprovalBanner() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => setDismissedIds(prev => new Set(prev).add(notification.id))}
+                  onClick={() => setDismissedIds((prev) => new Set(prev).add(notification.id))}
                   className="text-gray-600 hover:text-gray-900"
                 >
                   <X className="w-4 h-4" />

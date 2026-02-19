@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as SonnerToaster } from '@/components/ui/sonner'
 import { SessionProvider } from '@/components/providers/session-provider'
+import { QueryProvider } from '@/components/providers/query-provider'
 import { IntlProviderWrapper } from '@/components/providers/intl-provider-wrapper'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -56,6 +57,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
         <SessionProvider>
+          <QueryProvider>
           <IntlProviderWrapper>
             <ThemeProvider
               attribute="class"
@@ -68,6 +70,7 @@ export default function RootLayout({
               <SonnerToaster />
             </ThemeProvider>
           </IntlProviderWrapper>
+          </QueryProvider>
         </SessionProvider>
       </body>
     </html>

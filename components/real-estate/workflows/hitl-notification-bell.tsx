@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Shield, Clock, User, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { parseHITLNotifications } from '@/lib/api-validation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -14,80 +14,33 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
-
-interface HITLNotification {
-  id: string;
-  taskExecution: {
-    id: string;
-    task: {
-      name: string;
-      description: string;
-    };
-    workflowInstance: {
-      id: string;
-      lead?: { businessName: string; contactPerson: string | null; email: string | null } | null;
-      deal?: { title: string } | null;
-    };
-  };
-  message: string;
-  notificationType: string;
-  status: string;
-  createdAt: string;
-}
+import {
+  hitlQueryKeys,
+  fetchHITLPendingData,
+  parsePanelNotifications,
+} from '@/lib/hitl-queries';
+import type { HITLNotification } from '@/lib/api-validation';
 
 export function HITLNotificationBell() {
   const { data: session } = useSession() || {};
-  const [notifications, setNotifications] = useState<HITLNotification[]>([]);
-  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  // Check if user is in real estate industry
   const isRealEstateUser = (session?.user as any)?.industry === 'REAL_ESTATE';
 
-  const abortRef = useRef<AbortController | null>(null);
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: hitlQueryKeys.pending(),
+    queryFn: fetchHITLPendingData,
+    enabled: !!isRealEstateUser,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: true,
+    staleTime: 15_000,
+  });
 
-  // Fetch pending HITL notifications
-  const fetchNotifications = async (signal?: AbortSignal) => {
-    if (!isRealEstateUser) return;
-    setLoading(true);
-    try {
-      const res = await fetch('/api/real-estate/workflows/hitl/pending', { signal });
-      if (res.ok) {
-        const data = await res.json();
-        const parsed = parseHITLNotifications(data.notifications);
-        if (!signal?.aborted) setNotifications(parsed);
-      }
-    } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        console.error('Error fetching HITL notifications:', err);
-      }
-    } finally {
-      if (!signal?.aborted) setLoading(false);
-    }
-  };
-
-  // Poll for notifications every 30 seconds
-  useEffect(() => {
-    if (!isRealEstateUser) return;
-    abortRef.current = new AbortController();
-    const ac = abortRef.current;
-    fetchNotifications(ac.signal);
-    const interval = setInterval(() => fetchNotifications(ac.signal), 30000);
-    return () => {
-      clearInterval(interval);
-      ac.abort();
-    };
-  }, [isRealEstateUser]);
-
-  // Fetch when popover opens
-  useEffect(() => {
-    if (open && isRealEstateUser) {
-      const ac = new AbortController();
-      fetchNotifications(ac.signal);
-      return () => ac.abort();
-    }
-  }, [open, isRealEstateUser]);
+  const notifications: HITLNotification[] = data
+    ? parsePanelNotifications(data)
+    : [];
 
   const handleApprove = async (notificationId: string) => {
     setProcessingId(notificationId);
@@ -97,15 +50,15 @@ export function HITLNotificationBell() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notes: 'Approved via notification bell' }),
       });
-      
+
       if (res.ok) {
         toast.success('Task approved! Workflow will continue.');
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        await queryClient.invalidateQueries({ queryKey: hitlQueryKeys.pending() });
       } else {
-        const error = await res.json();
-        toast.error(error.error || 'Failed to approve');
+        const err = await res.json();
+        toast.error(err.message ?? err.error ?? 'Failed to approve');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to approve task');
     } finally {
       setProcessingId(null);
@@ -118,27 +71,27 @@ export function HITLNotificationBell() {
       const res = await fetch(`/api/real-estate/workflows/hitl/${notificationId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: 'Rejected via notification bell' }),
+        body: JSON.stringify({ notes: 'Rejected via notification bell' }),
       });
-      
+
       if (res.ok) {
         toast.success('Task rejected. Workflow paused.');
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        await queryClient.invalidateQueries({ queryKey: hitlQueryKeys.pending() });
       } else {
-        const error = await res.json();
-        toast.error(error.error || 'Failed to reject');
+        const err = await res.json();
+        toast.error(err.message ?? err.error ?? 'Failed to reject');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to reject task');
     } finally {
       setProcessingId(null);
     }
   };
 
-  // Don't render for non-real-estate users
   if (!isRealEstateUser) return null;
 
   const pendingCount = notifications.length;
+  const loading = isLoading || (open && isFetching);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -146,7 +99,7 @@ export function HITLNotificationBell() {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5 text-gray-600" />
           {pendingCount > 0 && (
-            <Badge 
+            <Badge
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-amber-500 text-white text-xs"
             >
               {pendingCount > 9 ? '9+' : pendingCount}
@@ -167,7 +120,7 @@ export function HITLNotificationBell() {
             Human-in-the-Loop tasks waiting for your approval
           </p>
         </div>
-        
+
         <ScrollArea className="max-h-[400px]">
           {notifications.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
@@ -177,79 +130,83 @@ export function HITLNotificationBell() {
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.filter((n) => n?.taskExecution?.task).map((notification) => (
-                <div key={notification.id} className="p-4 hover:bg-gray-50">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                      <Shield className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {notification.taskExecution?.task?.name ?? 'Task'}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {notification.message}
-                      </p>
-                      
-                      {/* Context: Lead or Deal */}
-                      {notification.taskExecution?.workflowInstance?.lead && (
-                        <div className="flex items-center gap-1 mt-2 text-xs text-blue-600">
-                          <User className="h-3 w-3" />
-                          <span>
-                            {notification.taskExecution?.workflowInstance?.lead?.businessName}{' '}
-                            {notification.taskExecution?.workflowInstance?.lead?.contactPerson || ''}
-                          </span>
-                        </div>
-                      )}
-                      {notification.taskExecution?.workflowInstance?.deal && (
-                        <div className="flex items-center gap-1 mt-2 text-xs text-green-600">
-                          <span className="font-medium">
-                            Deal: {notification.taskExecution?.workflowInstance?.deal?.title}
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
-                        <Clock className="h-3 w-3" />
-                        <span>{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+              {notifications
+                .filter((n) => n?.taskExecution?.task)
+                .map((notification) => (
+                  <div key={notification.id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                        <Shield className="h-5 w-5 text-amber-600" />
                       </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 mt-3">
-                        <Button
-                          size="sm"
-                          className="flex-1 h-8 bg-green-600 hover:bg-green-700"
-                          onClick={() => handleApprove(notification.id)}
-                          disabled={processingId === notification.id}
-                        >
-                          {processingId === notification.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <>
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Approve
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 h-8 border-red-300 text-red-600 hover:bg-red-50"
-                          onClick={() => handleReject(notification.id)}
-                          disabled={processingId === notification.id}
-                        >
-                          <XCircle className="h-3 w-3 mr-1" />
-                          Reject
-                        </Button>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {notification.taskExecution?.task?.name ?? 'Task'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {notification.message}
+                        </p>
+
+                        {notification.taskExecution?.workflowInstance?.lead && (
+                          <div className="flex items-center gap-1 mt-2 text-xs text-blue-600">
+                            <User className="h-3 w-3" />
+                            <span>
+                              {notification.taskExecution.workflowInstance.lead.businessName}{' '}
+                              {notification.taskExecution.workflowInstance.lead.contactPerson || ''}
+                            </span>
+                          </div>
+                        )}
+                        {notification.taskExecution?.workflowInstance?.deal && (
+                          <div className="flex items-center gap-1 mt-2 text-xs text-green-600">
+                            <span className="font-medium">
+                              Deal: {notification.taskExecution.workflowInstance.deal.title}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            {formatDistanceToNow(new Date(notification.createdAt ?? ''), {
+                              addSuffix: true,
+                            })}
+                          </span>
+                        </div>
+
+                        <div className="flex gap-2 mt-3">
+                          <Button
+                            size="sm"
+                            className="flex-1 h-8 bg-green-600 hover:bg-green-700"
+                            onClick={() => handleApprove(notification.id ?? '')}
+                            disabled={processingId === notification.id}
+                          >
+                            {processingId === notification.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Approve
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 h-8 border-red-300 text-red-600 hover:bg-red-50"
+                            onClick={() => handleReject(notification.id ?? '')}
+                            disabled={processingId === notification.id}
+                          >
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </ScrollArea>
-        
+
         {notifications.length > 0 && (
           <div className="p-3 border-t bg-gray-50">
             <Button
