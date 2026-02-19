@@ -13,7 +13,6 @@ import { AIBrainVoiceProvider } from '@/lib/ai-brain-voice-context'
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
 import { GlobalSearchTrigger } from '@/app/components/unified-search'
 import { HITLNotificationBell } from '@/components/real-estate/workflows/hitl-notification-bell'
-import { HITLApprovalBanner } from '@/components/real-estate/workflows/hitl-approval-banner'
 import { ErrorBoundary } from '@/components/error-boundary'
 
 interface DashboardWrapperProps {
@@ -86,11 +85,6 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
         {mounted && <SidebarNav isExpanded={isSidebarExpanded} />}
       </aside>
 
-      {/* HITL Approval Banner - Fixed at top */}
-      <ErrorBoundary>
-        <HITLApprovalBanner />
-      </ErrorBoundary>
-
       {/* Main Content */}
       <main 
         className={`
@@ -99,7 +93,7 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
         `}
       >
         {/* Top Bar with Search */}
-        <div className={`sticky top-0 z-40 bg-white border-b border-gray-200 px-8 py-4 ${mounted && (session?.user as any)?.industry === 'REAL_ESTATE' ? 'pt-20' : ''}`}>
+        <div className="sticky top-0 z-40 bg-white border-b border-gray-200 px-8 py-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">
               {session?.user?.name ?? 'Dashboard'}

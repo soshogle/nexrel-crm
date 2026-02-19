@@ -29,7 +29,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { type, sectionType, sectionIndex, layout, globalStyles, props, pagePath: reqPagePath } = body;
+    const { type, sectionType, sectionIndex, layout, globalStyles, props, pagePath: reqPagePath, pageSeo } = body;
     const pagePath = reqPagePath ?? '/';
 
     const structure = (website.structure || {}) as any;
@@ -87,6 +87,24 @@ export async function PATCH(
         ...(globalStyles.spacing && { spacing: { ...(newStructure.globalStyles?.spacing || {}), ...globalStyles.spacing } }),
       };
 
+      await prisma.website.update({
+        where: { id: params.id },
+        data: { structure: newStructure },
+      });
+      triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
+      return NextResponse.json({ success: true });
+    }
+
+    if (type === 'page_seo' && pageSeo && typeof pageSeo === 'object') {
+      const newStructure = JSON.parse(JSON.stringify(structure));
+      const pages = newStructure?.pages || [];
+      for (const [path, seo] of Object.entries(pageSeo)) {
+        const idx = pages.findIndex((p: any) => (p.path || '/') === path);
+        if (idx >= 0) {
+          pages[idx].seo = { ...(pages[idx].seo || {}), ...(seo as object) };
+        }
+      }
+      newStructure.pages = pages;
       await prisma.website.update({
         where: { id: params.id },
         data: { structure: newStructure },

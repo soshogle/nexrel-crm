@@ -22,6 +22,7 @@ const DEFAULT_NAV_CONFIG = {
     { label: 'News & Media', href: '/news', children: [{ label: 'Blog', href: '/blog' }] },
   ],
   topLinks: [
+    { label: 'Home', href: '/' },
     { label: 'Properties', href: '/properties' },
     { label: 'Get A Quote', href: '/get-a-quote' },
     { label: 'Contact', href: '/contact' },

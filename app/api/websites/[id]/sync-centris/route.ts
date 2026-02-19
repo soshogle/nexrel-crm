@@ -10,6 +10,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { runCentralCentrisSync, type BrokerOverride } from '@/lib/centris-sync';
+import { runRealtorSync } from '@/lib/realtor-sync';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -26,7 +27,7 @@ export async function POST(
 
     const website = await prisma.website.findFirst({
       where: { id: params.id, userId: session.user.id },
-      select: { id: true, templateType: true, neonDatabaseUrl: true },
+      select: { id: true, templateType: true, neonDatabaseUrl: true, agencyConfig: true },
     });
 
     if (!website) {
@@ -93,11 +94,27 @@ export async function POST(
     }
 
     const result = await runCentralCentrisSync(databaseUrls, 25, brokerOverrides.length > 0 ? brokerOverrides : undefined);
+
+    // Realtor.ca sync for this website if realtorBrokerUrl is set
+    let realtorResult: { fetched: number; imported: number; error?: string } | null = null;
+    if (website.neonDatabaseUrl) {
+      const ac = website.agencyConfig as Record<string, unknown> | null;
+      const realtorUrl = ac?.realtorBrokerUrl as string | undefined;
+      if (realtorUrl?.trim()) {
+        try {
+          realtorResult = await runRealtorSync(realtorUrl.trim(), website.neonDatabaseUrl);
+        } catch (err) {
+          realtorResult = { fetched: 0, imported: 0, error: String(err) };
+        }
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       fetched: result.fetched,
       databases: result.databases.length,
       details: result.databases,
+      realtor: realtorResult,
     });
   } catch (err) {
     console.error('[sync-centris]', err);

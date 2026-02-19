@@ -21,6 +21,7 @@ import { StockDashboard } from '@/components/websites/stock-dashboard';
 import { PropertyListings } from '@/components/websites/property-listings';
 import { AnalyticsSettings } from '@/components/websites/analytics-settings';
 import { EcommerceContentEditor } from '@/components/websites/ecommerce-content-editor';
+import { SeoEditor } from '@/components/websites/seo-editor';
 import { ProductsEditor } from '@/components/websites/products-editor';
 import { AgencyConfigEditor, type AgencyConfigForm } from '@/components/websites/agency-config-editor';
 import { MenuPagesEditor } from '@/components/websites/menu-pages-editor';
@@ -560,6 +561,7 @@ export default function WebsiteEditorPage() {
               <TabsTrigger value="content">Content</TabsTrigger>
             </>
           )}
+          <TabsTrigger value="seo">SEO & Ranking</TabsTrigger>
           <TabsTrigger value="stock">Stock & Inventory</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="approval">
@@ -917,6 +919,43 @@ export default function WebsiteEditorPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="seo" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>SEO & Google Ranking</CardTitle>
+              <CardDescription>
+                Configure meta tags, descriptions, and Open Graph data for better search visibility and social sharing.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SeoEditor
+                websiteId={website.id}
+                websiteName={website.name}
+                seoData={website.seoData as any}
+                structure={website.structure as any}
+                onSave={async (data) => {
+                  if (data.seoData) {
+                    const res = await fetch(`/api/websites/${website.id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ seoData: data.seoData }),
+                    });
+                    if (!res.ok) throw new Error((await res.json()).error);
+                  }
+                  if (data.pageSeo) {
+                    const res = await fetch(`/api/websites/${website.id}/structure`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ type: 'page_seo', pageSeo: data.pageSeo }),
+                    });
+                    if (!res.ok) throw new Error((await res.json()).error);
+                  }
+                  await fetchWebsite();
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="analytics" className="space-y-4">
           <AnalyticsSettings websiteId={params.id as string} />
         </TabsContent>
@@ -1164,6 +1203,39 @@ export default function WebsiteEditorPage() {
                     Paste your Centris.ca broker profile URL. When syncing, your listings will be marked featured and shown first on the home page.
                   </p>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="realtorBrokerUrl" className="text-xs">Your Realtor.ca agent URL (optional)</Label>
+                  <Input
+                    id="realtorBrokerUrl"
+                    placeholder="https://www.realtor.ca/agent/2237157/your-name-..."
+                    className="text-sm"
+                    defaultValue={(website.agencyConfig as { realtorBrokerUrl?: string })?.realtorBrokerUrl ?? ''}
+                    onBlur={async (e) => {
+                      const val = e.target.value.trim();
+                      const current = (website.agencyConfig as { realtorBrokerUrl?: string })?.realtorBrokerUrl ?? '';
+                      if (val === current) return;
+                      try {
+                        const agencyConfig = {
+                          ...(typeof website.agencyConfig === 'object' && website.agencyConfig ? website.agencyConfig : {}),
+                          realtorBrokerUrl: val || undefined,
+                        };
+                        const res = await fetch(`/api/websites/${website.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ agencyConfig }),
+                        });
+                        if (!res.ok) throw new Error('Failed to save');
+                        setWebsite((w) => (w ? { ...w, agencyConfig } : null));
+                        toast.success(val ? 'Realtor.ca URL saved. Run Sync to import your listings.' : 'Realtor.ca URL cleared');
+                      } catch {
+                        toast.error('Failed to save');
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Paste your Realtor.ca agent page URL. Sync will fetch your listings and add them to the home page rotation.
+                  </p>
+                </div>
                 <div className="flex items-center gap-2 pt-2">
                   {listingsCountLoading ? (
                     <span className="text-sm text-muted-foreground">Checking...</span>
@@ -1184,7 +1256,11 @@ export default function WebsiteEditorPage() {
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Sync failed');
-                        toast.success(`Synced ${data.fetched ?? 0} listings to ${data.databases ?? 1} database(s)`);
+                        let msg = `Synced ${data.fetched ?? 0} Centris listings to ${data.databases ?? 1} database(s)`;
+                        if (data.realtor?.imported != null && data.realtor.imported > 0) {
+                          msg += `, ${data.realtor.imported} Realtor.ca`;
+                        }
+                        toast.success(msg);
                         fetchListingsCount();
                       } catch (e) {
                         toast.error((e as Error).message || 'Sync failed');

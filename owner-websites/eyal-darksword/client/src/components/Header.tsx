@@ -4,6 +4,7 @@ import { Search, User, ShoppingCart, Menu, X, Heart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 
 const navLinks = [
+  { label: "HOME", href: "/" },
   { label: "MEDIEVAL SWORDS", href: "/category/medieval-swords" },
   { label: "ARMORS", href: "/category/medieval-armor" },
   { label: "DAGGERS", href: "/category/medieval-daggers" },
@@ -33,18 +34,9 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
-      <div className="container flex items-center justify-between h-16 lg:h-20">
-        {/* Mobile menu button */}
-        <button
-          className="lg:hidden p-2"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
+      <div className="container flex items-center justify-between h-16 lg:h-20 gap-4">
+        {/* Logo — top left on all screens */}
+        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
           <img
             src="https://www.darksword-armory.com/wp-content/uploads/2017/06/cropped-darksword-armory-logo-1.png"
             alt="Darksword Armory"
@@ -57,7 +49,7 @@ export default function Header() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center">
           {navLinks.map((link) => (
             <Link
               key={link.label}
@@ -71,32 +63,39 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* Right actions */}
-        <div className="flex items-center gap-3">
+        {/* Mobile menu + Right actions */}
+        <div className="flex items-center gap-1 sm:gap-3">
+          <button
+            className="lg:hidden min-h-[44px] min-w-[44px] flex items-center justify-center p-2 -m-2 hover:text-gold transition-colors"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
           <button
             onClick={() => setSearchOpen(!searchOpen)}
-            className="p-2 hover:text-gold transition-colors"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 -m-2 hover:text-gold transition-colors"
             aria-label="Search"
           >
             <Search className="w-5 h-5" />
           </button>
           <Link
             href="/wishlist"
-            className="p-2 hover:text-gold transition-colors hidden sm:block"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 -m-2 hover:text-gold transition-colors hidden sm:block"
             aria-label="Wishlist"
           >
             <Heart className="w-5 h-5" />
           </Link>
           <Link
             href="/account"
-            className="p-2 hover:text-gold transition-colors hidden sm:block"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 -m-2 hover:text-gold transition-colors hidden sm:block"
             aria-label="Account"
           >
             <User className="w-5 h-5" />
           </Link>
           <button
             onClick={() => setIsOpen(true)}
-            className="p-2 hover:text-gold transition-colors relative"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 -m-2 hover:text-gold transition-colors relative"
             aria-label="Cart"
           >
             <ShoppingCart className="w-5 h-5" />

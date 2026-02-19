@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Shield, Clock, User, CheckCircle, XCircle, Loader2 } from 'lucide-react';
@@ -21,11 +21,15 @@ import {
 } from '@/lib/hitl-queries';
 import type { HITLNotification } from '@/lib/api-validation';
 
+/** Voice agent / AI Brain accent color for HITL popup */
+const HITL_ACCENT = 'bg-purple-600';
+
 export function HITLNotificationBell() {
   const { data: session } = useSession() || {};
   const [open, setOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const hasAutoOpened = useRef(false);
 
   const isRealEstateUser = (session?.user as any)?.industry === 'REAL_ESTATE';
 
@@ -41,6 +45,15 @@ export function HITLNotificationBell() {
   const notifications: HITLNotification[] = data
     ? parsePanelNotifications(data)
     : [];
+
+  // Auto-open popover when pending HITL items exist (AI popup bubble next to bell)
+  useEffect(() => {
+    if (notifications.length > 0 && !hasAutoOpened.current) {
+      hasAutoOpened.current = true;
+      setOpen(true);
+    }
+    if (notifications.length === 0) hasAutoOpened.current = false;
+  }, [notifications.length]);
 
   const handleApprove = async (notificationId: string) => {
     setProcessingId(notificationId);
@@ -100,23 +113,23 @@ export function HITLNotificationBell() {
           <Bell className="h-5 w-5 text-gray-600" />
           {pendingCount > 0 && (
             <Badge
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-amber-500 text-white text-xs"
+              className={`absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 ${HITL_ACCENT} text-white text-xs`}
             >
               {pendingCount > 9 ? '9+' : pendingCount}
             </Badge>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 p-0" align="end">
-        <div className="p-4 border-b bg-gray-50">
+      <PopoverContent className="w-96 p-0 rounded-xl shadow-xl border border-gray-200" align="end">
+        <div className={`p-4 border-b rounded-t-xl ${HITL_ACCENT} text-white`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-amber-500" />
+              <Shield className="h-5 w-5" />
               <h3 className="font-semibold">HITL Approvals</h3>
             </div>
-            {loading && <Loader2 className="h-4 w-4 animate-spin text-gray-400" />}
+            {loading && <Loader2 className="h-4 w-4 animate-spin text-white/80" />}
           </div>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-white/90 mt-1">
             Human-in-the-Loop tasks waiting for your approval
           </p>
         </div>
@@ -135,8 +148,8 @@ export function HITLNotificationBell() {
                 .map((notification) => (
                   <div key={notification.id} className="p-4 hover:bg-gray-50">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                        <Shield className="h-5 w-5 text-amber-600" />
+                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                        <Shield className="h-5 w-5 text-purple-600" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">

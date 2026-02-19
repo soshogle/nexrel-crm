@@ -152,7 +152,12 @@ export function ElevenLabsAgent({
                 return true;
               }
             } catch (e) {
-              console.warn("[Voice] Audio connect:", e);
+              // InvalidStateError = element already connected (SDK or another instance) - stop retrying
+              if (e instanceof Error && e.name === "InvalidStateError") {
+                audioConnectedRef.current = true;
+              } else {
+                console.warn("[Voice] Audio connect:", e);
+              }
             }
             return false;
           };

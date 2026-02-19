@@ -161,17 +161,24 @@ export function CrmFramelessVoiceAgent({ agentId, loading, error }: CrmFrameless
           try {
             conversationRef.current?.setVolume?.({ volume: 1 });
           } catch {}
+          const audioConnectedRef = { current: false };
           const tryConnectAudio = () => {
+            if (audioConnectedRef.current) return true;
             try {
               const audioElement = document.querySelector('audio');
               if (audioElement && audioContextRef.current && analyserRef.current) {
                 const source = audioContextRef.current.createMediaElementSource(audioElement);
                 source.connect(analyserRef.current);
                 analyserRef.current.connect(audioContextRef.current.destination);
+                audioConnectedRef.current = true;
                 return true;
               }
             } catch (e) {
-              console.warn('[CRM Voice] Audio connect:', e);
+              if (e instanceof Error && e.name === 'InvalidStateError') {
+                audioConnectedRef.current = true;
+              } else {
+                console.warn('[CRM Voice] Audio connect:', e);
+              }
             }
             return false;
           };

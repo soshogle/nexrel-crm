@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react";
 
@@ -80,10 +80,29 @@ export default function HeroSection() {
     }
   };
 
+  const touchStartX = useRef(0);
+  const currentRef = useRef(current);
+  currentRef.current = current;
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 50) {
+      const c = currentRef.current;
+      const next = dx > 0 ? (c - 1 + slides.length) % slides.length : (c + 1) % slides.length;
+      goToSlide(next);
+    }
+  }, []);
+
   const slide = slides[current];
 
   return (
-    <section className="relative w-full h-[85vh] min-h-[600px] max-h-[900px] overflow-hidden">
+    <section
+      className="relative w-full h-[85vh] min-h-[400px] sm:min-h-[500px] md:min-h-[600px] max-h-[900px] overflow-hidden touch-pan-y"
+      onTouchStart={!videoPlaying ? handleTouchStart : undefined}
+      onTouchEnd={!videoPlaying ? handleTouchEnd : undefined}
+    >
       {/* === VIDEO PHASE === */}
       {videoPlaying && (
         <div className={`absolute inset-0 z-20 transition-opacity duration-800 ${videoFading ? "opacity-0" : "opacity-100"}`}>

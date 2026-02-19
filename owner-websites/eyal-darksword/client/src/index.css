@@ -90,8 +90,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    overflow-x: hidden;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),

@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Image as ImageIcon, Video, FileText, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,6 +19,7 @@ interface MediaItem {
   width?: number;
   height?: number;
   alt?: string;
+  metadata?: { description?: string };
 }
 
 interface MediaPickerProps {
@@ -31,6 +34,10 @@ export function MediaPicker({ websiteId, open, onClose, onSelect, type }: MediaP
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
+  const [editAlt, setEditAlt] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [savingMeta, setSavingMeta] = useState(false);
 
   useEffect(() => {
     if (open && websiteId) {
@@ -87,7 +94,45 @@ export function MediaPicker({ websiteId, open, onClose, onSelect, type }: MediaP
 
   const filteredMedia = type ? media.filter((m) => m.type === type) : media;
 
+  const openEditDialog = (m: MediaItem) => {
+    setEditingItem(m);
+    setEditAlt(m.alt || m.filename.replace(/\.[^/.]+$/, ''));
+    setEditDescription((m.metadata as { description?: string })?.description || '');
+  };
+
+  const handleConfirmImage = async () => {
+    if (!editingItem || !websiteId) return;
+    setSavingMeta(true);
+    try {
+      const altChanged = editAlt !== (editingItem.alt || editingItem.filename.replace(/\.[^/.]+$/, ''));
+      const descChanged = editDescription !== ((editingItem.metadata as { description?: string })?.description || '');
+      if (altChanged || descChanged) {
+        const res = await fetch(`/api/websites/${websiteId}/media/${editingItem.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ alt: editAlt, description: editDescription || null }),
+        });
+        if (!res.ok) throw new Error((await res.json()).error);
+        setMedia((prev) =>
+          prev.map((x) =>
+            x.id === editingItem.id
+              ? { ...x, alt: editAlt, metadata: { ...(x.metadata || {}), description: editDescription || undefined } }
+              : x
+          )
+        );
+      }
+      onSelect(editingItem.url, editAlt || undefined);
+      setEditingItem(null);
+      onClose();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save');
+    } finally {
+      setSavingMeta(false);
+    }
+  };
+
   return (
+    <>
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -114,10 +159,7 @@ export function MediaPicker({ websiteId, open, onClose, onSelect, type }: MediaP
                   <button
                     key={m.id}
                     type="button"
-                    onClick={() => {
-                      onSelect(m.url, m.alt || undefined);
-                      onClose();
-                    }}
+                    onClick={() => (m.type === 'IMAGE' ? openEditDialog(m) : (onSelect(m.url, m.alt || undefined), onClose()))}
                     className="aspect-square rounded-lg border overflow-hidden hover:ring-2 ring-primary transition-all"
                   >
                     {m.type === 'IMAGE' ? (
@@ -160,6 +202,50 @@ export function MediaPicker({ websiteId, open, onClose, onSelect, type }: MediaP
           </TabsContent>
         </Tabs>
       </DialogContent>
-    </Dialog>
+
+      {/* Image metadata editor (alt, description) for SEO */}
+      <Dialog open={!!editingItem} onOpenChange={(v) => !v && setEditingItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Image metadata (SEO)</DialogTitle>
+          </DialogHeader>
+          {editingItem && (
+            <div className="space-y-4">
+              <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                <img src={editingItem.thumbnailUrl || editingItem.url} alt={editAlt} className="w-full h-full object-contain" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="img-alt">Alt text</Label>
+                <Input
+                  id="img-alt"
+                  placeholder="Describe the image for accessibility and SEO"
+                  value={editAlt}
+                  onChange={(e) => setEditAlt(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="img-desc">Description</Label>
+                <Textarea
+                  id="img-desc"
+                  placeholder="Optional longer description for search engines"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={2}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingItem(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmImage} disabled={savingMeta}>
+              {savingMeta ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Use image
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
