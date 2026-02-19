@@ -23,26 +23,17 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         const normalizedEmail = credentials?.email?.trim().toLowerCase()
-        console.log('[AUTH DEBUG] authorize() called with email:', normalizedEmail)
         
         if (!normalizedEmail || !credentials?.password) {
-          console.log('[AUTH DEBUG] Missing email or password')
           return null
         }
 
         try {
-          console.log('[AUTH DEBUG] Querying database for user:', normalizedEmail)
-          
           // Check database connection first
           try {
             await prisma.$queryRaw`SELECT 1 as test`
-            console.log('[AUTH DEBUG] Database connection OK')
           } catch (dbError: any) {
-            console.error('[AUTH DEBUG] Database connection failed:', dbError.message)
-            console.error('[AUTH DEBUG] Database error details:', {
-              code: dbError.code,
-              meta: dbError.meta,
-            })
+            console.error('[AUTH] Database connection failed:', dbError.message)
             throw new Error(`Database connection failed: ${dbError.message}`)
           }
           
@@ -55,10 +46,7 @@ export const authOptions: NextAuthOptions = {
             }
           })
 
-          console.log('[AUTH DEBUG] User found:', !!user, 'Has password:', !!user?.password)
-
           if (!user || !user.password) {
-            console.log('[AUTH DEBUG] User not found or no password set')
             return null
           }
 
@@ -67,14 +55,9 @@ export const authOptions: NextAuthOptions = {
             user.password
           )
 
-          console.log('[AUTH DEBUG] Password valid:', isPasswordValid)
-
           if (!isPasswordValid) {
-            console.log('[AUTH DEBUG] Invalid password')
             return null
           }
-
-          console.log('[AUTH DEBUG] Login successful for user:', user.email)
           return {
             id: user.id,
             email: user.email,
@@ -84,10 +67,7 @@ export const authOptions: NextAuthOptions = {
             agencyName: user.agency?.name,
           }
         } catch (error: any) {
-          console.error('[AUTH DEBUG] Error during authorize:', error)
-          console.error('[AUTH DEBUG] Error stack:', error.stack)
-          console.error('[AUTH DEBUG] Error name:', error.name)
-          console.error('[AUTH DEBUG] Error code:', error.code)
+          console.error('[AUTH] Error during authorize:', error?.message ?? error)
           return null
         }
       }
@@ -101,8 +81,6 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signOut({ token }) {
-      console.log('🚪 SignOut event - Ending any active impersonation sessions for user:', token.id);
-      
       try {
         // End ALL active impersonation sessions for this Super Admin
         await prisma.superAdminSession.updateMany({
@@ -115,10 +93,8 @@ export const authOptions: NextAuthOptions = {
             endedAt: new Date()
           }
         });
-        
-        console.log('✅ All impersonation sessions ended for user:', token.id);
       } catch (error) {
-        console.error('❌ Error ending impersonation sessions during signout:', error);
+        console.error('[AUTH] Error ending impersonation sessions during signout:', error);
       }
     },
   },
@@ -139,18 +115,14 @@ export const authOptions: NextAuthOptions = {
             const hasDefaultStatus = existingUser.accountStatus === 'ACTIVE';
             
             if (isNewUser && hasDefaultStatus) {
-              console.log('🆕 New Google OAuth user detected, setting to PENDING_APPROVAL:', user.email);
-              
               await prisma.user.update({
                 where: { id: existingUser.id },
                 data: { accountStatus: 'PENDING_APPROVAL' }
               });
-              
-              console.log('✅ User status updated to PENDING_APPROVAL for:', user.email);
             }
           }
         } catch (error) {
-          console.error('❌ Error setting PENDING_APPROVAL for OAuth user:', error);
+          console.error('[AUTH] Error setting PENDING_APPROVAL for OAuth user:', error);
         }
       }
       
@@ -158,68 +130,23 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, account, trigger, session }): Promise<any> {
-      console.log('🔧 JWT Callback triggered -', { 
-        trigger, 
-        hasUser: !!user, 
-        tokenId: token.id,
-        sessionData: session 
-      });
-      
-      // ALWAYS check for active impersonation first, regardless of trigger
-      // Store the original token.id (Super Admin ID) before any modifications
       const originalUserId = token.originalUserId || token.id;
       const wasImpersonating = token.isImpersonating === true;
-      
-      console.log('🔍 JWT Callback - Starting impersonation check:', {
-        trigger,
-        hasUser: !!user,
-        originalUserId,
-        tokenId: token.id,
-        tokenIsImpersonating: token.isImpersonating,
-        wasImpersonating,
-        forcedRefresh: session?.trigger === 'checkImpersonation',
-      });
-      
-      // Only check for impersonation if we don't have fresh user data (i.e., not a new login)
-      // On fresh login, 'user' will be present and we should use that instead
-      if (originalUserId && !user) {
+      // Only run impersonation DB queries for super admins (or when resetting from impersonation)
+      const shouldCheckImpersonation =
+        originalUserId &&
+        !user &&
+        (token.originalUserIsSuperAdmin === true || wasImpersonating);
+
+      if (shouldCheckImpersonation) {
         try {
-          // Check if the user (Super Admin) has an active impersonation session
-          // Session is valid if it's active and last activity was within 15 minutes
           const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-          
-          console.log('🔍 Querying for impersonation session:', {
-            superAdminId: originalUserId,
-            cutoffTime: fifteenMinutesAgo.toISOString(),
-          });
-          
-          // First, let's see ALL sessions for this admin to debug
-          const allSessions = await prisma.superAdminSession.findMany({
-            where: {
-              superAdminId: originalUserId as string,
-            },
-            orderBy: { startedAt: 'desc' },
-            take: 5,
-          });
-          
-          console.log('🔍 ALL sessions for this admin:', {
-            count: allSessions.length,
-            sessions: allSessions.map(s => ({
-              id: s.id,
-              isActive: s.isActive,
-              lastActivity: s.lastActivity?.toISOString(),
-              startedAt: s.startedAt.toISOString(),
-              impersonatedUserId: s.impersonatedUserId,
-            }))
-          });
-          
+
           const impersonationSession = await prisma.superAdminSession.findFirst({
             where: {
               superAdminId: originalUserId as string,
               isActive: true,
-              lastActivity: {
-                gte: fifteenMinutesAgo
-              }
+              lastActivity: { gte: fifteenMinutesAgo },
             },
             include: {
               impersonatedUser: {
@@ -233,7 +160,7 @@ export const authOptions: NextAuthOptions = {
                   industry: true,
                   onboardingCompleted: true,
                   accountStatus: true,
-                }
+                },
               },
               superAdmin: {
                 select: {
@@ -241,41 +168,19 @@ export const authOptions: NextAuthOptions = {
                   email: true,
                   name: true,
                   role: true,
-                }
-              }
-            }
-          });
-
-          console.log('🔍 Impersonation session query result:', {
-            found: !!impersonationSession,
-            sessionId: impersonationSession?.id,
-            isActive: impersonationSession?.isActive,
-            lastActivity: impersonationSession?.lastActivity?.toISOString(),
-            superAdminId: impersonationSession?.superAdminId,
-            impersonatedUserId: impersonationSession?.impersonatedUserId,
+                },
+              },
+            },
           });
 
           if (impersonationSession?.impersonatedUser) {
-            // ✅ UPDATE LAST ACTIVITY TO KEEP SESSION ALIVE
             await prisma.superAdminSession.update({
               where: { id: impersonationSession.id },
               data: { lastActivity: new Date() },
             });
-            console.log('✅ Updated lastActivity for impersonation session');
-            
-            // User is impersonating - return impersonated user's data
-            const impersonatedUser = impersonationSession.impersonatedUser;
-            console.log('✅✅✅ IMPERSONATION ACTIVE - RETURNING EARLY WITH IMPERSONATED USER DATA ✅✅✅');
-            console.log('✅ Impersonation active - returning impersonated user data:', {
-              superAdminId: impersonationSession.superAdminId,
-              superAdminEmail: impersonationSession.superAdmin.email,
-              impersonatedUserId: impersonatedUser.id,
-              impersonatedUserEmail: impersonatedUser.email,
-              impersonatedUserName: impersonatedUser.name,
-              isImpersonating: true,
-            });
 
-            const impersonatedToken = {
+            const impersonatedUser = impersonationSession.impersonatedUser;
+            return {
               id: impersonatedUser.id,
               email: impersonatedUser.email,
               name: impersonatedUser.name,
@@ -284,21 +189,15 @@ export const authOptions: NextAuthOptions = {
               parentRole: impersonatedUser.parentRole || false,
               industry: impersonatedUser.industry,
               onboardingCompleted: impersonatedUser.onboardingCompleted || false,
-              // Store impersonation context for display
               isImpersonating: true,
               superAdminId: impersonationSession.superAdminId,
               superAdminName: impersonationSession.superAdmin.name,
-              // Keep track of original user ID (Super Admin)
-              originalUserId: originalUserId,
+              originalUserId,
+              originalUserIsSuperAdmin: true,
             };
-            
-            console.log('✅ Token being returned:', JSON.stringify(impersonatedToken, null, 2));
-            return impersonatedToken;
-          } else if (wasImpersonating) {
-            // 🔄 Impersonation was active but is no longer - reset to super admin
-            console.log('🔄 Impersonation ended - resetting session to super admin');
-            
-            // Fetch the super admin's data to reset the token
+          }
+
+          if (wasImpersonating) {
             const superAdmin = await prisma.user.findUnique({
               where: { id: originalUserId as string },
               select: {
@@ -315,13 +214,6 @@ export const authOptions: NextAuthOptions = {
             });
 
             if (superAdmin) {
-              console.log('✅ Reset to super admin:', {
-                id: superAdmin.id,
-                email: superAdmin.email,
-                name: superAdmin.name,
-                role: superAdmin.role,
-              });
-
               return {
                 id: superAdmin.id,
                 email: superAdmin.email,
@@ -333,18 +225,14 @@ export const authOptions: NextAuthOptions = {
                 onboardingCompleted: superAdmin.onboardingCompleted || false,
                 isImpersonating: false,
                 originalUserId: superAdmin.id,
+                originalUserIsSuperAdmin: superAdmin.role === 'SUPER_ADMIN',
               };
-            } else {
-              console.error('❌ Super admin not found in database:', originalUserId);
             }
-          } else {
-            console.log('❌ No active impersonation session found - continuing with regular flow');
+            console.error('[AUTH] Super admin not found when resetting impersonation:', originalUserId);
           }
         } catch (error) {
-          console.error('❌ Error checking impersonation session:', error);
+          console.error('[AUTH] Error checking impersonation session:', error);
         }
-      } else if (user) {
-        console.log('🆕 Fresh login detected - user object present, skipping impersonation check');
       }
 
       if (user) {
@@ -377,9 +265,9 @@ export const authOptions: NextAuthOptions = {
               token.onboardingCompleted = dbUser.onboardingCompleted || false
               token.accountStatus = dbUser.accountStatus
               token.isImpersonating = false
-              token.originalUserId = dbUser.id // Store original user ID for impersonation tracking
+              token.originalUserId = dbUser.id
+              token.originalUserIsSuperAdmin = dbUser.role === 'SUPER_ADMIN'
             } else {
-              // Fallback if user not found
               token.id = userId as string
               token.role = user.role || 'USER'
               token.agencyId = user.agencyId as string | null
@@ -388,9 +276,10 @@ export const authOptions: NextAuthOptions = {
               token.industry = null
               token.onboardingCompleted = false
               token.originalUserId = userId as string
+              token.originalUserIsSuperAdmin = user.role === 'SUPER_ADMIN'
             }
           } catch (error) {
-            console.error('Error fetching user in JWT callback:', error)
+            console.error('[AUTH] Error fetching user in JWT callback:', error)
             // Fallback on error
             token.id = userId as string
             token.role = user.role || 'USER'
@@ -400,20 +289,17 @@ export const authOptions: NextAuthOptions = {
             token.industry = null
             token.onboardingCompleted = false
             token.originalUserId = userId as string
+            token.originalUserIsSuperAdmin = false
           }
         }
       }
 
-      // Ensure originalUserId is always set for impersonation tracking
       if (!token.originalUserId) {
         token.originalUserId = token.id
       }
-
-      console.log('🔧 JWT Callback complete - Final token state:', {
-        tokenId: token.id,
-        originalUserId: token.originalUserId,
-        isImpersonating: token.isImpersonating || false,
-      })
+      if (token.originalUserIsSuperAdmin === undefined) {
+        token.originalUserIsSuperAdmin = token.role === 'SUPER_ADMIN'
+      }
 
       return token
     },

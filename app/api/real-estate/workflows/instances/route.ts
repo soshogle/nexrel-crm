@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { apiErrors } from '@/lib/api-error';
 import { logger } from '@/lib/logger';
+import { WorkflowInstancesQuerySchema } from '@/lib/api-validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,11 +18,17 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const leadId = searchParams.get('leadId');
-    const dealId = searchParams.get('dealId');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50') || 50, 100);
-    const cursor = searchParams.get('cursor');
+    const queryResult = WorkflowInstancesQuerySchema.safeParse({
+      status: searchParams.get('status') ?? undefined,
+      leadId: searchParams.get('leadId') ?? undefined,
+      dealId: searchParams.get('dealId') ?? undefined,
+      limit: searchParams.get('limit') ?? undefined,
+      cursor: searchParams.get('cursor') ?? undefined,
+    });
+    if (!queryResult.success) {
+      return apiErrors.validationError('Invalid query parameters', queryResult.error.flatten());
+    }
+    const { status, leadId, dealId, limit, cursor } = queryResult.data;
 
     const where: any = {
       template: {

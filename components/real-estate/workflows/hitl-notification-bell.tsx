@@ -131,7 +131,7 @@ export function HITLNotificationBell() {
           ) : (
             <div className="divide-y">
               {notifications
-                .filter((n) => n?.taskExecution?.task)
+                .filter((n) => n && n.taskExecution && n.taskExecution.task)
                 .map((notification) => (
                   <div key={notification.id} className="p-4 hover:bg-gray-50">
                     <div className="flex items-start gap-3">

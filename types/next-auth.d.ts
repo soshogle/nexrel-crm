@@ -14,6 +14,7 @@ declare module "next-auth" {
       parentRole?: boolean
       industry?: string | null
       onboardingCompleted?: boolean
+      accountStatus?: string | null
       // Impersonation context
       isImpersonating?: boolean
       superAdminId?: string

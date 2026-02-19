@@ -1,4 +1,3 @@
-
 export const dynamic = "force-dynamic";
 export const runtime = 'nodejs';
 
@@ -7,20 +6,30 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers'
+import { apiErrors } from '@/lib/api-error'
+import { LeadCreateBodySchema, LeadsGetQuerySchema } from '@/lib/api-validation'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
-    const search = searchParams.get('search')
+    const queryResult = LeadsGetQuerySchema.safeParse({
+      status: searchParams.get('status') ?? undefined,
+      search: searchParams.get('search') ?? undefined,
+    })
+    if (!queryResult.success) {
+      return apiErrors.validationError('Invalid query parameters', queryResult.error.flatten())
+    }
+    const { status, search } = queryResult.data
 
-    const where: any = { userId: session.user.id }
+    const where: { userId: string; status?: string; OR?: Array<Record<string, unknown>> } = {
+      userId: session.user.id,
+    }
     
     if (status && status !== 'ALL') {
       where.status = status
@@ -51,23 +60,31 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(leads)
   } catch (error) {
     console.error('Get leads error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch leads')
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
-    const data = await request.json()
-    
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return apiErrors.badRequest('Invalid JSON body')
+    }
+
+    const parseResult = LeadCreateBodySchema.safeParse(body)
+    if (!parseResult.success) {
+      return apiErrors.validationError('Invalid lead data', parseResult.error.flatten())
+    }
+    const data = parseResult.data
+
     const lead = await prisma.lead.create({
       data: {
         ...data,
@@ -99,9 +116,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(lead)
   } catch (error) {
     console.error('Create lead error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to create lead')
   }
 }

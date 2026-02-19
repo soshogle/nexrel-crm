@@ -161,6 +161,11 @@ vi.mock('@/lib/db', () => {
       findFirst: vi.fn(),
       findMany: vi.fn(),
     },
+    pipeline: {
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+    },
   };
   
   return {

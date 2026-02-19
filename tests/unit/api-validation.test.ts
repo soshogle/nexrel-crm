@@ -11,6 +11,8 @@ import {
   parseWorkflowExecutions,
   parseIndustryWorkflowInstances,
   HITLPendingResponseSchema,
+  LeadCreateBodySchema,
+  LeadsGetQuerySchema,
 } from '@/lib/api-validation';
 
 describe('api-validation', () => {
@@ -119,6 +121,58 @@ describe('api-validation', () => {
       const result = parseIndustryWorkflowInstances(data);
       expect(result).toHaveLength(1);
       expect(result[0]?.workflowName).toBe('Onboarding');
+    });
+  });
+
+  describe('LeadCreateBodySchema', () => {
+    it('accepts valid lead with business name', () => {
+      const result = LeadCreateBodySchema.safeParse({
+        businessName: 'Acme Corp',
+        contactPerson: 'John',
+        email: 'john@acme.com',
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.businessName).toBe('Acme Corp');
+      }
+    });
+
+    it('accepts valid lead with contact person only (transforms businessName)', () => {
+      const result = LeadCreateBodySchema.safeParse({
+        contactPerson: 'Jane Doe',
+        email: 'jane@example.com',
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.businessName).toBe('Jane Doe');
+      }
+    });
+
+    it('rejects when neither business name nor contact person provided', () => {
+      const result = LeadCreateBodySchema.safeParse({
+        email: 'test@example.com',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects invalid email', () => {
+      const result = LeadCreateBodySchema.safeParse({
+        businessName: 'Acme',
+        email: 'not-an-email',
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('LeadsGetQuerySchema', () => {
+    it('accepts valid query params', () => {
+      const result = LeadsGetQuerySchema.safeParse({ status: 'NEW', search: 'acme' });
+      expect(result.success).toBe(true);
+    });
+
+    it('accepts empty params', () => {
+      const result = LeadsGetQuerySchema.safeParse({});
+      expect(result.success).toBe(true);
     });
   });
 

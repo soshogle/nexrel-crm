@@ -42,16 +42,16 @@ export interface BannerNotification {
 }
 
 export function parseBannerNotifications(data: HITLPendingResponse): BannerNotification[] {
-  const approvals = parseHITLApprovals(data.pendingApprovals ?? []);
+  const approvals = parseHITLApprovals(data.pendingApprovals ?? []).filter(Boolean);
   return approvals.slice(0, 1).map((approval) => ({
-    id: approval.id ?? '',
-    executionId: approval.id ?? '',
-    taskName: approval.task?.name || 'Unknown Task',
-    contactName: approval.instance?.lead?.businessName || approval.instance?.lead?.contactPerson,
-    dealAddress: approval.instance?.deal?.title,
-    message: approval.task?.description || 'Requires your approval',
+    id: approval?.id ?? '',
+    executionId: approval?.id ?? '',
+    taskName: approval?.task?.name || 'Unknown Task',
+    contactName: approval?.instance?.lead?.businessName || approval?.instance?.lead?.contactPerson,
+    dealAddress: approval?.instance?.deal?.title,
+    message: approval?.task?.description || 'Requires your approval',
     urgency: 'HIGH' as const,
-    createdAt: approval.createdAt ?? '',
+    createdAt: approval?.createdAt ?? '',
   }));
 }
 

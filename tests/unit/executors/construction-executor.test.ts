@@ -37,6 +37,27 @@ describe('Construction Executor', () => {
     email: 'bob@example.com',
   };
 
+  const mockPipelineWithStages = {
+    id: 'pipeline-1',
+    userId: 'user-1',
+    name: 'Default Pipeline',
+    isDefault: true,
+    stages: [
+      { id: 'stage-1', name: 'Prospecting', displayOrder: 0, probability: 10 },
+      { id: 'stage-2', name: 'Estimate', displayOrder: 1, probability: 50 },
+      { id: 'stage-3', name: 'Won', displayOrder: 2, probability: 100 },
+    ],
+  };
+
+  const mockPipelineWithScheduledStage = {
+    ...mockPipelineWithStages,
+    stages: [
+      { id: 'stage-1', name: 'Prospecting', displayOrder: 0, probability: 10 },
+      { id: 'stage-2', name: 'Scheduled', displayOrder: 1, probability: 75 },
+      { id: 'stage-3', name: 'Won', displayOrder: 2, probability: 100 },
+    ],
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     (prisma.lead.findUnique as any).mockResolvedValue(mockLead);
@@ -46,6 +67,7 @@ describe('Construction Executor', () => {
       value: 50000,
     });
     (prisma.task.create as any).mockResolvedValue({ id: 'task-created-1' });
+    (prisma.pipeline.findFirst as any).mockResolvedValue(mockPipelineWithStages);
   });
 
   describe('estimate_generation', () => {
@@ -66,6 +88,12 @@ describe('Construction Executor', () => {
 
   describe('project_scheduling', () => {
     it('should schedule project and create deal', async () => {
+      (prisma.pipeline.findFirst as any).mockResolvedValue(mockPipelineWithScheduledStage);
+      (prisma.bookingAppointment.create as any).mockResolvedValue({
+        id: 'appointment-1',
+        appointmentDate: new Date('2024-12-25'),
+      });
+
       const result = await executeConstructionAction(
         'project_scheduling',
         {
@@ -133,11 +161,23 @@ describe('Construction Executor', () => {
 
   describe('project_completion', () => {
     it('should complete project and update deal', async () => {
-      (prisma.deal.findUnique as any).mockResolvedValue({
-        id: 'deal-1',
-        title: 'Construction Project',
-        leadId: 'lead-1',
-      });
+      (prisma.deal.findUnique as any)
+        .mockResolvedValueOnce({
+          id: 'deal-1',
+          title: 'Construction Project',
+          leadId: 'lead-1',
+        })
+        .mockResolvedValueOnce({
+          id: 'deal-1',
+          title: 'Construction Project',
+          leadId: 'lead-1',
+          pipeline: {
+            stages: [
+              { id: 'stage-1', name: 'Prospecting', probability: 10 },
+              { id: 'stage-2', name: 'Won', probability: 100 },
+            ],
+          },
+        });
 
       const result = await executeConstructionAction(
         'project_completion',

@@ -10,9 +10,6 @@ import { IntlProviderWrapper } from '@/components/providers/intl-provider-wrappe
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const dynamic = "force-dynamic"
-// Trigger redeploy
-
 function getMetadataBase(): string {
   if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`

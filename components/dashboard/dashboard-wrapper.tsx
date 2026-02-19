@@ -30,26 +30,22 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
     setMounted(true)
   }, [])
 
-  // Force session refresh on mount ONCE to ensure impersonation state is detected
+  // Force session refresh on mount ONCE for super admins to detect impersonation state
   useEffect(() => {
-    // Only run once when status becomes authenticated and hasn't been checked yet
     if (status === 'authenticated' && !sessionChecked && mounted) {
-      setSessionChecked(true) // Prevent future runs
-      
-      
-      // Check localStorage for impersonation data
-      const hasLocalStorageData = typeof window !== 'undefined' && 
-        window.localStorage.getItem('impersonationToken');
-      
-      if (hasLocalStorageData) {
-        // Only update if we have impersonation data
-        update({ trigger: 'checkImpersonation' }).catch(err => {
-          console.error('❌ Session refresh failed:', err)
+      setSessionChecked(true)
+      const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN'
+      const hasLocalStorageData =
+        typeof window !== 'undefined' &&
+        window.localStorage.getItem('impersonationToken')
+      if (isSuperAdmin && hasLocalStorageData) {
+        update({ trigger: 'checkImpersonation' }).catch((err) => {
+          console.error('[AUTH] Session refresh failed:', err)
         })
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, mounted, sessionChecked]) // Removed 'update' from dependencies to prevent infinite loop
+  }, [status, mounted, sessionChecked])
 
   return (
     <AIBrainVoiceProvider>
