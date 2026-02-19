@@ -8,6 +8,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { approveHITLGate } from '@/lib/real-estate/workflow-engine';
+import { apiErrors } from '@/lib/api-error';
+import { logger } from '@/lib/logger';
+import { HITLApproveBodySchema } from '@/lib/api-validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,11 +23,12 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
-    const body = await request.json();
-    const { notes } = body;
+    const body = await request.json().catch(() => ({}));
+    const parsed = HITLApproveBodySchema.safeParse(body);
+    const notes = parsed.success ? parsed.data.notes : undefined;
 
     // Find the task execution
     const execution = await prisma.rETaskExecution.findFirst({
@@ -52,10 +56,7 @@ export async function POST(
     });
 
     if (!execution) {
-      return NextResponse.json(
-        { error: 'Task execution not found or not awaiting approval' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Task execution not found or not awaiting approval');
     }
 
     // Approve HITL gate using the engine
@@ -92,11 +93,8 @@ export async function POST(
       nextTask: nextTask ? nextTask.name : null
     });
   } catch (error) {
-    console.error('Error approving HITL:', error);
-    return NextResponse.json(
-      { error: 'Failed to approve task' },
-      { status: 500 }
-    );
+    logger.error('Error approving HITL', { component: 'hitl-approve', error: String(error) });
+    return apiErrors.internal('Failed to approve task');
   }
 }
 

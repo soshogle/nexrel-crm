@@ -8,6 +8,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { rejectHITLGate } from '@/lib/real-estate/workflow-engine';
+import { apiErrors } from '@/lib/api-error';
+import { logger } from '@/lib/logger';
+import { HITLRejectBodySchema } from '@/lib/api-validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,11 +23,12 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
-    const body = await request.json();
-    const { notes, pauseWorkflow } = body;
+    const body = await request.json().catch(() => ({}));
+    const parsed = HITLRejectBodySchema.safeParse(body);
+    const { notes, pauseWorkflow } = parsed.success ? parsed.data : { notes: undefined, pauseWorkflow: undefined };
 
     // Find the task execution
     const execution = await prisma.rETaskExecution.findFirst({
@@ -42,10 +46,7 @@ export async function POST(
     });
 
     if (!execution) {
-      return NextResponse.json(
-        { error: 'Task execution not found or not awaiting approval' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Task execution not found or not awaiting approval');
     }
 
     // If pauseWorkflow is true, pause the entire workflow instance
@@ -75,10 +76,7 @@ export async function POST(
       workflowPaused: pauseWorkflow
     });
   } catch (error) {
-    console.error('Error rejecting HITL:', error);
-    return NextResponse.json(
-      { error: 'Failed to reject task' },
-      { status: 500 }
-    );
+    logger.error('Error rejecting HITL', { component: 'hitl-reject', error: String(error) });
+    return apiErrors.internal('Failed to reject task');
   }
 }

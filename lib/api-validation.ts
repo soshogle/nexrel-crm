@@ -1,9 +1,20 @@
 /**
- * Zod schemas for validating critical API responses.
+ * Zod schemas for validating critical API responses and request bodies.
  * Use parseSafe() to filter invalid items instead of throwing.
  */
 
 import { z } from 'zod';
+
+// ─── HITL Request Bodies ───────────────────────────────────────────────────
+
+export const HITLApproveBodySchema = z.object({
+  notes: z.string().optional(),
+});
+
+export const HITLRejectBodySchema = z.object({
+  notes: z.string().optional(),
+  pauseWorkflow: z.boolean().optional(),
+});
 
 // ─── HITL Pending Approvals ────────────────────────────────────────────────
 
