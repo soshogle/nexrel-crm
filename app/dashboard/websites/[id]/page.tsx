@@ -23,6 +23,7 @@ import { AnalyticsSettings } from '@/components/websites/analytics-settings';
 import { EcommerceContentEditor } from '@/components/websites/ecommerce-content-editor';
 import { ProductsEditor } from '@/components/websites/products-editor';
 import { AgencyConfigEditor, type AgencyConfigForm } from '@/components/websites/agency-config-editor';
+import { MenuPagesEditor } from '@/components/websites/menu-pages-editor';
 import { SectionEditor } from '@/components/website-builder/section-editor';
 import { GlobalStylesEditor } from '@/components/website-builder/global-styles-editor';
 import { WebsiteFilesManager } from '@/components/website-builder/website-files-manager';
@@ -60,6 +61,8 @@ interface Website {
   elevenLabsAgentId?: string;
   enableTavusAvatar?: boolean;
   agencyConfig?: Record<string, unknown> | null;
+  navConfig?: Record<string, unknown> | null;
+  pageLabels?: Record<string, string> | null;
   pendingChanges?: any;
   createdAt: string;
   updatedAt: string;
@@ -1224,6 +1227,42 @@ export default function WebsiteEditorPage() {
                   );
                 }}
                 onUpdateLocal={() => {}}
+              />
+            </div>
+            <div className="pt-4 border-t space-y-4">
+              <p className="text-sm font-medium">Menu & Pages</p>
+              <MenuPagesEditor
+                websiteId={website.id}
+                navConfig={website.navConfig ?? null}
+                pageLabels={website.pageLabels ?? null}
+                onSave={async (updates) => {
+                  const res = await fetch(`/api/websites/${website.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates),
+                  });
+                  if (!res.ok) throw new Error('Failed to save');
+                  setWebsite((w) =>
+                    w
+                      ? {
+                          ...w,
+                          navConfig: updates.navConfig ?? w.navConfig,
+                          pageLabels: updates.pageLabels ?? w.pageLabels,
+                        }
+                      : null
+                  );
+                }}
+                onUpdateLocal={(updates) => {
+                  setWebsite((w) =>
+                    w
+                      ? {
+                          ...w,
+                          navConfig: updates.navConfig ?? w.navConfig,
+                          pageLabels: updates.pageLabels ?? w.pageLabels,
+                        }
+                      : null
+                  );
+                }}
               />
             </div>
             <div className="pt-4 border-t space-y-3">

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Website" ADD COLUMN IF NOT EXISTS "navConfig" JSONB;
+ALTER TABLE "Website" ADD COLUMN IF NOT EXISTS "pageLabels" JSONB;

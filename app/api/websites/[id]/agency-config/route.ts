@@ -1,6 +1,6 @@
 /**
  * GET /api/websites/[id]/agency-config
- * Returns agency config for a website (logo, name, contact, etc.).
+ * Returns agency config for a website (logo, name, contact, nav, page labels).
  * Used by owner-deployed templates to fetch config at runtime.
  * Auth: session OR x-website-secret header (for template server fetches)
  */
@@ -11,6 +11,44 @@ import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+/** Default nav structure for SERVICE template — used when navConfig is empty */
+const DEFAULT_NAV_CONFIG = {
+  navItems: [
+    { label: 'Selling', href: '/selling', children: [{ label: 'For Sale', href: '/for-sale' }, { label: 'Sold Properties', href: '/sold' }, { label: 'Property Concierge', href: '/property-concierge' }, { label: 'Market Appraisal', href: '/market-appraisal' }] },
+    { label: 'Buying', href: '/buying', children: [{ label: 'For Sale', href: '/for-sale' }, { label: 'Prestige Properties', href: '/prestige' }, { label: 'Secret Properties', href: '/secret-properties' }] },
+    { label: 'Renting', href: '/renting', children: [{ label: 'For Lease', href: '/for-lease' }] },
+    { label: 'About', href: '/about', children: undefined },
+    { label: 'News & Media', href: '/news', children: [{ label: 'Blog', href: '/blog' }] },
+  ],
+  topLinks: [
+    { label: 'Properties', href: '/properties' },
+    { label: 'Get A Quote', href: '/get-a-quote' },
+    { label: 'Contact', href: '/contact' },
+    { label: 'Secret Properties', href: '/secret-properties' },
+  ],
+  footerLinks: [
+    { label: 'Properties', href: '/properties' },
+    { label: 'Buying', href: '/buying' },
+    { label: 'Selling', href: '/selling' },
+    { label: 'Renting', href: '/renting' },
+    { label: 'About', href: '/about' },
+    { label: 'Blog', href: '/blog' },
+    { label: 'Contact', href: '/contact' },
+  ],
+};
+
+/** Default page labels — used when pageLabels is empty */
+const DEFAULT_PAGE_LABELS: Record<string, string> = {
+  properties: 'Properties',
+  forSale: 'For Sale',
+  forLease: 'For Lease',
+  selling: 'Selling',
+  buying: 'Buying',
+  renting: 'Renting',
+  prestige: 'Prestige Properties',
+  secretProperties: 'Secret Properties',
+};
 
 export async function GET(
   request: NextRequest,
@@ -58,6 +96,18 @@ export async function GET(
     const stored = (website.agencyConfig as Record<string, unknown> | null) || {};
     const user = website.user;
 
+    // Merge navConfig with defaults (stored overrides defaults)
+    const storedNav = website.navConfig as Record<string, unknown> | null;
+    const navConfig = storedNav && Object.keys(storedNav).length > 0
+      ? { ...DEFAULT_NAV_CONFIG, ...storedNav }
+      : DEFAULT_NAV_CONFIG;
+
+    // Merge pageLabels with defaults
+    const storedLabels = website.pageLabels as Record<string, string> | null;
+    const pageLabels = storedLabels && Object.keys(storedLabels).length > 0
+      ? { ...DEFAULT_PAGE_LABELS, ...storedLabels }
+      : DEFAULT_PAGE_LABELS;
+
     const config = {
       brokerName: (stored.brokerName as string) || user?.name || 'Real Estate Professional',
       name: (stored.name as string) || website.name || user?.legalEntityName || 'Real Estate Agency',
@@ -77,6 +127,8 @@ export async function GET(
       tranquilliT: (stored.tranquilliT as boolean) ?? false,
       tranquilliTUrl: (stored.tranquilliTUrl as string) || '',
       fullAgencyMode: (stored.fullAgencyMode as boolean) ?? true,
+      navConfig,
+      pageLabels,
     };
 
     return NextResponse.json(config, {

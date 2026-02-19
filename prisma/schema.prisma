@@ -9548,6 +9548,12 @@ model Website {
   // Agency config for owner-deployed sites (logo, name, contact, etc.) — overrides template defaults
   agencyConfig Json?
 
+  // Per-broker menu/nav config (navItems, topLinks, footerLinks) — overrides template defaults
+  navConfig Json?
+
+  // Per-broker page labels (forSale, forLease, properties, etc.) — overrides template defaults
+  pageLabels Json?
+
   // E-commerce content for PRODUCT template sites (products, pages, policies, videos) — fetched at runtime
   ecommerceContent Json?
 
