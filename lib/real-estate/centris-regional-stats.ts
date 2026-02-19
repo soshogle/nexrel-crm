@@ -24,7 +24,7 @@ const CITY_TO_REGION: Record<string, string> = {
   vaudreuil: "vaudreuil_soulanges",
   "vaudreuil-dorion": "vaudreuil_soulanges",
   "vaudreuil-sur-lac": "vaudreuil_soulanges",
-  saint lazare: "vaudreuil_soulanges",
+  "saint lazare": "vaudreuil_soulanges",
   quebec: "quebec_cma",
   "quebec city": "quebec_cma",
   gatineau: "gatineau",
