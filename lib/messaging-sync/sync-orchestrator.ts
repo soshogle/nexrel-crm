@@ -9,6 +9,7 @@ import { GmailService } from './gmail-service';
 import { OutlookService } from './outlook-service';
 import { TwilioService } from './twilio-service';
 import { syncLogger } from './sync-logger';
+import { decrypt } from '@/lib/encryption';
 
 export class MessageSyncOrchestrator {
   /**
@@ -122,9 +123,11 @@ export class MessageSyncOrchestrator {
       throw new Error('No access token for Gmail connection');
     }
 
+    const gmailAccessToken = decrypt(connection.accessToken);
+    const gmailRefreshToken = connection.refreshToken ? decrypt(connection.refreshToken) : undefined;
     const gmailService = new GmailService(
-      connection.accessToken,
-      connection.refreshToken
+      gmailAccessToken,
+      gmailRefreshToken
     );
 
     return await gmailService.syncToDatabase(connection.id, userId);

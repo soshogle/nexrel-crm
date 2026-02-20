@@ -86,8 +86,10 @@ export type MenuItemId =
   | 'seller-net-sheet'
   | 'real-estate-analytics'
   | 'real-estate-listings'
-  // Templates
+  | 'inquiry-analytics'
+  // Templates & Blog
   | 'templates'
+  | 'blog-management'
   // Dental/Orthodontist specific
   | 'dental-management'
   | 'dental-clinical'
@@ -126,6 +128,7 @@ const CORE_MENU_ITEMS: MenuItemId[] = [
   'payments', // Payment processing for ALL industries
   'referrals', // Referral program for ALL industries
   'templates', // Email & SMS Template Manager
+  'blog-management', // Blog post management
   'websites', // Website Builder - available to ALL industries
   'billing',
   'settings',
@@ -236,6 +239,7 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
     'seller-net-sheet', // Net sheet calculator for sellers
     'real-estate-analytics', // Real estate specific analytics
     'real-estate-listings', // Centralized listing management
+    'inquiry-analytics', // Lead attribution and inquiry tracking
   ],
 
   HOSPITAL: [
@@ -413,9 +417,11 @@ export function getAllFeatures(): {
     { id: 'seller-net-sheet', label: 'Seller Net Sheet', category: 'Real Estate' },
     { id: 'real-estate-analytics', label: 'RE Analytics', category: 'Real Estate' },
     { id: 'real-estate-listings', label: 'Listing Management', category: 'Real Estate' },
+    { id: 'inquiry-analytics', label: 'Inquiry Analytics', category: 'Real Estate' },
 
     // Templates
     { id: 'templates', label: 'Email & SMS Templates', category: 'Core CRM' },
+    { id: 'blog-management', label: 'Blog Management', category: 'Core CRM' },
 
     // Dental/Orthodontist Features
     { id: 'dental-management', label: 'Dental Management', category: 'Dental/Orthodontist' },

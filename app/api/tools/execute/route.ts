@@ -2,30 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import crypto from 'crypto';
+import { decrypt } from '@/lib/encryption';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-function decrypt(text: string): string {
-  try {
-    const algorithm = 'aes-256-cbc';
-    const key = process.env.ENCRYPTION_KEY || 'your-32-character-secret-key-12';
-    const textParts = text.split(':');
-    const iv = Buffer.from(textParts.shift()!, 'hex');
-    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-    const decipher = crypto.createDecipheriv(
-      algorithm,
-      Buffer.from(key.slice(0, 32)),
-      iv
-    );
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString();
-  } catch (error) {
-    return text;
-  }
-}
 
 // POST /api/tools/execute - Execute a tool action
 export async function POST(request: NextRequest) {

@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 import sgMail from '@sendgrid/mail';
 import { CallSummaryExtractor } from '@/lib/call-summary-extractor';
 import { getEmailTemplates, replaceEmailPlaceholders, formatDateForLocale } from '@/lib/email-templates';
+import { decrypt } from '@/lib/encryption';
 
 interface EmailOptions {
   to: string;
@@ -132,12 +133,21 @@ export class EmailService {
         return false;
       }
 
+      // Decrypt stored tokens
+      try {
+        gmailConnection.accessToken = decrypt(gmailConnection.accessToken);
+        if (gmailConnection.refreshToken) {
+          gmailConnection.refreshToken = decrypt(gmailConnection.refreshToken);
+        }
+      } catch {
+        // Token may already be plaintext (legacy); continue as-is
+      }
+
       console.log('✅ [Gmail OAuth] Found Gmail connection:', gmailConnection.channelIdentifier);
       console.log('   Connection ID:', gmailConnection.id);
       console.log('   Status:', gmailConnection.status);
       console.log('   Expires at:', gmailConnection.expiresAt);
 
-      // Check if token is expired and refresh if needed
       const now = new Date();
       if (gmailConnection.expiresAt && gmailConnection.expiresAt < now) {
         console.log('⚠️  [Gmail OAuth] Access token expired, attempting refresh...');
@@ -159,7 +169,6 @@ export class EmailService {
           return false;
         }
 
-        // Update the access token for sending
         gmailConnection.accessToken = newAccessToken;
         console.log('✅ [Gmail OAuth] Token refreshed successfully');
       } else {

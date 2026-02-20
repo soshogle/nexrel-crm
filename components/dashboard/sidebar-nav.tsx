@@ -310,6 +310,12 @@ const merchantItems = [
     icon: Building2,
   },
   {
+    id: 'inquiry-analytics' as MenuItemId,
+    title: 'Inquiry Analytics',
+    href: '/dashboard/real-estate/inquiry-analytics',
+    icon: TrendingUp,
+  },
+  {
     id: 'real-estate-analytics' as MenuItemId,
     title: 'RE Analytics',
     href: '/dashboard/real-estate/analytics',
@@ -339,6 +345,12 @@ const merchantItems = [
     title: 'Templates',
     href: '/dashboard/templates',
     icon: Mail,
+  },
+  {
+    id: 'blog-management' as MenuItemId,
+    title: 'Blog',
+    href: '/dashboard/blog',
+    icon: Sparkles,
   },
   {
     id: 'websites' as MenuItemId,
@@ -491,7 +503,9 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
       'seller-net-sheet': 'sellerNetSheet',
       'real-estate-analytics': 'realEstateAnalytics',
       'real-estate-listings': 'listings',
+      'inquiry-analytics': 'inquiryAnalytics',
       'templates': 'templates',
+      'blog-management': 'blog',
       'dental-management': 'dentalManagement',
       'dental-clinical': 'clinicalDashboard',
       'dental-admin': 'administrativeDashboard',

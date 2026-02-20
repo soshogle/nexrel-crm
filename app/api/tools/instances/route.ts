@@ -2,37 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import crypto from 'crypto';
+import { encrypt, decrypt } from '@/lib/encryption';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-// Simple encryption helper (replace with proper encryption service in production)
-function encrypt(text: string): string {
-  const algorithm = 'aes-256-cbc';
-  const key = process.env.ENCRYPTION_KEY || 'your-32-character-secret-key-12';
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv(algorithm, Buffer.from(key.slice(0, 32)), iv);
-  let encrypted = cipher.update(text);
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return iv.toString('hex') + ':' + encrypted.toString('hex');
-}
-
-function decrypt(text: string): string {
-  try {
-    const algorithm = 'aes-256-cbc';
-    const key = process.env.ENCRYPTION_KEY || 'your-32-character-secret-key-12';
-    const textParts = text.split(':');
-    const iv = Buffer.from(textParts.shift()!, 'hex');
-    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-    const decipher = crypto.createDecipheriv(algorithm, Buffer.from(key.slice(0, 32)), iv);
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString();
-  } catch (error) {
-    return text; // Return as-is if decryption fails
-  }
-}
 
 // GET /api/tools/instances - List user's installed tools
 export async function GET(request: NextRequest) {

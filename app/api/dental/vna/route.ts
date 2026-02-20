@@ -8,31 +8,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { VnaManager } from '@/lib/dental/vna-integration';
-import crypto from 'crypto';
+import { encryptJSON, decryptJSON } from '@/lib/encryption';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-// Helper to encrypt credentials
-function encryptCredentials(credentials: any, key: string): string {
-  // Simple encryption - in production, use proper encryption library
-  const cipher = crypto.createCipher('aes-256-cbc', key);
-  let encrypted = cipher.update(JSON.stringify(credentials), 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  return encrypted;
-}
-
-// Helper to decrypt credentials
-function decryptCredentials(encrypted: string, key: string): any {
-  try {
-    const decipher = crypto.createDecipher('aes-256-cbc', key);
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return JSON.parse(decrypted);
-  } catch {
-    return null;
-  }
-}
 
 // GET /api/dental/vna - List VNA configurations
 export async function GET(request: NextRequest) {
@@ -101,11 +80,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Encrypt credentials if provided
     let encryptedCredentials = null;
     if (credentials) {
-      const encryptionKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
-      encryptedCredentials = encryptCredentials(credentials, encryptionKey);
+      encryptedCredentials = encryptJSON(credentials);
     }
 
     // If this is set as default, unset other defaults
@@ -210,11 +187,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'VNA not found' }, { status: 404 });
     }
 
-    // Encrypt credentials if provided
     let encryptedCredentials = existing.credentials;
     if (updateData.credentials) {
-      const encryptionKey = process.env.ENCRYPTION_KEY || 'default-key-change-in-production';
-      encryptedCredentials = { encrypted: encryptCredentials(updateData.credentials, encryptionKey) };
+      encryptedCredentials = { encrypted: encryptJSON(updateData.credentials) };
     }
 
     // Handle default VNA

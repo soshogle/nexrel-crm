@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-
+import { encrypt } from '@/lib/encryption'
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -123,12 +123,14 @@ export async function GET(request: NextRequest) {
       }
     });
     
+    const encryptedToken = encrypt(page.access_token);
+
     if (existing) {
       await prisma.channelConnection.update({
         where: { id: existing.id },
         data: {
           status: 'CONNECTED',
-          accessToken: page.access_token,
+          accessToken: encryptedToken,
           displayName: igDetails.username || 'Instagram',
           providerData: {
             igAccountId,
@@ -147,7 +149,7 @@ export async function GET(request: NextRequest) {
           displayName: igDetails.username || 'Instagram',
           status: 'CONNECTED',
           providerType: 'instagram',
-          accessToken: page.access_token,
+          accessToken: encryptedToken,
           providerAccountId: igAccountId,
           providerData: {
             igAccountId,

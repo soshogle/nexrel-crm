@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-
+import { encrypt } from '@/lib/encryption'
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -102,13 +102,16 @@ export async function GET(request: NextRequest) {
       }
     });
     
+    const encryptedAccess = encrypt(tokenData.access_token);
+    const encryptedRefresh = tokenData.refresh_token ? encrypt(tokenData.refresh_token) : undefined;
+
     if (existing) {
       await prisma.channelConnection.update({
         where: { id: existing.id },
         data: {
           status: 'CONNECTED',
-          accessToken: tokenData.access_token,
-          refreshToken: tokenData.refresh_token,
+          accessToken: encryptedAccess,
+          refreshToken: encryptedRefresh,
           expiresAt,
           displayName: profileData.email,
           providerData: {
@@ -126,8 +129,8 @@ export async function GET(request: NextRequest) {
           displayName: profileData.email,
           status: 'CONNECTED',
           providerType: 'gmail',
-          accessToken: tokenData.access_token,
-          refreshToken: tokenData.refresh_token,
+          accessToken: encryptedAccess,
+          refreshToken: encryptedRefresh,
           expiresAt,
           providerData: {
             email: profileData.email,

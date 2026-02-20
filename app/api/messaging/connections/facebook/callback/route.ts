@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-
+import { encrypt } from '@/lib/encryption'
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -101,12 +101,14 @@ export async function GET(request: NextRequest) {
       }
     });
     
+    const encryptedToken = encrypt(page.access_token);
+
     if (existing) {
       await prisma.channelConnection.update({
         where: { id: existing.id },
         data: {
           status: 'CONNECTED',
-          accessToken: page.access_token,
+          accessToken: encryptedToken,
           displayName: page.name,
           providerData: {
             pageId: page.id,
@@ -123,7 +125,7 @@ export async function GET(request: NextRequest) {
           displayName: page.name,
           status: 'CONNECTED',
           providerType: 'facebook',
-          accessToken: page.access_token, // Page access token
+          accessToken: encryptedToken,
           providerAccountId: page.id,
           providerData: {
             pageId: page.id,

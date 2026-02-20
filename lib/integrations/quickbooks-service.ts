@@ -5,6 +5,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { decrypt } from '@/lib/encryption';
 
 interface QuickBooksCredentials {
   realmId: string;
@@ -43,12 +44,17 @@ async function getQuickBooksCredentials(userId: string): Promise<QuickBooksCrede
   }
 
   try {
-    const config = JSON.parse(user.quickbooksConfig);
+    let raw = user.quickbooksConfig;
+    // Decrypt if encrypted (AES-256-GCM format), otherwise parse as legacy JSON
+    let config: any;
+    try {
+      config = JSON.parse(raw);
+    } catch {
+      config = JSON.parse(decrypt(raw));
+    }
     
-    // Check if token is expired
     const expiresAt = new Date(config.expiresAt);
     if (expiresAt < new Date()) {
-      // Token expired, need to refresh
       const refreshed = await refreshAccessToken(userId, config.refreshToken, config.realmId);
       return refreshed;
     }

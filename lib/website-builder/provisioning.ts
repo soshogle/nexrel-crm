@@ -430,25 +430,175 @@ export class ResourceProvisioningService {
     };
   }
 
-  async cleanupResources(
-    githubRepoUrl: string,
-    vercelProjectId: string
-  ): Promise<void> {
-    try {
-      await this.deleteGitHubRepo(githubRepoUrl);
-      await this.deleteVercelProject(vercelProjectId);
-    } catch (error: any) {
-      console.error('Resource cleanup failed:', error);
+  async cleanupResources(opts: {
+    githubRepoUrl?: string | null;
+    vercelProjectId?: string | null;
+    neonDatabaseUrl?: string | null;
+    elevenLabsAgentId?: string | null;
+    userId?: string;
+    websiteId?: string;
+  }): Promise<{ errors: string[] }> {
+    const errors: string[] = [];
+
+    if (opts.githubRepoUrl) {
+      try {
+        await this.deleteGitHubRepo(opts.githubRepoUrl);
+      } catch (e: any) {
+        console.error('[Cleanup] GitHub delete failed:', e.message);
+        errors.push(`GitHub: ${e.message}`);
+      }
     }
+
+    if (opts.vercelProjectId) {
+      try {
+        await this.deleteVercelProject(opts.vercelProjectId);
+      } catch (e: any) {
+        console.error('[Cleanup] Vercel delete failed:', e.message);
+        errors.push(`Vercel: ${e.message}`);
+      }
+    }
+
+    if (opts.neonDatabaseUrl) {
+      try {
+        await this.deleteNeonProject(opts.neonDatabaseUrl);
+      } catch (e: any) {
+        console.error('[Cleanup] Neon delete failed:', e.message);
+        errors.push(`Neon: ${e.message}`);
+      }
+    }
+
+    if (opts.elevenLabsAgentId) {
+      try {
+        const { elevenLabsProvisioning } = await import('@/lib/elevenlabs-provisioning');
+        await elevenLabsProvisioning.deleteAgent(opts.elevenLabsAgentId, opts.userId);
+      } catch (e: any) {
+        console.error('[Cleanup] ElevenLabs delete failed:', e.message);
+        errors.push(`ElevenLabs: ${e.message}`);
+      }
+    }
+
+    if (errors.length > 0) {
+      console.warn(`[Cleanup] ${errors.length} resource(s) failed to clean up:`, errors);
+    }
+    return { errors };
   }
 
-  private async deleteGitHubRepo(_repoUrl: string): Promise<void> {
-    // TODO: Implement GitHub repo deletion
+  private async deleteGitHubRepo(repoUrl: string): Promise<void> {
+    const githubToken = process.env.GITHUB_TOKEN;
+    if (!githubToken) {
+      throw new Error('GITHUB_TOKEN not configured');
+    }
+
+    // Extract owner/repo from URL like https://github.com/org/repo-name
+    const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+    if (!match) {
+      throw new Error(`Cannot parse GitHub repo URL: ${repoUrl}`);
+    }
+
+    const [, owner, repo] = match;
+    console.log(`🗑️  Deleting GitHub repo: ${owner}/${repo}`);
+
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${githubToken}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    });
+
+    if (!response.ok && response.status !== 404) {
+      const body = await response.text();
+      throw new Error(`GitHub API ${response.status}: ${body}`);
+    }
+    console.log(`✅ GitHub repo deleted: ${owner}/${repo}`);
   }
 
-  private async deleteVercelProject(_projectId: string): Promise<void> {
-    // TODO: Implement Vercel project deletion
+  private async deleteVercelProject(projectId: string): Promise<void> {
+    const vercelToken = process.env.VERCEL_TOKEN;
+    if (!vercelToken) {
+      throw new Error('VERCEL_TOKEN not configured');
+    }
+
+    console.log(`🗑️  Deleting Vercel project: ${projectId}`);
+
+    const teamId = process.env.VERCEL_TEAM_ID;
+    const url = teamId
+      ? `https://api.vercel.com/v9/projects/${projectId}?teamId=${teamId}`
+      : `https://api.vercel.com/v9/projects/${projectId}`;
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${vercelToken}`,
+      },
+    });
+
+    if (!response.ok && response.status !== 404) {
+      const body = await response.text();
+      throw new Error(`Vercel API ${response.status}: ${body}`);
+    }
+    console.log(`✅ Vercel project deleted: ${projectId}`);
+  }
+
+  private async deleteNeonProject(databaseUrl: string): Promise<void> {
+    const neonApiKey = process.env.NEON_API_KEY;
+    if (!neonApiKey) {
+      throw new Error('NEON_API_KEY not configured');
+    }
+
+    // Neon connection URLs contain the endpoint host which maps to a project.
+    // Format: postgres://user:pass@ep-xxxxx.region.neon.tech/dbname
+    // We need to list projects and find by endpoint host to get the project ID.
+    const hostMatch = databaseUrl.match(/@(ep-[^.]+)/);
+    if (!hostMatch) {
+      throw new Error(`Cannot extract Neon endpoint from URL`);
+    }
+    const endpointPrefix = hostMatch[1];
+    console.log(`🗑️  Looking up Neon project for endpoint: ${endpointPrefix}`);
+
+    // List projects and match by endpoint
+    const listResp = await fetch(`${NEON_API_BASE}/projects?limit=100`, {
+      headers: { Authorization: `Bearer ${neonApiKey}` },
+    });
+    if (!listResp.ok) {
+      throw new Error(`Neon list projects failed: ${listResp.status}`);
+    }
+    const listData = (await listResp.json()) as { projects: Array<{ id: string; name: string }> };
+
+    // Try each project to find the one with our endpoint
+    let projectId: string | null = null;
+    for (const proj of listData.projects) {
+      const epResp = await fetch(`${NEON_API_BASE}/projects/${proj.id}/endpoints`, {
+        headers: { Authorization: `Bearer ${neonApiKey}` },
+      });
+      if (!epResp.ok) continue;
+      const epData = (await epResp.json()) as { endpoints: Array<{ host: string }> };
+      if (epData.endpoints?.some(ep => ep.host.startsWith(endpointPrefix))) {
+        projectId = proj.id;
+        break;
+      }
+    }
+
+    if (!projectId) {
+      console.warn(`[Cleanup] Neon project for ${endpointPrefix} not found (may already be deleted)`);
+      return;
+    }
+
+    console.log(`🗑️  Deleting Neon project: ${projectId}`);
+    const delResp = await fetch(`${NEON_API_BASE}/projects/${projectId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${neonApiKey}` },
+    });
+
+    if (!delResp.ok && delResp.status !== 404) {
+      const body = await delResp.text();
+      throw new Error(`Neon API ${delResp.status}: ${body}`);
+    }
+    console.log(`✅ Neon project deleted: ${projectId}`);
   }
 }
+
+export const resourceProvisioning = new ResourceProvisioningService();
 
 export const resourceProvisioning = new ResourceProvisioningService();

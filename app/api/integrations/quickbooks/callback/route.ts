@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { cookies } from 'next/headers';
+import { encryptJSON } from '@/lib/encryption';
 
 /**
  * GET /api/integrations/quickbooks/callback
@@ -87,11 +88,10 @@ export async function GET(request: NextRequest) {
     // Calculate expiration
     const expiresAt = new Date(Date.now() + (tokenData.expires_in * 1000));
 
-    // Save QuickBooks credentials to user
     await prisma.user.update({
       where: { id: session.user.id },
       data: {
-        quickbooksConfig: JSON.stringify({
+        quickbooksConfig: encryptJSON({
           realmId,
           accessToken: tokenData.access_token,
           refreshToken: tokenData.refresh_token,

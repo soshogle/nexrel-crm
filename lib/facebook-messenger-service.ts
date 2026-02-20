@@ -4,6 +4,7 @@
  */
 
 import { prisma } from './db';
+import { decrypt } from '@/lib/encryption';
 
 export class FacebookMessengerService {
   /**
@@ -29,12 +30,14 @@ export class FacebookMessengerService {
 
       for (const connection of connections) {
         const pageId = connection.channelIdentifier;
-        const accessToken = connection.accessToken;
+        let accessToken = connection.accessToken;
 
         if (!pageId || !accessToken) {
           console.error('Missing page ID or access token for connection:', connection.id);
           continue;
         }
+
+        try { accessToken = decrypt(accessToken); } catch { /* legacy plaintext */ }
 
         console.log(`🔄 Syncing conversations for page ${pageId}...`);
 

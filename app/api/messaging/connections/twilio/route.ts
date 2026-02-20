@@ -3,43 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import crypto from 'crypto'
+import { encrypt, decrypt } from '@/lib/encryption'
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-const ALGORITHM = 'aes-256-gcm';
-
-function getEncryptionKey(): Buffer {
-  const secret = process.env.ENCRYPTION_SECRET || process.env.NEXTAUTH_SECRET || 'fallback-dev-key-32-chars-long!!';
-  return crypto.createHash('sha256').update(secret).digest();
-}
-
-function encrypt(text: string): string {
-  const key = getEncryptionKey();
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  const authTag = cipher.getAuthTag().toString('hex');
-  return `${iv.toString('hex')}:${authTag}:${encrypted}`;
-}
-
-function decrypt(encrypted: string): string {
-  const parts = encrypted.split(':');
-  if (parts.length !== 3) {
-    // Legacy base64 fallback
-    return Buffer.from(encrypted, 'base64').toString('utf-8');
-  }
-  const key = getEncryptionKey();
-  const iv = Buffer.from(parts[0], 'hex');
-  const authTag = Buffer.from(parts[1], 'hex');
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(authTag);
-  let decrypted = decipher.update(parts[2], 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
-}
 
 export async function POST(request: NextRequest) {
   try {

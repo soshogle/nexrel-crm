@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { websiteVoiceAI } from '@/lib/website-builder/voice-ai';
 import { triggerWebsiteDeploy } from '@/lib/website-builder/deploy-trigger';
+import { resourceProvisioning } from '@/lib/website-builder/provisioning';
 
 export async function GET(
   request: NextRequest,
@@ -266,8 +267,23 @@ export async function DELETE(
         timeout: 10000, // 10 second timeout
       });
 
-      // TODO: Clean up external resources (GitHub repo, Vercel project, etc.)
-      // await resourceProvisioning.cleanupResources(...)
+      // Clean up external resources (best-effort, don't block response)
+      const cleanup = resourceProvisioning.cleanupResources({
+        githubRepoUrl: website.githubRepoUrl,
+        vercelProjectId: website.vercelProjectId,
+        neonDatabaseUrl: website.neonDatabaseUrl,
+        elevenLabsAgentId: website.elevenLabsAgentId,
+        userId: session.user.id,
+        websiteId: params.id,
+      });
+      // Fire-and-forget but log errors
+      cleanup.then(({ errors }) => {
+        if (errors.length > 0) {
+          console.warn(`[Website Delete] External cleanup had ${errors.length} error(s):`, errors);
+        } else {
+          console.log(`[Website Delete] All external resources cleaned up for ${params.id}`);
+        }
+      });
 
       return NextResponse.json({ success: true });
     } catch (deleteError: any) {

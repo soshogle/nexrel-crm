@@ -330,6 +330,12 @@ export default function RealEstateDashboard() {
                     <span className="text-sm text-white font-medium">Listings</span>
                   </div>
                 </Link>
+                <Link href="/dashboard/real-estate/inquiry-analytics" className="group">
+                  <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-pink-500/50 hover:bg-pink-500/10 transition-all text-center">
+                    <TrendingUp className="w-6 h-6 text-pink-400 mx-auto mb-2" />
+                    <span className="text-sm text-white font-medium">Inquiries</span>
+                  </div>
+                </Link>
                 <Link href="/dashboard/real-estate/analytics" className="group">
                   <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-cyan-500/50 hover:bg-cyan-500/10 transition-all text-center">
                     <LineChart className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
