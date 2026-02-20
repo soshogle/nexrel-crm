@@ -17,5 +17,14 @@
     "paths": { "@/*": ["./*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".build/types/**/*.ts"],
-  "exclude": ["node_modules", "scripts"]
+  "exclude": [
+    "node_modules",
+    "scripts",
+    "owner-websites",
+    "nexrel-ecommerce-template",
+    "nexrel-service-template",
+    "darksword-armory",
+    "Theodora-Stavropoulos-Remax",
+    "backups"
+  ]
 }
