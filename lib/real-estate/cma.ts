@@ -98,7 +98,7 @@ function generateDemoComparables(subject: SubjectProperty): CMAComparable[] {
 }
 
 /**
- * Generate AI analysis for the CMA
+ * Generate AI analysis for the CMA via OpenAI when available, fallback to template
  */
 async function generateAnalysis(
   subject: SubjectProperty,
@@ -109,8 +109,7 @@ async function generateAnalysis(
     ? Math.round(comparables.reduce((a, c) => a + c.daysOnMarket, 0) / comparables.length)
     : 21;
 
-  // Default analysis (AI enhancement can be added later with LLM API)
-  return {
+  const fallback = {
     executiveSummary: `Based on ${comparables.length} comparable properties in ${subject.city}, we recommend listing at $${priceRange.mid.toLocaleString()}, within a range of $${priceRange.low.toLocaleString()} to $${priceRange.high.toLocaleString()}.`,
     positioningStrategy: 'Position competitively to attract qualified buyers while maximizing value.',
     keyStrengths: ['Desirable location', 'Property condition', 'Functional layout'],
@@ -120,8 +119,75 @@ async function generateAnalysis(
     recommendedActions: ['Professional photography', 'Minor repairs', 'Declutter and stage'],
     avgDaysOnMarket: avgDays,
     marketTrend: 'stable' as const,
-    sellerTips: ['Price correctly from day one', 'Maximize curb appeal', 'Be flexible with showings']
+    sellerTips: ['Price correctly from day one', 'Maximize curb appeal', 'Be flexible with showings'],
   };
+
+  if (!process.env.OPENAI_API_KEY) {
+    return fallback;
+  }
+
+  try {
+    const { default: OpenAI } = await import('openai');
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const compsSummary = comparables.map((c) =>
+      `${c.address}: ${c.beds}bd/${c.baths}ba, ${c.sqft}sqft, sold $${c.price.toLocaleString()}, adj $${(c.adjustedPrice || c.price).toLocaleString()}, ${c.daysOnMarket} DOM, ${c.status}`
+    ).join('\n');
+
+    const prompt = `You are a real estate CMA analyst. Analyze these comparables for the subject property and provide a professional CMA analysis.
+
+Subject Property:
+- Address: ${subject.address}, ${subject.city}, ${subject.state}
+- ${subject.beds} beds, ${subject.baths} baths, ${subject.sqft} sqft
+${subject.yearBuilt ? `- Built: ${subject.yearBuilt}` : ''}
+- Suggested Price Range: $${priceRange.low.toLocaleString()} - $${priceRange.high.toLocaleString()} (midpoint $${priceRange.mid.toLocaleString()})
+
+Comparable Properties:
+${compsSummary}
+
+Average DOM: ${avgDays} days
+
+Respond in JSON with these exact keys:
+{
+  "executiveSummary": "2-3 sentence executive summary",
+  "positioningStrategy": "1-2 sentence pricing strategy recommendation",
+  "keyStrengths": ["3-4 strengths as array of strings"],
+  "potentialConcerns": ["2-3 concerns as array of strings"],
+  "marketOverview": "2-3 sentence market overview",
+  "pricingRationale": "2-3 sentence explanation of the recommended price",
+  "recommendedActions": ["4-5 seller prep recommendations"],
+  "marketTrend": "rising" or "stable" or "declining",
+  "sellerTips": ["3-4 tips for the seller"]
+}`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+      temperature: 0.7,
+      max_tokens: 1000,
+    });
+
+    const content = completion.choices[0]?.message?.content;
+    if (!content) return fallback;
+
+    const parsed = JSON.parse(content);
+    return {
+      executiveSummary: parsed.executiveSummary || fallback.executiveSummary,
+      positioningStrategy: parsed.positioningStrategy || fallback.positioningStrategy,
+      keyStrengths: Array.isArray(parsed.keyStrengths) ? parsed.keyStrengths : fallback.keyStrengths,
+      potentialConcerns: Array.isArray(parsed.potentialConcerns) ? parsed.potentialConcerns : fallback.potentialConcerns,
+      marketOverview: parsed.marketOverview || fallback.marketOverview,
+      pricingRationale: parsed.pricingRationale || fallback.pricingRationale,
+      recommendedActions: Array.isArray(parsed.recommendedActions) ? parsed.recommendedActions : fallback.recommendedActions,
+      avgDaysOnMarket: avgDays,
+      marketTrend: (['rising', 'stable', 'declining'].includes(parsed.marketTrend) ? parsed.marketTrend : 'stable') as 'rising' | 'stable' | 'declining',
+      sellerTips: Array.isArray(parsed.sellerTips) ? parsed.sellerTips : fallback.sellerTips,
+    };
+  } catch (error) {
+    console.error('[CMA] AI analysis failed, using template:', error);
+    return fallback;
+  }
 }
 
 /**

@@ -202,6 +202,10 @@ async function executeVoiceCall(
   if (voiceOverride?.agent && lead) {
     const personalize = (s: string) =>
       s
+        .replace(/\{\{contactPerson\}\}/g, lead.contactPerson || 'there')
+        .replace(/\{\{firstName\}\}/g, lead.contactPerson?.split(' ')[0] || 'there')
+        .replace(/\{\{lastName\}\}/g, lead.contactPerson?.split(' ').slice(1).join(' ') || '')
+        .replace(/\{\{businessName\}\}/g, lead.businessName || '')
         .replace(/\{contactPerson\}/g, lead.contactPerson || 'there')
         .replace(/\{firstName\}/g, lead.contactPerson?.split(' ')[0] || 'there')
         .replace(/\{businessName\}/g, lead.businessName || '');
@@ -269,12 +273,16 @@ async function executeSMS(
     return { success: false, error: 'No phone number available' };
   }
 
-  // Get message content from task config
+  // Get message content from task config (support both UI field names and legacy names)
   const actionConfig = task.actionConfig as any;
-  const message = actionConfig?.message || task.description || 'Hello from your real estate agent';
+  const message = actionConfig?.smsMessage || actionConfig?.message || task.description || 'Hello from your real estate agent';
 
-  // Personalize message with lead data
+  // Personalize message with lead data (support both {{var}} and {var} formats)
   const personalizedMessage = message
+    .replace(/\{\{businessName\}\}/g, lead.businessName || 'there')
+    .replace(/\{\{contactPerson\}\}/g, lead.contactPerson || 'there')
+    .replace(/\{\{firstName\}\}/g, lead.contactPerson?.split(' ')[0] || 'there')
+    .replace(/\{\{lastName\}\}/g, lead.contactPerson?.split(' ').slice(1).join(' ') || '')
     .replace(/\{businessName\}/g, lead.businessName || 'there')
     .replace(/\{contactPerson\}/g, lead.contactPerson || 'there')
     .replace(/\{firstName\}/g, lead.contactPerson?.split(' ')[0] || 'there');
@@ -319,17 +327,23 @@ async function executeEmail(
     return { success: false, error: 'No email available' };
   }
 
-  // Get email content from task config
+  // Get email content from task config (support both UI field names and legacy names)
   const actionConfig = task.actionConfig as any;
-  const subject = actionConfig?.subject || task.name || 'Message from your real estate agent';
-  const emailBody = actionConfig?.body || actionConfig?.html || task.description || 'Hello!';
+  const subject = actionConfig?.emailSubject || actionConfig?.subject || task.name || 'Message from your real estate agent';
+  const emailBody = actionConfig?.emailBody || actionConfig?.body || actionConfig?.html || task.description || 'Hello!';
 
-  // Personalize email content
+  // Personalize email content (support both {{var}} and {var} formats)
   const personalizedSubject = subject
+    .replace(/\{\{businessName\}\}/g, lead.businessName || 'there')
+    .replace(/\{\{contactPerson\}\}/g, lead.contactPerson || 'there')
     .replace(/\{businessName\}/g, lead.businessName || 'there')
     .replace(/\{contactPerson\}/g, lead.contactPerson || 'there');
   
   const personalizedBody = emailBody
+    .replace(/\{\{businessName\}\}/g, lead.businessName || 'there')
+    .replace(/\{\{contactPerson\}\}/g, lead.contactPerson || 'there')
+    .replace(/\{\{firstName\}\}/g, lead.contactPerson?.split(' ')[0] || 'there')
+    .replace(/\{\{lastName\}\}/g, lead.contactPerson?.split(' ').slice(1).join(' ') || '')
     .replace(/\{businessName\}/g, lead.businessName || 'there')
     .replace(/\{contactPerson\}/g, lead.contactPerson || 'there')
     .replace(/\{firstName\}/g, lead.contactPerson?.split(' ')[0] || 'there');

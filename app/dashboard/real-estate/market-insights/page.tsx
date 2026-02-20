@@ -78,6 +78,7 @@ export default function MarketInsightsPage() {
   const [loadingStats, setLoadingStats] = useState(true);
   const [websiteId, setWebsiteId] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     fetch('/api/websites')
@@ -144,6 +145,31 @@ export default function MarketInsightsPage() {
       toast.error((e as Error)?.message || 'Failed to publish');
     } finally {
       setPublishingId(null);
+    }
+  };
+
+  const handleSeedData = async () => {
+    setSeeding(true);
+    try {
+      const res = await fetch('/api/real-estate/market-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'seed_sample', region: 'Local Market', months: 12 }),
+      });
+      if (!res.ok) throw new Error('Failed to seed data');
+      const result = await res.json();
+      toast.success(result.message || 'Sample data generated!');
+      // Refresh stats
+      const statsRes = await fetch('/api/real-estate/market-stats?limit=24');
+      if (statsRes.ok) {
+        const d = await statsRes.json();
+        setMarketStats(d.stats ?? []);
+        setMyStats(d.myStats ?? null);
+      }
+    } catch {
+      toast.error('Failed to generate sample data');
+    } finally {
+      setSeeding(false);
     }
   };
 
@@ -263,7 +289,15 @@ export default function MarketInsightsPage() {
               <div className="text-center py-12 text-muted-foreground">
                 <BarChart3 className="h-10 w-10 mx-auto mb-2 opacity-40" />
                 <p className="text-sm">No market stats data yet.</p>
-                <p className="text-xs mt-1">Stats will appear as market data is collected.</p>
+                <p className="text-xs mt-1 mb-3">Stats will appear as market data is collected.</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSeedData}
+                  disabled={seeding}
+                >
+                  {seeding ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</> : 'Generate Sample Data'}
+                </Button>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={280}>
