@@ -8,65 +8,17 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { PeriodontalBarChart } from '@/components/dental/periodontal-bar-chart';
-import { PeriodontalChart } from '@/components/dental/periodontal-chart';
-import { CustomOdontogramDisplay } from '@/components/dental/custom-odontogram-display';
-import { EnhancedOdontogramDisplay } from '@/components/dental/enhanced-odontogram-display';
-import { RedesignedArchOdontogram } from '@/components/dental/redesigned-arch-odontogram';
-import { ExactArchOdontogram } from '@/components/dental/exact-arch-odontogram';
-import { RedesignedProceduresLog } from '@/components/dental/redesigned-procedures-log';
-import { RedesignedTreatmentPlan } from '@/components/dental/redesigned-treatment-plan';
-import { RedesignedPeriodontalChart } from '@/components/dental/redesigned-periodontal-chart';
-import { RedesignedFormResponses } from '@/components/dental/redesigned-form-responses';
-import { RedesignedCheckIn } from '@/components/dental/redesigned-check-in';
-import { RedesignedInsuranceClaims } from '@/components/dental/redesigned-insurance-claims';
-import { CustomFormsBuilder } from '@/components/dental/custom-forms-builder';
-import { CustomMultiChairAgenda } from '@/components/dental/custom-multi-chair-agenda';
-import { CustomXRayAnalysis } from '@/components/dental/custom-xray-analysis';
-import { DicomViewer } from '@/components/dental/dicom-viewer';
-import { CustomDocumentUpload } from '@/components/dental/custom-document-upload';
-import { CustomSignature } from '@/components/dental/custom-signature';
-import { CardModal } from '@/components/dental/card-modal';
-import { Odontogram } from '@/components/dental/odontogram';
-import { TreatmentPlanBuilder } from '@/components/dental/treatment-plan-builder';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import {
-  FileText,
-  Activity,
-  ClipboardList,
-  Calendar,
-  Stethoscope,
-  FormInput,
-  Monitor,
-  Building2,
-  PenTool,
-  Scan,
-  User,
-  Users,
-  DollarSign,
-  Search,
-  CheckCircle2,
-  Clock,
-  Upload,
-  ChevronLeft,
-  ChevronRight,
-  File,
-  Image as ImageIcon,
-  GripVertical,
-  ArrowUp,
-  ArrowDown,
-  Circle,
-  X,
-  Eye,
+  FileText, Activity, ClipboardList, Calendar, Stethoscope,
+  Users, DollarSign,
 } from 'lucide-react';
+import { DentalCardGrid } from '@/components/dental/dental-card-grid';
+import { DentalModals } from '@/components/dental/dental-modals';
 
-// Pan-able Canvas - Smooth scrolling like landing page
 function PanableCanvas({ children }: { children: React.ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -74,33 +26,27 @@ function PanableCanvas({ children }: { children: React.ReactNode }) {
     <div
       ref={containerRef}
       className="w-full h-screen overflow-auto"
-      style={{
-        scrollBehavior: 'smooth',
-        cursor: 'grab',
-      }}
+      style={{ scrollBehavior: 'smooth', cursor: 'grab' }}
       onMouseDown={(e) => {
         if (containerRef.current) {
           const startX = e.pageX - containerRef.current.scrollLeft;
           const startY = e.pageY - containerRef.current.scrollTop;
-          
           const handleMouseMove = (e: MouseEvent) => {
             if (containerRef.current) {
               containerRef.current.scrollLeft = e.pageX - startX;
               containerRef.current.scrollTop = e.pageY - startY;
             }
           };
-          
           const handleMouseUp = () => {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
           };
-          
           document.addEventListener('mousemove', handleMouseMove);
           document.addEventListener('mouseup', handleMouseUp);
         }
       }}
     >
-      <div className="min-w-[1600px] min-h-[1400px] p-6 bg-gradient-to-r from-purple-900 via-purple-700 to-purple-500">
+      <div className="min-w-[1400px] p-4">
         {children}
       </div>
     </div>
@@ -122,7 +68,6 @@ export default function DentalTestPage() {
   const [xrays, setXrays] = useState<any[]>([]);
   const [selectedXray, setSelectedXray] = useState<any | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [activeMultiChairTab, setActiveMultiChairTab] = useState<'ortho' | 'hygiene' | 'restorative'>('ortho');
   const [appointments, setAppointments] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalPatients: 0,
@@ -132,9 +77,7 @@ export default function DentalTestPage() {
   });
   const [openModal, setOpenModal] = useState<string | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -143,10 +86,8 @@ export default function DentalTestPage() {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const appointmentsRes = await fetch(
-        `/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`
-      );
-      const appointments = appointmentsRes.ok ? await appointmentsRes.json() : [];
+      const appointmentsRes = await fetch(`/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`);
+      const appointmentsData = appointmentsRes.ok ? await appointmentsRes.json() : [];
 
       let pendingClaims = 0;
       if (session?.user?.id) {
@@ -164,22 +105,15 @@ export default function DentalTestPage() {
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
-        
         const plansRes = await Promise.all(
           leads.map(async (lead) => {
             try {
               const res = await fetch(`/api/dental/treatment-plans?leadId=${lead.id}`);
-              if (res.ok) {
-                const data = await res.json();
-                return data.plans || [];
-              }
+              if (res.ok) { const data = await res.json(); return data.plans || []; }
               return [];
-            } catch {
-              return [];
-            }
+            } catch { return []; }
           })
         );
-        
         const allPlans = plansRes.flat();
         monthlyRevenue = allPlans
           .filter((plan: any) => {
@@ -193,7 +127,7 @@ export default function DentalTestPage() {
 
       setStats({
         totalPatients: leads.length,
-        todayAppointments: Array.isArray(appointments) ? appointments.length : 0,
+        todayAppointments: Array.isArray(appointmentsData) ? appointmentsData.length : 0,
         pendingClaims,
         monthlyRevenue,
       });
@@ -209,7 +143,6 @@ export default function DentalTestPage() {
         const data = await response.json();
         const leadsArray = Array.isArray(data) ? data : (data.leads || []);
         setLeads(leadsArray);
-        console.log('Fetched leads:', leadsArray.length);
       }
     } catch (error) {
       console.error('Error fetching leads:', error);
@@ -223,97 +156,55 @@ export default function DentalTestPage() {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/odontogram?leadId=${selectedLeadId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setOdontogramData(data.odontogram?.toothData || null);
-      }
-    } catch (error) {
-      console.error('Error fetching odontogram:', error);
-      setOdontogramData(null);
-    }
+      if (response.ok) { const data = await response.json(); setOdontogramData(data.odontogram?.toothData || null); }
+    } catch (error) { console.error('Error fetching odontogram:', error); setOdontogramData(null); }
   }, [selectedLeadId]);
 
   const fetchPeriodontalChart = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/periodontal?leadId=${selectedLeadId}`);
-      if (response.ok) {
-        const data = await response.json();
-        const latestChart = data.charts?.[0];
-        setPeriodontalData(latestChart?.measurements || null);
-      }
-    } catch (error) {
-      console.error('Error fetching periodontal chart:', error);
-      setPeriodontalData(null);
-    }
+      if (response.ok) { const data = await response.json(); setPeriodontalData(data.charts?.[0]?.measurements || null); }
+    } catch (error) { console.error('Error fetching periodontal chart:', error); setPeriodontalData(null); }
   }, [selectedLeadId]);
 
   const fetchTreatmentPlans = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/treatment-plans?leadId=${selectedLeadId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setTreatmentPlans(data.plans || []);
-      }
-    } catch (error) {
-      console.error('Error fetching treatment plans:', error);
-      setTreatmentPlans([]);
-    }
+      if (response.ok) { const data = await response.json(); setTreatmentPlans(data.plans || []); }
+    } catch (error) { console.error('Error fetching treatment plans:', error); setTreatmentPlans([]); }
   }, [selectedLeadId]);
 
   const fetchProcedures = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/procedures?leadId=${selectedLeadId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setProcedures(data.procedures || []);
-      }
-    } catch (error) {
-      console.error('Error fetching procedures:', error);
-      setProcedures([]);
-    }
+      if (response.ok) { const data = await response.json(); setProcedures(data.procedures || []); }
+    } catch (error) { console.error('Error fetching procedures:', error); setProcedures([]); }
   }, [selectedLeadId]);
 
   const fetchForms = useCallback(async () => {
     try {
       const response = await fetch('/api/dental/forms?type=templates');
-      if (response.ok) {
-        const data = await response.json();
-        setForms(data.forms || []);
-      }
-    } catch (error) {
-      console.error('Error fetching forms:', error);
-    }
+      if (response.ok) { const data = await response.json(); setForms(data.forms || []); }
+    } catch (error) { console.error('Error fetching forms:', error); }
   }, []);
 
   const fetchFormResponses = useCallback(async () => {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/forms?type=responses&leadId=${selectedLeadId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setFormResponses(data.responses || []);
-      }
-    } catch (error) {
-      console.error('Error fetching form responses:', error);
-      setFormResponses([]);
-    }
+      if (response.ok) { const data = await response.json(); setFormResponses(data.responses || []); }
+    } catch (error) { console.error('Error fetching form responses:', error); setFormResponses([]); }
   }, [selectedLeadId]);
 
   const fetchRAMQClaims = useCallback(async () => {
     if (!session?.user?.id) return;
     try {
       const response = await fetch(`/api/dental/ramq/claims?userId=${session.user.id}${selectedLeadId ? `&leadId=${selectedLeadId}` : ''}`);
-      if (response.ok) {
-        const data = await response.json();
-        setRamqClaims(Array.isArray(data) ? data : []);
-      }
-    } catch (error) {
-      console.error('Error fetching RAMQ claims:', error);
-      setRamqClaims([]);
-    }
+      if (response.ok) { const data = await response.json(); setRamqClaims(Array.isArray(data) ? data : []); }
+    } catch (error) { console.error('Error fetching RAMQ claims:', error); setRamqClaims([]); }
   }, [session?.user?.id, selectedLeadId]);
 
   const fetchXrays = useCallback(async () => {
@@ -323,115 +214,67 @@ export default function DentalTestPage() {
       if (response.ok) {
         const data = await response.json();
         setXrays(Array.isArray(data) ? data : []);
-        if (data.length > 0 && !selectedXray) {
-          setSelectedXray(data[0]);
-        }
+        if (data.length > 0 && !selectedXray) { setSelectedXray(data[0]); }
       }
-    } catch (error) {
-      console.error('Error fetching X-rays:', error);
-      setXrays([]);
-    }
+    } catch (error) { console.error('Error fetching X-rays:', error); setXrays([]); }
   }, [selectedLeadId, selectedXray]);
 
-  // useEffect hooks after function declarations
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
+  useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
   useEffect(() => {
     if (leads.length > 0) {
       fetchStats();
-      // Auto-select first patient
-      if (!selectedLeadId && leads[0]) {
-        setSelectedLeadId(leads[0].id);
-      }
+      if (!selectedLeadId && leads[0]) { setSelectedLeadId(leads[0].id); }
     }
   }, [leads, selectedLeadId, fetchStats]);
 
   useEffect(() => {
     if (selectedLeadId) {
-      fetchOdontogram();
-      fetchPeriodontalChart();
-      fetchTreatmentPlans();
-      fetchProcedures();
-      fetchForms();
-      fetchFormResponses();
-      fetchRAMQClaims();
-      fetchXrays();
+      fetchOdontogram(); fetchPeriodontalChart(); fetchTreatmentPlans();
+      fetchProcedures(); fetchForms(); fetchFormResponses();
+      fetchRAMQClaims(); fetchXrays();
     }
   }, [selectedLeadId, fetchOdontogram, fetchPeriodontalChart, fetchTreatmentPlans, fetchProcedures, fetchForms, fetchFormResponses, fetchRAMQClaims, fetchXrays]);
 
-  // Fetch appointments for multi-chair agenda
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const fetchAppointmentsData = async () => {
       try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
         const response = await fetch(`/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`);
-        if (response.ok) {
-          const data = await response.json();
-          setAppointments(Array.isArray(data) ? data : []);
-        }
-      } catch (error) {
-        console.error('Error fetching appointments:', error);
-      }
+        if (response.ok) { const data = await response.json(); setAppointments(Array.isArray(data) ? data : []); }
+      } catch (error) { console.error('Error fetching appointments:', error); }
     };
-    if (session?.user?.id) {
-      fetchAppointments();
-    }
+    if (session?.user?.id) { fetchAppointmentsData(); }
   }, [session?.user?.id]);
 
   const handleSaveOdontogram = async (toothData: any) => {
-    if (!selectedLeadId) {
-      toast.error('Please select a patient first');
-      return;
-    }
+    if (!selectedLeadId) { toast.error('Please select a patient first'); return; }
     try {
       const response = await fetch('/api/dental/odontogram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: selectedLeadId,
-          toothData,
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: selectedLeadId, toothData }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save odontogram');
-      }
+      if (!response.ok) throw new Error(data.error || 'Failed to save odontogram');
       toast.success('Odontogram saved successfully');
       setOdontogramData(toothData);
-    } catch (error: any) {
-      toast.error('Failed to save odontogram: ' + error.message);
-    }
+    } catch (error: any) { toast.error('Failed to save odontogram: ' + error.message); }
   };
 
   const handleSavePeriodontalChart = async (measurements: any) => {
-    if (!selectedLeadId) {
-      toast.error('Please select a patient first');
-      return;
-    }
+    if (!selectedLeadId) { toast.error('Please select a patient first'); return; }
     try {
       const response = await fetch('/api/dental/periodontal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: selectedLeadId,
-          measurements,
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: selectedLeadId, measurements }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save periodontal chart');
-      }
+      if (!response.ok) throw new Error(data.error || 'Failed to save periodontal chart');
       toast.success('Periodontal chart saved successfully');
       setPeriodontalData(measurements);
       await fetchPeriodontalChart();
-    } catch (error: any) {
-      toast.error('Failed to save periodontal chart: ' + error.message);
-    }
+    } catch (error: any) { toast.error('Failed to save periodontal chart: ' + error.message); }
   };
 
   if (!mounted) {
@@ -455,8 +298,7 @@ export default function DentalTestPage() {
 
   const selectedPatient = leads.find(l => l.id === selectedLeadId);
 
-  // Transform fetched data to match display format, with fallback to mock data
-  const displayProcedures = procedures.length > 0 
+  const displayProcedures = procedures.length > 0
     ? procedures.slice(0, 4).map((proc: any) => ({
         time: new Date(proc.datePerformed || proc.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         patient: leads.find(l => l.id === proc.leadId)?.contactPerson || leads.find(l => l.id === proc.leadId)?.businessName || 'Unknown',
@@ -538,18 +380,11 @@ export default function DentalTestPage() {
       <div className="mb-4">
         <h1 className="text-xl font-bold text-gray-900 mb-2">Dental Management</h1>
         <div className="flex items-center gap-3">
-          <Select
-            value={selectedLeadId || ''}
-            onValueChange={(value) => setSelectedLeadId(value)}
-          >
-            <SelectTrigger className="w-64 h-9 border border-gray-300 text-sm">
-              <SelectValue placeholder="Select a patient..." />
-            </SelectTrigger>
+          <Select value={selectedLeadId || ''} onValueChange={(value) => setSelectedLeadId(value)}>
+            <SelectTrigger className="w-64 h-9 border border-gray-300 text-sm"><SelectValue placeholder="Select a patient..." /></SelectTrigger>
             <SelectContent>
               {leads.map((lead) => (
-                <SelectItem key={lead.id} value={lead.id}>
-                  {lead.contactPerson || lead.businessName || lead.email || lead.id}
-                </SelectItem>
+                <SelectItem key={lead.id} value={lead.id}>{lead.contactPerson || lead.businessName || lead.email || lead.id}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -583,562 +418,38 @@ export default function DentalTestPage() {
         ))}
       </div>
 
-      {/* TOP ROW - 3 Equal Columns */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        {/* 1. Arch Odontogram */}
-        <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setOpenModal('odontogram')}
-        >
-          <CardHeader className="pb-2 px-4 pt-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-gray-900">Arch Odontogram</CardTitle>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-gray-100" onClick={(e) => e.stopPropagation()}>
-                  <ChevronLeft className="h-3 w-3 text-gray-600" />
-                </Button>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-gray-100" onClick={(e) => e.stopPropagation()}>
-                  <ChevronRight className="h-3 w-3 text-gray-600" />
-                </Button>
-              </div>
-            </div>
-            <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-              <Select defaultValue="treatment">
-                <SelectTrigger className="h-7 text-xs w-full border border-gray-300">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="treatment">Hover affected by: Treatment</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            {selectedLeadId ? (
-              <ExactArchOdontogram toothData={odontogramData} />
-            ) : (
-              <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
-            )}
-          </CardContent>
-        </Card>
+      <DentalCardGrid
+        selectedLeadId={selectedLeadId}
+        sessionUserId={session?.user?.id}
+        odontogramData={odontogramData}
+        periodontalData={periodontalData}
+        selectedXray={selectedXray}
+        displayProcedures={displayProcedures}
+        displayTreatmentPlans={displayTreatmentPlans}
+        displayFormResponses={displayFormResponses}
+        displayClaims={displayClaims}
+        displayMultiChairAppointments={displayMultiChairAppointments}
+        onOpenModal={setOpenModal}
+      />
 
-        {/* 2. Procedures Activity Log */}
-        <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setOpenModal('procedures')}
-        >
-          <CardHeader className="pb-2 px-4 pt-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-gray-900">Procedures Activity Log</CardTitle>
-              <div className="flex items-center gap-2">
-                <Input placeholder="Search..." className="h-7 w-28 text-xs border border-gray-300" />
-                <Select defaultValue="today">
-                  <SelectTrigger className="h-7 text-xs w-20 border border-gray-300">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <RedesignedProceduresLog
-              procedures={displayProcedures.map((proc: any) => ({
-                time: proc.time,
-                patient: proc.patient,
-                procedure: proc.procedure,
-                status: proc.status,
-              }))}
-            />
-          </CardContent>
-        </Card>
-
-        {/* 3. Treatment Plan Builder */}
-        <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setOpenModal('treatment-plan')}
-        >
-          <CardHeader className="pb-2 px-4 pt-3">
-            <CardTitle className="text-sm font-semibold text-gray-900">Treatment Plan Builder</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <RedesignedTreatmentPlan
-              treatments={displayTreatmentPlans.map((plan: any) => ({
-                code: plan.code,
-                name: plan.name,
-                cost: plan.cost,
-                timeline: plan.timeline,
-                costColor: plan.costColor,
-                icon: plan.icon,
-                progress: 50,
-              }))}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* MIDDLE ROW - 3 Equal Columns */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        {/* 4. Periodontal Charting */}
-        <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setOpenModal('periodontal')}
-        >
-          <CardHeader className="pb-2 px-4 pt-3">
-            <CardTitle className="text-sm font-semibold text-gray-900">Periodontal Charting</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            {selectedLeadId ? (
-              <RedesignedPeriodontalChart measurements={periodontalData} />
-            ) : (
-              <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* 5. Forms Builder */}
-        <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setOpenModal('forms-builder')}
-        >
-          <CardHeader className="pb-2 px-4 pt-3">
-            <CardTitle className="text-sm font-semibold text-gray-900">Forms Builder</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            {session?.user?.id ? (
-              <CustomFormsBuilder />
-            ) : (
-              <div className="text-center py-8 text-gray-400 text-xs">Please sign in</div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* 6. Form Responses */}
-        <Card 
-          className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setOpenModal('form-responses')}
-        >
-          <CardHeader className="pb-2 px-4 pt-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold text-gray-900">Form Responses</CardTitle>
-              <div className="flex items-center gap-2">
-                <Input placeholder="Search..." className="h-7 w-28 text-xs border border-gray-300" />
-                <Select defaultValue="all">
-                  <SelectTrigger className="h-7 text-xs w-24 border border-gray-300">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Forms</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <RedesignedFormResponses
-              responses={displayFormResponses.map((r: any) => ({
-                date: r.date,
-                patientName: r.patient,
-                formTitle: r.form,
-                submissionDate: r.date,
-                time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-              }))}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* BOTTOM ROW - Split Layout */}
-      <div className="grid grid-cols-12 gap-4">
-        {/* 7. Document Upload - 3 columns */}
-        <div className="col-span-3">
-          <Card className="bg-white border border-gray-200 shadow-sm">
-            <CardHeader className="pb-2 px-4 pt-3">
-              <CardTitle className="text-sm font-semibold text-gray-900">Document Upload</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              {selectedLeadId ? (
-                <CustomDocumentUpload />
-              ) : (
-                <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 8. Check-In Touch-screen - 3 columns */}
-        <div className="col-span-3">
-          <Card 
-            className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setOpenModal('check-in')}
-          >
-            <CardHeader className="pb-2 px-4 pt-3">
-              <CardTitle className="text-sm font-semibold text-gray-900">Check-In Touch-screen</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              {session?.user?.id ? (
-                <div className="text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-                    <User className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 mb-2">Welcome, John Smith!</p>
-                    <p className="text-xs text-gray-600 mb-4">Please confirm your appointment.</p>
-                  </div>
-                  <Input placeholder="Patient name" className="mb-3 border border-gray-300" />
-                  <div className="flex gap-2">
-                    <Button className="bg-purple-600 hover:bg-purple-700 text-white flex-1">Check-In</Button>
-                    <Button variant="outline" className="border-gray-300 flex-1">Update Info</Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-400 text-xs">Please sign in</div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 9. Multi-Chair Agenda - 3 columns */}
-        <div className="col-span-3">
-          <Card 
-            className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setOpenModal('multi-chair')}
-          >
-            <CardHeader className="pb-2 px-4 pt-3">
-              <CardTitle className="text-sm font-semibold text-gray-900">Multi-Chair Agenda</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              {session?.user?.id ? (
-                <CustomMultiChairAgenda appointments={displayMultiChairAppointments} />
-              ) : (
-                <div className="text-center py-8 text-gray-400 text-xs">Please sign in</div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 10-12. Right Column - 3 sections stacked - 3 columns */}
-        <div className="col-span-3 space-y-4">
-          {/* 10. Insurance Claims Integration */}
-          <Card 
-            className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setOpenModal('insurance-claims')}
-          >
-            <CardHeader className="pb-2 px-4 pt-3">
-              <CardTitle className="text-sm font-semibold text-gray-900">Insurance Claims Integration</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <RedesignedInsuranceClaims
-                claims={displayClaims.map((claim: any) => ({
-                  id: claim.id,
-                  provider: claim.provider,
-                  amount: claim.amount,
-                  status: claim.status === 'Approved' ? 'Approved' : 'Funding',
-                }))}
-              />
-            </CardContent>
-          </Card>
-
-          {/* 11. X-Ray Analysis */}
-          <Card 
-            className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setOpenModal('xray-analysis')}
-          >
-            <CardHeader className="pb-2 px-4 pt-3">
-              <CardTitle className="text-sm font-semibold text-gray-900">X-Ray Analysis</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              {selectedLeadId && session?.user?.id ? (
-                <CustomXRayAnalysis xrayData={selectedXray} />
-              ) : (
-                <div className="text-center py-8 text-gray-400 text-xs">Select a patient</div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* 12. Electronic Signature Capture */}
-          <Card 
-            className="bg-white border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => setOpenModal('signature')}
-          >
-            <CardHeader className="pb-2 px-4 pt-3">
-              <CardTitle className="text-sm font-semibold text-gray-900">Electronic signature capture</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              {session?.user?.id ? (
-                <CustomSignature />
-              ) : (
-                <div className="text-center py-8 text-gray-400 text-xs">Please sign in</div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Modals */}
-      <CardModal
-        isOpen={openModal === 'odontogram'}
-        onClose={() => setOpenModal(null)}
-        title="Arch Odontogram"
-      >
-        {selectedLeadId ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <Select defaultValue="treatment">
-                <SelectTrigger className="h-8 w-64 border border-gray-300">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="treatment">Hover affected by: Treatment</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-                  <ChevronLeft className="h-4 w-4 text-gray-600" />
-                </Button>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-                  <ChevronRight className="h-4 w-4 text-gray-600" />
-                </Button>
-              </div>
-            </div>
-            <Odontogram
-              leadId={selectedLeadId}
-              initialData={odontogramData}
-              onSave={handleSaveOdontogram}
-            />
-          </div>
-        ) : (
-          <div className="text-center py-16 text-gray-400">Select a patient</div>
-        )}
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'treatment-plan'}
-        onClose={() => setOpenModal(null)}
-        title="Treatment Plan Builder"
-      >
-        {selectedLeadId ? (
-          <TreatmentPlanBuilder
-            leadId={selectedLeadId}
-            onSave={async (data) => {
-              await fetchTreatmentPlans();
-              toast.success('Treatment plan saved');
-            }}
-          />
-        ) : (
-          <div className="text-center py-16 text-gray-400">Select a patient</div>
-        )}
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'procedures'}
-        onClose={() => setOpenModal(null)}
-        title="Procedures Activity Log"
-      >
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <Input placeholder="Search..." className="h-8 flex-1 border border-gray-300" />
-            <Select defaultValue="today">
-              <SelectTrigger className="h-8 w-32 border border-gray-300">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {displayProcedures.map((proc, idx) => (
-            <div key={idx} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-              <div className="w-20 text-gray-600 font-medium">{proc.time}</div>
-              <div className="flex items-center gap-3 flex-1">
-                <div className="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4 text-purple-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900">{proc.patient}</div>
-                  <div className="text-sm text-gray-600">{proc.procedure}</div>
-                </div>
-              </div>
-              <Badge className={`text-sm px-3 py-1 ${proc.color} border-0`}>
-                {proc.status}
-              </Badge>
-            </div>
-          ))}
-        </div>
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'periodontal'}
-        onClose={() => setOpenModal(null)}
-        title="Periodontal Charting"
-      >
-        {selectedLeadId ? (
-          <PeriodontalChart
-            leadId={selectedLeadId}
-            initialData={periodontalData}
-            onSave={handleSavePeriodontalChart}
-          />
-        ) : (
-          <div className="text-center py-16 text-gray-400">Select a patient</div>
-        )}
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'forms-builder'}
-        onClose={() => setOpenModal(null)}
-        title="Forms Builder"
-      >
-        {session?.user?.id ? (
-          <CustomFormsBuilder />
-        ) : (
-          <div className="text-center py-16 text-gray-400">Please sign in</div>
-        )}
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'form-responses'}
-        onClose={() => setOpenModal(null)}
-        title="Form Responses"
-      >
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 mb-4">
-            <Input placeholder="Search..." className="h-8 flex-1 border border-gray-300" />
-            <Select defaultValue="all">
-              <SelectTrigger className="h-8 w-40 border border-gray-300">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Forms</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {displayFormResponses.map((response, idx) => (
-            <div key={idx} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-              <div className="w-24 text-gray-600">{response.date}</div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900">{response.patient}</div>
-                <div className="text-sm text-gray-600">{response.form}</div>
-              </div>
-              <Badge className="bg-green-100 text-green-700 text-sm border-0">Submitted</Badge>
-            </div>
-          ))}
-        </div>
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'document-upload'}
-        onClose={() => setOpenModal(null)}
-        title="Document Upload"
-      >
-        {selectedLeadId ? (
-          <CustomDocumentUpload />
-        ) : (
-          <div className="text-center py-16 text-gray-400">Select a patient</div>
-        )}
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'check-in'}
-        onClose={() => setOpenModal(null)}
-        title="Check-In Touch-screen"
-      >
-        {session?.user?.id ? (
-          <div className="text-center space-y-6 py-8">
-            <div className="w-20 h-20 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-              <User className="w-10 h-10 text-gray-400" />
-            </div>
-            <div>
-              <p className="text-lg font-medium text-gray-900 mb-2">Welcome, John Smith!</p>
-              <p className="text-sm text-gray-600 mb-6">Please confirm your appointment.</p>
-            </div>
-            <Input placeholder="Patient name" className="mb-4 border border-gray-300 h-10" />
-            <div className="flex gap-3">
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white flex-1 h-10">Check-In</Button>
-              <Button variant="outline" className="border-gray-300 flex-1 h-10">Update Info</Button>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-16 text-gray-400">Please sign in</div>
-        )}
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'multi-chair'}
-        onClose={() => setOpenModal(null)}
-        title="Multi-Chair Agenda"
-      >
-        {session?.user?.id ? (
-          <CustomMultiChairAgenda appointments={displayMultiChairAppointments} />
-        ) : (
-          <div className="text-center py-16 text-gray-400">Please sign in</div>
-        )}
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'insurance-claims'}
-        onClose={() => setOpenModal(null)}
-        title="Insurance Claims Integration"
-      >
-        <div className="space-y-3">
-          {displayClaims.map((claim, idx) => (
-            <div key={idx} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900">
-                  Claim {claim.id} - {claim.provider}
-                </div>
-              </div>
-              <div className="text-right ml-4">
-                <div className="text-lg font-bold text-gray-900">${claim.amount}</div>
-                {claim.status === 'Approved' ? (
-                  <CheckCircle2 className="w-5 h-5 text-green-600 mt-1 mx-auto" />
-                ) : (
-                  <Clock className="w-5 h-5 text-orange-600 mt-1 mx-auto" />
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'xray-analysis'}
-        onClose={() => setOpenModal(null)}
-        title="X-Ray Analysis"
-      >
-        {selectedLeadId && session?.user?.id && selectedXray ? (
-          <div className="h-[calc(100vh-200px)]">
-            <DicomViewer
-              xrayId={selectedXray.id}
-              imageUrl={selectedXray.imageUrl || `/api/dental/xrays/${selectedXray.id}/image`}
-              dicomFile={selectedXray.dicomFile || undefined}
-              xrayType={selectedXray.xrayType}
-              initialAnalysis={selectedXray.aiAnalysis}
-              onAnalysisComplete={(analysis) => {
-                // Refresh X-ray data
-                fetchXrays();
-              }}
-            />
-          </div>
-        ) : (
-          <div className="text-center py-16 text-gray-400">Select a patient and X-ray</div>
-        )}
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'signature'}
-        onClose={() => setOpenModal(null)}
-        title="Electronic Signature Capture"
-      >
-        {session?.user?.id ? (
-          <CustomSignature />
-        ) : (
-          <div className="text-center py-16 text-gray-400">Please sign in</div>
-        )}
-      </CardModal>
+      <DentalModals
+        openModal={openModal}
+        onCloseModal={() => setOpenModal(null)}
+        selectedLeadId={selectedLeadId}
+        sessionUserId={session?.user?.id}
+        odontogramData={odontogramData}
+        periodontalData={periodontalData}
+        selectedXray={selectedXray}
+        displayProcedures={displayProcedures}
+        displayTreatmentPlans={displayTreatmentPlans}
+        displayFormResponses={displayFormResponses}
+        displayClaims={displayClaims}
+        displayMultiChairAppointments={displayMultiChairAppointments}
+        onSaveOdontogram={handleSaveOdontogram}
+        onSavePeriodontalChart={handleSavePeriodontalChart}
+        onTreatmentPlanSaved={async () => { await fetchTreatmentPlans(); toast.success('Treatment plan saved'); }}
+        onXrayRefresh={fetchXrays}
+      />
     </PanableCanvas>
   );
 }
