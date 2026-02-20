@@ -295,6 +295,133 @@ export class AIBrainEnhancedService {
         where: { userId, leadScore: { not: null } },
         select: { leadScore: true },
       }),
+
+      // --- PHASE 1A: FINANCIAL & PAYMENT INTELLIGENCE ---
+      prisma.soshogleTransaction.findMany({
+        where: { merchantId: userId },
+        select: { id: true, amount: true, currency: true, status: true, type: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      }),
+      prisma.soshogleWallet.findMany({
+        where: { userId },
+        select: { id: true, balance: true, currency: true },
+      }),
+      prisma.creditScore.findMany({
+        where: { userId },
+        select: { id: true, score: true, factors: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+      prisma.achSettlement.findMany({
+        where: { userId },
+        select: { id: true, amount: true, status: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+      prisma.bnplApplication.findMany({
+        where: { userId },
+        select: { id: true, totalAmount: true, status: true, installmentCount: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+      prisma.cashTransaction.findMany({
+        where: { userId },
+        select: { id: true, amount: true, type: true, status: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      }),
+      prisma.fraudAlert.findMany({
+        where: { userId },
+        select: { id: true, severity: true, status: true, type: true, amount: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+
+      // --- PHASE 1B: E-COMMERCE & INVENTORY ---
+      prisma.product.findMany({
+        where: { userId },
+        select: { id: true, name: true, price: true, stock: true, status: true, createdAt: true },
+      }),
+      prisma.order.findMany({
+        where: { userId },
+        select: { id: true, total: true, status: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      }),
+      prisma.storefront.findMany({
+        where: { userId },
+        select: { id: true, name: true, status: true, createdAt: true },
+      }),
+      prisma.inventoryItem.findMany({
+        where: { userId },
+        select: { id: true, name: true, quantity: true, minQuantity: true, price: true, status: true },
+      }),
+      prisma.inventoryAlert.findMany({
+        where: { userId },
+        select: { id: true, type: true, status: true, createdAt: true },
+      }),
+
+      // POS & Restaurant
+      prisma.reservation.findMany({
+        where: { userId },
+        select: { id: true, status: true, partySize: true, date: true, createdAt: true },
+        orderBy: { date: 'desc' },
+        take: 500,
+      }),
+      prisma.restaurantTable.findMany({
+        where: { userId },
+        select: { id: true, name: true, capacity: true, status: true },
+      }),
+
+      // --- PHASE 1C: TEAM, COMMS, VOICE, INTEGRATIONS ---
+      prisma.teamMember.findMany({
+        where: { userId },
+        select: { id: true, role: true, status: true, createdAt: true },
+      }),
+      prisma.voiceAgent.findMany({
+        where: { userId },
+        select: { id: true, name: true, status: true, totalCalls: true, createdAt: true },
+      }),
+      prisma.voiceUsage.findMany({
+        where: { userId },
+        select: { id: true, minutes: true, cost: true, agentType: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+      prisma.channelConnection.findMany({
+        where: { userId },
+        select: { id: true, channel: true, status: true, lastSyncAt: true },
+      }),
+      prisma.calendarConnection.findMany({
+        where: { userId },
+        select: { id: true, provider: true, status: true, lastSyncAt: true },
+      }),
+      prisma.scheduledEmail.findMany({
+        where: { userId },
+        select: { id: true, status: true, scheduledFor: true },
+      }),
+      prisma.scheduledSms.findMany({
+        where: { userId },
+        select: { id: true, status: true, scheduledFor: true },
+      }),
+      prisma.referral.findMany({
+        where: { referrerId: userId },
+        select: { id: true, status: true, rewardAmount: true, createdAt: true },
+      }),
+      prisma.pipeline.findMany({
+        where: { userId },
+        include: { stages: { select: { id: true, name: true, probability: true } } },
+      }),
+      prisma.auditLog.findMany({
+        where: { userId },
+        select: { id: true, action: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+      prisma.message.count({
+        where: { lead: { userId } },
+      }),
     ]);
 
     // Extract results, defaulting to empty arrays on failure with proper typing
@@ -343,11 +470,45 @@ export class AIBrainEnhancedService {
     const websites = getResult(results[19], 'websites');
     const leadScores = getResult<{ leadScore: number | null }>(results[20], 'leadScores');
 
-    // Fetch Real Estate data conditionally (only if user is in RE industry)
+    // Phase 1A: Financial
+    const soshogleTransactions = getResult(results[21], 'soshogleTransactions');
+    const soshogleWallets = getResult(results[22], 'soshogleWallets');
+    const creditScores = getResult(results[23], 'creditScores');
+    const achSettlements = getResult(results[24], 'achSettlements');
+    const bnplApplications = getResult(results[25], 'bnplApplications');
+    const cashTransactions = getResult(results[26], 'cashTransactions');
+    const fraudAlerts = getResult(results[27], 'fraudAlerts');
+
+    // Phase 1B: E-commerce, Inventory, POS
+    const products = getResult(results[28], 'products');
+    const orders = getResult(results[29], 'orders');
+    const storefronts = getResult(results[30], 'storefronts');
+    const inventoryItems = getResult(results[31], 'inventoryItems');
+    const inventoryAlerts = getResult(results[32], 'inventoryAlerts');
+    const reservations = getResult(results[33], 'reservations');
+    const restaurantTables = getResult(results[34], 'restaurantTables');
+
+    // Phase 1C: Team, Voice, Integrations
+    const teamMembers = getResult(results[35], 'teamMembers');
+    const voiceAgents = getResult(results[36], 'voiceAgents');
+    const voiceUsage = getResult(results[37], 'voiceUsage');
+    const channelConnections = getResult(results[38], 'channelConnections');
+    const calendarConnections = getResult(results[39], 'calendarConnections');
+    const scheduledEmails = getResult(results[40], 'scheduledEmails');
+    const scheduledSms = getResult(results[41], 'scheduledSms');
+    const referrals = getResult(results[42], 'referrals');
+    const pipelines = getResult(results[43], 'pipelines');
+    const auditLogs = getResult(results[44], 'auditLogs');
+    const directMessageCount = results[45]?.status === 'fulfilled' ? (results[45].value as number) : 0;
+
+    // Fetch Industry-Specific data conditionally
     let reData = { properties: 0, fsbo: 0, cma: 0, presentations: 0, marketStats: 0 };
+    let industryData: Record<string, any> = {};
     try {
       const user = await prisma.user.findUnique({ where: { id: userId }, select: { industry: true } });
-      if (user?.industry === 'REAL_ESTATE') {
+      const industry = user?.industry;
+
+      if (industry === 'REAL_ESTATE') {
         const reResults = await Promise.allSettled([
           prisma.rEProperty.count({ where: { userId } }),
           prisma.rEFSBOListing.count({ where: { userId } }),
@@ -362,20 +523,63 @@ export class AIBrainEnhancedService {
           presentations: reResults[3].status === 'fulfilled' ? reResults[3].value : 0,
           marketStats: reResults[4].status === 'fulfilled' ? reResults[4].value : 0,
         };
+        industryData = { type: 'REAL_ESTATE', ...reData };
       }
-    } catch { /* RE tables may not exist */ }
+
+      if (industry === 'DENTAL' || industry === 'HEALTHCARE' || industry === 'MEDICAL') {
+        const dResults = await Promise.allSettled([
+          prisma.bookingAppointment.count({ where: { userId, startTime: { gte: new Date() } } }),
+          prisma.bookingAppointment.count({ where: { userId, status: 'NO_SHOW' } }),
+          prisma.bookingAppointment.count({ where: { userId } }),
+        ]);
+        industryData = {
+          type: industry,
+          upcomingAppointments: dResults[0].status === 'fulfilled' ? dResults[0].value : 0,
+          noShows: dResults[1].status === 'fulfilled' ? dResults[1].value : 0,
+          totalAppointments: dResults[2].status === 'fulfilled' ? dResults[2].value : 0,
+        };
+      }
+
+      if (industry === 'RESTAURANT' || industry === 'FOOD_SERVICE') {
+        industryData = {
+          type: industry,
+          reservations: reservations.length,
+          tables: restaurantTables.length,
+          avgPartySize: reservations.length > 0
+            ? Math.round(reservations.reduce((s: number, r: any) => s + (r.partySize || 0), 0) / reservations.length)
+            : 0,
+        };
+      }
+
+      if (industry === 'SPORTS_CLUB' || industry === 'YOUTH_SPORTS') {
+        const clubResults = await Promise.allSettled([
+          prisma.clubOSRegistration.count({ where: { program: { userId } } }),
+          prisma.clubOSProgram.count({ where: { userId } }),
+          prisma.clubOSTeam.count({ where: { division: { userId } } }),
+          prisma.clubOSSchedule.count({ where: { userId } }),
+        ]);
+        industryData = {
+          type: industry,
+          registrations: clubResults[0].status === 'fulfilled' ? clubResults[0].value : 0,
+          programs: clubResults[1].status === 'fulfilled' ? clubResults[1].value : 0,
+          teams: clubResults[2].status === 'fulfilled' ? clubResults[2].value : 0,
+          schedules: clubResults[3].status === 'fulfilled' ? clubResults[3].value : 0,
+        };
+      }
+    } catch { /* Industry tables may not exist */ }
 
     console.log('[AI Brain] Data summary:', {
       leads: leads.length, deals: deals.length, tasks: tasks.length,
       appointments: appointments.length, callLogs: callLogs.length,
       payments: payments.length, invoices: invoices.length,
       emailCampaigns: emailCampaigns.length, smsCampaigns: smsCampaigns.length,
-      conversations: conversations.length, conversationMessages: conversationMessages.length,
-      reviews: reviews.length, feedbackCollections: feedbackCollections.length,
-      workflows: workflows.length, workflowEnrollments: workflowEnrollments.length,
-      emailDripCampaigns: emailDripCampaigns.length, genericCampaigns: genericCampaigns.length,
-      outboundCalls: outboundCalls.length, smsDripCampaigns: smsDripCampaigns.length,
-      websites: websites.length, leadScores: leadScores.length, reData,
+      conversations: conversations.length, reviews: reviews.length,
+      workflows: workflows.length, websites: websites.length,
+      soshogleTransactions: soshogleTransactions.length, products: products.length,
+      orders: orders.length, inventoryItems: inventoryItems.length,
+      reservations: reservations.length, teamMembers: teamMembers.length,
+      voiceAgents: voiceAgents.length, channelConnections: channelConnections.length,
+      referrals: referrals.length, directMessageCount, reData,
     });
 
     // Calculate core metrics
@@ -391,19 +595,38 @@ export class AIBrainEnhancedService {
       : 0;
     const customerSatisfaction = (avgRating / 5) * 100;
 
-    // Calculate overall health (weighted average)
+    // Calculate overall health (weighted average of all data dimensions)
+    const orderCount = (extData.orders || []).length;
+    const fraudOpen = (extData.fraudAlerts || []).filter((f: any) => f.status === 'OPEN').length;
+    const invLow = (extData.inventoryItems || []).filter((i: any) => i.quantity <= (i.minQuantity || 5)).length;
     const healthFactors = {
       revenue: totalRevenue > 0 ? 100 : 50,
       leads: activeLeads > 0 ? 100 : 50,
       conversion: conversionRate > 10 ? 100 : conversionRate * 10,
       satisfaction: customerSatisfaction,
+      ecommerce: orderCount > 0 ? 100 : (extData.products || []).length > 0 ? 70 : 50,
+      security: fraudOpen === 0 ? 100 : fraudOpen < 3 ? 60 : 20,
+      inventory: invLow === 0 ? 100 : 50,
     };
     const overallHealth = Math.round(
-      (healthFactors.revenue * 0.3 +
-        healthFactors.leads * 0.2 +
-        healthFactors.conversion * 0.3 +
-        healthFactors.satisfaction * 0.2)
+      (healthFactors.revenue * 0.2 +
+        healthFactors.leads * 0.15 +
+        healthFactors.conversion * 0.2 +
+        healthFactors.satisfaction * 0.15 +
+        healthFactors.ecommerce * 0.1 +
+        healthFactors.security * 0.1 +
+        healthFactors.inventory * 0.1)
     );
+
+    // Build extended data bundle for hemisphere builders
+    const extData = {
+      soshogleTransactions, soshogleWallets, creditScores, achSettlements,
+      bnplApplications, cashTransactions, fraudAlerts,
+      products, orders, storefronts, inventoryItems, inventoryAlerts,
+      reservations, restaurantTables,
+      teamMembers, voiceAgents, voiceUsage, channelConnections, calendarConnections,
+      scheduledEmails, scheduledSms, referrals, pipelines, auditLogs, directMessageCount,
+    };
 
     // Build LEFT HEMISPHERE: Current Operations
     const leftHemisphere = this.buildCurrentOperationsHemisphere(
@@ -425,7 +648,8 @@ export class AIBrainEnhancedService {
       smsDripCampaigns,
       websites,
       leadScores,
-      workflowEnrollments
+      workflowEnrollments,
+      extData
     );
 
     // Build RIGHT HEMISPHERE: Future Predictions
@@ -501,7 +725,8 @@ export class AIBrainEnhancedService {
     smsDripCampaigns: any[],
     websites: any[],
     leadScores: any[],
-    workflowEnrollments: any[]
+    workflowEnrollments: any[],
+    ext: Record<string, any> = {}
   ): BrainHemisphere {
     const dataPoints: BrainDataPoint[] = [];
 
@@ -786,9 +1011,230 @@ export class AIBrainEnhancedService {
       metadata: { hot: hotLeads, warm: warmLeads, cold: coldLeads, total: scores.length },
     });
 
+    // --- FINANCIAL INTELLIGENCE ---
+    const txns = ext.soshogleTransactions || [];
+    const completedTxns = txns.filter((t: any) => t.status === 'COMPLETED' || t.status === 'SUCCEEDED');
+    const txnVolume = completedTxns.reduce((s: number, t: any) => s + (t.amount || 0), 0);
+    if (txns.length > 0) {
+      dataPoints.push({
+        id: 'soshogle-transactions', category: 'Financial', subcategory: 'Transactions',
+        label: 'Payment Transactions', value: txns.length, unit: 'transactions',
+        trend: txns.length > 10 ? 'up' : 'stable',
+        status: completedTxns.length / Math.max(txns.length, 1) > 0.9 ? 'healthy' : 'warning',
+        metadata: { volume: txnVolume, completed: completedTxns.length, total: txns.length },
+      });
+    }
+
+    const wallets = ext.soshogleWallets || [];
+    const totalBalance = wallets.reduce((s: number, w: any) => s + (w.balance || 0), 0);
+    if (wallets.length > 0) {
+      dataPoints.push({
+        id: 'wallet-balance', category: 'Financial', subcategory: 'Wallet',
+        label: 'Wallet Balance', value: totalBalance / 100, unit: 'USD',
+        trend: 'stable', status: totalBalance > 0 ? 'healthy' : 'warning',
+        metadata: { wallets: wallets.length },
+      });
+    }
+
+    const achSett = ext.achSettlements || [];
+    if (achSett.length > 0) {
+      const pending = achSett.filter((a: any) => a.status === 'PENDING').length;
+      dataPoints.push({
+        id: 'ach-settlements', category: 'Financial', subcategory: 'ACH',
+        label: 'ACH Settlements', value: achSett.length, unit: 'settlements',
+        trend: 'stable', status: pending > 5 ? 'warning' : 'healthy',
+        metadata: { pending, total: achSett.length },
+      });
+    }
+
+    const bnpl = ext.bnplApplications || [];
+    if (bnpl.length > 0) {
+      const approved = bnpl.filter((b: any) => b.status === 'APPROVED').length;
+      const bnplTotal = bnpl.reduce((s: number, b: any) => s + (b.totalAmount || 0), 0);
+      dataPoints.push({
+        id: 'bnpl-applications', category: 'Financial', subcategory: 'BNPL',
+        label: 'Buy Now Pay Later', value: bnpl.length, unit: 'applications',
+        trend: bnpl.length > 5 ? 'up' : 'stable', status: approved / Math.max(bnpl.length, 1) > 0.5 ? 'healthy' : 'warning',
+        metadata: { approved, totalAmount: bnplTotal },
+      });
+    }
+
+    const cashTxn = ext.cashTransactions || [];
+    if (cashTxn.length > 0) {
+      const cashTotal = cashTxn.reduce((s: number, c: any) => s + (c.amount || 0), 0);
+      dataPoints.push({
+        id: 'cash-transactions', category: 'Financial', subcategory: 'Cash',
+        label: 'Cash Transactions', value: cashTxn.length, unit: 'transactions',
+        trend: 'stable', status: 'healthy',
+        metadata: { totalAmount: cashTotal },
+      });
+    }
+
+    const frauds = ext.fraudAlerts || [];
+    if (frauds.length > 0) {
+      const openFraud = frauds.filter((f: any) => f.status === 'OPEN' || f.status === 'INVESTIGATING').length;
+      dataPoints.push({
+        id: 'fraud-alerts', category: 'Financial', subcategory: 'Fraud',
+        label: 'Fraud Alerts', value: openFraud, unit: 'open alerts',
+        trend: openFraud > 0 ? 'up' : 'stable', status: openFraud > 3 ? 'critical' : openFraud > 0 ? 'warning' : 'healthy',
+        metadata: { open: openFraud, total: frauds.length },
+      });
+    }
+
+    // --- E-COMMERCE & INVENTORY INTELLIGENCE ---
+    const prods = ext.products || [];
+    if (prods.length > 0) {
+      const lowStock = prods.filter((p: any) => p.stock !== null && p.stock <= 5).length;
+      const outOfStock = prods.filter((p: any) => p.stock === 0).length;
+      dataPoints.push({
+        id: 'product-catalog', category: 'E-commerce', subcategory: 'Products',
+        label: 'Product Catalog', value: prods.length, unit: 'products',
+        trend: 'stable', status: outOfStock > 0 ? 'warning' : 'healthy',
+        metadata: { lowStock, outOfStock, active: prods.filter((p: any) => p.status === 'ACTIVE').length },
+      });
+    }
+
+    const ords = ext.orders || [];
+    if (ords.length > 0) {
+      const recentOrds = ords.filter((o: any) => new Date(o.createdAt) >= last7Days);
+      const orderRevenue = ords.reduce((s: number, o: any) => s + (o.total || 0), 0);
+      dataPoints.push({
+        id: 'order-processing', category: 'E-commerce', subcategory: 'Orders',
+        label: 'Orders', value: ords.length, unit: 'orders',
+        trend: recentOrds.length > ords.length / 4 ? 'up' : 'stable',
+        status: 'healthy',
+        metadata: { thisWeek: recentOrds.length, totalRevenue: orderRevenue },
+      });
+    }
+
+    const invItems = ext.inventoryItems || [];
+    if (invItems.length > 0) {
+      const lowInv = invItems.filter((i: any) => i.quantity <= (i.minQuantity || 5)).length;
+      dataPoints.push({
+        id: 'inventory-levels', category: 'Inventory', subcategory: 'Stock',
+        label: 'Inventory Items', value: invItems.length, unit: 'items',
+        trend: 'stable', status: lowInv > invItems.length * 0.3 ? 'critical' : lowInv > 0 ? 'warning' : 'healthy',
+        metadata: { lowStock: lowInv, total: invItems.length, alerts: (ext.inventoryAlerts || []).length },
+      });
+    }
+
+    // --- RESTAURANT & RESERVATIONS ---
+    const reservs = ext.reservations || [];
+    if (reservs.length > 0) {
+      const upcoming = reservs.filter((r: any) => new Date(r.date) >= now).length;
+      const noShows = reservs.filter((r: any) => r.status === 'NO_SHOW').length;
+      const noShowRate = reservs.length > 0 ? (noShows / reservs.length) * 100 : 0;
+      dataPoints.push({
+        id: 'reservations', category: 'Restaurant', subcategory: 'Reservations',
+        label: 'Reservations', value: reservs.length, unit: 'reservations',
+        trend: upcoming > 5 ? 'up' : 'stable', status: noShowRate > 15 ? 'warning' : 'healthy',
+        metadata: { upcoming, noShows, noShowRate: Math.round(noShowRate), avgPartySize: Math.round(reservs.reduce((s: number, r: any) => s + (r.partySize || 0), 0) / reservs.length) },
+      });
+    }
+
+    const tables = ext.restaurantTables || [];
+    if (tables.length > 0) {
+      const available = tables.filter((t: any) => t.status === 'AVAILABLE').length;
+      dataPoints.push({
+        id: 'table-utilization', category: 'Restaurant', subcategory: 'Tables',
+        label: 'Table Availability', value: available, unit: 'available',
+        trend: 'stable', status: available / tables.length < 0.2 ? 'warning' : 'healthy',
+        metadata: { available, total: tables.length, totalCapacity: tables.reduce((s: number, t: any) => s + (t.capacity || 0), 0) },
+      });
+    }
+
+    // --- TEAM & COLLABORATION ---
+    const team = ext.teamMembers || [];
+    if (team.length > 0) {
+      const active = team.filter((t: any) => t.status === 'ACTIVE').length;
+      dataPoints.push({
+        id: 'team-members', category: 'Team', subcategory: 'Members',
+        label: 'Team Size', value: active, unit: 'active members',
+        trend: 'stable', status: 'healthy',
+        metadata: { active, total: team.length },
+      });
+    }
+
+    // --- VOICE AI ---
+    const vAgents = ext.voiceAgents || [];
+    if (vAgents.length > 0) {
+      const activeAgents = vAgents.filter((a: any) => a.status === 'ACTIVE' || a.status === 'active').length;
+      const totalAgentCalls = vAgents.reduce((s: number, a: any) => s + (a.totalCalls || 0), 0);
+      dataPoints.push({
+        id: 'voice-agents', category: 'Voice AI', subcategory: 'Agents',
+        label: 'Voice Agents', value: vAgents.length, unit: 'agents',
+        trend: totalAgentCalls > 50 ? 'up' : 'stable', status: activeAgents > 0 ? 'healthy' : 'warning',
+        metadata: { active: activeAgents, totalCalls: totalAgentCalls },
+      });
+    }
+
+    const vUsage = ext.voiceUsage || [];
+    if (vUsage.length > 0) {
+      const totalMinutes = vUsage.reduce((s: number, u: any) => s + (u.minutes || 0), 0);
+      const totalCost = vUsage.reduce((s: number, u: any) => s + (u.cost || 0), 0);
+      dataPoints.push({
+        id: 'voice-usage', category: 'Voice AI', subcategory: 'Usage',
+        label: 'Voice Usage', value: Math.round(totalMinutes), unit: 'minutes',
+        trend: 'stable', status: 'healthy',
+        metadata: { totalMinutes, totalCost, avgCostPerMin: totalMinutes > 0 ? (totalCost / totalMinutes).toFixed(2) : 0 },
+      });
+    }
+
+    // --- INTEGRATIONS ---
+    const channels = ext.channelConnections || [];
+    const calendars = ext.calendarConnections || [];
+    const totalIntegrations = channels.length + calendars.length;
+    if (totalIntegrations > 0) {
+      const connected = [...channels, ...calendars].filter((c: any) => c.status === 'ACTIVE' || c.status === 'CONNECTED').length;
+      dataPoints.push({
+        id: 'integrations', category: 'Integrations', subcategory: 'Connections',
+        label: 'Active Integrations', value: connected, unit: 'connected',
+        trend: 'stable', status: connected < totalIntegrations ? 'warning' : 'healthy',
+        metadata: { connected, total: totalIntegrations, channels: channels.length, calendars: calendars.length },
+      });
+    }
+
+    // --- REFERRALS ---
+    const refs = ext.referrals || [];
+    if (refs.length > 0) {
+      const converted = refs.filter((r: any) => r.status === 'CONVERTED' || r.status === 'REWARDED').length;
+      const refRewards = refs.reduce((s: number, r: any) => s + (r.rewardAmount || 0), 0);
+      dataPoints.push({
+        id: 'referrals', category: 'Marketing', subcategory: 'Referrals',
+        label: 'Referral Program', value: refs.length, unit: 'referrals',
+        trend: converted > 0 ? 'up' : 'stable', status: 'healthy',
+        metadata: { converted, totalRewards: refRewards, conversionRate: refs.length > 0 ? Math.round((converted / refs.length) * 100) : 0 },
+      });
+    }
+
+    // --- SCHEDULED COMMS ---
+    const schedEmails = ext.scheduledEmails || [];
+    const schedSms = ext.scheduledSms || [];
+    const pendingComms = [...schedEmails, ...schedSms].filter((s: any) => s.status === 'PENDING' || s.status === 'SCHEDULED').length;
+    if (schedEmails.length + schedSms.length > 0) {
+      dataPoints.push({
+        id: 'scheduled-comms', category: 'Communication', subcategory: 'Scheduled',
+        label: 'Scheduled Communications', value: pendingComms, unit: 'pending',
+        trend: 'stable', status: 'healthy',
+        metadata: { emails: schedEmails.length, sms: schedSms.length, directMessages: ext.directMessageCount || 0 },
+      });
+    }
+
+    // --- PIPELINES ---
+    const pipes = ext.pipelines || [];
+    if (pipes.length > 0) {
+      const totalStages = pipes.reduce((s: number, p: any) => s + (p.stages?.length || 0), 0);
+      dataPoints.push({
+        id: 'pipeline-structure', category: 'Sales', subcategory: 'Pipelines',
+        label: 'Sales Pipelines', value: pipes.length, unit: 'pipelines',
+        trend: 'stable', status: 'healthy',
+        metadata: { totalStages, pipelines: pipes.map((p: any) => ({ name: p.name, stages: p.stages?.length || 0 })) },
+      });
+    }
+
     // Calculate hemisphere health
     const healthyPoints = dataPoints.filter((p) => p.status === 'healthy' || p.status === 'excellent').length;
-    const overallHealth = Math.round((healthyPoints / dataPoints.length) * 100);
+    const overallHealth = dataPoints.length > 0 ? Math.round((healthyPoints / dataPoints.length) * 100) : 50;
     const criticalAlerts = dataPoints.filter((p) => p.status === 'critical').length;
     const opportunities = dataPoints.filter((p) => p.trend === 'up' && p.status !== 'critical').length;
 
