@@ -1845,6 +1845,269 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
         },
       },
     },
+
+    // =============================================
+    // FINANCIAL & PAYMENT ACTIONS
+    // =============================================
+    {
+      type: "function",
+      function: {
+        name: "get_payment_analytics",
+        description: "Get payment analytics including revenue breakdown, transaction volume, payment method distribution, cash flow trends. Use when user asks about payments, revenue, cash flow, financial health.",
+        parameters: { type: "object", properties: {
+          period: { type: "string", enum: ["today", "last_7_days", "last_30_days", "last_90_days", "all_time"], description: "Time period (default: last_30_days)" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_revenue_breakdown",
+        description: "Get detailed revenue breakdown by source, product, payment method, time period. Use for 'how much did I make', 'revenue by product', 'money coming in'.",
+        parameters: { type: "object", properties: {
+          groupBy: { type: "string", enum: ["source", "product", "method", "month", "week"], description: "How to break down revenue" },
+          period: { type: "string", enum: ["last_7_days", "last_30_days", "last_90_days", "this_year"], description: "Period" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "list_fraud_alerts",
+        description: "List fraud alerts and suspicious activity. Use when user asks about fraud, suspicious transactions, security alerts.",
+        parameters: { type: "object", properties: {
+          status: { type: "string", enum: ["OPEN", "INVESTIGATING", "RESOLVED", "all"], description: "Filter by status" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "check_cash_flow",
+        description: "Get cash flow summary: incoming payments, outgoing expenses, net flow, projections. Use for 'how's my cash flow', 'am I profitable', 'money in vs out'.",
+        parameters: { type: "object", properties: {
+          period: { type: "string", enum: ["last_7_days", "last_30_days", "last_90_days"], description: "Period to analyze" },
+        }},
+      },
+    },
+
+    // =============================================
+    // INVENTORY & E-COMMERCE ACTIONS
+    // =============================================
+    {
+      type: "function",
+      function: {
+        name: "check_stock_levels",
+        description: "Check inventory stock levels, low stock alerts, out of stock items. Use when user asks about inventory, stock, what needs restocking.",
+        parameters: { type: "object", properties: {
+          filter: { type: "string", enum: ["all", "low_stock", "out_of_stock", "overstocked"], description: "Filter type" },
+          limit: { type: "number", description: "Max items to return (default 20)" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_best_sellers",
+        description: "Get best selling products by revenue or quantity. Use for 'what's selling best', 'top products', 'best sellers'.",
+        parameters: { type: "object", properties: {
+          period: { type: "string", enum: ["last_7_days", "last_30_days", "last_90_days", "all_time"], description: "Period" },
+          limit: { type: "number", description: "Number of products (default 10)" },
+          sortBy: { type: "string", enum: ["revenue", "quantity"], description: "Sort by metric" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "track_order",
+        description: "Track an order status by order ID or customer name. Use for 'where's my order', 'order status', 'check order'.",
+        parameters: { type: "object", properties: {
+          orderId: { type: "string", description: "Order ID" },
+          customerName: { type: "string", description: "Customer name to search" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_low_stock_alerts",
+        description: "Get items that are below minimum stock levels and need restocking. Use for 'what needs restocking', 'low stock alert', 'inventory warnings'.",
+        parameters: { type: "object", properties: {} },
+      },
+    },
+
+    // =============================================
+    // ANALYTICS & DEEP REPORTING
+    // =============================================
+    {
+      type: "function",
+      function: {
+        name: "get_website_analytics",
+        description: "Get website performance analytics including traffic, conversions, lead capture rates. Use for 'how is my website doing', 'website traffic', 'conversion rate'.",
+        parameters: { type: "object", properties: {
+          websiteId: { type: "string", description: "Specific website ID (optional)" },
+          period: { type: "string", enum: ["last_7_days", "last_30_days", "last_90_days"], description: "Period" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_voice_ai_analytics",
+        description: "Get voice AI usage analytics: call volume, answer rates, avg duration, cost per call, agent performance. Use for 'voice AI stats', 'how are my voice agents doing', 'call analytics'.",
+        parameters: { type: "object", properties: {
+          period: { type: "string", enum: ["last_7_days", "last_30_days", "last_90_days"], description: "Period" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_conversation_analytics",
+        description: "Get conversation intelligence: response times, message volume by channel, engagement rates. Use for 'message stats', 'conversation analytics', 'response time'.",
+        parameters: { type: "object", properties: {
+          period: { type: "string", enum: ["last_7_days", "last_30_days", "last_90_days"], description: "Period" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_delivery_analytics",
+        description: "Get delivery performance: on-time rate, average delivery time, driver performance. Use for 'delivery stats', 'how are deliveries going'.",
+        parameters: { type: "object", properties: {} },
+      },
+    },
+
+    // =============================================
+    // RESTAURANT & RESERVATION ACTIONS
+    // =============================================
+    {
+      type: "function",
+      function: {
+        name: "manage_reservations",
+        description: "List, create, or get reservation analytics. Use for 'show reservations', 'how many bookings tonight', 'reservation stats', 'busiest times'.",
+        parameters: { type: "object", properties: {
+          action: { type: "string", enum: ["list", "stats", "upcoming", "peak_hours"], description: "Action to perform" },
+          date: { type: "string", description: "Date filter YYYY-MM-DD (optional)" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "manage_tables",
+        description: "Check table availability and status. Use for 'which tables are free', 'table status', 'restaurant capacity'.",
+        parameters: { type: "object", properties: {
+          action: { type: "string", enum: ["availability", "status", "all"], description: "What to check" },
+        }},
+      },
+    },
+
+    // =============================================
+    // TEAM & COLLABORATION ACTIONS
+    // =============================================
+    {
+      type: "function",
+      function: {
+        name: "get_team_performance",
+        description: "Get team member performance: tasks completed, deals closed, calls made, response times. Use for 'how is my team doing', 'team performance', 'who closed the most deals'.",
+        parameters: { type: "object", properties: {
+          period: { type: "string", enum: ["last_7_days", "last_30_days", "last_90_days"], description: "Period" },
+          memberId: { type: "string", description: "Specific team member ID (optional)" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_audit_log",
+        description: "Get recent system activity and audit log entries. Use for 'what happened recently', 'activity log', 'who changed what'.",
+        parameters: { type: "object", properties: {
+          limit: { type: "number", description: "Number of entries (default 20)" },
+        }},
+      },
+    },
+
+    // =============================================
+    // INTEGRATION MANAGEMENT ACTIONS
+    // =============================================
+    {
+      type: "function",
+      function: {
+        name: "check_integrations",
+        description: "Check status of all integrations (Stripe, Twilio, Gmail, QuickBooks, etc). Use for 'are my integrations working', 'connection status', 'which integrations are active'.",
+        parameters: { type: "object", properties: {} },
+      },
+    },
+
+    // =============================================
+    // CONTENT & MARKETING ACTIONS
+    // =============================================
+    {
+      type: "function",
+      function: {
+        name: "manage_reviews",
+        description: "Get review analytics, list reviews, check reputation score. Use for 'how are my reviews', 'reputation score', 'recent reviews', 'average rating'.",
+        parameters: { type: "object", properties: {
+          action: { type: "string", enum: ["list", "stats", "recent"], description: "Action" },
+          limit: { type: "number", description: "Number of reviews (default 10)" },
+        }},
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_referral_stats",
+        description: "Get referral program stats: total referrals, conversions, rewards paid out. Use for 'referral stats', 'how is my referral program doing'.",
+        parameters: { type: "object", properties: {} },
+      },
+    },
+
+    // =============================================
+    // INDUSTRY-SPECIFIC ACTIONS
+    // =============================================
+    {
+      type: "function",
+      function: {
+        name: "get_industry_analytics",
+        description: "Get industry-specific analytics. For real estate: listing performance, CMA data, market stats, FSBO leads. For dental: patient flow, treatment stats. For restaurant: reservation trends, table utilization. For ClubOS: registration stats, team/schedule data.",
+        parameters: { type: "object", properties: {
+          metric: { type: "string", description: "Specific metric to focus on (optional, e.g. 'listings', 'patients', 'reservations', 'registrations')" },
+        }},
+      },
+    },
+
+    // =============================================
+    // BUSINESS INTELLIGENCE
+    // =============================================
+    {
+      type: "function",
+      function: {
+        name: "get_business_score",
+        description: "Get the overall Business Health Score (0-100) combining all CRM data: lead health, pipeline velocity, revenue trend, team productivity, campaign ROI, customer satisfaction, operational efficiency. Use for 'how is my business doing overall', 'business score', 'health check'.",
+        parameters: { type: "object", properties: {} },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_cost_optimization",
+        description: "Analyze spending patterns and suggest cost-cutting measures across voice AI, SMS, subscriptions, and operations. Use for 'how can I save money', 'cost analysis', 'spending breakdown', 'where am I wasting money'.",
+        parameters: { type: "object", properties: {} },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_auto_action_suggestions",
+        description: "Get AI-recommended actions based on current CRM state: stale leads to follow up, overdue tasks, deals at risk, campaigns to optimize. Use for 'what should I do', 'action items', 'what am I missing', 'recommendations'.",
+        parameters: { type: "object", properties: {
+          limit: { type: "number", description: "Number of suggestions (default 10)" },
+        }},
+      },
+    },
   ];
 }
 
@@ -1956,7 +2219,30 @@ export function mapFunctionToAction(functionName: string): string {
     bulk_update_lead_status: "bulk_update_lead_status",
     bulk_add_tag: "bulk_add_tag",
     export_pipeline_csv: "export_pipeline_csv",
-    navigate_to: "navigate_to", // Special case - handled differently
+    get_payment_analytics: "get_payment_analytics",
+    get_revenue_breakdown: "get_revenue_breakdown",
+    list_fraud_alerts: "list_fraud_alerts",
+    check_cash_flow: "check_cash_flow",
+    check_stock_levels: "check_stock_levels",
+    get_best_sellers: "get_best_sellers",
+    track_order: "track_order",
+    get_low_stock_alerts: "get_low_stock_alerts",
+    get_website_analytics: "get_website_analytics",
+    get_voice_ai_analytics: "get_voice_ai_analytics",
+    get_conversation_analytics: "get_conversation_analytics",
+    get_delivery_analytics: "get_delivery_analytics",
+    manage_reservations: "manage_reservations",
+    manage_tables: "manage_tables",
+    get_team_performance: "get_team_performance",
+    get_audit_log: "get_audit_log",
+    check_integrations: "check_integrations",
+    manage_reviews: "manage_reviews",
+    get_referral_stats: "get_referral_stats",
+    get_industry_analytics: "get_industry_analytics",
+    get_business_score: "get_business_score",
+    get_cost_optimization: "get_cost_optimization",
+    get_auto_action_suggestions: "get_auto_action_suggestions",
+    navigate_to: "navigate_to",
   };
   return mapping[functionName] || functionName;
 }
@@ -2099,6 +2385,45 @@ export function getNavigationUrlForAction(
       return "/dashboard/contacts";
     case "export_pipeline_csv":
       return result?.result?.type === "leads" ? "/dashboard/contacts" : "/dashboard/pipeline";
+    case "get_payment_analytics":
+    case "get_revenue_breakdown":
+    case "check_cash_flow":
+      return "/dashboard/payments/analytics";
+    case "list_fraud_alerts":
+      return "/dashboard/payments/fraud-detection";
+    case "check_stock_levels":
+    case "get_low_stock_alerts":
+      return "/dashboard/inventory";
+    case "get_best_sellers":
+    case "track_order":
+      return "/dashboard/ecommerce";
+    case "get_website_analytics":
+      return "/dashboard/websites";
+    case "get_voice_ai_analytics":
+      return "/dashboard/voice-agents";
+    case "get_conversation_analytics":
+      return "/dashboard/messages";
+    case "get_delivery_analytics":
+      return "/dashboard/delivery";
+    case "manage_reservations":
+    case "manage_tables":
+      return "/dashboard/reservations";
+    case "get_team_performance":
+      return "/dashboard/team";
+    case "get_audit_log":
+      return "/dashboard/admin";
+    case "check_integrations":
+      return "/dashboard/settings";
+    case "manage_reviews":
+      return "/dashboard/reviews";
+    case "get_referral_stats":
+      return "/dashboard/referrals";
+    case "get_industry_analytics":
+      return "/dashboard/business-ai";
+    case "get_business_score":
+    case "get_cost_optimization":
+    case "get_auto_action_suggestions":
+      return "/dashboard/business-ai";
     default:
       return null;
   }

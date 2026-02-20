@@ -136,6 +136,36 @@ const AVAILABLE_ACTIONS = {
   BULK_UPDATE_LEAD_STATUS: "bulk_update_lead_status",
   BULK_ADD_TAG: "bulk_add_tag",
   EXPORT_PIPELINE_CSV: "export_pipeline_csv",
+  // Financial & Payment
+  GET_PAYMENT_ANALYTICS: "get_payment_analytics",
+  GET_REVENUE_BREAKDOWN: "get_revenue_breakdown",
+  LIST_FRAUD_ALERTS: "list_fraud_alerts",
+  CHECK_CASH_FLOW: "check_cash_flow",
+  // Inventory & E-commerce
+  CHECK_STOCK_LEVELS: "check_stock_levels",
+  GET_BEST_SELLERS: "get_best_sellers",
+  TRACK_ORDER: "track_order",
+  GET_LOW_STOCK_ALERTS: "get_low_stock_alerts",
+  // Analytics
+  GET_WEBSITE_ANALYTICS: "get_website_analytics",
+  GET_VOICE_AI_ANALYTICS: "get_voice_ai_analytics",
+  GET_CONVERSATION_ANALYTICS: "get_conversation_analytics",
+  GET_DELIVERY_ANALYTICS: "get_delivery_analytics",
+  // Restaurant
+  MANAGE_RESERVATIONS: "manage_reservations",
+  MANAGE_TABLES: "manage_tables",
+  // Team & Admin
+  GET_TEAM_PERFORMANCE: "get_team_performance",
+  GET_AUDIT_LOG: "get_audit_log",
+  CHECK_INTEGRATIONS: "check_integrations",
+  // Marketing & Content
+  MANAGE_REVIEWS: "manage_reviews",
+  GET_REFERRAL_STATS: "get_referral_stats",
+  // Industry & Business Intelligence
+  GET_INDUSTRY_ANALYTICS: "get_industry_analytics",
+  GET_BUSINESS_SCORE: "get_business_score",
+  GET_COST_OPTIMIZATION: "get_cost_optimization",
+  GET_AUTO_ACTION_SUGGESTIONS: "get_auto_action_suggestions",
 };
 
 export async function POST(req: NextRequest) {
@@ -615,6 +645,89 @@ export async function POST(req: NextRequest) {
 
       case AVAILABLE_ACTIONS.EXPORT_PIPELINE_CSV:
         result = await exportPipelineCsv(user.id, parameters);
+        break;
+
+      // Financial & Payment actions
+      case AVAILABLE_ACTIONS.GET_PAYMENT_ANALYTICS:
+        result = await getPaymentAnalytics(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.GET_REVENUE_BREAKDOWN:
+        result = await getRevenueBreakdown(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.LIST_FRAUD_ALERTS:
+        result = await listFraudAlerts(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.CHECK_CASH_FLOW:
+        result = await checkCashFlow(user.id, parameters);
+        break;
+
+      // Inventory & E-commerce actions
+      case AVAILABLE_ACTIONS.CHECK_STOCK_LEVELS:
+        result = await checkStockLevels(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.GET_BEST_SELLERS:
+        result = await getBestSellers(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.TRACK_ORDER:
+        result = await trackOrder(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.GET_LOW_STOCK_ALERTS:
+        result = await getLowStockAlerts(user.id);
+        break;
+
+      // Analytics actions
+      case AVAILABLE_ACTIONS.GET_WEBSITE_ANALYTICS:
+        result = await getWebsiteAnalytics(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.GET_VOICE_AI_ANALYTICS:
+        result = await getVoiceAIAnalytics(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.GET_CONVERSATION_ANALYTICS:
+        result = await getConversationAnalytics(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.GET_DELIVERY_ANALYTICS:
+        result = await getDeliveryAnalytics(user.id);
+        break;
+
+      // Restaurant actions
+      case AVAILABLE_ACTIONS.MANAGE_RESERVATIONS:
+        result = await manageReservations(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.MANAGE_TABLES:
+        result = await manageTables(user.id, parameters);
+        break;
+
+      // Team & Admin actions
+      case AVAILABLE_ACTIONS.GET_TEAM_PERFORMANCE:
+        result = await getTeamPerformance(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.GET_AUDIT_LOG:
+        result = await getAuditLog(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.CHECK_INTEGRATIONS:
+        result = await checkIntegrations(user.id);
+        break;
+
+      // Marketing & Content actions
+      case AVAILABLE_ACTIONS.MANAGE_REVIEWS:
+        result = await manageReviews(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.GET_REFERRAL_STATS:
+        result = await getReferralStats(user.id);
+        break;
+
+      // Industry & Business Intelligence actions
+      case AVAILABLE_ACTIONS.GET_INDUSTRY_ANALYTICS:
+        result = await getIndustryAnalytics(user.id, parameters);
+        break;
+      case AVAILABLE_ACTIONS.GET_BUSINESS_SCORE:
+        result = await getBusinessScore(user.id);
+        break;
+      case AVAILABLE_ACTIONS.GET_COST_OPTIMIZATION:
+        result = await getCostOptimization(user.id);
+        break;
+      case AVAILABLE_ACTIONS.GET_AUTO_ACTION_SUGGESTIONS:
+        result = await getAutoActionSuggestions(user.id, parameters);
         break;
 
       default:
@@ -5236,4 +5349,371 @@ async function getWhatsAppConversations(userId: string, params: any) {
     message: `Found ${conversationsCount} WhatsApp conversation(s)`,
     conversations: data.conversations
   };
+}
+
+// =============================================
+// FINANCIAL & PAYMENT HANDLERS
+// =============================================
+
+async function getPaymentAnalytics(userId: string, params: any) {
+  const period = params?.period || 'last_30_days';
+  const daysMap: Record<string, number> = { today: 1, last_7_days: 7, last_30_days: 30, last_90_days: 90, all_time: 3650 };
+  const since = new Date(Date.now() - (daysMap[period] || 30) * 86400000);
+
+  const [payments, invoices, cashTxns, fraudAlerts] = await Promise.all([
+    prisma.payment.findMany({ where: { userId, createdAt: { gte: since } }, select: { amount: true, status: true, paymentMethod: true, createdAt: true } }),
+    prisma.invoice.findMany({ where: { userId, createdAt: { gte: since } }, select: { totalAmount: true, status: true } }),
+    prisma.cashTransaction.findMany({ where: { userId, createdAt: { gte: since } }, select: { amount: true, type: true } }).catch(() => []),
+    prisma.fraudAlert.count({ where: { userId, status: 'OPEN' } }).catch(() => 0),
+  ]);
+
+  const succeeded = payments.filter((p: any) => p.status === 'SUCCEEDED');
+  const totalRevenue = succeeded.reduce((s: number, p: any) => s + (p.amount || 0), 0);
+  const methodBreakdown: Record<string, number> = {};
+  succeeded.forEach((p: any) => { const m = p.paymentMethod || 'unknown'; methodBreakdown[m] = (methodBreakdown[m] || 0) + (p.amount || 0); });
+  const unpaidInvoices = invoices.filter((i: any) => i.status !== 'PAID');
+  const outstandingAmount = unpaidInvoices.reduce((s: number, i: any) => s + (i.totalAmount || 0), 0);
+
+  return {
+    success: true, triggerVisualization: true,
+    statistics: { totalRevenue, transactionCount: payments.length, successRate: payments.length > 0 ? Math.round((succeeded.length / payments.length) * 100) : 0, methodBreakdown, outstandingInvoices: unpaidInvoices.length, outstandingAmount, cashTransactions: cashTxns.length, openFraudAlerts: fraudAlerts },
+    message: `Revenue: $${(totalRevenue / 100).toLocaleString()} from ${succeeded.length} payments. ${unpaidInvoices.length} unpaid invoices ($${(outstandingAmount / 100).toLocaleString()} outstanding). ${fraudAlerts} open fraud alerts.`,
+    dynamicCharts: [{ chartType: 'bar', dimension: 'payment_methods', title: 'Revenue by Payment Method', data: Object.entries(methodBreakdown).map(([name, value]) => ({ name, value: Math.round((value as number) / 100) })) }],
+  };
+}
+
+async function getRevenueBreakdown(userId: string, params: any) {
+  const period = params?.period || 'last_30_days';
+  const daysMap: Record<string, number> = { last_7_days: 7, last_30_days: 30, last_90_days: 90, this_year: 365 };
+  const since = new Date(Date.now() - (daysMap[period] || 30) * 86400000);
+  const groupBy = params?.groupBy || 'month';
+
+  const payments = await prisma.payment.findMany({ where: { userId, status: 'SUCCEEDED', createdAt: { gte: since } }, select: { amount: true, createdAt: true, paymentMethod: true } });
+
+  if (groupBy === 'month' || groupBy === 'week') {
+    const buckets: Record<string, number> = {};
+    payments.forEach((p: any) => {
+      const d = new Date(p.createdAt);
+      const key = groupBy === 'month' ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` : `W${Math.ceil(((d.getTime() - since.getTime()) / 86400000) / 7)}`;
+      buckets[key] = (buckets[key] || 0) + (p.amount || 0);
+    });
+    return { success: true, triggerVisualization: true, statistics: { breakdown: buckets }, message: `Revenue breakdown by ${groupBy}: ${Object.entries(buckets).map(([k, v]) => `${k}: $${Math.round((v as number) / 100).toLocaleString()}`).join(', ')}`, dynamicCharts: [{ chartType: 'line', dimension: `revenue_by_${groupBy}`, title: `Revenue by ${groupBy}`, data: Object.entries(buckets).map(([name, value]) => ({ name, value: Math.round((value as number) / 100) })) }] };
+  }
+
+  const methodBuckets: Record<string, number> = {};
+  payments.forEach((p: any) => { const m = p.paymentMethod || 'Other'; methodBuckets[m] = (methodBuckets[m] || 0) + (p.amount || 0); });
+  return { success: true, triggerVisualization: true, statistics: { breakdown: methodBuckets }, message: `Revenue by method: ${Object.entries(methodBuckets).map(([k, v]) => `${k}: $${Math.round((v as number) / 100).toLocaleString()}`).join(', ')}`, dynamicCharts: [{ chartType: 'pie', dimension: 'revenue_by_method', title: 'Revenue by Payment Method', data: Object.entries(methodBuckets).map(([name, value]) => ({ name, value: Math.round((value as number) / 100) })) }] };
+}
+
+async function listFraudAlerts(userId: string, params: any) {
+  const statusFilter = params?.status === 'all' ? undefined : (params?.status || 'OPEN');
+  const where: any = { userId };
+  if (statusFilter) where.status = statusFilter;
+  const alerts = await prisma.fraudAlert.findMany({ where, orderBy: { createdAt: 'desc' }, take: 20 }).catch(() => []);
+  return { success: true, statistics: { totalAlerts: alerts.length, alerts: alerts.map((a: any) => ({ id: a.id, type: a.type, severity: a.severity, status: a.status, amount: a.amount, date: a.createdAt })) }, message: `${alerts.length} fraud alert(s) found${statusFilter ? ` with status ${statusFilter}` : ''}.` };
+}
+
+async function checkCashFlow(userId: string, params: any) {
+  const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
+  const since = new Date(Date.now() - days * 86400000);
+  const [incoming, outgoing] = await Promise.all([
+    prisma.payment.findMany({ where: { userId, status: 'SUCCEEDED', createdAt: { gte: since } }, select: { amount: true } }),
+    prisma.invoice.findMany({ where: { userId, status: 'PAID', createdAt: { gte: since } }, select: { totalAmount: true } }),
+  ]);
+  const totalIn = incoming.reduce((s: number, p: any) => s + (p.amount || 0), 0);
+  const totalOut = outgoing.reduce((s: number, i: any) => s + (i.totalAmount || 0), 0);
+  const net = totalIn - totalOut;
+  return { success: true, triggerVisualization: true, statistics: { incoming: totalIn, outgoing: totalOut, net, period: `last_${days}_days` }, message: `Cash flow (last ${days} days): $${(totalIn / 100).toLocaleString()} in, $${(totalOut / 100).toLocaleString()} out. Net: $${(net / 100).toLocaleString()}. ${net > 0 ? 'Positive cash flow.' : 'Negative cash flow — review expenses.'}`, dynamicCharts: [{ chartType: 'bar', dimension: 'cash_flow', title: 'Cash Flow', data: [{ name: 'Incoming', value: Math.round(totalIn / 100) }, { name: 'Outgoing', value: Math.round(totalOut / 100) }, { name: 'Net', value: Math.round(net / 100) }] }] };
+}
+
+// =============================================
+// INVENTORY & E-COMMERCE HANDLERS
+// =============================================
+
+async function checkStockLevels(userId: string, params: any) {
+  const items = await prisma.inventoryItem.findMany({ where: { userId }, select: { id: true, name: true, quantity: true, minQuantity: true, price: true, status: true } }).catch(() => []);
+  let filtered = items;
+  if (params?.filter === 'low_stock') filtered = items.filter((i: any) => i.quantity <= (i.minQuantity || 5) && i.quantity > 0);
+  else if (params?.filter === 'out_of_stock') filtered = items.filter((i: any) => i.quantity === 0);
+  else if (params?.filter === 'overstocked') filtered = items.filter((i: any) => i.quantity > (i.minQuantity || 5) * 3);
+  const limit = params?.limit || 20;
+  return { success: true, statistics: { total: items.length, lowStock: items.filter((i: any) => i.quantity <= (i.minQuantity || 5)).length, outOfStock: items.filter((i: any) => i.quantity === 0).length, items: filtered.slice(0, limit).map((i: any) => ({ name: i.name, quantity: i.quantity, minQuantity: i.minQuantity, status: i.status })) }, message: `${items.length} inventory items. ${items.filter((i: any) => i.quantity <= (i.minQuantity || 5)).length} low stock, ${items.filter((i: any) => i.quantity === 0).length} out of stock.` };
+}
+
+async function getBestSellers(userId: string, params: any) {
+  const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : params?.period === 'all_time' ? 3650 : 30;
+  const since = new Date(Date.now() - days * 86400000);
+  const orders = await prisma.orderItem.findMany({ where: { order: { userId, createdAt: { gte: since } } }, include: { product: { select: { name: true, price: true } } } }).catch(() => []);
+  const productMap: Record<string, { name: string; revenue: number; qty: number }> = {};
+  orders.forEach((oi: any) => { const n = oi.product?.name || 'Unknown'; if (!productMap[n]) productMap[n] = { name: n, revenue: 0, qty: 0 }; productMap[n].revenue += (oi.price || 0) * (oi.quantity || 1); productMap[n].qty += oi.quantity || 1; });
+  const sorted = Object.values(productMap).sort((a, b) => params?.sortBy === 'quantity' ? b.qty - a.qty : b.revenue - a.revenue);
+  const top = sorted.slice(0, params?.limit || 10);
+  return { success: true, triggerVisualization: true, statistics: { bestSellers: top }, message: `Top ${top.length} best sellers: ${top.map((p, i) => `${i + 1}. ${p.name} ($${p.revenue.toLocaleString()}, ${p.qty} sold)`).join('; ')}`, dynamicCharts: [{ chartType: 'bar', dimension: 'best_sellers', title: 'Best Selling Products', data: top.map((p) => ({ name: p.name, value: params?.sortBy === 'quantity' ? p.qty : Math.round(p.revenue) })) }] };
+}
+
+async function trackOrder(userId: string, params: any) {
+  let order: any = null;
+  if (params?.orderId) order = await prisma.order.findFirst({ where: { userId, id: params.orderId }, include: { items: { include: { product: { select: { name: true } } } } } }).catch(() => null);
+  if (!order && params?.customerName) order = await prisma.order.findFirst({ where: { userId, customerName: { contains: params.customerName, mode: 'insensitive' } }, include: { items: { include: { product: { select: { name: true } } } } }, orderBy: { createdAt: 'desc' } }).catch(() => null);
+  if (!order) return { success: false, message: 'Order not found.' };
+  return { success: true, statistics: { order: { id: order.id, status: order.status, total: order.total, items: order.items?.map((i: any) => ({ product: i.product?.name, qty: i.quantity, price: i.price })), createdAt: order.createdAt } }, message: `Order ${order.id}: Status ${order.status}, Total $${(order.total || 0).toLocaleString()}, ${order.items?.length || 0} items. Created ${new Date(order.createdAt).toLocaleDateString()}.` };
+}
+
+async function getLowStockAlerts(userId: string) {
+  const [items, alerts] = await Promise.all([
+    prisma.inventoryItem.findMany({ where: { userId }, select: { name: true, quantity: true, minQuantity: true } }).catch(() => []),
+    prisma.inventoryAlert.findMany({ where: { userId, status: 'ACTIVE' }, select: { type: true, createdAt: true }, take: 20 }).catch(() => []),
+  ]);
+  const lowStock = items.filter((i: any) => i.quantity <= (i.minQuantity || 5));
+  return { success: true, statistics: { lowStockItems: lowStock.map((i: any) => ({ name: i.name, quantity: i.quantity, minQuantity: i.minQuantity })), activeAlerts: alerts.length }, message: `${lowStock.length} items need restocking: ${lowStock.slice(0, 5).map((i: any) => `${i.name} (${i.quantity}/${i.minQuantity})`).join(', ')}${lowStock.length > 5 ? ` and ${lowStock.length - 5} more` : ''}.` };
+}
+
+// =============================================
+// ANALYTICS HANDLERS
+// =============================================
+
+async function getWebsiteAnalytics(userId: string, params: any) {
+  const where: any = { userId };
+  if (params?.websiteId) where.id = params.websiteId;
+  const websites = await prisma.website.findMany({ where, select: { id: true, name: true, status: true, type: true, buildProgress: true, createdAt: true } });
+  const live = websites.filter((w: any) => w.status === 'LIVE' || w.status === 'DEPLOYED');
+  return { success: true, statistics: { totalWebsites: websites.length, liveWebsites: live.length, websites: websites.map((w: any) => ({ name: w.name, status: w.status, type: w.type })) }, message: `${websites.length} website(s): ${live.length} live, ${websites.length - live.length} in progress. ${live.map((w: any) => w.name).join(', ') || 'None live yet.'}` };
+}
+
+async function getVoiceAIAnalytics(userId: string, params: any) {
+  const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
+  const since = new Date(Date.now() - days * 86400000);
+  const [agents, usage, calls] = await Promise.all([
+    prisma.voiceAgent.findMany({ where: { userId }, select: { name: true, status: true, totalCalls: true } }),
+    prisma.voiceUsage.findMany({ where: { userId, createdAt: { gte: since } }, select: { minutes: true, cost: true } }).catch(() => []),
+    prisma.callLog.findMany({ where: { userId, createdAt: { gte: since } }, select: { status: true, duration: true } }),
+  ]);
+  const totalMin = usage.reduce((s: number, u: any) => s + (u.minutes || 0), 0);
+  const totalCost = usage.reduce((s: number, u: any) => s + (u.cost || 0), 0);
+  const completed = calls.filter((c: any) => c.status === 'COMPLETED');
+  const answerRate = calls.length > 0 ? Math.round((completed.length / calls.length) * 100) : 0;
+  const avgDuration = completed.length > 0 ? Math.round(completed.reduce((s: number, c: any) => s + (c.duration || 0), 0) / completed.length) : 0;
+  return { success: true, triggerVisualization: true, statistics: { agents: agents.length, activeAgents: agents.filter((a: any) => a.status === 'ACTIVE' || a.status === 'active').length, totalCalls: calls.length, answerRate, avgDuration, totalMinutes: Math.round(totalMin), totalCost: Math.round(totalCost * 100) / 100, costPerMinute: totalMin > 0 ? Math.round((totalCost / totalMin) * 100) / 100 : 0 }, message: `${agents.length} voice agent(s), ${calls.length} calls (${answerRate}% answer rate, avg ${avgDuration}s). Usage: ${Math.round(totalMin)} min, $${totalCost.toFixed(2)} cost.`, dynamicCharts: [{ chartType: 'bar', dimension: 'voice_metrics', title: 'Voice AI Metrics', data: [{ name: 'Total Calls', value: calls.length }, { name: 'Completed', value: completed.length }, { name: 'Answer Rate %', value: answerRate }] }] };
+}
+
+async function getConversationAnalytics(userId: string, params: any) {
+  const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
+  const since = new Date(Date.now() - days * 86400000);
+  const [conversations, messages] = await Promise.all([
+    prisma.conversation.findMany({ where: { userId }, select: { id: true, channel: true, status: true, lastMessageAt: true } }),
+    prisma.conversationMessage.findMany({ where: { conversation: { userId }, sentAt: { gte: since } }, select: { direction: true, channel: true, sentAt: true } }),
+  ]);
+  const channelCounts: Record<string, number> = {};
+  messages.forEach((m: any) => { const c = m.channel || 'unknown'; channelCounts[c] = (channelCounts[c] || 0) + 1; });
+  const inbound = messages.filter((m: any) => m.direction === 'INBOUND').length;
+  const outbound = messages.filter((m: any) => m.direction === 'OUTBOUND').length;
+  return { success: true, triggerVisualization: true, statistics: { activeConversations: conversations.filter((c: any) => c.status === 'OPEN').length, totalMessages: messages.length, inbound, outbound, byChannel: channelCounts }, message: `${conversations.length} conversations, ${messages.length} messages in ${days}d (${inbound} inbound, ${outbound} outbound). Channels: ${Object.entries(channelCounts).map(([k, v]) => `${k}: ${v}`).join(', ')}.`, dynamicCharts: [{ chartType: 'pie', dimension: 'messages_by_channel', title: 'Messages by Channel', data: Object.entries(channelCounts).map(([name, value]) => ({ name, value })) }] };
+}
+
+async function getDeliveryAnalytics(userId: string) {
+  const orders = await prisma.deliveryOrder?.findMany?.({ where: { userId }, select: { status: true, createdAt: true } })?.catch(() => []) || [];
+  const delivered = orders.filter((o: any) => o.status === 'DELIVERED').length;
+  const pending = orders.filter((o: any) => o.status === 'PENDING' || o.status === 'IN_TRANSIT').length;
+  return { success: true, statistics: { totalOrders: orders.length, delivered, pending, deliveryRate: orders.length > 0 ? Math.round((delivered / orders.length) * 100) : 0 }, message: `${orders.length} delivery orders: ${delivered} delivered, ${pending} pending. Completion rate: ${orders.length > 0 ? Math.round((delivered / orders.length) * 100) : 0}%.` };
+}
+
+// =============================================
+// RESTAURANT HANDLERS
+// =============================================
+
+async function manageReservations(userId: string, params: any) {
+  const action = params?.action || 'list';
+  if (action === 'stats' || action === 'peak_hours') {
+    const reservations = await prisma.reservation.findMany({ where: { userId }, select: { status: true, partySize: true, date: true } }).catch(() => []);
+    const noShows = reservations.filter((r: any) => r.status === 'NO_SHOW').length;
+    const hourBuckets: Record<number, number> = {};
+    reservations.forEach((r: any) => { const h = new Date(r.date).getHours(); hourBuckets[h] = (hourBuckets[h] || 0) + 1; });
+    const peakHour = Object.entries(hourBuckets).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
+    return { success: true, triggerVisualization: true, statistics: { total: reservations.length, noShows, noShowRate: reservations.length > 0 ? Math.round((noShows / reservations.length) * 100) : 0, avgPartySize: reservations.length > 0 ? Math.round(reservations.reduce((s: number, r: any) => s + (r.partySize || 0), 0) / reservations.length) : 0, peakHour: peakHour ? `${peakHour[0]}:00` : 'N/A' }, message: `${reservations.length} total reservations. No-show rate: ${reservations.length > 0 ? Math.round((noShows / reservations.length) * 100) : 0}%. Peak hour: ${peakHour ? `${peakHour[0]}:00` : 'N/A'}. Avg party: ${reservations.length > 0 ? Math.round(reservations.reduce((s: number, r: any) => s + (r.partySize || 0), 0) / reservations.length) : 0}.`, dynamicCharts: [{ chartType: 'bar', dimension: 'reservations_by_hour', title: 'Reservations by Hour', data: Object.entries(hourBuckets).sort((a, b) => Number(a[0]) - Number(b[0])).map(([h, c]) => ({ name: `${h}:00`, value: c })) }] };
+  }
+  const where: any = { userId };
+  if (action === 'upcoming') where.date = { gte: new Date() };
+  if (params?.date) { const d = new Date(params.date); where.date = { gte: d, lt: new Date(d.getTime() + 86400000) }; }
+  const reservations = await prisma.reservation.findMany({ where, orderBy: { date: 'desc' }, take: 20, select: { id: true, status: true, partySize: true, date: true, guestName: true } }).catch(() => []);
+  return { success: true, statistics: { reservations: reservations.map((r: any) => ({ guest: r.guestName, party: r.partySize, date: r.date, status: r.status })) }, message: `${reservations.length} reservation(s) found.${reservations.slice(0, 5).map((r: any) => ` ${r.guestName || 'Guest'} (${r.partySize}) - ${new Date(r.date).toLocaleString()}`).join(';')}` };
+}
+
+async function manageTables(userId: string, params: any) {
+  const tables = await prisma.restaurantTable.findMany({ where: { userId }, select: { id: true, name: true, capacity: true, status: true } }).catch(() => []);
+  const available = tables.filter((t: any) => t.status === 'AVAILABLE');
+  const occupied = tables.filter((t: any) => t.status === 'OCCUPIED');
+  return { success: true, statistics: { total: tables.length, available: available.length, occupied: occupied.length, totalCapacity: tables.reduce((s: number, t: any) => s + (t.capacity || 0), 0), tables: tables.map((t: any) => ({ name: t.name, capacity: t.capacity, status: t.status })) }, message: `${tables.length} tables: ${available.length} available, ${occupied.length} occupied. Total capacity: ${tables.reduce((s: number, t: any) => s + (t.capacity || 0), 0)} seats.` };
+}
+
+// =============================================
+// TEAM & ADMIN HANDLERS
+// =============================================
+
+async function getTeamPerformance(userId: string, params: any) {
+  const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
+  const since = new Date(Date.now() - days * 86400000);
+  const [members, tasks, deals] = await Promise.all([
+    prisma.teamMember.findMany({ where: { userId }, select: { id: true, role: true, status: true, user: { select: { name: true, email: true } } } }).catch(() => []),
+    prisma.task.findMany({ where: { userId, completedAt: { gte: since } }, select: { assignedToId: true } }),
+    prisma.deal.findMany({ where: { userId, actualCloseDate: { gte: since } }, select: { assignedToId: true, value: true } }),
+  ]);
+  const perf = members.map((m: any) => ({ name: m.user?.name || m.user?.email || 'Unknown', role: m.role, tasksCompleted: tasks.filter((t: any) => t.assignedToId === m.id).length, dealsClosed: deals.filter((d: any) => d.assignedToId === m.id).length, revenue: deals.filter((d: any) => d.assignedToId === m.id).reduce((s: number, d: any) => s + (d.value || 0), 0) }));
+  return { success: true, triggerVisualization: true, statistics: { teamSize: members.length, performance: perf }, message: `Team of ${members.length} (last ${days}d): ${perf.map((p) => `${p.name}: ${p.tasksCompleted} tasks, ${p.dealsClosed} deals, $${p.revenue.toLocaleString()}`).join('; ')}`, dynamicCharts: [{ chartType: 'bar', dimension: 'team_tasks', title: 'Tasks Completed by Team', data: perf.map((p) => ({ name: p.name, value: p.tasksCompleted })) }] };
+}
+
+async function getAuditLog(userId: string, params: any) {
+  const limit = params?.limit || 20;
+  const logs = await prisma.auditLog.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: limit, select: { action: true, details: true, createdAt: true } }).catch(() => []);
+  return { success: true, statistics: { entries: logs.map((l: any) => ({ action: l.action, details: l.details, time: l.createdAt })) }, message: `${logs.length} recent activities: ${logs.slice(0, 5).map((l: any) => `${l.action} (${new Date(l.createdAt).toLocaleString()})`).join('; ')}` };
+}
+
+async function checkIntegrations(userId: string) {
+  const [channels, calendars, paymentProviders] = await Promise.all([
+    prisma.channelConnection.findMany({ where: { userId }, select: { channel: true, status: true, lastSyncAt: true } }),
+    prisma.calendarConnection.findMany({ where: { userId }, select: { provider: true, status: true, lastSyncAt: true } }),
+    prisma.paymentProviderSettings.findMany({ where: { userId }, select: { provider: true, isActive: true } }).catch(() => []),
+  ]);
+  const all = [...channels.map((c: any) => ({ name: c.channel, type: 'channel', status: c.status, lastSync: c.lastSyncAt })), ...calendars.map((c: any) => ({ name: c.provider, type: 'calendar', status: c.status, lastSync: c.lastSyncAt })), ...paymentProviders.map((p: any) => ({ name: p.provider, type: 'payment', status: p.isActive ? 'ACTIVE' : 'INACTIVE' }))];
+  const active = all.filter((i) => i.status === 'ACTIVE' || i.status === 'CONNECTED');
+  return { success: true, statistics: { total: all.length, active: active.length, integrations: all }, message: `${all.length} integrations: ${active.length} active, ${all.length - active.length} inactive. ${all.map((i) => `${i.name} (${i.status})`).join(', ')}` };
+}
+
+// =============================================
+// MARKETING & CONTENT HANDLERS
+// =============================================
+
+async function manageReviews(userId: string, params: any) {
+  const action = params?.action || 'stats';
+  const reviews = await prisma.review.findMany({ where: { campaign: { userId } }, orderBy: { createdAt: 'desc' }, take: params?.limit || 50, select: { rating: true, comment: true, customerName: true, platform: true, createdAt: true } }).catch(() => []);
+  const avg = reviews.length > 0 ? (reviews.reduce((s: number, r: any) => s + (r.rating || 0), 0) / reviews.length).toFixed(1) : '0';
+  const dist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  reviews.forEach((r: any) => { if (r.rating >= 1 && r.rating <= 5) dist[Math.round(r.rating)]++; });
+  if (action === 'recent') { return { success: true, statistics: { reviews: reviews.slice(0, 10).map((r: any) => ({ rating: r.rating, customer: r.customerName, comment: r.comment?.slice(0, 100), platform: r.platform })) }, message: `Recent reviews: ${reviews.slice(0, 5).map((r: any) => `${r.customerName || 'Customer'}: ${r.rating}★${r.comment ? ` - "${r.comment.slice(0, 50)}"` : ''}`).join('; ')}` }; }
+  return { success: true, triggerVisualization: true, statistics: { avgRating: Number(avg), totalReviews: reviews.length, distribution: dist }, message: `Average rating: ${avg}★ from ${reviews.length} reviews. Distribution: ${Object.entries(dist).map(([k, v]) => `${k}★: ${v}`).join(', ')}`, dynamicCharts: [{ chartType: 'bar', dimension: 'review_distribution', title: 'Review Distribution', data: Object.entries(dist).map(([name, value]) => ({ name: `${name}★`, value })) }] };
+}
+
+async function getReferralStats(userId: string) {
+  const referrals = await prisma.referral.findMany({ where: { referrerId: userId }, select: { status: true, rewardAmount: true, createdAt: true } }).catch(() => []);
+  const converted = referrals.filter((r: any) => r.status === 'CONVERTED' || r.status === 'REWARDED').length;
+  const totalRewards = referrals.reduce((s: number, r: any) => s + (r.rewardAmount || 0), 0);
+  return { success: true, statistics: { total: referrals.length, converted, conversionRate: referrals.length > 0 ? Math.round((converted / referrals.length) * 100) : 0, totalRewards }, message: `Referral program: ${referrals.length} total, ${converted} converted (${referrals.length > 0 ? Math.round((converted / referrals.length) * 100) : 0}%). Total rewards: $${totalRewards.toLocaleString()}.` };
+}
+
+// =============================================
+// INDUSTRY & BUSINESS INTELLIGENCE HANDLERS
+// =============================================
+
+async function getIndustryAnalytics(userId: string, params: any) {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { industry: true } });
+  const industry = user?.industry || 'GENERAL';
+
+  if (industry === 'REAL_ESTATE') {
+    const [props, fsbo, cma, presentations] = await Promise.all([
+      prisma.rEProperty.count({ where: { userId } }).catch(() => 0),
+      prisma.rEFSBOListing.count({ where: { userId } }).catch(() => 0),
+      prisma.rECMAReport.count({ where: { userId } }).catch(() => 0),
+      prisma.rEListingPresentation.count({ where: { userId } }).catch(() => 0),
+    ]);
+    return { success: true, statistics: { industry, properties: props, fsboLeads: fsbo, cmaReports: cma, presentations }, message: `Real Estate: ${props} properties, ${fsbo} FSBO leads, ${cma} CMA reports, ${presentations} listing presentations.` };
+  }
+
+  if (industry === 'RESTAURANT' || industry === 'FOOD_SERVICE') {
+    const [reservations, tables] = await Promise.all([
+      prisma.reservation.count({ where: { userId } }).catch(() => 0),
+      prisma.restaurantTable.count({ where: { userId } }).catch(() => 0),
+    ]);
+    return { success: true, statistics: { industry, reservations, tables }, message: `Restaurant: ${reservations} reservations, ${tables} tables.` };
+  }
+
+  if (industry === 'SPORTS_CLUB' || industry === 'YOUTH_SPORTS') {
+    const [regs, programs, teams] = await Promise.all([
+      prisma.clubOSRegistration.count({ where: { program: { userId } } }).catch(() => 0),
+      prisma.clubOSProgram.count({ where: { userId } }).catch(() => 0),
+      prisma.clubOSTeam.count({ where: { division: { userId } } }).catch(() => 0),
+    ]);
+    return { success: true, statistics: { industry, registrations: regs, programs, teams }, message: `ClubOS: ${regs} registrations, ${programs} programs, ${teams} teams.` };
+  }
+
+  return { success: true, statistics: { industry }, message: `Industry: ${industry}. Use get_statistics for general CRM analytics.` };
+}
+
+async function getBusinessScore(userId: string) {
+  const { aiBrainService } = await import('@/lib/ai-brain-service');
+  const [insights, predictions] = await Promise.all([
+    aiBrainService.generateGeneralInsights(userId),
+    aiBrainService.generatePredictiveAnalytics(userId),
+  ]);
+
+  const [leads, deals, tasks, payments, reviews] = await Promise.all([
+    prisma.lead.count({ where: { userId } }),
+    prisma.deal.findMany({ where: { userId }, select: { value: true, actualCloseDate: true, stageId: true } }),
+    prisma.task.findMany({ where: { userId }, select: { status: true } }),
+    prisma.payment.findMany({ where: { userId, status: 'SUCCEEDED' }, select: { amount: true } }),
+    prisma.review.findMany({ where: { campaign: { userId } }, select: { rating: true } }).catch(() => []),
+  ]);
+
+  const revenue = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const closedDeals = deals.filter((d) => d.actualCloseDate).length;
+  const completedTasks = tasks.filter((t: any) => t.status === 'COMPLETED').length;
+  const avgRating = reviews.length > 0 ? reviews.reduce((s, r: any) => s + (r.rating || 0), 0) / reviews.length : 0;
+
+  const scores = {
+    leadHealth: Math.min(leads > 0 ? Math.round((leads / 50) * 100) : 0, 100),
+    pipelineVelocity: Math.min(deals.length > 0 ? Math.round((closedDeals / deals.length) * 100) : 0, 100),
+    revenueTrend: predictions.growthTrend === 'accelerating' ? 90 : predictions.growthTrend === 'steady' ? 70 : predictions.growthTrend === 'declining' ? 30 : 50,
+    teamProductivity: tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 50,
+    customerSatisfaction: Math.round((avgRating / 5) * 100),
+    operationalEfficiency: Math.min(Math.round(((completedTasks + closedDeals) / Math.max(tasks.length + deals.length, 1)) * 100), 100),
+  };
+  const overall = Math.round(Object.values(scores).reduce((s, v) => s + v, 0) / Object.values(scores).length);
+  const highInsights = insights.filter((i) => i.priority === 'high');
+
+  return {
+    success: true, triggerVisualization: true,
+    statistics: { overallScore: overall, breakdown: scores, growthTrend: predictions.growthTrend, criticalInsights: highInsights.length, topActions: highInsights.slice(0, 3).map((i) => i.suggestedActions?.[0]).filter(Boolean) },
+    message: `Business Score: ${overall}/100. Lead Health: ${scores.leadHealth}, Pipeline: ${scores.pipelineVelocity}, Revenue: ${scores.revenueTrend}, Productivity: ${scores.teamProductivity}, Satisfaction: ${scores.customerSatisfaction}, Efficiency: ${scores.operationalEfficiency}. Growth trend: ${predictions.growthTrend}. ${highInsights.length} critical insights.`,
+    dynamicCharts: [{ chartType: 'bar', dimension: 'business_score', title: 'Business Health Score', data: Object.entries(scores).map(([name, value]) => ({ name: name.replace(/([A-Z])/g, ' $1').trim(), value })) }],
+  };
+}
+
+async function getCostOptimization(userId: string) {
+  const [voiceUsage, smsCampaigns, payments, subscription] = await Promise.all([
+    prisma.voiceUsage.findMany({ where: { userId }, select: { minutes: true, cost: true, agentType: true }, orderBy: { createdAt: 'desc' }, take: 100 }).catch(() => []),
+    prisma.smsCampaign.findMany({ where: { userId }, select: { totalSent: true, totalReplied: true } }).catch(() => []),
+    prisma.payment.findMany({ where: { userId, status: 'SUCCEEDED' }, select: { amount: true }, orderBy: { createdAt: 'desc' }, take: 100 }),
+    prisma.userSubscription.findFirst({ where: { userId }, select: { plan: true, amount: true } }).catch(() => null),
+  ]);
+
+  const suggestions: string[] = [];
+  const voiceCost = voiceUsage.reduce((s: number, u: any) => s + (u.cost || 0), 0);
+  const voiceMin = voiceUsage.reduce((s: number, u: any) => s + (u.minutes || 0), 0);
+  if (voiceCost > 100) suggestions.push(`Voice AI: $${voiceCost.toFixed(0)} spent on ${Math.round(voiceMin)} min. Consider optimizing agent prompts to reduce call duration.`);
+
+  const totalSms = smsCampaigns.reduce((s: number, c: any) => s + (c.totalSent || 0), 0);
+  const totalReplied = smsCampaigns.reduce((s: number, c: any) => s + (c.totalReplied || 0), 0);
+  const smsReplyRate = totalSms > 0 ? (totalReplied / totalSms) * 100 : 0;
+  if (smsReplyRate < 15 && totalSms > 50) suggestions.push(`SMS reply rate is ${smsReplyRate.toFixed(1)}% — consider shifting budget to email drip campaigns.`);
+
+  const avgPayment = payments.length > 0 ? payments.reduce((s, p) => s + (p.amount || 0), 0) / payments.length : 0;
+  if (avgPayment < 1000 && payments.length > 20) suggestions.push(`Average transaction is $${(avgPayment / 100).toFixed(0)} — consider upselling or bundling products.`);
+
+  if (suggestions.length === 0) suggestions.push('Your spending patterns look efficient! No major cost optimization opportunities detected.');
+
+  return { success: true, statistics: { voiceCost, smsReplyRate: Math.round(smsReplyRate), subscriptionCost: (subscription as any)?.amount || 0, suggestions }, message: `Cost Analysis: ${suggestions.join(' ')}` };
+}
+
+async function getAutoActionSuggestions(userId: string, params: any) {
+  const limit = params?.limit || 10;
+  const { aiBrainService } = await import('@/lib/ai-brain-service');
+  const insights = await aiBrainService.generateGeneralInsights(userId);
+  const realtime = aiBrainService.detectRealtimePatterns(userId);
+  const combined = [...realtime, ...insights].filter((i) => i.actionable && i.suggestedActions?.length);
+  const actions = combined.slice(0, limit).map((i) => ({
+    priority: i.priority,
+    title: i.title,
+    description: i.description,
+    suggestedAction: i.suggestedActions?.[0],
+    allActions: i.suggestedActions,
+  }));
+  return { success: true, statistics: { totalSuggestions: actions.length, suggestions: actions }, message: `${actions.length} action suggestions: ${actions.map((a, i) => `${i + 1}. [${a.priority.toUpperCase()}] ${a.title} → ${a.suggestedAction}`).join('; ')}` };
 }

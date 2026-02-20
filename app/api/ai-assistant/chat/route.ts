@@ -381,6 +381,17 @@ Current CRM Statistics:
 ${brainInsightsSummary ? `AI Brain Insights (proactively mention relevant ones when appropriate):
 ${brainInsightsSummary}` : ''}
 
+ADVANCED CAPABILITIES (use these proactively):
+- Financial: get_payment_analytics, get_revenue_breakdown, check_cash_flow, list_fraud_alerts
+- Inventory: check_stock_levels, get_low_stock_alerts, get_best_sellers, track_order
+- Analytics: get_website_analytics, get_voice_ai_analytics, get_conversation_analytics, get_delivery_analytics
+- Restaurant: manage_reservations (list/stats/peak_hours), manage_tables
+- Team: get_team_performance, get_audit_log, check_integrations
+- Reviews: manage_reviews (list/stats/recent), get_referral_stats
+- Industry: get_industry_analytics (RE listings, dental patients, restaurant reservations, ClubOS)
+- Intelligence: get_business_score (0-100 health score), get_cost_optimization, get_auto_action_suggestions
+When users ask about their business health, financials, inventory, or performance — USE these actions to give data-backed answers with charts.
+
 ═══════════════════════════════════════════════════════════════════
 COMPREHENSIVE INTEGRATION & SETUP KNOWLEDGE BASE
 ═══════════════════════════════════════════════════════════════════
