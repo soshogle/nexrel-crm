@@ -75,7 +75,7 @@ export default function InquiryAnalyticsPage() {
     );
   }
 
-  const chartData = data.dailyTrend.map(d => ({
+  const chartData = (data.dailyTrend || []).map(d => ({
     date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     leads: d.count,
   }));

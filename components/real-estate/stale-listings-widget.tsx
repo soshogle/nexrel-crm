@@ -64,7 +64,27 @@ export function StaleListingsWidget() {
       const response = await fetch('/api/real-estate/stale-diagnostic');
       if (response.ok) {
         const data = await response.json();
-        setListings(data.listings || []);
+        const diagnostics = data.diagnostics || data.listings || [];
+        const mapped = diagnostics.map((d: any) => {
+          const prop = d.property;
+          return {
+            id: d.id,
+            address: d.address || prop?.address || 'Unknown',
+            city: prop?.city || '',
+            state: prop?.state || '',
+            price: prop?.listPrice || d.listPrice || 0,
+            originalPrice: prop?.listPrice || d.listPrice || undefined,
+            daysOnMarket: d.daysOnMarket || prop?.daysOnMarket || 0,
+            beds: prop?.beds || 0,
+            baths: prop?.baths || 0,
+            sqft: prop?.sqft || 0,
+            priceReductions: 0,
+            staleness: (d.daysOnMarket || 0) > 90 ? 'severe' as const : (d.daysOnMarket || 0) > 60 ? 'critical' as const : 'warning' as const,
+            aiRecommendation: d.clientSummary || undefined,
+            issues: d.topReasons || [],
+          };
+        });
+        setListings(mapped);
       } else {
         throw new Error('Failed to fetch');
       }

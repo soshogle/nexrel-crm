@@ -724,8 +724,8 @@ export class BusinessDataPipeline {
         });
         data.properties = {
           total: reProperties.length,
-          active: reProperties.filter(p => p.status === 'ACTIVE').length,
-          sold: reProperties.filter(p => p.status === 'SOLD').length,
+          active: reProperties.filter(p => p.listingStatus === 'ACTIVE').length,
+          sold: reProperties.filter(p => p.listingStatus === 'SOLD').length,
         };
         break;
 

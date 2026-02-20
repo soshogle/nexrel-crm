@@ -122,6 +122,7 @@ export default function ListingsPage() {
       if (typeFilter !== 'ALL') params.set('propertyType', typeFilter);
       params.set('limit', '200');
       const res = await fetch(`/api/real-estate/properties?${params}`);
+      if (!res.ok) throw new Error('API error');
       const data = await res.json();
       setProperties(data.properties || []);
     } catch {
