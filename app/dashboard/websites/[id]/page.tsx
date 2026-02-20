@@ -368,17 +368,43 @@ export default function WebsiteEditorPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {website.structure?.pages?.length > 0 ? (
-                <SectionContentEditor
-                  websiteId={website.id}
-                  pages={website.structure.pages}
-                  onStructureUpdate={fetchWebsite}
-                />
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <p>No pages found. Build your website first using the Editor or AI Chat tab.</p>
-                </div>
-              )}
+              {(() => {
+                const s = website.structure || {};
+                let editorPages = s.pages || [];
+                // Fallback: if no pages array but structure has components/sections at root, wrap them
+                if (editorPages.length === 0) {
+                  const rootComponents = s.components || s.sections || [];
+                  if (rootComponents.length > 0) {
+                    editorPages = [{ id: 'home', name: 'Home', path: '/', components: rootComponents }];
+                  }
+                  // Fallback: look for named page keys (e.g. structure.home, structure.about)
+                  if (editorPages.length === 0) {
+                    const pageKeys = Object.keys(s).filter(
+                      k => !['globalStyles', 'navigation', 'footer', 'fonts', 'colors', 'meta', 'seo', 'settings', 'config', 'pages'].includes(k)
+                        && typeof s[k] === 'object' && !Array.isArray(s[k]) && s[k]?.components
+                    );
+                    if (pageKeys.length > 0) {
+                      editorPages = pageKeys.map((k, i) => ({
+                        id: k,
+                        name: k.charAt(0).toUpperCase() + k.slice(1).replace(/[-_]/g, ' '),
+                        path: k === 'home' ? '/' : `/${k}`,
+                        components: s[k].components || [],
+                      }));
+                    }
+                  }
+                }
+                return editorPages.length > 0 ? (
+                  <SectionContentEditor
+                    websiteId={website.id}
+                    pages={editorPages}
+                    onStructureUpdate={fetchWebsite}
+                  />
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p>No pages found. Build your website first using the Editor or AI Chat tab.</p>
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
