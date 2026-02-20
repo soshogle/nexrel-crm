@@ -221,6 +221,15 @@ export function parseIndustryWorkflowInstances(data: unknown): IndustryWorkflowI
 
 export const HITLNotificationSchema = z.object({
   id: z.string().optional(),
+  executionId: z.string().optional(),
+  // Flat fields from REHITLNotification
+  taskName: z.string().optional(),
+  contactName: z.string().optional().nullable(),
+  dealAddress: z.string().optional().nullable(),
+  urgency: z.string().optional(),
+  isRead: z.boolean().optional(),
+  isActioned: z.boolean().optional(),
+  // Enriched nested data (joined from task execution)
   taskExecution: z
     .object({
       id: z.string().optional(),
@@ -238,6 +247,7 @@ export const HITLNotificationSchema = z.object({
           id: z.string().optional(),
           workflow: z
             .object({
+              id: z.string().optional(),
               name: z.string().optional(),
               workflowType: z.string().optional(),
             })
@@ -260,9 +270,9 @@ export type HITLNotification = z.infer<typeof HITLNotificationSchema>;
 export function parseHITLNotifications(data: unknown): HITLNotification[] {
   const arr = Array.isArray(data) ? data : [];
   return arr
-    .filter(
-      (item): item is HITLNotification =>
-        item != null && HITLNotificationSchema.safeParse(item).success
-    )
-    .map((item) => HITLNotificationSchema.parse(item));
+    .filter((item): item is HITLNotification => item != null)
+    .map((item) => {
+      const result = HITLNotificationSchema.safeParse(item);
+      return result.success ? result.data : (item as HITLNotification);
+    });
 }
