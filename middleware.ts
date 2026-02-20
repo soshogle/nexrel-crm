@@ -107,6 +107,10 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/api/')) {
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    // Allow cross-origin for signed-url (website voice agents e.g. Theodora)
+    if (request.nextUrl.pathname === '/api/elevenlabs/signed-url') {
+      response.headers.set('Access-Control-Allow-Origin', '*');
+    }
   }
 
   // Handle preflight requests
