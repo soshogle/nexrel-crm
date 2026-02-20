@@ -92,7 +92,8 @@ function extractCentrisImageIds(html: string): string[] {
   return Array.from(ids);
 }
 
-function buildHighResImageUrl(imageId: string, width = 1024, height = 768): string {
+function buildImageUrl(imageId: string, width = 640, height = 480): string {
+  // Centris CDN returns 0 bytes for sizes > 640x480
   return `${CENTRIS_CDN}?id=${imageId}&t=pi&w=${width}&h=${height}&sm=c`;
 }
 
@@ -333,12 +334,9 @@ export async function scrapeCentrisDetail(url: string): Promise<EnrichedData | n
     data.longitude = coords.lng;
   }
 
-  // --- Images ---
-  const imageIds = extractCentrisImageIds(html);
-  if (imageIds.length > 0) {
-    data.galleryImages = imageIds.map((id) => buildHighResImageUrl(id));
-    data.mainImageUrl = buildHighResImageUrl(imageIds[0], 1200, 900);
-  }
+  // NOTE: Centris masks image IDs in server-rendered HTML (anti-scraping).
+  // The extracted IDs return 0-byte responses. Do NOT overwrite images here.
+  // Images should come from RE/MAX or the original Apify sync.
 
   // --- Build features object ---
   if (amenities.length > 0 || data.buildingStyle || data.parking) {
