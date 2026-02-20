@@ -6,7 +6,8 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Building2, Home, MapPin, DollarSign, Plus, Search, Filter,
   Edit, Trash2, Eye, ArrowUpDown, MoreHorizontal, X, Save,
-  Bed, Bath, Ruler, Calendar, Tag, ChevronLeft
+  Bed, Bath, Ruler, Calendar, Tag, ChevronLeft, ImagePlus,
+  Loader2, GripVertical, Link2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,8 @@ interface Property {
   daysOnMarket: number;
   description?: string;
   features: string[];
+  photos?: string[];
+  virtualTourUrl?: string;
   listingDate?: string;
   createdAt: string;
   sellerLead?: { id: string; contactPerson?: string; email?: string; phone?: string } | null;
@@ -94,7 +97,7 @@ const emptyForm = {
   beds: '', baths: '', sqft: '', lotSize: '', yearBuilt: '',
   propertyType: 'SINGLE_FAMILY', listingStatus: 'ACTIVE',
   listPrice: '', mlsNumber: '', virtualTourUrl: '',
-  description: '', features: '',
+  description: '', features: '', photos: [] as string[],
 };
 
 export default function ListingsPage() {
@@ -107,6 +110,7 @@ export default function ListingsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<string>('');
   const { toast } = useToast();
@@ -174,11 +178,43 @@ export default function ListingsPage() {
       listingStatus: prop.listingStatus,
       listPrice: prop.listPrice?.toString() || '',
       mlsNumber: prop.mlsNumber || '',
-      virtualTourUrl: '',
+      virtualTourUrl: prop.virtualTourUrl || '',
       description: prop.description || '',
       features: prop.features?.join(', ') || '',
+      photos: Array.isArray(prop.photos) ? prop.photos : [],
     });
     setShowForm(true);
+  }
+
+  async function handlePhotoUpload(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      Array.from(files).forEach((f) => fd.append('photos', f));
+      const res = await fetch('/api/real-estate/properties/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setForm((prev) => ({ ...prev, photos: [...prev.photos, ...data.urls] }));
+      toast({ title: 'Uploaded', description: `${data.urls.length} photo(s) added` });
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function removePhoto(index: number) {
+    setForm((prev) => ({ ...prev, photos: prev.photos.filter((_, i) => i !== index) }));
+  }
+
+  function movePhoto(from: number, to: number) {
+    setForm((prev) => {
+      const arr = [...prev.photos];
+      const [item] = arr.splice(from, 1);
+      arr.splice(to, 0, item);
+      return { ...prev, photos: arr };
+    });
   }
 
   async function handleSave() {
@@ -193,6 +229,8 @@ export default function ListingsPage() {
         yearBuilt: form.yearBuilt || undefined,
         listPrice: form.listPrice || undefined,
         features: form.features ? form.features.split(',').map((f) => f.trim()).filter(Boolean) : [],
+        photos: form.photos,
+        virtualTourUrl: form.virtualTourUrl || undefined,
       };
 
       if (editingId) {
@@ -458,8 +496,19 @@ export default function ListingsPage() {
                       />
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium">{p.address}{p.unit ? `, ${p.unit}` : ''}</div>
-                      <div className="text-xs text-muted-foreground">{p.city}, {p.state} {p.zip}</div>
+                      <div className="flex items-center gap-3">
+                        {Array.isArray(p.photos) && p.photos.length > 0 ? (
+                          <img src={p.photos[0]} alt="" className="h-10 w-14 rounded object-cover flex-shrink-0 border" />
+                        ) : (
+                          <div className="h-10 w-14 rounded bg-muted flex items-center justify-center flex-shrink-0 border">
+                            <Building2 className="h-4 w-4 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium">{p.address}{p.unit ? `, ${p.unit}` : ''}</div>
+                          <div className="text-xs text-muted-foreground">{p.city}, {p.state} {p.zip}</div>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={`${statusColor(p.listingStatus)} text-white text-xs`}>
@@ -602,6 +651,74 @@ export default function ListingsPage() {
                 onChange={(e) => setForm({ ...form, features: e.target.value })}
                 placeholder="Garage, Pool, Renovated Kitchen"
               />
+            </div>
+
+            {/* Photos */}
+            <div>
+              <Label className="mb-2 block">Photos</Label>
+              {form.photos.length > 0 && (
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {form.photos.map((url, i) => (
+                    <div key={i} className="relative group rounded-lg overflow-hidden border bg-muted aspect-square">
+                      <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                        {i > 0 && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-white" onClick={() => movePhoto(i, i - 1)} title="Move left">
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:text-red-300" onClick={() => removePhoto(i)} title="Remove">
+                          <X className="h-4 w-4" />
+                        </Button>
+                        {i < form.photos.length - 1 && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-white rotate-180" onClick={() => movePhoto(i, i + 1)} title="Move right">
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {i === 0 && (
+                        <span className="absolute top-1 left-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded font-medium">Cover</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploading}
+                  onClick={() => document.getElementById('photo-upload-input')?.click()}
+                >
+                  {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
+                  {uploading ? 'Uploading...' : 'Upload Photos'}
+                </Button>
+                <input
+                  id="photo-upload-input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handlePhotoUpload(e.target.files)}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {form.photos.length} photo{form.photos.length !== 1 ? 's' : ''} &middot; JPEG, PNG, WebP up to 10 MB
+                </span>
+              </div>
+            </div>
+
+            {/* Virtual Tour */}
+            <div>
+              <Label>Virtual Tour URL</Label>
+              <div className="flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <Input
+                  value={form.virtualTourUrl}
+                  onChange={(e) => setForm({ ...form, virtualTourUrl: e.target.value })}
+                  placeholder="https://my.matterport.com/show/?m=..."
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
