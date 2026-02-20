@@ -242,137 +242,122 @@ export function HITLNotificationBell() {
         </div>
 
         {/* Content */}
-        <ScrollArea className="max-h-[450px]">
-          {approvals.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-500 opacity-50" />
-              <p className="text-sm font-medium">No pending approvals</p>
-              <p className="text-xs text-gray-400 mt-1">All HITL gates are clear</p>
-            </div>
-          ) : (
-            <div className="divide-y">
-              {approvals.map((approval) => {
-                const isExpanded = expandedId === approval.id;
-                const isProcessing = processingId === approval.id;
-                const urgencyStyle = URGENCY_STYLES[approval.urgency] || URGENCY_STYLES.NORMAL;
-
-                return (
-                  <div
-                    key={approval.id}
-                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${urgencyStyle}`}
-                    onClick={() => setExpandedId(isExpanded ? null : approval.id)}
-                  >
-                    {/* Approval Header */}
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        approval.urgency === 'URGENT' ? 'bg-red-100' :
-                        approval.urgency === 'HIGH' ? 'bg-orange-100' : 'bg-purple-100'
-                      }`}>
-                        {approval.urgency === 'URGENT' ? (
-                          <AlertTriangle className="h-5 w-5 text-red-600" />
-                        ) : (
-                          <Shield className="h-5 w-5 text-purple-600" />
-                        )}
+        {approvals.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-500 opacity-50" />
+            <p className="text-sm font-medium">No pending approvals</p>
+            <p className="text-xs text-gray-400 mt-1">All HITL gates are clear</p>
+          </div>
+        ) : (
+          <div>
+            {/* Primary approval — shown in full */}
+            {(() => {
+              const approval = approvals[0];
+              const isProcessing = processingId === approval.id;
+              const urgencyStyle = URGENCY_STYLES[approval.urgency] || URGENCY_STYLES.NORMAL;
+              return (
+                <div className={`p-4 ${urgencyStyle}`}>
+                  <div className="flex items-start gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      approval.urgency === 'URGENT' ? 'bg-red-100' :
+                      approval.urgency === 'HIGH' ? 'bg-orange-100' : 'bg-purple-100'
+                    }`}>
+                      {approval.urgency === 'URGENT' ? (
+                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                      ) : (
+                        <Shield className="h-5 w-5 text-purple-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm text-gray-900 truncate">{approval.taskName}</p>
+                        {approval.urgency === 'URGENT' && <Badge className="bg-red-100 text-red-700 text-[10px] px-1.5 py-0">URGENT</Badge>}
+                        {approval.urgency === 'HIGH' && <Badge className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0">HIGH</Badge>}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-sm text-gray-900 truncate">{approval.taskName}</p>
-                          {approval.urgency === 'URGENT' && (
-                            <Badge className="bg-red-100 text-red-700 text-[10px] px-1.5 py-0">URGENT</Badge>
-                          )}
-                          {approval.urgency === 'HIGH' && (
-                            <Badge className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0">HIGH</Badge>
-                          )}
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{approval.message}</p>
+                      {approval.contactName && (
+                        <div className="flex items-center gap-1 mt-2 text-xs text-blue-600">
+                          <User className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{approval.contactName}</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{approval.message}</p>
-
-                        {/* Contact & Deal Info */}
-                        {approval.contactName && (
-                          <div className="flex items-center gap-1 mt-2 text-xs text-blue-600">
-                            <User className="h-3 w-3 flex-shrink-0" />
-                            <span className="truncate">{approval.contactName}</span>
-                          </div>
-                        )}
-                        {approval.dealTitle && (
-                          <div className="flex items-center gap-1 mt-1 text-xs text-green-600">
-                            <Building2 className="h-3 w-3 flex-shrink-0" />
-                            <span className="truncate">{approval.dealTitle}</span>
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
-                          <Clock className="h-3 w-3" />
-                          <span>
-                            {approval.createdAt
-                              ? formatDistanceToNow(new Date(approval.createdAt), { addSuffix: true })
-                              : 'Just now'}
-                          </span>
-                          {approval.workflowName && (
-                            <>
-                              <span className="mx-1">&bull;</span>
-                              <span className="truncate">{approval.workflowName}</span>
-                            </>
-                          )}
+                      )}
+                      {approval.dealTitle && (
+                        <div className="flex items-center gap-1 mt-1 text-xs text-green-600">
+                          <Building2 className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{approval.dealTitle}</span>
                         </div>
-
-                        {/* Action Buttons — always visible */}
-                        <div className="flex gap-2 mt-3">
-                          <Button
-                            size="sm"
-                            className="flex-1 h-8 bg-green-600 hover:bg-green-700 text-white"
-                            onClick={(e) => handleApprove(approval.id, e)}
-                            disabled={isProcessing}
-                          >
-                            {isProcessing ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <>
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Approve
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 h-8 border-red-300 text-red-600 hover:bg-red-50"
-                            onClick={(e) => handleReject(approval.id, e)}
-                            disabled={isProcessing}
-                          >
-                            <XCircle className="h-3 w-3 mr-1" />
-                            Reject
-                          </Button>
-                        </div>
-
-                        {/* Expanded Detail — click to open */}
-                        {isExpanded && (
-                          <div className="mt-3 pt-3 border-t border-gray-200">
-                            {approval.contactEmail && (
-                              <p className="text-xs text-gray-500 mb-1">Email: {approval.contactEmail}</p>
-                            )}
-                            {approval.dealAddress && approval.dealAddress !== approval.dealTitle && (
-                              <p className="text-xs text-gray-500 mb-1">Address: {approval.dealAddress}</p>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full h-7 text-xs mt-2"
-                              onClick={(e) => { e.stopPropagation(); navigateToApproval(approval); }}
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              {approval.leadId ? 'Open Lead' : approval.dealId ? 'Open Deal' : 'View in Workflows'}
-                              <ChevronRight className="h-3 w-3 ml-auto" />
-                            </Button>
-                          </div>
-                        )}
+                      )}
+                      <div className="flex items-center gap-1 mt-1 text-xs text-gray-400">
+                        <Clock className="h-3 w-3" />
+                        <span>{approval.createdAt ? formatDistanceToNow(new Date(approval.createdAt), { addSuffix: true }) : 'Just now'}</span>
+                        {approval.workflowName && <><span className="mx-1">&bull;</span><span className="truncate">{approval.workflowName}</span></>}
                       </div>
+                      <div className="flex gap-2 mt-3">
+                        <Button size="sm" className="flex-1 h-8 bg-green-600 hover:bg-green-700 text-white" onClick={(e) => handleApprove(approval.id, e)} disabled={isProcessing}>
+                          {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <><CheckCircle className="h-3 w-3 mr-1" />Approve</>}
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-1 h-8 border-red-300 text-red-600 hover:bg-red-50" onClick={(e) => handleReject(approval.id, e)} disabled={isProcessing}>
+                          <XCircle className="h-3 w-3 mr-1" />Reject
+                        </Button>
+                      </div>
+                      <Button size="sm" variant="ghost" className="w-full h-7 text-xs mt-2 text-gray-500" onClick={() => navigateToApproval(approval)}>
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        {approval.leadId ? 'Open Lead' : approval.dealId ? 'Open Deal' : 'View in Workflows'}
+                        <ChevronRight className="h-3 w-3 ml-auto" />
+                      </Button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </ScrollArea>
+                </div>
+              );
+            })()}
+
+            {/* Remaining approvals — compact, scrollable */}
+            {approvals.length > 1 && (
+              <>
+                <div className="px-4 py-1.5 bg-gray-100 border-y text-xs text-gray-500 font-medium">
+                  {approvals.length - 1} more pending
+                </div>
+                <ScrollArea className="max-h-[180px]">
+                  <div className="divide-y">
+                    {approvals.slice(1).map((approval) => {
+                      const isProcessing = processingId === approval.id;
+                      return (
+                        <div key={approval.id} className="px-4 py-3 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              approval.urgency === 'URGENT' ? 'bg-red-100' : approval.urgency === 'HIGH' ? 'bg-orange-100' : 'bg-purple-100'
+                            }`}>
+                              {approval.urgency === 'URGENT' ? <AlertTriangle className="h-4 w-4 text-red-600" /> : <Shield className="h-4 w-4 text-purple-600" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-sm text-gray-900 truncate">{approval.taskName}</p>
+                                {approval.urgency === 'URGENT' && <Badge className="bg-red-100 text-red-700 text-[10px] px-1 py-0">URGENT</Badge>}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
+                                {approval.contactName && <span className="truncate">{approval.contactName}</span>}
+                                {approval.contactName && approval.createdAt && <span>&bull;</span>}
+                                {approval.createdAt && <span>{formatDistanceToNow(new Date(approval.createdAt), { addSuffix: true })}</span>}
+                              </div>
+                            </div>
+                            <div className="flex gap-1.5 flex-shrink-0">
+                              <Button size="sm" className="h-7 w-7 p-0 bg-green-600 hover:bg-green-700 text-white" onClick={(e) => { e.stopPropagation(); handleApprove(approval.id, e); }} disabled={isProcessing}>
+                                {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 w-7 p-0 border-red-300 text-red-600 hover:bg-red-50" onClick={(e) => { e.stopPropagation(); handleReject(approval.id, e); }} disabled={isProcessing}>
+                                <XCircle className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Footer */}
         {approvals.length > 0 && (
