@@ -600,5 +600,3 @@ export class ResourceProvisioningService {
 }
 
 export const resourceProvisioning = new ResourceProvisioningService();
-
-export const resourceProvisioning = new ResourceProvisioningService();
