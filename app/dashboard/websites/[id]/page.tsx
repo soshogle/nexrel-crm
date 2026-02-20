@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { setWebsiteBuilderContext } from '@/lib/website-builder-context';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Globe, Settings, Loader2, MessageSquare, Eye, Check, X, Upload, Image as ImageIcon, AlertCircle, BarChart3, Package, Link2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Globe, Settings, Loader2, MessageSquare, Eye, Check, X, Upload, Image as ImageIcon, AlertCircle, BarChart3, Package, Link2, RefreshCw, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,7 @@ import { SectionRewriteEditor } from '@/components/website-builder/section-rewri
 import { GlobalStylesEditor } from '@/components/website-builder/global-styles-editor';
 import { WebsiteFilesManager } from '@/components/website-builder/website-files-manager';
 import { StructurePreview } from '@/components/website-builder/structure-preview';
+import { SectionContentEditor } from '@/components/website-builder/section-content-editor';
 import {
   Sheet,
   SheetContent,
@@ -562,6 +563,7 @@ export default function WebsiteEditorPage() {
               <TabsTrigger value="content">Content</TabsTrigger>
             </>
           )}
+          <TabsTrigger value="page-editor">Page Editor</TabsTrigger>
           <TabsTrigger value="seo">SEO & Ranking</TabsTrigger>
           <TabsTrigger value="stock">Stock & Inventory</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -934,6 +936,33 @@ export default function WebsiteEditorPage() {
                       console.log('Conversation ended:', transcript);
                     }}
                   />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="page-editor" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Pencil className="h-5 w-5" />
+                Page-by-Page Content Editor
+              </CardTitle>
+              <CardDescription>
+                Edit text, swap images, and use AI to rewrite content for each section of your website. Select a page and expand any section to modify it.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {website.structure?.pages?.length > 0 ? (
+                <SectionContentEditor
+                  websiteId={website.id}
+                  pages={website.structure.pages}
+                  onStructureUpdate={fetchWebsite}
+                />
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>No pages found. Build your website first using the Editor or AI Chat tab.</p>
                 </div>
               )}
             </CardContent>
