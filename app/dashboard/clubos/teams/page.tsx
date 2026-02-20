@@ -4,37 +4,20 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Users, Trophy, Shield, Plus, Loader2, ChevronDown, Edit } from 'lucide-react';
 import EditProgramDialog from '@/components/clubos/edit-program-dialog';
 import EditDivisionDialog from '@/components/clubos/edit-division-dialog';
 import EditTeamDialog from '@/components/clubos/edit-team-dialog';
+import { CreateProgramDialog, CreateDivisionDialog, CreateTeamDialog } from '@/components/clubos/create-entity-dialogs';
 
 interface Program {
   id: string;
@@ -484,214 +467,21 @@ export default function TeamsManagementPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Create Program Dialog */}
-      <Dialog open={programDialog} onOpenChange={setProgramDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Program</DialogTitle>
-            <DialogDescription>Add a new league or season</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Program Name *</Label>
-              <Input
-                placeholder="e.g., Spring Soccer League 2025"
-                value={programForm.name}
-                onChange={(e) => setProgramForm({ ...programForm, name: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Sport *</Label>
-              <Input
-                placeholder="e.g., Soccer"
-                value={programForm.sport}
-                onChange={(e) => setProgramForm({ ...programForm, sport: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Start Date</Label>
-                <Input
-                  type="date"
-                  value={programForm.startDate}
-                  onChange={(e) => setProgramForm({ ...programForm, startDate: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>End Date</Label>
-                <Input
-                  type="date"
-                  value={programForm.endDate}
-                  onChange={(e) => setProgramForm({ ...programForm, endDate: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Registration Fee ($)</Label>
-                <Input
-                  type="number"
-                  placeholder="100"
-                  value={programForm.registrationFee}
-                  onChange={(e) => setProgramForm({ ...programForm, registrationFee: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Early Bird Fee ($)</Label>
-                <Input
-                  type="number"
-                  placeholder="85"
-                  value={programForm.earlyBirdFee}
-                  onChange={(e) => setProgramForm({ ...programForm, earlyBirdFee: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProgramDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={createProgram} disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Program'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Division Dialog */}
-      <Dialog open={divisionDialog} onOpenChange={setDivisionDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Division</DialogTitle>
-            <DialogDescription>Add an age group or skill level</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Program *</Label>
-              <Select value={divisionForm.programId || undefined} onValueChange={(value) => setDivisionForm({ ...divisionForm, programId: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select program" />
-                </SelectTrigger>
-                <SelectContent>
-                  {programs.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Division Name *</Label>
-              <Input
-                placeholder="e.g., U10 Boys"
-                value={divisionForm.name}
-                onChange={(e) => setDivisionForm({ ...divisionForm, name: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>Min Age</Label>
-                <Input
-                  type="number"
-                  placeholder="8"
-                  value={divisionForm.ageMin}
-                  onChange={(e) => setDivisionForm({ ...divisionForm, ageMin: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Max Age</Label>
-                <Input
-                  type="number"
-                  placeholder="10"
-                  value={divisionForm.ageMax}
-                  onChange={(e) => setDivisionForm({ ...divisionForm, ageMax: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Gender</Label>
-                <Select value={divisionForm.gender} onValueChange={(value) => setDivisionForm({ ...divisionForm, gender: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="COED">Co-Ed</SelectItem>
-                    <SelectItem value="BOYS">Boys</SelectItem>
-                    <SelectItem value="GIRLS">Girls</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDivisionDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={createDivision} disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Division'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Team Dialog */}
-      <Dialog open={teamDialog} onOpenChange={setTeamDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Team</DialogTitle>
-            <DialogDescription>Add a team to a division</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Division *</Label>
-              <Select value={teamForm.divisionId || undefined} onValueChange={(value) => setTeamForm({ ...teamForm, divisionId: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select division" />
-                </SelectTrigger>
-                <SelectContent>
-                  {divisions.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.name} ({d.program.name})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Team Name *</Label>
-              <Input
-                placeholder="e.g., Lightning"
-                value={teamForm.name}
-                onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Team Color</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="color"
-                  value={teamForm.colorPrimary}
-                  onChange={(e) => setTeamForm({ ...teamForm, colorPrimary: e.target.value })}
-                  className="w-20 h-10"
-                />
-                <Input
-                  value={teamForm.colorPrimary}
-                  onChange={(e) => setTeamForm({ ...teamForm, colorPrimary: e.target.value })}
-                  placeholder="#0066cc"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTeamDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={createTeam} disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Team'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateProgramDialog
+        open={programDialog} onOpenChange={setProgramDialog}
+        form={programForm} setForm={setProgramForm}
+        onSubmit={createProgram} submitting={submitting}
+      />
+      <CreateDivisionDialog
+        open={divisionDialog} onOpenChange={setDivisionDialog}
+        form={divisionForm} setForm={setDivisionForm}
+        programs={programs} onSubmit={createDivision} submitting={submitting}
+      />
+      <CreateTeamDialog
+        open={teamDialog} onOpenChange={setTeamDialog}
+        form={teamForm} setForm={setTeamForm}
+        divisions={divisions} onSubmit={createTeam} submitting={submitting}
+      />
 
       {/* Edit Dialogs */}
       {selectedProgram && (
