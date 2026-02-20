@@ -31,6 +31,8 @@ interface ElevenLabsAgentProps {
   hideWhenIdle?: boolean;
   /** Theodora-style: frameless, GeometricShapes with bare, minimal overlay */
   variant?: 'default' | 'frameless';
+  /** When true, suppress console.log for user-initiated disconnects (site agents, website preview). Landing + CRM assistant keep full logging. */
+  suppressUserDisconnectLog?: boolean;
 }
 
 type AgentStatus = "idle" | "connecting" | "listening" | "speaking" | "processing";
@@ -45,6 +47,7 @@ export function ElevenLabsAgent({
   compactMode = false,
   hideWhenIdle = false,
   variant = 'default',
+  suppressUserDisconnectLog = false,
 }: ElevenLabsAgentProps) {
   const isFrameless = variant === 'frameless';
   const [isConnected, setIsConnected] = useState(false);
@@ -175,7 +178,11 @@ export function ElevenLabsAgent({
           attempt(3000);
         },
         onDisconnect: (details?: any) => {
-          console.log("[Voice] Disconnected", details ? JSON.stringify(details) : "");
+          // When suppressUserDisconnectLog: skip logging user-initiated disconnects (reason:"user")
+          const isUserInitiated = details?.reason === "user";
+          if (!(suppressUserDisconnectLog && isUserInitiated)) {
+            console.log("[Voice] Disconnected", details ? JSON.stringify(details) : "");
+          }
           audioConnectedRef.current = false;
           setIsConnected(false);
           setIsAgentSpeaking(false);

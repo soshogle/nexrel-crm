@@ -929,6 +929,7 @@ export default function WebsiteEditorPage() {
                   </p>
                   <ElevenLabsAgent
                     agentId={website.elevenLabsAgentId}
+                    suppressUserDisconnectLog={true}
                     onConversationEnd={(transcript) => {
                       console.log('Conversation ended:', transcript);
                     }}

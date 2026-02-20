@@ -364,10 +364,15 @@ async function processWebsiteBuild(
     if (config.enableVoiceAI) {
       try {
         const website = await prisma.website.findUnique({ where: { id: websiteId } });
+        const user = await prisma.user.findUnique({ where: { id: website!.userId }, select: { industry: true } });
         const businessInfo = config.questionnaireAnswers || {
           businessName: website!.name,
           businessDescription: '',
         };
+        // Ensure industryNiche is set so createVoiceAIAgent can auto-register RE client tools
+        if (!businessInfo.industryNiche && user?.industry === 'REAL_ESTATE') {
+          (businessInfo as any).industryNiche = 'real estate';
+        }
         voiceAIConfig = await Promise.race([
           websiteVoiceAI.createVoiceAIAgent(
             websiteId,

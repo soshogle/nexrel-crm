@@ -93,7 +93,12 @@ export default function ElevenLabsVoiceAgent({ agentId, websiteId }: Props) {
             conversationRef.current?.sendContextualUpdate?.(getEasternTimeContext());
           } catch {}
         },
-        onDisconnect: () => {
+        onDisconnect: (details?: unknown) => {
+          // Only log unexpected disconnects (user-initiated reason:"user" is normal)
+          const d = details as { reason?: string } | null | undefined;
+          if (typeof d === "object" && d !== null && (!d.reason || d.reason !== "user")) {
+            console.log("[Voice] Disconnected", JSON.stringify(details));
+          }
           setIsConnected(false);
           const msgs = messagesRef.current;
           if (mediaRecorderRef.current?.state !== "inactive") {

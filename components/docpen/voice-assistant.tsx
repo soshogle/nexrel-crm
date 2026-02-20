@@ -327,8 +327,12 @@ export function VoiceAssistant({
           setRetryCount(0);
           toast.success(t('voiceAssistantConnected'));
         },
-        onDisconnect: async () => {
-          console.log('🔔 [Docpen] SDK disconnected');
+        onDisconnect: async (details?: unknown) => {
+          // Only log unexpected disconnects (user-initiated reason:"user" is normal)
+          const d = details as { reason?: string } | null | undefined;
+          if (typeof d !== "object" || d === null || !d.reason || d.reason !== "user") {
+            console.log('🔔 [Docpen] SDK disconnected', details ? JSON.stringify(details) : '');
+          }
           setIsConnected(false);
           setIsAgentSpeaking(false);
           await saveConversation();

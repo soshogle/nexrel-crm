@@ -44,6 +44,27 @@ export class WebsiteVoiceAIService {
       if (!result.success || !result.agentId) {
         throw new Error(result.error || 'Failed to create voice AI agent');
       }
+
+      // Auto-register real estate client tools (searchListings, showListing, getListingDetails)
+      // when the site is a real estate business — the LLM needs these schemas to call the tools.
+      const industry = ((businessInfo as any).industryNiche || '').toLowerCase();
+      const isRealEstate =
+        industry.includes('real estate') ||
+        industry.includes('realestate') ||
+        industry.includes('realtor') ||
+        industry.includes('broker') ||
+        industry.includes('property') ||
+        industry.includes('immobilier');
+      if (isRealEstate) {
+        try {
+          const toolResult = await this.updateRealEstateAgentTools(result.agentId, userId);
+          if (!toolResult.success) {
+            console.warn('[WebsiteVoiceAI] Failed to register RE client tools:', toolResult.error);
+          }
+        } catch (e) {
+          console.warn('[WebsiteVoiceAI] RE client tools registration error (continuing):', e);
+        }
+      }
       
       return {
         enabled: true,

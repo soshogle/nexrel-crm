@@ -10,6 +10,8 @@
     {"path": "/api/cron/blog-generator", "schedule": "0 9,15 * * *"},
     {"path": "/api/cron/sync-centris", "schedule": "0 12 * * *"},
     {"path": "/api/cron/monitor-listings", "schedule": "0 6,18 * * *"},
-    {"path": "/api/cron/scheduled-reports", "schedule": "0 9 * * 1"}
+    {"path": "/api/cron/scheduled-reports", "schedule": "0 9 * * 1"},
+    {"path": "/api/campaigns/drip/process", "schedule": "*/5 * * * *"},
+    {"path": "/api/campaigns/sms-drip/process", "schedule": "*/5 * * * *"}
   ]
 }
