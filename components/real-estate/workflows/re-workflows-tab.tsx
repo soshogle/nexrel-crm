@@ -35,7 +35,7 @@ import {
   Calendar,
 } from 'lucide-react';
 
-export function REWorkflowsTab() {
+export function REWorkflowsTab({ preSelectedAgent }: { preSelectedAgent?: string | null } = {}) {
   const searchParams = useSearchParams();
   const [showBuilder, setShowBuilder] = useState(false);
   const [draftId, setDraftId] = useState<string | undefined>(undefined);
@@ -43,6 +43,13 @@ export function REWorkflowsTab() {
   const [workflows, setWorkflows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const workflowBuilderRef = useRef<REWorkflowBuilderHandle>(null);
+
+  // Auto-open builder when a professional agent was selected from Setup Dialog
+  useEffect(() => {
+    if (preSelectedAgent) {
+      setShowBuilder(true);
+    }
+  }, [preSelectedAgent]);
 
   useEffect(() => {
     if (searchParams?.get('openBuilder') === '1') {
@@ -166,7 +173,7 @@ export function REWorkflowsTab() {
           </Button>
         </div>
         <div className="flex-1 bg-white rounded-xl overflow-hidden">
-          <WorkflowBuilder ref={workflowBuilderRef} initialWorkflowId={draftId} />
+          <WorkflowBuilder ref={workflowBuilderRef} initialWorkflowId={draftId} preSelectedAgent={preSelectedAgent} />
         </div>
       </div>
     );

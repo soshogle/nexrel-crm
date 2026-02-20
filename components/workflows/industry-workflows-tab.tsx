@@ -40,9 +40,10 @@ import {
 
 interface IndustryWorkflowsTabProps {
   industry: Industry;
+  preSelectedAgent?: string | null;
 }
 
-export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
+export function IndustryWorkflowsTab({ industry, preSelectedAgent }: IndustryWorkflowsTabProps) {
   const searchParams = useSearchParams();
   const [showBuilder, setShowBuilder] = useState(false);
   const [draftId, setDraftId] = useState<string | undefined>(undefined);
@@ -53,8 +54,14 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
   const industryConfig = getIndustryConfig(industry);
   const workflowBuilderRef = useRef<WorkflowBuilderHandle>(null);
 
+  // Auto-open builder when a professional agent was selected from Setup Dialog
+  useEffect(() => {
+    if (preSelectedAgent) {
+      setShowBuilder(true);
+    }
+  }, [preSelectedAgent]);
+
   // Phase 1+2: Auto-open builder when navigating from voice/chat "create workflow"
-  // Keep openBuilder in URL so voice context knows we're in builder (avoids navigating away on "contacts"/"pipeline")
   useEffect(() => {
     if (searchParams?.get('openBuilder') === '1') {
       setShowBuilder(true);
@@ -65,7 +72,6 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
           sessionStorage.setItem('activeWorkflowDraftId', did);
         }
       }
-      // Don't clear params - keeps user in builder mode, prevents voice from navigating away
     }
   }, [searchParams]);
 
@@ -170,7 +176,7 @@ export function IndustryWorkflowsTab({ industry }: IndustryWorkflowsTabProps) {
           </Button>
         </div>
         <div className="flex-1 bg-white rounded-xl overflow-hidden">
-          <WorkflowBuilder ref={workflowBuilderRef} industry={industry} initialWorkflowId={draftId} />
+          <WorkflowBuilder ref={workflowBuilderRef} industry={industry} initialWorkflowId={draftId} preSelectedAgent={preSelectedAgent} />
         </div>
       </div>
     );

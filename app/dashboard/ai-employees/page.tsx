@@ -583,6 +583,7 @@ export default function AIEmployeesPage() {
   const tabParam = searchParams.get('tab');
   const initialTab = tabParam && ['trigger', 'ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'ai-team';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [selectedProfessionalForWorkflow, setSelectedProfessionalForWorkflow] = useState<string | null>(null);
 
   useEffect(() => {
     fetchJobs();
@@ -1302,7 +1303,10 @@ export default function AIEmployeesPage() {
           open={showSetupDialog}
           onOpenChange={setShowSetupDialog}
           onProvisionRefresh={() => {}}
-          onSwitchToWorkflows={() => setActiveTab('workflows')}
+          onSwitchToWorkflows={(professionalType) => {
+            setSelectedProfessionalForWorkflow(professionalType);
+            setActiveTab('workflows');
+          }}
         />
 
         <TabsContent value="monitor" className="space-y-4">
@@ -1338,31 +1342,31 @@ export default function AIEmployeesPage() {
         {(isRealEstateUser || hasWorkflowSystem) && (
           <TabsContent value="workflows" className="space-y-4">
             {isRealEstateUser ? (
-              <REWorkflowsTab />
+              <REWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : userIndustry === 'MEDICAL' ? (
-              <MedicalWorkflowsTab />
+              <MedicalWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : userIndustry === 'RESTAURANT' ? (
-              <RestaurantWorkflowsTab />
+              <RestaurantWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : userIndustry === 'CONSTRUCTION' ? (
-              <ConstructionWorkflowsTab />
+              <ConstructionWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : userIndustry === 'DENTIST' ? (
-              <DentistWorkflowsTab />
+              <DentistWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : userIndustry === 'MEDICAL_SPA' ? (
-              <MedicalSpaWorkflowsTab />
+              <MedicalSpaWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : userIndustry === 'OPTOMETRIST' ? (
-              <OptometristWorkflowsTab />
+              <OptometristWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : userIndustry === 'HEALTH_CLINIC' ? (
-              <HealthClinicWorkflowsTab />
+              <HealthClinicWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : userIndustry === 'HOSPITAL' ? (
-              <HospitalWorkflowsTab />
+              <HospitalWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : userIndustry === 'TECHNOLOGY' ? (
-              <TechnologyWorkflowsTab />
+              <TechnologyWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : userIndustry === 'SPORTS_CLUB' ? (
-              <SportsClubWorkflowsTab />
+              <SportsClubWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : userIndustry === 'ORTHODONTIST' ? (
-              <DentistWorkflowsTab />
+              <DentistWorkflowsTab preSelectedAgent={selectedProfessionalForWorkflow} />
             ) : (
-              <IndustryWorkflowsTab industry={userIndustry} />
+              <IndustryWorkflowsTab industry={userIndustry} preSelectedAgent={selectedProfessionalForWorkflow} />
             )}
           </TabsContent>
         )}

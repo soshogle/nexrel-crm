@@ -14,7 +14,7 @@ interface SetupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onProvisionRefresh: () => void;
-  onSwitchToWorkflows?: () => void;
+  onSwitchToWorkflows?: (professionalType: string) => void;
 }
 
 export function SetupDialog({ open, onOpenChange, onProvisionRefresh, onSwitchToWorkflows }: SetupDialogProps) {
@@ -58,12 +58,14 @@ export function SetupDialog({ open, onOpenChange, onProvisionRefresh, onSwitchTo
     }
     if (setupForm.useCase === 'workflow') {
       onOpenChange(false);
+      const config = Object.values(PROFESSIONAL_EMPLOYEE_CONFIGS).find(c => c.type === setupForm.professionalType);
+      const professionalLabel = config?.title || setupForm.professionalType;
       if (onSwitchToWorkflows) {
-        onSwitchToWorkflows();
-        toast.success('Switched to Workflows tab');
+        onSwitchToWorkflows(setupForm.professionalType);
+        toast.success(`Opening Workflows for ${professionalLabel}...`);
       } else {
         router.push(`/dashboard/ai-employees?tab=workflows&agent=${setupForm.professionalType}`);
-        toast.success('Opening Workflows...');
+        toast.success(`Opening Workflows for ${professionalLabel}...`);
       }
       return;
     }

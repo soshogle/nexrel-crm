@@ -7,6 +7,6 @@
 
 import { IndustryWorkflowsTab } from '@/components/workflows/industry-workflows-tab';
 
-export function OptometristWorkflowsTab() {
-  return <IndustryWorkflowsTab industry="OPTOMETRIST" />;
+export function OptometristWorkflowsTab({ preSelectedAgent }: { preSelectedAgent?: string | null }) {
+  return <IndustryWorkflowsTab industry="OPTOMETRIST" preSelectedAgent={preSelectedAgent} />;
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { PROFESSIONAL_EMPLOYEE_CONFIGS, ProfessionalAIEmployeeType } from '@/lib/professional-ai-employees/config';
 import { WorkflowTask, WorkflowTemplate, RE_AGENTS, TASK_TYPE_ICONS } from './types';
 import { CircularWorkflowCanvas } from './circular-workflow-canvas';
 import { TaskEditorPanel } from './task-editor-panel';
@@ -44,6 +45,7 @@ import {
 
 interface WorkflowBuilderProps {
   initialWorkflowId?: string;
+  preSelectedAgent?: string | null;
 }
 
 export interface REWorkflowBuilderHandle {
@@ -51,7 +53,7 @@ export interface REWorkflowBuilderHandle {
 }
 
 export const WorkflowBuilder = forwardRef<REWorkflowBuilderHandle, WorkflowBuilderProps>(
-  function WorkflowBuilder({ initialWorkflowId }, ref) {
+  function WorkflowBuilder({ initialWorkflowId, preSelectedAgent }, ref) {
   const [workflow, setWorkflow] = useState<WorkflowTemplate | null>(null);
   const [workflows, setWorkflows] = useState<WorkflowTemplate[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -75,7 +77,43 @@ export const WorkflowBuilder = forwardRef<REWorkflowBuilderHandle, WorkflowBuild
 
   const isSavedWorkflowId = (id: string) =>
     id !== 'new' && !id.includes('-') && id.length >= 20;
-  
+
+  // Auto-create workflow with pre-selected professional agent from Setup Dialog
+  const preSelectedAgentApplied = useRef(false);
+  useEffect(() => {
+    if (!preSelectedAgent || preSelectedAgentApplied.current || workflow) return;
+    preSelectedAgentApplied.current = true;
+    const config = PROFESSIONAL_EMPLOYEE_CONFIGS[preSelectedAgent as ProfessionalAIEmployeeType];
+    const agentLabel = config?.title || config?.name || preSelectedAgent;
+    const newWorkflow: WorkflowTemplate = {
+      id: `new-${Date.now()}`,
+      name: `${agentLabel} Workflow`,
+      description: `Automated workflow powered by ${agentLabel}`,
+      workflowType: 'CUSTOM',
+      tasks: [{
+        id: `task-${Date.now()}`,
+        name: `${agentLabel} Task`,
+        description: `Task assigned to ${agentLabel}`,
+        taskType: 'CUSTOM',
+        assignedAgentId: `professional:${preSelectedAgent}`,
+        assignedAgentName: config?.name || preSelectedAgent,
+        agentColor: '#0ea5e9',
+        displayOrder: 1,
+        isHITL: false,
+        delayMinutes: 0,
+        actionConfig: { actions: [], assignedProfessionalType: preSelectedAgent },
+      }],
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    loadWorkflow(newWorkflow);
+    setShowTemplateGallery(false);
+    setSelectedTaskId(newWorkflow.tasks[0].id);
+    setHasUnsavedChanges(true);
+    toast.success(`Workflow created with ${agentLabel} — configure the task and save when ready`);
+  }, [preSelectedAgent, workflow]);
+
   // Fetch workflows on mount
   useEffect(() => {
     fetchWorkflows();

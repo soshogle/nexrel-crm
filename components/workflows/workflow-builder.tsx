@@ -16,6 +16,7 @@ import { CampaignSettingsPanel, CampaignSettings } from './campaign-settings-pan
 import { EnrollmentPanel } from './enrollment-panel';
 import { ABTestPanel } from './ab-test-panel';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
+import { PROFESSIONAL_EMPLOYEE_CONFIGS, ProfessionalAIEmployeeType } from '@/lib/professional-ai-employees/config';
 import { Industry } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +55,7 @@ import {
 interface WorkflowBuilderProps {
   industry: Industry;
   initialWorkflowId?: string;
+  preSelectedAgent?: string | null;
 }
 
 export interface WorkflowBuilderHandle {
@@ -61,7 +63,7 @@ export interface WorkflowBuilderHandle {
 }
 
 export const WorkflowBuilder = forwardRef<WorkflowBuilderHandle, WorkflowBuilderProps>(
-  function WorkflowBuilder({ industry, initialWorkflowId }, ref) {
+  function WorkflowBuilder({ industry, initialWorkflowId, preSelectedAgent }, ref) {
   const [workflow, setWorkflow] = useState<WorkflowTemplate | null>(null);
   const [workflows, setWorkflows] = useState<WorkflowTemplate[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -169,6 +171,44 @@ export const WorkflowBuilder = forwardRef<WorkflowBuilderHandle, WorkflowBuilder
     };
     load();
   }, [workflows, initialWorkflowId, workflow, showTemplateGallery]);
+
+  // Auto-create workflow with pre-selected professional agent from Setup Dialog
+  const preSelectedAgentApplied = useRef(false);
+  useEffect(() => {
+    if (!preSelectedAgent || preSelectedAgentApplied.current || workflow) return;
+    preSelectedAgentApplied.current = true;
+    const config = PROFESSIONAL_EMPLOYEE_CONFIGS[preSelectedAgent as ProfessionalAIEmployeeType];
+    const agentLabel = config?.title || config?.name || preSelectedAgent;
+    const newWorkflow: WorkflowTemplate = {
+      id: `new-${Date.now()}`,
+      name: `${agentLabel} Workflow`,
+      description: `Automated workflow powered by ${agentLabel}`,
+      workflowType: 'CUSTOM',
+      industry,
+      tasks: [{
+        id: `task-${Date.now()}`,
+        name: `${agentLabel} Task`,
+        description: `Task assigned to ${agentLabel}`,
+        taskType: industryConfig?.taskTypes[0]?.value || 'CUSTOM',
+        assignedAgentId: `professional:${preSelectedAgent}`,
+        assignedAgentName: config?.name || preSelectedAgent,
+        agentColor: '#0ea5e9',
+        displayOrder: 1,
+        isHITL: false,
+        delayMinutes: 0,
+        actionType: 'CREATE_TASK',
+        actionConfig: { actions: [], assignedProfessionalType: preSelectedAgent },
+      }],
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    loadWorkflow(newWorkflow);
+    setShowTemplateGallery(false);
+    setSelectedTaskId(newWorkflow.tasks[0].id);
+    setHasUnsavedChanges(true);
+    toast.success(`Workflow created with ${agentLabel} — configure the task and save when ready`);
+  }, [preSelectedAgent, workflow]);
 
   // Phase 2: Set active draft in sessionStorage and server for voice/chat context
   // Don't clear on unmount - only clear when user explicitly clicks "Back to Overview" (preserves draft for "take me back")
