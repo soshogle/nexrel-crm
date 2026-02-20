@@ -55,7 +55,7 @@ import { PresentationGenerator } from '@/components/real-estate/presentation-gen
 import { MarketInsightsWidget } from '@/components/real-estate/market-insights-widget';
 import { FSBOLeadsWidget } from '@/components/real-estate/fsbo-leads-widget';
 import { StaleListingsWidget } from '@/components/real-estate/stale-listings-widget';
-import { RealEstateAITeamWidget } from '@/components/ai-employees/real-estate-employees';
+
 import { AttractionEngine } from '@/components/real-estate/attraction-engine';
 import { PropertyEvaluationPanel } from '@/components/real-estate/property-evaluation-panel';
 
@@ -432,10 +432,6 @@ export default function RealEstateDashboard() {
               <StaleListingsWidget />
             </div>
 
-            {/* AI Team Widget */}
-            <div className="mt-6">
-              <RealEstateAITeamWidget />
-            </div>
           </TabsContent>
 
           <TabsContent value="cma">
