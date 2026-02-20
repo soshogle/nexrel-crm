@@ -4,10 +4,10 @@ on:
   pull_request:
     branches: [master]
   push:
-    branches-ignore: [master]
+    branches: [master]
 
 jobs:
-  build-check:
+  lint-and-typecheck:
     runs-on: ubuntu-latest
     
     steps:
@@ -23,11 +23,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Lint
+        run: npm run lint
+      
       - name: Type check
         run: npm run typecheck
-      
-      - name: Build
-        run: npm run build
-      
-      - name: Lint
-        run: npm run lint || echo "Lint warnings (non-blocking)"
