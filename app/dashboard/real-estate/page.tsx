@@ -92,30 +92,38 @@ export default function RealEstateDashboard() {
   useEffect(() => {
     if (!mounted) return;
     
-    // Fetch real data from API
     const fetchDashboardData = async () => {
       try {
-        // Fetch FSBO stats
-        const fsboRes = await fetch('/api/real-estate/fsbo');
+        const [fsboRes, activityRes, marketRes] = await Promise.all([
+          fetch('/api/real-estate/fsbo'),
+          fetch('/api/real-estate/activity'),
+          fetch('/api/real-estate/market-stats?limit=24'),
+        ]);
+
         const fsboData = fsboRes.ok ? await fsboRes.json() : { pagination: { total: 0 } };
-        
-        // Fetch recent activity from various sources
-        const activityRes = await fetch('/api/real-estate/activity');
         const activityData = activityRes.ok ? await activityRes.json() : { activities: [] };
+        const marketData = marketRes.ok ? await marketRes.json() : { liveStats: {} };
+
+        const live = marketData.liveStats || {};
+        const formatPrice = (p: number) => {
+          if (!p) return '—';
+          if (p >= 1000000) return `$${(p / 1000000).toFixed(1)}M`;
+          if (p >= 1000) return `$${Math.round(p / 1000)}K`;
+          return `$${p.toLocaleString()}`;
+        };
 
         setMarketStats([
-          { label: 'Active Listings', value: '—', change: 0, trend: 'neutral', icon: Building2 },
-          { label: 'Median Price', value: '—', change: 0, trend: 'neutral', icon: DollarSign },
-          { label: 'Days on Market', value: '—', change: 0, trend: 'neutral', icon: Clock },
-          { label: 'FSBO Leads', value: String(fsboData.pagination?.total || 0), change: 0, trend: 'neutral', icon: Users },
+          { label: 'Active Listings', value: live.activeListings > 0 ? String(live.activeListings) : '0', change: 0, trend: live.activeListings > 0 ? 'up' : 'neutral', icon: Building2 },
+          { label: 'Median Price', value: formatPrice(live.medianSalePrice), change: live.priceChangePercent || 0, trend: (live.priceChangePercent || 0) > 0 ? 'up' : (live.priceChangePercent || 0) < 0 ? 'down' : 'neutral', icon: DollarSign },
+          { label: 'Days on Market', value: live.domMedian > 0 ? `${live.domMedian}` : '—', change: 0, trend: 'neutral', icon: Clock },
+          { label: 'FSBO Leads', value: String(fsboData.pagination?.total || live.fsboListings || 0), change: 0, trend: (fsboData.pagination?.total || 0) > 0 ? 'up' : 'neutral', icon: Users },
         ]);
-        
+
         setRecentActivity(activityData.activities || []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-        // Set empty data, not sample data
         setMarketStats([
-          { label: 'Active Listings', value: '—', change: 0, trend: 'neutral', icon: Building2 },
+          { label: 'Active Listings', value: '0', change: 0, trend: 'neutral', icon: Building2 },
           { label: 'Median Price', value: '—', change: 0, trend: 'neutral', icon: DollarSign },
           { label: 'Days on Market', value: '—', change: 0, trend: 'neutral', icon: Clock },
           { label: 'FSBO Leads', value: '0', change: 0, trend: 'neutral', icon: Users },
