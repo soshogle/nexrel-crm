@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Send, Sparkles, Wand2, MessageSquare, Target, Clock, Lightbulb, FileText } from 'lucide-react';
+import { PersonalizationVariables } from '@/components/workflows/personalization-variables';
+import { PersonalizationVariables } from '@/components/workflows/personalization-variables';
 
 interface CreateSmsCampaignDialogProps {
   open: boolean;
@@ -48,6 +50,8 @@ export function CreateSmsCampaignDialog({
   });
   const [messageVariants, setMessageVariants] = useState<string[]>([]);
   const [showMessageVariants, setShowMessageVariants] = useState(false);
+
+  const smsMessageRef = useRef<HTMLTextAreaElement>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -478,18 +482,19 @@ export function CreateSmsCampaignDialog({
               </div>
               <Textarea
                 id="message"
+                ref={smsMessageRef}
                 value={formData.message}
                 onChange={(e) =>
                   setFormData({ ...formData, message: e.target.value })
                 }
                 rows={6}
-                placeholder="Hi {{name}}, check out our special offer..."
+                placeholder="Hi {{firstName}}, check out our special offer..."
                 className="resize-none"
               />
               <div className="flex justify-between items-center mt-2">
-                <p className="text-xs text-muted-foreground">
-                  Use {`{{name}}`} for personalization
-                </p>
+                <PersonalizationVariables textareaRef={smsMessageRef} onInsert={(token) => {
+                  setFormData(prev => ({ ...prev, message: prev.message + token }));
+                }} mode="button" groups={['Contact', 'Business']} />
                 <div className="text-xs text-muted-foreground">
                   <span className={messageLength > MAX_SMS_LENGTH ? 'text-orange-600 font-semibold' : ''}>
                     {messageLength} characters

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Mail, FileText, Users, Send, Sparkles, Wand2, TrendingUp, Clock, Target, Lightbulb } from 'lucide-react';
+import { PersonalizationVariables } from '@/components/workflows/personalization-variables';
 
 interface CreateEmailCampaignDialogProps {
   open: boolean;
@@ -58,6 +59,7 @@ export function CreateEmailCampaignDialog({
   });
   const [subjectVariants, setSubjectVariants] = useState<string[]>([]);
   const [showSubjectVariants, setShowSubjectVariants] = useState(false);
+  const emailContentRef = useRef<HTMLTextAreaElement>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -635,29 +637,32 @@ export function CreateEmailCampaignDialog({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="htmlContent">Email Content (HTML) *</Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleOptimizeContent}
-                  disabled={loading || !formData.htmlContent}
-                >
-                  <Wand2 className="h-3 w-3 mr-1" />
-                  Optimize with AI
-                </Button>
+                <div className="flex items-center gap-1">
+                  <PersonalizationVariables textareaRef={emailContentRef} onInsert={(token) => {
+                    setFormData(prev => ({ ...prev, htmlContent: prev.htmlContent + token }));
+                  }} mode="button" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleOptimizeContent}
+                    disabled={loading || !formData.htmlContent}
+                  >
+                    <Wand2 className="h-3 w-3 mr-1" />
+                    Optimize with AI
+                  </Button>
+                </div>
               </div>
               <Textarea
                 id="htmlContent"
+                ref={emailContentRef}
                 value={formData.htmlContent}
                 onChange={(e) =>
                   setFormData({ ...formData, htmlContent: e.target.value })
                 }
                 rows={10}
-                placeholder="<div>Your HTML content here...</div>"
+                placeholder="<div>Hi {{firstName}}, ...</div>"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Use AI to improve clarity, engagement, and call-to-action effectiveness
-              </p>
             </div>
 
             <div className="flex justify-between">

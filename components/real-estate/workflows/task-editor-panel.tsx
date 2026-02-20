@@ -14,11 +14,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Trash2, Save, Shield, Clock, User, GitBranch, Settings, Globe, MessageSquare } from 'lucide-react';
+import { X, Trash2, Save, Shield, Clock, User, GitBranch, Settings, Globe, MessageSquare, AlertTriangle, Phone, Bell } from 'lucide-react';
 import { VOICE_LANGUAGES } from '@/lib/voice-languages';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import { CalendarConfigSection } from '@/components/workflows/calendar-config-section';
+import { PersonalizationVariables } from '@/components/workflows/personalization-variables';
 
 interface TaskEditorPanelProps {
   task: WorkflowTask | null;
@@ -86,7 +96,11 @@ export function TaskEditorPanel({
   const [showBranching, setShowBranching] = useState(false);
   const [selectedActions, setSelectedActions] = useState<string[]>([]);
   const [aiEmployees, setAiEmployees] = useState<AIEmployee[]>([]);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; email: string }>>([]);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const lastSavedRef = useRef<string>('');
+  const smsTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const emailBodyRef = useRef<HTMLTextAreaElement>(null);
 
   const buildEffectiveTask = useCallback(() => {
     if (!editedTask) return null;
@@ -113,6 +127,13 @@ export function TaskEditorPanel({
       .then((res) => res.ok ? res.json() : { employees: [] })
       .then((data) => setAiEmployees(data.employees || []))
       .catch(() => setAiEmployees([]));
+    fetch('/api/team')
+      .then((res) => res.ok ? res.json() : { members: [] })
+      .then((data) => {
+        const members = data.members || data.teamMembers || [];
+        setTeamMembers(Array.isArray(members) ? members : []);
+      })
+      .catch(() => setTeamMembers([]));
   }, []);
   
   useEffect(() => {
@@ -211,13 +232,35 @@ export function TaskEditorPanel({
   const parentTask = editedTask.parentTaskId 
     ? workflowTasks.find(t => t.id === editedTask.parentTaskId)
     : null;
+
+  const handleCloseAttempt = () => {
+    if (hasUnsavedChanges) {
+      setShowCloseConfirm(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleSaveAndClose = () => {
+    const taskToSave = {
+      ...editedTask,
+      actionConfig: {
+        ...((editedTask as any).actionConfig || {}),
+        actions: selectedActions,
+      },
+    };
+    onSave(taskToSave as WorkflowTask);
+    lastSavedRef.current = JSON.stringify(taskToSave);
+    setShowCloseConfirm(false);
+    onClose();
+  };
   
   return (
     <div className="w-96 bg-white border-l-2 border-purple-200 h-full overflow-y-auto shadow-xl">
       {/* Header */}
       <div className="sticky top-0 bg-gradient-to-r from-purple-50 to-white border-b-2 border-purple-200 p-4 flex items-center justify-between z-10">
         <h3 className="text-lg font-bold text-gray-900">Edit Task</h3>
-        <Button variant="ghost" size="icon" onClick={onClose} className="hover:bg-purple-100">
+        <Button variant="ghost" size="icon" onClick={handleCloseAttempt} className="hover:bg-purple-100">
           <X className="w-4 h-4 text-gray-600" />
         </Button>
       </div>
@@ -450,17 +493,53 @@ export function TaskEditorPanel({
         {selectedActions.includes('sms') && (
           <Card className="p-4 bg-gradient-to-br from-cyan-50 to-white border-2 border-cyan-200">
             <Label className="text-sm font-semibold text-gray-900">SMS Message</Label>
-            <p className="text-xs text-gray-600 mb-2">What message to send. Use {'{{firstName}}'} for personalization.</p>
-            <Textarea
-              value={(editedTask as any).actionConfig?.smsMessage ?? ''}
-              onChange={(e) => {
-                const ac = (editedTask as any).actionConfig || {};
-                setEditedTask({ ...editedTask, actionConfig: { ...ac, smsMessage: e.target.value || undefined } } as WorkflowTask);
-              }}
-              placeholder="e.g. Hi {{firstName}}, just following up..."
-              rows={4}
-              className="bg-white border-cyan-200"
-            />
+            <div className="space-y-2 mt-2">
+              <div>
+                <Label className="text-xs text-gray-600">Send To</Label>
+                <Select
+                  value={(editedTask as any).actionConfig?.smsRecipient ?? 'lead'}
+                  onValueChange={(v) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, smsRecipient: v } } as WorkflowTask);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-cyan-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lead">Lead / Contact (from workflow)</SelectItem>
+                    <SelectItem value="assigned_agent">Assigned Agent</SelectItem>
+                    <SelectItem value="owner">Account Owner</SelectItem>
+                    {teamMembers.map((m) => (
+                      <SelectItem key={m.id} value={`team:${m.id}`}>
+                        {m.name || m.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs text-gray-600">Message</Label>
+                  <PersonalizationVariables textareaRef={smsTextareaRef} onInsert={(token) => {
+                    const cur = (editedTask as any).actionConfig?.smsMessage ?? '';
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, smsMessage: cur + token } } as WorkflowTask);
+                  }} mode="button" groups={['Contact', 'Business']} />
+                </div>
+                <Textarea
+                  ref={smsTextareaRef}
+                  value={(editedTask as any).actionConfig?.smsMessage ?? ''}
+                  onChange={(e) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, smsMessage: e.target.value || undefined } } as WorkflowTask);
+                  }}
+                  placeholder="e.g. Hi {{firstName}}, just following up..."
+                  rows={4}
+                  className="bg-white border-cyan-200"
+                />
+              </div>
+            </div>
           </Card>
         )}
 
@@ -468,27 +547,64 @@ export function TaskEditorPanel({
         {selectedActions.includes('email') && (
           <Card className="p-4 bg-gradient-to-br from-blue-50 to-white border-2 border-blue-200">
             <Label className="text-sm font-semibold text-gray-900">Email Content</Label>
-            <p className="text-xs text-gray-600 mb-2">Subject and body for the email.</p>
             <div className="space-y-2 mt-2">
-              <Input
-                value={(editedTask as any).actionConfig?.emailSubject ?? ''}
-                onChange={(e) => {
-                  const ac = (editedTask as any).actionConfig || {};
-                  setEditedTask({ ...editedTask, actionConfig: { ...ac, emailSubject: e.target.value || undefined } } as WorkflowTask);
-                }}
-                placeholder="Email subject"
-                className="bg-white border-blue-200"
-              />
-              <Textarea
-                value={(editedTask as any).actionConfig?.emailBody ?? ''}
-                onChange={(e) => {
-                  const ac = (editedTask as any).actionConfig || {};
-                  setEditedTask({ ...editedTask, actionConfig: { ...ac, emailBody: e.target.value || undefined } } as WorkflowTask);
-                }}
-                placeholder="Email body"
-                rows={5}
-                className="bg-white border-blue-200"
-              />
+              <div>
+                <Label className="text-xs text-gray-600">Send To</Label>
+                <Select
+                  value={(editedTask as any).actionConfig?.emailRecipient ?? 'lead'}
+                  onValueChange={(v) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, emailRecipient: v } } as WorkflowTask);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-blue-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="lead">Lead / Contact (from workflow)</SelectItem>
+                    <SelectItem value="assigned_agent">Assigned Agent</SelectItem>
+                    <SelectItem value="owner">Account Owner</SelectItem>
+                    {teamMembers.map((m) => (
+                      <SelectItem key={m.id} value={`team:${m.id}`}>
+                        {m.name || m.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs text-gray-600">Subject</Label>
+                <Input
+                  value={(editedTask as any).actionConfig?.emailSubject ?? ''}
+                  onChange={(e) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, emailSubject: e.target.value || undefined } } as WorkflowTask);
+                  }}
+                  placeholder="Email subject"
+                  className="bg-white border-blue-200"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs text-gray-600">Body</Label>
+                  <PersonalizationVariables textareaRef={emailBodyRef} onInsert={(token) => {
+                    const cur = (editedTask as any).actionConfig?.emailBody ?? '';
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, emailBody: cur + token } } as WorkflowTask);
+                  }} mode="button" />
+                </div>
+                <Textarea
+                  ref={emailBodyRef}
+                  value={(editedTask as any).actionConfig?.emailBody ?? ''}
+                  onChange={(e) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, emailBody: e.target.value || undefined } } as WorkflowTask);
+                  }}
+                  placeholder="Email body"
+                  rows={5}
+                  className="bg-white border-blue-200"
+                />
+              </div>
             </div>
           </Card>
         )}
@@ -610,31 +726,118 @@ export function TaskEditorPanel({
           <Card className="p-4 bg-gradient-to-br from-amber-50 to-white border-2 border-amber-200">
             <Label className="text-sm font-semibold text-gray-900">Assign to Human</Label>
             <p className="text-xs text-gray-600 mb-2">Who should review this task?</p>
-            {aiEmployees.length === 0 ? (
-              <p className="text-sm text-amber-700 bg-amber-100/80 rounded-md px-3 py-2">
-                No AI Team employees yet. Create one in <a href="/dashboard/ai-employees" className="underline font-medium">AI Team</a> first, then return here to assign.
+            <Select
+              value={(editedTask as any).actionConfig?.hitlAssignee ?? 'unassigned'}
+              onValueChange={(v) => {
+                const ac = (editedTask as any).actionConfig || {};
+                setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlAssignee: v === 'unassigned' ? undefined : v } } as WorkflowTask);
+              }}
+            >
+              <SelectTrigger className="bg-white border-amber-200">
+                <SelectValue placeholder="Select person" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned (Owner)</SelectItem>
+                {teamMembers.map((member) => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.name || member.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {teamMembers.length === 0 && (
+              <p className="text-xs text-amber-600 mt-2">
+                No team members found. The task will default to you. Add team members in <a href="/dashboard/team" className="underline font-medium">Team Management</a>.
               </p>
-            ) : (
-              <Select
-                value={(editedTask as any).actionConfig?.hitlAssignee ?? 'unassigned'}
-                onValueChange={(v) => {
-                  const ac = (editedTask as any).actionConfig || {};
-                  setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlAssignee: v === 'unassigned' ? undefined : v } } as WorkflowTask);
-                }}
-              >
-                <SelectTrigger className="bg-white border-amber-200">
-                  <SelectValue placeholder="Select person" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {aiEmployees.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.id}>
-                      {emp.customName || emp.profession}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             )}
+
+            {/* Escalation: AI reminder if human doesn't complete by deadline */}
+            <div className="mt-4 pt-3 border-t border-amber-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Bell className="w-4 h-4 text-orange-500" />
+                <Label className="text-sm font-semibold text-gray-900">Escalation Reminder</Label>
+              </div>
+              <p className="text-xs text-gray-600 mb-2">
+                If the assignee doesn&apos;t complete by the deadline, an AI employee will remind them.
+              </p>
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs text-gray-600">Deadline</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      min="1"
+                      value={(editedTask as any).actionConfig?.hitlDeadlineAmount ?? ''}
+                      onChange={(e) => {
+                        const ac = (editedTask as any).actionConfig || {};
+                        setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlDeadlineAmount: parseInt(e.target.value) || undefined } } as WorkflowTask);
+                      }}
+                      placeholder="e.g. 24"
+                      className="flex-1 bg-white border-amber-200"
+                    />
+                    <Select
+                      value={(editedTask as any).actionConfig?.hitlDeadlineUnit ?? 'HOURS'}
+                      onValueChange={(v) => {
+                        const ac = (editedTask as any).actionConfig || {};
+                        setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlDeadlineUnit: v } } as WorkflowTask);
+                      }}
+                    >
+                      <SelectTrigger className="w-28 bg-white border-amber-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MINUTES">Minutes</SelectItem>
+                        <SelectItem value="HOURS">Hours</SelectItem>
+                        <SelectItem value="DAYS">Days</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-600">AI Employee to Remind</Label>
+                  <Select
+                    value={(editedTask as any).actionConfig?.hitlEscalationAgent ?? 'none'}
+                    onValueChange={(v) => {
+                      const ac = (editedTask as any).actionConfig || {};
+                      setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlEscalationAgent: v === 'none' ? undefined : v } } as WorkflowTask);
+                    }}
+                  >
+                    <SelectTrigger className="bg-white border-amber-200">
+                      <SelectValue placeholder="Select AI employee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None (no reminder)</SelectItem>
+                      {aiEmployees.map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.customName || emp.profession}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(editedTask as any).actionConfig?.hitlEscalationAgent && (
+                  <div>
+                    <Label className="text-xs text-gray-600">Remind Via</Label>
+                    <Select
+                      value={(editedTask as any).actionConfig?.hitlEscalationMethod ?? 'sms'}
+                      onValueChange={(v) => {
+                        const ac = (editedTask as any).actionConfig || {};
+                        setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlEscalationMethod: v } } as WorkflowTask);
+                      }}
+                    >
+                      <SelectTrigger className="bg-white border-amber-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sms">SMS</SelectItem>
+                        <SelectItem value="call">Voice Call</SelectItem>
+                        <SelectItem value="both">Both (SMS + Call)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </div>
           </Card>
         )}
         
@@ -896,6 +1099,29 @@ export function TaskEditorPanel({
           )}
         </div>
       </div>
+
+      <AlertDialog open={showCloseConfirm} onOpenChange={(open) => !open && setShowCloseConfirm(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Unsaved Changes
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes to this task. Would you like to save before closing?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button variant="outline" onClick={() => { setShowCloseConfirm(false); onClose(); }}>
+              Don&apos;t Save
+            </Button>
+            <Button className="bg-purple-600 hover:bg-purple-700" onClick={handleSaveAndClose}>
+              Save &amp; Close
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

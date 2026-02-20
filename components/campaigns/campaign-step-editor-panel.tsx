@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CampaignStep } from './campaign-builder-types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card } from '@/components/ui/card';
-import { X, Save, Sparkles, GitBranch, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { X, Save, Sparkles, GitBranch, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { VoiceAgentSelect } from './voice-agent-select';
+import { PersonalizationVariables } from '@/components/workflows/personalization-variables';
 import { toast } from 'sonner';
 
 interface CampaignStepEditorPanelProps {
@@ -38,6 +39,8 @@ export function CampaignStepEditorPanel({
 }: CampaignStepEditorPanelProps) {
   const [edited, setEdited] = useState<CampaignStep | null>(step);
   const [aiLoading, setAiLoading] = useState(false);
+  const emailContentRef = useRef<HTMLTextAreaElement>(null);
+  const smsContentRef = useRef<HTMLTextAreaElement>(null);
   const [showBranching, setShowBranching] = useState(!!step?.parentStepId);
   const [skipConditions, setSkipConditions] = useState<Array<{ field: string; operator: string; value: string }>>(
     step?.skipConditions && Array.isArray(step.skipConditions) ? step.skipConditions : []
@@ -163,17 +166,20 @@ export function CampaignStepEditorPanel({
               />
             </div>
             <div>
-              <Label>Email Content (HTML)</Label>
+              <div className="flex items-center justify-between mb-1">
+                <Label>Email Content (HTML)</Label>
+                <PersonalizationVariables textareaRef={emailContentRef} onInsert={(token) => {
+                  update({ htmlContent: (edited.htmlContent || '') + token });
+                }} mode="button" />
+              </div>
               <Textarea
+                ref={emailContentRef}
                 value={edited.htmlContent || ''}
                 onChange={(e) => update({ htmlContent: e.target.value })}
-                placeholder="Hi {{firstName}}, ... Use {{lastName}}, {{company}}, {{notes}} for personalization"
+                placeholder="Hi {{firstName}}, we wanted to reach out..."
                 rows={8}
                 className="font-mono text-sm"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Personalize: {'{{firstName}}'}, {'{{lastName}}'}, {'{{company}}'}, {'{{notes}}'}, {'{{lastCallSummary}}'}, {'{{lastEmailSubject}}'}
-              </p>
             </div>
             <div>
               <Label>Plain Text (Fallback)</Label>
@@ -202,25 +208,28 @@ export function CampaignStepEditorPanel({
             <div>
               <div className="flex items-center justify-between gap-2">
                 <Label>Message Content</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleAiGenerate('sms')}
-                  disabled={aiLoading}
-                >
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  {aiLoading ? 'Generating...' : 'AI'}
-                </Button>
+                <div className="flex items-center gap-1">
+                  <PersonalizationVariables textareaRef={smsContentRef} onInsert={(token) => {
+                    update({ message: (edited.message || '') + token });
+                  }} mode="button" groups={['Contact', 'Business']} />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAiGenerate('sms')}
+                    disabled={aiLoading}
+                  >
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    {aiLoading ? 'Generating...' : 'AI'}
+                  </Button>
+                </div>
               </div>
               <Textarea
+                ref={smsContentRef}
                 value={edited.message || ''}
                 onChange={(e) => update({ message: e.target.value })}
-                placeholder="Hi {{firstName}}, ... Use {{lastName}}, {{company}}, {{notes}} for personalization"
+                placeholder="Hi {{firstName}}, we wanted to reach out..."
                 rows={6}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Personalize: {'{{firstName}}'}, {'{{lastName}}'}, {'{{company}}'}, {'{{notes}}'}
-              </p>
               <p className="text-xs text-gray-500 mt-1">
                 {edited.message?.length || 0} chars
                 {(edited.message?.length || 0) > 160 &&
@@ -252,25 +261,21 @@ export function CampaignStepEditorPanel({
             </div>
             <div>
               <div className="flex items-center justify-between gap-2 mb-1">
-                <div className="flex items-center gap-2">
-                  <Label>Call Script / Instructions</Label>
-                  <span
-                    className="text-xs text-muted-foreground flex items-center gap-1"
-                    title="Use {{firstName}}, {{lastName}}, {{company}}, {{notes}}, {{lastCallSummary}}, {{lastEmailSubject}} to personalize per contact"
+                <Label>Call Script / Instructions</Label>
+                <div className="flex items-center gap-1">
+                  <PersonalizationVariables onInsert={(token) => {
+                    update({ callScript: (edited.callScript || '') + token });
+                  }} mode="button" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleAiGenerate('voice')}
+                    disabled={aiLoading}
                   >
-                    <Info className="h-3 w-3" />
-                    Personalization
-                  </span>
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    {aiLoading ? 'Generating...' : 'AI'}
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleAiGenerate('voice')}
-                  disabled={aiLoading}
-                >
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  {aiLoading ? 'Generating...' : 'AI'}
-                </Button>
               </div>
               <Textarea
                 value={edited.callScript || ''}
@@ -278,9 +283,6 @@ export function CampaignStepEditorPanel({
                 placeholder="Hi {{firstName}}, this is... Reference {{notes}} or {{lastCallSummary}} for context."
                 rows={6}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Tokens: {'{{firstName}}'}, {'{{lastName}}'}, {'{{company}}'}, {'{{notes}}'}, {'{{lastCallSummary}}'}, {'{{lastEmailSubject}}'}
-              </p>
             </div>
           </>
         )}

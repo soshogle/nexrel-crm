@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
+import { PersonalizationVariables } from '@/components/workflows/personalization-variables'
 
 interface Lead {
   id: string
@@ -28,6 +29,7 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
   const [loading, setLoading] = useState(false)
   const [leads, setLeads] = useState<Lead[]>([])
   const [selectedLeads, setSelectedLeads] = useState<string[]>([])
+  const smsTemplateRef = useRef<HTMLTextAreaElement>(null)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -152,17 +154,23 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
           </div>
 
           <div>
-            <Label htmlFor="smsTemplate">SMS Message Template *</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label htmlFor="smsTemplate">SMS Message Template *</Label>
+              <PersonalizationVariables textareaRef={smsTemplateRef} onInsert={(token) => {
+                setFormData(prev => ({ ...prev, smsTemplate: prev.smsTemplate + token }))
+              }} mode="button" groups={['Contact', 'Business']} />
+            </div>
             <Textarea
               id="smsTemplate"
+              ref={smsTemplateRef}
               value={formData.smsTemplate}
               onChange={(e) => setFormData({ ...formData, smsTemplate: e.target.value })}
-              placeholder="Use {businessName}, {contactPerson}, {reviewUrl}, {referralReward} as placeholders"
+              placeholder="Hi {{firstName}}, we'd love your feedback..."
               rows={4}
               required
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Available placeholders: {'{businessName}'}, {'{contactPerson}'}, {'{reviewUrl}'}, {'{referralReward}'}
+              Campaign tokens: {'{reviewUrl}'}, {'{referralReward}'}
             </p>
           </div>
 
