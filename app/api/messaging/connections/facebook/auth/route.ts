@@ -14,8 +14,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // TODO: Replace with your Facebook App ID
-    const facebookAppId = process.env.FACEBOOK_APP_ID || 'YOUR_FACEBOOK_APP_ID'
+    const facebookAppId = process.env.FACEBOOK_APP_ID;
+    if (!facebookAppId) {
+      return NextResponse.json({ error: 'Facebook App ID not configured' }, { status: 500 });
+    }
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/messaging/connections/facebook/callback`
     
     const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?` +

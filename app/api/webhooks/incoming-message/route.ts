@@ -214,8 +214,23 @@ export async function POST(request: NextRequest) {
 
         // Send notification if enabled
         if (autoReplySettings.notifyOnEscalation && autoReplySettings.notificationEmail) {
-          // TODO: Send email notification
-          console.log('Escalation notification needed for:', autoReplySettings.notificationEmail);
+          const { emailService } = await import('@/lib/email-service');
+          await emailService.sendEmail({
+            to: autoReplySettings.notificationEmail,
+            subject: `⚠️ Message Escalation — needs human review`,
+            html: `
+              <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+                <div style="background:#f59e0b;color:#fff;padding:20px 30px;border-radius:8px 8px 0 0;">
+                  <h2 style="margin:0;">⚠️ Message Escalated</h2>
+                </div>
+                <div style="padding:24px 30px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+                  <p>A conversation needs your attention. The AI auto-reply flagged this for human review.</p>
+                  ${aiResponse.escalationReason ? `<p><strong>Reason:</strong> ${aiResponse.escalationReason}</p>` : ''}
+                  <p style="margin-top:20px;"><a href="${process.env.NEXTAUTH_URL || ''}/dashboard/messages" style="background:#667eea;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">View Conversation</a></p>
+                </div>
+              </div>
+            `,
+          });
         }
       }
 

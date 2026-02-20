@@ -14,8 +14,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // TODO: Replace with your Google OAuth credentials
-    const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ID || ''
+    const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ID;
+    if (!googleClientId) {
+      return NextResponse.json({ error: 'Google OAuth credentials not configured' }, { status: 500 });
+    }
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/messaging/connections/gmail/callback`
     
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +

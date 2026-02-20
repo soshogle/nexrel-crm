@@ -76,8 +76,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // TODO: Send email if emailTo is provided
-    // This would integrate with your existing email service
+    if (emailTo) {
+      const { emailService } = await import('@/lib/email-service');
+      await emailService.sendEmail({
+        to: emailTo,
+        subject: `Your Receipt — ${receiptNumber}`,
+        html: receiptHTML,
+        userId: session.user.id,
+      });
+    }
 
     console.log(`✅ Receipt generated: ${receiptNumber}`);
 

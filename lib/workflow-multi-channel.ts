@@ -206,17 +206,49 @@ export class MultiChannelOrchestrator {
     message: string,
     channel: ChannelPreference['channel']
   ): Promise<boolean> {
-    // This would integrate with actual messaging services
-    // For now, just log the action
-    console.log(`📤 Sending via ${channel} to lead ${leadId}: ${message}`);
-    
-    // TODO: Integrate with actual messaging APIs
-    // - Twilio for SMS
-    // - SendGrid for Email
-    // - WhatsApp Business API
-    // - ElevenLabs for Voice
-    
-    return true;
+    const { prisma } = await import('@/lib/db');
+    const lead = await prisma.lead.findUnique({
+      where: { id: leadId },
+      select: { email: true, phone: true, contactPerson: true, businessName: true },
+    });
+
+    if (!lead) return false;
+
+    switch (channel) {
+      case 'SMS': {
+        if (!lead.phone) return false;
+        const { sendSMS } = await import('@/lib/twilio');
+        try {
+          await sendSMS(lead.phone, message);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      case 'EMAIL': {
+        if (!lead.email) return false;
+        const { emailService } = await import('@/lib/email-service');
+        return emailService.sendEmail({
+          to: lead.email,
+          subject: 'Message from your agent',
+          html: `<div style="font-family:sans-serif;">${message}</div>`,
+          userId,
+        });
+      }
+      case 'WHATSAPP': {
+        if (!lead.phone) return false;
+        const { sendSMS } = await import('@/lib/twilio');
+        try {
+          await sendSMS(`whatsapp:${lead.phone}`, message);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+      default:
+        console.warn(`Channel ${channel} not yet supported`);
+        return false;
+    }
   }
 
   /**

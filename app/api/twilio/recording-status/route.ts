@@ -104,24 +104,28 @@ export async function POST(request: NextRequest) {
       console.log(`✅ Transcript stored in call log and linked to lead ${callLog.lead.id}`);
     }
 
-    // Send email if configured
     if (voiceAgent.sendRecordingEmail && voiceAgent.recordingEmailAddress) {
       try {
-        console.log('📧 Sending recording email to:', voiceAgent.recordingEmailAddress);
-        
-        const contactName = callLog.lead?.contactPerson 
-          || callLog.lead?.businessName 
+        const { emailService } = await import('@/lib/email-service');
+        const contactName = callLog.lead?.contactPerson
+          || callLog.lead?.businessName
           || 'Unknown';
 
-        // TODO: Re-implement with new email service
-        // const emailSent = await emailService.sendCallSummaryEmail({...});
-        // if (emailSent) {
-        //   console.log('✅ Recording email sent successfully');
-        // }
-        console.log('⚠️ Recording email temporarily disabled - use call status webhook instead');
+        await emailService.sendCallSummaryEmail({
+          recipientEmail: voiceAgent.recordingEmailAddress,
+          callerName: contactName,
+          callerPhone: callLog.fromNumber || 'Unknown',
+          agentName: voiceAgent.name,
+          callDuration: callLog.duration ? `${Math.ceil(callLog.duration / 60)} min` : 'N/A',
+          callDate: callLog.createdAt,
+          transcript: transcript || callLog.transcription || undefined,
+          summary: (callLog.conversationAnalysis as any)?.summary || undefined,
+          recordingUrl: fullRecordingUrl,
+          userId: callLog.userId,
+        });
+        console.log('✅ Recording email sent successfully');
       } catch (emailError) {
         console.error('❌ Error sending recording email:', emailError);
-        // Continue execution
       }
     }
 

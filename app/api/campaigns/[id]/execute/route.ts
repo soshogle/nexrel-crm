@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { emailService } from '@/lib/email-service';
+import { sendSMS } from '@/lib/twilio';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -241,15 +243,21 @@ async function processCampaignMessages(campaignId: string, userId: string) {
 
   for (const message of pendingMessages) {
     try {
-      // Simulate sending (in real app, integrate with Twilio/SendGrid)
       // For EMAIL campaigns
       if (
         (campaign.type === 'EMAIL' || campaign.type === 'MULTI_CHANNEL') &&
         message.recipientEmail
       ) {
-        // TODO: Integrate with email service (SendGrid, etc.)
-        console.log(`📧 Would send email to: ${message.recipientEmail}`);
-        console.log(`   Subject: ${campaign.emailSubject}`);
+        const personalizedBody = (campaign.emailBody || '')
+          .replace(/{{name}}/gi, message.recipientName || '')
+          .replace(/{{email}}/gi, message.recipientEmail || '');
+
+        await emailService.sendEmail({
+          to: message.recipientEmail,
+          subject: campaign.emailSubject || campaign.name,
+          html: personalizedBody,
+          userId: session.user.id,
+        });
       }
 
       // For SMS campaigns
@@ -257,9 +265,15 @@ async function processCampaignMessages(campaignId: string, userId: string) {
         (campaign.type === 'SMS' || campaign.type === 'MULTI_CHANNEL') &&
         message.recipientPhone
       ) {
-        // TODO: Integrate with Twilio SMS
-        console.log(`📱 Would send SMS to: ${message.recipientPhone}`);
-        console.log(`   Message: ${campaign.smsTemplate?.substring(0, 50)}...`);
+        const personalizedSms = (campaign.smsTemplate || '')
+          .replace(/{{name}}/gi, message.recipientName || '')
+          .replace(/{{email}}/gi, message.recipientEmail || '');
+
+        try {
+          await sendSMS(message.recipientPhone, personalizedSms);
+        } catch (smsErr) {
+          console.error(`SMS failed for ${message.recipientPhone}:`, smsErr);
+        }
       }
 
       // For VOICE_CALL campaigns

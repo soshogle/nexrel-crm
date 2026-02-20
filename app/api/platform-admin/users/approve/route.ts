@@ -86,8 +86,25 @@ export async function POST(request: NextRequest) {
       approvedBy: session.user.email,
     });
 
-    // TODO: Send email notification to user (optional)
-    // You could integrate with an email service here to notify the user
+    if (updatedUser.email) {
+      const { emailService } = await import('@/lib/email-service');
+      await emailService.sendEmail({
+        to: updatedUser.email,
+        subject: `Welcome — Your account has been approved!`,
+        html: `
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:30px;border-radius:8px 8px 0 0;text-align:center;">
+              <h1 style="margin:0;font-size:24px;">🎉 You're Approved!</h1>
+            </div>
+            <div style="padding:24px 30px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+              <p>Hi ${updatedUser.name || 'there'},</p>
+              <p>Your account has been approved. You now have full access to the platform.</p>
+              <p style="margin-top:20px;"><a href="${process.env.NEXTAUTH_URL || ''}/dashboard" style="background:#667eea;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">Go to Dashboard</a></p>
+            </div>
+          </div>
+        `,
+      });
+    }
 
     return NextResponse.json(
       {

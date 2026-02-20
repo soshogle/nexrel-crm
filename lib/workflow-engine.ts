@@ -851,10 +851,10 @@ export class WorkflowEngine {
 
     const message = this.replaceVariables(config.message, lead);
 
-    // TODO: Integrate with Twilio
-    console.log(`Would send SMS to ${lead.phone}: ${message}`);
+    const { sendSMS: twilioSendSMS } = await import('@/lib/twilio');
+    const result = await twilioSendSMS(lead.phone, message);
 
-    return { phone: lead.phone, action: 'sms_sent' };
+    return { phone: lead.phone, sid: result.sid, action: 'sms_sent' };
   }
 
   /**
@@ -872,8 +872,13 @@ export class WorkflowEngine {
     const subject = this.replaceVariables(config.subject, lead);
     const message = this.replaceVariables(config.message, lead);
 
-    // TODO: Integrate with email service
-    console.log(`Would send email to ${lead.email}: ${subject}`);
+    const { emailService } = await import('@/lib/email-service');
+    await emailService.sendEmail({
+      to: lead.email,
+      subject,
+      html: message,
+      userId: context.userId,
+    });
 
     return { email: lead.email, action: 'email_sent' };
   }
@@ -991,8 +996,45 @@ export class WorkflowEngine {
    * Notify user
    */
   private async notifyUser(context: ExecutionContext, config: any) {
-    // TODO: Implement notification system (email, push, in-app)
-    console.log('Notification:', config.message);
+    const user = await prisma.user.findUnique({
+      where: { id: context.userId },
+      select: { email: true, name: true },
+    });
+
+    if (user?.email) {
+      const { emailService } = await import('@/lib/email-service');
+      await emailService.sendEmail({
+        to: user.email,
+        subject: config.subject || 'Workflow Notification',
+        html: `
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:#667eea;color:#fff;padding:20px 30px;border-radius:8px 8px 0 0;">
+              <h2 style="margin:0;">Workflow Notification</h2>
+            </div>
+            <div style="padding:24px 30px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+              <p>${config.message || ''}</p>
+              ${context.leadId ? `<p style="margin-top:16px;"><a href="${process.env.NEXTAUTH_URL || ''}/dashboard/leads/${context.leadId}" style="background:#667eea;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">View Lead</a></p>` : ''}
+            </div>
+          </div>
+        `,
+        userId: context.userId,
+      });
+    }
+
+    // Store in-app notification
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: context.userId,
+          title: config.subject || 'Workflow Notification',
+          message: config.message || '',
+          type: 'WORKFLOW',
+        },
+      });
+    } catch {
+      // Notification model may not exist yet — email was sent as fallback
+    }
+
     return { action: 'notified', message: config.message };
   }
 
@@ -1000,9 +1042,25 @@ export class WorkflowEngine {
    * Add tag
    */
   private async addTag(context: ExecutionContext, config: any) {
-    // TODO: Implement tagging system
-    console.log('Add tag:', config.tag);
-    return { action: 'tagged', tag: config.tag };
+    if (!context.leadId || !config.tag) {
+      throw new Error('Lead ID and tag are required');
+    }
+
+    const lead = await prisma.lead.findUnique({
+      where: { id: context.leadId },
+      select: { tags: true },
+    });
+
+    const existing: string[] = Array.isArray(lead?.tags) ? (lead.tags as string[]) : [];
+    const tagsToAdd = Array.isArray(config.tag) ? config.tag : [config.tag];
+    const merged = [...new Set([...existing, ...tagsToAdd])];
+
+    await prisma.lead.update({
+      where: { id: context.leadId },
+      data: { tags: JSON.parse(JSON.stringify(merged)) },
+    });
+
+    return { action: 'tagged', tag: config.tag, leadId: context.leadId };
   }
 
   /**

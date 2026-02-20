@@ -5,6 +5,7 @@
  */
 
 import { sendSMS } from '@/lib/twilio';
+import { emailService } from '@/lib/email-service';
 import { prisma } from '@/lib/db';
 import { format } from 'date-fns';
 
@@ -132,14 +133,11 @@ export class ClubOSCommunicationService {
     const html = this.generateRegistrationEmailHTML(data);
     const subject = `Registration Confirmed: ${data.childName} - ${data.programName}`;
     
-    // Log email (In production, use SendGrid, AWS SES, or similar)
-    console.log('📧 [EMAIL] Registration Confirmation');
-    console.log('To:', data.parentEmail);
-    console.log('Subject:', subject);
-    console.log('Preview:', `Registration for ${data.childName} has been ${data.status.toLowerCase()}`);
-    
-    // TODO: Implement actual email sending
-    // await this.sendEmail(data.parentEmail, subject, html);
+    await emailService.sendEmail({
+      to: data.parentEmail,
+      subject,
+      html,
+    });
   }
 
   /**
@@ -164,13 +162,11 @@ export class ClubOSCommunicationService {
     const html = this.generatePaymentEmailHTML(data);
     const subject = `Payment Received: ${data.childName} - ${data.programName}`;
     
-    console.log('📧 [EMAIL] Payment Confirmation');
-    console.log('To:', data.parentEmail);
-    console.log('Subject:', subject);
-    console.log('Preview:', `Payment of $${(data.amount / 100).toFixed(2)} received`);
-    
-    // TODO: Implement actual email sending
-    // await this.sendEmail(data.parentEmail, subject, html);
+    await emailService.sendEmail({
+      to: data.parentEmail,
+      subject,
+      html,
+    });
   }
 
   /**
@@ -198,13 +194,11 @@ export class ClubOSCommunicationService {
     const html = this.generateScheduleEmailHTML(data);
     const subject = `Reminder: ${data.eventType} Tomorrow - ${data.childName}`;
     
-    console.log('📧 [EMAIL] Schedule Reminder');
-    console.log('To:', data.parentEmail);
-    console.log('Subject:', subject);
-    console.log('Preview:', `${data.eventType} tomorrow at ${format(data.startTime, 'h:mm a')}`);
-    
-    // TODO: Implement actual email sending
-    // await this.sendEmail(data.parentEmail, subject, html);
+    await emailService.sendEmail({
+      to: data.parentEmail,
+      subject,
+      html,
+    });
   }
 
   /**
@@ -230,13 +224,11 @@ export class ClubOSCommunicationService {
     const html = this.generateBalanceEmailHTML(data);
     const subject = `Balance Due: ${data.childName} - ${data.programName}`;
     
-    console.log('📧 [EMAIL] Balance Reminder');
-    console.log('To:', data.parentEmail);
-    console.log('Subject:', subject);
-    console.log('Preview:', `Outstanding balance: $${(data.balanceDue / 100).toFixed(2)}`);
-    
-    // TODO: Implement actual email sending
-    // await this.sendEmail(data.parentEmail, subject, html);
+    await emailService.sendEmail({
+      to: data.parentEmail,
+      subject,
+      html,
+    });
   }
 
   /**

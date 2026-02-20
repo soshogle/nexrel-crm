@@ -205,7 +205,25 @@ export async function DELETE(
       },
     });
 
-    // TODO: Send cancellation email to customer
+    if (reservation.customer?.email) {
+      const { emailService } = await import('@/lib/email-service');
+      await emailService.sendEmail({
+        to: reservation.customer.email,
+        subject: `Reservation Cancelled`,
+        html: `
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+            <div style="background:#ef4444;color:#fff;padding:20px 30px;border-radius:8px 8px 0 0;">
+              <h2 style="margin:0;">Reservation Cancelled</h2>
+            </div>
+            <div style="padding:24px 30px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+              <p>Hi ${reservation.customer.name || 'there'},</p>
+              <p>Your reservation has been cancelled as requested.</p>
+              <p>If this was a mistake or you'd like to rebook, please contact us.</p>
+            </div>
+          </div>
+        `,
+      });
+    }
 
     return NextResponse.json({
       success: true,

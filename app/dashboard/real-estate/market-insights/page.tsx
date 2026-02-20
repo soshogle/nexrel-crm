@@ -5,9 +5,18 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, TrendingDown, Home, DollarSign, Share2, Loader2, FileText } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  BarChart3, TrendingUp, TrendingDown, Home, DollarSign,
+  Share2, Loader2, FileText, Building2, Clock, PieChart as PieIcon, ChevronLeft,
+} from 'lucide-react';
+import {
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from 'recharts';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import Link from 'next/link';
 
 interface MarketReport {
   id: string;
@@ -26,9 +35,47 @@ interface MarketReport {
   createdAt: string;
 }
 
+interface MarketStat {
+  id: string;
+  periodStart: string;
+  periodEnd: string;
+  region: string;
+  medianSalePrice?: number | null;
+  avgSalePrice?: number | null;
+  domMedian?: number | null;
+  newListings?: number | null;
+  closedSales?: number | null;
+  activeInventory?: number | null;
+  monthsOfSupply?: number | null;
+  listToSaleRatio?: number | null;
+}
+
+interface MyStats {
+  totalListings: number;
+  activeCount: number;
+  soldCount: number;
+  pendingCount: number;
+  medianListPrice: number;
+  avgDaysOnMarket: number;
+  medianSoldPrice: number;
+  totalActiveValue: number;
+  statusBreakdown: { status: string; count: number; avgPrice: number | null; avgDom: number | null }[];
+}
+
+const PIE_COLORS = ['#22c55e', '#eab308', '#3b82f6', '#ef4444', '#6b7280', '#a855f7'];
+
+function formatK(v: number) {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
+  return `$${v}`;
+}
+
 export default function MarketInsightsPage() {
   const [marketReports, setMarketReports] = useState<MarketReport[]>([]);
+  const [marketStats, setMarketStats] = useState<MarketStat[]>([]);
+  const [myStats, setMyStats] = useState<MyStats | null>(null);
   const [loadingReports, setLoadingReports] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
   const [websiteId, setWebsiteId] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
 
@@ -48,6 +95,17 @@ export default function MarketInsightsPage() {
       .then((d) => setMarketReports(d.reports ?? []))
       .catch(() => setMarketReports([]))
       .finally(() => setLoadingReports(false));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/real-estate/market-stats?limit=24')
+      .then((r) => (r.ok ? r.json() : { stats: [], myStats: null }))
+      .then((d) => {
+        setMarketStats(d.stats ?? []);
+        setMyStats(d.myStats ?? null);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingStats(false));
   }, []);
 
   const publishToSecretProperties = async (report: MarketReport) => {
@@ -89,19 +147,256 @@ export default function MarketInsightsPage() {
     }
   };
 
+  // Prepare chart data
+  const priceChartData = marketStats.map((s) => ({
+    period: format(new Date(s.periodStart), 'MMM yy'),
+    median: s.medianSalePrice || 0,
+    avg: s.avgSalePrice || 0,
+  }));
+
+  const inventoryChartData = marketStats.map((s) => ({
+    period: format(new Date(s.periodStart), 'MMM yy'),
+    newListings: s.newListings || 0,
+    closedSales: s.closedSales || 0,
+    activeInventory: s.activeInventory || 0,
+  }));
+
+  const domChartData = marketStats.map((s) => ({
+    period: format(new Date(s.periodStart), 'MMM yy'),
+    dom: s.domMedian || 0,
+  }));
+
+  const pieData = myStats?.statusBreakdown
+    .filter((s) => s.count > 0)
+    .map((s) => ({
+      name: s.status.replace(/_/g, ' '),
+      value: s.count,
+    })) || [];
+
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-3">
+        <Link href="/dashboard/real-estate" className="text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
         <div className="p-3 bg-purple-500 rounded-xl">
           <BarChart3 className="h-8 w-8 text-white" />
         </div>
         <div>
           <h1 className="text-3xl font-bold">Market Insights</h1>
-          <p className="text-muted-foreground">Real-time market data and trends</p>
+          <p className="text-muted-foreground">Real-time market data, trends, and your portfolio analytics</p>
         </div>
       </div>
 
-      {/* Market Reports - Publish to Secret Properties */}
+      {/* My Portfolio Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Median List Price</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{myStats ? formatK(myStats.medianListPrice) : '—'}</div>
+            <div className="text-xs text-muted-foreground mt-1">Your active listings</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Days on Market</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold flex items-center gap-2">
+              {myStats ? Math.round(myStats.avgDaysOnMarket) : '—'}
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">Active listings</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active Listings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{myStats?.activeCount ?? '—'}</div>
+            <div className="text-xs text-muted-foreground mt-1">of {myStats?.totalListings ?? 0} total</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Sold</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{myStats?.soldCount ?? '—'}</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Median {myStats ? formatK(myStats.medianSoldPrice) : '—'}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active Portfolio Value</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{myStats ? formatK(myStats.totalActiveValue) : '—'}</div>
+            <div className="text-xs text-muted-foreground mt-1">Combined list price</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Price Trends Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Price Trends
+            </CardTitle>
+            <CardDescription>Median & average sale prices over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingStats ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : priceChartData.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <BarChart3 className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No market stats data yet.</p>
+                <p className="text-xs mt-1">Stats will appear as market data is collected.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={priceChartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="period" className="text-xs" />
+                  <YAxis tickFormatter={(v) => formatK(v)} className="text-xs" />
+                  <Tooltip formatter={(v: number) => formatK(v)} />
+                  <Legend />
+                  <Area type="monotone" dataKey="median" name="Median" stroke="#8b5cf6" fill="#8b5cf680" />
+                  <Area type="monotone" dataKey="avg" name="Average" stroke="#3b82f6" fill="#3b82f680" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Inventory / Sales Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Inventory & Sales
+            </CardTitle>
+            <CardDescription>New listings vs closed sales</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingStats ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : inventoryChartData.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <BarChart3 className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No inventory data yet.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={inventoryChartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="period" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="newListings" name="New Listings" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="closedSales" name="Closed Sales" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Days on Market Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Days on Market
+            </CardTitle>
+            <CardDescription>Median DOM over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingStats ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : domChartData.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Clock className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No DOM data yet.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={domChartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="period" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip formatter={(v: number) => `${v} days`} />
+                  <Area type="monotone" dataKey="dom" name="Median DOM" stroke="#f59e0b" fill="#f59e0b40" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Portfolio Breakdown Pie */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PieIcon className="h-5 w-5" />
+              Portfolio Breakdown
+            </CardTitle>
+            <CardDescription>Your listings by status</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingStats ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : pieData.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <PieIcon className="h-10 w-10 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No listings yet.</p>
+                <Link href="/dashboard/real-estate/listings" className="text-primary text-sm hover:underline">
+                  Add your first listing
+                </Link>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={3}
+                    dataKey="value"
+                    label={({ name, value }) => `${name} (${value})`}
+                  >
+                    {pieData.map((_, idx) => (
+                      <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Market Reports */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -133,8 +428,11 @@ export default function MarketInsightsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">{report.title}</p>
                     <p className="text-sm text-muted-foreground">
-                      {report.region} • {report.type} • {format(new Date(report.createdAt), 'MMM d, yyyy')}
+                      {report.region} &bull; {report.type} &bull; {format(new Date(report.createdAt), 'MMM d, yyyy')}
                     </p>
+                    {report.executiveSummary && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{report.executiveSummary}</p>
+                    )}
                   </div>
                   <Button
                     size="sm"
@@ -148,7 +446,7 @@ export default function MarketInsightsPage() {
                     ) : (
                       <>
                         <Share2 className="h-4 w-4 mr-2" />
-                        Publish to Secret Properties
+                        Publish
                       </>
                     )}
                   </Button>
@@ -156,76 +454,6 @@ export default function MarketInsightsPage() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Median Home Price</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$425,000</div>
-            <div className="flex items-center text-green-500 text-sm">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              +5.2% YoY
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Days on Market</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">28</div>
-            <div className="flex items-center text-green-500 text-sm">
-              <TrendingDown className="h-4 w-4 mr-1" />
-              -3 days
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Listings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,245</div>
-            <div className="flex items-center text-red-500 text-sm">
-              <TrendingDown className="h-4 w-4 mr-1" />
-              -8.3% MoM
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Sold This Month</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">342</div>
-            <div className="flex items-center text-green-500 text-sm">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              +12.1% MoM
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Market Trends</CardTitle>
-          <CardDescription>Historical and projected market data for your area</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="p-4 bg-muted rounded-full mb-4">
-              <BarChart3 className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Market Charts Coming Soon</h3>
-            <p className="text-muted-foreground max-w-md">
-              Interactive charts showing price trends, inventory levels, and market predictions 
-              will be available here.
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>
