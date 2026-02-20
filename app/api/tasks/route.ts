@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -218,6 +219,8 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    emitCRMEvent('task_created', session.user.id, { entityId: task.id, entityType: 'Task', data: { title } });
 
     // Create activity log
     await prisma.taskActivity.create({

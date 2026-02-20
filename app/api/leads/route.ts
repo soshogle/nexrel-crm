@@ -8,6 +8,7 @@ import { prisma } from '@/lib/db'
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers'
 import { apiErrors } from '@/lib/api-error'
 import { LeadCreateBodySchema, LeadsGetQuerySchema } from '@/lib/api-validation'
+import { emitCRMEvent } from '@/lib/crm-event-emitter'
 
 export async function GET(request: NextRequest) {
   try {
@@ -95,6 +96,8 @@ export async function POST(request: NextRequest) {
         messages: true,
       }
     })
+
+    emitCRMEvent('lead_created', session.user.id, { entityId: lead.id, entityType: 'Lead', data: { name: lead.businessName || lead.contactPerson } });
 
     // Trigger workflows on lead creation (RE and industry auto-run)
     const user = await prisma.user.findUnique({

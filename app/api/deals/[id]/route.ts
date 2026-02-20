@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { detectDealStageWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
+import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
 // GET /api/deals/[id] - Get single deal
 
@@ -118,6 +119,8 @@ export async function PATCH(
           description: `Deal moved from "${existingDeal.stage.name}" to stage`,
         },
       });
+
+      emitCRMEvent('deal_stage_changed', user.id, { entityId: params.id, entityType: 'Deal', data: { from: existingDeal.stage.name } });
 
       // Trigger DEAL_STAGE_CHANGED workflows (generic)
       workflowEngine.triggerWorkflow('DEAL_STAGE_CHANGED', {

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { workflowEngine } from '@/lib/workflow-engine';
+import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
 // GET /api/deals - Get all deals
 
@@ -111,6 +112,8 @@ export async function POST(request: NextRequest) {
         stage: true,
       },
     });
+
+    emitCRMEvent('deal_created', user.id, { entityId: deal.id, entityType: 'Deal', data: { title, value } });
 
     // Create activity log
     await prisma.dealActivity.create({
