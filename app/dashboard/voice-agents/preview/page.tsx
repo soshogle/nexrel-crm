@@ -6,24 +6,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
-import {
-  Mic,
-  MicOff,
-  Phone,
-  PhoneOff,
-  Loader2,
-  Volume2,
-  FileText,
-  Clock,
-  AlertTriangle,
-  CheckCircle2,
-  Activity,
-} from 'lucide-react';
+import { Mic, Phone, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { ActiveConversationPanel } from '@/components/voice-agents/active-conversation-panel';
+import { PostConversationPanel } from '@/components/voice-agents/post-conversation-panel';
 
 const MAX_DURATION_MS = 10 * 60 * 1000; // 10 minutes
 const INACTIVITY_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
@@ -601,201 +589,31 @@ export default function VoiceAgentPreviewPage() {
 
         {/* Active Conversation */}
         {isConnected && (
-          <>
-            {/* Status Bar */}
-            <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-300 shadow-sm">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
-                        isSpeaking ? 'bg-green-100 animate-pulse' : 
-                        isListening ? 'bg-purple-100' : 
-                        'bg-gray-200'
-                      }`}>
-                        {isSpeaking ? (
-                          <Volume2 className="h-8 w-8 text-green-600" />
-                        ) : isListening ? (
-                          <Mic className="h-8 w-8 text-purple-600 animate-pulse" />
-                        ) : (
-                          <MicOff className="h-8 w-8 text-gray-500" />
-                        )}
-                      </div>
-                      {(isSpeaking || isListening) && (
-                        <div className="absolute -top-1 -right-1">
-                          <Activity className="h-6 w-6 text-red-500 animate-pulse" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-green-100 text-green-700 border-green-300">
-                          <CheckCircle2 className="mr-1 h-3 w-3" />
-                          Connected
-                        </Badge>
-                        {isSpeaking && (
-                          <Badge className="bg-green-100 text-green-700 border-green-300">
-                            Agent Speaking
-                          </Badge>
-                        )}
-                        {isListening && !isSpeaking && (
-                          <Badge className="bg-purple-100 text-purple-700 border-purple-300">
-                            Listening
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 text-sm text-gray-700">
-                        <Clock className="h-4 w-4" />
-                        {formatTime(duration)} / 10:00
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="destructive"
-                    size="lg"
-                    onClick={endConversation}
-                  >
-                    <PhoneOff className="mr-2 h-5 w-5" />
-                    End Call
-                  </Button>
-                </div>
-
-                <Progress 
-                  value={progressPercentage} 
-                  className="mt-4 h-2"
-                />
-              </CardContent>
-            </Card>
-
-            {/* Transcript */}
-            <Card className="bg-white border-gray-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-gray-900">
-                  <FileText className="h-5 w-5 text-purple-600" />
-                  Live Transcript
-                </CardTitle>
-                <CardDescription className="text-gray-600">
-                  Real-time conversation transcript
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {transcript.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">
-                      Transcript will appear here as you speak...
-                    </p>
-                  ) : (
-                    transcript.map((msg, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-3 rounded-lg ${
-                          msg.role === 'agent'
-                            ? 'bg-purple-50 border border-purple-200'
-                            : 'bg-blue-50 border border-blue-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge
-                            variant="outline"
-                            className={
-                              msg.role === 'agent'
-                                ? 'bg-purple-100 text-purple-700 border-purple-300'
-                                : 'bg-blue-100 text-blue-700 border-blue-300'
-                            }
-                          >
-                            {msg.role === 'agent' ? 'Agent' : 'You'}
-                          </Badge>
-                          <span className="text-xs text-gray-500">
-                            {new Date(msg.timestamp).toLocaleTimeString()}
-                          </span>
-                        </div>
-                        <p className="text-gray-900">{msg.message}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Knowledge Base References */}
-            {knowledgeBaseRefs.length > 0 && (
-              <Card className="bg-white border-gray-200 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-gray-900">
-                    <FileText className="h-5 w-5 text-green-600" />
-                    Knowledge Base Documents Referenced
-                  </CardTitle>
-                  <CardDescription className="text-gray-600">
-                    Documents the agent used to answer your questions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {knowledgeBaseRefs.map((ref, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                      >
-                        <span className="text-gray-900">{ref.documentName}</span>
-                        <Badge className="bg-green-100 text-green-700 border-green-300">
-                          {Math.round(ref.relevance * 100)}% relevant
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </>
+          <ActiveConversationPanel
+            isSpeaking={isSpeaking}
+            isListening={isListening}
+            duration={duration}
+            progressPercentage={progressPercentage}
+            transcript={transcript}
+            knowledgeBaseRefs={knowledgeBaseRefs}
+            onEndConversation={endConversation}
+            formatTime={formatTime}
+          />
         )}
 
         {/* Post-Conversation */}
         {!isConnected && transcript.length > 0 && (
-          <Card className="bg-white border-gray-200 shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-gray-900">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                Conversation Complete
-              </CardTitle>
-              <CardDescription className="text-gray-600">
-                Preview conversation saved successfully
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {recordingUrl && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">
-                    Audio Recording
-                  </h3>
-                  <audio controls src={recordingUrl} className="w-full" />
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => {
-                    setTranscript([]);
-                    setDuration(0);
-                    setElevenLabsConversationId('');
-                    setRecordingUrl('');
-                    setKnowledgeBaseRefs([]);
-                  }}
-                  className="flex-1 border-gray-300"
-                  variant="outline"
-                >
-                  Test Again
-                </Button>
-                <Button
-                  onClick={() => router.push('/dashboard/voice-agents')}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-                >
-                  Back to Agents
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <PostConversationPanel
+            recordingUrl={recordingUrl}
+            onTestAgain={() => {
+              setTranscript([]);
+              setDuration(0);
+              setElevenLabsConversationId('');
+              setRecordingUrl('');
+              setKnowledgeBaseRefs([]);
+            }}
+            onBackToAgents={() => router.push('/dashboard/voice-agents')}
+          />
         )}
       </div>
     </div>
