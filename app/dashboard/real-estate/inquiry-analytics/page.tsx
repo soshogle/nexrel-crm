@@ -50,8 +50,13 @@ export default function InquiryAnalyticsPage() {
 
   useEffect(() => {
     fetch('/api/real-estate/inquiry-analytics')
-      .then(r => r.json())
-      .then(setData)
+      .then(r => {
+        if (!r.ok) throw new Error('API error');
+        return r.json();
+      })
+      .then(d => {
+        if (d && !d.error) setData(d);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

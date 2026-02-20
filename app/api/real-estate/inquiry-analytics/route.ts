@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.rEProperty.findMany({
         where: { userId },
-        select: { id: true, address: true, status: true, price: true },
+        select: { id: true, address: true, listingStatus: true, listPrice: true },
       }),
     ]);
 
@@ -93,8 +93,8 @@ export async function GET(request: NextRequest) {
       propertyInquiries.push({
         propertyId: prop.id,
         address: prop.address || 'Unknown',
-        status: prop.status,
-        price: prop.price ? Number(prop.price) : null,
+        status: prop.listingStatus || 'UNKNOWN',
+        price: prop.listPrice ? Number(prop.listPrice) : null,
         inquiryCount: count,
       });
     }
