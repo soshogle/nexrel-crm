@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
 type RouteContext = {
   params: Promise<{ trackingId: string }>;
@@ -21,7 +22,11 @@ export async function GET(
     const message = await prisma.emailDripMessage.findUnique({
       where: { trackingId },
       include: {
-        enrollment: true,
+        enrollment: {
+          include: {
+            campaign: { select: { userId: true } },
+          },
+        },
         sequence: true,
       },
     });
@@ -65,6 +70,11 @@ export async function GET(
           totalOpened: { increment: 1 },
         },
       });
+
+      const userId = message.enrollment?.campaign?.userId;
+      if (userId) {
+        emitCRMEvent('email_opened', userId, { entityId: trackingId, entityType: 'EmailTracking' });
+      }
     }
 
     // Return 1x1 transparent pixel

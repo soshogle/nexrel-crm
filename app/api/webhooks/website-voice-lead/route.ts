@@ -8,6 +8,7 @@ import { prisma } from '@/lib/db';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 import { processWebsiteTriggers } from '@/lib/website-triggers';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
+import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -144,6 +145,8 @@ export async function POST(request: NextRequest) {
     } catch (wfErr) {
       console.warn('[website-voice-lead] Workflow trigger error:', wfErr);
     }
+
+    emitCRMEvent('website_lead_captured', leadOwnerId, { entityType: 'WebsiteLead' });
 
     console.log(`[website-voice-lead] Lead created: ${lead.id} (${name || '—'} ${email || '—'})`);
 

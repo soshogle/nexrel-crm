@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { startWorkflowInstance } from '@/lib/workflows/workflow-engine';
+import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -124,6 +125,8 @@ export async function POST(
       triggerType: 'MANUAL',
       metadata: metadata || {},
     });
+
+    emitCRMEvent('workflow_started', session.user.id, { entityId: params.id, entityType: 'Workflow' });
 
     // Get the created instance with executions
     const instance = await prisma.workflowInstance.findUnique({

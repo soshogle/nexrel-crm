@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { emitCRMEvent } from '@/lib/crm-event-emitter'
 
 // GET /api/appointments - List all appointments for the user
 
@@ -353,6 +354,8 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    emitCRMEvent('appointment_booked', session.user.id, { entityId: appointment.id, entityType: 'Appointment' });
 
     return NextResponse.json(appointment, { status: 201 })
   } catch (error) {

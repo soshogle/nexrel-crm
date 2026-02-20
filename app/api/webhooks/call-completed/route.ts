@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadStatus } from '@/lib/conversation-intelligence';
+import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
 /**
  * POST /api/webhooks/call-completed
@@ -106,6 +107,8 @@ export async function POST(req: NextRequest) {
         },
       });
     }
+
+    emitCRMEvent('call_completed', callLog.userId, { entityId: callLogId, entityType: 'Call' });
 
     return NextResponse.json({
       success: true,

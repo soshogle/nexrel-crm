@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma as db } from '@/lib/db';
 import { ReservationStatus } from '@prisma/client';
+import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
 // GET /api/reservations - List reservations with filters
 
@@ -209,6 +210,8 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+
+    emitCRMEvent('appointment_booked', session.user.id, { entityId: reservation.id, entityType: 'Reservation' });
 
     return NextResponse.json({
       success: true,

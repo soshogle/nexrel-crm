@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { soshoglePay } from '@/lib/payments';
+import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
 
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,8 @@ export async function POST(
     const { amount } = body;
 
     const paymentIntent = await soshoglePay.capturePayment(params.id, amount);
+
+    emitCRMEvent('payment_received', session.user.id, { entityId: params.id, entityType: 'Payment' });
 
     return NextResponse.json({ success: true, paymentIntent });
   } catch (error: any) {

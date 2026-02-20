@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { reviewFeedbackService } from '@/lib/review-feedback-service'
 import { processServiceCompletedTriggers } from '@/lib/service-completed-triggers'
+import { emitCRMEvent } from '@/lib/crm-event-emitter'
 
 // GET /api/appointments/[id] - Get appointment details
 
@@ -142,6 +143,10 @@ export async function PATCH(
       },
     })
 
+    if (status === 'CANCELLED' && existingAppointment.status !== 'CANCELLED') {
+      emitCRMEvent('appointment_cancelled', session.user.id, { entityId: params.id, entityType: 'Appointment' });
+    }
+
     // Trigger feedback collection and workflow/campaign enrollment if appointment was just completed
     if (status === 'COMPLETED' && existingAppointment.status !== 'COMPLETED' && appointment.leadId) {
       try {
@@ -223,6 +228,8 @@ export async function DELETE(
         cancelledBy: 'business',
       },
     })
+
+    emitCRMEvent('appointment_cancelled', session.user.id, { entityId: params.id, entityType: 'Appointment' });
 
     return NextResponse.json({ message: 'Appointment cancelled successfully', appointment })
   } catch (error) {

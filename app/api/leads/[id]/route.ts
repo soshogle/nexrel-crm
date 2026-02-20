@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { emitCRMEvent } from '@/lib/crm-event-emitter'
 
 export async function GET(
   request: NextRequest,
@@ -79,6 +80,14 @@ export async function PUT(
         messages: true,
       }
     })
+
+    if (data.status === 'CONVERTED') {
+      emitCRMEvent('lead_converted', session.user.id, { entityId: params.id, entityType: 'Lead' });
+    } else if (data.status === 'LOST') {
+      emitCRMEvent('lead_lost', session.user.id, { entityId: params.id, entityType: 'Lead' });
+    } else if (data.status) {
+      emitCRMEvent('lead_updated', session.user.id, { entityId: params.id, entityType: 'Lead' });
+    }
 
     return NextResponse.json(updatedLead)
   } catch (error) {
