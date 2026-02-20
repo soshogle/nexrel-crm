@@ -344,6 +344,33 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
         },
       },
     },
+    // AI Team
+    {
+      type: "function",
+      function: {
+        name: "create_ai_employee",
+        description: "Create an AI Team employee. Use when user says 'add an AI employee', 'create a sales assistant named Sarah', 'add a follow-up specialist to my AI team'",
+        parameters: {
+          type: "object",
+          properties: {
+            profession: { type: "string", description: "Role/profession (e.g. Sales Assistant, Follow-up Specialist)" },
+            customName: { type: "string", description: "Display name (e.g. Sarah, Alex)" },
+          },
+          required: ["profession", "customName"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "list_ai_employees",
+        description: "List AI Team employees. Use when user says 'show my AI team', 'list my AI employees', 'who are my AI assistants?'",
+        parameters: {
+          type: "object",
+          properties: {},
+        },
+      },
+    },
     // Notes
     {
       type: "function",
@@ -1844,6 +1871,8 @@ export function mapFunctionToAction(functionName: string): string {
     complete_task: "complete_task",
     update_task: "update_task",
     cancel_task: "cancel_task",
+    create_ai_employee: "create_ai_employee",
+    list_ai_employees: "list_ai_employees",
     add_note: "add_note",
     update_deal_stage: "update_deal_stage",
     create_invoice: "create_invoice",
@@ -1997,6 +2026,9 @@ export function getNavigationUrlForAction(
     case "list_tasks":
     case "complete_task":
       return "/dashboard/tasks";
+    case "create_ai_employee":
+    case "list_ai_employees":
+      return "/dashboard/ai-employees";
     case "add_note":
       return result?.result?.leadId ? `/dashboard/contacts?id=${result.result.leadId}` : result?.result?.dealId ? `/dashboard/pipeline?id=${result.result.dealId}` : "/dashboard/contacts";
     case "update_deal_stage":

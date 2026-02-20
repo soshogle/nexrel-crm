@@ -69,6 +69,8 @@ const AVAILABLE_ACTIONS = {
   DELETE_DUPLICATE_CONTACTS: "delete_duplicate_contacts",
   CREATE_TASK: "create_task",
   LIST_TASKS: "list_tasks",
+  CREATE_AI_EMPLOYEE: "create_ai_employee",
+  LIST_AI_EMPLOYEES: "list_ai_employees",
   COMPLETE_TASK: "complete_task",
   UPDATE_TASK: "update_task",
   CANCEL_TASK: "cancel_task",
@@ -324,6 +326,14 @@ export async function POST(req: NextRequest) {
 
       case AVAILABLE_ACTIONS.CREATE_TASK:
         result = await createTask(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.CREATE_AI_EMPLOYEE:
+        result = await createAIEmployee(user.id, parameters);
+        break;
+
+      case AVAILABLE_ACTIONS.LIST_AI_EMPLOYEES:
+        result = await listAIEmployees(user.id);
         break;
 
       case AVAILABLE_ACTIONS.LIST_TASKS:
@@ -1213,6 +1223,52 @@ async function searchContacts(userId: string, params: any) {
     query,
     count: leads.length,
     contacts: leads,
+  };
+}
+
+async function createAIEmployee(userId: string, params: any) {
+  const { profession, customName } = params;
+
+  if (!profession || !customName) {
+    throw new Error("profession and customName are required for AI Team employee");
+  }
+
+  const employee = await prisma.userAIEmployee.create({
+    data: {
+      userId,
+      profession: String(profession),
+      customName: String(customName),
+      isActive: true,
+    },
+  });
+
+  return {
+    message: `✓ AI Team employee "${customName}" (${profession}) created successfully!`,
+    employee: {
+      id: employee.id,
+      profession: employee.profession,
+      customName: employee.customName,
+    },
+  };
+}
+
+async function listAIEmployees(userId: string) {
+  const employees = await prisma.userAIEmployee.findMany({
+    where: { userId },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return {
+    message: employees.length === 0
+      ? "No AI Team employees yet. Create one with create_ai_employee."
+      : `Found ${employees.length} AI Team employee(s)`,
+    count: employees.length,
+    employees: employees.map((e) => ({
+      id: e.id,
+      profession: e.profession,
+      customName: e.customName,
+      isActive: e.isActive,
+    })),
   };
 }
 
@@ -2832,11 +2888,12 @@ async function getStatistics(userId: string, params: any = {}) {
       compareWhereClause.createdAt = { gte: compareStartDate, lte: compareEndDate };
     }
 
-    const [leads, deals, contacts, campaigns] = await Promise.all([
+    const [leads, deals, contacts, campaigns, additionalStats] = await Promise.all([
       prisma.lead.count({ where: whereClause }),
       prisma.deal.count({ where: whereClause }),
-      prisma.lead.count({ where: whereClause }), // Contacts are leads
+      prisma.lead.count({ where: whereClause }),
       prisma.campaign.count({ where: whereClause }),
+      fetchComprehensiveStats(userId, whereClause),
     ]);
 
     // Get all deals with dates for time-series analysis
@@ -2986,9 +3043,9 @@ async function getStatistics(userId: string, params: any = {}) {
         })),
         dynamicCharts,
         scenarioResult,
+        ...additionalStats,
       },
-      message: `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns.`,
-      // Flag to trigger visualization
+      message: `You have ${leads} leads, ${deals} deals, ${openDeals.length} open deals worth $${totalRevenue.toLocaleString()}, and ${campaigns} campaigns.${additionalStats.campaignPerformance ? ` Email open rate: ${additionalStats.campaignPerformance.emailOpenRate.toFixed(1)}%, SMS reply rate: ${additionalStats.campaignPerformance.smsReplyRate.toFixed(1)}%.` : ''}${additionalStats.voiceCallAnalytics ? ` Voice calls: ${additionalStats.voiceCallAnalytics.totalCalls}, answer rate: ${additionalStats.voiceCallAnalytics.answerRate.toFixed(1)}%.` : ''}`,
       triggerVisualization: true,
     };
   } catch (error: any) {
@@ -2997,6 +3054,161 @@ async function getStatistics(userId: string, params: any = {}) {
       error: 'Failed to get statistics', 
       details: error.message 
     };
+  }
+}
+
+async function fetchComprehensiveStats(userId: string, whereClause: any) {
+  try {
+    const results = await Promise.allSettled([
+      // Campaign performance (email)
+      prisma.emailCampaign.findMany({
+        where: { userId },
+        include: { recipients: { select: { status: true, openedAt: true, clickedAt: true } } },
+      }),
+      // Campaign performance (SMS)
+      prisma.smsCampaign.findMany({
+        where: { userId },
+        include: { recipients: { select: { status: true, repliedAt: true } } },
+      }),
+      // Email drip campaigns
+      prisma.emailDripCampaign.findMany({
+        where: { userId },
+        select: {
+          status: true, totalEnrolled: true, totalCompleted: true,
+          avgOpenRate: true, avgClickRate: true, avgReplyRate: true,
+        },
+      }),
+      // Voice calls
+      prisma.callLog.findMany({
+        where: { userId },
+        select: { status: true, duration: true, direction: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      }),
+      // Workflows
+      prisma.workflow.findMany({
+        where: { userId },
+        select: { status: true },
+      }),
+      prisma.workflowEnrollment.findMany({
+        where: { workflow: { userId } },
+        select: { status: true },
+      }),
+      // Deal stages for funnel
+      prisma.deal.findMany({
+        where: { userId },
+        include: { stage: { select: { name: true, probability: true } } },
+      }),
+      // Lead scoring
+      prisma.lead.findMany({
+        where: { userId, leadScore: { not: null } },
+        select: { leadScore: true, status: true },
+      }),
+      // Outbound calls
+      prisma.outboundCall.findMany({
+        where: { userId },
+        select: { status: true, completedAt: true },
+      }),
+    ]);
+
+    const get = <T>(r: PromiseSettledResult<T>, fallback: T): T =>
+      r.status === 'fulfilled' ? r.value : fallback;
+
+    const emailCampaigns = get(results[0], [] as any[]);
+    const smsCampaigns = get(results[1], [] as any[]);
+    const dripCampaigns = get(results[2], [] as any[]);
+    const callLogs = get(results[3], [] as any[]);
+    const workflows = get(results[4], [] as any[]);
+    const enrollments = get(results[5], [] as any[]);
+    const dealsWithStages = get(results[6], [] as any[]);
+    const leadsWithScores = get(results[7], [] as any[]);
+    const outboundCalls = get(results[8], [] as any[]);
+
+    // Campaign performance
+    let emailSent = 0, emailOpened = 0, emailClicked = 0;
+    emailCampaigns.forEach((c: any) => {
+      (c.recipients || []).forEach((r: any) => {
+        if (['SENT', 'DELIVERED', 'OPENED', 'CLICKED'].includes(r.status)) emailSent++;
+        if (['OPENED', 'CLICKED'].includes(r.status)) emailOpened++;
+        if (r.status === 'CLICKED') emailClicked++;
+      });
+    });
+    let smsSent = 0, smsDelivered = 0, smsReplied = 0;
+    smsCampaigns.forEach((c: any) => {
+      (c.recipients || []).forEach((r: any) => {
+        if (['SENT', 'DELIVERED', 'REPLIED'].includes(r.status)) smsSent++;
+        if (['DELIVERED', 'REPLIED'].includes(r.status)) smsDelivered++;
+        if (r.status === 'REPLIED' || r.repliedAt) smsReplied++;
+      });
+    });
+
+    const emailOpenRate = emailSent > 0 ? (emailOpened / emailSent) * 100 : 0;
+    const emailClickRate = emailSent > 0 ? (emailClicked / emailSent) * 100 : 0;
+    const smsReplyRate = smsDelivered > 0 ? (smsReplied / smsDelivered) * 100 : 0;
+
+    // Drip campaign stats
+    const activeDrips = dripCampaigns.filter((c: any) => c.status === 'ACTIVE').length;
+    const avgDripOpen = dripCampaigns.length > 0
+      ? dripCampaigns.reduce((s: number, c: any) => s + (c.avgOpenRate || 0), 0) / dripCampaigns.length : 0;
+
+    // Voice call analytics
+    const completedCalls = callLogs.filter((c: any) => c.status === 'COMPLETED');
+    const totalCalls = callLogs.length;
+    const answerRate = totalCalls > 0 ? (completedCalls.length / totalCalls) * 100 : 0;
+    const avgDuration = completedCalls.length > 0
+      ? completedCalls.reduce((s: number, c: any) => s + (c.duration || 0), 0) / completedCalls.length : 0;
+    const outboundCompleted = outboundCalls.filter((c: any) => c.status === 'COMPLETED').length;
+
+    // Workflow completion
+    const activeWorkflows = workflows.filter((w: any) => w.status === 'ACTIVE').length;
+    const completedEnrollments = enrollments.filter((e: any) => e.status === 'COMPLETED').length;
+    const workflowCompletionRate = enrollments.length > 0
+      ? (completedEnrollments / enrollments.length) * 100 : 0;
+
+    // Funnel conversion by stage
+    const stageCounts: Record<string, { count: number; value: number; probability: number }> = {};
+    dealsWithStages.forEach((d: any) => {
+      const name = d.stage?.name || 'Unknown';
+      if (!stageCounts[name]) stageCounts[name] = { count: 0, value: 0, probability: d.stage?.probability || 0 };
+      stageCounts[name].count++;
+      stageCounts[name].value += d.value || 0;
+    });
+    const funnelStages = Object.entries(stageCounts)
+      .sort((a, b) => b[1].probability - a[1].probability)
+      .map(([name, data]) => ({ stage: name, deals: data.count, value: data.value, probability: data.probability }));
+
+    // Lead scoring distribution
+    const scores = leadsWithScores.map((l: any) => l.leadScore).filter((s: any) => s != null) as number[];
+    const avgScore = scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
+    const hot = scores.filter((s) => s >= 80).length;
+    const warm = scores.filter((s) => s >= 50 && s < 80).length;
+    const cold = scores.filter((s) => s < 50).length;
+
+    return {
+      campaignPerformance: {
+        emailSent, emailOpened, emailClicked, emailOpenRate, emailClickRate,
+        smsSent, smsDelivered, smsReplied, smsReplyRate,
+        activeDripCampaigns: activeDrips, avgDripOpenRate: avgDripOpen,
+        totalEmailCampaigns: emailCampaigns.length,
+        totalSmsCampaigns: smsCampaigns.length,
+      },
+      voiceCallAnalytics: {
+        totalCalls, completedCalls: completedCalls.length, answerRate, avgDuration,
+        outboundScheduled: outboundCalls.length, outboundCompleted,
+      },
+      workflowMetrics: {
+        activeWorkflows, totalEnrollments: enrollments.length,
+        completedEnrollments, workflowCompletionRate,
+      },
+      funnelStages,
+      leadScoring: {
+        avgScore: Math.round(avgScore), totalScored: scores.length,
+        hot, warm, cold,
+      },
+    };
+  } catch (error) {
+    console.error('[getStatistics] Error fetching comprehensive stats:', error);
+    return {};
   }
 }
 

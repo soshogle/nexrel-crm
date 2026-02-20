@@ -8,6 +8,7 @@ import {
   mapFunctionToAction,
   getNavigationUrlForAction,
 } from "@/lib/ai-assistant-functions";
+import { aiBrainService } from "@/lib/ai-brain-service";
 
 
 export const dynamic = 'force-dynamic';
@@ -269,6 +270,24 @@ export async function POST(req: NextRequest) {
       console.error("Error fetching recent activity:", error);
     }
 
+    // Fetch AI Brain insights + real-time patterns for proactive awareness
+    let brainInsightsSummary = "";
+    try {
+      const [insights, realtimePatterns] = await Promise.all([
+        aiBrainService.generateGeneralInsights(user.id),
+        Promise.resolve(aiBrainService.detectRealtimePatterns(user.id)),
+      ]);
+      const combined = [...realtimePatterns, ...insights];
+      const top = combined.slice(0, 5);
+      if (top.length > 0) {
+        brainInsightsSummary = top.map((i) =>
+          `- [${i.priority.toUpperCase()}] ${i.title}: ${i.description}${i.suggestedActions?.length ? ` (Suggested: ${i.suggestedActions[0]})` : ''}`
+        ).join('\n');
+      }
+    } catch (error) {
+      console.error("Error fetching AI Brain insights:", error);
+    }
+
     const systemContext = `${languageInstruction}
 
 You are Soshogle AI, a proactive AI assistant that DOES THINGS for users rather than just explaining how. Your core principle: Always offer to execute tasks for users, not just give instructions.
@@ -358,6 +377,9 @@ Current CRM Statistics:
 - Appointments: ${userStats.appointments}
 - Workflows: ${userStats.workflows}
 - Messages: ${userStats.messages}${recentActivity}
+
+${brainInsightsSummary ? `AI Brain Insights (proactively mention relevant ones when appropriate):
+${brainInsightsSummary}` : ''}
 
 ═══════════════════════════════════════════════════════════════════
 COMPREHENSIVE INTEGRATION & SETUP KNOWLEDGE BASE
@@ -629,6 +651,8 @@ You have access to FUNCTIONS that can actually execute actions. When a user asks
 - delete_duplicate_contacts - Find and delete duplicate contacts from the contacts list. Identifies duplicates based on email, phone, or business name and removes them, keeping the oldest contact. Use when user asks to remove duplicates or clean up duplicate contacts.
 - create_task - Create a CRM task (required: title, optional: description, dueDate, leadId, dealId). Use when user says "remind me to follow up with John tomorrow", "create a task to call back Acme Corp".
 - list_tasks - List tasks (optional: status, overdue). Use when user says "show my overdue tasks", "what's due today?", "my tasks".
+- create_ai_employee - Create an AI Team employee (required: profession, customName). Use when user says "add an AI employee", "create a sales assistant named Sarah", "add a follow-up specialist to my AI team".
+- list_ai_employees - List AI Team employees. Use when user says "show my AI team", "list my AI employees", "who are my AI assistants?".
 - complete_task - Mark a task as done (required: taskId or taskTitle). Use when user says "mark Follow up with John as done", "complete the task".
 - add_note - Add a note to a contact or deal (required: content, contactName or dealTitle). Use when user says "add a note to John Smith: interested in enterprise plan", "log a note on the Acme deal: sent proposal Tuesday".
 - update_deal_stage - Move a deal to a pipeline stage (required: dealTitle, stageName). Use when user says "move Acme deal to Negotiation", "mark the Big Corp deal as won".
