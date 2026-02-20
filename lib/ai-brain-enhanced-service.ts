@@ -58,11 +58,29 @@ export interface ComprehensiveBrainData {
   }>;
 }
 
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 export class AIBrainEnhancedService {
+  private cache = new Map<string, { data: any; expiresAt: number }>();
+
+  private getCached<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) { this.cache.delete(key); return null; }
+    return entry.data as T;
+  }
+
+  private setCache(key: string, data: any, ttl = CACHE_TTL_MS) {
+    this.cache.set(key, { data, expiresAt: Date.now() + ttl });
+  }
+
   /**
    * Get comprehensive brain data from all sources
    */
   async getComprehensiveBrainData(userId: string): Promise<ComprehensiveBrainData> {
+    const cacheKey = `${userId}:enhanced`;
+    const cached = this.getCached<ComprehensiveBrainData>(cacheKey);
+    if (cached) return cached;
     // Helper to fetch leads safely, handling dateOfBirth column issues
     const fetchLeadsSafely = async () => {
       try {
@@ -215,6 +233,68 @@ export class AIBrainEnhancedService {
         orderBy: { enrolledAt: 'desc' },
         take: 500,
       }),
+
+      // --- NEW DATA SOURCES ---
+
+      // Email Drip Campaigns (detailed engagement stats)
+      prisma.emailDripCampaign.findMany({
+        where: { userId },
+        select: {
+          id: true, name: true, status: true,
+          totalEnrolled: true, totalCompleted: true, totalUnsubscribed: true, totalBounced: true,
+          avgOpenRate: true, avgClickRate: true, avgReplyRate: true,
+          createdAt: true,
+        },
+      }),
+
+      // Generic Campaigns (voice, multi-channel)
+      prisma.campaign.findMany({
+        where: { userId },
+        select: {
+          id: true, name: true, type: true, status: true,
+          sentCount: true, deliveredCount: true, openedCount: true, clickedCount: true,
+          totalCalls: true, answeredCalls: true, voicemails: true, avgCallDuration: true,
+          totalRecipients: true, openRate: true, clickRate: true,
+          createdAt: true,
+        },
+      }),
+
+      // Outbound Calls
+      prisma.outboundCall.findMany({
+        where: { userId },
+        select: {
+          id: true, status: true, scheduledFor: true, completedAt: true,
+          attemptCount: true, maxAttempts: true, createdAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      }),
+
+      // SMS Drip Campaigns
+      prisma.smsCampaign.findMany({
+        where: { userId, isSequence: true },
+        select: {
+          id: true, name: true, status: true,
+          totalEnrolled: true, totalCompleted: true, totalSent: true, totalDelivered: true, totalReplied: true, totalFailed: true,
+          avgReplyRate: true,
+          createdAt: true,
+        },
+      }),
+
+      // Websites
+      prisma.website.findMany({
+        where: { userId },
+        select: {
+          id: true, name: true, status: true, type: true, buildProgress: true,
+          createdAt: true,
+        },
+      }),
+
+      // Lead scoring distribution
+      prisma.lead.findMany({
+        where: { userId, leadScore: { not: null } },
+        select: { leadScore: true },
+      }),
     ]);
 
     // Extract results, defaulting to empty arrays on failure with proper typing
@@ -256,24 +336,46 @@ export class AIBrainEnhancedService {
     const feedbackCollections = getResult(results[12], 'feedbackCollections');
     const workflows = getResult(results[13], 'workflows');
     const workflowEnrollments = getResult(results[14], 'workflowEnrollments');
+    const emailDripCampaigns = getResult(results[15], 'emailDripCampaigns');
+    const genericCampaigns = getResult(results[16], 'genericCampaigns');
+    const outboundCalls = getResult(results[17], 'outboundCalls');
+    const smsDripCampaigns = getResult(results[18], 'smsDripCampaigns');
+    const websites = getResult(results[19], 'websites');
+    const leadScores = getResult<{ leadScore: number | null }>(results[20], 'leadScores');
 
-    // Log summary of fetched data
+    // Fetch Real Estate data conditionally (only if user is in RE industry)
+    let reData = { properties: 0, fsbo: 0, cma: 0, presentations: 0, marketStats: 0 };
+    try {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { industry: true } });
+      if (user?.industry === 'REAL_ESTATE') {
+        const reResults = await Promise.allSettled([
+          prisma.rEProperty.count({ where: { userId } }),
+          prisma.rEFSBOListing.count({ where: { userId } }),
+          prisma.rECMAReport.count({ where: { userId } }),
+          prisma.rEListingPresentation.count({ where: { userId } }),
+          prisma.rEMarketStats.count({ where: { userId } }),
+        ]);
+        reData = {
+          properties: reResults[0].status === 'fulfilled' ? reResults[0].value : 0,
+          fsbo: reResults[1].status === 'fulfilled' ? reResults[1].value : 0,
+          cma: reResults[2].status === 'fulfilled' ? reResults[2].value : 0,
+          presentations: reResults[3].status === 'fulfilled' ? reResults[3].value : 0,
+          marketStats: reResults[4].status === 'fulfilled' ? reResults[4].value : 0,
+        };
+      }
+    } catch { /* RE tables may not exist */ }
+
     console.log('[AI Brain] Data summary:', {
-      leads: leads.length,
-      deals: deals.length,
-      tasks: tasks.length,
-      appointments: appointments.length,
-      callLogs: callLogs.length,
-      payments: payments.length,
-      invoices: invoices.length,
-      emailCampaigns: emailCampaigns.length,
-      smsCampaigns: smsCampaigns.length,
-      conversations: conversations.length,
-      conversationMessages: conversationMessages.length,
-      reviews: reviews.length,
-      feedbackCollections: feedbackCollections.length,
-      workflows: workflows.length,
-      workflowEnrollments: workflowEnrollments.length,
+      leads: leads.length, deals: deals.length, tasks: tasks.length,
+      appointments: appointments.length, callLogs: callLogs.length,
+      payments: payments.length, invoices: invoices.length,
+      emailCampaigns: emailCampaigns.length, smsCampaigns: smsCampaigns.length,
+      conversations: conversations.length, conversationMessages: conversationMessages.length,
+      reviews: reviews.length, feedbackCollections: feedbackCollections.length,
+      workflows: workflows.length, workflowEnrollments: workflowEnrollments.length,
+      emailDripCampaigns: emailDripCampaigns.length, genericCampaigns: genericCampaigns.length,
+      outboundCalls: outboundCalls.length, smsDripCampaigns: smsDripCampaigns.length,
+      websites: websites.length, leadScores: leadScores.length, reData,
     });
 
     // Calculate core metrics
@@ -317,6 +419,12 @@ export class AIBrainEnhancedService {
       conversationMessages,
       reviews,
       workflows,
+      emailDripCampaigns,
+      genericCampaigns,
+      outboundCalls,
+      smsDripCampaigns,
+      websites,
+      leadScores,
       workflowEnrollments
     );
 
@@ -351,7 +459,7 @@ export class AIBrainEnhancedService {
       reviews
     );
 
-    return {
+    const brainData: ComprehensiveBrainData = {
       core: {
         overallHealth,
         keyMetrics: {
@@ -367,6 +475,8 @@ export class AIBrainEnhancedService {
       rightHemisphere,
       connections,
     };
+    this.setCache(cacheKey, brainData);
+    return brainData;
   }
 
   /**
@@ -385,6 +495,12 @@ export class AIBrainEnhancedService {
     conversationMessages: any[],
     reviews: any[],
     workflows: any[],
+    emailDripCampaigns: any[],
+    genericCampaigns: any[],
+    outboundCalls: any[],
+    smsDripCampaigns: any[],
+    websites: any[],
+    leadScores: any[],
     workflowEnrollments: any[]
   ): BrainHemisphere {
     const dataPoints: BrainDataPoint[] = [];
@@ -558,6 +674,116 @@ export class AIBrainEnhancedService {
       status: recentCalls > 0 ? 'healthy' : 'warning',
       timestamp: now,
       metadata: { completionRate: callCompletionRate },
+    });
+
+    // Email Drip Campaign Performance
+    const activeDrips = emailDripCampaigns.filter((c: any) => c.status === 'ACTIVE');
+    const totalDripEnrolled = emailDripCampaigns.reduce((s: number, c: any) => s + (c.totalEnrolled || 0), 0);
+    const avgDripOpenRate = emailDripCampaigns.length > 0
+      ? emailDripCampaigns.reduce((s: number, c: any) => s + (c.avgOpenRate || 0), 0) / emailDripCampaigns.length
+      : 0;
+
+    dataPoints.push({
+      id: 'email-drip-performance',
+      category: 'Marketing',
+      subcategory: 'Email Drip',
+      label: 'Email Drip Campaigns',
+      value: activeDrips.length,
+      unit: 'active',
+      status: activeDrips.length > 0 ? 'healthy' : emailDripCampaigns.length > 0 ? 'warning' : 'healthy',
+      timestamp: now,
+      metadata: { totalEnrolled: totalDripEnrolled, avgOpenRate: avgDripOpenRate },
+    });
+
+    // SMS Drip Campaign Performance
+    const activeSmsDrips = smsDripCampaigns.filter((c: any) => c.status === 'ACTIVE');
+    const totalSmsDripSent = smsDripCampaigns.reduce((s: number, c: any) => s + (c.totalSent || 0), 0);
+    const avgSmsReplyRate = smsDripCampaigns.length > 0
+      ? smsDripCampaigns.reduce((s: number, c: any) => s + (c.avgReplyRate || 0), 0) / smsDripCampaigns.length
+      : 0;
+
+    dataPoints.push({
+      id: 'sms-drip-performance',
+      category: 'Marketing',
+      subcategory: 'SMS Drip',
+      label: 'SMS Drip Campaigns',
+      value: activeSmsDrips.length,
+      unit: 'active',
+      status: activeSmsDrips.length > 0 ? 'healthy' : smsDripCampaigns.length > 0 ? 'warning' : 'healthy',
+      timestamp: now,
+      metadata: { totalSent: totalSmsDripSent, avgReplyRate: avgSmsReplyRate },
+    });
+
+    // Generic Campaigns (voice, multi-channel)
+    const runningCampaigns = genericCampaigns.filter((c: any) => c.status === 'RUNNING');
+    const voiceCampaigns = genericCampaigns.filter((c: any) => c.type === 'VOICE_CALL');
+    const totalCampaignCalls = voiceCampaigns.reduce((s: number, c: any) => s + (c.totalCalls || 0), 0);
+    const totalCampaignAnswered = voiceCampaigns.reduce((s: number, c: any) => s + (c.answeredCalls || 0), 0);
+    const voiceAnswerRate = totalCampaignCalls > 0 ? (totalCampaignAnswered / totalCampaignCalls) * 100 : 0;
+
+    dataPoints.push({
+      id: 'generic-campaigns',
+      category: 'Marketing',
+      subcategory: 'Campaigns',
+      label: 'Active Campaigns',
+      value: runningCampaigns.length,
+      unit: 'campaigns',
+      status: runningCampaigns.length > 0 ? 'healthy' : genericCampaigns.length > 0 ? 'warning' : 'healthy',
+      timestamp: now,
+      metadata: { total: genericCampaigns.length, voiceCalls: totalCampaignCalls, voiceAnswerRate },
+    });
+
+    // Outbound Calls
+    const scheduledCalls = outboundCalls.filter((c: any) => c.status === 'SCHEDULED');
+    const completedOutbound = outboundCalls.filter((c: any) => c.status === 'COMPLETED');
+    const outboundCompletionRate = outboundCalls.length > 0 ? (completedOutbound.length / outboundCalls.length) * 100 : 0;
+
+    dataPoints.push({
+      id: 'outbound-calls',
+      category: 'Communication',
+      subcategory: 'Outbound',
+      label: 'Outbound Calls',
+      value: outboundCalls.length,
+      unit: 'calls',
+      status: outboundCompletionRate > 50 ? 'healthy' : outboundCalls.length > 0 ? 'warning' : 'healthy',
+      timestamp: now,
+      metadata: { scheduled: scheduledCalls.length, completed: completedOutbound.length, completionRate: outboundCompletionRate },
+    });
+
+    // Websites
+    const liveWebsites = websites.filter((w: any) => w.status === 'LIVE' || w.status === 'DEPLOYED');
+    const buildingWebsites = websites.filter((w: any) => w.status === 'BUILDING');
+
+    dataPoints.push({
+      id: 'websites',
+      category: 'Digital',
+      subcategory: 'Websites',
+      label: 'Websites',
+      value: liveWebsites.length,
+      unit: 'live',
+      status: liveWebsites.length > 0 ? 'healthy' : websites.length > 0 ? 'warning' : 'healthy',
+      timestamp: now,
+      metadata: { total: websites.length, building: buildingWebsites.length },
+    });
+
+    // Lead Scoring Distribution
+    const scores = leadScores.map((l: any) => l.leadScore).filter((s: any) => s != null) as number[];
+    const avgScore = scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
+    const hotLeads = scores.filter((s: number) => s >= 80).length;
+    const warmLeads = scores.filter((s: number) => s >= 50 && s < 80).length;
+    const coldLeads = scores.filter((s: number) => s < 50).length;
+
+    dataPoints.push({
+      id: 'lead-scoring',
+      category: 'Sales',
+      subcategory: 'Scoring',
+      label: 'Avg Lead Score',
+      value: Math.round(avgScore),
+      unit: '/100',
+      trend: avgScore >= 60 ? 'up' : avgScore >= 40 ? 'stable' : 'down',
+      status: avgScore >= 70 ? 'excellent' : avgScore >= 50 ? 'healthy' : avgScore >= 30 ? 'warning' : 'critical',
+      timestamp: now,
+      metadata: { hot: hotLeads, warm: warmLeads, cold: coldLeads, total: scores.length },
     });
 
     // Calculate hemisphere health

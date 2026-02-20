@@ -5,6 +5,7 @@
  */
 
 import { prisma } from './db';
+import { crmEvents } from './crm-event-emitter';
 
 interface GeneralInsight {
   id: string;
@@ -55,11 +56,43 @@ interface WorkflowRecommendation {
   priority: 'high' | 'medium' | 'low';
 }
 
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
 export class AIBrainService {
+  private cache = new Map<string, CacheEntry<any>>();
+
+  private getCached<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.data as T;
+  }
+
+  private setCache<T>(key: string, data: T, ttlMs = CACHE_TTL_MS) {
+    this.cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+  }
+
+  invalidateCache(userId: string) {
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(userId)) this.cache.delete(key);
+    }
+  }
+
   /**
    * Generate general insights across all business data
    */
   async generateGeneralInsights(userId: string): Promise<GeneralInsight[]> {
+    const cacheKey = `${userId}:insights`;
+    const cached = this.getCached<GeneralInsight[]>(cacheKey);
+    if (cached) return cached;
     const insights: GeneralInsight[] = [];
 
     // Fetch all relevant data with error handling
@@ -349,19 +382,105 @@ export class AIBrainService {
       });
     }
 
+    // Attempt AI-powered insights (augments template ones)
+    try {
+      const convertedLeadsCount = leads.filter((l) => l.status === 'CONVERTED').length;
+      const totalConvRate = leads.length > 0 ? (convertedLeadsCount / leads.length) * 100 : 0;
+      const aiInsights = await this.generateAIInsights({
+        totalLeads: leads.length,
+        recentLeads: recentLeads.length,
+        previousWeekLeads: previousWeekLeads.length,
+        conversionRate: totalConvRate.toFixed(1),
+        activeDeals: activeDeals.length,
+        staleDeals: staleDeals.length,
+        recentWins: leads.filter(
+          (l) => l.status === 'CONVERTED' && l.updatedAt > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        ).length,
+        overdueTasks: overdueTasks.length,
+        avgCallsPerDay: avgCallsPerDay.toFixed(1),
+        emailOpenRate: '0',
+        smsReplyRate: '0',
+      });
+      // Add AI insights that don't duplicate existing template insights
+      const existingIds = new Set(insights.map((i) => i.id));
+      for (const ai of aiInsights) {
+        if (!existingIds.has(ai.id)) insights.push(ai);
+      }
+    } catch { /* AI insights are optional */ }
+
     // Sort by priority and confidence
-    return insights.sort((a, b) => {
+    const sorted = insights.sort((a, b) => {
       const priorityWeight = { high: 3, medium: 2, low: 1 };
       const priorityDiff = priorityWeight[b.priority] - priorityWeight[a.priority];
       if (priorityDiff !== 0) return priorityDiff;
       return b.confidence - a.confidence;
     });
+    this.setCache(cacheKey, sorted);
+    return sorted;
+  }
+
+  /**
+   * Use OpenAI to generate richer insights from CRM data snapshot.
+   * Falls back to template insights if API key is not set or call fails.
+   */
+  private async generateAIInsights(dataSnapshot: Record<string, any>): Promise<GeneralInsight[]> {
+    if (!process.env.OPENAI_API_KEY) return [];
+    try {
+      const { default: OpenAI } = await import('openai');
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const prompt = `You are a CRM analytics AI. Analyze this business data snapshot and return 3-5 high-value insights as JSON array. Each object: { "type": "opportunity"|"risk"|"trend"|"action"|"prediction", "priority": "high"|"medium"|"low", "title": string (short), "description": string (1-2 sentences), "impact": string, "confidence": number (0-100), "suggestedActions": string[] (1-3 actions) }.
+
+Data:
+- Leads: ${dataSnapshot.totalLeads} total, ${dataSnapshot.recentLeads} this week, ${dataSnapshot.previousWeekLeads} last week
+- Conversion rate: ${dataSnapshot.conversionRate}%
+- Active deals: ${dataSnapshot.activeDeals}, stale (14d+): ${dataSnapshot.staleDeals}
+- Recent wins: ${dataSnapshot.recentWins} (last 30d)
+- Overdue tasks: ${dataSnapshot.overdueTasks}
+- Avg calls/day: ${dataSnapshot.avgCallsPerDay}
+- Email open rate: ${dataSnapshot.emailOpenRate}%
+- SMS reply rate: ${dataSnapshot.smsReplyRate}%
+
+Respond ONLY with valid JSON array, no markdown.`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
+        max_tokens: 800,
+      });
+
+      const content = completion.choices[0]?.message?.content;
+      if (!content) return [];
+      const parsed = JSON.parse(content);
+      const items = Array.isArray(parsed) ? parsed : parsed.insights || parsed.data || [];
+      return items.map((item: any, i: number) => ({
+        id: `ai-insight-${i}`,
+        type: item.type || 'trend',
+        priority: item.priority || 'medium',
+        title: item.title || 'AI Insight',
+        description: item.description || '',
+        impact: item.impact || '',
+        confidence: item.confidence || 70,
+        actionable: true,
+        suggestedActions: item.suggestedActions || [],
+        timestamp: new Date(),
+      }));
+    } catch (error) {
+      console.error('[AI Brain] OpenAI insight generation failed:', error);
+      return [];
+    }
   }
 
   /**
    * Generate predictive analytics
    */
   async generatePredictiveAnalytics(userId: string): Promise<PredictiveAnalytics> {
+    const cacheKey = `${userId}:predictions`;
+    const cached = this.getCached<PredictiveAnalytics>(cacheKey);
+    if (cached) return cached;
+
     // Fetch data with error handling
     const results = await Promise.allSettled([
       prisma.lead.findMany({
@@ -438,7 +557,7 @@ export class AIBrainService {
     else if (Math.abs(leadGrowthRate) < 0.05) growthTrend = 'steady';
     else growthTrend = 'volatile';
 
-    return {
+    const result: PredictiveAnalytics = {
       nextWeekForecast: {
         newLeads: { predicted: nextWeekLeads, confidence: 70 },
         dealConversions: { predicted: nextWeekConversions, confidence: 65 },
@@ -454,17 +573,56 @@ export class AIBrainService {
         },
       },
       growthTrend,
-      seasonalPatterns: [
-        'Higher activity on Tuesdays and Wednesdays',
-        'Slower conversion rates near month-end',
-      ],
+      seasonalPatterns: await this.detectSeasonalPatterns(leads, deals),
     };
+    this.setCache(cacheKey, result);
+    return result;
+  }
+
+  private async detectSeasonalPatterns(leads: any[], deals: any[]): Promise<string[]> {
+    const patterns: string[] = [];
+
+    // Day-of-week analysis
+    const dayBuckets = [0, 0, 0, 0, 0, 0, 0];
+    const recentLeads = leads.filter(
+      (l) => l.createdAt > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+    );
+    for (const l of recentLeads) {
+      dayBuckets[new Date(l.createdAt).getDay()]++;
+    }
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const maxDay = dayBuckets.indexOf(Math.max(...dayBuckets));
+    const minDay = dayBuckets.indexOf(Math.min(...dayBuckets));
+    if (recentLeads.length > 10) {
+      patterns.push(`Highest lead generation on ${dayNames[maxDay]}s`);
+      patterns.push(`Lowest activity on ${dayNames[minDay]}s`);
+    }
+
+    // Month-over-month pattern
+    const monthBuckets: Record<number, number> = {};
+    for (const d of deals) {
+      if (d.actualCloseDate) {
+        const m = new Date(d.actualCloseDate).getMonth();
+        monthBuckets[m] = (monthBuckets[m] || 0) + 1;
+      }
+    }
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const entries = Object.entries(monthBuckets).sort((a, b) => Number(b[1]) - Number(a[1]));
+    if (entries.length >= 3) {
+      patterns.push(`Best closing months: ${monthNames[Number(entries[0][0])]}, ${monthNames[Number(entries[1][0])]}`);
+    }
+
+    return patterns.length > 0 ? patterns : ['Insufficient historical data for seasonal patterns'];
   }
 
   /**
    * Generate workflow automation recommendations
    */
   async generateWorkflowRecommendations(userId: string): Promise<WorkflowRecommendation[]> {
+    const cacheKey = `${userId}:workflows`;
+    const cached = this.getCached<WorkflowRecommendation[]>(cacheKey);
+    if (cached) return cached;
+
     const recommendations: WorkflowRecommendation[] = [];
 
     // Fetch data with error handling
@@ -605,7 +763,82 @@ export class AIBrainService {
       });
     }
 
+    this.setCache(cacheKey, recommendations);
     return recommendations;
+  }
+
+  /**
+   * Detect real-time patterns from recent CRM events.
+   * Call this alongside generateGeneralInsights for up-to-the-minute awareness.
+   */
+  detectRealtimePatterns(userId: string): GeneralInsight[] {
+    const insights: GeneralInsight[] = [];
+    const summary = crmEvents.getEventSummary(userId, 60);
+
+    const leadsCreated = summary.lead_created || 0;
+    if (leadsCreated >= 5) {
+      insights.push({
+        id: 'realtime-lead-surge',
+        type: 'trend',
+        priority: 'high',
+        title: 'Lead surge detected',
+        description: `${leadsCreated} new leads in the last hour — capitalize on this momentum.`,
+        impact: 'High potential for conversions if followed up quickly',
+        confidence: 90,
+        actionable: true,
+        suggestedActions: ['Prioritize follow-ups on newest leads', 'Check which source is generating the surge'],
+        timestamp: new Date(),
+      });
+    }
+
+    const dealsMoved = summary.deal_stage_changed || 0;
+    if (dealsMoved >= 3) {
+      insights.push({
+        id: 'realtime-deal-movement',
+        type: 'opportunity',
+        priority: 'medium',
+        title: 'Active deal movement',
+        description: `${dealsMoved} deals changed stage in the last hour.`,
+        impact: 'Pipeline is active — review for closing opportunities',
+        confidence: 85,
+        actionable: true,
+        suggestedActions: ['Review deals near close stage', 'Update forecasts'],
+        timestamp: new Date(),
+      });
+    }
+
+    const tasksCompleted = summary.task_completed || 0;
+    if (tasksCompleted >= 5) {
+      insights.push({
+        id: 'realtime-productivity',
+        type: 'trend',
+        priority: 'low',
+        title: 'High productivity period',
+        description: `${tasksCompleted} tasks completed in the last hour.`,
+        impact: 'Team productivity is above average',
+        confidence: 80,
+        actionable: false,
+        timestamp: new Date(),
+      });
+    }
+
+    const campaignsSent = summary.campaign_sent || 0;
+    if (campaignsSent >= 1) {
+      insights.push({
+        id: 'realtime-campaign-activity',
+        type: 'action',
+        priority: 'medium',
+        title: 'Campaigns recently sent',
+        description: `${campaignsSent} campaign(s) sent in the last hour — monitor delivery and engagement.`,
+        impact: 'Early engagement metrics may be available soon',
+        confidence: 95,
+        actionable: true,
+        suggestedActions: ['Check open rates in 1-2 hours', 'Prepare follow-up for non-openers'],
+        timestamp: new Date(),
+      });
+    }
+
+    return insights;
   }
 }
 
