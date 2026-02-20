@@ -14,7 +14,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -476,7 +475,6 @@ export default function AIEmployeesPage() {
   const [purchaseAmount, setPurchaseAmount] = useState('');
   const [serviceType, setServiceType] = useState('');
   const [workflowLoading, setWorkflowLoading] = useState(false);
-  const [selectedLeadJob, setSelectedLeadJob] = useState<string>('');
   
   // Workflow progress tracking
   const [workflowProgress, setWorkflowProgress] = useState<{
@@ -581,7 +579,7 @@ export default function AIEmployeesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const initialTab = tabParam && ['trigger', 'ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'ai-team';
+  const initialTab = tabParam && ['ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'ai-team';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [selectedProfessionalForWorkflow, setSelectedProfessionalForWorkflow] = useState<string | null>(null);
 
@@ -927,74 +925,6 @@ export default function AIEmployeesPage() {
     }
   };
 
-  // Get completed lead research jobs (from Monitor Jobs - used to populate workflow form)
-  const completedLeadJobs = jobs.filter(
-    j => j.jobType === 'lead_enrichment' && j.status === 'COMPLETED' && j.output
-  );
-
-  // Handle selecting a lead job to populate workflow fields
-  const handleSelectLeadJob = (jobId: string) => {
-    if (!jobId) {
-      setSelectedLeadJob('');
-      return;
-    }
-    
-    setSelectedLeadJob(jobId);
-    const job = jobs.find(j => j.id === jobId);
-    console.log('[Workflow] Selected job:', job);
-    console.log('[Workflow] Job output:', job?.output);
-    
-    if (job?.output) {
-      const output = job.output;
-      // Populate fields from lead research
-      const companyName = output.companyInfo?.name || output.businessName || job.input?.businessName || '';
-      console.log('[Workflow] Setting customerName:', companyName);
-      setCustomerName(companyName);
-      
-      // Try to get contact info - check multiple paths
-      const contacts = output.contactInfo || {};
-      const emails = contacts.emails || [];
-      const phones = contacts.phones || [];
-      
-      // If no emails found in contactInfo, try decisionMakers
-      let email = emails[0] || '';
-      let phone = phones[0] || '';
-      
-      if (!email && output.decisionMakers?.length > 0) {
-        email = output.decisionMakers[0]?.email || '';
-      }
-      
-      // Set a placeholder email if none found
-      if (!email && companyName) {
-        email = `contact@${companyName.toLowerCase().replace(/\s+/g, '')}.com`;
-      }
-      
-      console.log('[Workflow] Setting email:', email);
-      console.log('[Workflow] Setting phone:', phone);
-      setCustomerEmail(email);
-      if (phone) setCustomerPhone(phone);
-      
-      // Set industry as service type
-      const industry = output.companyInfo?.industry || output.industry || '';
-      console.log('[Workflow] Setting serviceType:', industry);
-      setServiceType(industry);
-      
-      // Set a default purchase amount
-      setPurchaseAmount('5000');
-      
-      toast.success(`Loaded data from ${companyName} research`);
-    } else if (job?.input) {
-      // Fallback to input data
-      const businessName = job.input.businessName || '';
-      setCustomerName(businessName);
-      if (businessName) {
-        setCustomerEmail(`contact@${businessName.toLowerCase().replace(/\s+/g, '')}.com`);
-      }
-      setPurchaseAmount('5000');
-      toast.info(`Loaded basic info from ${businessName}`);
-    }
-  };
-
   const handleWorkflowTrigger = async () => {
     if (!customerName || !customerEmail) {
       toast.error('Customer name and email are required');
@@ -1133,7 +1063,6 @@ export default function AIEmployeesPage() {
           setCustomerPhone('');
           setPurchaseAmount('');
           setServiceType('');
-          setSelectedLeadJob('');
           fetchJobs();
         }, 9000);
       } else {
@@ -1203,24 +1132,12 @@ export default function AIEmployeesPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className={`grid w-full bg-black ${
-          isRealEstateUser && hasIndustryTeam ? 'grid-cols-7' :
-          isRealEstateUser ? 'grid-cols-6' : 
-          hasIndustryTeam ? 'grid-cols-6' :
-          hasWorkflowSystem ? 'grid-cols-5' : 
-          'grid-cols-4'
+          isRealEstateUser && hasIndustryTeam ? 'grid-cols-6' :
+          isRealEstateUser ? 'grid-cols-5' : 
+          hasIndustryTeam ? 'grid-cols-5' :
+          hasWorkflowSystem ? 'grid-cols-4' : 
+          'grid-cols-3'
         }`}>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium opacity-50 cursor-not-allowed bg-gray-700 border border-gray-600 text-gray-400">
-                  Lead Search
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Upgrade - Contact Sales</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
           <TabsTrigger
             value="ai-team"
             className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
@@ -1264,13 +1181,6 @@ export default function AIEmployeesPage() {
             Manage Tasks
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="trigger" className="space-y-6">
-          {/* Lead Research & Enrichment moved to Leads page → Lead Finder tab */}
-
-          {/* Note: Simple workflow builder removed - use the Workflows tab for visual workflow builder */}
-
-        </TabsContent>
 
         {/* AI Team Tab */}
         <TabsContent value="ai-team" className="space-y-4">
