@@ -10,20 +10,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { SharedDashboardLayout } from '@/components/dental/shared-dashboard-layout';
 import { ProductionDashboard } from '@/components/dental/production-dashboard';
-import { ProductionCharts } from '@/components/dental/production-charts';
 import { TeamPerformanceCard } from '@/components/dental/team-performance-card';
 import { DentalWorkflowTemplatesBrowser } from '@/components/dental/workflow-templates-browser';
 import { CustomMultiChairAgenda } from '@/components/dental/custom-multi-chair-agenda';
-import { CustomFormsBuilder } from '@/components/dental/custom-forms-builder';
 import { CustomDocumentUpload } from '@/components/dental/custom-document-upload';
-import { CustomSignature } from '@/components/dental/custom-signature';
 import { RedesignedCheckIn } from '@/components/dental/redesigned-check-in';
 import { RedesignedFormResponses } from '@/components/dental/redesigned-form-responses';
 import { RedesignedInsuranceClaims } from '@/components/dental/redesigned-insurance-claims';
-import { VnaConfigurationWithRouting } from '@/components/dental/vna-configuration-with-routing';
-import { CardModal } from '@/components/dental/card-modal';
-import { PatientInfoUpdateForm } from '@/components/dental/patient-info-update-form';
-import { LabOrderForm } from '@/components/dental/lab-order-form';
+import { AdminModals } from '@/components/dental/admin-modals';
 import { Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -45,7 +39,6 @@ import {
   Search,
   TrendingUp,
   Server,
-  Mic,
 } from 'lucide-react';
 
 export default function AdministrativeDashboardPage() {
@@ -81,9 +74,6 @@ export default function AdministrativeDashboardPage() {
     monthlyRevenue: 0,
   });
   const [openModal, setOpenModal] = useState<string | null>(null);
-  const [activeMultiChairTab, setActiveMultiChairTab] = useState<'ortho' | 'hygiene' | 'restorative'>('ortho');
-  const [showUpdateInfo, setShowUpdateInfo] = useState(false);
-  const [showLabOrderForm, setShowLabOrderForm] = useState(false);
   const [formResponseSearch, setFormResponseSearch] = useState('');
   const [formResponseFilter, setFormResponseFilter] = useState('date');
   const [productionChartData, setProductionChartData] = useState({
@@ -593,256 +583,19 @@ export default function AdministrativeDashboardPage() {
       </div>
 
 
-      {/* Modals */}
-      <CardModal
-        isOpen={openModal === 'multi-chair'}
-        onClose={() => setOpenModal(null)}
-        title="Multi-Chair Agenda"
-      >
-        <div className="space-y-4">
-          <CustomMultiChairAgenda appointments={displayMultiChairAppointments} />
-        </div>
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'check-in'}
-        onClose={() => {
-          setOpenModal(null);
-          setShowUpdateInfo(false);
-        }}
-        title={showUpdateInfo ? "Update Patient Information" : "Patient Check-In"}
-      >
-        {showUpdateInfo && selectedLeadId ? (
-          <PatientInfoUpdateForm
-            leadId={selectedLeadId}
-            onSuccess={() => {
-              toast.success('Patient information updated successfully');
-              setShowUpdateInfo(false);
-              setOpenModal(null);
-              fetchLeads(); // Refresh leads list
-            }}
-            onCancel={() => setShowUpdateInfo(false)}
-          />
-        ) : (
-          <div className="space-y-4">
-            {selectedLeadId && (
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const params = new URLSearchParams();
-                    params.set('leadId', selectedLeadId);
-                    const patientName = leads.find((l) => l.id === selectedLeadId)?.contactPerson;
-                    if (patientName) params.set('patientName', patientName);
-                    params.set('from', 'clinical');
-                    window.location.href = `/dashboard/docpen?${params.toString()}`;
-                  }}
-                >
-                  <Mic className="h-4 w-4 mr-2" />
-                  Start Visit in Docpen
-                </Button>
-              </div>
-            )}
-            <RedesignedCheckIn
-              patientName={selectedLeadId ? leads.find(l => l.id === selectedLeadId)?.contactPerson || 'Patient' : 'John Smith'}
-              onCheckIn={() => {
-                toast.success('Patient checked in successfully');
-                setOpenModal(null);
-              }}
-              onUpdateInfo={() => {
-                if (!selectedLeadId) {
-                  toast.error('Please select a patient first');
-                  return;
-                }
-                setShowUpdateInfo(true);
-              }}
-            />
-          </div>
-        )}
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'insurance-claims'}
-        onClose={() => setOpenModal(null)}
-        title="Insurance Claims"
-      >
-        <RedesignedInsuranceClaims
-          claims={claims.map((claim: any) => ({
-            id: claim.id?.substring(0, 8) || 'N/A',
-            provider: claim.provider || 'RAMQ',
-            amount: claim.amount || 0,
-            status: claim.status === 'APPROVED' ? 'Approved' : 'Funding',
-          }))}
-        />
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'billing'}
-        onClose={() => setOpenModal(null)}
-        title="Billing & Payments"
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Today's Revenue</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-green-600">${productionMetrics.dailyProduction.toLocaleString()}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Outstanding</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-amber-600">$12,450</p>
-              </CardContent>
-            </Card>
-          </div>
-          <Button 
-            className="w-full"
-            onClick={async () => {
-              toast.info('Payment processing feature - coming soon');
-              // TODO: Implement payment processing
-            }}
-          >
-            <DollarSign className="w-4 h-4 mr-2" />
-            Process Payment
-          </Button>
-        </div>
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'form-responses'}
-        onClose={() => setOpenModal(null)}
-        title="Form Responses"
-      >
-        <RedesignedFormResponses
-          responses={formResponses.map((response: any) => ({
-            date: new Date(response.submittedAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
-            patientName: leads.find((l) => l.id === response.leadId)?.contactPerson || 'Unknown',
-            formTitle: response.formName || 'Form',
-            submissionDate: new Date(response.submittedAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
-            time: new Date(response.submittedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-          }))}
-        />
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'team-performance'}
-        onClose={() => setOpenModal(null)}
-        title="Team Performance"
-      >
-        <div className="space-y-4">
-          {teamMembers.map((member) => (
-            <div key={member.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-              <div>
-                <p className="font-semibold text-gray-900">{member.name}</p>
-                <p className="text-sm text-gray-600">{member.role}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-lg font-bold text-gray-900">${member.production.toLocaleString()}</p>
-                <p className="text-sm text-gray-600">{member.cases} cases</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'lab-orders'}
-        onClose={() => {
-          setOpenModal(null);
-          setShowLabOrderForm(false);
-        }}
-        title={showLabOrderForm ? "Create New Lab Order" : "Lab Orders"}
-      >
-        {showLabOrderForm && selectedLeadId ? (
-          <LabOrderForm
-            leadId={selectedLeadId}
-            onSuccess={() => {
-              setShowLabOrderForm(false);
-              setOpenModal(null);
-            }}
-            onCancel={() => setShowLabOrderForm(false)}
-          />
-        ) : (
-          <div className="space-y-4">
-            <Button 
-              className="w-full"
-              onClick={() => {
-                if (!selectedLeadId) {
-                  toast.error('Please select a patient first');
-                  return;
-                }
-                setShowLabOrderForm(true);
-              }}
-            >
-              <Building2 className="w-4 h-4 mr-2" />
-              Create New Lab Order
-            </Button>
-            <div className="space-y-2">
-              <div className="p-3 border border-gray-200 rounded">
-                <p className="font-semibold">Order #12345</p>
-                <p className="text-sm text-gray-600">Status: In Progress</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'signature'}
-        onClose={() => setOpenModal(null)}
-        title="Electronic Signature Capture"
-      >
-        <CustomSignature />
-      </CardModal>
-
-      <CardModal
-        isOpen={openModal === 'production-charts'}
-        onClose={() => setOpenModal(null)}
-        title="Production Analytics"
-      >
-        <ProductionCharts
-          dailyData={productionChartData.dailyData}
-          weeklyData={productionChartData.weeklyData}
-          monthlyData={productionChartData.monthlyData}
-          byTreatmentType={productionChartData.byTreatmentType}
-          byPractitioner={productionChartData.byPractitioner}
-          byDayOfWeek={productionChartData.byDayOfWeek}
-          onExport={(format) => {
-            toast.success(`Exporting as ${format.toUpperCase()}...`);
-            // Implement export functionality
-          }}
-        />
-      </CardModal>
-
-      {/* Settings Modal - Admin Only */}
-      <CardModal
-        isOpen={openModal === 'settings'}
-        onClose={() => setOpenModal(null)}
-        title="Settings"
-      >
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-4">VNA Configuration</h3>
-            <p className="text-sm text-gray-600 mb-4">Manage Vendor Neutral Archive connections and routing rules</p>
-            <VnaConfigurationWithRouting />
-          </div>
-        </div>
-      </CardModal>
-
-      {/* VNA Configuration Modal - Phase 2 (kept for backward compatibility) */}
-      <CardModal
-        isOpen={openModal === 'vna-config'}
-        onClose={() => setOpenModal(null)}
-        title="VNA Configuration & Routing Rules"
-      >
-        <VnaConfigurationWithRouting />
-      </CardModal>
+      <AdminModals
+        openModal={openModal}
+        onCloseModal={() => setOpenModal(null)}
+        selectedLeadId={selectedLeadId}
+        leads={leads}
+        claims={claims}
+        formResponses={formResponses}
+        teamMembers={teamMembers}
+        displayMultiChairAppointments={displayMultiChairAppointments}
+        productionMetrics={productionMetrics}
+        productionChartData={productionChartData}
+        onRefreshLeads={fetchLeads}
+      />
     </SharedDashboardLayout>
   );
 }
