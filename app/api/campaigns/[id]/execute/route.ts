@@ -248,15 +248,30 @@ async function processCampaignMessages(campaignId: string, userId: string) {
         (campaign.type === 'EMAIL' || campaign.type === 'MULTI_CHANNEL') &&
         message.recipientEmail
       ) {
-        const personalizedBody = (campaign.emailBody || '')
-          .replace(/{{name}}/gi, message.recipientName || '')
-          .replace(/{{email}}/gi, message.recipientEmail || '');
+        const firstName = message.recipientName?.split(' ')[0] || '';
+        const lastName = message.recipientName?.split(' ').slice(1).join(' ') || '';
+        const personalizedBody = personalizeContent(campaign.emailBody || '', {
+          name: message.recipientName || '',
+          firstName,
+          lastName,
+          email: message.recipientEmail || '',
+          businessName: message.recipientName || '',
+          contactPerson: message.recipientName || '',
+        });
+        const personalizedSubject = personalizeContent(campaign.emailSubject || campaign.name, {
+          name: message.recipientName || '',
+          firstName,
+          lastName,
+          email: message.recipientEmail || '',
+          businessName: message.recipientName || '',
+          contactPerson: message.recipientName || '',
+        });
 
         await emailService.sendEmail({
           to: message.recipientEmail,
-          subject: campaign.emailSubject || campaign.name,
+          subject: personalizedSubject,
           html: personalizedBody,
-          userId: session.user.id,
+          userId,
         });
       }
 
@@ -265,9 +280,16 @@ async function processCampaignMessages(campaignId: string, userId: string) {
         (campaign.type === 'SMS' || campaign.type === 'MULTI_CHANNEL') &&
         message.recipientPhone
       ) {
-        const personalizedSms = (campaign.smsTemplate || '')
-          .replace(/{{name}}/gi, message.recipientName || '')
-          .replace(/{{email}}/gi, message.recipientEmail || '');
+        const firstName = message.recipientName?.split(' ')[0] || '';
+        const lastName = message.recipientName?.split(' ').slice(1).join(' ') || '';
+        const personalizedSms = personalizeContent(campaign.smsTemplate || '', {
+          name: message.recipientName || '',
+          firstName,
+          lastName,
+          email: message.recipientEmail || '',
+          businessName: message.recipientName || '',
+          contactPerson: message.recipientName || '',
+        });
 
         try {
           await sendSMS(message.recipientPhone, personalizedSms);
@@ -388,9 +410,20 @@ async function processCampaignMessages(campaignId: string, userId: string) {
     await prisma.campaign.update({
       where: { id: campaignId },
       data: {
-        openRate: delivered > 0 ? 0.21 : 0, // Simulate 21% open rate
-        clickRate: delivered > 0 ? 0.027 : 0, // Simulate 2.7% click rate
+        openRate: delivered > 0 ? 0.21 : 0,
+        clickRate: delivered > 0 ? 0.027 : 0,
       },
     });
   }
+}
+
+function personalizeContent(content: string, vars: Record<string, string>): string {
+  if (!content) return '';
+  let result = content;
+  for (const [key, value] of Object.entries(vars)) {
+    const doublePattern = new RegExp(`\\{\\{${key}\\}\\}`, 'gi');
+    const singlePattern = new RegExp(`\\{${key}\\}`, 'gi');
+    result = result.replace(doublePattern, value).replace(singlePattern, value);
+  }
+  return result;
 }

@@ -218,10 +218,11 @@ export default function CampaignBuilderPage() {
 
     try {
       setSaving(true);
+      // Always create as DRAFT first so we can add sequences, then activate
       const campaignBody: Record<string, unknown> = {
         name: campaign.name,
         description: campaign.description,
-        status,
+        status: 'DRAFT',
         triggerType: campaign.triggerType,
         tags: campaign.tags?.trim() || undefined,
       };
@@ -305,6 +306,18 @@ export default function CampaignBuilderPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(seqBody),
         });
+      }
+
+      // If user chose ACTIVE, activate the campaign now that sequences are added
+      if (status === 'ACTIVE') {
+        const activateUrl = isEmailDrip
+          ? `/api/campaigns/drip/${created.id}/activate`
+          : `/api/campaigns/sms-drip/${created.id}/activate`;
+        const activateRes = await fetch(activateUrl, { method: 'POST' });
+        if (!activateRes.ok) {
+          console.error('Failed to activate campaign, left as DRAFT');
+          toast.warning('Campaign saved as draft (activation failed — activate manually)');
+        }
       }
 
       toast.success(status === 'ACTIVE' ? 'Campaign created and activated!' : 'Campaign saved as draft');

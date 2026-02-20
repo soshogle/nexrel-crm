@@ -73,14 +73,15 @@ export function CampaignStepEditorPanel({
     setEdited((s) => (s ? { ...s, ...updates } : null));
   };
 
-  const handleAiGenerate = async (field: 'email' | 'sms') => {
+  const handleAiGenerate = async (field: 'email' | 'sms' | 'voice') => {
     setAiLoading(true);
     try {
+      const typeMap = { email: 'EMAIL', sms: 'SMS', voice: 'VOICE_CALL' } as const;
       const res = await fetch('/api/campaigns/ai-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          campaignType: field === 'email' ? 'EMAIL' : 'SMS',
+          campaignType: typeMap[field],
           goal: 'Welcome and nurture new leads',
           targetAudience: 'New leads',
           tone: 'professional',
@@ -100,6 +101,10 @@ export function CampaignStepEditorPanel({
       if (field === 'sms' && gen.sms) {
         update({ message: gen.sms?.smsText || gen.sms?.message || '' });
         toast.success('SMS content generated');
+      }
+      if (field === 'voice' && gen.voice) {
+        update({ callScript: gen.voice?.script || gen.voice?.body || '' });
+        toast.success('Voice script generated');
       }
     } catch (e) {
       toast.error('Failed to generate with AI');
@@ -246,15 +251,26 @@ export function CampaignStepEditorPanel({
               />
             </div>
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Label>Call Script / Instructions</Label>
-                <span
-                  className="text-xs text-muted-foreground flex items-center gap-1"
-                  title="Use {{firstName}}, {{lastName}}, {{company}}, {{notes}}, {{lastCallSummary}}, {{lastEmailSubject}} to personalize per contact"
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-center gap-2">
+                  <Label>Call Script / Instructions</Label>
+                  <span
+                    className="text-xs text-muted-foreground flex items-center gap-1"
+                    title="Use {{firstName}}, {{lastName}}, {{company}}, {{notes}}, {{lastCallSummary}}, {{lastEmailSubject}} to personalize per contact"
+                  >
+                    <Info className="h-3 w-3" />
+                    Personalization
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleAiGenerate('voice')}
+                  disabled={aiLoading}
                 >
-                  <Info className="h-3 w-3" />
-                  Personalization
-                </span>
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  {aiLoading ? 'Generating...' : 'AI'}
+                </Button>
               </div>
               <Textarea
                 value={edited.callScript || ''}

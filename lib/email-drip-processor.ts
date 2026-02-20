@@ -291,22 +291,36 @@ async function moveToNextSequence(
  * Personalize email content with merge tags
  */
 function personalizeContent(content: string, lead: any, campaign: any): string {
+  if (!content) return '';
   let personalized = content;
 
-  // Replace merge tags
-  const replacements: Record<string, string> = {
-    '{{business_name}}': lead.businessName || '',
-    '{{contact_person}}': lead.contactPerson || '',
-    '{{first_name}}': lead.contactPerson?.split(' ')[0] || '',
-    '{{email}}': lead.email || '',
-    '{{phone}}': lead.phone || '',
-    '{{city}}': lead.city || '',
-    '{{state}}': lead.state || '',
-    '{{campaign_name}}': campaign.name || '',
+  const firstName = lead.contactPerson?.split(' ')[0] || '';
+  const lastName = lead.contactPerson?.split(' ').slice(1).join(' ') || '';
+
+  const vars: Record<string, string> = {
+    firstName,
+    lastName,
+    first_name: firstName,
+    last_name: lastName,
+    name: lead.contactPerson || lead.businessName || '',
+    businessName: lead.businessName || '',
+    business_name: lead.businessName || '',
+    contactPerson: lead.contactPerson || '',
+    contact_person: lead.contactPerson || '',
+    company: lead.businessName || '',
+    email: lead.email || '',
+    phone: lead.phone || '',
+    city: lead.city || '',
+    state: lead.state || '',
+    notes: lead.notes || '',
+    campaign_name: campaign.name || '',
+    campaignName: campaign.name || '',
   };
 
-  for (const [tag, value] of Object.entries(replacements)) {
-    personalized = personalized.replace(new RegExp(tag, 'g'), value);
+  for (const [key, value] of Object.entries(vars)) {
+    const doublePattern = new RegExp(`\\{\\{${key}\\}\\}`, 'gi');
+    const singlePattern = new RegExp(`\\{${key}\\}`, 'gi');
+    personalized = personalized.replace(doublePattern, value).replace(singlePattern, value);
   }
 
   return personalized;

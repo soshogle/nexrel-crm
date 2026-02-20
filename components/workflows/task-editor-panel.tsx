@@ -633,25 +633,31 @@ export function TaskEditorPanel({
             <p className="text-xs text-muted-foreground mb-2">
               Who should this task be assigned to for human review?
             </p>
-            <Select
-              value={(editedTask as any).actionConfig?.hitlAssignee ?? 'unassigned'}
-              onValueChange={(v) => {
-                const ac = (editedTask as any).actionConfig || {};
-                setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlAssignee: v === 'unassigned' ? undefined : v } } as WorkflowTask);
-              }}
-            >
-              <SelectTrigger className="bg-white border-amber-200">
-                <SelectValue placeholder="Select person" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {aiEmployees.map((emp) => (
-                  <SelectItem key={emp.id} value={emp.id}>
-                    {emp.customName || emp.profession}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {aiEmployees.length === 0 ? (
+              <p className="text-sm text-amber-700 bg-amber-100/80 rounded-md px-3 py-2">
+                No AI Team employees yet. Create one in <a href="/dashboard/ai-employees" className="underline font-medium">AI Team</a> first, then return here to assign.
+              </p>
+            ) : (
+              <Select
+                value={(editedTask as any).actionConfig?.hitlAssignee ?? 'unassigned'}
+                onValueChange={(v) => {
+                  const ac = (editedTask as any).actionConfig || {};
+                  setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlAssignee: v === 'unassigned' ? undefined : v } } as WorkflowTask);
+                }}
+              >
+                <SelectTrigger className="bg-white border-amber-200">
+                  <SelectValue placeholder="Select person" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {aiEmployees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.customName || emp.profession}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </Card>
         )}
 
