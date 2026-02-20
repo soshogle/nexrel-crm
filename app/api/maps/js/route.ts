@@ -8,12 +8,22 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export async function GET(request: NextRequest) {
   const key = process.env.GOOGLE_MAPS_API_KEY;
   if (!key) {
     return NextResponse.json(
       { error: "Maps not configured: set GOOGLE_MAPS_API_KEY in CRM" },
-      { status: 503 }
+      { status: 503, headers: CORS_HEADERS }
     );
   }
 
@@ -30,10 +40,14 @@ export async function GET(request: NextRequest) {
       headers: {
         "Content-Type": "application/javascript",
         "Cache-Control": "public, max-age=3600, s-maxage=3600",
+        ...CORS_HEADERS,
       },
     });
   } catch (err) {
     console.error("[api/maps/js]", err);
-    return new NextResponse("Failed to load Maps script", { status: 502 });
+    return new NextResponse("Failed to load Maps script", {
+      status: 502,
+      headers: CORS_HEADERS,
+    });
   }
 }
