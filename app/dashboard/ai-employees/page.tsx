@@ -581,7 +581,8 @@ export default function AIEmployeesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const defaultTab = tabParam && ['trigger', 'ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'ai-team';
+  const initialTab = tabParam && ['trigger', 'ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'ai-team';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
     fetchJobs();
@@ -1199,7 +1200,7 @@ export default function AIEmployeesPage() {
         </Button>
       </div>
 
-      <Tabs defaultValue={defaultTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className={`grid w-full bg-black ${
           isRealEstateUser && hasIndustryTeam ? 'grid-cols-7' :
           isRealEstateUser ? 'grid-cols-6' : 
@@ -1301,6 +1302,7 @@ export default function AIEmployeesPage() {
           open={showSetupDialog}
           onOpenChange={setShowSetupDialog}
           onProvisionRefresh={() => {}}
+          onSwitchToWorkflows={() => setActiveTab('workflows')}
         />
 
         <TabsContent value="monitor" className="space-y-4">
