@@ -60,12 +60,13 @@ async function processImportAllInBackground(
     }
 
     const downloadImages = process.env.ENABLE_IMAGE_DOWNLOAD === 'true';
-    const useJsRendering = false;
+    const useJsRendering = process.env.ENABLE_JS_SCRAPING === 'true';
 
     const structure = (website.structure || {}) as any;
     if (!structure.pages) structure.pages = [];
 
     let totalAdded = 0;
+    const pageResults: { path: string; label: string; status: string; components: number; error?: string }[] = [];
 
     for (let i = 0; i < pagePaths.length; i++) {
       const { path, label } = pagePaths[i];
@@ -75,7 +76,7 @@ async function processImportAllInBackground(
         where: { id: buildId },
         data: {
           progress: Math.round(((i + 0.5) / pagePaths.length) * 100),
-          buildData: { type: 'import_all', currentPage: label, total: pagePaths.length },
+          buildData: { type: 'import_all', currentPage: label, total: pagePaths.length, pageResults },
         },
       });
 
@@ -89,7 +90,11 @@ async function processImportAllInBackground(
         );
 
         const components = convertScrapedToComponents(scrapedData);
-        if (components.length === 0) continue;
+        if (components.length === 0) {
+          console.warn(`[Import all] ${fullUrl}: scraped OK but 0 components extracted (HTML may be SPA shell)`);
+          pageResults.push({ path, label, status: 'empty', components: 0 });
+          continue;
+        }
 
         const pageId = path === '/' ? 'home' : path.slice(1).replace(/\//g, '-') || 'page';
         const pageName = path === '/' ? 'Home' : label;
@@ -109,10 +114,15 @@ async function processImportAllInBackground(
           structure.pages.push(pageData);
         }
         totalAdded += components.length;
+        pageResults.push({ path, label, status: 'ok', components: components.length });
+        console.log(`[Import all] ✅ ${fullUrl}: ${components.length} components`);
       } catch (pageErr: any) {
-        console.warn(`[Import all] Failed to scrape ${fullUrl}:`, pageErr.message);
+        console.warn(`[Import all] ❌ Failed to scrape ${fullUrl}:`, pageErr.message);
+        pageResults.push({ path, label, status: 'error', components: 0, error: pageErr.message });
       }
     }
+
+    console.log(`[Import all] Summary: ${pageResults.filter(r => r.status === 'ok').length}/${pagePaths.length} pages imported, ${totalAdded} total components`);
 
     let structureToSave = structure;
     try {
@@ -135,7 +145,13 @@ async function processImportAllInBackground(
         status: 'COMPLETED',
         progress: 100,
         completedAt: new Date(),
-        buildData: { type: 'import_all', addedCount: totalAdded, pagesImported: pagePaths.length },
+        buildData: {
+          type: 'import_all',
+          addedCount: totalAdded,
+          pagesImported: pageResults.filter(r => r.status === 'ok').length,
+          pagesTotal: pagePaths.length,
+          pageResults,
+        },
       },
     });
   } catch (error: any) {
@@ -165,13 +181,17 @@ export async function POST(
     }
 
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const secret = request.headers.get('x-website-secret');
+    const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
+    const hasSecretAuth = !!(expectedSecret && secret === expectedSecret);
+
+    if (!session?.user?.id && !hasSecretAuth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: websiteId, userId: session.user.id },
-    });
+    const website = session?.user?.id
+      ? await prisma.website.findFirst({ where: { id: websiteId, userId: session.user.id } })
+      : await prisma.website.findFirst({ where: { id: websiteId } });
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
@@ -205,8 +225,9 @@ export async function POST(
       },
     });
 
+    const userId = session?.user?.id || website.userId;
     waitUntil(
-      processImportAllInBackground(websiteId, build.id, normalizedUrl, session.user.id)
+      processImportAllInBackground(websiteId, build.id, normalizedUrl, userId)
     );
 
     return NextResponse.json({

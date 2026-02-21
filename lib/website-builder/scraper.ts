@@ -338,26 +338,64 @@ export class WebsiteScraper {
    */
   private async extractImages(html: string, baseUrl: string): Promise<ScrapedImage[]> {
     const images: ScrapedImage[] = [];
-    
-    // Extract <img> tags
-    const imgMatches = html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi);
+    const seen = new Set<string>();
+
+    const addImage = (rawUrl: string, alt?: string) => {
+      if (!rawUrl || rawUrl.startsWith('data:') || rawUrl.length < 5) return;
+      const url = this.resolveUrl(rawUrl.trim(), baseUrl);
+      if (seen.has(url)) return;
+      seen.add(url);
+      images.push({ url, alt: alt || undefined });
+    };
+
+    // Extract <img> tags — src, data-src, data-lazy-src
+    const imgMatches = html.matchAll(/<img[^>]*>/gi);
     for (const match of imgMatches) {
-      const src = match[1];
-      const altMatch = match[0].match(/alt=["']([^"']+)["']/i);
-      images.push({
-        url: this.resolveUrl(src, baseUrl),
-        alt: altMatch ? altMatch[1] : undefined,
-      });
+      const tag = match[0];
+      const altMatch = tag.match(/alt=["']([^"']+)["']/i);
+      const alt = altMatch?.[1];
+
+      const srcMatch = tag.match(/\bsrc=["']([^"']+)["']/i);
+      if (srcMatch) addImage(srcMatch[1], alt);
+
+      const dataSrcMatch = tag.match(/data-(?:src|lazy-src|original)=["']([^"']+)["']/i);
+      if (dataSrcMatch) addImage(dataSrcMatch[1], alt);
+
+      // Extract best image from srcset
+      const srcsetMatch = tag.match(/srcset=["']([^"']+)["']/i);
+      if (srcsetMatch) {
+        const candidates = srcsetMatch[1].split(',').map((s) => s.trim().split(/\s+/));
+        const best = candidates
+          .map(([url, descriptor]) => ({
+            url,
+            width: parseInt(descriptor?.replace('w', '') || '0') || 0,
+          }))
+          .sort((a, b) => b.width - a.width)[0];
+        if (best?.url) addImage(best.url, alt);
+      }
     }
-    
-    // Extract background images from CSS
-    const bgMatches = html.matchAll(/background-image:\s*url\(["']?([^"')]+)["']?\)/gi);
+
+    // Extract <picture> > <source> elements
+    const sourceMatches = html.matchAll(/<source[^>]+srcset=["']([^"',\s]+)/gi);
+    for (const match of sourceMatches) {
+      addImage(match[1]);
+    }
+
+    // Extract background images from CSS (both background-image and background shorthand)
+    const bgMatches = html.matchAll(/background(?:-image)?:\s*[^;]*url\(["']?([^"')]+)["']?\)/gi);
     for (const match of bgMatches) {
-      images.push({
-        url: this.resolveUrl(match[1], baseUrl),
-      });
+      addImage(match[1]);
     }
-    
+
+    // Extract Open Graph and Twitter Card images
+    const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    if (ogMatch) addImage(ogMatch[1]);
+
+    const twMatch = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i);
+    if (twMatch) addImage(twMatch[1]);
+
     return images;
   }
 
@@ -517,42 +555,196 @@ export class WebsiteScraper {
   }
 
   /**
-   * Extract content sections (headings, paragraphs) for template population
+   * Extract content sections (headings, paragraphs) for template population.
+   * Handles both semantic HTML (h1-h6, p, li) and React SPA output (section > div trees).
    */
-  private async extractContentSections(html: string): Promise<{ hero?: { title?: string; subtitle?: string }; sections: { title?: string; content?: string }[] }> {
-    const sections: { title?: string; content?: string }[] = [];
-    const stripHtml = (s: string) => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500);
+  private async extractContentSections(html: string): Promise<{
+    hero?: { title?: string; subtitle?: string; image?: string };
+    sections: { title?: string; content?: string; image?: string }[];
+  }> {
+    const stripHtml = (s: string) =>
+      s.replace(/<br\s*\/?>/gi, '\n')
+       .replace(/<[^>]+>/g, ' ')
+       .replace(/&nbsp;/gi, ' ')
+       .replace(/&amp;/gi, '&')
+       .replace(/&lt;/gi, '<')
+       .replace(/&gt;/gi, '>')
+       .replace(/&quot;/gi, '"')
+       .replace(/&#39;/gi, "'")
+       .replace(/\s+/g, ' ')
+       .trim()
+       .slice(0, 2000);
 
-    // Extract h1-h3 for section titles
-    const headingMatches = html.matchAll(/<h[1-3][^>]*>([^<]+)<\/h[1-3]>/gi);
-    const headings: string[] = [];
+    const cleaned = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, '');
+
+    // --- Standard semantic extraction ---
+
+    const headingMatches = cleaned.matchAll(/<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi);
+    const headings: { level: number; text: string; index: number }[] = [];
     for (const m of headingMatches) {
-      const text = stripHtml(m[1]);
-      if (text && text.length > 2) headings.push(text);
+      const text = stripHtml(m[2]);
+      if (text && text.length > 2) {
+        headings.push({ level: parseInt(m[1][1]), text, index: m.index! });
+      }
     }
 
-    // Extract paragraphs
-    const pMatches = html.matchAll(/<p[^>]*>([^<]+)<\/p>/gi);
-    const paragraphs: string[] = [];
+    const pMatches = cleaned.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi);
+    const paragraphs: { text: string; index: number }[] = [];
     for (const m of pMatches) {
       const text = stripHtml(m[1]);
-      if (text && text.length > 2) paragraphs.push(text);
+      if (text && text.length > 10) {
+        paragraphs.push({ text, index: m.index! });
+      }
     }
 
-    // First h1 = hero title, first substantial p = hero subtitle
-    let hero: { title?: string; subtitle?: string } | undefined;
-    if (headings.length > 0) {
-      hero = { title: headings[0] };
-      const firstP = paragraphs.find((p) => p.length > 30);
-      if (firstP) hero.subtitle = firstP;
+    const liMatches = cleaned.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi);
+    const listItems: { text: string; index: number }[] = [];
+    for (const m of liMatches) {
+      const text = stripHtml(m[1]);
+      if (text && text.length > 5) {
+        listItems.push({ text, index: m.index! });
+      }
     }
 
-    // Build sections from h2/h3 + following content
-    for (let i = 1; i < headings.length; i++) {
-      sections.push({ title: headings[i], content: paragraphs[i] || paragraphs[0] });
+    const bqMatches = cleaned.matchAll(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi);
+    for (const m of bqMatches) {
+      const text = stripHtml(m[1]);
+      if (text && text.length > 10) {
+        paragraphs.push({ text: `"${text}"`, index: m.index! });
+      }
     }
+
+    // --- SPA / div-based content extraction ---
+    // React SPAs render into <section> and <div> elements. Extract text from <span>,
+    // <em>, <strong>, and bare text nodes inside divs when no <p> tags are present.
+    if (paragraphs.length < 3) {
+      const spanMatches = cleaned.matchAll(/<(?:span|em|strong|a)[^>]*>([\s\S]*?)<\/(?:span|em|strong|a)>/gi);
+      const seenTexts = new Set(paragraphs.map(p => p.text));
+      for (const m of spanMatches) {
+        const text = stripHtml(m[1]);
+        if (text && text.length > 20 && !seenTexts.has(text)) {
+          seenTexts.add(text);
+          paragraphs.push({ text, index: m.index! });
+        }
+      }
+    }
+
+    // Extract <section> blocks as section boundaries (common in React templates)
+    const sectionElements = cleaned.matchAll(/<section[^>]*>([\s\S]*?)<\/section>/gi);
+    const sectionBlocks: { html: string; index: number }[] = [];
+    for (const m of sectionElements) {
+      sectionBlocks.push({ html: m[1], index: m.index! });
+    }
+
+    const imgPositions = cleaned.matchAll(/<img[^>]+(?:src|data-src)=["']([^"']+)["'][^>]*>/gi);
+    const positionedImages: { url: string; alt: string; index: number }[] = [];
+    for (const m of imgPositions) {
+      const altMatch = m[0].match(/alt=["']([^"']+)["']/i);
+      positionedImages.push({
+        url: m[1],
+        alt: altMatch?.[1] || '',
+        index: m.index!,
+      });
+    }
+
+    // Build hero from first h1 + nearest paragraph + nearest image
+    let hero: { title?: string; subtitle?: string; image?: string } | undefined;
+    const h1 = headings.find((h) => h.level === 1);
+    if (h1) {
+      const nearestP = paragraphs.find((p) => p.index > h1.index);
+      const nearestImg = positionedImages.find(
+        (img) => Math.abs(img.index - h1.index) < 3000
+      );
+      hero = {
+        title: h1.text,
+        subtitle: nearestP?.text,
+        image: nearestImg?.url,
+      };
+    } else if (headings.length > 0) {
+      hero = { title: headings[0].text };
+      const nearestP = paragraphs.find((p) => p.index > headings[0].index);
+      if (nearestP) hero.subtitle = nearestP.text;
+    }
+
+    // Build sections by grouping content under each heading (h2-h6)
+    const sections: { title?: string; content?: string; image?: string }[] = [];
+    const sectionHeadings = headings.filter((h) => h !== (h1 || headings[0]));
+
+    for (let i = 0; i < sectionHeadings.length; i++) {
+      const heading = sectionHeadings[i];
+      const nextHeading = sectionHeadings[i + 1];
+      const rangeEnd = nextHeading?.index ?? Infinity;
+
+      const sectionParagraphs = paragraphs
+        .filter((p) => p.index > heading.index && p.index < rangeEnd)
+        .map((p) => p.text);
+
+      const sectionLists = listItems
+        .filter((li) => li.index > heading.index && li.index < rangeEnd)
+        .map((li) => `• ${li.text}`);
+
+      const allContent = [...sectionParagraphs, ...sectionLists].join('\n\n');
+
+      const sectionImg = positionedImages.find(
+        (img) => img.index > heading.index && img.index < rangeEnd
+      );
+
+      if (allContent || heading.text) {
+        sections.push({
+          title: heading.text,
+          content: allContent || '',
+          image: sectionImg?.url,
+        });
+      }
+    }
+
+    // Fallback: if heading-based extraction yielded few/no sections, try <section> blocks
+    if (sections.length < 2 && sectionBlocks.length > 0) {
+      const seenTitles = new Set(sections.map(s => s.title));
+
+      for (const block of sectionBlocks) {
+        const blockHeading = block.html.match(/<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/i);
+        const title = blockHeading ? stripHtml(blockHeading[2]) : undefined;
+        if (title && seenTitles.has(title)) continue;
+
+        const blockParagraphs: string[] = [];
+        const pInBlock = block.html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi);
+        for (const pm of pInBlock) {
+          const t = stripHtml(pm[1]);
+          if (t && t.length > 10) blockParagraphs.push(t);
+        }
+
+        // Also extract text from divs with meaningful content (React SPA pattern)
+        if (blockParagraphs.length === 0) {
+          const divTexts = block.html.matchAll(/<div[^>]*>([\s\S]*?)<\/div>/gi);
+          for (const dm of divTexts) {
+            const t = stripHtml(dm[1]);
+            if (t && t.length > 30 && !t.includes('<')) {
+              blockParagraphs.push(t);
+            }
+          }
+        }
+
+        const blockImg = block.html.match(/<img[^>]+(?:src|data-src)=["']([^"']+)["']/i);
+        const content = blockParagraphs.join('\n\n');
+        if (content || title) {
+          if (title) seenTitles.add(title);
+          sections.push({
+            title: title || undefined,
+            content,
+            image: blockImg?.[1],
+          });
+        }
+      }
+    }
+
+    // Last resort: group all paragraphs into one section
     if (sections.length === 0 && paragraphs.length > 0) {
-      sections.push({ title: 'About', content: paragraphs.slice(0, 2).join(' ') });
+      const allText = paragraphs.map((p) => p.text).join('\n\n');
+      sections.push({ title: 'About', content: allText });
     }
 
     return { hero, sections };

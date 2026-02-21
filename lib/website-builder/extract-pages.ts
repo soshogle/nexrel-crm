@@ -97,14 +97,14 @@ const DEFAULT_NAV = {
     { label: 'Buying', href: '/buying', children: [{ label: 'For Sale', href: '/for-sale' }, { label: 'Prestige Properties', href: '/prestige' }, { label: 'Secret Properties', href: '/secret-properties' }] },
     { label: 'Renting', href: '/renting', children: [{ label: 'For Lease', href: '/for-lease' }] },
     { label: 'About', href: '/about', children: undefined },
-    { label: 'News & Media', href: '/news', children: [{ label: 'Blog', href: '/blog' }] },
+    { label: 'News & Media', href: '/news', children: [{ label: 'Blog', href: '/blog' }, { label: 'Videos', href: '/videos' }, { label: 'Podcasts', href: '/podcasts' }] },
   ],
   topLinks: [
     { label: 'Home', href: '/' },
     { label: 'Properties', href: '/properties' },
     { label: 'Get A Quote', href: '/get-a-quote' },
     { label: 'Contact', href: '/contact' },
-    { label: 'Secret Properties', href: '/secret-properties' },
+    { label: 'Testimonials', href: '/testimonials' },
   ],
   footerLinks: [
     { label: 'Properties', href: '/properties' },
@@ -114,6 +114,8 @@ const DEFAULT_NAV = {
     { label: 'About', href: '/about' },
     { label: 'Blog', href: '/blog' },
     { label: 'Contact', href: '/contact' },
+    { label: 'Awards', href: '/awards' },
+    { label: 'Testimonials', href: '/testimonials' },
   ],
 };
 
