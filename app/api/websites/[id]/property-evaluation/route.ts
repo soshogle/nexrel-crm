@@ -6,14 +6,46 @@
  * Body: { propertyDetails, contact: { name, email, phone } }
  * - propertyDetails: { address, city?, bedrooms?, bathrooms?, propertyType? }
  * - contact: { name, email, phone } — required to receive evaluation
+ *
+ * Returns display report with blurred comparables. Email sends blurred version (Option B).
+ * Full comparables only after booking a meeting.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { runPropertyEvaluation } from "@/lib/real-estate/property-evaluation";
+import type { ComparableProperty } from "@/lib/real-estate/property-evaluation";
 import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+/** Blur address: "123 Main St" -> "123 M*** St" */
+function blurAddress(addr: string): string {
+  const s = addr.trim();
+  if (!s) return "••• ••••";
+  const parts = s.split(/\s+/);
+  if (parts.length < 2) return "••• ••••";
+  const num = parts[0];
+  const street = parts.slice(1).join(" ").split(",")[0].trim();
+  const first = street.slice(0, 1);
+  return `${num} ${first}***`;
+}
+
+/** Blur price: 450000 -> "$***,***" */
+function blurPrice(price: number): string {
+  const len = String(Math.round(price)).length;
+  return "$" + "•".repeat(Math.min(len, 6));
+}
+
+function blurComparables(comparables: ComparableProperty[]): { addressBlurred: string; priceBlurred: string; bedrooms: number | null; bathrooms: number | null; status: string }[] {
+  return comparables.map((c) => ({
+    addressBlurred: blurAddress(c.address) + (c.city ? `, ${c.city}` : ""),
+    priceBlurred: blurPrice(c.price),
+    bedrooms: c.bedrooms,
+    bathrooms: c.bathrooms,
+    status: c.status,
+  }));
+}
 
 export async function POST(
   request: NextRequest,
@@ -69,6 +101,8 @@ export async function POST(
       livingArea: propertyDetails.livingArea,
     });
 
+    const blurredComparables = blurComparables(evaluation.comparables);
+
     // Create lead in CRM
     const user = await prisma.user.findUnique({
       where: { id: website.userId },
@@ -106,12 +140,12 @@ export async function POST(
       });
     }
 
-    // Send email with evaluation
+    // Send email with BLURRED comparables (Option B) — full comparables only after booking
     const resendKey = process.env.RESEND_API_KEY;
     if (resendKey) {
       const resend = new Resend(resendKey);
       const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
-      const emailHtml = buildEvaluationEmailHtml(evaluation, contact.name);
+      const emailHtml = buildEvaluationEmailHtmlBlurred(evaluation, contact.name, blurredComparables);
 
       await resend.emails.send({
         from: `Property Evaluation <${fromEmail}>`,
@@ -122,11 +156,19 @@ export async function POST(
       });
     }
 
+    // Return display report for on-screen display (blurred comparables)
     return NextResponse.json({
       success: true,
-      message: "Your evaluation has been sent to your email.",
-      estimatedValue: evaluation.estimatedValue,
-      comparablesCount: evaluation.comparables.length,
+      message: "Your evaluation is ready.",
+      report: {
+        address: evaluation.address,
+        city: evaluation.city,
+        estimatedValue: evaluation.estimatedValue,
+        usedRegionalFallback: evaluation.usedRegionalFallback,
+        comparablesBlurred: blurredComparables,
+        comparablesCount: evaluation.comparables.length,
+      },
+      contact: { name: contact.name, email: contact.email, phone: contact.phone },
     });
   } catch (error: any) {
     console.error("[property-evaluation]", error);
@@ -137,7 +179,11 @@ export async function POST(
   }
 }
 
-function buildEvaluationEmailHtml(evaluation: any, name: string): string {
+function buildEvaluationEmailHtmlBlurred(
+  evaluation: any,
+  name: string,
+  blurredComparables: { addressBlurred: string; priceBlurred: string; bedrooms: number | null; bathrooms: number | null; status: string }[]
+): string {
   const valueStr = evaluation.estimatedValue > 0
     ? `$${evaluation.estimatedValue.toLocaleString()}`
     : "Contact us for a detailed appraisal";
@@ -146,9 +192,10 @@ function buildEvaluationEmailHtml(evaluation: any, name: string): string {
     : "";
 
   let comparablesHtml = "";
-  if (evaluation.comparables?.length > 0) {
+  if (blurredComparables.length > 0) {
     comparablesHtml = `
-      <h3 style="margin-top:24px;color:#214359;">Comparable Properties</h3>
+      <h3 style="margin-top:24px;color:#214359;">Comparable Properties (Preview)</h3>
+      <p style="font-size:13px;color:#666;">We found ${blurredComparables.length} comparable propert${blurredComparables.length === 1 ? "y" : "ies"} in your area. <strong>Book a meeting</strong> to unlock full addresses and sale prices.</p>
       <table style="width:100%;border-collapse:collapse;margin-top:12px;">
         <tr style="background:#f5f5f5;">
           <th style="padding:8px;text-align:left;">Address</th>
@@ -157,12 +204,12 @@ function buildEvaluationEmailHtml(evaluation: any, name: string): string {
           <th style="padding:8px;">Baths</th>
           <th style="padding:8px;">Status</th>
         </tr>
-        ${evaluation.comparables
+        ${blurredComparables
           .map(
-            (c: any) => `
+            (c) => `
         <tr style="border-bottom:1px solid #eee;">
-          <td style="padding:8px;">${c.address}, ${c.city}</td>
-          <td style="padding:8px;text-align:right;">$${c.price.toLocaleString()}</td>
+          <td style="padding:8px;color:#888;">${c.addressBlurred}</td>
+          <td style="padding:8px;text-align:right;color:#888;">${c.priceBlurred}</td>
           <td style="padding:8px;">${c.bedrooms ?? "—"}</td>
           <td style="padding:8px;">${c.bathrooms ?? "—"}</td>
           <td style="padding:8px;">${c.status}</td>
@@ -171,6 +218,7 @@ function buildEvaluationEmailHtml(evaluation: any, name: string): string {
           )
           .join("")}
       </table>
+      <p style="margin-top:16px;font-size:13px;color:#214359;"><strong>Book a meeting</strong> to receive your full comparative market analysis with detailed comparable properties.</p>
     `;
   }
 
@@ -188,7 +236,7 @@ function buildEvaluationEmailHtml(evaluation: any, name: string): string {
     <p style="margin:8px 0 0;font-size:28px;font-weight:700;color:#214359;">${valueStr}</p>
   </div>
 
-  <p style="font-size:13px;color:#666;">This estimate is based on comparable properties in your area. For a detailed, personalized appraisal, we'd be happy to schedule a visit.</p>
+  <p style="font-size:13px;color:#666;">This estimate is based on comparable properties in your area. Book a meeting to receive your full comparative market analysis with detailed comparables.</p>
   ${fallbackNote}
   ${comparablesHtml}
   <p style="margin-top:32px;font-size:13px;color:#666;">Questions? Reply to this email or give us a call.</p>

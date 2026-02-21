@@ -87,6 +87,12 @@ export default function WebsiteEditorPage() {
   const [listingsCountLoading, setListingsCountLoading] = useState(false);
   const [syncCentrisLoading, setSyncCentrisLoading] = useState(false);
 
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
+  const showNeonDatabaseSection =
+    isSuperAdmin ||
+    website?.templateType === 'SERVICE' ||
+    website?.type === 'SERVICE_TEMPLATE';
+
   useEffect(() => {
     if (session && params.id) {
       fetchWebsite();
@@ -534,7 +540,7 @@ export default function WebsiteEditorPage() {
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6 space-y-6">
-            {(website.templateType === 'SERVICE' || website.type === 'SERVICE_TEMPLATE') && (
+            {showNeonDatabaseSection && (
               <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
                 <Label htmlFor="neonDatabaseUrl" className="text-sm font-medium">Neon Database URL (required for sync)</Label>
                 <Input
@@ -562,7 +568,7 @@ export default function WebsiteEditorPage() {
                   }}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Same as DATABASE_URL in your site&apos;s Vercel project. Required for listings sync and property evaluation.
+                  Same as DATABASE_URL in your site&apos;s Vercel project. Paste the URL without quotes. Required for listings sync and property evaluation.
                 </p>
               </div>
             )}
@@ -601,7 +607,7 @@ export default function WebsiteEditorPage() {
               <BarChart3 className="h-4 w-4 mr-2" />
               Analytics
             </Button>
-            {(website.templateType === 'SERVICE' || website.type === 'SERVICE_TEMPLATE') && (
+            {showNeonDatabaseSection && (
               <div className="space-y-2 pt-2 border-t">
                 <p className="text-sm font-medium">Centris Listings</p>
                 <div className="space-y-2">

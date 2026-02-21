@@ -35,6 +35,8 @@
     "check-theodora-listings": "tsx scripts/check-theodora-listings.ts",
     "set-theodora-vercel-database": "tsx scripts/set-theodora-vercel-database.ts",
     "publish-theodora-to-github": "tsx scripts/publish-theodora-to-github.ts",
+    "sync-theodora": "tsx scripts/sync-template-to-theodora.ts",
+    "deploy-theodora": "tsx scripts/deploy-theodora.ts",
     "publish:templates": "tsx scripts/publish-templates-to-github.ts",
     "phase4a:eyal-secret": "tsx scripts/phase4a-eyal-website-secret.ts",
     "phase0:backup-eyal": "tsx scripts/phase0-backup-eyal-darksword.ts"

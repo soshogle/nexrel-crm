@@ -19,6 +19,10 @@ import path from "path";
 dotenv.config({ path: path.join(process.cwd(), ".env.local") });
 dotenv.config({ path: path.join(process.cwd(), ".env") });
 
+/** Theodora's broker Neon DB (ep-delicate-bar). Override with THEODORA_DATABASE_URL env. */
+const THEODORA_BROKER_DB_URL =
+  "postgresql://neondb_owner:npg_VZvTl5BQ9keR@ep-delicate-bar-aiwr4hlz-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+
 function getTheodoraDatabaseUrl(): string | undefined {
   if (process.env.THEODORA_DATABASE_URL) {
     return process.env.THEODORA_DATABASE_URL;
@@ -29,7 +33,7 @@ function getTheodoraDatabaseUrl(): string | undefined {
     const m = content.match(/^\s*DATABASE_URL=(.+)$/m);
     if (m) return m[1].trim().replace(/^["']|["']$/g, "");
   }
-  return undefined;
+  return THEODORA_BROKER_DB_URL;
 }
 
 const prisma = new PrismaClient();
