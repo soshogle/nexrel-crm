@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         lead: {
-          select: { id: true, name: true, businessName: true, contactPerson: true, email: true },
+          select: { id: true, businessName: true, contactPerson: true, email: true },
         },
         campaign: {
           select: { id: true, name: true },
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     const fullReview = await prisma.review.findUnique({
       where: { id: review.id },
       include: {
-        lead: { select: { id: true, name: true, businessName: true, contactPerson: true } },
+        lead: { select: { id: true, businessName: true, contactPerson: true } },
         campaign: { select: { id: true, name: true } },
       },
     });

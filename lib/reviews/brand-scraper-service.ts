@@ -17,9 +17,10 @@ import { analyzeReviewSentiment, processIncomingReview } from './review-intellig
 const APIFY_BASE = 'https://api.apify.com/v2';
 
 // ── Apify actors for each review platform ──────────────────────────────────
+// Apify actor IDs use tilde (username~actor-name), not slash
 const REVIEW_ACTORS: Record<string, { actorId: string; buildInput: (biz: string, loc?: string) => Record<string, any> }> = {
   GOOGLE: {
-    actorId: 'compass/google-maps-reviews-scraper',
+    actorId: 'compass~google-maps-reviews-scraper',
     buildInput: (biz, loc) => ({
       searchQueries: [loc ? `${biz} ${loc}` : biz],
       maxReviews: 100,
@@ -27,7 +28,7 @@ const REVIEW_ACTORS: Record<string, { actorId: string; buildInput: (biz: string,
     }),
   },
   YELP: {
-    actorId: 'yin/yelp-scraper',
+    actorId: 'yin~yelp-scraper',
     buildInput: (biz, loc) => ({
       searchTerms: [biz],
       locations: loc ? [loc] : [],
@@ -36,21 +37,21 @@ const REVIEW_ACTORS: Record<string, { actorId: string; buildInput: (biz: string,
     }),
   },
   TRUSTPILOT: {
-    actorId: 'trudax/trustpilot-reviews-scraper',
+    actorId: 'trudax~trustpilot-reviews-scraper',
     buildInput: (biz) => ({
       startUrls: [{ url: `https://www.trustpilot.com/search?query=${encodeURIComponent(biz)}` }],
       maxItems: 100,
     }),
   },
   FACEBOOK: {
-    actorId: 'apify/facebook-pages-scraper',
+    actorId: 'apify~facebook-pages-scraper',
     buildInput: (biz) => ({
       startUrls: [{ url: `https://www.facebook.com/search/pages/?q=${encodeURIComponent(biz)}` }],
       maxReviews: 50,
     }),
   },
   BBB: {
-    actorId: 'apify/cheerio-scraper',
+    actorId: 'apify~cheerio-scraper',
     buildInput: (biz) => ({
       startUrls: [{ url: `https://www.bbb.org/search?find_text=${encodeURIComponent(biz)}` }],
       pageFunction: `async function pageFunction(context) {
@@ -72,7 +73,7 @@ const REVIEW_ACTORS: Record<string, { actorId: string; buildInput: (biz: string,
 // ── Apify helpers ──────────────────────────────────────────────────────────
 
 function getApifyToken(): string {
-  return process.env.APIFY_API_TOKEN || '';
+  return process.env.APIFY_API_TOKEN || process.env.APIFY_TOKEN || process.env.APIFY_API_KEY || '';
 }
 
 async function runActorAndWait(
@@ -145,10 +146,41 @@ function classifySource(url: string): string {
   return 'FORUM';
 }
 
+async function searchViaGoogleCSE(query: string, apiKey: string, cx: string): Promise<WebMention[]> {
+  const params = new URLSearchParams({ q: query, key: apiKey, cx, num: '10' });
+  const res = await fetch(`https://www.googleapis.com/customsearch/v1?${params}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.items || []).map((r: any) => ({
+    title: r.title || '',
+    url: r.link,
+    snippet: r.snippet || '',
+    source: classifySource(r.link),
+    publishedAt: r.pagemap?.metatags?.[0]?.['article:published_time'] || undefined,
+  }));
+}
+
+async function searchViaSerpAPI(query: string, serpKey: string): Promise<WebMention[]> {
+  const params = new URLSearchParams({ q: query, api_key: serpKey, engine: 'google', num: '15', hl: 'en' });
+  const res = await fetch(`https://serpapi.com/search.json?${params}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.organic_results || []).map((r: any) => ({
+    title: r.title || '',
+    url: r.link,
+    snippet: r.snippet || '',
+    source: classifySource(r.link),
+    publishedAt: r.date || undefined,
+  }));
+}
+
 async function searchWebMentions(businessName: string): Promise<WebMention[]> {
   const serpKey = process.env.SERPAPI_KEY || process.env.SERP_API_KEY;
-  if (!serpKey) {
-    console.warn('[BrandScraper] No SERPAPI_KEY configured – skipping web mentions');
+  const googleCSEKey = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY || process.env.GOOGLE_CSE_API_KEY;
+  const googleCSECx = process.env.GOOGLE_CUSTOM_SEARCH_CX || process.env.GOOGLE_CSE_CX;
+
+  if (!serpKey && !googleCSEKey) {
+    console.warn('[BrandScraper] No SERPAPI_KEY or GOOGLE_CUSTOM_SEARCH_API_KEY configured – skipping web mentions');
     return [];
   }
 
@@ -158,30 +190,21 @@ async function searchWebMentions(businessName: string): Promise<WebMention[]> {
 
   for (const q of queries) {
     try {
-      const params = new URLSearchParams({
-        q,
-        api_key: serpKey,
-        engine: 'google',
-        num: '15',
-        hl: 'en',
-      });
-      const res = await fetch(`https://serpapi.com/search.json?${params}`);
-      if (!res.ok) continue;
-      const data = await res.json();
+      let results: WebMention[] = [];
 
-      for (const r of data.organic_results || []) {
-        if (!r.link || seenUrls.has(r.link)) continue;
-        seenUrls.add(r.link);
-        allMentions.push({
-          title: r.title || '',
-          url: r.link,
-          snippet: r.snippet || '',
-          source: classifySource(r.link),
-          publishedAt: r.date || undefined,
-        });
+      if (googleCSEKey && googleCSECx) {
+        results = await searchViaGoogleCSE(q, googleCSEKey, googleCSECx);
+      } else if (serpKey) {
+        results = await searchViaSerpAPI(q, serpKey);
+      }
+
+      for (const r of results) {
+        if (!r.url || seenUrls.has(r.url)) continue;
+        seenUrls.add(r.url);
+        allMentions.push(r);
       }
     } catch (err) {
-      console.warn(`[BrandScraper] SerpAPI query failed for "${q}":`, err);
+      console.warn(`[BrandScraper] Web search query failed for "${q}":`, err);
     }
   }
 
