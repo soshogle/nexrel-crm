@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.website.findMany({
         where: { userId },
-        select: { id: true, name: true, domain: true },
+        select: { id: true, name: true, vercelDeploymentUrl: true },
       }),
       prisma.rEProperty.findMany({
         where: { userId },
@@ -104,9 +104,9 @@ export async function GET(request: NextRequest) {
     const websiteLeads = websites.map(w => ({
       websiteId: w.id,
       name: w.name,
-      domain: w.domain,
+      domain: w.vercelDeploymentUrl || null,
       leadCount: recentLeads.filter(l =>
-        l.source.includes(w.id) || l.source.includes(w.domain || '') || l.source === 'website-inquiry'
+        l.source.includes(w.id) || l.source.includes(w.vercelDeploymentUrl || '') || l.source === 'website-inquiry'
       ).length,
     })).sort((a, b) => b.leadCount - a.leadCount);
 
