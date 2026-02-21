@@ -25,6 +25,8 @@ export interface WorkflowTask {
     field: string;
     operator: string;
     value: string;
+    customFieldName?: string;
+    branchAction?: string;
   } | null;
   // Position for serpentine layout
   position?: {

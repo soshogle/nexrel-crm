@@ -69,6 +69,28 @@ const BRANCH_OPERATORS = [
   { value: 'is_not_empty', label: 'Is Not Empty' },
 ];
 
+const BRANCH_CONDITION_FIELDS = [
+  { value: 'status', label: 'Status' },
+  { value: 'lead_score', label: 'Lead Score' },
+  { value: 'response', label: 'Response' },
+  { value: 'engagement', label: 'Engagement' },
+  { value: 'custom', label: 'Custom Field' },
+];
+
+const BRANCH_ACTIONS = [
+  { value: 'email', label: 'Send Email', icon: '📧' },
+  { value: 'sms', label: 'Send SMS', icon: '💬' },
+  { value: 'voice_call', label: 'Make Voice Call', icon: '📞' },
+  { value: 'task', label: 'Create Task', icon: '✅' },
+  { value: 'calendar', label: 'Schedule Calendar Event', icon: '📅' },
+  { value: 'document', label: 'Generate Document', icon: '📄' },
+  { value: 'lead_research', label: 'Run Lead Research', icon: '🔍' },
+  { value: 'request_review', label: 'Request Review', icon: '⭐' },
+  { value: 'notification', label: 'Send Notification', icon: '🔔' },
+  { value: 'update_status', label: 'Update Lead Status', icon: '🔄' },
+  { value: 'create_report', label: 'Create Report', icon: '📊' },
+];
+
 const AVAILABLE_ACTIONS = [
   { value: 'voice_call', label: 'Voice Call', icon: '📞', description: 'Make AI voice call via Soshogle AI' },
   { value: 'sms', label: 'SMS', icon: '💬', description: 'Send SMS message via Soshogle AI' },
@@ -695,7 +717,13 @@ export function TaskEditorPanel({
                 <div>
                   <Label className="text-xs">AI Employee to Remind</Label>
                   <Select
-                    value={(editedTask as any).actionConfig?.hitlEscalationAgent ?? 'none'}
+                    value={(() => {
+                      const v = (editedTask as any).actionConfig?.hitlEscalationAgent;
+                      if (!v || v === 'none') return 'none';
+                      if (v.startsWith('ai_team:')) return v;
+                      if (aiEmployees.some((e) => e.id === v)) return `ai_team:${v}`;
+                      return v;
+                    })()}
                     onValueChange={(v) => {
                       const ac = (editedTask as any).actionConfig || {};
                       setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlEscalationAgent: v === 'none' ? undefined : v } } as WorkflowTask);
@@ -706,11 +734,43 @@ export function TaskEditorPanel({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None (no reminder)</SelectItem>
-                      {aiEmployees.map((emp) => (
-                        <SelectItem key={emp.id} value={emp.id}>
-                          {emp.customName || emp.profession}
+                      {industryConfig.aiAgents.map((agent) => (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: agent.color }} />
+                            {agent.name} ({agent.role})
+                          </span>
                         </SelectItem>
                       ))}
+                      {aiEmployees.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1 pt-2">
+                            My AI Team
+                          </div>
+                          {aiEmployees.map((emp) => (
+                            <SelectItem key={emp.id} value={`ai_team:${emp.id}`}>
+                              <span className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-purple-500" />
+                                {emp.customName || emp.profession}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                      <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1 pt-2">
+                        Professional AI Experts
+                      </div>
+                      {PROFESSIONAL_EMPLOYEE_TYPES.map((type) => {
+                        const config = PROFESSIONAL_EMPLOYEE_CONFIGS[type];
+                        return (
+                          <SelectItem key={type} value={`professional:${type}`}>
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-sky-500" />
+                              {config.name} ({config.title})
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1329,13 +1389,45 @@ export function TaskEditorPanel({
                 <div className="space-y-2">
                   <div>
                     <Label className="text-xs">Condition Field</Label>
-                    <Input
-                      value={editedTask.branchCondition.field}
-                      onChange={(e) => handleBranchConditionChange('field', e.target.value)}
-                      className="mt-1 border-purple-200"
-                      placeholder="e.g., status"
-                    />
+                    <Select
+                      value={
+                        BRANCH_CONDITION_FIELDS.some(f => f.value === editedTask.branchCondition?.field)
+                          ? editedTask.branchCondition.field
+                          : 'custom'
+                      }
+                      onValueChange={(value) => {
+                        handleBranchConditionChange('field', value);
+                        if (value !== 'custom') {
+                          handleBranchConditionChange('customFieldName', undefined);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="mt-1 border-purple-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="z-50">
+                        {BRANCH_CONDITION_FIELDS.map((f) => (
+                          <SelectItem key={f.value} value={f.value}>
+                            {f.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+
+                  {editedTask.branchCondition.field === 'custom' && (
+                    <div>
+                      <Label className="text-xs">Custom Field Name</Label>
+                      <Input
+                        value={editedTask.branchCondition.customFieldName || ''}
+                        onChange={(e) => handleBranchConditionChange('customFieldName', e.target.value)}
+                        className="mt-1 border-purple-200"
+                        placeholder="e.g., lead_score, deal_size, priority"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Enter the name of the field you want to evaluate</p>
+                    </div>
+                  )}
+
                   <div>
                     <Label className="text-xs">Operator</Label>
                     <Select
@@ -1354,15 +1446,67 @@ export function TaskEditorPanel({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label className="text-xs">Value</Label>
-                    <Input
-                      value={editedTask.branchCondition.value}
-                      onChange={(e) => handleBranchConditionChange('value', e.target.value)}
-                      className="mt-1 border-purple-200"
-                      placeholder="e.g., completed"
-                    />
+
+                  {editedTask.branchCondition.operator !== 'is_empty' &&
+                   editedTask.branchCondition.operator !== 'is_not_empty' && (
+                    <div>
+                      <Label className="text-xs">Value</Label>
+                      <Input
+                        value={editedTask.branchCondition.value}
+                        onChange={(e) => handleBranchConditionChange('value', e.target.value)}
+                        className="mt-1 border-purple-200"
+                        placeholder="e.g., completed"
+                      />
+                    </div>
+                  )}
+
+                  {/* Branch Action */}
+                  <div className="pt-2 mt-2 border-t border-purple-200">
+                    <Label className="text-xs font-semibold">Then Do (Branch Action)</Label>
+                    <p className="text-xs text-gray-500 mt-0.5 mb-1">What action to perform when this condition is met</p>
+                    <Select
+                      value={editedTask.branchCondition.branchAction || '__none__'}
+                      onValueChange={(value) => handleBranchConditionChange('branchAction', value === '__none__' ? undefined : value)}
+                    >
+                      <SelectTrigger className="mt-1 border-purple-200">
+                        <SelectValue placeholder="Select an action" />
+                      </SelectTrigger>
+                      <SelectContent className="z-50">
+                        <SelectItem value="__none__">No specific action</SelectItem>
+                        {BRANCH_ACTIONS.map((action) => (
+                          <SelectItem key={action.value} value={action.value}>
+                            <span className="flex items-center gap-2">
+                              <span>{action.icon}</span>
+                              <span>{action.label}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+
+                  {parentTask && (
+                    <div className="mt-3 p-2 bg-green-100 rounded text-xs text-gray-700">
+                      <strong>Branching from:</strong> {parentTask.name}
+                      <br />
+                      <strong>If:</strong>{' '}
+                      {editedTask.branchCondition?.field === 'custom'
+                        ? (editedTask.branchCondition?.customFieldName || 'custom field')
+                        : editedTask.branchCondition?.field}{' '}
+                      {editedTask.branchCondition?.operator}{' '}
+                      {editedTask.branchCondition?.operator !== 'is_empty' && editedTask.branchCondition?.operator !== 'is_not_empty'
+                        ? `"${editedTask.branchCondition?.value}"`
+                        : ''}
+                      {editedTask.branchCondition?.branchAction && (
+                        <>
+                          <br />
+                          <strong>Then:</strong>{' '}
+                          {BRANCH_ACTIONS.find(a => a.value === editedTask.branchCondition?.branchAction)?.icon}{' '}
+                          {BRANCH_ACTIONS.find(a => a.value === editedTask.branchCondition?.branchAction)?.label}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
