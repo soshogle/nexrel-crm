@@ -14,6 +14,23 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: { unoptimized: true },
+  // Reduce browser caching for app routes so deployments take effect immediately
+  async headers() {
+    return [
+      {
+        source: '/dashboard/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0, must-revalidate' },
+        ],
+      },
+      {
+        source: '/',
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0, must-revalidate' },
+        ],
+      },
+    ];
+  },
   webpack: (config, { isServer, dev }) => {
     // Use polling in dev to avoid EMFILE "too many open files" on macOS
     if (dev) {

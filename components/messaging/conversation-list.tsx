@@ -112,7 +112,7 @@ export function ConversationList({
   return (
     <div className="flex flex-col h-full bg-transparent">
       {/* Header */}
-        <div className="p-4 border-b border-white/10">
+        <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2 text-white">
             <Inbox className="h-5 w-5 text-[#7b42f6]" />
@@ -131,31 +131,33 @@ export function ConversationList({
           )}
         </div>
 
-        {/* Search */}
+        {/* Search - medium dark gray like dashboard inputs */}
         <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white" />
           <Input
             placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+            className="pl-9 bg-[#363636] border-gray-600 text-white placeholder:text-gray-400"
           />
         </div>
 
-        {/* Channel Filter */}
+        {/* Channel Filter - dropdown matches dashboard dark theme */}
         <Select value={channelFilter} onValueChange={setChannelFilter}>
-          <SelectTrigger className="w-full bg-white/10 border-white/20 text-white">
+          <SelectTrigger className="w-full bg-[#363636] border-gray-600 text-white [&>svg]:text-white">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Channels</SelectItem>
-            <SelectItem value="SMS">💬 SMS</SelectItem>
-            <SelectItem value="EMAIL">✉️ Email</SelectItem>
-            <SelectItem value="WHATSAPP">📱 WhatsApp</SelectItem>
-            <SelectItem value="INSTAGRAM">📸 Instagram</SelectItem>
-            <SelectItem value="FACEBOOK_MESSENGER">💙 Facebook</SelectItem>
-            <SelectItem value="GOOGLE_BUSINESS">🏢 Google Business</SelectItem>
-            <SelectItem value="WEBSITE_CHAT">💻 Website Chat</SelectItem>
+          <SelectContent className="bg-[#202124] border-gray-700 text-white [&>button]:text-white">
+            <SelectItem value="all" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">
+              All Channels
+            </SelectItem>
+            <SelectItem value="SMS" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">💬 SMS</SelectItem>
+            <SelectItem value="EMAIL" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">✉️ Email</SelectItem>
+            <SelectItem value="WHATSAPP" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">📱 WhatsApp</SelectItem>
+            <SelectItem value="INSTAGRAM" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">📸 Instagram</SelectItem>
+            <SelectItem value="FACEBOOK_MESSENGER" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">💙 Facebook</SelectItem>
+            <SelectItem value="GOOGLE_BUSINESS" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">🏢 Google Business</SelectItem>
+            <SelectItem value="WEBSITE_CHAT" className="text-white focus:bg-[#7b42f6] focus:text-white data-[highlighted]:bg-[#7b42f6] data-[highlighted]:text-white">💻 Website Chat</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -157,6 +157,18 @@ export async function PUT(
 
     // If tasks are provided, update them
     if (tasks && Array.isArray(tasks)) {
+      // Delete TaskExecution first (FK: taskId -> WorkflowTask)
+      const taskIds = await prisma.workflowTask.findMany({
+        where: { templateId: params.id },
+        select: { id: true }
+      });
+      const ids = taskIds.map(t => t.id);
+      if (ids.length > 0) {
+        await prisma.taskExecution.deleteMany({
+          where: { taskId: { in: ids } }
+        });
+      }
+
       // Delete existing tasks
       await prisma.workflowTask.deleteMany({
         where: { templateId: params.id }

@@ -484,7 +484,7 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
                   <DropdownMenuItem 
                     onClick={handleDeleteCall}
                     disabled={isDeleting}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 focus:text-red-700 focus:bg-red-50"
+                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 focus:text-purple-700 focus:bg-purple-50"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     {isDeleting ? 'Deleting...' : 'Delete Call'}
@@ -694,7 +694,7 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
                             <DropdownMenuItem 
                               onClick={handleDeleteCall}
                               disabled={isDeleting}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 focus:text-red-700 focus:bg-red-50"
+                              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 focus:text-purple-700 focus:bg-purple-50"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               {isDeleting ? 'Deleting...' : 'Delete Call'}
@@ -1000,7 +1000,7 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
             <AlertDialogAction
               onClick={confirmDeleteCall}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              className="bg-[#7b42f6] hover:bg-[#5a2db3] focus:ring-[#7b42f6]"
             >
               {isDeleting ? (
                 <>

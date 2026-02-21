@@ -245,8 +245,8 @@ export function MessagingPage() {
       </div>
 
       <div className="flex-1 flex min-h-0">
-      {/* Conversations List - Left Sidebar - Dark indigo like dashboard sidebar */}
-      <div className="w-full md:w-96 shrink-0 flex flex-col border-r border-[#281e4b]/30 bg-[#281e4b]">
+      {/* Conversations List - Same dark gray as stats cards (#202124) */}
+      <div className="w-full md:w-96 shrink-0 flex flex-col border-r border-gray-700 bg-[#202124]">
         <div className="flex-1 overflow-hidden">
           <ConversationList
             key={refreshKey}

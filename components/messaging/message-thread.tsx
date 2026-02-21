@@ -195,7 +195,7 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
       case 'READ':
         return <CheckCheck className="h-3 w-3 text-white" />;
       case 'FAILED':
-        return <span className="text-red-400 text-xs">!</span>;
+        return <span className="text-purple-400 text-xs">!</span>;
       default:
         return null;
     }

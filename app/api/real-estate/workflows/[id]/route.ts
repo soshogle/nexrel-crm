@@ -128,6 +128,19 @@ export async function PUT(
     }
 
     if (tasks && Array.isArray(tasks)) {
+      // Delete RETaskExecution first (FK: taskId -> REWorkflowTask)
+      // Executions reference tasks, so we must remove them before deleting tasks
+      const taskIds = await prisma.rEWorkflowTask.findMany({
+        where: { templateId: id },
+        select: { id: true }
+      });
+      const ids = taskIds.map(t => t.id);
+      if (ids.length > 0) {
+        await prisma.rETaskExecution.deleteMany({
+          where: { taskId: { in: ids } }
+        });
+      }
+
       await prisma.rEWorkflowTask.deleteMany({
         where: { templateId: id }
       });

@@ -50,9 +50,9 @@ export function ChannelStatsCards({ refreshKey = 0, compact = false }: ChannelSt
 
   const cards = [
     { label: 'Total Connections', value: stats.totalConnections, color: 'text-white' },
-    { label: 'Active Channels', value: stats.activeConnections, color: 'text-green-500' },
-    { label: 'Messages Received', value: stats.messagesReceived, color: 'text-blue-500' },
-    { label: 'Messages Sent', value: stats.messagesSent, color: 'text-purple-500' },
+    { label: 'Active Channels', value: stats.activeConnections, color: 'text-white' },
+    { label: 'Messages Received', value: stats.messagesReceived, color: 'text-white' },
+    { label: 'Messages Sent', value: stats.messagesSent, color: 'text-white' },
   ];
 
   if (compact) {

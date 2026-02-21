@@ -134,7 +134,7 @@ export function ChannelConnectionsPanel({ onConnectionChange }: ChannelConnectio
         );
       case 'ERROR':
         return (
-          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+          <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
             <AlertCircle className="h-3 w-3 mr-1" />
             Error
           </Badge>
@@ -148,7 +148,7 @@ export function ChannelConnectionsPanel({ onConnectionChange }: ChannelConnectio
         );
       default:
         return (
-          <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">
+          <Badge className="bg-gray-400/30 text-gray-300 border-gray-500/30">
             <XCircle className="h-3 w-3 mr-1" />
             Not Connected
           </Badge>
@@ -182,7 +182,7 @@ export function ChannelConnectionsPanel({ onConnectionChange }: ChannelConnectio
           return (
             <div
               key={channelType}
-              className={`flex items-center justify-between p-3 rounded-lg border ${config.borderColor} ${config.bgColor} transition-all hover:opacity-80`}
+              className="flex items-center justify-between p-3 rounded-lg bg-[#363636] border border-gray-600 transition-all hover:opacity-90"
             >
               <div className="flex items-center gap-3 flex-1">
                 <div className={`p-2 rounded-lg ${config.bgColor}`}>
