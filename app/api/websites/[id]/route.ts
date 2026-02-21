@@ -104,7 +104,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name, structure, seoData, voiceAIEnabled, voiceAIConfig, enableTavusAvatar, status, agencyConfig, navConfig, pageLabels } = body;
+    const { name, structure, seoData, voiceAIEnabled, voiceAIConfig, enableTavusAvatar, status, agencyConfig, navConfig, pageLabels, neonDatabaseUrl } = body;
 
     // Merge voiceAIConfig with existing if partial update
     let finalVoiceAIConfig = voiceAIConfig;
@@ -144,6 +144,7 @@ export async function PATCH(
         ...(finalAgencyConfig !== undefined && { agencyConfig: finalAgencyConfig }),
         ...(navConfig !== undefined && { navConfig }),
         ...(pageLabels !== undefined && { pageLabels }),
+        ...(neonDatabaseUrl !== undefined && { neonDatabaseUrl: neonDatabaseUrl || null }),
       },
     });
 
