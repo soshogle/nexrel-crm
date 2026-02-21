@@ -484,26 +484,6 @@ export function CircularWorkflowCanvas({
         <p className="text-gray-600">Drag to reposition</p>
         <p className="text-gray-600">Drop on task to swap</p>
       </motion.div>
-      
-      {/* Stats - positioned to not overlap diagram content */}
-      <div className="absolute bottom-4 right-4 flex gap-3 text-xs z-10">
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
-          <div className="text-gray-500">Tasks</div>
-          <div className="text-gray-900 font-bold">{workflow.tasks.length}</div>
-        </div>
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
-          <div className="text-gray-500">HITL Gates</div>
-          <div className="text-purple-600 font-bold">
-            {workflow.tasks.filter(t => t.isHITL).length}
-          </div>
-        </div>
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-purple-200 shadow-sm">
-          <div className="text-gray-500">Agents</div>
-          <div className="text-gray-900 font-bold">
-            {new Set(workflow.tasks.map(t => t.assignedAgentId).filter(Boolean)).size}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
