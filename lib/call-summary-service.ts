@@ -6,7 +6,13 @@
 import OpenAI from 'openai';
 import { prisma } from '@/lib/db';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY is not configured. Set it in Vercel environment variables.');
+  }
+  return new OpenAI({ apiKey });
+}
 
 export interface CallSummaryResult {
   summary: string;
@@ -31,7 +37,7 @@ export async function summarizeCallAndAddNote(
     throw new Error('Call has no transcript to summarize');
   }
 
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {
