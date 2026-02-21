@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, Wand2, Loader2, AlertCircle, CheckCircle2, Zap, ArrowRight, Globe, DollarSign, Users, ShoppingCart, TrendingUp, Eye, Plus, X, Clock, MessageSquare, MessageCircle, Briefcase, UserPlus, Calendar } from 'lucide-react';
+import { Sparkles, Wand2, Loader2, AlertCircle, CheckCircle2, Zap, ArrowRight, Globe, DollarSign, Users, ShoppingCart, TrendingUp, Eye, Plus, X, Clock, MessageSquare, MessageCircle, Briefcase, UserPlus, Calendar, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 
@@ -167,6 +167,11 @@ export function CreateWorkflowDialog({ open, onOpenChange, onSuccess, template }
     { value: 'DEAL_STALE', label: 'Deal Stale', icon: AlertCircle, category: 'crm' },
     { value: 'DEAL_WON', label: 'Deal Won', icon: CheckCircle2, category: 'crm' },
     { value: 'TIME_BASED', label: 'Time Based', icon: Clock, category: 'system' },
+    { value: 'REVIEW_RECEIVED', label: 'Review Received', icon: Star, category: 'reviews' },
+    { value: 'REVIEW_POSITIVE', label: 'Positive Review (4-5★)', icon: Star, category: 'reviews' },
+    { value: 'REVIEW_NEGATIVE', label: 'Negative Review (1-2★)', icon: AlertCircle, category: 'reviews' },
+    { value: 'FEEDBACK_POSITIVE', label: 'Positive Feedback', icon: CheckCircle2, category: 'reviews' },
+    { value: 'FEEDBACK_NEGATIVE', label: 'Negative Feedback', icon: AlertCircle, category: 'reviews' },
   ];
 
   const websiteTriggerTypes = [

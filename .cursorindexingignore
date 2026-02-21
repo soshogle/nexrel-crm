@@ -1,0 +1,22 @@
+# Embedded projects — each has its own repo, node_modules, and tsconfig.
+# Indexing them causes memory pressure and crashes.
+owner-websites/
+nexrel-ecommerce-template/
+nexrel-service-template/
+darksword-armory/
+Theodora-Stavropoulos-Remax/
+
+# Build artifacts
+.next/
+node_modules/
+
+# Backups and data
+backups/
+*.backup
+*.bak
+
+# Git internals
+.git/
+
+# Large data files
+owner-websites/**/data/xml/

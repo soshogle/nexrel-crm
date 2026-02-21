@@ -86,6 +86,10 @@ const AVAILABLE_ACTIONS = [
   { value: 'update_website_content', label: 'Update Website Content', icon: '✏️', description: 'Update website structure or content' },
   { value: 'publish_website', label: 'Publish Website', icon: '🚀', description: 'Publish website changes' },
   { value: 'notify_website_event', label: 'Notify on Website Event', icon: '🔔', description: 'Notify when visitor submits form or books' },
+  // Review actions
+  { value: 'request_review', label: 'Request Review', icon: '⭐', description: 'Send review request to a satisfied client via SMS/email' },
+  { value: 'respond_to_review', label: 'AI Review Response', icon: '🤖', description: 'Auto-generate AI response to a review' },
+  { value: 'analyze_reviews', label: 'Analyze Reviews', icon: '📊', description: 'Run sentiment analysis and brand insights on all reviews' },
 ];
 
 export function TaskEditorPanel({
@@ -801,7 +805,114 @@ export function TaskEditorPanel({
             </div>
           </Card>
         )}
-        
+
+        {/* Request Review - when request_review action is selected */}
+        {selectedActions.includes('request_review') && (
+          <Card className="p-4 border-yellow-200 bg-yellow-50/50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">⭐</span>
+              <Label className="text-sm font-semibold">Request Review</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Send a review request to the lead/client after a positive interaction.
+            </p>
+            <div className="space-y-2">
+              <div>
+                <Label className="text-xs">Send Via</Label>
+                <Select
+                  value={(editedTask as any).actionConfig?.reviewRequestMethod ?? 'SMS'}
+                  onValueChange={(v) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, reviewRequestMethod: v } } as WorkflowTask);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-yellow-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SMS">SMS</SelectItem>
+                    <SelectItem value="EMAIL">Email</SelectItem>
+                    <SelectItem value="BOTH">Both SMS &amp; Email</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Review Link (e.g. Google review page)</Label>
+                <Input
+                  value={(editedTask as any).actionConfig?.reviewUrl ?? ''}
+                  onChange={(e) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, reviewUrl: e.target.value || undefined } } as WorkflowTask);
+                  }}
+                  placeholder="https://g.page/your-business/review"
+                  className="bg-white border-yellow-200"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Custom Message (optional)</Label>
+                <Textarea
+                  value={(editedTask as any).actionConfig?.reviewRequestMessage ?? ''}
+                  onChange={(e) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, reviewRequestMessage: e.target.value || undefined } } as WorkflowTask);
+                  }}
+                  placeholder="Leave blank for a friendly default message"
+                  rows={3}
+                  className="bg-white border-yellow-200"
+                />
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* AI Review Response - when respond_to_review action is selected */}
+        {selectedActions.includes('respond_to_review') && (
+          <Card className="p-4 border-blue-200 bg-blue-50/50">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🤖</span>
+              <Label className="text-sm font-semibold">AI Review Response</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">
+              Automatically generate a response when a new review comes in. Works best with the &quot;Review Received&quot; trigger.
+            </p>
+            <div className="space-y-2">
+              <div>
+                <Label className="text-xs">Response Tone</Label>
+                <Select
+                  value={(editedTask as any).actionConfig?.responseTone ?? 'professional'}
+                  onValueChange={(v) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, responseTone: v } } as WorkflowTask);
+                  }}
+                >
+                  <SelectTrigger className="bg-white border-blue-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="professional">Professional</SelectItem>
+                    <SelectItem value="friendly">Friendly</SelectItem>
+                    <SelectItem value="casual">Casual</SelectItem>
+                    <SelectItem value="empathetic">Empathetic</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Custom Instructions</Label>
+                <Textarea
+                  value={(editedTask as any).actionConfig?.responseInstructions ?? ''}
+                  onChange={(e) => {
+                    const ac = (editedTask as any).actionConfig || {};
+                    setEditedTask({ ...editedTask, actionConfig: { ...ac, responseInstructions: e.target.value || undefined } } as WorkflowTask);
+                  }}
+                  placeholder="E.g. always mention our 24/7 support, invite them back for a discount..."
+                  rows={2}
+                  className="bg-white border-blue-200"
+                />
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Delay Settings */}
         <Card className="p-4 border-purple-200 bg-purple-50/50">
           <div className="flex items-center justify-between mb-3">

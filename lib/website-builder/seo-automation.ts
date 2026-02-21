@@ -8,6 +8,7 @@
  */
 
 import type { WebsiteStructure, WebsitePage } from './types';
+import { extractPages } from './extract-pages';
 
 export interface SEOAutomationConfig {
   websiteUrl: string;
@@ -273,6 +274,126 @@ Sitemap: ${baseUrl}/sitemap.xml
     tags.push(`<meta name="robots" content="index, follow">`);
 
     return tags.join('\n');
+  }
+
+  /**
+   * Auto-generate comprehensive SEO metadata for every page in a structure.
+   * Fills in titles, descriptions, keywords, OG tags, and Twitter cards
+   * so owners only need to review/edit rather than create from scratch.
+   */
+  generateAutoSeo(
+    structure: any,
+    config: SEOAutomationConfig
+  ): { globalSeo: any; pagesWithSeo: any[] } {
+    const pages = extractPages(structure);
+
+    const globalSeo = {
+      title: config.businessName,
+      description: config.businessDescription ||
+        `Welcome to ${config.businessName}. Explore our services and discover what sets us apart.`,
+      keywords: this.inferKeywords(config),
+      canonicalUrl: config.websiteUrl?.replace(/\/$/, '') || '',
+      ogTitle: config.businessName,
+      ogDescription: config.businessDescription ||
+        `Welcome to ${config.businessName}. Explore our services and discover what sets us apart.`,
+      ogImage: '',
+      twitterCard: 'summary_large_image',
+      locale: 'en_US',
+      type: 'website',
+    };
+
+    const pagesWithSeo = pages.map((page: any) => {
+      const pageName = page.name || page.id || 'Page';
+      const pagePath = page.path || '/';
+      const isHome = pagePath === '/' || page.id === 'home';
+      const heroComponent = (page.components || []).find(
+        (c: any) => c.type === 'Hero' || c.type === 'hero' ||
+          c.sectionType === 'Hero' || c.sectionType === 'hero'
+      );
+      const heroTitle = heroComponent?.props?.title || heroComponent?.props?.heading;
+      const heroSubtitle = heroComponent?.props?.subtitle || heroComponent?.props?.description;
+
+      const title = page.seo?.title ||
+        (isHome
+          ? `${config.businessName} | ${heroTitle || 'Home'}`
+          : `${pageName} | ${config.businessName}`);
+
+      const description = page.seo?.description ||
+        heroSubtitle ||
+        (isHome
+          ? config.businessDescription || `${config.businessName} — ${pageName}`
+          : `${pageName} — ${config.businessName}. Learn more about our ${pageName.toLowerCase()}.`);
+
+      const keywords = page.seo?.keywords ||
+        this.inferPageKeywords(pageName, pagePath, config);
+
+      return {
+        ...page,
+        seo: {
+          ...(page.seo || {}),
+          title,
+          description: description.slice(0, 160),
+          keywords,
+          ogTitle: page.seo?.ogTitle || title,
+          ogDescription: page.seo?.ogDescription || description.slice(0, 160),
+          ogImage: page.seo?.ogImage || '',
+          twitterCard: 'summary_large_image',
+          robots: 'index, follow',
+          canonicalUrl: isHome
+            ? config.websiteUrl?.replace(/\/$/, '') || ''
+            : `${config.websiteUrl?.replace(/\/$/, '') || ''}${pagePath}`,
+        },
+      };
+    });
+
+    return { globalSeo, pagesWithSeo };
+  }
+
+  private inferKeywords(config: SEOAutomationConfig): string[] {
+    const kw: string[] = [];
+    if (config.businessName) kw.push(config.businessName);
+    const desc = (config.businessDescription || '').toLowerCase();
+    const buzzwords = [
+      'real estate', 'dental', 'clinic', 'services', 'products', 'e-commerce',
+      'consulting', 'agency', 'portfolio', 'restaurant', 'salon', 'fitness',
+      'health', 'law', 'legal', 'finance', 'insurance', 'marketing',
+      'construction', 'education', 'coaching', 'photography', 'design',
+    ];
+    for (const bw of buzzwords) {
+      if (desc.includes(bw)) kw.push(bw);
+    }
+    if (config.address?.city) kw.push(config.address.city);
+    if (config.address?.state) kw.push(config.address.state);
+    return kw.length > 0 ? kw : [config.businessName || 'business'];
+  }
+
+  private inferPageKeywords(
+    pageName: string,
+    pagePath: string,
+    config: SEOAutomationConfig
+  ): string[] {
+    const base = [config.businessName || ''];
+    const slug = pagePath.replace(/^\//, '').replace(/-/g, ' ');
+    if (slug && slug !== '/') base.push(slug);
+    const nameLC = pageName.toLowerCase();
+    const pageAliases: Record<string, string[]> = {
+      about: ['about us', 'our story', 'company'],
+      services: ['services', 'what we offer', 'solutions'],
+      products: ['products', 'shop', 'store'],
+      contact: ['contact us', 'get in touch', 'reach us'],
+      blog: ['blog', 'articles', 'news'],
+      gallery: ['gallery', 'portfolio', 'work'],
+      faq: ['faq', 'frequently asked questions', 'help'],
+      testimonials: ['reviews', 'testimonials', 'what clients say'],
+      pricing: ['pricing', 'plans', 'rates'],
+    };
+    for (const [key, aliases] of Object.entries(pageAliases)) {
+      if (nameLC.includes(key)) {
+        base.push(...aliases);
+        break;
+      }
+    }
+    return base.filter(Boolean);
   }
 
   // Helper methods

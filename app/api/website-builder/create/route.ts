@@ -16,6 +16,7 @@ import { seoAutomation } from '@/lib/website-builder/seo-automation';
 import { googleSearchConsole } from '@/lib/website-builder/google-search-console';
 import { buildQuestionnaireFromUser } from '@/lib/website-builder/prefill-from-user';
 import { downloadExternalImagesInStructure } from '@/lib/website-builder/download-external-images';
+import { extractPages } from '@/lib/website-builder/extract-pages';
 
 export async function POST(request: NextRequest) {
   try {
@@ -288,7 +289,7 @@ async function processWebsiteBuild(
         config.templateType as any,
         config.templateId // Pass templateId if provided
       );
-      seoData = structure.pages[0]?.seo || {};
+      seoData = extractPages(structure)[0]?.seo || {};
     }
 
     // Download external images to blob storage (one store for all; paths: website-images/{userId}/{websiteId}/)
@@ -426,7 +427,8 @@ async function processWebsiteBuild(
       seoFiles.robots = robotsTxt;
 
       // Generate structured data for homepage
-      const homepage = structure.pages?.find((p: any) => p.path === '/' || p.id === 'home');
+      const buildPages = extractPages(structure);
+      const homepage = buildPages.find((p) => p.path === '/' || p.id === 'home');
       if (homepage) {
         const structuredData = seoAutomation.generatePageStructuredData(homepage, seoConfig);
         seoFiles.structuredData = structuredData;
@@ -487,7 +489,7 @@ async function processWebsiteBuild(
             // Request indexing for homepage and key pages
             const keyPages = [
               deploymentUrl, // Homepage
-              ...(structure.pages?.slice(0, 5).map((p: any) => `${deploymentUrl}${p.path}`) || []),
+              ...buildPages.slice(0, 5).map((p) => `${deploymentUrl}${p.path}`),
             ];
 
             const indexingResult = await googleSearchConsole.requestIndexingForKeyPages(
@@ -532,6 +534,28 @@ async function processWebsiteBuild(
       where: { id: websiteId },
       data: { buildProgress: 95 },
     });
+
+    // Auto-generate comprehensive per-page SEO so owners only edit, not create
+    const questionnaireAnswers = config.questionnaireAnswers || {};
+    const autoSeoConfig: import('@/lib/website-builder/seo-automation').SEOAutomationConfig = {
+      websiteUrl: provisioningResult.vercelDeploymentUrl || `https://${website.name.toLowerCase().replace(/\s+/g, '-')}.com`,
+      businessName: questionnaireAnswers.businessName || website.name,
+      businessDescription: questionnaireAnswers.businessDescription || seoData?.description || '',
+      contactEmail: questionnaireAnswers.contactInfo?.email,
+      contactPhone: questionnaireAnswers.contactInfo?.phone,
+      address: questionnaireAnswers.contactInfo?.address ? { street: questionnaireAnswers.contactInfo.address } : undefined,
+    };
+    try {
+      const { globalSeo, pagesWithSeo } = seoAutomation.generateAutoSeo(structure, autoSeoConfig);
+      if (!seoData || !seoData.title) {
+        seoData = { ...globalSeo, ...seoData };
+      }
+      if (Array.isArray(structure.pages)) {
+        structure.pages = pagesWithSeo;
+      }
+    } catch (autoSeoErr: any) {
+      console.warn('Auto-SEO generation error (non-critical):', autoSeoErr.message);
+    }
 
     // Update website with final data (including SEO files in seoData)
     const finalSeoData = {

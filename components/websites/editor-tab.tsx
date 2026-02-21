@@ -21,6 +21,7 @@ import { GlobalStylesEditor } from '@/components/website-builder/global-styles-e
 import { WebsiteFilesManager } from '@/components/website-builder/website-files-manager';
 import { Eye, Loader2, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { extractPages } from '@/lib/website-builder/extract-pages';
 
 interface EditorTabProps {
   website: any;
@@ -48,6 +49,7 @@ export function EditorTab({
   const [fallbackTemplates, setFallbackTemplates] = useState<any[]>([]);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
 
+  const pages = extractPages(website.structure);
   const isBuilding = website.status === 'BUILDING';
 
   return (
@@ -73,7 +75,7 @@ export function EditorTab({
                   onClick={async () => {
                     setApplyingTemplate(true);
                     try {
-                      const pagePath = website?.structure?.pages?.[selectedPageIndex]?.path || '/';
+                      const pagePath = pages[selectedPageIndex]?.path || '/';
                       const res = await fetch(`/api/websites/${website?.id}/apply-template`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -139,7 +141,7 @@ export function EditorTab({
             <div className="flex items-center gap-2">
               <SectionRewriteEditor
                 websiteId={website.id}
-                pages={website.structure?.pages || []}
+                pages={pages}
                 selectedPageIndex={selectedPageIndex}
                 onSave={async (pagePath, sectionType, props) => {
                   const res = await fetch(`/api/websites/${website.id}/structure`, {
@@ -194,7 +196,7 @@ export function EditorTab({
                         }
                         setImporting(true);
                         try {
-                          const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
+                          const pagePath = pages[selectedPageIndex]?.path || '/';
                           const res = await fetch(`/api/websites/${website.id}/import-from-url`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -233,14 +235,14 @@ export function EditorTab({
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-              {website.structure?.pages?.length > 1 && (
+              {pages.length > 1 && (
                 <Tabs
                   value={String(selectedPageIndex)}
                   onValueChange={(v) => setSelectedPageIndex(parseInt(v, 10))}
                   className="w-auto"
                 >
                   <TabsList className="h-8">
-                    {website.structure.pages.map((p: any, i: number) => (
+                    {pages.map((p: any, i: number) => (
                       <TabsTrigger key={p.id || i} value={String(i)} className="text-xs">
                         {p.name || p.path || `Page ${i + 1}`}
                       </TabsTrigger>
@@ -261,12 +263,12 @@ export function EditorTab({
           <SectionEditor
             compactMode={editorMode === 'simple'}
             websiteId={website.id}
-            pagePath={website.structure?.pages?.[selectedPageIndex]?.path || '/'}
-            components={website.structure?.pages?.[selectedPageIndex]?.components || []}
+            pagePath={pages[selectedPageIndex]?.path || '/'}
+            components={pages[selectedPageIndex]?.components || []}
             isBuilding={isBuilding}
             buildProgress={website.buildProgress ?? 0}
             onReorder={async (from, to) => {
-              const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
+              const pagePath = pages[selectedPageIndex]?.path || '/';
               const res = await fetch('/api/ai-assistant/actions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -279,7 +281,7 @@ export function EditorTab({
               await fetchWebsite();
             }}
             onDelete={async (sectionType) => {
-              const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
+              const pagePath = pages[selectedPageIndex]?.path || '/';
               const res = await fetch('/api/ai-assistant/actions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -292,7 +294,7 @@ export function EditorTab({
               await fetchWebsite();
             }}
             onUpdateImage={async (sectionType, imageUrl, alt) => {
-              const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
+              const pagePath = pages[selectedPageIndex]?.path || '/';
               const res = await fetch('/api/ai-assistant/actions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -305,7 +307,7 @@ export function EditorTab({
               await fetchWebsite();
             }}
             onUpdateLayout={async (sectionType, layout) => {
-              const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
+              const pagePath = pages[selectedPageIndex]?.path || '/';
               const res = await fetch(`/api/websites/${website.id}/structure`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -325,7 +327,7 @@ export function EditorTab({
               await fetchWebsite();
             }}
             onUpdateProps={async (sectionType, props) => {
-              const pagePath = website.structure?.pages?.[selectedPageIndex]?.path || '/';
+              const pagePath = pages[selectedPageIndex]?.path || '/';
               const res = await fetch(`/api/websites/${website.id}/structure`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },

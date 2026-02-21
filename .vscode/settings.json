@@ -1,0 +1,29 @@
+{
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/.git/**": true,
+    "**/owner-websites/**": true,
+    "**/nexrel-ecommerce-template/**": true,
+    "**/nexrel-service-template/**": true,
+    "**/darksword-armory/**": true,
+    "**/Theodora-Stavropoulos-Remax/**": true,
+    "**/backups/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/owner-websites": true,
+    "**/nexrel-ecommerce-template": true,
+    "**/nexrel-service-template": true,
+    "**/darksword-armory": true,
+    "**/Theodora-Stavropoulos-Remax": true,
+    "**/backups": true
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/node_modules": true,
+    "**/.next": true
+  },
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

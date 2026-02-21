@@ -526,7 +526,16 @@ export class WorkflowEngine {
       
       case 'MAKE_OUTBOUND_CALL':
         return this.makeOutboundCall(context, config);
-      
+
+      case 'REQUEST_REVIEW':
+        return this.requestReview(context, config);
+
+      case 'RESPOND_TO_REVIEW':
+        return this.respondToReview(context, config);
+
+      case 'ANALYZE_REVIEWS':
+        return this.analyzeReviews(context);
+
       default:
         console.warn(`Unknown action type: ${action.type}`);
         return { action: action.type, status: 'skipped' };
@@ -1787,6 +1796,64 @@ export class WorkflowEngine {
     });
 
     return { websiteId, action: 'published' };
+  }
+
+  /**
+   * Send a review request to a lead via SMS/email
+   */
+  private async requestReview(context: ExecutionContext, config: any) {
+    if (!context.leadId) return { action: 'request_review', status: 'skipped', reason: 'no lead' };
+
+    const { sendReviewRequest } = await import('@/lib/reviews/review-intelligence-service');
+    const result = await sendReviewRequest(
+      context.userId,
+      context.leadId,
+      config?.method || 'SMS',
+      config?.reviewUrl,
+      config?.customMessage
+    );
+
+    return { action: 'request_review', ...result };
+  }
+
+  /**
+   * Auto-generate and store an AI response for a review
+   */
+  private async respondToReview(context: ExecutionContext, config: any) {
+    const reviewId = (context.variables as any)?.reviewId;
+    if (!reviewId) return { action: 'respond_to_review', status: 'skipped', reason: 'no reviewId' };
+
+    const { generateAutoResponse } = await import('@/lib/reviews/review-intelligence-service');
+    const review = await prisma.review.findFirst({
+      where: { id: reviewId, userId: context.userId },
+    });
+    if (!review) return { action: 'respond_to_review', status: 'skipped', reason: 'review not found' };
+
+    const user = await prisma.user.findUnique({
+      where: { id: context.userId },
+      select: { name: true, legalEntityName: true },
+    });
+
+    const draft = await generateAutoResponse(
+      { reviewText: review.reviewText || '', rating: review.rating, reviewerName: review.reviewerName || undefined, source: review.source },
+      { tone: config?.tone || 'professional', ownerName: user?.name || undefined, includeOwnerName: true, customInstructions: config?.customInstructions }
+    );
+
+    await prisma.review.update({
+      where: { id: reviewId },
+      data: { aiResponseDraft: draft, aiResponseStatus: config?.autoApprove ? 'APPROVED' : 'PENDING' },
+    });
+
+    return { action: 'respond_to_review', reviewId, status: config?.autoApprove ? 'auto_approved' : 'draft_created' };
+  }
+
+  /**
+   * Run sentiment analysis on recent reviews
+   */
+  private async analyzeReviews(context: ExecutionContext) {
+    const { generateBrandInsights } = await import('@/lib/reviews/review-intelligence-service');
+    const report = await generateBrandInsights(context.userId);
+    return { action: 'analyze_reviews', satisfactionScore: report.satisfactionScore, totalReviews: report.totalReviews };
   }
 }
 
