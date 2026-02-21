@@ -37,6 +37,8 @@ interface SectionContentEditorProps {
   websiteId: string;
   pages: PageData[];
   onStructureUpdate: () => void;
+  /** When true, pages were derived from navConfig (template site); show template-specific hints */
+  pagesDerivedFromNav?: boolean;
 }
 
 const TEXT_FIELDS = ['title', 'subtitle', 'description', 'heading', 'subheading', 'text', 'content', 'caption', 'label', 'buttonText', 'ctaText', 'tagline', 'quote', 'author', 'name', 'role', 'body', 'summary', 'headline', 'paragraph'];
@@ -87,7 +89,7 @@ function humanize(key: string) {
     .trim();
 }
 
-export function SectionContentEditor({ websiteId, pages, onStructureUpdate }: SectionContentEditorProps) {
+export function SectionContentEditor({ websiteId, pages, onStructureUpdate, pagesDerivedFromNav }: SectionContentEditorProps) {
   const [selectedPagePath, setSelectedPagePath] = useState(pages[0]?.path || '/');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [editingProps, setEditingProps] = useState<Record<string, Record<string, any>>>({});
@@ -235,7 +237,11 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate }: Se
           <CardContent className="py-12 text-center text-muted-foreground">
             <FileText className="h-10 w-10 mx-auto mb-3 opacity-40" />
             <p>No sections on this page yet.</p>
-            <p className="text-sm mt-1">Use the Editor tab to add sections, or use AI Chat to build content.</p>
+            <p className="text-sm mt-1">
+              {pagesDerivedFromNav
+                ? 'Your template renders these pages. Use Menu & Page Labels to customize labels, or add sections via the Editor tab.'
+                : 'Use the Editor tab to add sections, or use AI Chat to build content.'}
+            </p>
           </CardContent>
         </Card>
       ) : (

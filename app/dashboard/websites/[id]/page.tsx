@@ -29,7 +29,7 @@ import { EditorTab } from '@/components/websites/editor-tab';
 import { ChatTab } from '@/components/websites/chat-tab';
 import { ApprovalTab } from '@/components/websites/approval-tab';
 import { SectionContentEditor } from '@/components/website-builder/section-content-editor';
-import { extractPages } from '@/lib/website-builder/extract-pages';
+import { extractPages, getPagesForEditor } from '@/lib/website-builder/extract-pages';
 import {
   Sheet,
   SheetContent,
@@ -370,17 +370,22 @@ export default function WebsiteEditorPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {extractPages(website.structure).length > 0 ? (
-                <SectionContentEditor
-                  websiteId={website.id}
-                  pages={extractPages(website.structure)}
-                  onStructureUpdate={fetchWebsite}
-                />
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <p>No pages found. Build your website first using the Editor or AI Chat tab.</p>
-                </div>
-              )}
+              {(() => {
+                const pages = getPagesForEditor(website.structure, website.navConfig);
+                const fromNav = pages.length > 0 && extractPages(website.structure).length === 0;
+                return pages.length > 0 ? (
+                  <SectionContentEditor
+                    websiteId={website.id}
+                    pages={pages}
+                    onStructureUpdate={fetchWebsite}
+                    pagesDerivedFromNav={fromNav}
+                  />
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p>No pages found. Build your website first using the Editor or AI Chat tab.</p>
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>

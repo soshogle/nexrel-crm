@@ -47,7 +47,7 @@ export function extractPages(structure: any): ExtractedPage[] {
       typeof structure[k] === 'object' &&
       !Array.isArray(structure[k]) &&
       structure[k] !== null &&
-      Array.isArray(structure[k]?.components)
+      (Array.isArray(structure[k]?.components) || Array.isArray(structure[k]?.sections))
   );
 
   if (pageKeys.length > 0) {
@@ -55,10 +55,90 @@ export function extractPages(structure: any): ExtractedPage[] {
       id: k,
       name: k.charAt(0).toUpperCase() + k.slice(1).replace(/[-_]/g, ' '),
       path: k === 'home' ? '/' : `/${k}`,
-      components: structure[k].components || [],
+      components: structure[k].components || structure[k].sections || [],
       seo: structure[k].seo,
     }));
   }
 
   return [];
+}
+
+/** Default nav for SERVICE template — used when deriving pages from navConfig */
+const DEFAULT_NAV = {
+  navItems: [
+    { label: 'Selling', href: '/selling', children: [{ label: 'For Sale', href: '/for-sale' }, { label: 'Sold Properties', href: '/sold' }, { label: 'Property Concierge', href: '/property-concierge' }, { label: 'Market Appraisal', href: '/market-appraisal' }] },
+    { label: 'Buying', href: '/buying', children: [{ label: 'For Sale', href: '/for-sale' }, { label: 'Prestige Properties', href: '/prestige' }, { label: 'Secret Properties', href: '/secret-properties' }] },
+    { label: 'Renting', href: '/renting', children: [{ label: 'For Lease', href: '/for-lease' }] },
+    { label: 'About', href: '/about', children: undefined },
+    { label: 'News & Media', href: '/news', children: [{ label: 'Blog', href: '/blog' }] },
+  ],
+  topLinks: [
+    { label: 'Home', href: '/' },
+    { label: 'Properties', href: '/properties' },
+    { label: 'Get A Quote', href: '/get-a-quote' },
+    { label: 'Contact', href: '/contact' },
+    { label: 'Secret Properties', href: '/secret-properties' },
+  ],
+  footerLinks: [
+    { label: 'Properties', href: '/properties' },
+    { label: 'Buying', href: '/buying' },
+    { label: 'Selling', href: '/selling' },
+    { label: 'Renting', href: '/renting' },
+    { label: 'About', href: '/about' },
+    { label: 'Blog', href: '/blog' },
+    { label: 'Contact', href: '/contact' },
+  ],
+};
+
+/**
+ * Extract pages for the Page Editor. When structure has no pages (e.g. template sites
+ * like real estate brokers), derive pages from navConfig so users can see their site's
+ * pages and use Menu & Page Labels or add sections.
+ */
+export function getPagesForEditor(
+  structure: any,
+  navConfig?: Record<string, unknown> | null
+): ExtractedPage[] {
+  const fromStructure = extractPages(structure);
+  if (fromStructure.length > 0) return fromStructure;
+
+  // For template sites (SERVICE, PRODUCT) with empty structure, derive from navConfig
+  const nav = (navConfig && Object.keys(navConfig).length > 0
+    ? { ...DEFAULT_NAV, ...navConfig }
+    : DEFAULT_NAV) as typeof DEFAULT_NAV;
+
+  const seen = new Set<string>();
+  const pages: ExtractedPage[] = [];
+
+  const addPage = (path: string, label: string) => {
+    const normalizedPath = path === '' ? '/' : path.startsWith('/') ? path : `/${path}`;
+    if (seen.has(normalizedPath)) return;
+    seen.add(normalizedPath);
+    const id = normalizedPath === '/' ? 'home' : normalizedPath.slice(1).replace(/\//g, '-') || 'page';
+    pages.push({
+      id,
+      name: label,
+      path: normalizedPath,
+      components: [],
+      seo: undefined,
+    });
+  };
+
+  // topLinks first (Home, Properties, etc.)
+  for (const item of nav.topLinks || []) {
+    addPage(item.href, item.label);
+  }
+  // navItems and their children
+  for (const item of nav.navItems || []) {
+    addPage(item.href, item.label);
+    for (const child of item.children || []) {
+      addPage(child.href, child.label);
+    }
+  }
+  // footerLinks (may add more unique paths)
+  for (const item of nav.footerLinks || []) {
+    addPage(item.href, item.label);
+  }
+
+  return pages;
 }
