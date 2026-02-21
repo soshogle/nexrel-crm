@@ -158,7 +158,7 @@ export function ChannelConnectionsPanel({ onConnectionChange }: ChannelConnectio
 
   if (loading) {
     return (
-      <Card className="border-gray-700 bg-gray-900">
+      <Card className="border-gray-700 bg-[#202124]">
         <CardHeader>
           <CardTitle className="text-white">Channel Connections</CardTitle>
         </CardHeader>
@@ -214,7 +214,7 @@ export function ChannelConnectionsPanel({ onConnectionChange }: ChannelConnectio
                       window.open(config.connectUrl, '_blank');
                       onConnectionChange?.();
                     }}
-                    className="text-white hover:bg-gray-800"
+                    className="text-white hover:bg-white/10"
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>

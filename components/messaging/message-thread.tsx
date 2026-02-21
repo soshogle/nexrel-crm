@@ -190,12 +190,12 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
   const getMessageStatusIcon = (status: string) => {
     switch (status) {
       case 'SENT':
-        return <Check className="h-3 w-3 text-muted-foreground" />;
+        return <Check className="h-3 w-3 text-white/80" />;
       case 'DELIVERED':
       case 'READ':
-        return <CheckCheck className="h-3 w-3 text-primary" />;
+        return <CheckCheck className="h-3 w-3 text-white" />;
       case 'FAILED':
-        return <span className="text-destructive text-xs">!</span>;
+        return <span className="text-red-400 text-xs">!</span>;
       default:
         return null;
     }
@@ -203,26 +203,26 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
 
   if (!conversation) {
     return (
-      <div className="flex items-center justify-center h-full bg-background">
-        <div className="animate-pulse">Loading...</div>
+      <div className="flex items-center justify-center h-full bg-gray-50">
+        <div className="animate-pulse text-gray-500">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
             <AvatarImage src={conversation.contactAvatar} />
-            <AvatarFallback className="bg-primary/10 text-primary">
+            <AvatarFallback className="bg-[#7b42f6]/10 text-[#7b42f6]">
               {getInitials(conversation.contactName)}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-semibold">{conversation.contactName}</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="font-semibold text-gray-900">{conversation.contactName}</h3>
+            <p className="text-sm text-gray-500">
               {conversation.contactIdentifier}
             </p>
           </div>
@@ -267,9 +267,9 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="flex gap-2">
-                <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-16 bg-muted rounded-2xl animate-pulse max-w-xs" />
+                  <div className="h-16 bg-gray-200 rounded-2xl animate-pulse max-w-xs" />
                 </div>
               </div>
             ))}
@@ -277,8 +277,8 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-center">
             <div>
-              <p className="text-muted-foreground mb-2">No messages yet</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-gray-500 mb-2">No messages yet</p>
+              <p className="text-sm text-gray-500">
                 Start the conversation by sending a message below
               </p>
             </div>
@@ -298,7 +298,7 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
                   {showAvatar && !isOutbound && (
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={conversation.contactAvatar} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                      <AvatarFallback className="bg-[#7b42f6]/10 text-[#7b42f6] text-xs">
                         {getInitials(conversation.contactName)}
                       </AvatarFallback>
                     </Avatar>
@@ -311,8 +311,8 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
                     <div
                       className={`px-4 py-2 rounded-2xl ${
                         isOutbound
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-card border border-border'
+                          ? 'bg-gradient-to-r from-[#7b42f6] to-[#5a2db3] text-white'
+                          : 'bg-white border border-gray-200'
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap break-words">
@@ -320,7 +320,7 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
                       </p>
                     </div>
                     <div className="flex items-center gap-1 mt-1 px-2">
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-gray-500">
                         {format(new Date(message.sentAt), 'HH:mm')}
                       </span>
                       {isOutbound && getMessageStatusIcon(message.status)}
@@ -335,7 +335,7 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t border-border bg-card">
+      <div className="p-4 border-t border-gray-200 bg-white">
         {showSmartReplies && smartReplies.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1.5">
             {smartReplies.map((r) => (
@@ -364,7 +364,7 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
             title="Smart replies"
           >
             {loadingReplies ? (
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#7b42f6] border-t-transparent" />
             ) : (
               <Sparkles className="h-5 w-5" />
             )}
@@ -386,7 +386,7 @@ export function MessageThread({ conversationId }: MessageThreadProps) {
             onClick={sendMessage} 
             disabled={!newMessage.trim() || sending}
             size="icon"
-            className="shrink-0"
+            className="shrink-0 bg-gradient-to-r from-[#7b42f6] to-[#5a2db3] hover:from-[#7b42f6]/90 hover:to-[#5a2db3]/90 text-white border-0"
           >
             <Send className="h-5 w-5" />
           </Button>
