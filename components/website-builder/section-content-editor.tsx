@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Image as ImageIcon, Type, Sparkles, Loader2, Save, Trash2, Plus,
   ChevronDown, ChevronRight, X, Upload, RotateCcw, Check, Pencil,
@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { MediaPicker } from './media-picker';
 
@@ -47,6 +48,10 @@ interface SectionContentEditorProps {
   onStructureUpdate: () => void;
   /** When true, pages were derived from navConfig (template site); show template-specific hints */
   pagesDerivedFromNav?: boolean;
+  /** Live site URL - used for auto-import when structure is empty */
+  vercelDeploymentUrl?: string;
+  /** When true, import-all-pages is in progress */
+  isImportAllInProgress?: boolean;
 }
 
 const TEXT_FIELDS = ['title', 'subtitle', 'description', 'heading', 'subheading', 'text', 'content', 'caption', 'label', 'buttonText', 'ctaText', 'tagline', 'quote', 'author', 'name', 'role', 'body', 'summary', 'headline', 'paragraph'];
@@ -97,7 +102,7 @@ function humanize(key: string) {
     .trim();
 }
 
-export function SectionContentEditor({ websiteId, pages, onStructureUpdate, pagesDerivedFromNav }: SectionContentEditorProps) {
+export function SectionContentEditor({ websiteId, pages, onStructureUpdate, pagesDerivedFromNav, vercelDeploymentUrl, isImportAllInProgress }: SectionContentEditorProps) {
   const [selectedPagePath, setSelectedPagePath] = useState(pages[0]?.path || '/');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [editingProps, setEditingProps] = useState<Record<string, Record<string, any>>>({});
@@ -107,6 +112,34 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
   const [importUrlOpen, setImportUrlOpen] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
+  const [importAllUrlOpen, setImportAllUrlOpen] = useState(false);
+  const [importAllUrl, setImportAllUrl] = useState(vercelDeploymentUrl || '');
+  const needsImportAll = pagesDerivedFromNav && !vercelDeploymentUrl && !isImportAllInProgress && !importingAll;
+  const [importingAll, setImportingAll] = useState(false);
+  const autoImportTriggeredRef = useRef(false);
+
+  // Auto-trigger import-all when structure is empty, navConfig has pages, and we have a live URL
+  useEffect(() => {
+    if (!pagesDerivedFromNav || !vercelDeploymentUrl || isImportAllInProgress || importingAll || autoImportTriggeredRef.current) return;
+    const base = vercelDeploymentUrl.trim();
+    if (!base) return;
+    autoImportTriggeredRef.current = true;
+    setImportingAll(true);
+    fetch(`/api/websites/${websiteId}/import-all-pages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ baseUrl: base }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          toast.info('Importing your content from your live site. This may take a few minutes.');
+          onStructureUpdate();
+        }
+      })
+      .catch(() => {})
+      .finally(() => setImportingAll(false));
+  }, [websiteId, pagesDerivedFromNav, vercelDeploymentUrl, isImportAllInProgress, importingAll, onStructureUpdate]);
 
   const handlePageChange = (path: string) => {
     setSelectedPagePath(path);
@@ -256,7 +289,43 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
           <Link2 className="h-3.5 w-3.5" />
           Import from URL
         </Button>
+        {(pagesDerivedFromNav || needsImportAll) && (
+          <Button
+            variant={needsImportAll ? 'default' : 'outline'}
+            size="sm"
+            className="gap-1.5"
+            onClick={() => {
+              setImportAllUrl(vercelDeploymentUrl || importAllUrl || '');
+              setImportAllUrlOpen(true);
+            }}
+            disabled={importingAll || isImportAllInProgress}
+          >
+            {(importingAll || isImportAllInProgress) ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Importing all pages…
+              </>
+            ) : (
+              <>
+                <Link2 className="h-3.5 w-3.5" />
+                Import all pages
+              </>
+            )}
+          </Button>
+        )}
       </div>
+
+      {/* Import all pages banner when URL missing */}
+      {needsImportAll && (
+        <Alert className="border-amber-200 bg-amber-50">
+          <AlertDescription>
+            <p className="font-medium">Import your content</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Your live site URL isn&apos;t set. Click &quot;Import all pages&quot; and enter your site URL (e.g. https://yoursite.vercel.app) to import all pages with text and images. You can also add the URL in Settings for future auto-import.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Import from URL Dialog */}
       <Dialog open={importUrlOpen} onOpenChange={setImportUrlOpen}>
@@ -317,6 +386,70 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
                 </>
               ) : (
                 'Import'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import all pages Dialog */}
+      <Dialog open={importAllUrlOpen} onOpenChange={setImportAllUrlOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import all pages from your live site</DialogTitle>
+            <DialogDescription>
+              Enter your live site URL. We&apos;ll scrape every page in your menu (Home, About, Contact, etc.) and populate the editor with your actual text and images. This may take a few minutes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="import-all-url">Live site URL</Label>
+              <Input
+                id="import-all-url"
+                placeholder="https://yoursite.vercel.app"
+                value={importAllUrl}
+                onChange={(e) => setImportAllUrl(e.target.value)}
+                disabled={importingAll || isImportAllInProgress}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportAllUrlOpen(false)} disabled={importingAll || isImportAllInProgress}>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!importAllUrl.trim()) {
+                  toast.error('Enter your live site URL');
+                  return;
+                }
+                setImportingAll(true);
+                try {
+                  const res = await fetch(`/api/websites/${websiteId}/import-all-pages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ baseUrl: importAllUrl.trim() }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.error || 'Import failed');
+                  toast.success(data.message || 'Importing all pages. Refresh in a few minutes.');
+                  setImportAllUrlOpen(false);
+                  onStructureUpdate();
+                } catch (err: any) {
+                  toast.error(err.message || 'Failed to import');
+                } finally {
+                  setImportingAll(false);
+                }
+              }}
+              disabled={importingAll || isImportAllInProgress || !importAllUrl.trim()}
+            >
+              {(importingAll || isImportAllInProgress) ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Importing…
+                </>
+              ) : (
+                'Import all pages'
               )}
             </Button>
           </DialogFooter>

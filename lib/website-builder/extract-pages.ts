@@ -213,3 +213,29 @@ export function getPagesForEditor(
   // Merge: structure pages first, then navConfig pages
   return [...fromStructure, ...navPages];
 }
+
+/** Extract unique page paths from navConfig for import-all-pages */
+export function getNavPagePaths(navConfig?: Record<string, unknown> | null): { path: string; label: string }[] {
+  const nav = (navConfig && Object.keys(navConfig).length > 0
+    ? { ...DEFAULT_NAV, ...navConfig }
+    : DEFAULT_NAV) as typeof DEFAULT_NAV;
+
+  const seen = new Set<string>();
+  const result: { path: string; label: string }[] = [];
+
+  const add = (path: string, label: string) => {
+    const normalized = path === '' ? '/' : path.startsWith('/') ? path : `/${path}`;
+    if (seen.has(normalized)) return;
+    seen.add(normalized);
+    result.push({ path: normalized, label });
+  };
+
+  for (const item of nav.topLinks || []) add(item.href, item.label);
+  for (const item of nav.navItems || []) {
+    add(item.href, item.label);
+    for (const child of item.children || []) add(child.href, child.label);
+  }
+  for (const item of nav.footerLinks || []) add(item.href, item.label);
+
+  return result;
+}

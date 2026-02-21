@@ -112,9 +112,9 @@ export default function WebsiteEditorPage() {
     return () => clearInterval(interval);
   }, [params.id, website?.status]);
 
-  // Poll when import from URL is in progress
-  const importBuild = website?.builds?.[0] as { status?: string; error?: string; buildData?: { type?: string; url?: string; addedCount?: number } } | undefined;
-  const isImportInProgress = importBuild?.status === 'IN_PROGRESS' && importBuild?.buildData?.type === 'import';
+  // Poll when import from URL or import-all-pages is in progress
+  const importBuild = website?.builds?.[0] as { status?: string; error?: string; buildData?: { type?: string; url?: string; addedCount?: number; pagesImported?: number } } | undefined;
+  const isImportInProgress = importBuild?.status === 'IN_PROGRESS' && (importBuild?.buildData?.type === 'import' || importBuild?.buildData?.type === 'import_all');
   useEffect(() => {
     if (!params.id || !isImportInProgress) return;
     const interval = setInterval(fetchWebsite, 5000);
@@ -123,11 +123,16 @@ export default function WebsiteEditorPage() {
 
   // Toast when import completes (transition from in-progress to completed)
   useEffect(() => {
-    if (prevImportInProgressRef.current && !isImportInProgress && importBuild?.status === 'COMPLETED' && importBuild?.buildData?.addedCount) {
-      toast.success(`Added ${importBuild.buildData.addedCount} sections from the URL`);
+    if (prevImportInProgressRef.current && !isImportInProgress && importBuild?.status === 'COMPLETED' && importBuild?.buildData) {
+      const data = importBuild.buildData;
+      if (data.type === 'import_all' && data.pagesImported) {
+        toast.success(`Imported ${data.pagesImported} pages with ${data.addedCount || 0} sections`);
+      } else if (data.addedCount) {
+        toast.success(`Added ${data.addedCount} sections from the URL`);
+      }
     }
     prevImportInProgressRef.current = isImportInProgress;
-  }, [isImportInProgress, importBuild?.status, importBuild?.buildData?.addedCount]);
+  }, [isImportInProgress, importBuild?.status, importBuild?.buildData]);
 
   // Fetch listings count when opening settings (SERVICE template only)
   const fetchListingsCount = useCallback(async () => {
@@ -379,6 +384,8 @@ export default function WebsiteEditorPage() {
                     pages={pages}
                     onStructureUpdate={fetchWebsite}
                     pagesDerivedFromNav={fromNav}
+                    vercelDeploymentUrl={website.vercelDeploymentUrl ?? undefined}
+                    isImportAllInProgress={isImportInProgress}
                   />
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
