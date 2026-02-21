@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { REPropertyType, REListingStatus } from '@prisma/client';
+import { syncListingToWebsite } from '@/lib/website-builder/listings-service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -109,6 +110,21 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Sync listing to owner's SERVICE website (fire-and-forget)
+    syncListingToWebsite(session.user.id, {
+      address, city, state, zip, country,
+      beds: beds ? parseInt(beds) : null,
+      baths: baths ? parseFloat(baths) : null,
+      sqft: sqft ? parseInt(sqft) : null,
+      propertyType, listingStatus,
+      listPrice: listPrice ? parseFloat(listPrice) : null,
+      mlsNumber, photos, description, features,
+      lat: body.lat, lng: body.lng, virtualTourUrl,
+    }).then((r) => {
+      if (r.success) console.log(`[Properties POST] Synced to website ${r.websiteId}`);
+      else if (r.error) console.warn('[Properties POST] Website sync skipped:', r.error);
+    }).catch((e) => console.warn('[Properties POST] Website sync error:', e.message));
+
     return NextResponse.json({ property, success: true });
   } catch (error) {
     console.error('Properties POST error:', error);
@@ -142,12 +158,49 @@ export async function PUT(request: NextRequest) {
       where: { id },
       data: {
         ...(updateData.address && { address: updateData.address }),
-        ...(updateData.listPrice !== undefined && { listPrice: parseFloat(updateData.listPrice) }),
+        ...(updateData.unit !== undefined && { unit: updateData.unit || null }),
+        ...(updateData.city && { city: updateData.city }),
+        ...(updateData.state && { state: updateData.state }),
+        ...(updateData.zip && { zip: updateData.zip }),
+        ...(updateData.country && { country: updateData.country }),
+        ...(updateData.beds !== undefined && { beds: updateData.beds ? parseInt(updateData.beds) : null }),
+        ...(updateData.baths !== undefined && { baths: updateData.baths ? parseFloat(updateData.baths) : null }),
+        ...(updateData.sqft !== undefined && { sqft: updateData.sqft ? parseInt(updateData.sqft) : null }),
+        ...(updateData.lotSize !== undefined && { lotSize: updateData.lotSize ? parseInt(updateData.lotSize) : null }),
+        ...(updateData.yearBuilt !== undefined && { yearBuilt: updateData.yearBuilt ? parseInt(updateData.yearBuilt) : null }),
+        ...(updateData.propertyType && { propertyType: updateData.propertyType as REPropertyType }),
+        ...(updateData.listPrice !== undefined && { listPrice: updateData.listPrice ? parseFloat(updateData.listPrice) : null }),
         ...(updateData.listingStatus && { listingStatus: updateData.listingStatus as REListingStatus }),
-        ...(updateData.description && { description: updateData.description }),
+        ...(updateData.mlsNumber !== undefined && { mlsNumber: updateData.mlsNumber || null }),
+        ...(updateData.description !== undefined && { description: updateData.description || null }),
+        ...(updateData.features !== undefined && { features: updateData.features || [] }),
+        ...(updateData.photos !== undefined && { photos: updateData.photos || [] }),
+        ...(updateData.virtualTourUrl !== undefined && { virtualTourUrl: updateData.virtualTourUrl || null }),
         ...(updateData.daysOnMarket !== undefined && { daysOnMarket: parseInt(updateData.daysOnMarket) }),
       },
     });
+
+    // Re-sync to owner's website after update
+    syncListingToWebsite(session.user.id, {
+      address: property.address,
+      city: property.city,
+      state: property.state,
+      zip: property.zip,
+      country: property.country,
+      beds: property.beds,
+      baths: property.baths,
+      sqft: property.sqft,
+      propertyType: property.propertyType,
+      listingStatus: property.listingStatus,
+      listPrice: property.listPrice,
+      mlsNumber: property.mlsNumber,
+      photos: property.photos as string[] | null,
+      description: property.description,
+      features: property.features,
+      virtualTourUrl: property.virtualTourUrl,
+    }).then((r) => {
+      if (r.success) console.log(`[Properties PUT] Re-synced to website ${r.websiteId}`);
+    }).catch((e) => console.warn('[Properties PUT] Website sync error:', e.message));
 
     return NextResponse.json({ property, success: true });
   } catch (error) {

@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Building2, Home, DollarSign, Plus, Search, Filter,
   Edit, Trash2, MoreHorizontal,
-  Calendar, Tag, ChevronLeft,
+  Calendar, Tag, ChevronLeft, Download,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -226,6 +226,8 @@ export default function ListingsPage() {
         features: form.features ? form.features.split(',').map((f) => f.trim()).filter(Boolean) : [],
         photos: form.photos,
         virtualTourUrl: form.virtualTourUrl || undefined,
+        lat: (form as any).lat || undefined,
+        lng: (form as any).lng || undefined,
       };
 
       if (editingId) {
@@ -316,9 +318,30 @@ export default function ListingsPage() {
           </div>
           <p className="text-muted-foreground">Centralized view of all your property listings</p>
         </div>
-        <Button onClick={openNew}>
-          <Plus className="mr-2 h-4 w-4" /> Add Listing
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={properties.length === 0}>
+                <Download className="mr-2 h-4 w-4" /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                window.open('/api/real-estate/properties/export?format=centris', '_blank');
+              }}>
+                Export for Centris.ca
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                window.open('/api/real-estate/properties/export?format=realtor', '_blank');
+              }}>
+                Export for Realtor.ca (CREA DDF)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={openNew}>
+            <Plus className="mr-2 h-4 w-4" /> Add Listing
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}

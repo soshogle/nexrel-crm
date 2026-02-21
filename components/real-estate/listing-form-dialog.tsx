@@ -12,6 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { X, Save, ChevronLeft, ImagePlus, Loader2, Link2 } from 'lucide-react';
+import { PlaceAutocomplete, type PlaceData } from '@/components/ui/place-autocomplete';
 
 const PROPERTY_TYPES = [
   { value: 'SINGLE_FAMILY', label: 'Single Family' },
@@ -38,6 +39,7 @@ export interface ListingFormState {
   propertyType: string; listingStatus: string;
   listPrice: string; mlsNumber: string; virtualTourUrl: string;
   description: string; features: string; photos: string[];
+  lat?: number; lng?: number;
 }
 
 interface ListingFormDialogProps {
@@ -71,7 +73,30 @@ export function ListingFormDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label>Address *</Label>
-              <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main St" />
+              <PlaceAutocomplete
+                value={form.address}
+                types="address"
+                placeholder="Start typing an address..."
+                onChange={(value: string, placeData?: PlaceData) => {
+                  const updates: Partial<ListingFormState> = { address: value };
+                  if (placeData) {
+                    if (placeData.city) updates.city = placeData.city;
+                    if (placeData.state) updates.state = placeData.state;
+                    if (placeData.country) updates.country = placeData.country;
+                    if (placeData.lat) updates.lat = placeData.lat;
+                    if (placeData.lng) updates.lng = placeData.lng;
+                    // Extract postal code and street from the formatted address
+                    const parts = (placeData.description || value).split(',');
+                    if (parts.length >= 1) {
+                      updates.address = parts[0].trim();
+                    }
+                    // Try to extract postal code from address components
+                    const postalMatch = placeData.description?.match(/[A-Z]\d[A-Z]\s?\d[A-Z]\d|\d{5}(-\d{4})?/i);
+                    if (postalMatch) updates.zip = postalMatch[0];
+                  }
+                  setForm((prev) => ({ ...prev, ...updates }));
+                }}
+              />
             </div>
             <div>
               <Label>Unit</Label>
