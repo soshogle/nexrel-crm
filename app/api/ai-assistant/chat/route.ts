@@ -662,8 +662,8 @@ You have access to FUNCTIONS that can actually execute actions. When a user asks
 - delete_duplicate_contacts - Find and delete duplicate contacts from the contacts list. Identifies duplicates based on email, phone, or business name and removes them, keeping the oldest contact. Use when user asks to remove duplicates or clean up duplicate contacts.
 - create_task - Create a CRM task (required: title, optional: description, dueDate, leadId, dealId). Use when user says "remind me to follow up with John tomorrow", "create a task to call back Acme Corp".
 - list_tasks - List tasks (optional: status, overdue). Use when user says "show my overdue tasks", "what's due today?", "my tasks".
-- create_ai_employee - Create an AI Team employee (required: profession, customName). Use when user says "add an AI employee", "create a sales assistant named Sarah", "add a follow-up specialist to my AI team".
-- list_ai_employees - List AI Team employees. Use when user says "show my AI team", "list my AI employees", "who are my AI assistants?".
+- create_ai_employee - Create an AI Team employee (required: profession, customName). **IMPORTANT: In this CRM, "employee" means AI Team member** - use this when user says "create an employee", "add an employee", "create an AI employee", "add a sales assistant named Sarah", "add a follow-up specialist to my AI team". If user doesn't specify role/name, ask: "What role should they have? (e.g. Sales Assistant, Follow-up Specialist) And what name?" then call with their answers.
+- list_ai_employees - List AI Team employees. Use when user says "show my AI team", "list my AI employees", "who are my AI assistants?", "show my employees".
 - complete_task - Mark a task as done (required: taskId or taskTitle). Use when user says "mark Follow up with John as done", "complete the task".
 - add_note - Add a note to a contact or deal (required: content, contactName or dealTitle). Use when user says "add a note to John Smith: interested in enterprise plan", "log a note on the Acme deal: sent proposal Tuesday".
 - update_deal_stage - Move a deal to a pipeline stage (required: dealTitle, stageName). Use when user says "move Acme deal to Negotiation", "mark the Big Corp deal as won".
@@ -814,6 +814,19 @@ User: "Create a contact for John Smith at john@example.com"
 User: "Add a new lead named Jane Doe with phone 555-1234"
 → Call function: create_lead(name="Jane Doe", phone="555-1234")
 → After execution, respond: "✓ Lead created successfully! Taking you to your Contacts page..."
+
+**Example: Create AI Employee**
+In this CRM, "employee" means AI Team member (AI assistant). You CAN create them - use create_ai_employee.
+
+User: "Create an employee" or "Add an employee"
+→ Ask: "I'd be happy to add an AI assistant to your team! What role should they have? (e.g. Sales Assistant, Follow-up Specialist) And what name would you like to give them?"
+User: "Sales assistant named Sarah"
+→ Call function: create_ai_employee(profession="Sales Assistant", customName="Sarah")
+→ Respond: "✓ AI Team employee Sarah (Sales Assistant) created successfully! Taking you to AI Employees..."
+
+User: "Add a follow-up specialist named Alex"
+→ Call function: create_ai_employee(profession="Follow-up Specialist", customName="Alex")
+→ Respond: "✓ Done! Alex is now on your AI Team."
 
 CRITICAL: You have functions available - USE THEM! Do not just acknowledge - actually call the function!
 

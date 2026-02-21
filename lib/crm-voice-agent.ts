@@ -277,6 +277,8 @@ Available functions:
 - create_website: Create new site from template. USE when user says "create a website", "build a site for my business". Optional name, templateType, businessDescription.
 - list_websites: List user's websites. USE when user says "show my websites", "how many sites do I have".
 - modify_website: Change website content via AI. USE when user says "change the hero text", "update the about section". Requires websiteId (use active_website_id when editing) and message.
+- create_ai_employee: Create an AI Team employee. USE when user says "create an employee", "add an employee", "add an AI employee", "create a sales assistant named Sarah". In this CRM, "employee" means AI assistant. Requires profession (role) and customName. If missing, ask: "What role? (e.g. Sales Assistant) And what name?"
+- list_ai_employees: List AI Team employees. USE when user says "show my AI team", "list my employees", "who are my AI assistants?".
 
 IMPORTANT: When users ask "how many new leads today" or "show me my leads" → use list_leads (navigates to contacts page). When users ask for graphs, charts, or sales trends → use get_statistics (shows visualizations on AI Brain). Do not use get_statistics for simple lead/deal counts.
 For workflows: when user says "create workflow", acknowledge and say you've opened the builder (client opens it). Then for each step ("add email", "add delay", "add call") → add_workflow_task.
@@ -727,6 +729,25 @@ ${getConfidentialityGuard()}`;
             taskTitle: { type: 'string', description: 'Task title to match (use if taskId not known)' },
           },
         },
+        server_url: serverUrl,
+      },
+      {
+        name: 'create_ai_employee',
+        description: 'Create an AI Team employee. In this CRM, "employee" means AI assistant. Use when user says "create an employee", "add an employee", "add an AI employee", "create a sales assistant named Sarah". Requires profession (role) and customName. If missing, ask for role and name.',
+        parameters: {
+          type: 'object',
+          properties: {
+            profession: { type: 'string', description: 'Role e.g. Sales Assistant, Follow-up Specialist (required)' },
+            customName: { type: 'string', description: 'Display name e.g. Sarah, Alex (required)' },
+          },
+          required: ['profession', 'customName'],
+        },
+        server_url: serverUrl,
+      },
+      {
+        name: 'list_ai_employees',
+        description: 'List AI Team employees. Use when user says "show my AI team", "list my employees", "who are my AI assistants?".',
+        parameters: { type: 'object', properties: {} },
         server_url: serverUrl,
       },
       {

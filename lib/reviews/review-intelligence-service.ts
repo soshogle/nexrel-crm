@@ -26,7 +26,7 @@ interface AutoResponseConfig {
   customInstructions?: string;
 }
 
-interface BrandInsightsReport {
+export interface BrandInsightsReport {
   overallSentiment: string;
   satisfactionScore: number;
   totalReviews: number;
@@ -40,6 +40,27 @@ interface BrandInsightsReport {
   recentVsPastRating: { recent: number; past: number };
   responseRate: number;
   recommendations: string[];
+  // Web mentions data (populated when brand scans exist)
+  webMentions?: {
+    total: number;
+    sourceBreakdown: Record<string, number>;
+    sentimentBreakdown: Record<string, number>;
+    recentMentions: {
+      source: string;
+      title: string | null;
+      snippet: string;
+      sourceUrl: string | null;
+      sentiment: string | null;
+      sentimentScore: number | null;
+      themes: string[];
+      publishedAt: string | null;
+      createdAt: string;
+    }[];
+    topMentionThemes: { theme: string; count: number; sentiment: string }[];
+    overallWebSentiment: string;
+    overallWebSentimentScore: number;
+  };
+  lastScanAt?: string | null;
 }
 
 async function callOpenAI(
@@ -271,6 +292,81 @@ Return JSON: {"recommendations": ["recommendation 1", ...]}`;
       100
   );
 
+  // ─── Web mentions from brand scans ─────────────────────────────────
+  let webMentions: BrandInsightsReport['webMentions'];
+  let lastScanAt: string | null = null;
+
+  try {
+    const lastScan = await prisma.brandScan.findFirst({
+      where: { userId, status: 'COMPLETED' },
+      orderBy: { completedAt: 'desc' },
+    });
+    lastScanAt = lastScan?.completedAt?.toISOString() ?? null;
+
+    const mentions = await prisma.brandMention.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+
+    if (mentions.length > 0) {
+      const sourceBreakdown: Record<string, number> = {};
+      const sentimentBreakdown: Record<string, number> = { POSITIVE: 0, NEGATIVE: 0, NEUTRAL: 0, MIXED: 0 };
+      const mentionThemeMap = new Map<string, { count: number; sentimentSum: number }>();
+      let totalScore = 0;
+
+      for (const m of mentions) {
+        sourceBreakdown[m.source] = (sourceBreakdown[m.source] || 0) + 1;
+        if (m.sentiment && sentimentBreakdown[m.sentiment] !== undefined) {
+          sentimentBreakdown[m.sentiment]++;
+        }
+        totalScore += m.sentimentScore ?? 0;
+
+        const mThemes = (m.themes as string[]) || [];
+        const mScore = m.sentimentScore ?? 0;
+        for (const t of mThemes) {
+          const ex = mentionThemeMap.get(t) || { count: 0, sentimentSum: 0 };
+          ex.count++;
+          ex.sentimentSum += mScore;
+          mentionThemeMap.set(t, ex);
+        }
+      }
+
+      const topMentionThemes = Array.from(mentionThemeMap.entries())
+        .map(([theme, data]) => ({
+          theme,
+          count: data.count,
+          sentiment: data.sentimentSum / data.count > 0.1 ? 'POSITIVE' : data.sentimentSum / data.count < -0.1 ? 'NEGATIVE' : 'NEUTRAL',
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 15);
+
+      const avgWebScore = mentions.length > 0 ? totalScore / mentions.length : 0;
+
+      webMentions = {
+        total: mentions.length,
+        sourceBreakdown,
+        sentimentBreakdown,
+        recentMentions: mentions.slice(0, 20).map((m) => ({
+          source: m.source,
+          title: m.title,
+          snippet: m.snippet.slice(0, 300),
+          sourceUrl: m.sourceUrl,
+          sentiment: m.sentiment,
+          sentimentScore: m.sentimentScore,
+          themes: (m.themes as string[]) || [],
+          publishedAt: m.publishedAt?.toISOString() ?? null,
+          createdAt: m.createdAt.toISOString(),
+        })),
+        topMentionThemes,
+        overallWebSentiment: avgWebScore > 0.2 ? 'POSITIVE' : avgWebScore < -0.2 ? 'NEGATIVE' : avgWebScore > 0.05 || avgWebScore < -0.05 ? 'MIXED' : 'NEUTRAL',
+        overallWebSentimentScore: Math.round(avgWebScore * 100) / 100,
+      };
+    }
+  } catch (e: any) {
+    console.warn('Failed to load web mentions for brand insights:', e.message);
+  }
+
   return {
     overallSentiment: avgRating >= 4 ? 'POSITIVE' : avgRating >= 3 ? 'MIXED' : 'NEGATIVE',
     satisfactionScore: Math.min(100, satisfactionScore),
@@ -288,6 +384,8 @@ Return JSON: {"recommendations": ["recommendation 1", ...]}`;
     },
     responseRate: Math.round(responseRate),
     recommendations,
+    webMentions,
+    lastScanAt,
   };
 }
 

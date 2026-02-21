@@ -349,7 +349,7 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
       type: "function",
       function: {
         name: "create_ai_employee",
-        description: "Create an AI Team employee. Use when user says 'add an AI employee', 'create a sales assistant named Sarah', 'add a follow-up specialist to my AI team'",
+        description: "Create an AI Team employee. In this CRM, 'employee' means AI assistant. Use when user says 'create an employee', 'add an employee', 'add an AI employee', 'create a sales assistant named Sarah', 'add a follow-up specialist'. If role/name missing, ask for them first.",
         parameters: {
           type: "object",
           properties: {

@@ -1,9 +1,10 @@
 /**
  * Extract pages from any website structure format.
- * Handles three layouts:
+ * Handles four layouts:
  *   1. Standard:  { pages: [...] }
- *   2. Root-level: { components: [...] } or { sections: [...] }
- *   3. Named keys: { home: { components: [...] }, about: { components: [...] } }
+ *   2. Pages as object: { pages: { home: { components: [...] }, about: { components: [...] } } }
+ *   3. Root-level: { components: [...] } or { sections: [...] }
+ *   4. Named keys: { home: { components: [...] }, about: { components: [...] } }
  */
 
 export interface ExtractedPage {
@@ -16,9 +17,13 @@ export interface ExtractedPage {
 
 const RESERVED_KEYS = new Set([
   'globalStyles', 'navigation', 'footer', 'fonts', 'colors',
-  'meta', 'seo', 'settings', 'config', 'pages', 'theme',
+  'meta', 'seo', 'settings', 'config', 'theme',
   'analytics', 'integrations', 'scripts', 'head',
 ]);
+
+function humanizeKey(k: string): string {
+  return k.charAt(0).toUpperCase() + k.slice(1).replace(/[-_]/g, ' ');
+}
 
 export function extractPages(structure: any): ExtractedPage[] {
   if (!structure || typeof structure !== 'object') return [];
@@ -28,7 +33,28 @@ export function extractPages(structure: any): ExtractedPage[] {
     return structure.pages;
   }
 
-  // 2. Root-level components / sections
+  // 2. Pages stored as an object/dictionary (e.g. { pages: { home: {...}, about: {...} } })
+  if (
+    structure.pages &&
+    typeof structure.pages === 'object' &&
+    !Array.isArray(structure.pages)
+  ) {
+    const entries = Object.entries(structure.pages).filter(
+      ([, val]) =>
+        val && typeof val === 'object' && !Array.isArray(val)
+    );
+    if (entries.length > 0) {
+      return entries.map(([k, page]: [string, any]) => ({
+        id: k,
+        name: page.name || page.title || humanizeKey(k),
+        path: page.path || (k === 'home' ? '/' : `/${k}`),
+        components: page.components || page.sections || [],
+        seo: page.seo,
+      }));
+    }
+  }
+
+  // 3. Root-level components / sections
   const rootComponents = structure.components || structure.sections;
   if (Array.isArray(rootComponents) && rootComponents.length > 0) {
     return [{
@@ -40,10 +66,11 @@ export function extractPages(structure: any): ExtractedPage[] {
     }];
   }
 
-  // 3. Named page keys (e.g. structure.home, structure.about)
+  // 4. Named page keys (e.g. structure.home, structure.about)
   const pageKeys = Object.keys(structure).filter(
     (k) =>
       !RESERVED_KEYS.has(k) &&
+      k !== 'pages' &&
       typeof structure[k] === 'object' &&
       !Array.isArray(structure[k]) &&
       structure[k] !== null &&
@@ -90,55 +117,89 @@ const DEFAULT_NAV = {
   ],
 };
 
+/** Generate default editable sections for a navConfig-derived page */
+function createDefaultSections(pageId: string, label: string): any[] {
+  return [
+    {
+      id: `${pageId}-hero`,
+      type: 'Hero',
+      props: {
+        title: label,
+        subtitle: `Welcome to our ${label} page`,
+        ctaText: 'Learn More',
+        ctaLink: '/contact',
+      },
+    },
+    {
+      id: `${pageId}-content`,
+      type: 'ContentSection',
+      props: {
+        heading: `About ${label}`,
+        text: `Discover everything about our ${label.toLowerCase()} services. Edit this section to add your own content.`,
+      },
+    },
+    {
+      id: `${pageId}-cta`,
+      type: 'CTASection',
+      props: {
+        title: 'Ready to Get Started?',
+        description: `Contact us today to learn more about ${label.toLowerCase()}.`,
+        ctaText: 'Contact Us',
+        ctaLink: '/contact',
+      },
+    },
+  ];
+}
+
 /**
- * Extract pages for the Page Editor. When structure has no pages (e.g. template sites
- * like real estate brokers), derive pages from navConfig so users can see their site's
- * pages and use Menu & Page Labels or add sections.
+ * Extract pages for the Page Editor. Merges structure pages with navConfig pages so
+ * all routes are visible and editable. NavConfig pages that don't exist in the structure
+ * get default editable sections so users can start editing immediately.
  */
 export function getPagesForEditor(
   structure: any,
   navConfig?: Record<string, unknown> | null
 ): ExtractedPage[] {
   const fromStructure = extractPages(structure);
-  if (fromStructure.length > 0) return fromStructure;
 
-  // For template sites (SERVICE, PRODUCT) with empty structure, derive from navConfig
+  // Collect navConfig pages
   const nav = (navConfig && Object.keys(navConfig).length > 0
     ? { ...DEFAULT_NAV, ...navConfig }
     : DEFAULT_NAV) as typeof DEFAULT_NAV;
 
-  const seen = new Set<string>();
-  const pages: ExtractedPage[] = [];
+  const seen = new Set<string>(fromStructure.map((p) => p.path));
+  const navPages: ExtractedPage[] = [];
 
-  const addPage = (path: string, label: string) => {
+  const addNavPage = (path: string, label: string) => {
     const normalizedPath = path === '' ? '/' : path.startsWith('/') ? path : `/${path}`;
     if (seen.has(normalizedPath)) return;
     seen.add(normalizedPath);
     const id = normalizedPath === '/' ? 'home' : normalizedPath.slice(1).replace(/\//g, '-') || 'page';
-    pages.push({
+    navPages.push({
       id,
       name: label,
       path: normalizedPath,
-      components: [],
+      components: createDefaultSections(id, label),
       seo: undefined,
     });
   };
 
   // topLinks first (Home, Properties, etc.)
   for (const item of nav.topLinks || []) {
-    addPage(item.href, item.label);
+    addNavPage(item.href, item.label);
   }
   // navItems and their children
   for (const item of nav.navItems || []) {
-    addPage(item.href, item.label);
+    addNavPage(item.href, item.label);
     for (const child of item.children || []) {
-      addPage(child.href, child.label);
+      addNavPage(child.href, child.label);
     }
   }
   // footerLinks (may add more unique paths)
   for (const item of nav.footerLinks || []) {
-    addPage(item.href, item.label);
+    addNavPage(item.href, item.label);
   }
 
-  return pages;
+  // Merge: structure pages first, then navConfig pages
+  return [...fromStructure, ...navPages];
 }

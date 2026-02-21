@@ -53,6 +53,7 @@ export const TASK_TYPE_LABELS: Record<RETaskType, string> = {
   PHOTO_SCHEDULING: 'Schedule Photography',
   MARKETING_DRAFT: 'Draft Marketing',
   LISTING_PUBLISH: 'Publish Listing',
+  LISTING_VISIT_CONFIRMED: 'Listing Visit Confirmed',
   CUSTOM: 'Custom Task'
 };
 

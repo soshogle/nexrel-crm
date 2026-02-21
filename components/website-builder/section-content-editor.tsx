@@ -97,6 +97,12 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [mediaPickerOpen, setMediaPickerOpen] = useState<{ sectionType: string; fieldKey: string; arrayIndex?: number; itemKey?: string } | null>(null);
 
+  const handlePageChange = (path: string) => {
+    setSelectedPagePath(path);
+    setExpandedSections(new Set());
+    setEditingProps({});
+  };
+
   const currentPage = pages.find(p => p.path === selectedPagePath) || pages[0];
   const components = currentPage?.components || [];
 
@@ -214,7 +220,7 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
           <Layers className="h-4 w-4 text-muted-foreground" />
           <Label className="font-medium">Page</Label>
         </div>
-        <Select value={selectedPagePath} onValueChange={setSelectedPagePath}>
+        <Select value={selectedPagePath} onValueChange={handlePageChange}>
           <SelectTrigger className="w-64">
             <SelectValue />
           </SelectTrigger>
@@ -231,6 +237,13 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
         </Badge>
       </div>
 
+      {/* Template hint */}
+      {pagesDerivedFromNav && components.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          These are starter sections for your template page. Edit them below, then save to persist your changes.
+        </p>
+      )}
+
       {/* Sections */}
       {components.length === 0 ? (
         <Card>
@@ -238,9 +251,7 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
             <FileText className="h-10 w-10 mx-auto mb-3 opacity-40" />
             <p>No sections on this page yet.</p>
             <p className="text-sm mt-1">
-              {pagesDerivedFromNav
-                ? 'Your template renders these pages. Use Menu & Page Labels to customize labels, or add sections via the Editor tab.'
-                : 'Use the Editor tab to add sections, or use AI Chat to build content.'}
+              Use the Editor tab to add sections, or use AI Chat to build content.
             </p>
           </CardContent>
         </Card>

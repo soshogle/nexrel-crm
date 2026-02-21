@@ -148,6 +148,8 @@ export async function POST(req: NextRequest) {
       case 'create_task':
       case 'list_tasks':
       case 'complete_task':
+      case 'create_ai_employee':
+      case 'list_ai_employees':
       case 'add_note':
       case 'update_deal_stage':
       case 'create_invoice':

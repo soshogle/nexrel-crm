@@ -35,26 +35,58 @@ export async function PATCH(
     const structure = (website.structure || {}) as any;
 
     if (type === 'section_props' && props && sectionType) {
-      const pages = structure?.pages || [];
-      let pageIndex = pages.findIndex((p: any) => p.path === pagePath);
-      if (pageIndex < 0) pageIndex = Math.max(0, pages.findIndex((p: any) => p.path === '/'));
-      if (pageIndex >= 0 && pages[pageIndex].components) {
-        const compIndex = pages[pageIndex].components.findIndex((c: any) => c.type === sectionType);
-        if (compIndex >= 0) {
-          const newStructure = JSON.parse(JSON.stringify(structure));
-          newStructure.pages[pageIndex].components[compIndex].props = {
-            ...(newStructure.pages[pageIndex].components[compIndex].props || {}),
-            ...props,
-          };
-          await prisma.website.update({
-            where: { id: params.id },
-            data: { structure: newStructure },
-          });
-          triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
-          return NextResponse.json({ success: true });
-        }
+      const newStructure = JSON.parse(JSON.stringify(structure));
+      if (!Array.isArray(newStructure.pages)) {
+        newStructure.pages = [];
       }
-      return NextResponse.json({ error: 'Section not found' }, { status: 404 });
+
+      let pageIndex = newStructure.pages.findIndex((p: any) => p.path === pagePath);
+
+      // If page doesn't exist, create it so navConfig-derived pages can be saved
+      if (pageIndex < 0) {
+        const pageId = pagePath === '/' ? 'home' : pagePath.slice(1).replace(/\//g, '-') || 'page';
+        const pageName = pagePath === '/'
+          ? 'Home'
+          : pagePath.slice(1).split(/[-/]/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        newStructure.pages.push({
+          id: pageId,
+          name: pageName,
+          path: pagePath,
+          components: [{ id: `${sectionType}-1`, type: sectionType, props }],
+        });
+        await prisma.website.update({
+          where: { id: params.id },
+          data: { structure: newStructure },
+        });
+        triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
+        return NextResponse.json({ success: true });
+      }
+
+      if (!Array.isArray(newStructure.pages[pageIndex].components)) {
+        newStructure.pages[pageIndex].components = [];
+      }
+
+      const compIndex = newStructure.pages[pageIndex].components.findIndex((c: any) => c.type === sectionType);
+      if (compIndex >= 0) {
+        newStructure.pages[pageIndex].components[compIndex].props = {
+          ...(newStructure.pages[pageIndex].components[compIndex].props || {}),
+          ...props,
+        };
+      } else {
+        // Section type doesn't exist on this page yet — add it
+        newStructure.pages[pageIndex].components.push({
+          id: `${sectionType}-${Date.now()}`,
+          type: sectionType,
+          props,
+        });
+      }
+
+      await prisma.website.update({
+        where: { id: params.id },
+        data: { structure: newStructure },
+      });
+      triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
+      return NextResponse.json({ success: true });
     }
 
     if (type === 'section_layout' && layout) {

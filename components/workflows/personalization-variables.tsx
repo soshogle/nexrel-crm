@@ -40,7 +40,9 @@ export const ALL_VARIABLES = [...CONTACT_VARS, ...BUSINESS_VARS, ...CONTEXT_VARS
 interface PersonalizationVariablesProps {
   /** The textarea ref to insert at cursor position. If not provided, calls onInsert callback. */
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
-  /** Called with the inserted token so parent can update state */
+  /** Optional input ref (e.g. for subject line). Insert goes to whichever field has focus. */
+  inputRef?: React.RefObject<HTMLInputElement | null>;
+  /** Called with the inserted token so parent can update state (used when no ref has focus) */
   onInsert?: (token: string, cursorPosition?: number) => void;
   /** Which variable groups to show. Defaults to all. */
   groups?: ('Contact' | 'Business' | 'Context')[];
@@ -50,6 +52,7 @@ interface PersonalizationVariablesProps {
 
 export function PersonalizationVariables({
   textareaRef,
+  inputRef,
   onInsert,
   groups,
   mode = 'inline',
@@ -63,40 +66,72 @@ export function PersonalizationVariables({
     return acc;
   }, {});
 
-  const handleInsert = (token: string) => {
-    if (textareaRef?.current) {
-      const el = textareaRef.current;
-      const start = el.selectionStart ?? el.value.length;
-      const end = el.selectionEnd ?? start;
-      const before = el.value.slice(0, start);
-      const after = el.value.slice(end);
-      const newValue = before + token + after;
-      const newCursor = start + token.length;
+  const insertIntoElement = (
+    el: HTMLInputElement | HTMLTextAreaElement,
+    token: string
+  ) => {
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? start;
+    const before = el.value.slice(0, start);
+    const after = el.value.slice(end);
+    const newValue = before + token + after;
+    const newCursor = start + token.length;
 
-      // Trigger React-compatible change
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLTextAreaElement.prototype,
-        'value'
-      )?.set;
-      nativeInputValueSetter?.call(el, newValue);
-      el.dispatchEvent(new Event('input', { bubbles: true }));
+    const proto = el instanceof HTMLTextAreaElement
+      ? window.HTMLTextAreaElement.prototype
+      : window.HTMLInputElement.prototype;
+    const nativeValueSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+    nativeValueSetter?.call(el, newValue);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
 
-      requestAnimationFrame(() => {
-        el.focus();
-        el.setSelectionRange(newCursor, newCursor);
-      });
-
-      onInsert?.(token, newCursor);
-    } else {
-      onInsert?.(token);
-    }
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(newCursor, newCursor);
+    });
   };
+
+  const handleInsert = (token: string) => {
+    // Insert into whichever field currently has focus (subject input or body textarea)
+    const activeEl = document.activeElement;
+    if (inputRef?.current && activeEl === inputRef.current) {
+      insertIntoElement(inputRef.current, token);
+      return;
+    }
+    if (textareaRef?.current && activeEl === textareaRef.current) {
+      insertIntoElement(textareaRef.current, token);
+      return;
+    }
+    // Fallback: use textarea if provided, else input, else callback
+    if (textareaRef?.current) {
+      insertIntoElement(textareaRef.current, token);
+      return;
+    }
+    if (inputRef?.current) {
+      insertIntoElement(inputRef.current, token);
+      return;
+    }
+    onInsert?.(token);
+  };
+
+  const insertHint = inputRef && textareaRef
+    ? 'Click in Subject or Body first, then select a variable'
+    : inputRef
+      ? 'Click in the field first, then select a variable'
+      : textareaRef
+        ? 'Click in the field first, then select a variable'
+        : undefined;
 
   if (mode === 'button') {
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1 border-purple-200 text-purple-700 hover:bg-purple-50">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1 border-purple-200 text-purple-700 hover:bg-purple-50"
+            title={insertHint}
+          >
             <Braces className="w-3 h-3" />
             Insert Variable
           </Button>

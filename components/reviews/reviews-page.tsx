@@ -49,6 +49,10 @@ import {
   Eye,
   Bot,
   Pencil,
+  Globe,
+  Radar,
+  Newspaper,
+  Hash,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -92,6 +96,26 @@ interface BrandInsights {
   recentVsPastRating: { recent: number; past: number };
   responseRate: number;
   recommendations: string[];
+  webMentions?: {
+    total: number;
+    sourceBreakdown: Record<string, number>;
+    sentimentBreakdown: Record<string, number>;
+    recentMentions: {
+      source: string;
+      title: string | null;
+      snippet: string;
+      sourceUrl: string | null;
+      sentiment: string | null;
+      sentimentScore: number | null;
+      themes: string[];
+      publishedAt: string | null;
+      createdAt: string;
+    }[];
+    topMentionThemes: { theme: string; count: number; sentiment: string }[];
+    overallWebSentiment: string;
+    overallWebSentimentScore: number;
+  };
+  lastScanAt?: string | null;
 }
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -167,6 +191,11 @@ export function ReviewsPage() {
   const [sendingRequest, setSendingRequest] = useState(false);
   const [leads, setLeads] = useState<{ id: string; name: string; email: string | null; phone: string | null }[]>([]);
 
+  // Brand scan state
+  const [scanning, setScanning] = useState(false);
+  const [scanId, setScanId] = useState<string | null>(null);
+  const [scanStatus, setScanStatus] = useState<string | null>(null);
+
   const fetchReviews = useCallback(async () => {
     setLoading(true);
     try {
@@ -207,6 +236,53 @@ export function ReviewsPage() {
       }
     } catch { /* non-critical */ }
   }, []);
+
+  const startBrandScan = useCallback(async () => {
+    setScanning(true);
+    setScanStatus('RUNNING');
+    try {
+      const res = await fetch('/api/reviews/brand-scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to start scan');
+      }
+      const data = await res.json();
+      setScanId(data.scanId);
+      toast.success(`Scanning the web for "${data.businessName}"...`);
+      pollScanStatus(data.scanId);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to start brand scan');
+      setScanning(false);
+      setScanStatus(null);
+    }
+  }, []);
+
+  const pollScanStatus = useCallback((id: string) => {
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/reviews/brand-scan?action=status&id=${id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setScanStatus(data.status);
+        if (data.status === 'COMPLETED') {
+          setScanning(false);
+          toast.success(`Scan complete! Found ${data.reviewsFound} reviews and ${data.mentionsFound} web mentions.`);
+          fetchInsights();
+          fetchReviews();
+          return;
+        }
+        if (data.status === 'FAILED') {
+          setScanning(false);
+          toast.error('Scan failed: ' + (data.error || 'Unknown error'));
+          return;
+        }
+        setTimeout(poll, 5000);
+      } catch {
+        setTimeout(poll, 10000);
+      }
+    };
+    setTimeout(poll, 3000);
+  }, [fetchInsights, fetchReviews]);
 
   useEffect(() => { fetchReviews(); }, [fetchReviews]);
 
@@ -627,6 +703,41 @@ export function ReviewsPage() {
 
         {/* ─── Brand Insights Tab ─── */}
         <TabsContent value="insights" className="space-y-4">
+          {/* Scan the Web Banner */}
+          <Card className="border-purple-200 bg-gradient-to-r from-purple-50/50 to-blue-50/50">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Radar className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Scan the Web for Brand Mentions</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {scanning
+                        ? `Scanning... ${scanStatus === 'RUNNING' ? 'Collecting reviews & mentions from across the web' : scanStatus}`
+                        : insights?.lastScanAt
+                          ? `Last scan: ${format(new Date(insights.lastScanAt), 'MMM d, yyyy h:mm a')}`
+                          : 'Scrape Google, Yelp, Trustpilot, Reddit, forums & more for what people say about your brand'}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={startBrandScan}
+                  disabled={scanning}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {scanning ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Globe className="h-4 w-4 mr-2" />
+                  )}
+                  {scanning ? 'Scanning...' : 'Scan the Web'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {insightsLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -814,6 +925,175 @@ export function ReviewsPage() {
                     </div>
                   </CardContent>
                 </Card>
+              )}
+
+              {/* ─── Web Mentions Section ─── */}
+              {insights.webMentions && insights.webMentions.total > 0 && (
+                <>
+                  <div className="pt-2">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Globe className="h-5 w-5 text-purple-600" />
+                      Web Presence & Public Sentiment
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      What people are saying about your brand across the internet
+                    </p>
+                  </div>
+
+                  {/* Web Sentiment Overview */}
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Web Mentions Found</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-4xl font-bold">{insights.webMentions.total}</div>
+                        <p className="text-xs text-muted-foreground mt-1">Across all sources</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Public Sentiment</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center gap-2">
+                          <SentimentBadge sentiment={insights.webMentions.overallWebSentiment} />
+                          <span className="text-lg font-bold">
+                            {insights.webMentions.overallWebSentimentScore > 0 ? '+' : ''}{insights.webMentions.overallWebSentimentScore}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Score from -1.0 to +1.0</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Sentiment Breakdown</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-1">
+                          {Object.entries(insights.webMentions.sentimentBreakdown)
+                            .filter(([, count]) => count > 0)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([sent, count]) => (
+                              <div key={sent} className="flex items-center justify-between text-xs">
+                                <SentimentBadge sentiment={sent} />
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Mention Sources Breakdown */}
+                  {Object.keys(insights.webMentions.sourceBreakdown).length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Newspaper className="h-4 w-4" />
+                          Mentions by Source
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-2 sm:grid-cols-4">
+                          {Object.entries(insights.webMentions.sourceBreakdown)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([src, count]) => (
+                              <div key={src} className="flex items-center justify-between p-2 border rounded">
+                                <Badge variant="outline" className={SOURCE_COLORS[src] || 'bg-purple-50 border-purple-200 text-purple-700'}>
+                                  {src.replace('_', ' ')}
+                                </Badge>
+                                <span className="font-medium text-sm">{count}</span>
+                              </div>
+                            ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Web Mention Themes */}
+                  {insights.webMentions.topMentionThemes.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Hash className="h-4 w-4" />
+                          Trending Topics About Your Brand
+                        </CardTitle>
+                        <CardDescription>Themes people mention most across the web</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                          {insights.webMentions.topMentionThemes.map((t, i) => (
+                            <Badge
+                              key={i}
+                              variant="outline"
+                              className={
+                                t.sentiment === 'POSITIVE' ? 'bg-green-50 border-green-200 text-green-700' :
+                                t.sentiment === 'NEGATIVE' ? 'bg-red-50 border-red-200 text-red-700' :
+                                'bg-gray-50 border-gray-200 text-gray-700'
+                              }
+                            >
+                              {t.theme} ({t.count})
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Recent Web Mentions Feed */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-purple-600" />
+                        Recent Web Mentions
+                      </CardTitle>
+                      <CardDescription>Latest mentions of your brand found online</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="max-h-[500px]">
+                        <div className="space-y-3">
+                          {insights.webMentions.recentMentions.map((m, i) => (
+                            <div key={i} className="border rounded-lg p-3 space-y-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant="outline" className={SOURCE_COLORS[m.source] || 'bg-purple-50 border-purple-200 text-purple-700'}>
+                                  {m.source.replace('_', ' ')}
+                                </Badge>
+                                <SentimentBadge sentiment={m.sentiment} />
+                                {m.publishedAt && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(m.publishedAt), 'MMM d, yyyy')}
+                                  </span>
+                                )}
+                              </div>
+                              {m.title && (
+                                <h4 className="font-medium text-sm">{m.title}</h4>
+                              )}
+                              <p className="text-sm text-foreground/80">{m.snippet}</p>
+                              {m.themes.length > 0 && (
+                                <div className="flex gap-1 flex-wrap">
+                                  {m.themes.slice(0, 5).map((t, ti) => (
+                                    <Badge key={ti} variant="secondary" className="text-xs">{t}</Badge>
+                                  ))}
+                                </div>
+                              )}
+                              {m.sourceUrl && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs"
+                                  onClick={() => window.open(m.sourceUrl!, '_blank')}
+                                >
+                                  <ExternalLink className="h-3 w-3 mr-1" /> View Source
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </>
               )}
 
               {/* AI Recommendations */}

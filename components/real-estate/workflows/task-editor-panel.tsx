@@ -42,7 +42,7 @@ const TASK_TYPES = [
   'QUALIFICATION', 'MLS_SEARCH', 'SHOWING_SCHEDULE', 'SHOWING_FEEDBACK',
   'OFFER_PREP', 'OFFER_SUBMIT', 'CONDITION_TRACKING', 'CLOSING_COORDINATION',
   'POST_CLOSE_FOLLOWUP', 'CMA_GENERATION', 'LISTING_PREP', 'PHOTO_SCHEDULING',
-  'MARKETING_DRAFT', 'LISTING_PUBLISH', 'CUSTOM'
+  'MARKETING_DRAFT', 'LISTING_PUBLISH', 'LISTING_VISIT_CONFIRMED', 'CUSTOM'
 ];
 
 const DELAY_UNITS = ['MINUTES', 'HOURS', 'DAYS'];
@@ -70,6 +70,7 @@ const BRANCH_FIELDS = [
   { value: 'offer_status', label: 'Offer Status' },
   { value: 'inspection_result', label: 'Inspection Result' },
   { value: 'financing_status', label: 'Financing Status' },
+  { value: 'visit_status', label: 'Visit Status' },
   { value: 'custom', label: 'Custom Field' },
 ];
 

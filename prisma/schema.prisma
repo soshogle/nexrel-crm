@@ -274,6 +274,8 @@ model User {
   docpenKnowledgeBaseFiles    DocpenKnowledgeBaseFile[]
   feedbackCollections         FeedbackCollection[]
   ownedReviews                Review[]
+  brandScans                  BrandScan[]
+  brandMentions               BrandMention[]
   // Real Estate Industry Relations
   reProperties                REProperty[]                 @relation("REUserProperties")
   reFsboAssignedListings      REFSBOListing[]              @relation("REFSBOAssignedUser")
@@ -608,6 +610,55 @@ model Review {
   @@index([userId])
   @@index([campaignId])
   @@index([leadId])
+  @@index([source])
+  @@index([sentiment])
+}
+
+model BrandScan {
+  id              String    @id @default(cuid())
+  userId          String
+  status          String    @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  businessName    String
+  location        String?
+  sources         Json?     // ["GOOGLE", "YELP", ...] — which platforms to scan
+  reviewsFound    Int       @default(0)
+  mentionsFound   Int       @default(0)
+  error           String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mentions        BrandMention[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model BrandMention {
+  id              String    @id @default(cuid())
+  userId          String
+  scanId          String?
+  source          String    // GOOGLE, YELP, REDDIT, FORUM, NEWS, BLOG, TWITTER, FACEBOOK, BBB, TRUSTPILOT, OTHER
+  sourceUrl       String?
+  title           String?
+  snippet         String    @db.Text
+  fullText        String?   @db.Text
+  authorName      String?
+  rating          Int?      // 1-5, null if not a formal review
+  sentiment       String?   // POSITIVE, NEGATIVE, NEUTRAL, MIXED
+  sentimentScore  Float?    // -1.0 to 1.0
+  themes          Json?     // ["fast service", "rude staff", ...]
+  aiSummary       String?
+  publishedAt     DateTime?
+  importedAsReviewId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scan            BrandScan? @relation(fields: [scanId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([scanId])
   @@index([source])
   @@index([sentiment])
 }
@@ -7877,6 +7928,7 @@ enum RETaskType {
   PHOTO_SCHEDULING
   MARKETING_DRAFT
   LISTING_PUBLISH
+  LISTING_VISIT_CONFIRMED
   CUSTOM
 }
 
