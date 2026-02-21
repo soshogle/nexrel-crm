@@ -83,16 +83,19 @@ export function ListingFormDialog({
                     if (placeData.city) updates.city = placeData.city;
                     if (placeData.state) updates.state = placeData.state;
                     if (placeData.country) updates.country = placeData.country;
+                    if (placeData.zip) updates.zip = placeData.zip;
                     if (placeData.lat) updates.lat = placeData.lat;
                     if (placeData.lng) updates.lng = placeData.lng;
-                    // Extract postal code and street from the formatted address
+                    // Extract street from the formatted address (first part)
                     const parts = (placeData.description || value).split(',');
                     if (parts.length >= 1) {
                       updates.address = parts[0].trim();
                     }
-                    // Try to extract postal code from address components
-                    const postalMatch = placeData.description?.match(/[A-Z]\d[A-Z]\s?\d[A-Z]\d|\d{5}(-\d{4})?/i);
-                    if (postalMatch) updates.zip = postalMatch[0];
+                    // Fallback: try to extract postal code from description if not in placeData
+                    if (!updates.zip && placeData.description) {
+                      const postalMatch = placeData.description.match(/[A-Z]\d[A-Z]\s?\d[A-Z]\d|\d{5}(-\d{4})?/i);
+                      if (postalMatch) updates.zip = postalMatch[0];
+                    }
                   }
                   setForm((prev) => ({ ...prev, ...updates }));
                 }}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Input } from '@/components/ui/input';
 import { MapPin, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ export interface PlaceData {
   city?: string;
   state?: string;
   country?: string;
+  zip?: string;
   lat?: number;
   lng?: number;
 }
@@ -88,10 +90,11 @@ export function PlaceAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
   const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
 
-  // Load Google Maps script
+  // Load Google Maps script (with server API fallback if client SDK fails)
   useEffect(() => {
     loadGoogleMapsScript()
       .then(() => {
@@ -109,6 +112,20 @@ export function PlaceAutocomplete({
   useEffect(() => {
     setInputValue(value);
   }, [value]);
+
+  // Update dropdown position when shown (for portal rendering inside dialogs)
+  useEffect(() => {
+    if (showDropdown && predictions.length > 0 && inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom,
+        left: rect.left,
+        width: rect.width,
+      });
+    } else {
+      setDropdownPosition(null);
+    }
+  }, [showDropdown, predictions.length]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -192,7 +209,7 @@ export function PlaceAutocomplete({
       { placeId: prediction.place_id, fields: ['address_components', 'geometry', 'formatted_address'] },
       (place, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-          let city = '', state = '', country = '';
+          let city = '', state = '', country = '', zip = '';
           
           place.address_components?.forEach((component) => {
             if (component.types.includes('locality')) {
@@ -204,6 +221,9 @@ export function PlaceAutocomplete({
             if (component.types.includes('country')) {
               country = component.long_name;
             }
+            if (component.types.includes('postal_code')) {
+              zip = component.long_name;
+            }
           });
 
           onChange(desc, {
@@ -212,6 +232,7 @@ export function PlaceAutocomplete({
             city,
             state,
             country,
+            zip: zip || undefined,
             lat: place.geometry?.location?.lat(),
             lng: place.geometry?.location?.lng(),
           });
@@ -250,25 +271,31 @@ export function PlaceAutocomplete({
         )}
       </div>
 
-      {showDropdown && predictions.length > 0 && (
+      {showDropdown && predictions.length > 0 && dropdownPosition && typeof document !== 'undefined' && createPortal(
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+          className="fixed z-[100] mt-1 bg-background border rounded-lg shadow-lg max-h-60 overflow-y-auto"
+          style={{
+            top: dropdownPosition.top,
+            left: dropdownPosition.left,
+            width: dropdownPosition.width,
+          }}
         >
           {predictions.map((prediction, idx) => (
             <button
               key={prediction.place_id || idx}
               type="button"
               onClick={() => handleSelectPrediction(prediction)}
-              className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
+              className="w-full px-4 py-3 text-left hover:bg-muted flex items-center gap-3 transition-colors"
             >
-              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-700 dark:text-gray-200 truncate">
+              <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm truncate">
                 {prediction.description}
               </span>
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
