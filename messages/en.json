@@ -82,7 +82,11 @@
     "mySchedules": "My Schedules",
     "myPayments": "My Payments",
     "websites": "Websites",
-    "aiAutomations": "AI Automations"
+    "aiAutomations": "AI Automations",
+    "templates": "Templates",
+    "blog": "Blog",
+    "listings": "Listings",
+    "inquiryAnalytics": "Inquiry Analytics"
   },
   "dashboard": {
     "welcome": "Welcome",

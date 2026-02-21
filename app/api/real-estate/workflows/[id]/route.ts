@@ -14,9 +14,13 @@ export const runtime = 'nodejs';
 // GET - Get a specific workflow template with tasks
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const params = typeof (context.params as any).then === 'function'
+      ? await (context.params as Promise<{ id: string }>)
+      : context.params as { id: string };
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -69,12 +73,29 @@ export async function GET(
   }
 }
 
+const VALID_RETASK_TYPES = new Set([
+  'QUALIFICATION', 'MLS_SEARCH', 'SHOWING_SCHEDULE', 'SHOWING_FEEDBACK', 'OFFER_PREP', 'OFFER_SUBMIT',
+  'CONDITION_TRACKING', 'CLOSING_COORDINATION', 'POST_CLOSE_FOLLOWUP', 'CMA_GENERATION', 'LISTING_PREP',
+  'PHOTO_SCHEDULING', 'MARKETING_DRAFT', 'LISTING_PUBLISH', 'CUSTOM'
+]);
+
+const VALID_RE_AGENT_TYPES = new Set([
+  'RE_SPEED_TO_LEAD', 'RE_FSBO_OUTREACH', 'RE_EXPIRED_OUTREACH', 'RE_COLD_REACTIVATION', 'RE_DOCUMENT_CHASER',
+  'RE_SHOWING_CONFIRM', 'RE_SPHERE_NURTURE', 'RE_BUYER_FOLLOWUP', 'RE_MARKET_UPDATE', 'RE_STALE_DIAGNOSTIC',
+  'RE_LISTING_BOOST', 'RE_CMA_GENERATOR'
+]);
+
 // PUT - Full update (metadata + tasks) - used by workflow builder on save
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const params = typeof (context.params as any).then === 'function'
+      ? await (context.params as Promise<{ id: string }>)
+      : context.params as { id: string };
+    const id = params.id;
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -82,7 +103,7 @@ export async function PUT(
 
     const existing = await prisma.rEWorkflowTemplate.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id
       }
     });
@@ -108,7 +129,7 @@ export async function PUT(
 
     if (tasks && Array.isArray(tasks)) {
       await prisma.rEWorkflowTask.deleteMany({
-        where: { templateId: params.id }
+        where: { templateId: id }
       });
 
       const createdTasks = await prisma.$transaction(
@@ -121,18 +142,26 @@ export async function PUT(
             agentColor: task.agentColor || '#6B7280',
             assignedAIEmployeeId: task.assignedAIEmployeeId || null,
           };
+          const taskType = VALID_RETASK_TYPES.has(task.taskType) ? task.taskType : 'CUSTOM';
+          const assignedAgentType = task.assignedAgentType && VALID_RE_AGENT_TYPES.has(task.assignedAgentType)
+            ? task.assignedAgentType
+            : null;
+          const pos = task.position || { angle: (task.angle ?? (index * 36) - 90), radius: task.radius ?? 0.7 };
+          const position = typeof pos === 'object' && pos !== null
+            ? { angle: Number(pos.angle) || 0, radius: Number(pos.radius) ?? 0.7 }
+            : { angle: (index * 36) - 90, radius: 0.7 };
           return prisma.rEWorkflowTask.create({
             data: {
-              templateId: params.id,
-              name: task.name as string,
-              description: task.description as string || '',
-              taskType: task.taskType as string,
-              assignedAgentType: task.assignedAgentType as string || null,
-              delayValue: task.delayMinutes ?? task.delayValue ?? 0,
+              templateId: id,
+              name: (task.name as string) || 'Task',
+              description: (task.description as string) || '',
+              taskType,
+              assignedAgentType,
+              delayValue: Math.max(0, Number(task.delayMinutes ?? task.delayValue ?? 0) || 0),
               delayUnit: (task.delayUnit as string) || 'MINUTES',
-              isHITL: task.isHITL as boolean || false,
-              isOptional: task.isOptional as boolean || false,
-              position: task.position || { angle: (task.angle ?? (index * 36) - 90), radius: task.radius ?? 0.7 },
+              isHITL: Boolean(task.isHITL),
+              isOptional: Boolean(task.isOptional),
+              position,
               displayOrder: task.displayOrder ?? index + 1,
               parentTaskId: null,
               branchCondition: (task.branchCondition as object | undefined) ?? undefined,
@@ -167,13 +196,13 @@ export async function PUT(
 
     if (Object.keys(updateData).length > 0) {
       await prisma.rEWorkflowTemplate.update({
-        where: { id: params.id },
+        where: { id },
         data: updateData as any,
       });
     }
 
     const raw = await prisma.rEWorkflowTemplate.findFirst({
-      where: { id: params.id },
+      where: { id },
       include: {
         tasks: { orderBy: { displayOrder: 'asc' } }
       }
@@ -202,9 +231,11 @@ export async function PUT(
       workflow
     });
   } catch (error) {
-    console.error('Error updating RE workflow (PUT):', error);
+    const err = error as Error;
+    console.error('Error updating RE workflow (PUT):', err);
+    const message = err?.message || 'Failed to update workflow';
     return NextResponse.json(
-      { error: 'Failed to update workflow' },
+      { error: message, details: process.env.NODE_ENV === 'development' ? err?.stack : undefined },
       { status: 500 }
     );
   }
@@ -213,9 +244,13 @@ export async function PUT(
 // PATCH - Partial update (metadata only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const params = typeof (context.params as any).then === 'function'
+      ? await (context.params as Promise<{ id: string }>)
+      : context.params as { id: string };
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -269,9 +304,13 @@ export async function PATCH(
 // DELETE - Delete a workflow template
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const params = typeof (context.params as any).then === 'function'
+      ? await (context.params as Promise<{ id: string }>)
+      : context.params as { id: string };
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
