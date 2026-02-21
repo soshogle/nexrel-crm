@@ -25,6 +25,7 @@
     "nexrel-service-template",
     "darksword-armory",
     "Theodora-Stavropoulos-Remax",
+    ".tmp-*",
     "backups"
   ]
 }
