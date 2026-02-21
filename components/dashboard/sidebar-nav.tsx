@@ -145,12 +145,6 @@ const merchantItems = [
     icon: MessageSquare,
   },
   {
-    id: 'soshogle' as MenuItemId,
-    title: 'Soshogle Multi-Channel',
-    href: '/dashboard/soshogle',
-    icon: MessageSquare,
-  },
-  {
     id: 'calendar' as MenuItemId,
     title: 'Appointments',
     href: '/dashboard/calendar',
@@ -376,6 +370,13 @@ const adminItems = [
     href: '/dashboard/voice-ai/notifications',
     icon: Mail,
     requiresAdmin: false, // Allow all business owners to manage notifications
+  },
+  {
+    id: 'soshogle' as MenuItemId,
+    title: 'Soshogle Multi-Channel',
+    href: '/dashboard/soshogle',
+    icon: MessageSquare,
+    requiresAdmin: true,
   },
   {
     id: 'team' as MenuItemId,

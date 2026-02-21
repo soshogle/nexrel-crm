@@ -25,6 +25,7 @@ import {
   Webhook
 } from 'lucide-react';
 import WebhookTestPanel from '@/components/instagram/webhook-test-panel';
+import AdminPageGuard from '@/components/admin/admin-page-guard';
 
 interface ChannelConnection {
   id: string;
@@ -61,6 +62,25 @@ export default function SoshoglePage() {
     fetchStats();
   }, []);
 
+  // Handle OAuth redirect when returning to this page (e.g. after same-window redirect or popup)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const soshogleSuccess = params.get('soshogle_connected') === 'success';
+    const soshogleError = params.get('soshogle_connected') === 'error';
+    const instagramSuccess = params.get('instagram_success') === 'true';
+    const instagramError = params.get('instagram_error');
+    
+    if (soshogleSuccess || instagramSuccess) {
+      toast.success('Channel connected successfully!');
+      fetchConnections();
+      fetchStats();
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (soshogleError || instagramError) {
+      toast.error(params.get('error') || instagramError || 'Connection failed');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   const fetchConnections = async () => {
     try {
       const response = await fetch('/api/soshogle/connections');
@@ -90,6 +110,7 @@ export default function SoshoglePage() {
 
   const handleConnect = async (provider: 'INSTAGRAM' | 'FACEBOOK' | 'WHATSAPP') => {
     setConnectingChannel(provider);
+    toast.loading(`Connecting ${provider}...`, { id: 'connect-loading' });
     try {
       // Use specific Instagram endpoint
       const endpoint = provider === 'INSTAGRAM' 
@@ -109,53 +130,57 @@ export default function SoshoglePage() {
             { duration: 6000 }
           );
         } else {
-          toast.error(data.error || `Failed to connect ${provider}`);
+          toast.error(data.error || `Failed to connect ${provider}`, { id: 'connect-loading' });
         }
         setConnectingChannel(null);
         return;
       }
 
       const data = await response.json();
+      const authUrl = data.authUrl || data.url;
       
-      // Open OAuth URL in popup
+      if (!authUrl) {
+        toast.error('Invalid response from server - no OAuth URL received');
+        setConnectingChannel(null);
+        return;
+      }
+      
+      // Open OAuth URL in popup (may be blocked by browser)
       const width = 600;
       const height = 700;
       const left = window.screen.width / 2 - width / 2;
       const top = window.screen.height / 2 - height / 2;
       
       const popup = window.open(
-        data.authUrl,
+        authUrl,
         `${provider} OAuth`,
         `width=${width},height=${height},left=${left},top=${top}`
       );
 
-      // Poll for popup closure
+      // If popup was blocked, redirect in same window instead
+      if (!popup || popup.closed) {
+        toast.dismiss('connect-loading');
+        toast.info('Opening in same window (popup was blocked)');
+        setConnectingChannel(null);
+        window.location.href = authUrl;
+        return;
+      }
+
+      // Poll for popup closure - when closed, refetch connections (success params are in popup, not opener)
       const checkPopup = setInterval(() => {
-        if (popup?.closed) {
+        if (popup.closed) {
           clearInterval(checkPopup);
           setConnectingChannel(null);
-          // Check if connection was successful
-          const urlParams = new URLSearchParams(window.location.search);
-          
-          // Check for Instagram success (different param)
-          const instagramSuccess = provider === 'INSTAGRAM' && urlParams.get('instagram_success') === 'true';
-          const soshoglSuccess = urlParams.get('soshogle_connected') === 'success';
-          
-          if (instagramSuccess || soshoglSuccess) {
-            toast.success(`${provider} connected successfully!`);
-            fetchConnections();
-            fetchStats();
-            // Clean up URL
-            window.history.replaceState({}, '', window.location.pathname);
-          } else if (urlParams.get('soshogle_connected') === 'error' || urlParams.get('instagram_error')) {
-            const error = urlParams.get('error') || urlParams.get('instagram_error') || 'Connection failed';
-            toast.error(error);
-            window.history.replaceState({}, '', window.location.pathname);
-          }
+          toast.dismiss('connect-loading');
+          // Always refetch - connection will appear if OAuth succeeded
+          fetchConnections();
+          fetchStats();
+          toast.success('Connection status updated');
         }
       }, 500);
     } catch (error: any) {
       console.error(`Error connecting ${provider}:`, error);
+      toast.dismiss('connect-loading');
       toast.error(`Failed to connect ${provider}: ${error.message}`);
       setConnectingChannel(null);
     }
@@ -226,13 +251,16 @@ export default function SoshoglePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
-      </div>
+      <AdminPageGuard>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+        </div>
+      </AdminPageGuard>
     );
   }
 
   return (
+    <AdminPageGuard>
     <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
       <div>
@@ -645,5 +673,6 @@ export default function SoshoglePage() {
         )}
       </Tabs>
     </div>
+    </AdminPageGuard>
   );
 }

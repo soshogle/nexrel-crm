@@ -6,6 +6,7 @@ import { ConversationList } from './conversation-list';
 import { MessageThread } from './message-thread';
 import CallHistoryPanel from './call-history-panel';
 import { ChannelConnectionsPanel } from './channel-connections-panel';
+import { ChannelStatsCards } from './channel-stats-cards';
 import CreateContactDialog from '../contacts/create-contact-dialog';
 import { MessageCircle, Plus, Loader2, Search, UserPlus, Phone, Mail, User, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -236,7 +237,14 @@ export function MessagingPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex bg-background">
+    <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">
+      {/* Channel Stats - Reference for owners to see which channels get most communications */}
+      <div className="shrink-0 px-4 py-3 border-b border-gray-700 bg-gray-900/50">
+        <p className="text-xs text-muted-foreground mb-2">Channel activity overview</p>
+        <ChannelStatsCards refreshKey={refreshKey} compact />
+      </div>
+
+      <div className="flex-1 flex min-h-0">
       {/* Conversations List - Left Sidebar */}
       <div className="w-full md:w-96 shrink-0 flex flex-col border-r border-gray-700">
         <div className="flex-1 overflow-hidden">
@@ -620,6 +628,7 @@ export function MessagingPage() {
           </Tabs>
         </div>
       )}
+      </div>
 
       {/* Create Contact Dialog */}
       <CreateContactDialog
