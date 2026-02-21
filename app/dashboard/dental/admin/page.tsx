@@ -18,6 +18,7 @@ import { RedesignedCheckIn } from '@/components/dental/redesigned-check-in';
 import { RedesignedFormResponses } from '@/components/dental/redesigned-form-responses';
 import { RedesignedInsuranceClaims } from '@/components/dental/redesigned-insurance-claims';
 import { AdminModals } from '@/components/dental/admin-modals';
+import { CustomSignature } from '@/components/dental/custom-signature';
 import { Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

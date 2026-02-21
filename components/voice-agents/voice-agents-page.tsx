@@ -601,7 +601,6 @@ export function VoiceAgentsPage() {
                   )}
                 </div>
               </div>
-            )}
           </TabsContent>
 
           {isSuperAdmin && (

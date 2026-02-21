@@ -6,7 +6,7 @@
     "build": "bash scripts/prevent-local-build.sh",
     "build:force": "node scripts/run-next-build.js",
     "start": "NODE_OPTIONS=\"--max-old-space-size=4096\" next start",
-    "lint": "next lint",
+    "lint": "eslint . --no-error-on-unmatched-pattern",
     "typecheck": "NODE_OPTIONS=\"--max-old-space-size=4096\" tsc --noEmit",
     "postinstall": "prisma generate",
     "test": "vitest",
