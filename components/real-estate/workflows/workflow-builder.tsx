@@ -327,8 +327,8 @@ export const WorkflowBuilder = forwardRef<REWorkflowBuilderHandle, WorkflowBuild
     });
   };
 
-  const handleSaveTask = async (updatedTask: WorkflowTask): Promise<void> => {
-    if (!workflow) return;
+  const handleSaveTask = async (updatedTask: WorkflowTask): Promise<boolean> => {
+    if (!workflow) return false;
     const updatedWorkflow = {
       ...workflow,
       tasks: workflow.tasks.map(t =>
@@ -337,7 +337,8 @@ export const WorkflowBuilder = forwardRef<REWorkflowBuilderHandle, WorkflowBuild
     };
     setWorkflow(updatedWorkflow);
     setHasUnsavedChanges(false);
-    await handleSaveWorkflow(updatedWorkflow, 'Saved');
+    const ok = await handleSaveWorkflow(updatedWorkflow, 'Saved');
+    return ok;
   };
   
   const handleReorderTasks = (updatedTasks: WorkflowTask[]) => {

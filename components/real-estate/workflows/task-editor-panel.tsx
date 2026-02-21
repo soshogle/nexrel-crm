@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Trash2, Save, Shield, Clock, User, GitBranch, Settings, Globe, MessageSquare, AlertTriangle, Phone, Bell } from 'lucide-react';
+import { X, Trash2, Save, Shield, Clock, User, GitBranch, Settings, Globe, MessageSquare, AlertTriangle, Phone, Bell, Loader2 } from 'lucide-react';
 import { VOICE_LANGUAGES } from '@/lib/voice-languages';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -34,7 +34,7 @@ interface TaskEditorPanelProps {
   task: WorkflowTask | null;
   workflowTasks: WorkflowTask[];
   onClose: () => void;
-  onSave: (task: WorkflowTask) => void | Promise<void>;
+  onSave: (task: WorkflowTask) => void | Promise<boolean>;
   onDelete: (taskId: string) => void;
 }
 
@@ -100,8 +100,10 @@ export function TaskEditorPanel({
   const [aiEmployees, setAiEmployees] = useState<AIEmployee[]>([]);
   const [teamMembers, setTeamMembers] = useState<Array<{ id: string; name: string; email: string }>>([]);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const lastSavedRef = useRef<string>('');
   const smsTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const emailSubjectRef = useRef<HTMLInputElement>(null);
   const emailBodyRef = useRef<HTMLTextAreaElement>(null);
 
   const buildEffectiveTask = useCallback(() => {
@@ -548,7 +550,15 @@ export function TaskEditorPanel({
         {/* Email Content - when Email action is selected */}
         {selectedActions.includes('email') && (
           <Card className="p-4 bg-gradient-to-br from-blue-50 to-white border-2 border-blue-200">
-            <Label className="text-sm font-semibold text-gray-900">Email Content</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-sm font-semibold text-gray-900">Email Content</Label>
+              <PersonalizationVariables
+                inputRef={emailSubjectRef}
+                textareaRef={emailBodyRef}
+                mode="button"
+                groups={['Contact', 'Business', 'Context']}
+              />
+            </div>
             <div className="space-y-2 mt-2">
               <div>
                 <Label className="text-xs text-gray-600">Send To</Label>
@@ -577,6 +587,7 @@ export function TaskEditorPanel({
               <div>
                 <Label className="text-xs text-gray-600">Subject</Label>
                 <Input
+                  ref={emailSubjectRef}
                   value={(editedTask as any).actionConfig?.emailSubject ?? ''}
                   onChange={(e) => {
                     const ac = (editedTask as any).actionConfig || {};
@@ -587,14 +598,7 @@ export function TaskEditorPanel({
                 />
               </div>
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <Label className="text-xs text-gray-600">Body</Label>
-                  <PersonalizationVariables textareaRef={emailBodyRef} onInsert={(token) => {
-                    const cur = (editedTask as any).actionConfig?.emailBody ?? '';
-                    const ac = (editedTask as any).actionConfig || {};
-                    setEditedTask({ ...editedTask, actionConfig: { ...ac, emailBody: cur + token } } as WorkflowTask);
-                  }} mode="button" />
-                </div>
+                <Label className="text-xs text-gray-600 mb-1 block">Body</Label>
                 <Textarea
                   ref={emailBodyRef}
                   value={(editedTask as any).actionConfig?.emailBody ?? ''}
@@ -854,7 +858,13 @@ export function TaskEditorPanel({
                 <div>
                   <Label className="text-xs text-gray-600">AI Employee to Remind</Label>
                   <Select
-                    value={(editedTask as any).actionConfig?.hitlEscalationAgent ?? 'none'}
+                    value={(() => {
+                      const v = (editedTask as any).actionConfig?.hitlEscalationAgent;
+                      if (!v || v === 'none') return 'none';
+                      if (v.startsWith('ai_team:')) return v;
+                      if (aiEmployees.some((e) => e.id === v)) return `ai_team:${v}`;
+                      return v;
+                    })()}
                     onValueChange={(v) => {
                       const ac = (editedTask as any).actionConfig || {};
                       setEditedTask({ ...editedTask, actionConfig: { ...ac, hitlEscalationAgent: v === 'none' ? undefined : v } } as WorkflowTask);
@@ -865,11 +875,29 @@ export function TaskEditorPanel({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">None (no reminder)</SelectItem>
-                      {aiEmployees.map((emp) => (
-                        <SelectItem key={emp.id} value={emp.id}>
-                          {emp.customName || emp.profession}
+                      {RE_AGENTS.map((agent) => (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: agent.color }} />
+                            {agent.name} ({agent.role})
+                          </span>
                         </SelectItem>
                       ))}
+                      {aiEmployees.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t mt-1 pt-2">
+                            My AI Team
+                          </div>
+                          {aiEmployees.map((emp) => (
+                            <SelectItem key={emp.id} value={`ai_team:${emp.id}`}>
+                              <span className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-purple-500" />
+                                {emp.customName || emp.profession}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1212,20 +1240,37 @@ export function TaskEditorPanel({
             <Button
               size="sm"
               className="flex-1 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
-              onClick={() => {
+              disabled={isSaving}
+              onClick={async () => {
                 const taskToSave = {
                   ...editedTask,
                   actionConfig: {
                     ...((editedTask as any).actionConfig || {}),
                     actions: selectedActions,
-                },
+                  },
                 };
-                onSave(taskToSave as WorkflowTask);
-                lastSavedRef.current = JSON.stringify(taskToSave);
+                setIsSaving(true);
+                try {
+                  const success = await Promise.resolve(onSave(taskToSave as WorkflowTask));
+                  if (success !== false) {
+                    lastSavedRef.current = JSON.stringify(taskToSave);
+                  }
+                } finally {
+                  setIsSaving(false);
+                }
               }}
             >
-              <Save className="w-4 h-4 mr-2" />
-              Save
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save
+                </>
+              )}
             </Button>
           )}
         </div>
