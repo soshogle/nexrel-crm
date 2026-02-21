@@ -218,6 +218,109 @@ export async function syncListingToWebsite(
   }
 }
 
+/** Search the owner's website Neon DB by MLS number or address fragment */
+export async function searchWebsiteListings(
+  userId: string,
+  query: string,
+  limit = 20
+): Promise<{
+  results: Array<{
+    id: number;
+    mls_number: string | null;
+    title: string;
+    address: string;
+    status: string;
+    price: number | null;
+    bedrooms: number | null;
+    bathrooms: number | null;
+    living_area: number | null;
+    property_type: string | null;
+    main_image_url: string | null;
+    description: string | null;
+    is_featured: boolean;
+  }>;
+  websiteId?: string;
+  error?: string;
+}> {
+  try {
+    const website = await prisma.website.findFirst({
+      where: { userId, templateType: 'SERVICE' },
+      select: { id: true, neonDatabaseUrl: true },
+    });
+
+    if (!website?.neonDatabaseUrl) {
+      return { results: [], error: 'No SERVICE website with database found' };
+    }
+
+    const pool = getPool(website.neonDatabaseUrl);
+    const q = `%${query}%`;
+
+    const result = await pool.query(
+      `SELECT id, mls_number, title, address, status, price,
+              bedrooms, bathrooms, living_area, property_type,
+              main_image_url, description, is_featured
+       FROM properties
+       WHERE mls_number ILIKE $1 OR address ILIKE $1 OR title ILIKE $1
+       ORDER BY is_featured DESC, created_at DESC
+       LIMIT $2`,
+      [q, limit]
+    );
+
+    return { results: result.rows, websiteId: website.id };
+  } catch (e: any) {
+    return { results: [], error: e.message };
+  }
+}
+
+/**
+ * Update the status of a property in the owner's website Neon DB.
+ * Matches by MLS number first, falls back to address ILIKE match.
+ */
+export async function syncStatusToWebsite(
+  userId: string,
+  mlsNumber: string | null,
+  address: string | null,
+  status: string
+): Promise<{ success: boolean; updated: number; error?: string }> {
+  try {
+    const website = await prisma.website.findFirst({
+      where: { userId, templateType: 'SERVICE' },
+      select: { id: true, neonDatabaseUrl: true },
+    });
+
+    if (!website?.neonDatabaseUrl) {
+      return { success: false, updated: 0, error: 'No SERVICE website with database found' };
+    }
+
+    const statusMap: Record<string, string> = {
+      ACTIVE: 'active', PENDING: 'pending', SOLD: 'sold',
+      EXPIRED: 'expired', WITHDRAWN: 'withdrawn', COMING_SOON: 'coming_soon',
+    };
+    const dbStatus = statusMap[status] || 'active';
+
+    const pool = getPool(website.neonDatabaseUrl);
+    let result;
+
+    if (mlsNumber) {
+      result = await pool.query(
+        `UPDATE properties SET status = $1, updated_at = NOW() WHERE mls_number = $2`,
+        [dbStatus, mlsNumber]
+      );
+    } else if (address) {
+      result = await pool.query(
+        `UPDATE properties SET status = $1, updated_at = NOW() WHERE address ILIKE $2 AND is_featured = true`,
+        [dbStatus, `%${address}%`]
+      );
+    } else {
+      return { success: false, updated: 0, error: 'No MLS number or address to match' };
+    }
+
+    return { success: true, updated: result.rowCount ?? 0 };
+  } catch (e: any) {
+    return { success: false, updated: 0, error: e.message };
+  }
+}
+
 export async function getPropertyForEdit(websiteId: string, propertyId: number): Promise<PropertyListing | null> {
   const website = await prisma.website.findFirst({
     where: { id: websiteId },

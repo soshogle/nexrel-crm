@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { REPropertyType, REListingStatus } from '@prisma/client';
-import { syncListingToWebsite } from '@/lib/website-builder/listings-service';
+import { syncListingToWebsite, syncStatusToWebsite } from '@/lib/website-builder/listings-service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -180,7 +180,7 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    // Re-sync to owner's website after update
+    // Re-sync full data to owner's website after update
     syncListingToWebsite(session.user.id, {
       address: property.address,
       city: property.city,
@@ -201,6 +201,16 @@ export async function PUT(request: NextRequest) {
     }).then((r) => {
       if (r.success) console.log(`[Properties PUT] Re-synced to website ${r.websiteId}`);
     }).catch((e) => console.warn('[Properties PUT] Website sync error:', e.message));
+
+    // Also explicitly sync status to website DB for all matching listings
+    if (updateData.listingStatus) {
+      syncStatusToWebsite(
+        session.user.id,
+        property.mlsNumber,
+        property.address,
+        property.listingStatus
+      ).catch((e) => console.warn('[Properties PUT] Status sync error:', e.message));
+    }
 
     return NextResponse.json({ property, success: true });
   } catch (error) {

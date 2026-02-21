@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Building2, Home, DollarSign, Plus, Search, Filter,
   Edit, Trash2, MoreHorizontal,
-  Calendar, Tag, ChevronLeft, Download,
+  Calendar, Tag, ChevronLeft, Download, Database, Import, Loader2,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -107,6 +107,11 @@ export default function ListingsPage() {
   const [uploading, setUploading] = useState(false);
   const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<string>('');
+  const [websiteResults, setWebsiteResults] = useState<any[]>([]);
+  const [websiteSearching, setWebsiteSearching] = useState(false);
+  const [showWebsiteResults, setShowWebsiteResults] = useState(false);
+  const [importingMls, setImportingMls] = useState<string | null>(null);
+  const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchProperties = useCallback(async () => {
@@ -288,6 +293,107 @@ export default function ListingsPage() {
     }
   }
 
+  // Search owner's website DB for listings by MLS# or address
+  async function searchWebsiteDB(query: string) {
+    if (!query || query.length < 2) {
+      setWebsiteResults([]);
+      setShowWebsiteResults(false);
+      return;
+    }
+    setWebsiteSearching(true);
+    try {
+      const res = await fetch(`/api/real-estate/properties/search-website?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      setWebsiteResults(data.results || []);
+      setShowWebsiteResults(data.results?.length > 0);
+    } catch {
+      setWebsiteResults([]);
+    } finally {
+      setWebsiteSearching(false);
+    }
+  }
+
+  // Import a listing from the website DB into the CRM
+  async function importFromWebsite(listing: any) {
+    setImportingMls(listing.mls_number || listing.id?.toString());
+    try {
+      const typeMap: Record<string, string> = {
+        house: 'SINGLE_FAMILY', condo: 'CONDO', townhouse: 'TOWNHOUSE',
+        'multi-family': 'MULTI_FAMILY', land: 'LAND', commercial: 'COMMERCIAL',
+      };
+      const statusMap: Record<string, string> = {
+        active: 'ACTIVE', pending: 'PENDING', sold: 'SOLD',
+        expired: 'EXPIRED', withdrawn: 'WITHDRAWN', coming_soon: 'COMING_SOON',
+      };
+
+      const payload = {
+        address: listing.address || listing.title || '',
+        city: '',
+        state: '',
+        zip: '',
+        country: 'CA',
+        beds: listing.bedrooms?.toString() || '',
+        baths: listing.bathrooms?.toString() || '',
+        sqft: listing.living_area?.toString() || '',
+        propertyType: typeMap[listing.property_type] || 'OTHER',
+        listingStatus: statusMap[listing.status] || 'ACTIVE',
+        listPrice: listing.price?.toString() || '',
+        mlsNumber: listing.mls_number || '',
+        description: listing.description || '',
+        photos: listing.main_image_url ? [listing.main_image_url] : [],
+        features: [],
+      };
+
+      // Parse city/state/zip from the address string
+      const parts = (listing.address || '').split(',').map((p: string) => p.trim());
+      if (parts.length >= 3) {
+        payload.address = parts[0];
+        payload.city = parts[1];
+        const stateZip = parts[2].split(' ').filter(Boolean);
+        payload.state = stateZip[0] || '';
+        payload.zip = stateZip.slice(1).join(' ') || '';
+      } else if (parts.length === 2) {
+        payload.address = parts[0];
+        payload.city = parts[1];
+      }
+
+      const res = await fetch('/api/real-estate/properties', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error('Import failed');
+      toast({ title: 'Imported', description: `Listing ${listing.mls_number || ''} imported from website database` });
+      setShowWebsiteResults(false);
+      setSearchQuery('');
+      fetchProperties();
+    } catch {
+      toast({ title: 'Error', description: 'Failed to import listing', variant: 'destructive' });
+    } finally {
+      setImportingMls(null);
+    }
+  }
+
+  // Quick status change for a listing (updates CRM + syncs to website DB)
+  async function handleStatusChange(propertyId: string, newStatus: string) {
+    setStatusUpdating(propertyId);
+    try {
+      const res = await fetch('/api/real-estate/properties', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: propertyId, listingStatus: newStatus }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      toast({ title: 'Status Updated', description: `Listing marked as ${statusLabel(newStatus)}` });
+      fetchProperties();
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' });
+    } finally {
+      setStatusUpdating(null);
+    }
+  }
+
   function toggleBulk(id: string) {
     setBulkSelected((prev) => {
       const next = new Set(prev);
@@ -410,11 +516,74 @@ export default function ListingsPage() {
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search address, city, MLS#, seller..."
+                placeholder="Search address, city, MLS#, seller... (also searches your website DB)"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  searchWebsiteDB(e.target.value);
+                }}
                 className="pl-10"
               />
+              {websiteSearching && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+              )}
+              {/* Website DB search results dropdown */}
+              {showWebsiteResults && websiteResults.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                  <div className="px-3 py-2 text-xs text-muted-foreground border-b flex items-center gap-1.5">
+                    <Database className="h-3 w-3" />
+                    Found {websiteResults.length} listing(s) in your website database — click to import
+                  </div>
+                  {websiteResults.map((r: any) => {
+                    const alreadyInCRM = properties.some(
+                      (p) => p.mlsNumber && r.mls_number && p.mlsNumber === r.mls_number
+                    );
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        disabled={alreadyInCRM || importingMls === (r.mls_number || r.id?.toString())}
+                        onClick={() => !alreadyInCRM && importFromWebsite(r)}
+                        className="w-full px-3 py-2.5 text-left hover:bg-muted/50 flex items-center gap-3 transition-colors disabled:opacity-50 border-b last:border-0"
+                      >
+                        {r.main_image_url ? (
+                          <img src={r.main_image_url} alt="" className="h-10 w-14 rounded object-cover flex-shrink-0 border" />
+                        ) : (
+                          <div className="h-10 w-14 rounded bg-muted flex items-center justify-center flex-shrink-0 border">
+                            <Building2 className="h-4 w-4 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{r.address || r.title}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-2">
+                            {r.mls_number && <span className="font-mono">MLS# {r.mls_number}</span>}
+                            {r.price && <span>${Number(r.price).toLocaleString()}</span>}
+                            {r.bedrooms && <span>{r.bedrooms} bd</span>}
+                            {r.bathrooms && <span>{r.bathrooms} ba</span>}
+                            <Badge variant="outline" className="text-[10px] h-4">
+                              {r.status}
+                            </Badge>
+                          </div>
+                        </div>
+                        {alreadyInCRM ? (
+                          <Badge variant="secondary" className="text-xs flex-shrink-0">In CRM</Badge>
+                        ) : importingMls === (r.mls_number || r.id?.toString()) ? (
+                          <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
+                        ) : (
+                          <Import className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => setShowWebsiteResults(false)}
+                    className="w-full px-3 py-1.5 text-xs text-center text-muted-foreground hover:bg-muted/50"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[150px]">
@@ -529,9 +698,26 @@ export default function ListingsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className={`${statusColor(p.listingStatus)} text-white text-xs`}>
-                        {statusLabel(p.listingStatus)}
-                      </Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Badge variant="secondary" className={`${statusColor(p.listingStatus)} text-white text-xs cursor-pointer hover:opacity-80`}>
+                            {statusLabel(p.listingStatus)}
+                          </Badge>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          {LISTING_STATUSES.map((s) => (
+                            <DropdownMenuItem
+                              key={s.value}
+                              disabled={p.listingStatus === s.value}
+                              onClick={() => handleStatusChange(p.id, s.value)}
+                            >
+                              <div className={`mr-2 h-2 w-2 rounded-full ${s.color}`} />
+                              {s.label}
+                              {p.listingStatus === s.value && <span className="ml-auto text-xs text-muted-foreground">current</span>}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                     <TableCell className="text-sm">{typeLabel(p.propertyType)}</TableCell>
                     <TableCell className="text-right font-medium">{formatPrice(p.listPrice)}</TableCell>
@@ -551,13 +737,34 @@ export default function ListingsPage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100">
-                            <MoreHorizontal className="h-4 w-4" />
+                            {statusUpdating === p.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <MoreHorizontal className="h-4 w-4" />
+                            )}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openEdit(p)}>
                             <Edit className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {p.listingStatus !== 'ACTIVE' && (
+                            <DropdownMenuItem onClick={() => handleStatusChange(p.id, 'ACTIVE')}>
+                              <div className="mr-2 h-2 w-2 rounded-full bg-green-500" /> Mark Active
+                            </DropdownMenuItem>
+                          )}
+                          {p.listingStatus !== 'PENDING' && (
+                            <DropdownMenuItem onClick={() => handleStatusChange(p.id, 'PENDING')}>
+                              <div className="mr-2 h-2 w-2 rounded-full bg-yellow-500" /> Mark Pending
+                            </DropdownMenuItem>
+                          )}
+                          {p.listingStatus !== 'SOLD' && (
+                            <DropdownMenuItem onClick={() => handleStatusChange(p.id, 'SOLD')}>
+                              <div className="mr-2 h-2 w-2 rounded-full bg-blue-500" /> Mark Sold
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => handleDelete(p.id)}
