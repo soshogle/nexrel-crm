@@ -43,7 +43,13 @@ import {
   Copy,
   Download,
   MoreVertical,
-  Trash2
+  Trash2,
+  MessageSquare,
+  FileText,
+  CheckCircle,
+  XCircle,
+  PhoneIncoming,
+  PhoneOutgoing
 } from 'lucide-react';
 
 interface CallHistoryPanelProps {
@@ -751,30 +757,145 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
                     )}
                   </TabsContent>
 
-                  <TabsContent value="overview" className="space-y-4 mt-4">
-                    {conversationDetails?.analysis?.call_summary && (
-                      <div>
-                        <h3 className="text-sm font-semibold text-gray-700 mb-2">Call Summary</h3>
-                        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4">
-                          <p className="text-sm text-gray-700 leading-relaxed">
-                            {conversationDetails.analysis.call_summary}
+                  <TabsContent value="overview" className="space-y-6 mt-4">
+                    {/* Call Metrics Row */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                          <Clock className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Duration</p>
+                          <p className="text-lg font-semibold text-gray-900">
+                            {formatDuration(selectedConversation.call_duration_secs)}
                           </p>
                         </div>
                       </div>
-                    )}
-                    
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Status</h3>
-                      <Badge
-                        className={
-                          selectedConversation.status === 'done'
-                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-100'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-100'
-                        }
-                      >
-                        {selectedConversation.status === 'done' ? 'Successful' : 'Unsuccessful'}
-                      </Badge>
+                      <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <MessageSquare className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Messages</p>
+                          <p className="text-lg font-semibold text-gray-900">
+                            {getTranscriptTurnCount(conversationDetails || selectedConversation)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3">
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                          selectedConversation.status === 'done' ? 'bg-green-100' : 'bg-red-100'
+                        }`}>
+                          {selectedConversation.status === 'done' ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Status</p>
+                          <Badge
+                            className={
+                              selectedConversation.status === 'done'
+                                ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                                : 'bg-red-100 text-red-700 hover:bg-red-100'
+                            }
+                          >
+                            {selectedConversation.status === 'done' ? 'Successful' : 'Failed'}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Enhanced Call Summary */}
+                    {conversationDetails?.analysis?.call_summary && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-2">Call Summary</h3>
+                        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-5 border border-purple-100">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center mt-0.5">
+                              <FileText className="h-4 w-4 text-purple-600" />
+                            </div>
+                            <p className="text-sm text-gray-800 leading-relaxed flex-1">
+                              {conversationDetails.analysis.call_summary}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Call Analysis Data */}
+                    {conversationDetails?.analysis && (
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-gray-700">Call Analysis</h3>
+                        <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-100">
+                          {conversationDetails.analysis.sentiment && (
+                            <div className="flex items-center justify-between px-4 py-3">
+                              <span className="text-sm text-gray-600">Sentiment</span>
+                              <Badge className={
+                                conversationDetails.analysis.sentiment === 'positive'
+                                  ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                                  : conversationDetails.analysis.sentiment === 'negative'
+                                    ? 'bg-red-100 text-red-700 hover:bg-red-100'
+                                    : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100'
+                              }>
+                                {conversationDetails.analysis.sentiment}
+                              </Badge>
+                            </div>
+                          )}
+                          {conversationDetails.analysis.call_outcome && (
+                            <div className="flex items-center justify-between px-4 py-3">
+                              <span className="text-sm text-gray-600">Outcome</span>
+                              <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
+                                {conversationDetails.analysis.call_outcome}
+                              </Badge>
+                            </div>
+                          )}
+                          {conversationDetails.analysis.call_successful !== undefined && (
+                            <div className="flex items-center justify-between px-4 py-3">
+                              <span className="text-sm text-gray-600">Call Successful</span>
+                              <Badge className={
+                                conversationDetails.analysis.call_successful === true || conversationDetails.analysis.call_successful === 'true'
+                                  ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                                  : 'bg-red-100 text-red-700 hover:bg-red-100'
+                              }>
+                                {conversationDetails.analysis.call_successful === true || conversationDetails.analysis.call_successful === 'true' ? 'Yes' : 'No'}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Data Collected */}
+                        {conversationDetails.analysis.data_collected && (
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Data Collected</h4>
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                              {typeof conversationDetails.analysis.data_collected === 'object' && !Array.isArray(conversationDetails.analysis.data_collected) ? (
+                                <dl className="space-y-2">
+                                  {Object.entries(conversationDetails.analysis.data_collected).map(([key, value]) => (
+                                    <div key={key} className="flex justify-between gap-4">
+                                      <dt className="text-sm text-gray-500 capitalize">{key.replace(/_/g, ' ')}</dt>
+                                      <dd className="text-sm font-medium text-gray-900 text-right">{String(value)}</dd>
+                                    </div>
+                                  ))}
+                                </dl>
+                              ) : Array.isArray(conversationDetails.analysis.data_collected) ? (
+                                <ul className="space-y-1">
+                                  {conversationDetails.analysis.data_collected.map((item: any, idx: number) => (
+                                    <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
+                                      <span className="text-purple-400 mt-1">•</span>
+                                      <span>{typeof item === 'object' ? JSON.stringify(item) : String(item)}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-sm text-gray-700">{String(conversationDetails.analysis.data_collected)}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="client-data" className="mt-4">
@@ -822,6 +943,51 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
                   {getTranscriptTurnCount(conversationDetails)}
                 </p>
               </div>
+
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Agent</p>
+                <p className="text-sm text-gray-900">
+                  {conversationDetails?.agent_name || selectedConversation.agent_name || 'Unknown'}
+                </p>
+              </div>
+
+              {selectedConversation.conversation_initiation_client_data?.caller_number && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Caller Number</p>
+                  <p className="text-sm text-gray-900">
+                    {selectedConversation.conversation_initiation_client_data.caller_number}
+                  </p>
+                </div>
+              )}
+
+              {(selectedConversation.call_direction || conversationDetails?.call_direction) && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Direction</p>
+                  <div className="flex items-center gap-1.5">
+                    {(selectedConversation.call_direction || conversationDetails?.call_direction) === 'inbound' ? (
+                      <PhoneIncoming className="h-3.5 w-3.5 text-green-600" />
+                    ) : (
+                      <PhoneOutgoing className="h-3.5 w-3.5 text-blue-600" />
+                    )}
+                    <p className="text-sm text-gray-900 capitalize">
+                      {selectedConversation.call_direction || conversationDetails?.call_direction}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {conversationDetails?.analysis?.call_successful !== undefined && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Call Successful</p>
+                  <Badge className={
+                    conversationDetails.analysis.call_successful === true || conversationDetails.analysis.call_successful === 'true'
+                      ? 'bg-green-100 text-green-700 hover:bg-green-100'
+                      : 'bg-red-100 text-red-700 hover:bg-red-100'
+                  }>
+                    {conversationDetails.analysis.call_successful === true || conversationDetails.analysis.call_successful === 'true' ? 'Successful' : 'Unsuccessful'}
+                  </Badge>
+                </div>
+              )}
             </div>
           </div>
         </div>

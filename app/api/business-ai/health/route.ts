@@ -102,10 +102,10 @@ async function getCrmFallbackHealth(userId: string) {
     ? (wonDeals.length / deals.filter(d => d.actualCloseDate).length) * 100
     : 0;
 
-  const revenueScore = totalRevenue > 0 ? Math.min(25, 12 + Math.floor(Math.log10(totalRevenue + 1) * 4)) : 12;
-  const pipelineScore = pipelineValue > 0 || openDeals.length > 0 ? Math.min(25, 12 + Math.min(openDeals.length, 5) * 2) : 12;
-  const customerScore = leads > 0 ? Math.min(25, 12 + Math.min(leads, 10)) : 12;
-  const opsScore = campaigns > 0 ? 15 : 12;
+  const revenueScore = totalRevenue > 0 ? Math.min(25, 5 + Math.floor(Math.log10(totalRevenue + 1) * 4)) : 0;
+  const pipelineScore = pipelineValue > 0 || openDeals.length > 0 ? Math.min(25, 5 + Math.min(openDeals.length, 5) * 3) : 0;
+  const customerScore = leads > 0 ? Math.min(25, Math.min(leads, 25)) : 0;
+  const opsScore = campaigns > 0 ? Math.min(25, 5 + Math.min(campaigns, 4) * 5) : 0;
   const overall = Math.min(100, Math.max(0, revenueScore + pipelineScore + customerScore + opsScore));
 
   const alerts: any[] = [];
@@ -121,10 +121,14 @@ async function getCrmFallbackHealth(userId: string) {
     alerts,
   };
 
+  const revenueConfidence = totalRevenue > 0 ? 70 : 0;
+  const conversionConfidence = leads > 0 ? Math.min(85, 30 + Math.min(leads, 50)) : 0;
+  const dealConfidence = pipelineValue > 0 && winRate > 0 ? Math.min(80, Math.round(winRate)) : 0;
+
   const predictions = [
-    { metric: 'revenue', currentValue: totalRevenue, predictedValue: totalRevenue * 1.1, confidence: 70, timeframe: 'next month', factors: ['Based on current pipeline'] },
-    { metric: 'leadConversions', currentValue: leads, predictedValue: Math.max(0, Math.floor(leads * 0.2)), confidence: 65, timeframe: 'next 30 days', factors: ['Based on lead count'] },
-    { metric: 'dealValue', currentValue: pipelineValue, predictedValue: Math.floor(pipelineValue * (winRate / 100)), confidence: 70, timeframe: 'next month', factors: [`Win rate: ${winRate.toFixed(0)}%`] },
+    { metric: 'revenue', currentValue: totalRevenue, predictedValue: totalRevenue > 0 ? Math.round(totalRevenue * 1.1) : 0, confidence: revenueConfidence, timeframe: 'next month', factors: totalRevenue > 0 ? ['Based on current pipeline'] : ['No revenue data yet'] },
+    { metric: 'leadConversions', currentValue: leads, predictedValue: leads > 0 ? Math.max(1, Math.floor(leads * 0.2)) : 0, confidence: conversionConfidence, timeframe: 'next 30 days', factors: leads > 0 ? [`${leads} leads × 20% est. conversion rate`] : ['No leads yet'] },
+    { metric: 'dealValue', currentValue: pipelineValue, predictedValue: pipelineValue > 0 ? Math.floor(pipelineValue * (winRate / 100)) : 0, confidence: dealConfidence, timeframe: 'next month', factors: pipelineValue > 0 ? [`Pipeline: $${pipelineValue.toLocaleString()} × ${winRate.toFixed(0)}% win rate`] : ['No deals with values yet'] },
   ];
 
   const insights: any[] = [];

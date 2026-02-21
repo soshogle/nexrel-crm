@@ -147,21 +147,21 @@ export function RadialBrainVisualization({
         key={point.id}
         d={pathData}
         fill={`url(#gradient-${point.status}-${point.id})`}
-        opacity={isSelected ? 0.9 : isHovered ? 0.7 : 0.4}
+        opacity={isSelected ? 0.95 : isHovered ? 0.85 : 0.6}
         className="cursor-pointer transition-all"
         onClick={() => handlePointClick(point)}
         onMouseEnter={() => setHoveredDataPoint(point)}
         onMouseLeave={() => setHoveredDataPoint(null)}
         initial={{ opacity: 0 }}
         animate={{ 
-          opacity: isSelected ? 0.85 : isHovered ? 0.65 : 0.45,
-          scale: 1, // No scaling animation
+          opacity: isSelected ? 0.95 : isHovered ? 0.85 : 0.6,
+          scale: 1,
         }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
-        whileHover={{ opacity: 0.75 }}
+        whileHover={{ opacity: 0.85 }}
         whileTap={{ scale: 0.98 }}
         style={{
-          filter: isHovered || isSelected ? `drop-shadow(0 0 8px ${colors.from}80)` : 'none',
+          filter: isHovered || isSelected ? `drop-shadow(0 0 15px ${colors.from}A0)` : 'none',
         }}
       />
     );
@@ -197,19 +197,19 @@ export function RadialBrainVisualization({
               const colors = getStatusColor(point.status);
               return (
                 <linearGradient key={`gradient-${point.status}-${point.id}`} id={`gradient-${point.status}-${point.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor={colors.from} stopOpacity="0.7" />
-                  <stop offset="50%" stopColor={colors.to} stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="#ffffff" stopOpacity="0.3" />
+                  <stop offset="0%" stopColor={colors.from} stopOpacity="0.9" />
+                  <stop offset="50%" stopColor={colors.to} stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#ffffff" stopOpacity="0.4" />
                 </linearGradient>
               );
             })}
             
             {/* Core gradient - muted purple to white */}
             <radialGradient id="coreGradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#6b21a8" stopOpacity="0.9" />
-              <stop offset="40%" stopColor="#7c3aed" stopOpacity="0.7" />
-              <stop offset="70%" stopColor="#a78bfa" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.3" />
+              <stop offset="0%" stopColor="#6b21a8" stopOpacity="1.0" />
+              <stop offset="40%" stopColor="#7c3aed" stopOpacity="0.85" />
+              <stop offset="70%" stopColor="#a78bfa" stopOpacity="0.65" />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity="0.4" />
             </radialGradient>
 
             {/* Connection lines gradient - muted purple to white */}
@@ -224,6 +224,20 @@ export function RadialBrainVisualization({
               <stop offset="0%" stopColor="#6b21a8" stopOpacity="0.2" />
               <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
             </radialGradient>
+
+            {/* Outer glow ring gradient */}
+            <radialGradient id="outerGlowGradient" cx="50%" cy="50%" r="50%">
+              <stop offset="60%" stopColor="#7c3aed" stopOpacity="0.4" />
+              <stop offset="80%" stopColor="#a78bfa" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#c4b5fd" stopOpacity="0" />
+            </radialGradient>
+
+            {/* Label border gradient */}
+            <linearGradient id="labelBorderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#6b21a8" stopOpacity="0.8" />
+              <stop offset="50%" stopColor="#7c3aed" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#a78bfa" stopOpacity="0.3" />
+            </linearGradient>
           </defs>
 
           {/* Static connection lines - professional appearance */}
@@ -240,12 +254,12 @@ export function RadialBrainVisualization({
                 x2={toPoint.x}
                 y2={toPoint.y}
                 stroke="url(#connectionGradient)"
-                strokeWidth={Math.max(conn.strength / 50, 0.3)}
-                opacity={0.2 + (conn.strength / 200) * 0.3}
+                strokeWidth={Math.max(conn.strength / 50, 0.5)}
+                opacity={0.3 + (conn.strength / 200) * 0.3}
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{ 
                   pathLength: 1,
-                  opacity: 0.2 + (conn.strength / 200) * 0.3,
+                  opacity: 0.3 + (conn.strength / 200) * 0.3,
                 }}
                 transition={{ 
                   duration: 2, 
@@ -303,6 +317,26 @@ export function RadialBrainVisualization({
             }}
           />
 
+          {/* Outer glow ring */}
+          <motion.circle
+            cx={centerX}
+            cy={centerY}
+            r={coreRadius + 20}
+            fill="none"
+            stroke="url(#outerGlowGradient)"
+            strokeWidth="6"
+            opacity={0.35}
+            animate={{
+              opacity: [0.25, 0.45, 0.25],
+              r: [coreRadius + 18, coreRadius + 22, coreRadius + 18],
+            }}
+            transition={{
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+
           {/* Core Label */}
           <text
             x={centerX}
@@ -338,10 +372,10 @@ export function RadialBrainVisualization({
                   cy={point.y}
                   r="50"
                   fill="rgba(255, 255, 255, 0.95)"
-                  stroke={colors.from}
-                  strokeWidth="2"
+                  stroke="url(#labelBorderGradient)"
+                  strokeWidth="2.5"
                   className="pointer-events-none"
-                  style={{ filter: `drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1))` }}
+                  style={{ filter: `drop-shadow(0 4px 10px rgba(107, 33, 168, 0.15))` }}
                 />
                 {/* Label text */}
                 <text
@@ -359,7 +393,7 @@ export function RadialBrainVisualization({
                   y={point.y + 10}
                   textAnchor="middle"
                   className="fill-gray-800 text-sm font-bold pointer-events-none"
-                  style={{ fontSize: '14px' }}
+                  style={{ fontSize: '16px' }}
                 >
                   {formatValue(point.value, point.unit)}
                 </text>
@@ -381,10 +415,10 @@ export function RadialBrainVisualization({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           whileHover={{ scale: 1.02 }}
-          className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-white/98 backdrop-blur-sm border border-gray-300 rounded-lg px-6 py-2.5 shadow-md cursor-pointer"
-          style={{ marginTop: '-15px' }}
+          className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-white/98 backdrop-blur-sm border border-gray-300 rounded-lg px-7 py-3 shadow-md cursor-pointer"
+          style={{ marginTop: '-15px', borderTop: '2px solid #a855f7' }}
         >
-          <div className="flex items-center gap-6 text-xs">
+          <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
               <span className="text-gray-600 font-medium">Active:</span>
@@ -455,9 +489,10 @@ export function RadialBrainVisualization({
           transition={{ duration: 0.6, ease: "easeOut" }}
           whileHover={{ scale: 1.05, x: 5 }}
           className="bg-white/98 backdrop-blur-sm border border-gray-300 rounded-lg p-4 min-w-[220px] pointer-events-auto shadow-md cursor-pointer"
+          style={{ borderLeft: '3px solid #a855f7' }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <Activity className="h-4 w-4 text-gray-700" />
+            <Activity className="h-4 w-4 text-purple-600" />
             <div className="text-gray-900 text-sm font-semibold">Current Operations</div>
           </div>
           <div className="text-gray-600 text-xs space-y-2">
@@ -487,9 +522,10 @@ export function RadialBrainVisualization({
           transition={{ delay: 0.1, duration: 0.6, ease: "easeOut" }}
           whileHover={{ scale: 1.05, x: 5 }}
           className="bg-white/98 backdrop-blur-sm border border-gray-300 rounded-lg p-4 min-w-[220px] pointer-events-auto shadow-md cursor-pointer"
+          style={{ borderLeft: '3px solid #a855f7' }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <Zap className="h-4 w-4 text-gray-700" />
+            <Zap className="h-4 w-4 text-purple-600" />
             <div className="text-gray-900 text-sm font-semibold">Future Predictions</div>
           </div>
           <div className="text-gray-600 text-xs space-y-2">

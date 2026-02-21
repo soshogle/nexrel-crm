@@ -88,17 +88,17 @@ export class BusinessAnalyticsEngine {
    * Calculate revenue score
    */
   private calculateRevenueScore(revenue: BusinessDataSnapshot['revenue']): number {
-    let score = 12.5; // Base score
+    if (revenue.total === 0 && revenue.thisMonth === 0) return 0;
 
-    // Growth rate contribution
-    if (revenue.growthRate > 10) score += 6.25;
-    else if (revenue.growthRate > 5) score += 3.125;
-    else if (revenue.growthRate < -10) score -= 6.25;
-    else if (revenue.growthRate < -5) score -= 3.125;
+    let score = 10;
 
-    // Trend contribution
-    if (revenue.trend === 'up') score += 6.25;
-    else if (revenue.trend === 'down') score -= 6.25;
+    if (revenue.growthRate > 10) score += 7.5;
+    else if (revenue.growthRate > 5) score += 5;
+    else if (revenue.growthRate < -10) score -= 5;
+    else if (revenue.growthRate < -5) score -= 2.5;
+
+    if (revenue.trend === 'up') score += 7.5;
+    else if (revenue.trend === 'down') score -= 5;
 
     return Math.max(0, Math.min(25, score));
   }
@@ -110,21 +110,19 @@ export class BusinessAnalyticsEngine {
     leads: BusinessDataSnapshot['leads'],
     deals: BusinessDataSnapshot['deals']
   ): number {
-    let score = 12.5; // Base score
+    if (leads.total === 0 && deals.total === 0) return 0;
 
-    // Conversion rate contribution
-    if (leads.conversionRate > 20) score += 6.25;
-    else if (leads.conversionRate > 10) score += 3.125;
-    else if (leads.conversionRate < 5) score -= 6.25;
+    let score = 5;
 
-    // Win rate contribution
-    if (deals.winRate > 50) score += 6.25;
-    else if (deals.winRate > 30) score += 3.125;
-    else if (deals.winRate < 20) score -= 6.25;
+    if (leads.total > 0) score += Math.min(5, leads.total / 10);
+    if (leads.conversionRate > 20) score += 5;
+    else if (leads.conversionRate > 10) score += 3;
 
-    // Pipeline trend
-    if (leads.trend === 'up' && deals.trend === 'up') score += 6.25;
-    else if (leads.trend === 'down' && deals.trend === 'down') score -= 6.25;
+    if (deals.winRate > 50) score += 5;
+    else if (deals.winRate > 30) score += 3;
+
+    if (leads.trend === 'up' && deals.trend === 'up') score += 5;
+    else if (leads.trend === 'down' && deals.trend === 'down') score -= 3;
 
     return Math.max(0, Math.min(25, score));
   }
@@ -133,21 +131,20 @@ export class BusinessAnalyticsEngine {
    * Calculate customer score
    */
   private calculateCustomerScore(customers: BusinessDataSnapshot['customers']): number {
-    let score = 12.5; // Base score
+    if (customers.total === 0) return 0;
 
-    // Retention rate contribution
-    if (customers.retentionRate > 90) score += 6.25;
-    else if (customers.retentionRate > 80) score += 3.125;
-    else if (customers.retentionRate < 70) score -= 6.25;
+    let score = 5;
 
-    // LTV contribution
-    if (customers.averageLifetimeValue > 1000) score += 6.25;
-    else if (customers.averageLifetimeValue > 500) score += 3.125;
-    else if (customers.averageLifetimeValue < 100) score -= 3.125;
+    if (customers.retentionRate > 90) score += 7.5;
+    else if (customers.retentionRate > 80) score += 5;
+    else if (customers.retentionRate < 70) score -= 3;
 
-    // New customers
-    if (customers.new > 10) score += 3.125;
-    else if (customers.new < 2) score -= 3.125;
+    if (customers.averageLifetimeValue > 1000) score += 7.5;
+    else if (customers.averageLifetimeValue > 500) score += 5;
+    else if (customers.averageLifetimeValue > 0) score += 2.5;
+
+    if (customers.new > 10) score += 5;
+    else if (customers.new > 2) score += 2.5;
 
     return Math.max(0, Math.min(25, score));
   }
@@ -156,26 +153,30 @@ export class BusinessAnalyticsEngine {
    * Calculate operations score
    */
   private calculateOperationsScore(data: BusinessDataSnapshot): number {
-    let score = 12.5; // Base score
+    const hasOpsData = data.communication.emailsSent > 0 ||
+      data.communication.callsMade > 0 ||
+      data.workflows.total > 0 ||
+      data.appointments.total > 0 ||
+      data.products.total > 0;
 
-    // Response rate contribution
-    if (data.communication.responseRate > 30) score += 4;
-    else if (data.communication.responseRate < 10) score -= 4;
+    if (!hasOpsData) return 0;
 
-    // Workflow completion rate
-    if (data.workflows.averageCompletionRate > 60) score += 4;
-    else if (data.workflows.averageCompletionRate < 30) score -= 4;
+    let score = 5;
 
-    // Inventory health
+    if (data.communication.responseRate > 30) score += 5;
+    else if (data.communication.responseRate > 10) score += 2.5;
+
+    if (data.workflows.averageCompletionRate > 60) score += 5;
+    else if (data.workflows.averageCompletionRate > 30) score += 2.5;
+
     const inventoryHealth = data.products.total > 0
       ? ((data.products.total - data.products.outOfStock) / data.products.total) * 100
       : 100;
-    if (inventoryHealth > 90) score += 4;
-    else if (inventoryHealth < 70) score -= 4;
+    if (data.products.total > 0 && inventoryHealth > 90) score += 5;
+    else if (data.products.total > 0 && inventoryHealth < 70) score -= 3;
 
-    // Appointment no-show rate
-    if (data.appointments.noShowRate < 10) score += 4;
-    else if (data.appointments.noShowRate > 20) score -= 4;
+    if (data.appointments.total > 0 && data.appointments.noShowRate < 10) score += 5;
+    else if (data.appointments.total > 0 && data.appointments.noShowRate > 20) score -= 3;
 
     return Math.max(0, Math.min(25, score));
   }

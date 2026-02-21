@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Activity, Target, X } from 'lucide-react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface CrmVisualizationPanelProps {
   crmStatistics: any;
@@ -143,36 +143,39 @@ export function CrmVisualizationPanel({ crmStatistics, onClose }: CrmVisualizati
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart
+                    <AreaChart
                       data={Object.entries(crmStatistics.monthlyRevenue).map(([month, revenue]) => ({
                         month: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short' }),
                         current: revenue as number,
                         ...(crmStatistics.comparisonData?.monthlyRevenue && { previous: crmStatistics.comparisonData.monthlyRevenue[month] || 0 }),
                       }))}
-                      margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                      margin={{ top: 16, right: 24, left: 0, bottom: 8 }}
                     >
                       <defs>
-                        <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1}/>
+                        <linearGradient id="revenueAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.4}/>
+                          <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0}/>
                         </linearGradient>
-                        {crmStatistics.comparisonData && (
-                          <linearGradient id="previousGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#a78bfa" stopOpacity={0.1}/>
-                          </linearGradient>
-                        )}
+                        <linearGradient id="previousAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.3}/>
+                          <stop offset="100%" stopColor="#a78bfa" stopOpacity={0}/>
+                        </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
-                      <XAxis dataKey="month" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value.toLocaleString()}`} />
-                      <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.95)', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} formatter={(value: any) => `$${Number(value).toLocaleString()}`} />
-                      <Legend />
-                      <Line type="monotone" dataKey="current" stroke="#8b5cf6" strokeWidth={3} dot={{ fill: '#8b5cf6', r: 4 }} activeDot={{ r: 6 }} name="Current Period" animationDuration={1000} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} opacity={0.6} />
+                      <XAxis dataKey="month" stroke="#64748b" fontSize={13} fontWeight={500} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                      <YAxis stroke="#64748b" fontSize={13} fontWeight={500} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v >= 1000 ? (v / 1000) + 'k' : v}`} width={44} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', padding: '12px 16px' }}
+                        labelStyle={{ fontWeight: 600, color: '#334155', marginBottom: 6 }}
+                        formatter={(value: any) => [`$${Number(value).toLocaleString()}`, '']}
+                        labelFormatter={(label) => label}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: 12 }} formatter={(value) => <span className="text-sm font-medium text-gray-700">{value}</span>} />
+                      <Area type="monotone" dataKey="current" stroke="#8b5cf6" strokeWidth={2.5} fill="url(#revenueAreaGradient)" dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 5 }} activeDot={{ r: 7, strokeWidth: 2 }} name="Current Period" animationDuration={800} animationEasing="ease-out" />
                       {crmStatistics.comparisonData && (
-                        <Line type="monotone" dataKey="previous" stroke="#a78bfa" strokeWidth={3} dot={{ fill: '#a78bfa', r: 4 }} activeDot={{ r: 6 }} name="Previous Period" animationDuration={1000} />
+                        <Area type="monotone" dataKey="previous" stroke="#a78bfa" strokeWidth={2} strokeDasharray="5 5" fill="url(#previousAreaGradient)" dot={{ fill: '#a78bfa', strokeWidth: 2, r: 4 }} activeDot={{ r: 6 }} name="Previous Period" animationDuration={800} animationEasing="ease-out" />
                       )}
-                    </LineChart>
+                    </AreaChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
@@ -183,32 +186,52 @@ export function CrmVisualizationPanel({ crmStatistics, onClose }: CrmVisualizati
                 <CardTitle className="text-lg bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">CRM Metrics Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={340}>
-                  <PieChart margin={{ top: 10, right: 10, bottom: 70, left: 10 }}>
-                    <Pie
-                      data={[
-                        { name: 'Leads', value: crmStatistics.totalLeads },
-                        { name: 'Deals', value: crmStatistics.totalDeals },
-                        { name: 'Open Deals', value: crmStatistics.openDeals },
-                        { name: 'Campaigns', value: crmStatistics.totalCampaigns },
-                      ].filter(item => item.value > 0)}
-                      cx="50%" cy="50%" labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={100} fill="#8884d8" dataKey="value" animationDuration={1000} animationBegin={0}
-                    >
-                      {[
-                        { name: 'Leads', value: crmStatistics.totalLeads },
-                        { name: 'Deals', value: crmStatistics.totalDeals },
-                        { name: 'Open Deals', value: crmStatistics.openDeals },
-                        { name: 'Campaigns', value: crmStatistics.totalCampaigns },
-                      ].filter(item => item.value > 0).map((_, index) => {
-                        const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
-                        return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="#fff" strokeWidth={2} />;
-                      })}
-                    </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.95)', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} />
-                    <Legend verticalAlign="bottom" height={56} wrapperStyle={{ paddingTop: 8 }} formatter={(value) => <span className="text-sm text-gray-700">{value}</span>} />
-                  </PieChart>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    layout="vertical"
+                    data={[
+                      { name: 'Leads', value: crmStatistics.totalLeads },
+                      { name: 'Deals', value: crmStatistics.totalDeals },
+                      { name: 'Open Deals', value: crmStatistics.openDeals },
+                      { name: 'Campaigns', value: crmStatistics.totalCampaigns },
+                    ].filter(item => item.value > 0)}
+                    margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
+                  >
+                    <defs>
+                      <linearGradient id="barGradLeads" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#a78bfa" stopOpacity={0.7}/>
+                      </linearGradient>
+                      <linearGradient id="barGradDeals" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#60a5fa" stopOpacity={0.7}/>
+                      </linearGradient>
+                      <linearGradient id="barGradOpen" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#34d399" stopOpacity={0.7}/>
+                      </linearGradient>
+                      <linearGradient id="barGradCampaigns" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.7}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} opacity={0.6} />
+                    <XAxis type="number" stroke="#64748b" fontSize={13} fontWeight={500} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                    <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={14} fontWeight={600} tickLine={false} axisLine={false} width={100} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', padding: '12px 16px' }}
+                      formatter={(value: number) => [value.toLocaleString(), 'Count']}
+                      labelFormatter={(label) => label}
+                      cursor={{ fill: 'rgba(139, 92, 246, 0.06)' }}
+                    />
+                    <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={48} animationDuration={600} animationEasing="ease-out"
+                      fill={(entry: { name: string }) => {
+                        const map: Record<string, string> = { Leads: 'url(#barGradLeads)', Deals: 'url(#barGradDeals)', 'Open Deals': 'url(#barGradOpen)', Campaigns: 'url(#barGradCampaigns)' };
+                        return map[entry.name] || '#8b5cf6';
+                      }}
+                      label={{ position: 'right', formatter: (v: number) => v.toLocaleString(), fontSize: 13, fontWeight: 600, fill: '#334155' }}
+                    />
+                  </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
