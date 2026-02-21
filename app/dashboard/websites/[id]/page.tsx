@@ -534,6 +534,38 @@ export default function WebsiteEditorPage() {
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6 space-y-6">
+            {(website.templateType === 'SERVICE' || website.type === 'SERVICE_TEMPLATE') && (
+              <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
+                <Label htmlFor="neonDatabaseUrl" className="text-sm font-medium">Neon Database URL (required for sync)</Label>
+                <Input
+                  id="neonDatabaseUrl"
+                  type="password"
+                  placeholder="postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require"
+                  className="text-sm font-mono"
+                  defaultValue={website.neonDatabaseUrl ?? ''}
+                  onBlur={async (e) => {
+                    const val = e.target.value.trim();
+                    const current = website.neonDatabaseUrl ?? '';
+                    if (val === current) return;
+                    try {
+                      const res = await fetch(`/api/websites/${website.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ neonDatabaseUrl: val || null }),
+                      });
+                      if (!res.ok) throw new Error('Failed to save');
+                      setWebsite((w) => (w ? { ...w, neonDatabaseUrl: val || null } : null));
+                      toast.success(val ? 'Database URL saved. Run Sync to populate listings.' : 'Database URL cleared');
+                    } catch {
+                      toast.error('Failed to save');
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Same as DATABASE_URL in your site&apos;s Vercel project. Required for listings sync and property evaluation.
+                </p>
+              </div>
+            )}
             {website.vercelDeploymentUrl && (
               <a
                 href={website.vercelDeploymentUrl}
@@ -572,36 +604,6 @@ export default function WebsiteEditorPage() {
             {(website.templateType === 'SERVICE' || website.type === 'SERVICE_TEMPLATE') && (
               <div className="space-y-2 pt-2 border-t">
                 <p className="text-sm font-medium">Centris Listings</p>
-                <div className="space-y-2">
-                  <Label htmlFor="neonDatabaseUrl" className="text-xs">Neon Database URL (required for sync)</Label>
-                  <Input
-                    id="neonDatabaseUrl"
-                    type="password"
-                    placeholder="postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require"
-                    className="text-sm font-mono"
-                    defaultValue={website.neonDatabaseUrl ?? ''}
-                    onBlur={async (e) => {
-                      const val = e.target.value.trim();
-                      const current = website.neonDatabaseUrl ?? '';
-                      if (val === current) return;
-                      try {
-                        const res = await fetch(`/api/websites/${website.id}`, {
-                          method: 'PATCH',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ neonDatabaseUrl: val || null }),
-                        });
-                        if (!res.ok) throw new Error('Failed to save');
-                        setWebsite((w) => (w ? { ...w, neonDatabaseUrl: val || null } : null));
-                        toast.success(val ? 'Database URL saved. Run Sync to populate listings.' : 'Database URL cleared');
-                      } catch {
-                        toast.error('Failed to save');
-                      }
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Same as DATABASE_URL in your site&apos;s Vercel project. Required for listings sync and property evaluation.
-                  </p>
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="centrisBrokerUrl" className="text-xs">Your Centris broker URL (optional)</Label>
                   <Input
