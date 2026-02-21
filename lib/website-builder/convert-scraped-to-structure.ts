@@ -6,15 +6,20 @@
 export function convertScrapedToComponents(scrapedData: any): any[] {
   const components: any[] = [];
   const ts = Date.now();
+  const contentSections = scrapedData.contentSections;
 
-  // 1. Hero section - from SEO title/description + first image
+  // Hero: prefer contentSections (actual page h1/p) over SEO
+  const heroTitle = contentSections?.hero?.title || scrapedData.seo?.title || 'Welcome';
+  const heroSubtitle = contentSections?.hero?.subtitle || scrapedData.seo?.description || '';
   const heroImage = scrapedData.images?.[0]?.url;
+
+  // 1. Hero section - from contentSections or SEO + first image
   components.push({
     id: `hero-${ts}`,
     type: 'Hero',
     props: {
-      title: scrapedData.seo?.title || 'Welcome',
-      subtitle: scrapedData.seo?.description || '',
+      title: heroTitle,
+      subtitle: heroSubtitle,
       imageUrl: heroImage || undefined,
       image: heroImage || undefined,
       ctaText: 'Get in Touch',
@@ -22,8 +27,24 @@ export function convertScrapedToComponents(scrapedData: any): any[] {
     },
   });
 
-  // 2. About/Text section - from SEO description
-  if (scrapedData.seo?.description) {
+  // 2. About/Text sections - from contentSections (headings + paragraphs) or SEO
+  const sections = contentSections?.sections || [];
+  if (sections.length > 0) {
+    sections.forEach((sec: { title?: string; content?: string }, i: number) => {
+      if (sec.content || sec.title) {
+        components.push({
+          id: `about-${ts}-${i}`,
+          type: 'AboutSection',
+          props: {
+            title: sec.title || 'About',
+            description: sec.content || '',
+            ctaText: 'Learn More',
+            ctaLink: '/about',
+          },
+        });
+      }
+    });
+  } else if (scrapedData.seo?.description) {
     components.push({
       id: `about-${ts}`,
       type: 'AboutSection',
@@ -36,8 +57,8 @@ export function convertScrapedToComponents(scrapedData: any): any[] {
     });
   }
 
-  // 3. Image sections - from additional images (skip first, used in hero)
-  const extraImages = (scrapedData.images || []).slice(1, 4);
+  // 3. Image sections - from additional images (skip first, used in hero); include more for bio/gallery
+  const extraImages = (scrapedData.images || []).slice(1, 8);
   extraImages.forEach((img: any, i: number) => {
     components.push({
       id: `image-${ts}-${i}`,

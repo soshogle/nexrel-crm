@@ -69,21 +69,21 @@ async function processImportInBackground(
       pages = [{ id: 'home', name: 'Home', path: '/', components: [] }];
       structure.pages = pages;
     }
-    let pageIndex = pages.findIndex((p: any) => p.path === pagePath);
-    if (pageIndex < 0) {
-      pageIndex = pages.findIndex((p: any) => p.path === '/');
-    }
-    if (pageIndex < 0) pageIndex = 0;
 
+    let pageIndex = pages.findIndex((p: any) => p.path === pagePath);
     const newStructure = JSON.parse(JSON.stringify(structure));
-    const targetPage = newStructure.pages[pageIndex];
+    let targetPage = newStructure.pages[pageIndex];
+
+    // If page doesn't exist, create it (enables multi-page import: /, /about, /bio, etc.)
     if (!targetPage) {
-      await prisma.websiteBuild.update({
-        where: { id: buildId },
-        data: { status: 'FAILED', error: 'Page not found', completedAt: new Date() },
-      });
-      return;
+      const pageId = pagePath === '/' ? 'home' : pagePath.slice(1).replace(/\//g, '-') || 'page';
+      const pageName = pagePath === '/'
+        ? 'Home'
+        : pagePath.slice(1).split(/[-/]/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      targetPage = { id: pageId, name: pageName, path: pagePath, components: [] };
+      newStructure.pages.push(targetPage);
     }
+
     if (!targetPage.components) {
       targetPage.components = [];
     }

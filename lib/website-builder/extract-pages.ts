@@ -126,6 +126,7 @@ function createDefaultSections(pageId: string, label: string): any[] {
       props: {
         title: label,
         subtitle: `Welcome to our ${label} page`,
+        imageUrl: '',
         ctaText: 'Learn More',
         ctaLink: '/contact',
       },
@@ -136,6 +137,15 @@ function createDefaultSections(pageId: string, label: string): any[] {
       props: {
         heading: `About ${label}`,
         text: `Discover everything about our ${label.toLowerCase()} services. Edit this section to add your own content.`,
+      },
+    },
+    {
+      id: `${pageId}-image`,
+      type: 'ImageSection',
+      props: {
+        title: `${label} image`,
+        imageUrl: '',
+        alt: '',
       },
     },
     {

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import {
   Image as ImageIcon, Type, Sparkles, Loader2, Save, Trash2, Plus,
   ChevronDown, ChevronRight, X, Upload, RotateCcw, Check, Pencil,
-  FileText, Layers, Eye,
+  FileText, Layers, Eye, Link2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { MediaPicker } from './media-picker';
 
@@ -96,6 +104,9 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
   const [savingSection, setSavingSection] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState<string | null>(null);
   const [mediaPickerOpen, setMediaPickerOpen] = useState<{ sectionType: string; fieldKey: string; arrayIndex?: number; itemKey?: string } | null>(null);
+  const [importUrlOpen, setImportUrlOpen] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importing, setImporting] = useState(false);
 
   const handlePageChange = (path: string) => {
     setSelectedPagePath(path);
@@ -215,7 +226,7 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
   return (
     <div className="space-y-4">
       {/* Page Selector */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4 text-muted-foreground" />
           <Label className="font-medium">Page</Label>
@@ -235,7 +246,82 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
         <Badge variant="outline" className="text-xs">
           {components.length} section{components.length !== 1 ? 's' : ''}
         </Badge>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => setImportUrlOpen(true)}
+          disabled={importing}
+        >
+          <Link2 className="h-3.5 w-3.5" />
+          Import from URL
+        </Button>
       </div>
+
+      {/* Import from URL Dialog */}
+      <Dialog open={importUrlOpen} onOpenChange={setImportUrlOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import content for this page</DialogTitle>
+            <DialogDescription>
+              Scrape a URL and add its sections (Hero, About, images, etc.) to <strong>{pages.find(p => p.path === selectedPagePath)?.name || selectedPagePath}</strong>. For best results, use the exact page URL (e.g. yoursite.com/about for the About page). Runs in the background — refresh in a minute to see results.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="import-url">Website URL</Label>
+              <Input
+                id="import-url"
+                placeholder="https://yoursite.com/about"
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                disabled={importing}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportUrlOpen(false)} disabled={importing}>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!importUrl.trim()) {
+                  toast.error('Enter a URL');
+                  return;
+                }
+                setImporting(true);
+                try {
+                  const res = await fetch(`/api/websites/${websiteId}/import-from-url`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: importUrl.trim(), pagePath: selectedPagePath }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.error || 'Import failed');
+                  toast.success(data.message || 'Import started. Refresh in a minute to see your content.');
+                  setImportUrl('');
+                  setImportUrlOpen(false);
+                  onStructureUpdate();
+                } catch (err: any) {
+                  toast.error(err.message || 'Failed to import');
+                } finally {
+                  setImporting(false);
+                }
+              }}
+              disabled={importing || !importUrl.trim()}
+            >
+              {importing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Importing…
+                </>
+              ) : (
+                'Import'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Template hint */}
       {pagesDerivedFromNav && components.length > 0 && (
