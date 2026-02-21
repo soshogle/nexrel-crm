@@ -34,7 +34,7 @@ interface TaskEditorPanelProps {
   task: WorkflowTask | null;
   workflowTasks: WorkflowTask[];
   onClose: () => void;
-  onSave: (task: WorkflowTask) => void;
+  onSave: (task: WorkflowTask) => void | Promise<void>;
   onDelete: (taskId: string) => void;
 }
 
@@ -243,7 +243,7 @@ export function TaskEditorPanel({
     }
   };
 
-  const handleSaveAndClose = () => {
+  const handleSaveAndClose = async () => {
     const taskToSave = {
       ...editedTask,
       actionConfig: {
@@ -251,7 +251,7 @@ export function TaskEditorPanel({
         actions: selectedActions,
       },
     };
-    onSave(taskToSave as WorkflowTask);
+    await Promise.resolve(onSave(taskToSave as WorkflowTask));
     lastSavedRef.current = JSON.stringify(taskToSave);
     setShowCloseConfirm(false);
     onClose();

@@ -268,22 +268,26 @@ export const WorkflowBuilder = forwardRef<REWorkflowBuilderHandle, WorkflowBuild
     });
   };
   
-  const handleSaveWorkflow = async (): Promise<boolean> => {
-    if (!workflow) return false;
+  const handleSaveWorkflow = async (
+    workflowOverride?: WorkflowTemplate | null,
+    successMessage = 'Workflow saved successfully'
+  ): Promise<boolean> => {
+    const wf = workflowOverride ?? workflow;
+    if (!wf) return false;
     
     setIsSaving(true);
     try {
-      const usePut = isSavedWorkflowId(workflow.id);
+      const usePut = isSavedWorkflowId(wf.id);
       const method = usePut ? 'PUT' : 'POST';
-      const url = usePut ? `/api/real-estate/workflows/${workflow.id}` : '/api/real-estate/workflows';
+      const url = usePut ? `/api/real-estate/workflows/${wf.id}` : '/api/real-estate/workflows';
       
       // API expects 'type' (BUYER|SELLER|CUSTOM); workflow has workflowType (BUYER_PIPELINE|SELLER_PIPELINE|CUSTOM)
       const mapWorkflowTypeToApiType = (wt: string) =>
         wt === 'BUYER_PIPELINE' ? 'BUYER' : wt === 'SELLER_PIPELINE' ? 'SELLER' : 'CUSTOM';
       
-      const payload = usePut ? workflow : {
-        ...workflow,
-        type: mapWorkflowTypeToApiType(workflow.workflowType),
+      const payload = usePut ? wf : {
+        ...wf,
+        type: mapWorkflowTypeToApiType(wf.workflowType),
       };
       
       const res = await fetch(url, {
@@ -296,7 +300,7 @@ export const WorkflowBuilder = forwardRef<REWorkflowBuilderHandle, WorkflowBuild
       
       if (res.ok) {
         loadWorkflow(data.workflow);
-        toast.success('Workflow saved successfully');
+        toast.success(successMessage);
         fetchWorkflows();
         return true;
       } else {
@@ -321,6 +325,19 @@ export const WorkflowBuilder = forwardRef<REWorkflowBuilderHandle, WorkflowBuild
         t.id === updatedTask.id ? updatedTask : t
       ),
     });
+  };
+
+  const handleSaveTask = async (updatedTask: WorkflowTask): Promise<void> => {
+    if (!workflow) return;
+    const updatedWorkflow = {
+      ...workflow,
+      tasks: workflow.tasks.map(t =>
+        t.id === updatedTask.id ? updatedTask : t
+      ),
+    };
+    setWorkflow(updatedWorkflow);
+    setHasUnsavedChanges(false);
+    await handleSaveWorkflow(updatedWorkflow, 'Saved');
   };
   
   const handleReorderTasks = (updatedTasks: WorkflowTask[]) => {
@@ -573,7 +590,7 @@ export const WorkflowBuilder = forwardRef<REWorkflowBuilderHandle, WorkflowBuild
             task={selectedTask}
             workflowTasks={workflow.tasks}
             onClose={() => setSelectedTaskId(null)}
-            onSave={handleUpdateTask}
+            onSave={handleSaveTask}
             onDelete={handleDeleteTask}
           />
         )}
