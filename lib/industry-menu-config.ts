@@ -82,6 +82,7 @@ export type MenuItemId =
   | 'real-estate-dashboard'
   | 'fsbo-leads'
   | 'cma-tools'
+  | 'property-evaluation'
   | 'market-insights'
   | 'seller-net-sheet'
   | 'real-estate-analytics'
@@ -235,6 +236,7 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
     'real-estate-dashboard', // Real Estate overview dashboard
     'fsbo-leads', // For Sale By Owner lead generation
     'cma-tools', // Comparative Market Analysis tools
+    'property-evaluation', // Property valuation and evaluation leads
     'market-insights', // Market data and insights
     'seller-net-sheet', // Net sheet calculator for sellers
     'real-estate-analytics', // Real estate specific analytics
@@ -413,6 +415,7 @@ export function getAllFeatures(): {
     { id: 'real-estate-dashboard', label: 'Real Estate Hub', category: 'Real Estate' },
     { id: 'fsbo-leads', label: 'FSBO Leads', category: 'Real Estate' },
     { id: 'cma-tools', label: 'CMA Tools', category: 'Real Estate' },
+    { id: 'property-evaluation', label: 'Property Evaluation', category: 'Real Estate' },
     { id: 'market-insights', label: 'Market Insights', category: 'Real Estate' },
     { id: 'seller-net-sheet', label: 'Seller Net Sheet', category: 'Real Estate' },
     { id: 'real-estate-analytics', label: 'RE Analytics', category: 'Real Estate' },

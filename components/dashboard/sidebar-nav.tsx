@@ -51,6 +51,7 @@ import {
   ClipboardList,
   Globe,
   Sparkles,
+  Calculator,
 } from 'lucide-react';
 
 // Parent Portal items - what parents see when they log in
@@ -284,6 +285,12 @@ const merchantItems = [
     title: 'CMA Tools',
     href: '/dashboard/real-estate/cma',
     icon: TrendingUp,
+  },
+  {
+    id: 'property-evaluation' as MenuItemId,
+    title: 'Property Evaluation',
+    href: '/dashboard/real-estate/property-evaluation',
+    icon: Calculator,
   },
   {
     id: 'market-insights' as MenuItemId,
