@@ -3,8 +3,13 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Loader2, CheckCircle2 } from 'lucide-react';
+import { Calendar, Loader2, CheckCircle2, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface GoogleCalendarConnectProps {
   isConnected?: boolean;
@@ -16,6 +21,7 @@ export function GoogleCalendarConnect({
   onConnectionSuccess 
 }: GoogleCalendarConnectProps) {
   const [isConnecting, setIsConnecting] = useState(false);
+  const [redirectUri, setRedirectUri] = useState<string | null>(null);
 
   const handleConnect = async () => {
     setIsConnecting(true);
@@ -23,10 +29,12 @@ export function GoogleCalendarConnect({
       // Get OAuth URL
       const response = await fetch('/api/calendar/google-oauth');
       if (!response.ok) {
-        throw new Error('Failed to initialize OAuth');
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to initialize OAuth');
       }
 
-      const { url } = await response.json();
+      const { url, redirectUri: uri } = await response.json();
+      if (uri) setRedirectUri(uri);
 
       // Open OAuth popup
       const width = 600;
@@ -139,6 +147,36 @@ export function GoogleCalendarConnect({
           <br />
           ✓ Secure: Your data is encrypted and private
         </p>
+        <Collapsible
+          className="mt-4"
+          onOpenChange={async (open) => {
+            if (open && !redirectUri) {
+              try {
+                const res = await fetch('/api/calendar/google-oauth');
+                const data = await res.json();
+                if (data.redirectUri) setRedirectUri(data.redirectUri);
+              } catch {
+                /* ignore */
+              }
+            }
+          }}
+        >
+          <CollapsibleTrigger className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
+            <HelpCircle className="h-3.5 w-3.5" />
+            Seeing &quot;redirect_uri_mismatch&quot;? Click for setup help
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <p className="text-xs text-muted-foreground mb-2">
+              Add this exact URL to Google Cloud Console → Credentials → your OAuth client → Authorized redirect URIs:
+            </p>
+            <code className="block text-xs bg-muted px-2 py-1.5 rounded break-all">
+              {redirectUri || 'Loading...'}
+            </code>
+            <p className="text-xs text-muted-foreground mt-2">
+              See <code className="bg-muted px-1 rounded">docs/GOOGLE_CALENDAR_OAUTH_SETUP.md</code> for full instructions.
+            </p>
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );

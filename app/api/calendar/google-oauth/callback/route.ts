@@ -20,7 +20,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Exchange code for tokens
+    // Exchange code for tokens - must use same redirect_uri as auth request
+    const redirectUri =
+      process.env.GOOGLE_CALENDAR_REDIRECT_URI ||
+      `${process.env.NEXTAUTH_URL}/api/calendar/google-oauth/callback`;
+
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -28,7 +32,7 @@ export async function GET(request: NextRequest) {
         code,
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: `${process.env.NEXTAUTH_URL}/api/calendar/google-oauth/callback`,
+        redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       }),
     });

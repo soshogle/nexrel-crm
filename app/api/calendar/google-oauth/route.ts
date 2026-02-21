@@ -23,8 +23,17 @@ export async function GET(request: NextRequest) {
     if (!code) {
       // Return OAuth URL for client to open
       const clientId = process.env.GOOGLE_CLIENT_ID || '';
-      const redirectUri = `${process.env.NEXTAUTH_URL}/api/calendar/google-oauth/callback`;
+      const redirectUri =
+        process.env.GOOGLE_CALENDAR_REDIRECT_URI ||
+        `${process.env.NEXTAUTH_URL}/api/calendar/google-oauth/callback`;
       
+      if (!clientId) {
+        return NextResponse.json(
+          { error: 'Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.' },
+          { status: 500 }
+        );
+      }
+
       const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${clientId}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
@@ -34,7 +43,7 @@ export async function GET(request: NextRequest) {
         `prompt=consent&` +
         `state=${session.user.id}`;
 
-      return NextResponse.json({ url: oauthUrl });
+      return NextResponse.json({ url: oauthUrl, redirectUri });
     }
 
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
