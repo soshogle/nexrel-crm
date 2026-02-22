@@ -50,10 +50,15 @@ export async function POST(request: NextRequest) {
     }
     
     // Update score
-    const result = await updateLeadScoreOnEvent(leadId, {
-      type: eventType,
-      data
-    });
+    const result = await updateLeadScoreOnEvent(
+      leadId,
+      session.user.id,
+      {
+        type: eventType,
+        data
+      },
+      (session.user as any).industry ?? null
+    );
     
     return NextResponse.json({
       success: true,

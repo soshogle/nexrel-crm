@@ -9,7 +9,8 @@ import { waitUntil } from '@vercel/functions';
 export const maxDuration = 300; // 5 min - scraping can take a while, waitUntil keeps function alive
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
+import { websiteService, getCrmDb } from '@/lib/dal';
 import { websiteScraper } from '@/lib/website-builder/scraper';
 import { convertScrapedToComponents } from '@/lib/website-builder/convert-scraped-to-structure';
 import { downloadExternalImagesInStructure } from '@/lib/website-builder/download-external-images';
@@ -31,6 +32,7 @@ async function processImportInBackground(
   pagePath: string,
   userId: string
 ) {
+  const ctx = createDalContext(userId);
   try {
     const downloadImages = process.env.ENABLE_IMAGE_DOWNLOAD === 'true';
     // Try simple fetch first (faster, works on Vercel). Scraper falls back to Playwright if blocked.
@@ -45,18 +47,16 @@ async function processImportInBackground(
 
     const newComponents = convertScrapedToComponents(scrapedData);
     if (newComponents.length === 0) {
-      await prisma.websiteBuild.update({
+      await getCrmDb(ctx).websiteBuild.update({
         where: { id: buildId },
         data: { status: 'FAILED', error: 'No sections could be extracted from the URL', completedAt: new Date() },
       });
       return;
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: websiteId },
-    });
+    const website = await websiteService.findUnique(ctx, websiteId);
     if (!website) {
-      await prisma.websiteBuild.update({
+      await getCrmDb(ctx).websiteBuild.update({
         where: { id: buildId },
         data: { status: 'FAILED', error: 'Website not found', completedAt: new Date() },
       });
@@ -97,15 +97,12 @@ async function processImportInBackground(
       console.warn('[Import from URL] Image download failed (using original URLs):', imgErr.message);
     }
 
-    await prisma.website.update({
-      where: { id: websiteId },
-      data: { structure: structureToSave },
-    });
+    await websiteService.update(ctx, websiteId, { structure: structureToSave });
 
     const { triggerWebsiteDeploy } = await import('@/lib/website-builder/deploy-trigger');
     triggerWebsiteDeploy(websiteId).catch((e) => console.warn('[Import from URL] Deploy:', e));
 
-    await prisma.websiteBuild.update({
+    await getCrmDb(ctx).websiteBuild.update({
       where: { id: buildId },
       data: {
         status: 'COMPLETED',
@@ -116,7 +113,7 @@ async function processImportInBackground(
     });
   } catch (error: any) {
     console.error('[Import from URL background]', error);
-    await prisma.websiteBuild.update({
+    await getCrmDb(ctx).websiteBuild.update({
       where: { id: buildId },
       data: {
         status: 'FAILED',
@@ -138,13 +135,12 @@ export async function POST(
     }
 
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: websiteId, userId: session.user.id },
-    });
+    const website = await websiteService.findUnique(ctx, websiteId);
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
@@ -169,7 +165,7 @@ export async function POST(
     const normalizedUrl = normalizeUrl(url);
 
     // Create build record for tracking
-    const build = await prisma.websiteBuild.create({
+    const build = await getCrmDb(ctx).websiteBuild.create({
       data: {
         websiteId,
         buildType: 'UPDATE',
@@ -187,7 +183,7 @@ export async function POST(
         build.id,
         normalizedUrl,
         pagePath,
-        session.user.id
+        ctx.userId
       )
     );
 

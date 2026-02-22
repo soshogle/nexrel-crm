@@ -1,4 +1,3 @@
-
 /**
  * Instagram DM Integration Service
  * Handles sending and receiving Instagram Direct Messages
@@ -6,7 +5,8 @@
  */
 
 import axios from 'axios';
-import { prisma } from '@/lib/db';
+import { getCrmDb, conversationService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 
 const FACEBOOK_GRAPH_API = 'https://graph.facebook.com/v18.0';
 
@@ -82,8 +82,11 @@ export class InstagramService {
       // Get sender info
       const senderInfo = await this.getUserInfo(senderId);
 
+      const ctx = createDalContext(userId);
+      const db = getCrmDb(ctx);
+
       // Find or create conversation
-      let conversation = await prisma.conversation.findUnique({
+      let conversation = await db.conversation.findUnique({
         where: {
           channelConnectionId_contactIdentifier: {
             channelConnectionId,
@@ -93,16 +96,13 @@ export class InstagramService {
       });
 
       if (!conversation) {
-        conversation = await prisma.conversation.create({
-          data: {
-            userId,
-            channelConnectionId,
-            contactName: senderInfo.username || senderId,
-            contactIdentifier: senderId,
-            contactAvatar: senderInfo.profile_picture_url,
-            status: 'ACTIVE',
-          },
-        });
+        conversation = await conversationService.create(ctx, {
+          channelConnection: { connect: { id: channelConnectionId } },
+          contactName: senderInfo.username || senderId,
+          contactIdentifier: senderId,
+          contactAvatar: senderInfo.profile_picture_url,
+          status: 'ACTIVE',
+        } as any);
       }
 
       // Prepare attachments
@@ -113,7 +113,7 @@ export class InstagramService {
       }));
 
       // Create message
-      await prisma.conversationMessage.create({
+      await db.conversationMessage.create({
         data: {
           conversationId: conversation.id,
           userId,
@@ -127,13 +127,10 @@ export class InstagramService {
       });
 
       // Update conversation
-      await prisma.conversation.update({
-        where: { id: conversation.id },
-        data: {
-          lastMessageAt: new Date(),
-          lastMessagePreview: messageText.substring(0, 100) || '(attachment)',
-          unreadCount: { increment: 1 },
-        },
+      await conversationService.update(ctx, conversation.id, {
+        lastMessageAt: new Date(),
+        lastMessagePreview: messageText.substring(0, 100) || '(attachment)',
+        unreadCount: { increment: 1 },
       });
     } catch (error: any) {
       console.error('Error processing Instagram webhook:', error);

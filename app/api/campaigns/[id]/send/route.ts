@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { campaignService, getCrmDb } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { sendSMS } from '@/lib/twilio'
 
 export const dynamic = 'force-dynamic'
@@ -19,15 +19,15 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     // Get campaign
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: params.id, userId: session.user.id },
-      include: {
-        campaignLeads: {
-          where: { status: 'PENDING' },
-          include: {
-            lead: true,
-          },
+    const campaign = await campaignService.findUnique(ctx, params.id, {
+      campaignLeads: {
+        where: { status: 'PENDING' },
+        include: {
+          lead: true,
         },
       },
     })
@@ -54,7 +54,7 @@ export async function POST(
       const lead = campaignLead.lead
 
       if (!lead.phone) {
-        await prisma.campaignLead.update({
+        await getCrmDb(ctx).campaignLead.update({
           where: { id: campaignLead.id },
           data: {
             status: 'FAILED',
@@ -78,7 +78,7 @@ export async function POST(
         const twilioResponse = await sendSMS(lead.phone, personalizedMessage)
 
         // Update campaign lead status
-        await prisma.campaignLead.update({
+        await getCrmDb(ctx).campaignLead.update({
           where: { id: campaignLead.id },
           data: {
             status: 'SENT',
@@ -91,7 +91,7 @@ export async function POST(
       } catch (error: any) {
         console.error(`Error sending SMS to ${lead.phone}:`, error)
         
-        await prisma.campaignLead.update({
+        await getCrmDb(ctx).campaignLead.update({
           where: { id: campaignLead.id },
           data: {
             status: 'FAILED',
@@ -106,10 +106,7 @@ export async function POST(
 
     // Update campaign status to ACTIVE if messages were sent
     if (results.sent > 0) {
-      await prisma.campaign.update({
-        where: { id: params.id },
-        data: { status: 'ACTIVE' },
-      })
+      await campaignService.update(ctx, params.id, { status: 'ACTIVE' })
     }
 
     return NextResponse.json({ results })

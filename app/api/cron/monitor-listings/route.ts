@@ -12,7 +12,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { createDalContext } from "@/lib/context/industry-context";
+import { getCrmDb } from "@/lib/dal";
 import { monitorListings } from "@/lib/listing-enrichment/monitor";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const websites = await prisma.website.findMany({
+  const db = getCrmDb(createDalContext("cron"));
+  const websites = await db.website.findMany({
     where: {
       templateType: "SERVICE",
       status: "READY",

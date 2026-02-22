@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService, getCrmDb } from '@/lib/dal';
 
 export async function POST(
   request: NextRequest,
@@ -14,13 +15,12 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: params.id, userId: session.user.id },
-    });
+    const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
@@ -37,7 +37,7 @@ export async function POST(
       );
     }
 
-    const template = await prisma.websiteTemplate.findUnique({
+    const template = await getCrmDb(ctx).websiteTemplate.findUnique({
       where: { id: templateId },
     });
 
@@ -92,10 +92,7 @@ export async function POST(
     targetPage.components = targetPage.components || [];
     targetPage.components.push(...newComponents);
 
-    await prisma.website.update({
-      where: { id: params.id },
-      data: { structure: newStructure },
-    });
+    await websiteService.update(ctx, params.id, { structure: newStructure });
 
     const { triggerWebsiteDeploy } = await import('@/lib/website-builder/deploy-trigger');
     triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Apply template] Deploy:', e));

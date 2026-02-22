@@ -3,7 +3,8 @@
  * Handles real-time stock updates and synchronization between inventory and websites
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb, taskService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { websiteStockNotificationService } from './stock-notification-service';
 import { workflowEngine } from '@/lib/workflow-engine';
 
@@ -33,7 +34,7 @@ export class WebsiteStockSyncService {
     const { productId, sku, quantity, previousQuantity, websiteId } = update;
 
     // Get all websites that have this product
-    const websiteProducts = await prisma.websiteProduct.findMany({
+    const websiteProducts = await getCrmDb(createDalContext('bootstrap')).websiteProduct.findMany({
       where: {
         productId,
         ...(websiteId ? { websiteId } : {}),
@@ -57,6 +58,8 @@ export class WebsiteStockSyncService {
     }> = [];
 
     for (const wp of websiteProducts) {
+      const ctx = createDalContext(wp.website.userId);
+      const db = getCrmDb(ctx);
       const settings = wp.website.stockSettings;
       const product = wp.product;
 
@@ -65,7 +68,7 @@ export class WebsiteStockSyncService {
         if (quantity === 0 && settings.autoHideOutOfStock) {
           // Hide product if out of stock
           if (settings.outOfStockAction === 'HIDE') {
-            await prisma.websiteProduct.update({
+            await db.websiteProduct.update({
               where: { id: wp.id },
               data: { isVisible: false },
             });
@@ -94,7 +97,7 @@ export class WebsiteStockSyncService {
           }
         } else if (previousQuantity === 0 && quantity > 0) {
           // Product back in stock - show it
-          await prisma.websiteProduct.update({
+          await db.websiteProduct.update({
             where: { id: wp.id },
             data: { isVisible: true },
           });
@@ -126,7 +129,7 @@ export class WebsiteStockSyncService {
       } else {
         // No settings - default behavior: hide if out of stock
         if (quantity === 0) {
-          await prisma.websiteProduct.update({
+          await db.websiteProduct.update({
             where: { id: wp.id },
             data: { isVisible: false },
           });
@@ -261,13 +264,15 @@ export class WebsiteStockSyncService {
    */
   private async checkAndSendLowStockAlert(alert: LowStockAlert) {
     const { productId, websiteId, userId } = alert;
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
 
     // Store alert in database (we'll create a simple table or use existing structure)
     // For now, we'll log it and could trigger workflows/emails
     
     // Check if we've already sent an alert recently (within last 24 hours)
     // Using a simple approach: store in a JSON field or check recent orders/adjustments
-    const recentAdjustment = await prisma.generalInventoryAdjustment.findFirst({
+    const recentAdjustment = await db.generalInventoryAdjustment.findFirst({
       where: {
         userId,
         itemId: productId,
@@ -289,25 +294,22 @@ export class WebsiteStockSyncService {
     // Create a record of the alert (we can enhance this later with a dedicated table)
     // For now, create a task or note for the user
     try {
-      await prisma.task.create({
-        data: {
-          userId,
-          title: `Low Stock Alert: ${alert.productName}`,
-          description: `${alert.productName} (SKU: ${alert.sku}) is running low. Current stock: ${alert.currentStock}, Threshold: ${alert.threshold}`,
-          priority: 'HIGH',
-          status: 'PENDING',
-          dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Due in 24 hours
-          metadata: {
-            type: 'LOW_STOCK_ALERT',
-            productId: alert.productId,
-            productName: alert.productName,
-            sku: alert.sku,
-            currentStock: alert.currentStock,
-            threshold: alert.threshold,
-            websiteId: alert.websiteId,
-          },
+      await taskService.create(ctx, {
+        title: `Low Stock Alert: ${alert.productName}`,
+        description: `${alert.productName} (SKU: ${alert.sku}) is running low. Current stock: ${alert.currentStock}, Threshold: ${alert.threshold}`,
+        priority: 'HIGH',
+        status: 'PENDING',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Due in 24 hours
+        aiContext: {
+          type: 'LOW_STOCK_ALERT',
+          productId: alert.productId,
+          productName: alert.productName,
+          sku: alert.sku,
+          currentStock: alert.currentStock,
+          threshold: alert.threshold,
+          websiteId: alert.websiteId,
         },
-      });
+      } as any);
     } catch (e) {
       // Task creation failed, log it
       console.error('Failed to create low stock alert task:', e);
@@ -324,7 +326,16 @@ export class WebsiteStockSyncService {
    * Get stock status for a website
    */
   async getWebsiteStockStatus(websiteId: string) {
-    const website = await prisma.website.findUnique({
+    const website = await getCrmDb(createDalContext('bootstrap')).website.findUnique({
+      where: { id: websiteId },
+      select: { userId: true },
+    });
+    if (!website) throw new Error('Website not found');
+
+    const ctx = createDalContext(website.userId);
+    const db = getCrmDb(ctx);
+
+    const websiteFull = await db.website.findUnique({
       where: { id: websiteId },
       include: {
         websiteProducts: {
@@ -336,18 +347,18 @@ export class WebsiteStockSyncService {
       },
     });
 
-    if (!website) {
+    if (!websiteFull) {
       throw new Error('Website not found');
     }
 
-    const settings = website.stockSettings || {
+    const settings = websiteFull.stockSettings || {
       lowStockThreshold: 10,
       outOfStockAction: 'HIDE',
       syncInventory: true,
       autoHideOutOfStock: true,
     };
 
-    const products = website.websiteProducts.map((wp) => ({
+    const products = websiteFull.websiteProducts.map((wp) => ({
       id: wp.productId,
       name: wp.product.name,
       sku: wp.product.sku,
@@ -390,7 +401,16 @@ export class WebsiteStockSyncService {
       autoHideOutOfStock?: boolean;
     }
   ) {
-    return await prisma.websiteStockSettings.upsert({
+    const website = await getCrmDb(createDalContext('bootstrap')).website.findUnique({
+      where: { id: websiteId },
+      select: { userId: true },
+    });
+    if (!website) throw new Error('Website not found');
+
+    const ctx = createDalContext(website.userId);
+    const db = getCrmDb(ctx);
+
+    return await db.websiteStockSettings.upsert({
       where: { websiteId },
       create: {
         websiteId,

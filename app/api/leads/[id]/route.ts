@@ -1,11 +1,11 @@
-
 export const dynamic = "force-dynamic";
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { leadService } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { emitCRMEvent } from '@/lib/crm-event-emitter'
 
 export async function GET(
@@ -19,20 +19,13 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const lead = await prisma.lead.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-      include: {
-        notes: {
-          orderBy: { createdAt: 'desc' }
-        },
-        messages: {
-          orderBy: { createdAt: 'desc' }
-        },
-      }
-    })
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const lead = await leadService.findUnique(ctx, params.id, {
+      notes: { orderBy: { createdAt: 'desc' } },
+      messages: { orderBy: { createdAt: 'desc' } },
+    } as any)
 
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
@@ -61,25 +54,15 @@ export async function PUT(
 
     const data = await request.json()
     
-    const lead = await prisma.lead.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      }
-    })
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const lead = await leadService.findUnique(ctx, params.id)
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
     }
 
-    const updatedLead = await prisma.lead.update({
-      where: { id: params.id },
-      data,
-      include: {
-        notes: true,
-        messages: true,
-      }
-    })
+    const updatedLead = await leadService.update(ctx, params.id, data, { notes: true, messages: true } as any)
 
     if (data.status === 'CONVERTED') {
       emitCRMEvent('lead_converted', session.user.id, { entityId: params.id, entityType: 'Lead' });
@@ -110,20 +93,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const lead = await prisma.lead.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      }
-    })
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const lead = await leadService.findUnique(ctx, params.id)
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
     }
 
-    await prisma.lead.delete({
-      where: { id: params.id }
-    })
+    await leadService.delete(ctx, params.id)
 
     return NextResponse.json({ message: 'Lead deleted successfully' })
   } catch (error) {

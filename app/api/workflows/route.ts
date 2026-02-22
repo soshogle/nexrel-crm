@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { workflowTemplateService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
 
 export const dynamic = 'force-dynamic';
@@ -20,9 +21,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Get user's industry
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const user = await getCrmDb(ctx).user.findUnique({
+      where: { id: ctx.userId },
       select: { industry: true }
     });
 
@@ -42,24 +46,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's workflow templates
-    const workflows = await prisma.workflowTemplate.findMany({
-      where: { 
-        userId: session.user.id,
-        industry: user.industry
-      },
-      include: {
-        tasks: {
-          orderBy: { displayOrder: 'asc' }
-        },
-        _count: {
-          select: { instances: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
+    const workflows = await workflowTemplateService.findMany(ctx, {
+      industry: user.industry,
     });
 
+    const workflowsWithCount = await Promise.all(
+      workflows.map(async (w) => {
+        const _count = await getCrmDb(ctx).workflowInstance.count({
+          where: { templateId: w.id },
+        });
+        return { ...w, _count: { instances: _count } };
+      })
+    );
+
     // Transform to match WorkflowTemplate interface
-    const transformedWorkflows = workflows.map(w => ({
+    const transformedWorkflows = workflowsWithCount.map(w => ({
       id: w.id,
       name: w.name,
       description: w.description || '',
@@ -133,9 +134,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Get user's industry
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const user = await getCrmDb(ctx).user.findUnique({
+      where: { id: ctx.userId },
       select: { industry: true }
     });
 
@@ -168,10 +172,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Create workflow from template
-      const workflow = await prisma.workflowTemplate.create({
+      const workflow = await getCrmDb(ctx).workflowTemplate.create({
         data: {
-          userId: session.user.id,
-          industry: user.industry,
+        user: { connect: { id: ctx.userId } },
+        industry: user.industry as any,
           name: name || template.name,
           type: type || 'TEMPLATE',
           description: description || template.description,
@@ -251,7 +255,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const workflow = await prisma.workflowTemplate.create({
+    const workflow = await getCrmDb(ctx).workflowTemplate.create({
       data: {
         userId: session.user.id,
         industry: user.industry,

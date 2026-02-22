@@ -9,6 +9,10 @@
  */
 
 import { prisma } from './db';
+import { getCrmDb } from '@/lib/dal/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { campaignService } from '@/lib/dal';
+import { taskService } from '@/lib/dal';
 import { elevenLabsService } from './elevenlabs';
 import { processFeedbackPositiveTriggers } from './feedback-positive-triggers';
 
@@ -34,7 +38,10 @@ export class ReviewFeedbackService {
    */
   async triggerFeedbackCollection(request: FeedbackRequest): Promise<void> {
     try {
-      const lead = await prisma.lead.findUnique({
+      const ctx = createDalContext(request.userId);
+      const db = getCrmDb(ctx);
+
+      const lead = await db.lead.findUnique({
         where: { id: request.leadId },
       });
 
@@ -45,7 +52,7 @@ export class ReviewFeedbackService {
 
       // Check if feedback was already collected for this appointment
       if (request.appointmentId) {
-        const existingFeedback = await prisma.feedbackCollection.findFirst({
+        const existingFeedback = await db.feedbackCollection.findFirst({
           where: {
             appointmentId: request.appointmentId,
             userId: request.userId,
@@ -62,7 +69,7 @@ export class ReviewFeedbackService {
       const method = request.preferredMethod || (lead.phone ? 'SMS' : 'VOICE');
 
       // Create feedback collection record
-      const feedbackRecord = await prisma.feedbackCollection.create({
+      const feedbackRecord = await db.feedbackCollection.create({
         data: {
           userId: request.userId,
           leadId: request.leadId,
@@ -113,9 +120,12 @@ export class ReviewFeedbackService {
         return;
       }
 
+      const ctx = createDalContext(feedback.userId);
+      const db = getCrmDb(ctx);
+
       // Use your SMS service here (Twilio, etc.)
       // For now, we'll create a message record
-      await prisma.message.create({
+      await db.message.create({
         data: {
           userId: feedback.userId,
           leadId: lead.id,
@@ -139,8 +149,11 @@ export class ReviewFeedbackService {
     userId: string
   ): Promise<void> {
     try {
+      const ctx = createDalContext(userId);
+      const db = getCrmDb(ctx);
+
       // Get an active voice agent for the user
-      const voiceAgent = await prisma.docpenVoiceAgent.findFirst({
+      const voiceAgent = await db.docpenVoiceAgent.findFirst({
         where: {
           userId,
           isActive: true,
@@ -153,7 +166,7 @@ export class ReviewFeedbackService {
       }
 
       // Create outbound call record
-      const outboundCall = await prisma.outboundCall.create({
+      const outboundCall = await db.outboundCall.create({
         data: {
           userId,
           leadId: lead.id,
@@ -202,8 +215,11 @@ export class ReviewFeedbackService {
         return;
       }
 
+      const ctx = createDalContext(feedback.userId);
+      const db = getCrmDb(ctx);
+
       // Update feedback record
-      await prisma.feedbackCollection.update({
+      await db.feedbackCollection.update({
         where: { id: feedbackId },
         data: {
           status: 'COMPLETED',
@@ -255,8 +271,11 @@ export class ReviewFeedbackService {
     feedback: FeedbackResponse
   ): Promise<void> {
     try {
+      const ctx = createDalContext(userId);
+      const db = getCrmDb(ctx);
+
       // Get review URL from user's review campaign (or any campaign with reviewUrl)
-      const campaignWithUrl = await prisma.campaign.findFirst({
+      const campaignWithUrl = await db.campaign.findFirst({
         where: {
           userId,
           type: 'REVIEW_REQUEST',
@@ -267,7 +286,7 @@ export class ReviewFeedbackService {
       const reviewUrl = campaignWithUrl?.reviewUrl?.trim() || '';
 
       // Find or create a reviews campaign
-      let campaign = await prisma.campaign.findFirst({
+      let campaign = await db.campaign.findFirst({
         where: {
           userId,
           name: 'Review Collection',
@@ -276,20 +295,17 @@ export class ReviewFeedbackService {
       });
 
       if (!campaign) {
-        campaign = await prisma.campaign.create({
-          data: {
-            userId,
-            name: 'Review Collection',
-            type: 'REVIEW_REQUEST',
-            status: 'ACTIVE',
-          },
-        });
+        campaign = await campaignService.create(ctx, {
+          name: 'Review Collection',
+          type: 'REVIEW_REQUEST',
+          status: 'ACTIVE',
+        } as any);
       }
 
       const reviewLinkText = reviewUrl ? ` ${reviewUrl}` : ' (add your Google/Yelp review link in Campaign settings)';
       const reviewRequestMessage = `Thank you for the ${feedback.rating}-star feedback! We'd love it if you could share your experience publicly. Would you mind leaving us a review?${reviewLinkText}`;
 
-      await prisma.message.create({
+      await db.message.create({
         data: {
           userId,
           leadId: lead.id,
@@ -313,10 +329,13 @@ export class ReviewFeedbackService {
     feedback: FeedbackResponse
   ): Promise<void> {
     try {
+      const ctx = createDalContext(userId);
+      const db = getCrmDb(ctx);
+
       // Send resolution offer message
       const resolutionMessage = `We're sorry to hear about your experience. We'd like to make it right! Please reply with what would help - we can offer a discount, refund, or another solution. Your feedback is valuable and we want to ensure your satisfaction.`;
 
-      await prisma.message.create({
+      await db.message.create({
         data: {
           userId,
           leadId: lead.id,
@@ -326,17 +345,14 @@ export class ReviewFeedbackService {
       });
 
       // Create a task for follow-up
-      await prisma.task.create({
-        data: {
-          userId,
-          leadId: lead.id,
-          title: `Follow up on negative feedback - ${lead.businessName}`,
-          description: `Customer provided ${feedback.rating}-star feedback: ${feedback.feedbackText || 'No text provided'}. Resolution offer sent.`,
-          priority: 'HIGH',
-          dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-          status: 'TODO',
-        },
-      });
+      await taskService.create(ctx, {
+        leadId: lead.id,
+        title: `Follow up on negative feedback - ${lead.businessName}`,
+        description: `Customer provided ${feedback.rating}-star feedback: ${feedback.feedbackText || 'No text provided'}. Resolution offer sent.`,
+        priority: 'HIGH',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        status: 'TODO',
+      } as any);
 
       console.log('🔧 Resolution offer sent to:', lead.businessName);
     } catch (error) {

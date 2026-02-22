@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { campaignService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { voiceCampaignScheduler } from '@/lib/voice-campaign-scheduler';
 
 export async function POST(request: NextRequest) {
@@ -34,22 +36,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { prisma } = await import('@/lib/db');
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const runningCampaigns = await prisma.campaign.count({
-      where: {
-        userId: session.user.id,
-        type: 'VOICE_CALL',
-        status: 'RUNNING',
-      },
+    const runningCampaigns = await campaignService.count(ctx, {
+      type: 'VOICE_CALL',
+      status: 'RUNNING',
     });
 
-    const scheduledCampaigns = await prisma.campaign.count({
-      where: {
-        userId: session.user.id,
-        type: 'VOICE_CALL',
-        status: 'SCHEDULED',
-      },
+    const scheduledCampaigns = await campaignService.count(ctx, {
+      type: 'VOICE_CALL',
+      status: 'SCHEDULED',
     });
 
     return NextResponse.json({

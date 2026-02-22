@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,8 +14,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const members = await prisma.teamMember.findMany({
-      where: { userId: session.user.id },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const members = await getCrmDb(ctx).teamMember.findMany({
+      where: { userId: ctx.userId },
       include: {
         _count: {
           select: {
@@ -29,11 +32,8 @@ export async function GET(req: NextRequest) {
     // Get task counts for each member
     const membersWithTaskCounts = await Promise.all(
       members.map(async (member) => {
-        const taskCount = await prisma.task.count({
-          where: {
-            assignedToId: member.id,
-            status: { not: 'COMPLETED' },
-          },
+        const taskCount = await getCrmDb(ctx).task.count({
+          where: { assignedToId: member.id, status: { not: 'COMPLETED' } },
         });
 
         return {
@@ -66,10 +66,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, name, role, phone, permissions } = body;
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Check if member already exists
-    const existing = await prisma.teamMember.findFirst({
+    const existing = await getCrmDb(ctx).teamMember.findFirst({
       where: {
-        userId: session.user.id,
+        userId: ctx.userId,
         email,
       },
     });
@@ -81,9 +84,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const member = await prisma.teamMember.create({
+    const member = await getCrmDb(ctx).teamMember.create({
       data: {
-        userId: session.user.id,
+        userId: ctx.userId,
         email,
         name,
         role: role || 'AGENT',

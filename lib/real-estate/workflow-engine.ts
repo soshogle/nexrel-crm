@@ -4,6 +4,8 @@
  */
 
 import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { REAIEmployeeType, RETaskExecutionStatus, REWorkflowInstanceStatus } from '@prisma/client';
 import { executeTask } from './workflow-task-executor';
 import { createHITLNotification } from './hitl-notification-service';
@@ -22,10 +24,14 @@ interface WorkflowTrigger {
 export async function startWorkflowInstance(
   userId: string,
   templateId: string,
-  trigger: WorkflowTrigger
+  trigger: WorkflowTrigger,
+  industry?: string | null
 ): Promise<string> {
-  const template = await prisma.rEWorkflowTemplate.findUnique({
-    where: { id: templateId },
+  const ctx = createDalContext(userId, industry);
+  const db = getCrmDb(ctx);
+
+  const template = await db.rEWorkflowTemplate.findFirst({
+    where: { id: templateId, userId },
     include: { tasks: { orderBy: { displayOrder: 'asc' } } },
   });
 
@@ -72,7 +78,10 @@ export async function startWorkflowInstance(
 /**
  * Process a task execution
  */
-export async function processTaskExecution(executionId: string): Promise<void> {
+export async function processTaskExecution(
+  executionId: string,
+  ctx?: { userId: string; industry?: string | null }
+): Promise<void> {
   const execution = await prisma.rETaskExecution.findUnique({
     where: { id: executionId },
     include: {
@@ -92,6 +101,9 @@ export async function processTaskExecution(executionId: string): Promise<void> {
     throw new Error('Task execution not found');
   }
 
+  const dbCtx = ctx ?? createDalContext(execution.instance.userId, null);
+  const db = getCrmDb(dbCtx);
+
   // Check if task is scheduled for future
   if (execution.scheduledFor && execution.scheduledFor > new Date()) {
     return; // Not time yet
@@ -99,7 +111,7 @@ export async function processTaskExecution(executionId: string): Promise<void> {
 
   // Check if task has a parent (branching)
   if (execution.task.parentTaskId) {
-    const parentExecution = await prisma.rETaskExecution.findFirst({
+    const parentExecution = await db.rETaskExecution.findFirst({
       where: {
         instanceId: execution.instanceId,
         taskId: execution.task.parentTaskId,
@@ -116,11 +128,11 @@ export async function processTaskExecution(executionId: string): Promise<void> {
       const branchCondition = execution.task.branchCondition as { field: string; operator: string; value: string } | null;
       if (!branchCondition || !branchCondition.field || !branchCondition.operator || !branchCondition.value) {
         // Invalid branch condition, skip
-        await prisma.rETaskExecution.update({
+        await db.rETaskExecution.update({
           where: { id: executionId },
           data: { status: RETaskExecutionStatus.SKIPPED },
         });
-        await processNextTask(execution.instanceId);
+        await processNextTask(execution.instanceId, dbCtx);
         return;
       }
       const resultData = (parentExecution.result as Record<string, any>) || {};
@@ -131,18 +143,18 @@ export async function processTaskExecution(executionId: string): Promise<void> {
 
       if (!conditionMet) {
         // Condition not met, skip this task
-        await prisma.rETaskExecution.update({
+        await db.rETaskExecution.update({
           where: { id: executionId },
           data: { status: RETaskExecutionStatus.SKIPPED },
         });
-        await processNextTask(execution.instanceId);
+        await processNextTask(execution.instanceId, dbCtx);
         return;
       }
     }
   }
 
   // Update status to IN_PROGRESS
-  await prisma.rETaskExecution.update({
+  await db.rETaskExecution.update({
     where: { id: executionId },
     data: {
       status: RETaskExecutionStatus.IN_PROGRESS,
@@ -152,7 +164,7 @@ export async function processTaskExecution(executionId: string): Promise<void> {
 
   // Check if HITL gate
   if (execution.task.isHITL) {
-    await prisma.rETaskExecution.update({
+    await db.rETaskExecution.update({
       where: { id: executionId },
       data: { status: RETaskExecutionStatus.AWAITING_HITL },
     });
@@ -200,7 +212,10 @@ export async function processTaskExecution(executionId: string): Promise<void> {
 /**
  * Process the next task in the workflow
  */
-async function processNextTask(instanceId: string): Promise<void> {
+async function processNextTask(
+  instanceId: string,
+  ctx?: { userId: string; industry?: string | null }
+): Promise<void> {
   const instance = await prisma.rEWorkflowInstance.findUnique({
     where: { id: instanceId },
     include: {
@@ -212,6 +227,9 @@ async function processNextTask(instanceId: string): Promise<void> {
   });
 
   if (!instance) return;
+
+  const dbCtx = ctx ?? createDalContext(instance.userId, null);
+  const db = getCrmDb(dbCtx);
 
   // Find next pending task
   const completedTaskIds = new Set(
@@ -227,7 +245,7 @@ async function processNextTask(instanceId: string): Promise<void> {
 
   if (!nextTask) {
     // All tasks completed
-    await prisma.rEWorkflowInstance.update({
+    await db.rEWorkflowInstance.update({
       where: { id: instanceId },
       data: {
         status: REWorkflowInstanceStatus.COMPLETED,
@@ -241,7 +259,7 @@ async function processNextTask(instanceId: string): Promise<void> {
   let nextExecution = instance.executions.find(e => e.taskId === nextTask.id);
 
   if (!nextExecution) {
-    nextExecution = await prisma.rETaskExecution.create({
+    nextExecution = await db.rETaskExecution.create({
       data: {
         instanceId,
         taskId: nextTask.id,
@@ -253,7 +271,7 @@ async function processNextTask(instanceId: string): Promise<void> {
 
   // Process if scheduled time has passed
   if (!nextExecution.scheduledFor || nextExecution.scheduledFor <= new Date()) {
-    await processTaskExecution(nextExecution.id);
+    await processTaskExecution(nextExecution.id, dbCtx);
   }
 }
 
@@ -265,8 +283,11 @@ export async function approveHITLGate(
   userId: string,
   notes?: string
 ): Promise<void> {
-  const execution = await prisma.rETaskExecution.findUnique({
-    where: { id: executionId },
+  const ctx = createDalContext(userId, null);
+  const db = getCrmDb(ctx);
+
+  const execution = await db.rETaskExecution.findFirst({
+    where: { id: executionId, instance: { userId } },
     include: { task: true, instance: true },
   });
 
@@ -275,7 +296,7 @@ export async function approveHITLGate(
   }
 
   // Update execution
-  await prisma.rETaskExecution.update({
+  await db.rETaskExecution.update({
     where: { id: executionId },
     data: {
       status: RETaskExecutionStatus.APPROVED,
@@ -286,16 +307,16 @@ export async function approveHITLGate(
   });
 
   // Mark HITL notification as actioned
-  await prisma.rEHITLNotification.updateMany({
+  await db.rEHITLNotification.updateMany({
     where: { executionId },
     data: { isActioned: true },
   });
 
   // Execute the task
   try {
-    const result = await executeTask(execution.task, execution.instance);
+    const result = await executeTask(execution.task, execution.instance, ctx.industry ?? null);
 
-    await prisma.rETaskExecution.update({
+    await db.rETaskExecution.update({
       where: { id: executionId },
       data: {
         status: RETaskExecutionStatus.COMPLETED,
@@ -305,9 +326,9 @@ export async function approveHITLGate(
     });
 
     // Process next task
-    await processNextTask(execution.instanceId);
+    await processNextTask(execution.instanceId, ctx);
   } catch (error: any) {
-    await prisma.rETaskExecution.update({
+    await db.rETaskExecution.update({
       where: { id: executionId },
       data: {
         status: RETaskExecutionStatus.FAILED,
@@ -325,15 +346,18 @@ export async function rejectHITLGate(
   userId: string,
   notes?: string
 ): Promise<void> {
-  const execution = await prisma.rETaskExecution.findUnique({
-    where: { id: executionId },
+  const ctx = createDalContext(userId, null);
+  const db = getCrmDb(ctx);
+
+  const execution = await db.rETaskExecution.findFirst({
+    where: { id: executionId, instance: { userId } },
   });
 
   if (!execution || execution.status !== RETaskExecutionStatus.AWAITING_HITL) {
     throw new Error('Invalid HITL gate or already processed');
   }
 
-  await prisma.rETaskExecution.update({
+  await db.rETaskExecution.update({
     where: { id: executionId },
     data: {
       status: RETaskExecutionStatus.REJECTED,
@@ -344,7 +368,7 @@ export async function rejectHITLGate(
   });
 
   // Mark HITL notification as actioned
-  await prisma.rEHITLNotification.updateMany({
+  await db.rEHITLNotification.updateMany({
     where: { executionId },
     data: { isActioned: true },
   });

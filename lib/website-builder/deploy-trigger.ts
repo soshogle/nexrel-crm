@@ -6,7 +6,8 @@
  * Lazy-creates deploy hook for existing sites that have vercelProjectId but no hook.
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { createOrFetchDeployHook } from './deploy-hook';
 
 const VERCEL_API = 'https://api.vercel.com/v13';
@@ -30,7 +31,8 @@ export async function triggerWebsiteDeploy(websiteId: string): Promise<{ ok: boo
     return { ok: false, error: 'WEBSITE_AUTO_DEPLOY is disabled' };
   }
 
-  const website = await prisma.website.findUnique({
+  const db = getCrmDb(createDalContext('bootstrap'));
+  const website = await db.website.findUnique({
     where: { id: websiteId },
     select: { vercelProjectId: true, vercelDeployHookUrl: true, name: true },
   });
@@ -54,7 +56,7 @@ export async function triggerWebsiteDeploy(websiteId: string): Promise<{ ok: boo
     try {
       const created = await createOrFetchDeployHook(website.vercelProjectId);
       if (created) {
-        await prisma.website.update({
+        await db.website.update({
           where: { id: websiteId },
           data: { vercelDeployHookUrl: created },
         });

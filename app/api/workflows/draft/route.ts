@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { workflowTemplateService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,8 +19,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const user = await getCrmDb(ctx).user.findUnique({
+      where: { id: ctx.userId },
       select: { industry: true },
     });
 
@@ -31,20 +35,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const workflow = await prisma.workflowTemplate.create({
-      data: {
-        userId: session.user.id,
-        industry: user.industry,
-        name: 'New from conversation',
-        type: 'CUSTOM',
-        description: 'Workflow being created via voice or chat',
-        isDefault: false,
-        isActive: true,
-        executionMode: 'WORKFLOW',
-      },
-      include: {
-        tasks: true,
-      },
+    const workflow = await workflowTemplateService.create(ctx, {
+      industry: user.industry as any,
+      name: 'New from conversation',
+      type: 'CUSTOM',
+      description: 'Workflow being created via voice or chat',
+      isDefault: false,
+      isActive: true,
+      executionMode: 'WORKFLOW',
     });
 
     return NextResponse.json({

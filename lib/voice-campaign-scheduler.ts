@@ -3,7 +3,8 @@
  * Handles automated voice calling campaigns with intelligent scheduling
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { parse, format, isAfter, isBefore, addMinutes, startOfDay } from 'date-fns';
 
 export class VoiceCampaignScheduler {
@@ -21,7 +22,8 @@ export class VoiceCampaignScheduler {
         where.userId = userId;
       }
 
-      const campaigns = await prisma.campaign.findMany({
+      const db = userId ? getCrmDb(createDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
+      const campaigns = await db.campaign.findMany({
         where,
         include: {
           voiceAgent: true,
@@ -62,7 +64,7 @@ export class VoiceCampaignScheduler {
     }
 
     // Check daily call limit
-    const callsToday = await this.getCallsToday(campaign.id);
+    const callsToday = await this.getCallsToday(campaign.id, campaign.userId);
     const maxCalls = campaign.maxCallsPerDay || 50;
     const remainingCalls = maxCalls - callsToday;
 
@@ -104,10 +106,10 @@ export class VoiceCampaignScheduler {
   /**
    * Get number of calls made today for campaign
    */
-  private async getCallsToday(campaignId: string): Promise<number> {
+  private async getCallsToday(campaignId: string, userId?: string): Promise<number> {
     const today = startOfDay(new Date());
-
-    const count = await prisma.campaignMessage.count({
+    const db = userId ? getCrmDb(createDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
+    const count = await db.campaignMessage.count({
       where: {
         campaignId,
         sentAt: {
@@ -166,7 +168,8 @@ export class VoiceCampaignScheduler {
 
     try {
       // Create campaign message record
-      const message = await prisma.campaignMessage.create({
+      const db = getCrmDb(createDalContext(campaign.userId));
+      const message = await db.campaignMessage.create({
         data: {
           campaignId: campaign.id,
           recipientType: 'LEAD',
@@ -214,7 +217,7 @@ export class VoiceCampaignScheduler {
       });
 
       // Update campaign stats
-      await prisma.campaign.update({
+      await db.campaign.update({
         where: { id: campaign.id },
         data: {
           sentCount: { increment: 1 },
@@ -224,8 +227,9 @@ export class VoiceCampaignScheduler {
     } catch (error: any) {
       console.error(`❌ Failed to initiate call:`, error.message);
 
+      const db = getCrmDb(createDalContext(campaign.userId));
       // Update campaign message
-      await prisma.campaignMessage.updateMany({
+      await db.campaignMessage.updateMany({
         where: {
           campaignId: campaign.id,
           recipientId: lead.id,
@@ -238,7 +242,7 @@ export class VoiceCampaignScheduler {
       });
 
       // Update campaign lead
-      await prisma.campaignLead.update({
+      await db.campaignLead.update({
         where: { id: campaignLead.id },
         data: {
           status: 'FAILED',
@@ -252,7 +256,8 @@ export class VoiceCampaignScheduler {
    * Get campaign analytics
    */
   async getCampaignAnalytics(campaignId: string) {
-    const campaign = await prisma.campaign.findUnique({
+    const db = getCrmDb(createDalContext('bootstrap'));
+    const campaign = await db.campaign.findUnique({
       where: { id: campaignId },
       include: {
         campaignLeads: {

@@ -4,7 +4,8 @@
  * (e.g. APPOINTMENT_SCHEDULER for DENTIST = "Contact New Patient")
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, workflowTemplateService } from '@/lib/dal';
 import { Industry } from '@prisma/client';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
 
@@ -19,40 +20,35 @@ export async function createDefaultIndustryContactWorkflow(
   const industryConfig = getIndustryConfig(industry);
   const contactLabel = industryConfig?.fieldLabels?.contact || 'Contact';
 
-  const workflow = await prisma.workflowTemplate.create({
-    data: {
-      userId,
-      industry,
-      name: `Contact New ${contactLabel}`,
-      type: 'CUSTOM',
-      description: `Instant response to new ${contactLabel.toLowerCase()}s - AI voice call and SMS. Customize this workflow to add more steps.`,
-      isDefault: false,
-      isActive: true,
-      tasks: {
-        create: [
-          {
-            name: `Contact New ${contactLabel}`,
-            description: `Instant AI voice call and SMS to engage new ${contactLabel.toLowerCase()} within 60 seconds`,
-            taskType: 'LEAD_RESEARCH',
-            assignedAgentType: employeeType,
-            delayValue: 0,
-            delayUnit: 'MINUTES',
-            isHITL: false,
-            isOptional: false,
-            position: { row: 0, col: 0 },
-            displayOrder: 1,
-            branchCondition: undefined,
-            actionConfig: {
-              actions: ['voice_call', 'sms'],
-            },
+  const ctx = createDalContext(userId);
+  const workflow = await workflowTemplateService.create(ctx, {
+    industry,
+    name: `Contact New ${contactLabel}`,
+    type: 'CUSTOM',
+    description: `Instant response to new ${contactLabel.toLowerCase()}s - AI voice call and SMS. Customize this workflow to add more steps.`,
+    isDefault: false,
+    isActive: true,
+    tasks: {
+      create: [
+        {
+          name: `Contact New ${contactLabel}`,
+          description: `Instant AI voice call and SMS to engage new ${contactLabel.toLowerCase()} within 60 seconds`,
+          taskType: 'LEAD_RESEARCH',
+          assignedAgentType: employeeType,
+          delayValue: 0,
+          delayUnit: 'MINUTES',
+          isHITL: false,
+          isOptional: false,
+          position: { row: 0, col: 0 },
+          displayOrder: 1,
+          branchCondition: undefined,
+          actionConfig: {
+            actions: ['voice_call', 'sms'],
           },
-        ],
-      },
+        },
+      ],
     },
-    include: {
-      tasks: { orderBy: { displayOrder: 'asc' } },
-    },
-  });
+  } as any);
 
   return { id: workflow.id, name: workflow.name };
 }
@@ -65,7 +61,9 @@ export async function hasIndustryContactWorkflow(
   industry: Industry,
   employeeType: string
 ): Promise<boolean> {
-  const count = await prisma.workflowTask.count({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const count = await db.workflowTask.count({
     where: {
       template: {
         userId,

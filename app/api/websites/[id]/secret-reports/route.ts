@@ -4,7 +4,8 @@
  * Auth: x-website-secret header (for template server fetches)
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,7 +27,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findUnique({
+    const ctx = createDalContext('bootstrap', null);
+    const website = await getCrmDb(ctx).website.findUnique({
       where: { id: websiteId },
       select: { id: true },
     });
@@ -36,7 +38,7 @@ export async function GET(
     }
 
     // List only — do not expose full content until user unlocks with email/phone
-    const reports = await prisma.rEWebsiteReport.findMany({
+    const reports = await getCrmDb(ctx).rEWebsiteReport.findMany({
       where: { websiteId },
       orderBy: [{ displayOrder: 'asc' }, { createdAt: 'desc' }],
       select: {

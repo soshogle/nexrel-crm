@@ -10,7 +10,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService, dealService } from '@/lib/dal';
 import { Industry } from '@prisma/client';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
 
@@ -27,13 +28,14 @@ async function executeAppointmentScheduler(
   userId: string,
   _industry: Industry
 ): Promise<ExecutionResult> {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const tomorrow = new Date();
   tomorrow.setHours(0, 0, 0, 0);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const dayAfter = new Date(tomorrow);
   dayAfter.setDate(dayAfter.getDate() + 1);
-
-  const appointments = await prisma.bookingAppointment.findMany({
+  const appointments = await db.bookingAppointment.findMany({
     where: {
       userId,
       appointmentDate: {
@@ -62,11 +64,9 @@ async function executePatientCoordinator(
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const newPatients = await prisma.lead.findMany({
-    where: {
-      userId,
-      createdAt: { gte: sevenDaysAgo },
-    },
+  const ctx = createDalContext(userId);
+  const newPatients = await leadService.findMany(ctx, {
+    where: { createdAt: { gte: sevenDaysAgo } },
     take: 15,
   });
 
@@ -84,15 +84,12 @@ async function executeTreatmentCoordinator(
   userId: string,
   _industry: Industry
 ): Promise<ExecutionResult> {
+  const ctx = createDalContext(userId);
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const deals = await prisma.deal.findMany({
-    where: {
-      userId,
-      createdAt: { gte: thirtyDaysAgo },
-      status: { not: 'WON' },
-    },
+  const deals = await dealService.findMany(ctx, {
+    where: { createdAt: { gte: thirtyDaysAgo }, status: { not: 'WON' } },
     take: 10,
   });
 
@@ -110,7 +107,9 @@ async function executeBillingSpecialist(
   userId: string,
   _industry: Industry
 ): Promise<ExecutionResult> {
-  const invoices = await prisma.invoice
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const invoices = await db.invoice
     .findMany({
       where: {
         userId,

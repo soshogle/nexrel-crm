@@ -4,7 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -27,37 +28,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token required' }, { status: 400 });
     }
 
-    // In production, validate token from database
-    // For now, decode token to get leadId (simplified)
-    // In real implementation, store tokens in database with expiration
+    // TODO: Validate token from database and extract leadId/userId
+    // For demo, fetch first lead to get userId - in production use proper token validation
+    const db = getCrmDb(createDalContext('bootstrap'));
+    const firstLead = await db.lead.findFirst({
+      take: 1,
+      select: { id: true, userId: true },
+    });
+    if (!firstLead) {
+      return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+    }
+    const ctx = createDalContext(firstLead.userId);
 
     // Fetch patient data
-    // For demo, we'll use a simple approach - in production, use proper token validation
-    const leads = await prisma.lead.findMany({
-      take: 1, // Simplified - in production, use token to find lead
-      select: {
-        id: true,
-        businessName: true,
-        contactPerson: true,
-        email: true,
-        phone: true,
-      },
-    });
+    const lead = await leadService.findUnique(ctx, firstLead.id);
 
-    if (leads.length === 0) {
+    if (!lead) {
       return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
     }
 
-    const lead = leads[0];
-
     // Fetch treatment plans
-    const treatmentPlans = await prisma.dentalTreatmentPlan.findMany({
+    const treatmentPlans = await getCrmDb(ctx).dentalTreatmentPlan.findMany({
       where: { leadId: lead.id },
       orderBy: { createdAt: 'desc' },
     });
 
     // Fetch appointments
-    const appointments = await prisma.bookingAppointment.findMany({
+    const appointments = await getCrmDb(ctx).bookingAppointment.findMany({
       where: { leadId: lead.id },
       orderBy: { appointmentDate: 'desc' },
       take: 10,
@@ -72,7 +69,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Fetch documents
-    const documents = await prisma.patientDocument.findMany({
+    const documents = await getCrmDb(ctx).patientDocument.findMany({
       where: { leadId: lead.id },
       orderBy: { createdAt: 'desc' },
       take: 20,
@@ -86,14 +83,14 @@ export async function GET(request: NextRequest) {
     });
 
     // Fetch invoices
-    const invoices = await prisma.invoice.findMany({
+    const invoices = await getCrmDb(ctx).invoice.findMany({
       where: { leadId: lead.id },
       orderBy: { issueDate: 'desc' },
       take: 10,
     });
 
     // Fetch X-rays
-    const xrays = await prisma.dentalXRay.findMany({
+    const xrays = await getCrmDb(ctx).dentalXRay.findMany({
       where: { leadId: lead.id },
       orderBy: { dateTaken: 'desc' },
       take: 20,

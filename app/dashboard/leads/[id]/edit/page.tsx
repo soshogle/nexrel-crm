@@ -2,7 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { leadService } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { redirect, notFound } from 'next/navigation'
 import { EditLeadForm } from '@/components/leads/edit-lead-form'
 
@@ -12,17 +13,13 @@ export default async function EditLeadPage({
   params: { id: string }
 }) {
   const session = await getServerSession(authOptions)
-  
-  if (!session?.user?.id) {
+  const ctx = getDalContextFromSession(session)
+
+  if (!ctx) {
     redirect('/auth/signin')
   }
 
-  const lead = await prisma.lead.findFirst({
-    where: {
-      id: params.id,
-      userId: session.user.id,
-    }
-  })
+  const lead = await leadService.findUnique(ctx, params.id)
 
   if (!lead) {
     notFound()

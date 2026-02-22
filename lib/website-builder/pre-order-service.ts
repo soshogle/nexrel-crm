@@ -3,7 +3,8 @@
  * Handles pre-orders for out-of-stock products
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService, websiteService } from '@/lib/dal';
 
 export interface CreatePreOrderParams {
   websiteId: string;
@@ -39,8 +40,9 @@ export class WebsitePreOrderService {
   async createPreOrder(params: CreatePreOrderParams): Promise<PreOrder> {
     const { websiteId, productId, customerEmail, customerName, customerPhone, quantity, expectedRestockDate, notes } = params;
 
+    const dbBootstrap = getCrmDb(createDalContext('bootstrap'));
     // Verify product exists and is out of stock
-    const product = await prisma.product.findUnique({
+    const product = await dbBootstrap.product.findUnique({
       where: { id: productId },
     });
 
@@ -53,7 +55,7 @@ export class WebsitePreOrderService {
     }
 
     // Verify website exists
-    const website = await prisma.website.findUnique({
+    const website = await dbBootstrap.website.findUnique({
       where: { id: websiteId },
       include: {
         stockSettings: true,
@@ -70,8 +72,11 @@ export class WebsitePreOrderService {
       throw new Error('Pre-orders are not enabled for this website');
     }
 
+    const ctx = createDalContext(website.userId);
+    const db = getCrmDb(ctx);
+
     // Create pre-order record
-    const preOrder = await prisma.$executeRawUnsafe(`
+    const preOrder = await db.$executeRawUnsafe(`
       INSERT INTO "PreOrder" (
         "id", "websiteId", "productId", "customerEmail", "customerName", 
         "customerPhone", "quantity", "status", "expectedRestockDate", "notes", "createdAt"
@@ -94,7 +99,7 @@ export class WebsitePreOrderService {
     ).catch(async () => {
       // If table doesn't exist, create it via Prisma (fallback)
       // For now, store in a JSON field or use a simpler approach
-      return await prisma.website.update({
+      return await db.website.update({
         where: { id: websiteId },
         data: {
           integrationsConfig: {
@@ -121,7 +126,7 @@ export class WebsitePreOrderService {
     });
 
     // Create or update Lead for the customer
-    let lead = await prisma.lead.findFirst({
+    let lead = await db.lead.findFirst({
       where: {
         userId: website.userId,
         email: customerEmail,
@@ -129,46 +134,40 @@ export class WebsitePreOrderService {
     });
 
     if (!lead) {
-      lead = await prisma.lead.create({
-        data: {
-          userId: website.userId,
-          businessName: customerName,
-          contactPerson: customerName,
-          email: customerEmail,
-          phone: customerPhone || null,
-          status: 'NEW',
-          source: 'website_pre_order',
-          tags: ['pre_order_customer', 'website_visitor'],
-          enrichedData: {
-            preOrders: [{
+      lead = await leadService.create(ctx, {
+        businessName: customerName,
+        contactPerson: customerName,
+        email: customerEmail,
+        phone: customerPhone || null,
+        status: 'NEW',
+        source: 'website_pre_order',
+        tags: ['pre_order_customer', 'website_visitor'],
+        enrichedData: {
+          preOrders: [{
+            websiteId,
+            productId,
+            quantity,
+            createdAt: new Date().toISOString(),
+          }],
+        },
+      } as any);
+    } else {
+      // Update existing lead
+      await leadService.update(ctx, lead.id, {
+        tags: Array.isArray(lead.tags) 
+          ? [...(lead.tags as string[]), 'pre_order_customer']
+          : ['pre_order_customer'],
+        enrichedData: {
+          ...((lead.enrichedData as any) || {}),
+          preOrders: [
+            ...((lead.enrichedData as any)?.preOrders || []),
+            {
               websiteId,
               productId,
               quantity,
               createdAt: new Date().toISOString(),
-            }],
-          },
-        },
-      });
-    } else {
-      // Update existing lead
-      await prisma.lead.update({
-        where: { id: lead.id },
-        data: {
-          tags: Array.isArray(lead.tags) 
-            ? [...(lead.tags as string[]), 'pre_order_customer']
-            : ['pre_order_customer'],
-          enrichedData: {
-            ...((lead.enrichedData as any) || {}),
-            preOrders: [
-              ...((lead.enrichedData as any)?.preOrders || []),
-              {
-                websiteId,
-                productId,
-                quantity,
-                createdAt: new Date().toISOString(),
-              },
-            ],
-          },
+            },
+          ],
         },
       });
     }
@@ -196,8 +195,9 @@ export class WebsitePreOrderService {
     fulfilled: number;
     preOrders: PreOrder[];
   }> {
+    const bootstrapDb = getCrmDb(createDalContext('bootstrap'));
     // Get website and pre-orders
-    const website = await prisma.website.findUnique({
+    const website = await bootstrapDb.website.findFirst({
       where: {
         websiteProducts: {
           some: {
@@ -207,6 +207,7 @@ export class WebsitePreOrderService {
       },
       select: {
         id: true,
+        userId: true,
         integrationsConfig: true,
       },
     });
@@ -214,6 +215,8 @@ export class WebsitePreOrderService {
     if (!website) {
       return { fulfilled: 0, preOrders: [] };
     }
+
+    const fulfillCtx = createDalContext(website.userId);
 
     const preOrders = (website.integrationsConfig as any)?.preOrders || [];
     const pendingPreOrders = preOrders
@@ -256,16 +259,13 @@ export class WebsitePreOrderService {
     }
 
     // Update website config with fulfilled pre-orders
-    await prisma.website.update({
-      where: { id: website.id },
-      data: {
-        integrationsConfig: {
-          ...((website.integrationsConfig as any) || {}),
-          preOrders: preOrders.map((po: any) => {
-            const fulfilled = fulfilledPreOrders.find((f) => f.id === po.id);
-            return fulfilled || po;
-          }),
-        },
+    await websiteService.update(fulfillCtx, website.id, {
+      integrationsConfig: {
+        ...((website.integrationsConfig as any) || {}),
+        preOrders: preOrders.map((po: any) => {
+          const fulfilled = fulfilledPreOrders.find((f) => f.id === po.id);
+          return fulfilled || po;
+        }),
       },
     });
 
@@ -279,7 +279,8 @@ export class WebsitePreOrderService {
    * Get pre-orders for a website
    */
   async getWebsitePreOrders(websiteId: string): Promise<PreOrder[]> {
-    const website = await prisma.website.findUnique({
+    const db = getCrmDb(createDalContext('bootstrap'));
+    const website = await db.website.findUnique({
       where: { id: websiteId },
       select: { integrationsConfig: true },
     });

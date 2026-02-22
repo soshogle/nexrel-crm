@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService } from '@/lib/dal';
 
 export async function POST(
   request: NextRequest,
@@ -16,10 +17,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: params.id, userId: session.user.id },
-      select: { id: true, name: true, type: true },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });

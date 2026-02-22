@@ -4,7 +4,8 @@
  */
 
 import { WorkflowTask, WorkflowInstance } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService, taskService, getCrmDb } from '@/lib/dal';
 import { sendSMS } from '@/lib/twilio';
 import { EmailService } from '@/lib/email-service';
 import { CalendarService } from '@/lib/calendar/calendar-service';
@@ -184,9 +185,10 @@ async function executeVoiceCall(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   // Get contact phone number
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead?.phone) {
@@ -209,7 +211,7 @@ async function executeVoiceCall(
     } | undefined;
 
     if (actionConfig?.assignedAIEmployeeId) {
-      const aiEmployee = await prisma.userAIEmployee.findFirst({
+      const aiEmployee = await getCrmDb(ctx).userAIEmployee.findFirst({
         where: {
           id: actionConfig.assignedAIEmployeeId,
           userId: instance.userId,
@@ -217,7 +219,7 @@ async function executeVoiceCall(
         },
       });
       if (aiEmployee?.voiceAgentId) {
-        const voiceAgent = await prisma.voiceAgent.findFirst({
+        const voiceAgent = await getCrmDb(ctx).voiceAgent.findFirst({
           where: {
             id: aiEmployee.voiceAgentId,
             userId: instance.userId,
@@ -254,7 +256,7 @@ async function executeVoiceCall(
 
     // Fallback to user language when no override yet
     if (!voiceOverride?.agent?.language) {
-      const user = await prisma.user.findUnique({
+      const user = await getCrmDb(ctx).user.findUnique({
         where: { id: instance.userId },
         select: { language: true },
       });
@@ -350,7 +352,7 @@ async function executeVoiceCall(
     );
 
     // Create call log
-    const callLog = await prisma.callLog.create({
+    const callLog = await getCrmDb(ctx).callLog.create({
       data: {
         userId: instance.userId,
         voiceAgentId: null,
@@ -388,8 +390,9 @@ async function executeSMS(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead?.phone) {
@@ -439,8 +442,9 @@ async function executeEmail(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead?.email) {
@@ -514,21 +518,15 @@ async function createTask(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
-  const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
-    : null;
-
-  await prisma.task.create({
-    data: {
-      userId: instance.userId,
-      title: task.name,
-      description: task.description || '',
-      status: 'TODO',
-      priority: 'MEDIUM',
-      dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Due in 24 hours
-      leadId: instance.leadId || undefined,
-      dealId: instance.dealId || undefined,
-    },
+  const ctx = createDalContext(instance.userId, instance.industry);
+  await taskService.create(ctx, {
+    title: task.name,
+    description: task.description || '',
+    status: 'TODO',
+    priority: 'MEDIUM',
+    dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Due in 24 hours
+    leadId: instance.leadId || undefined,
+    dealId: instance.dealId || undefined,
   });
 
   return {
@@ -547,8 +545,9 @@ async function createCalendarEvent(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   const actionConfig = task.actionConfig as any;
@@ -561,7 +560,7 @@ async function createCalendarEvent(
 
   try {
     // Create appointment in database
-    const appointment = await prisma.bookingAppointment.create({
+    const appointment = await getCrmDb(ctx).bookingAppointment.create({
       data: {
         userId: instance.userId,
         customerName: lead?.contactPerson || lead?.businessName || 'Contact',
@@ -601,8 +600,9 @@ async function executeLeadResearch(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -659,8 +659,9 @@ async function executeSendReferralLink(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
   if (!lead) {
     return { success: false, error: 'No lead for referral link' };
@@ -710,8 +711,9 @@ async function executeCreateReferral(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
   if (!lead) {
     return { success: false, error: 'No lead for create referral' };
@@ -723,7 +725,7 @@ async function executeCreateReferral(
   const referredPhone = actionConfig?.referredPhone || null;
 
   try {
-    await prisma.referral.create({
+    await getCrmDb(ctx).referral.create({
       data: {
         userId: instance.userId,
         referrerId: lead.id,
@@ -746,11 +748,12 @@ async function executeNotifyReferralConverted(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   if (!instance.leadId) {
     return { success: false, error: 'No lead in context' };
   }
 
-  const referral = await prisma.referral.findFirst({
+  const referral = await getCrmDb(ctx).referral.findFirst({
     where: { convertedLeadId: instance.leadId, userId: instance.userId },
     include: { referrer: true },
   });
@@ -760,7 +763,7 @@ async function executeNotifyReferralConverted(
 
   const actionConfig = task.actionConfig as { channel?: 'email' | 'sms'; message?: string } | undefined;
   const channel = actionConfig?.channel || 'email';
-  const newLead = await prisma.lead.findUnique({ where: { id: instance.leadId } });
+  const newLead = await leadService.findUnique(ctx, instance.leadId);
   const message = (actionConfig?.message || 'Your referral {{referredName}} has signed up.')
     .replace(/\{\{referredName\}\}/g, newLead?.contactPerson || newLead?.businessName || 'Someone')
     .replace(/\{\{contactPerson\}\}/g, referral.referrer.contactPerson || referral.referrer.businessName || 'there');
@@ -802,8 +805,9 @@ async function executeRequestFeedbackVoice(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
   if (!lead?.phone) {
     return { success: false, error: 'No lead or phone for feedback call' };
@@ -830,8 +834,9 @@ async function executeSendReviewLink(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
   if (!lead) {
     return { success: false, error: 'No lead for review link' };
@@ -850,7 +855,7 @@ async function executeSendReviewLink(
   const channel = config?.channel || 'email';
 
   if (!googleUrl && !yelpUrl) {
-    const campaign = await prisma.campaign.findFirst({
+    const campaign = await getCrmDb(ctx).campaign.findFirst({
       where: { userId: instance.userId, type: 'REVIEW_REQUEST', reviewUrl: { not: null } },
       select: { reviewUrl: true },
     });

@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService, getCrmDb } from '@/lib/dal';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
 import crypto from 'crypto';
@@ -29,13 +30,12 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: params.id, userId: session.user.id },
-    });
+    const website = await websiteService.findUnique(ctx, params.id);
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
@@ -47,7 +47,7 @@ export async function GET(
     const where: any = { websiteId: params.id };
     if (type) where.type = type;
 
-    const media = await prisma.websiteMedia.findMany({
+    const media = await getCrmDb(ctx).websiteMedia.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: Math.min(limit, 100),
@@ -69,13 +69,12 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: params.id, userId: session.user.id },
-    });
+    const website = await websiteService.findUnique(ctx, params.id);
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
@@ -117,7 +116,7 @@ export async function POST(
     const hash = crypto.createHash('md5').update(buffer).digest('hex').slice(0, 12);
     const ext = contentType.split('/')[1] || 'bin';
     const filename = `${hash}-${Date.now()}.${ext}`;
-    const basePath = `website-media/${session.user.id}/${params.id}`;
+    const basePath = `website-media/${ctx.userId}/${params.id}`;
     const storagePath = `${basePath}/${filename}`;
 
     let url: string;
@@ -180,7 +179,7 @@ export async function POST(
       url = blob.url;
     }
 
-    const media = await prisma.websiteMedia.create({
+    const media = await getCrmDb(ctx).websiteMedia.create({
       data: {
         websiteId: params.id,
         url,

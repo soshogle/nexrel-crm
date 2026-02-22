@@ -4,6 +4,8 @@
  */
 
 import { prisma } from './db';
+import { getCrmDb } from '@/lib/dal/db';
+import { createDalContext } from '@/lib/context/industry-context';
 import { decrypt } from '@/lib/encryption';
 
 export class FacebookMessengerService {
@@ -12,8 +14,11 @@ export class FacebookMessengerService {
    */
   async syncConversations(userId: string): Promise<{ success: boolean; synced: number; error?: string }> {
     try {
+      const ctx = createDalContext(userId);
+      const db = getCrmDb(ctx);
+
       // Get all active Messenger connections for this user
-      const connections = await prisma.channelConnection.findMany({
+      const connections = await db.channelConnection.findMany({
         where: {
           userId,
           providerType: 'FACEBOOK',
@@ -70,7 +75,7 @@ export class FacebookMessengerService {
           const participantName = participant.name || `User ${participantId}`;
 
           // Find or create conversation in our database
-          let dbConversation = await prisma.conversation.findFirst({
+          let dbConversation = await db.conversation.findFirst({
             where: {
               userId,
               channelConnectionId: connection.id,
@@ -79,7 +84,7 @@ export class FacebookMessengerService {
           });
 
           if (!dbConversation) {
-            dbConversation = await prisma.conversation.create({
+            dbConversation = await db.conversation.create({
               data: {
                 userId,
                 channelConnectionId: connection.id,
@@ -103,7 +108,7 @@ export class FacebookMessengerService {
             const createdTime = message.created_time;
 
             // Check if message already exists
-            const existingMessage = await prisma.conversationMessage.findFirst({
+            const existingMessage = await db.conversationMessage.findFirst({
               where: {
                 conversationId: dbConversation.id,
                 externalMessageId: messageId,
@@ -116,7 +121,7 @@ export class FacebookMessengerService {
             const direction = fromId === pageId ? 'OUTBOUND' : 'INBOUND';
 
             // Save message
-            await prisma.conversationMessage.create({
+            await db.conversationMessage.create({
               data: {
                 conversationId: dbConversation.id,
                 userId,
@@ -139,7 +144,7 @@ export class FacebookMessengerService {
         }
 
         // Update last synced time
-        await prisma.channelConnection.update({
+        await db.channelConnection.update({
           where: { id: connection.id },
           data: { lastSyncedAt: new Date() },
         });

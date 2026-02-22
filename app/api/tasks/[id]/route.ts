@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { taskService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
 export const dynamic = 'force-dynamic';
@@ -19,8 +19,14 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const task = await prisma.task.findUnique({
-      where: { id: params.id },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const task = await getCrmDb(ctx).task.findFirst({
+      where: {
+        id: params.id,
+        OR: [{ userId: ctx.userId }, { assignedToId: ctx.userId }],
+      },
       include: {
         assignedTo: {
           select: {
@@ -130,11 +136,7 @@ export async function GET(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    // Verify ownership or assignment
-    if (task.userId !== session.user.id && task.assignedToId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
+    // Verify ownership or assignment (already enforced by findFirst where)
     return NextResponse.json({ task });
   } catch (error: any) {
     console.error('Error fetching task:', error);
@@ -156,15 +158,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const existingTask = await prisma.task.findUnique({
-      where: { id: params.id },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const existingTask = await taskService.findUnique(ctx, params.id);
 
     if (!existingTask) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    if (existingTask.userId !== session.user.id) {
+    if (existingTask.userId !== ctx.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -221,7 +224,7 @@ export async function PUT(
       if (status === 'COMPLETED') {
         updateData.completedAt = new Date();
         updateData.progressPercent = 100;
-        emitCRMEvent('task_completed', session.user.id, { entityId: params.id, entityType: 'Task' });
+        emitCRMEvent('task_completed', ctx.userId, { entityId: params.id, entityType: 'Task' });
       } else if (existingTask.status === 'COMPLETED' && status !== 'COMPLETED') {
         updateData.completedAt = null;
       }
@@ -239,8 +242,8 @@ export async function PUT(
     if (actualHours !== undefined) updateData.actualHours = actualHours;
     if (progressPercent !== undefined) updateData.progressPercent = progressPercent;
 
-    const task = await prisma.task.update({
-      where: { id: params.id },
+    const task = await getCrmDb(ctx).task.update({
+      where: { id: params.id, userId: ctx.userId },
       data: updateData,
       include: {
         assignedTo: {
@@ -275,10 +278,10 @@ export async function PUT(
 
     // Create activity logs for changes
     for (const change of changes) {
-      await prisma.taskActivity.create({
+      await getCrmDb(ctx).taskActivity.create({
         data: {
           taskId: task.id,
-          userId: session.user.id,
+          userId: ctx.userId,
           action: change.action,
           oldValue: change.oldValue,
           newValue: change.newValue,
@@ -307,21 +310,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const task = await prisma.task.findUnique({
-      where: { id: params.id },
-    });
+    const task = await taskService.findUnique(ctx, params.id);
 
     if (!task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    if (task.userId !== session.user.id) {
+    if (task.userId !== ctx.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    await prisma.task.delete({
-      where: { id: params.id },
-    });
+    await taskService.delete(ctx, params.id);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { Deal, Lead } from '@prisma/client';
 
 interface ClosingPrediction {
@@ -71,10 +72,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Fetch active deals
-    const deals = await prisma.deal.findMany({
+    const deals = await getCrmDb(ctx).deal.findMany({
       where: {
-        userId: session.user.id,
+        userId: ctx.userId,
         actualCloseDate: null, // Not yet closed
       },
       include: {
@@ -91,12 +95,9 @@ export async function GET(req: NextRequest) {
     });
 
     // Also fetch FSBO leads as potential deals
-    const fsboLeads = await prisma.lead.findMany({
+    const fsboLeads = await leadService.findMany(ctx, {
       where: {
-        userId: session.user.id,
-        status: {
-          in: ['NEW', 'CONTACTED', 'QUALIFIED', 'RESPONDED'],
-        },
+        status: { in: ['NEW', 'CONTACTED', 'QUALIFIED', 'RESPONDED'] } as any,
         OR: [
           { source: { contains: 'FSBO' } },
           { source: { contains: 'DUPROPRIO' } },

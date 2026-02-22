@@ -5,7 +5,8 @@
  */
 
 import { WorkflowAction, WorkflowEnrollment } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { sendEmail } from '@/lib/email';
 import { sendSMS } from '@/lib/sms';
 import {
@@ -18,7 +19,10 @@ interface ExecutionContext {
   leadId: string | null;
   dealId: string | null;
   variables: Record<string, any>;
+  industry?: string | null;
 }
+
+type ExecutionContextWithDb = ExecutionContext & { db: ReturnType<typeof getCrmDb> };
 
 /**
  * Execute dental-specific workflow action
@@ -28,99 +32,103 @@ export async function executeDentalAction(
   enrollment: WorkflowEnrollment,
   context: ExecutionContext
 ): Promise<any> {
+  const dalCtx = createDalContext(context.userId, (context as any).industry ?? null);
+  const db = getCrmDb(dalCtx);
+  const ctxWithDb: ExecutionContextWithDb = { ...context, db };
+
   const config = action.actionConfig as any;
   const actionType = action.type as string;
 
   // Clinical Actions
   switch (actionType) {
     case 'CREATE_TREATMENT_PLAN':
-      return await createTreatmentPlan(config, context);
+      return await createTreatmentPlan(config, ctxWithDb);
 
     case 'UPDATE_ODONTOGRAM':
-      return await updateOdontogram(config, context);
+      return await updateOdontogram(config, ctxWithDb);
 
     case 'SCHEDULE_FOLLOWUP_APPOINTMENT':
-      return await scheduleFollowupAppointment(config, context);
+      return await scheduleFollowupAppointment(config, ctxWithDb);
 
     case 'SEND_TREATMENT_UPDATE_TO_PATIENT':
-      return await sendTreatmentUpdateToPatient(config, context);
+      return await sendTreatmentUpdateToPatient(config, ctxWithDb);
 
     case 'CREATE_CLINICAL_NOTE':
-      return await createClinicalNote(config, context);
+      return await createClinicalNote(config, ctxWithDb);
 
     case 'REQUEST_XRAY_REVIEW':
-      return await requestXrayReview(config, context);
+      return await requestXrayReview(config, ctxWithDb);
 
     case 'GENERATE_TREATMENT_REPORT':
-      return await generateTreatmentReport(config, context);
+      return await generateTreatmentReport(config, ctxWithDb);
 
     case 'UPDATE_TREATMENT_PLAN':
-      return await updateTreatmentPlan(config, context);
+      return await updateTreatmentPlan(config, ctxWithDb);
 
     case 'LOG_PROCEDURE':
-      return await logProcedure(config, context);
+      return await logProcedure(config, ctxWithDb);
 
     // Admin Actions
     case 'SEND_APPOINTMENT_REMINDER':
-      return await sendAppointmentReminder(config, context);
+      return await sendAppointmentReminder(config, ctxWithDb);
 
     case 'PROCESS_PAYMENT':
-      return await processPayment(config, context);
+      return await processPayment(config, ctxWithDb);
 
     case 'SUBMIT_INSURANCE_CLAIM':
-      return await submitInsuranceClaim(config, context);
+      return await submitInsuranceClaim(config, ctxWithDb);
 
     case 'GENERATE_INVOICE':
-      return await generateInvoice(config, context);
+      return await generateInvoice(config, ctxWithDb);
 
     case 'UPDATE_PATIENT_INFO':
-      return await updatePatientInfo(config, context);
+      return await updatePatientInfo(config, ctxWithDb);
 
     case 'CREATE_LAB_ORDER':
-      return await createLabOrder(config, context);
+      return await createLabOrder(config, ctxWithDb);
 
     case 'GENERATE_PRODUCTION_REPORT':
-      return await generateProductionReport(config, context);
+      return await generateProductionReport(config, ctxWithDb);
 
     case 'NOTIFY_TEAM_MEMBER':
-      return await notifyTeamMember(config, context);
+      return await notifyTeamMember(config, ctxWithDb);
 
     case 'RESCHEDULE_APPOINTMENT':
-      return await rescheduleAppointment(config, context);
+      return await rescheduleAppointment(config, ctxWithDb);
 
     case 'SEND_BILLING_REMINDER':
-      return await sendBillingReminder(config, context);
+      return await sendBillingReminder(config, ctxWithDb);
 
     case 'UPDATE_APPOINTMENT_STATUS':
-      return await updateAppointmentStatus(config, context);
+      return await updateAppointmentStatus(config, ctxWithDb);
 
     // Legacy action types (for backward compatibility)
     case 'DENTAL_SEND_APPOINTMENT_REMINDER':
-      return await sendAppointmentReminder(config, context);
+      return await sendAppointmentReminder(config, ctxWithDb);
 
     case 'DENTAL_SEND_TREATMENT_PLAN_NOTIFICATION':
-      return await sendTreatmentPlanNotification(config, context);
+      return await sendTreatmentPlanNotification(config, ctxWithDb);
 
     case 'DENTAL_SEND_XRAY_NOTIFICATION':
-      return await sendXrayNotification(config, context);
+      return await sendXrayNotification(config, ctxWithDb);
 
     case 'DENTAL_CREATE_FOLLOWUP_APPOINTMENT':
-      return await scheduleFollowupAppointment(config, context);
+      return await scheduleFollowupAppointment(config, ctxWithDb);
 
     case 'DENTAL_SEND_INSURANCE_VERIFICATION_REQUEST':
-      return await submitInsuranceClaim(config, context);
+      return await submitInsuranceClaim(config, ctxWithDb);
 
     case 'DENTAL_SEND_PAYMENT_REMINDER':
-      return await sendBillingReminder(config, context);
+      return await sendBillingReminder(config, ctxWithDb);
 
     case 'DENTAL_CREATE_TREATMENT_TASK':
-      return await createTreatmentTask(config, context);
+      return await createTreatmentTask(config, ctxWithDb);
 
     case 'DENTAL_SEND_POST_VISIT_FOLLOWUP':
-      return await sendPostVisitFollowup(config, context);
+      return await sendPostVisitFollowup(config, ctxWithDb);
 
     case 'DENTAL_UPDATE_PATIENT_STATUS':
-      return await updatePatientStatus(config, context);
+      return await updatePatientStatus(config, ctxWithDb);
 
     default:
       throw new Error(`Unknown dental action type: ${actionType}`);
@@ -130,9 +138,10 @@ export async function executeDentalAction(
 /**
  * Send appointment reminder
  */
-async function sendAppointmentReminder(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function sendAppointmentReminder(config: any, context: ExecutionContextWithDb) {
+  const { db } = context;
+  const lead = await db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -140,8 +149,8 @@ async function sendAppointmentReminder(config: any, context: ExecutionContext) {
   }
 
   const appointmentId = config.appointmentId || context.variables.appointmentId;
-  const appointment = await prisma.bookingAppointment.findUnique({
-    where: { id: appointmentId },
+  const appointment = await db.bookingAppointment.findFirst({
+    where: { id: appointmentId, userId: context.userId },
   });
 
   if (!appointment) {
@@ -174,9 +183,10 @@ async function sendAppointmentReminder(config: any, context: ExecutionContext) {
 /**
  * Send treatment plan notification
  */
-async function sendTreatmentPlanNotification(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function sendTreatmentPlanNotification(config: any, context: ExecutionContextWithDb) {
+  const { db } = context;
+  const lead = await db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -184,8 +194,8 @@ async function sendTreatmentPlanNotification(config: any, context: ExecutionCont
   }
 
   const treatmentPlanId = config.treatmentPlanId || context.variables.treatmentPlanId;
-  const treatmentPlan = await (prisma as any).dentalTreatmentPlan.findUnique({
-    where: { id: treatmentPlanId },
+  const treatmentPlan = await (db as any).dentalTreatmentPlan.findFirst({
+    where: { id: treatmentPlanId, userId: context.userId },
   });
 
   if (!treatmentPlan) {
@@ -208,9 +218,9 @@ async function sendTreatmentPlanNotification(config: any, context: ExecutionCont
 /**
  * Send X-ray notification
  */
-async function sendXrayNotification(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function sendXrayNotification(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -236,9 +246,9 @@ async function sendXrayNotification(config: any, context: ExecutionContext) {
 /**
  * Create follow-up appointment
  */
-async function createFollowupAppointment(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function createFollowupAppointment(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -249,7 +259,7 @@ async function createFollowupAppointment(config: any, context: ExecutionContext)
   const appointmentDate = new Date();
   appointmentDate.setDate(appointmentDate.getDate() + daysFromNow);
 
-  const appointment = await prisma.bookingAppointment.create({
+  const appointment = await context.db.bookingAppointment.create({
     data: {
       userId: context.userId,
       leadId: context.leadId!,
@@ -269,9 +279,9 @@ async function createFollowupAppointment(config: any, context: ExecutionContext)
 /**
  * Send insurance verification request
  */
-async function sendInsuranceVerificationRequest(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function sendInsuranceVerificationRequest(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -294,9 +304,9 @@ async function sendInsuranceVerificationRequest(config: any, context: ExecutionC
 /**
  * Send payment reminder
  */
-async function sendPaymentReminder(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function sendPaymentReminder(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -327,9 +337,9 @@ async function sendPaymentReminder(config: any, context: ExecutionContext) {
 /**
  * Create treatment task
  */
-async function createTreatmentTask(config: any, context: ExecutionContext) {
+async function createTreatmentTask(config: any, context: ExecutionContextWithDb) {
   // Create a task in the system for the team
-  const task = await prisma.task.create({
+  const task = await context.db.task.create({
     data: {
       userId: context.userId,
       title: config.title || 'Treatment Task',
@@ -347,9 +357,9 @@ async function createTreatmentTask(config: any, context: ExecutionContext) {
 /**
  * Send post-visit follow-up
  */
-async function sendPostVisitFollowup(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function sendPostVisitFollowup(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -372,9 +382,9 @@ async function sendPostVisitFollowup(config: any, context: ExecutionContext) {
 /**
  * Update patient status
  */
-async function updatePatientStatus(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function updatePatientStatus(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -386,7 +396,7 @@ async function updatePatientStatus(config: any, context: ExecutionContext) {
     throw new Error('Status is required');
   }
 
-  await prisma.lead.update({
+  await context.db.lead.update({
     where: { id: context.leadId! },
     data: {
       status: newStatus,
@@ -401,16 +411,16 @@ async function updatePatientStatus(config: any, context: ExecutionContext) {
 /**
  * Create treatment plan
  */
-async function createTreatmentPlan(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function createTreatmentPlan(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
     throw new Error('Lead not found');
   }
 
-  const treatmentPlan = await (prisma as any).dentalTreatmentPlan.create({
+  const treatmentPlan = await (context.db as any).dentalTreatmentPlan.create({
     data: {
       userId: context.userId,
       leadId: context.leadId!,
@@ -428,9 +438,9 @@ async function createTreatmentPlan(config: any, context: ExecutionContext) {
 /**
  * Update odontogram
  */
-async function updateOdontogram(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function updateOdontogram(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -451,16 +461,16 @@ async function updateOdontogram(config: any, context: ExecutionContext) {
 /**
  * Schedule follow-up appointment (alias for createFollowupAppointment)
  */
-async function scheduleFollowupAppointment(config: any, context: ExecutionContext) {
+async function scheduleFollowupAppointment(config: any, context: ExecutionContextWithDb) {
   return createFollowupAppointment(config, context);
 }
 
 /**
  * Send treatment update to patient
  */
-async function sendTreatmentUpdateToPatient(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function sendTreatmentUpdateToPatient(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -491,11 +501,11 @@ async function sendTreatmentUpdateToPatient(config: any, context: ExecutionConte
 /**
  * Create clinical note
  */
-async function createClinicalNote(config: any, context: ExecutionContext) {
+async function createClinicalNote(config: any, context: ExecutionContextWithDb) {
   if (!context.leadId) {
     throw new Error('Lead ID is required to create a clinical note');
   }
-  const note = await prisma.note.create({
+  const note = await context.db.note.create({
     data: {
       userId: context.userId,
       leadId: context.leadId,
@@ -509,11 +519,11 @@ async function createClinicalNote(config: any, context: ExecutionContext) {
 /**
  * Request X-ray review
  */
-async function requestXrayReview(config: any, context: ExecutionContext) {
+async function requestXrayReview(config: any, context: ExecutionContextWithDb) {
   const xrayId = config.xrayId || context.variables.xrayId;
   
   // Create a task for review
-  const task = await prisma.task.create({
+  const task = await context.db.task.create({
     data: {
       userId: context.userId,
       leadId: context.leadId,
@@ -530,9 +540,9 @@ async function requestXrayReview(config: any, context: ExecutionContext) {
 /**
  * Generate treatment report
  */
-async function generateTreatmentReport(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function generateTreatmentReport(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
     include: {
       dentalXRays: true,
       dentalTreatmentPlans: true,
@@ -559,7 +569,7 @@ async function generateTreatmentReport(config: any, context: ExecutionContext) {
 /**
  * Update treatment plan
  */
-async function updateTreatmentPlan(config: any, context: ExecutionContext) {
+async function updateTreatmentPlan(config: any, context: ExecutionContextWithDb) {
   const treatmentPlanId = config.treatmentPlanId || context.variables.treatmentPlanId;
   
   if (!treatmentPlanId) {
@@ -582,7 +592,7 @@ async function updateTreatmentPlan(config: any, context: ExecutionContext) {
 /**
  * Log procedure
  */
-async function logProcedure(config: any, context: ExecutionContext) {
+async function logProcedure(config: any, context: ExecutionContextWithDb) {
   const procedure = await (prisma as any).dentalProcedure.create({
     data: {
       userId: context.userId,
@@ -603,7 +613,7 @@ async function logProcedure(config: any, context: ExecutionContext) {
 /**
  * Process payment
  */
-async function processPayment(config: any, context: ExecutionContext) {
+async function processPayment(config: any, context: ExecutionContextWithDb) {
   const amount = config.amount || context.variables.amount;
   const paymentMethod = config.paymentMethod || 'MANUAL';
 
@@ -624,9 +634,9 @@ async function processPayment(config: any, context: ExecutionContext) {
 /**
  * Submit insurance claim
  */
-async function submitInsuranceClaim(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function submitInsuranceClaim(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -646,9 +656,9 @@ async function submitInsuranceClaim(config: any, context: ExecutionContext) {
 /**
  * Generate invoice
  */
-async function generateInvoice(config: any, context: ExecutionContext) {
-  const lead = await prisma.lead.findUnique({
-    where: { id: context.leadId! },
+async function generateInvoice(config: any, context: ExecutionContextWithDb) {
+  const lead = await context.db.lead.findFirst({
+    where: { id: context.leadId!, userId: context.userId },
   });
 
   if (!lead) {
@@ -672,14 +682,14 @@ async function generateInvoice(config: any, context: ExecutionContext) {
 /**
  * Update patient info
  */
-async function updatePatientInfo(config: any, context: ExecutionContext) {
+async function updatePatientInfo(config: any, context: ExecutionContextWithDb) {
   const updateData: any = {};
   if (config.email) updateData.email = config.email;
   if (config.phone) updateData.phone = config.phone;
   if (config.address) updateData.address = config.address;
   if (config.contactPerson) updateData.contactPerson = config.contactPerson;
 
-  await prisma.lead.update({
+  await context.db.lead.update({
     where: { id: context.leadId! },
     data: updateData,
   });
@@ -690,7 +700,7 @@ async function updatePatientInfo(config: any, context: ExecutionContext) {
 /**
  * Create lab order
  */
-async function createLabOrder(config: any, context: ExecutionContext) {
+async function createLabOrder(config: any, context: ExecutionContextWithDb) {
   // Create lab order (simplified - Phase 6 will integrate with lab systems)
   console.log('Lab order created:', {
     leadId: context.leadId,
@@ -704,7 +714,7 @@ async function createLabOrder(config: any, context: ExecutionContext) {
 /**
  * Generate production report
  */
-async function generateProductionReport(config: any, context: ExecutionContext) {
+async function generateProductionReport(config: any, context: ExecutionContextWithDb) {
   const dateRange = config.dateRange || { start: new Date(), end: new Date() };
   
   // Generate production report (simplified)
@@ -723,7 +733,7 @@ async function generateProductionReport(config: any, context: ExecutionContext) 
 /**
  * Notify team member
  */
-async function notifyTeamMember(config: any, context: ExecutionContext) {
+async function notifyTeamMember(config: any, context: ExecutionContextWithDb) {
   const teamMemberId = config.teamMemberId || config.userId;
   const message = config.message || 'You have a new notification';
 
@@ -739,7 +749,7 @@ async function notifyTeamMember(config: any, context: ExecutionContext) {
 /**
  * Reschedule appointment
  */
-async function rescheduleAppointment(config: any, context: ExecutionContext) {
+async function rescheduleAppointment(config: any, context: ExecutionContextWithDb) {
   const appointmentId = config.appointmentId || context.variables.appointmentId;
   const newDate = config.newDate ? new Date(config.newDate) : null;
 
@@ -751,7 +761,7 @@ async function rescheduleAppointment(config: any, context: ExecutionContext) {
     throw new Error('New date required');
   }
 
-  const appointment = await prisma.bookingAppointment.update({
+  const appointment = await context.db.bookingAppointment.update({
     where: { id: appointmentId },
     data: {
       appointmentDate: newDate,
@@ -765,14 +775,14 @@ async function rescheduleAppointment(config: any, context: ExecutionContext) {
 /**
  * Send billing reminder (alias for sendPaymentReminder)
  */
-async function sendBillingReminder(config: any, context: ExecutionContext) {
+async function sendBillingReminder(config: any, context: ExecutionContextWithDb) {
   return sendPaymentReminder(config, context);
 }
 
 /**
  * Update appointment status
  */
-async function updateAppointmentStatus(config: any, context: ExecutionContext) {
+async function updateAppointmentStatus(config: any, context: ExecutionContextWithDb) {
   const appointmentId = config.appointmentId || context.variables.appointmentId;
   const newStatus = config.status;
 
@@ -780,7 +790,7 @@ async function updateAppointmentStatus(config: any, context: ExecutionContext) {
     throw new Error('Appointment ID and status required');
   }
 
-  await prisma.bookingAppointment.update({
+  await context.db.bookingAppointment.update({
     where: { id: appointmentId },
     data: { status: newStatus as any },
   });

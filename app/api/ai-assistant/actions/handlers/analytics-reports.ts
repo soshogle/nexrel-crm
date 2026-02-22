@@ -1,6 +1,9 @@
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
 
 export async function getStatistics(userId: string, params: any = {}) {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   try {
     const { period = 'all_time', compareWith, chartIntent } = params;
     const scenarioIntent = chartIntent; // Same message can contain both chart and scenario
@@ -24,8 +27,8 @@ export async function getStatistics(userId: string, params: any = {}) {
     }
 
     // Build where clauses
-    const whereClause: any = { userId };
-    const compareWhereClause: any = { userId };
+    const whereClause: any = { userId: ctx.userId };
+    const compareWhereClause: any = { userId: ctx.userId };
     
     if (startDate) {
       whereClause.createdAt = { gte: startDate };
@@ -36,15 +39,15 @@ export async function getStatistics(userId: string, params: any = {}) {
     }
 
     const [leads, deals, contacts, campaigns, additionalStats] = await Promise.all([
-      prisma.lead.count({ where: whereClause }),
-      prisma.deal.count({ where: whereClause }),
-      prisma.lead.count({ where: whereClause }),
-      prisma.campaign.count({ where: whereClause }),
+      db.lead.count({ where: whereClause }),
+      db.deal.count({ where: whereClause }),
+      db.lead.count({ where: whereClause }),
+      db.campaign.count({ where: whereClause }),
       fetchComprehensiveStats(userId, whereClause),
     ]);
 
     // Get all deals with dates for time-series analysis
-    const allDeals = await prisma.deal.findMany({
+    const allDeals = await db.deal.findMany({
       where: whereClause,
       select: { 
         value: true,
@@ -84,7 +87,7 @@ export async function getStatistics(userId: string, params: any = {}) {
     // Get comparison data if requested
     let comparisonData: any = null;
     if (compareStartDate && compareEndDate) {
-      const compareDeals = await prisma.deal.findMany({
+      const compareDeals = await db.deal.findMany({
         where: compareWhereClause,
         select: { 
           value: true,
@@ -117,7 +120,7 @@ export async function getStatistics(userId: string, params: any = {}) {
       };
     }
 
-    const recentLeads = await prisma.lead.findMany({
+    const recentLeads = await db.lead.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
       take: 5,
@@ -207,55 +210,57 @@ export async function getStatistics(userId: string, params: any = {}) {
 }
 
 export async function fetchComprehensiveStats(userId: string, whereClause: any) {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   try {
     const results = await Promise.allSettled([
       // Campaign performance (email)
-      prisma.emailCampaign.findMany({
-        where: { userId },
+      db.emailCampaign.findMany({
+        where: { userId: ctx.userId },
         include: { recipients: { select: { status: true, openedAt: true, clickedAt: true } } },
       }),
       // Campaign performance (SMS)
-      prisma.smsCampaign.findMany({
-        where: { userId },
+      db.smsCampaign.findMany({
+        where: { userId: ctx.userId },
         include: { recipients: { select: { status: true, repliedAt: true } } },
       }),
       // Email drip campaigns
-      prisma.emailDripCampaign.findMany({
-        where: { userId },
+      db.emailDripCampaign.findMany({
+        where: { userId: ctx.userId },
         select: {
           status: true, totalEnrolled: true, totalCompleted: true,
           avgOpenRate: true, avgClickRate: true, avgReplyRate: true,
         },
       }),
       // Voice calls
-      prisma.callLog.findMany({
-        where: { userId },
+      db.callLog.findMany({
+        where: { userId: ctx.userId },
         select: { status: true, duration: true, direction: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 500,
       }),
       // Workflows
-      prisma.workflow.findMany({
-        where: { userId },
+      db.workflow.findMany({
+        where: { userId: ctx.userId },
         select: { status: true },
       }),
-      prisma.workflowEnrollment.findMany({
-        where: { workflow: { userId } },
+      db.workflowEnrollment.findMany({
+        where: { workflow: { userId: ctx.userId } },
         select: { status: true },
       }),
       // Deal stages for funnel
-      prisma.deal.findMany({
-        where: { userId },
+      db.deal.findMany({
+        where: { userId: ctx.userId },
         include: { stage: { select: { name: true, probability: true } } },
       }),
       // Lead scoring
-      prisma.lead.findMany({
-        where: { userId, leadScore: { not: null } },
+      db.lead.findMany({
+        where: { userId: ctx.userId, leadScore: { not: null } },
         select: { leadScore: true, status: true },
       }),
       // Outbound calls
-      prisma.outboundCall.findMany({
-        where: { userId },
+      db.outboundCall.findMany({
+        where: { userId: ctx.userId },
         select: { status: true, completedAt: true },
       }),
     ]);
@@ -384,9 +389,12 @@ export async function createReport(userId: string, params: any) {
 
   const stats = statsResult.statistics;
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+
   // Fetch voice agent usage stats for business owner
-  const voiceAgents = await prisma.voiceAgent.findMany({
-    where: { userId },
+  const voiceAgents = await db.voiceAgent.findMany({
+    where: { userId: ctx.userId },
     select: {
       id: true,
       name: true,
@@ -396,9 +404,9 @@ export async function createReport(userId: string, params: any) {
       },
     },
   });
-  const aiEmployeeCounts = await prisma.userAIEmployee.groupBy({
+  const aiEmployeeCounts = await db.userAIEmployee.groupBy({
     by: ['voiceAgentId'],
-    where: { userId, voiceAgentId: { not: null } },
+    where: { userId: ctx.userId, voiceAgentId: { not: null } },
     _count: { voiceAgentId: true },
   });
   const aiCountByAgent = Object.fromEntries(
@@ -442,9 +450,9 @@ export async function createReport(userId: string, params: any) {
     }];
   }
 
-  const report = await prisma.aiGeneratedReport.create({
+  const report = await db.aiGeneratedReport.create({
     data: {
-      userId,
+      userId: ctx.userId,
       title: reportTitle,
       reportType: reportType || 'overview',
       content,
@@ -466,10 +474,12 @@ export async function createReport(userId: string, params: any) {
 
 export async function getRecentActivity(userId: string, params: any) {
   const { limit = 5 } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
   const [recentLeads, recentDeals, recentCampaigns] = await Promise.all([
-    prisma.lead.findMany({
-      where: { userId },
+    db.lead.findMany({
+      where: { userId: ctx.userId },
       take: limit,
       orderBy: { createdAt: "desc" },
       select: {
@@ -480,16 +490,16 @@ export async function getRecentActivity(userId: string, params: any) {
         createdAt: true,
       },
     }),
-    prisma.deal.findMany({
-      where: { userId },
+    db.deal.findMany({
+      where: { userId: ctx.userId },
       take: limit,
       orderBy: { createdAt: "desc" },
       include: {
         stage: true,
       },
     }),
-    prisma.campaign.findMany({
-      where: { userId },
+    db.campaign.findMany({
+      where: { userId: ctx.userId },
       take: limit,
       orderBy: { createdAt: "desc" },
       select: {
@@ -527,14 +537,16 @@ export async function getCustomReport(userId: string, params: any) {
 
 export async function createScheduledReport(userId: string, params: any) {
   const { reportType = "pipeline", frequency = "weekly", email } = params;
-  const userEmail = email || (await prisma.user.findUnique({ where: { id: userId }, select: { email: true } }))?.email;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const userEmail = email || (await db.user.findUnique({ where: { id: userId }, select: { email: true } }))?.email;
   if (!userEmail) throw new Error("Email required for scheduled reports");
   // Store in user onboardingProgress or create DataExport - use existing mechanism
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { onboardingProgress: true } });
+  const user = await db.user.findUnique({ where: { id: userId }, select: { onboardingProgress: true } });
   const progress = (user?.onboardingProgress as any) || {};
   const scheduledReports = progress.scheduledReports || [];
   scheduledReports.push({ reportType, frequency, email: userEmail, createdAt: new Date().toISOString() });
-  await prisma.user.update({
+  await db.user.update({
     where: { id: userId },
     data: { onboardingProgress: { ...progress, scheduledReports } },
   });
@@ -546,9 +558,11 @@ export async function createScheduledReport(userId: string, params: any) {
 
 export async function getFollowUpPriority(userId: string, params: any) {
   const { limit = 10, sortBy = "lastContact" } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
-  const leads = await prisma.lead.findMany({
-    where: { userId },
+  const leads = await db.lead.findMany({
+    where: { userId: ctx.userId },
     include: {
       deals: { include: { stage: true }, take: 1, orderBy: { updatedAt: "desc" } },
       tasks: { where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, take: 1, orderBy: { dueDate: "asc" } },
@@ -588,13 +602,15 @@ export async function getFollowUpPriority(userId: string, params: any) {
 
 export async function getFollowUpSuggestions(userId: string, params: any) {
   const { period = "last_2_weeks", limit = 10 } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
   const daysAgo = period === "last_week" ? 7 : period === "last_2_weeks" ? 14 : 30;
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - daysAgo);
 
-  const leadsWithNotes = await prisma.lead.findMany({
-    where: { userId },
+  const leadsWithNotes = await db.lead.findMany({
+    where: { userId: ctx.userId },
     include: {
       notes: {
         orderBy: { createdAt: "desc" },
@@ -631,9 +647,11 @@ export async function getMeetingPrep(userId: string, params: any) {
     throw new Error("Contact name is required");
   }
 
-  const lead = await prisma.lead.findFirst({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const lead = await db.lead.findFirst({
     where: {
-      userId,
+      userId: ctx.userId,
       OR: [
         { contactPerson: { contains: contactName, mode: "insensitive" } },
         { businessName: { contains: contactName, mode: "insensitive" } },
@@ -680,15 +698,17 @@ export async function getMeetingPrep(userId: string, params: any) {
 }
 
 export async function getDailyBriefing(userId: string) {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart);
   todayEnd.setDate(todayEnd.getDate() + 1);
 
   const [overdueTasks, todayTasks, appointments, hotDeals, newLeads, overdueInvoices] = await Promise.all([
-    prisma.task.findMany({
+    db.task.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         status: { notIn: ["COMPLETED", "CANCELLED"] },
         dueDate: { lt: todayStart },
       },
@@ -696,41 +716,41 @@ export async function getDailyBriefing(userId: string) {
       orderBy: { dueDate: "asc" },
       select: { id: true, title: true, dueDate: true },
     }),
-    prisma.task.findMany({
+    db.task.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         status: { notIn: ["COMPLETED", "CANCELLED"] },
         dueDate: { gte: todayStart, lt: todayEnd },
       },
       take: 10,
       select: { id: true, title: true, dueDate: true },
     }),
-    prisma.bookingAppointment.findMany({
+    db.bookingAppointment.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         appointmentDate: { gte: todayStart, lt: todayEnd },
         status: "SCHEDULED",
       },
       take: 10,
       select: { id: true, customerName: true, appointmentDate: true },
     }),
-    prisma.deal.findMany({
-      where: { userId },
+    db.deal.findMany({
+      where: { userId: ctx.userId },
       take: 5,
       orderBy: { value: "desc" },
       include: { stage: true, lead: true },
     }),
-    prisma.lead.findMany({
+    db.lead.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         createdAt: { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) },
       },
       take: 5,
       select: { id: true, businessName: true, contactPerson: true, createdAt: true },
     }),
-    prisma.invoice.findMany({
+    db.invoice.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         status: { notIn: ["PAID", "CANCELLED", "REFUNDED"] },
         dueDate: { lt: todayStart },
       },
@@ -792,8 +812,10 @@ export async function getAutoActionSuggestions(userId: string, params: any) {
 
 export async function listEmailTemplates(userId: string, params: any) {
   const { category } = params;
-  const templates = await prisma.emailTemplate.findMany({
-    where: { userId, ...(category && { category }) },
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const templates = await db.emailTemplate.findMany({
+    where: { userId: ctx.userId, ...(category && { category }) },
     orderBy: { name: "asc" },
     select: { id: true, name: true, subject: true, category: true, isDefault: true },
   });
@@ -805,8 +827,10 @@ export async function listEmailTemplates(userId: string, params: any) {
 
 export async function listSMSTemplates(userId: string, params: any) {
   const { category } = params;
-  const templates = await prisma.sMSTemplate.findMany({
-    where: { userId, ...(category && { category }) },
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const templates = await db.sMSTemplate.findMany({
+    where: { userId: ctx.userId, ...(category && { category }) },
     orderBy: { name: "asc" },
     select: { id: true, name: true, message: true, category: true, isDefault: true },
   });
@@ -818,14 +842,16 @@ export async function listSMSTemplates(userId: string, params: any) {
 
 export async function getPaymentAnalytics(userId: string, params: any) {
   const period = params?.period || 'last_30_days';
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const daysMap: Record<string, number> = { today: 1, last_7_days: 7, last_30_days: 30, last_90_days: 90, all_time: 3650 };
   const since = new Date(Date.now() - (daysMap[period] || 30) * 86400000);
 
   const [payments, invoices, cashTxns, fraudAlerts] = await Promise.all([
-    prisma.payment.findMany({ where: { userId, createdAt: { gte: since } }, select: { amount: true, status: true, paymentMethod: true, createdAt: true } }),
-    prisma.invoice.findMany({ where: { userId, createdAt: { gte: since } }, select: { totalAmount: true, status: true } }),
-    prisma.cashTransaction.findMany({ where: { userId, createdAt: { gte: since } }, select: { amount: true, type: true } }).catch(() => []),
-    prisma.fraudAlert.count({ where: { userId, status: 'OPEN' } }).catch(() => 0),
+    db.payment.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { amount: true, status: true, paymentMethod: true, createdAt: true } }),
+    db.invoice.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { totalAmount: true, status: true } }),
+    db.cashTransaction.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { amount: true, type: true } }).catch(() => []),
+    db.fraudAlert.count({ where: { userId: ctx.userId, status: 'OPEN' } }).catch(() => 0),
   ]);
 
   const succeeded = payments.filter((p: any) => p.status === 'SUCCEEDED');
@@ -849,7 +875,9 @@ export async function getRevenueBreakdown(userId: string, params: any) {
   const since = new Date(Date.now() - (daysMap[period] || 30) * 86400000);
   const groupBy = params?.groupBy || 'month';
 
-  const payments = await prisma.payment.findMany({ where: { userId, status: 'SUCCEEDED', createdAt: { gte: since } }, select: { amount: true, createdAt: true, paymentMethod: true } });
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const payments = await db.payment.findMany({ where: { userId: ctx.userId, status: 'SUCCEEDED', createdAt: { gte: since } }, select: { amount: true, createdAt: true, paymentMethod: true } });
 
   if (groupBy === 'month' || groupBy === 'week') {
     const buckets: Record<string, number> = {};
@@ -868,18 +896,22 @@ export async function getRevenueBreakdown(userId: string, params: any) {
 
 export async function listFraudAlerts(userId: string, params: any) {
   const statusFilter = params?.status === 'all' ? undefined : (params?.status || 'OPEN');
-  const where: any = { userId };
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const where: any = { userId: ctx.userId };
   if (statusFilter) where.status = statusFilter;
-  const alerts = await prisma.fraudAlert.findMany({ where, orderBy: { createdAt: 'desc' }, take: 20 }).catch(() => []);
+  const alerts = await db.fraudAlert.findMany({ where, orderBy: { createdAt: 'desc' }, take: 20 }).catch(() => []);
   return { success: true, statistics: { totalAlerts: alerts.length, alerts: alerts.map((a: any) => ({ id: a.id, type: a.type, severity: a.severity, status: a.status, amount: a.amount, date: a.createdAt })) }, message: `${alerts.length} fraud alert(s) found${statusFilter ? ` with status ${statusFilter}` : ''}.` };
 }
 
 export async function checkCashFlow(userId: string, params: any) {
   const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const since = new Date(Date.now() - days * 86400000);
   const [incoming, outgoing] = await Promise.all([
-    prisma.payment.findMany({ where: { userId, status: 'SUCCEEDED', createdAt: { gte: since } }, select: { amount: true } }),
-    prisma.invoice.findMany({ where: { userId, status: 'PAID', createdAt: { gte: since } }, select: { totalAmount: true } }),
+    db.payment.findMany({ where: { userId: ctx.userId, status: 'SUCCEEDED', createdAt: { gte: since } }, select: { amount: true } }),
+    db.invoice.findMany({ where: { userId: ctx.userId, status: 'PAID', createdAt: { gte: since } }, select: { totalAmount: true } }),
   ]);
   const totalIn = incoming.reduce((s: number, p: any) => s + (p.amount || 0), 0);
   const totalOut = outgoing.reduce((s: number, i: any) => s + (i.totalAmount || 0), 0);
@@ -888,7 +920,9 @@ export async function checkCashFlow(userId: string, params: any) {
 }
 
 export async function checkStockLevels(userId: string, params: any) {
-  const items = await prisma.inventoryItem.findMany({ where: { userId }, select: { id: true, name: true, quantity: true, minQuantity: true, price: true, status: true } }).catch(() => []);
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const items = await db.inventoryItem.findMany({ where: { userId: ctx.userId }, select: { id: true, name: true, quantity: true, minQuantity: true, price: true, status: true } }).catch(() => []);
   let filtered = items;
   if (params?.filter === 'low_stock') filtered = items.filter((i: any) => i.quantity <= (i.minQuantity || 5) && i.quantity > 0);
   else if (params?.filter === 'out_of_stock') filtered = items.filter((i: any) => i.quantity === 0);
@@ -900,7 +934,9 @@ export async function checkStockLevels(userId: string, params: any) {
 export async function getBestSellers(userId: string, params: any) {
   const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : params?.period === 'all_time' ? 3650 : 30;
   const since = new Date(Date.now() - days * 86400000);
-  const orders = await prisma.orderItem.findMany({ where: { order: { userId, createdAt: { gte: since } } }, include: { product: { select: { name: true, price: true } } } }).catch(() => []);
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const orders = await db.orderItem.findMany({ where: { order: { userId: ctx.userId, createdAt: { gte: since } } }, include: { product: { select: { name: true, price: true } } } }).catch(() => []);
   const productMap: Record<string, { name: string; revenue: number; qty: number }> = {};
   orders.forEach((oi: any) => { const n = oi.product?.name || 'Unknown'; if (!productMap[n]) productMap[n] = { name: n, revenue: 0, qty: 0 }; productMap[n].revenue += (oi.price || 0) * (oi.quantity || 1); productMap[n].qty += oi.quantity || 1; });
   const sorted = Object.values(productMap).sort((a, b) => params?.sortBy === 'quantity' ? b.qty - a.qty : b.revenue - a.revenue);
@@ -909,37 +945,45 @@ export async function getBestSellers(userId: string, params: any) {
 }
 
 export async function trackOrder(userId: string, params: any) {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   let order: any = null;
-  if (params?.orderId) order = await prisma.order.findFirst({ where: { userId, id: params.orderId }, include: { items: { include: { product: { select: { name: true } } } } } }).catch(() => null);
-  if (!order && params?.customerName) order = await prisma.order.findFirst({ where: { userId, customerName: { contains: params.customerName, mode: 'insensitive' } }, include: { items: { include: { product: { select: { name: true } } } } }, orderBy: { createdAt: 'desc' } }).catch(() => null);
+  if (params?.orderId) order = await db.order.findFirst({ where: { userId: ctx.userId, id: params.orderId }, include: { items: { include: { product: { select: { name: true } } } } } }).catch(() => null);
+  if (!order && params?.customerName) order = await db.order.findFirst({ where: { userId: ctx.userId, customerName: { contains: params.customerName, mode: 'insensitive' } }, include: { items: { include: { product: { select: { name: true } } } } }, orderBy: { createdAt: 'desc' } }).catch(() => null);
   if (!order) return { success: false, message: 'Order not found.' };
   return { success: true, statistics: { order: { id: order.id, status: order.status, total: order.total, items: order.items?.map((i: any) => ({ product: i.product?.name, qty: i.quantity, price: i.price })), createdAt: order.createdAt } }, message: `Order ${order.id}: Status ${order.status}, Total $${(order.total || 0).toLocaleString()}, ${order.items?.length || 0} items. Created ${new Date(order.createdAt).toLocaleDateString()}.` };
 }
 
 export async function getLowStockAlerts(userId: string) {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const [items, alerts] = await Promise.all([
-    prisma.inventoryItem.findMany({ where: { userId }, select: { name: true, quantity: true, minQuantity: true } }).catch(() => []),
-    prisma.inventoryAlert.findMany({ where: { userId, status: 'ACTIVE' }, select: { type: true, createdAt: true }, take: 20 }).catch(() => []),
+    db.inventoryItem.findMany({ where: { userId: ctx.userId }, select: { name: true, quantity: true, minQuantity: true } }).catch(() => []),
+    db.inventoryAlert.findMany({ where: { userId: ctx.userId, status: 'ACTIVE' }, select: { type: true, createdAt: true }, take: 20 }).catch(() => []),
   ]);
   const lowStock = items.filter((i: any) => i.quantity <= (i.minQuantity || 5));
   return { success: true, statistics: { lowStockItems: lowStock.map((i: any) => ({ name: i.name, quantity: i.quantity, minQuantity: i.minQuantity })), activeAlerts: alerts.length }, message: `${lowStock.length} items need restocking: ${lowStock.slice(0, 5).map((i: any) => `${i.name} (${i.quantity}/${i.minQuantity})`).join(', ')}${lowStock.length > 5 ? ` and ${lowStock.length - 5} more` : ''}.` };
 }
 
 export async function getWebsiteAnalytics(userId: string, params: any) {
-  const where: any = { userId };
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const where: any = { userId: ctx.userId };
   if (params?.websiteId) where.id = params.websiteId;
-  const websites = await prisma.website.findMany({ where, select: { id: true, name: true, status: true, type: true, buildProgress: true, createdAt: true } });
+  const websites = await db.website.findMany({ where, select: { id: true, name: true, status: true, type: true, buildProgress: true, createdAt: true } });
   const live = websites.filter((w: any) => w.status === 'LIVE' || w.status === 'DEPLOYED');
   return { success: true, statistics: { totalWebsites: websites.length, liveWebsites: live.length, websites: websites.map((w: any) => ({ name: w.name, status: w.status, type: w.type })) }, message: `${websites.length} website(s): ${live.length} live, ${websites.length - live.length} in progress. ${live.map((w: any) => w.name).join(', ') || 'None live yet.'}` };
 }
 
 export async function getVoiceAIAnalytics(userId: string, params: any) {
   const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const since = new Date(Date.now() - days * 86400000);
   const [agents, usage, calls] = await Promise.all([
-    prisma.voiceAgent.findMany({ where: { userId }, select: { name: true, status: true, totalCalls: true } }),
-    prisma.voiceUsage.findMany({ where: { userId, createdAt: { gte: since } }, select: { minutes: true, cost: true } }).catch(() => []),
-    prisma.callLog.findMany({ where: { userId, createdAt: { gte: since } }, select: { status: true, duration: true } }),
+    db.voiceAgent.findMany({ where: { userId: ctx.userId }, select: { name: true, status: true, totalCalls: true } }),
+    db.voiceUsage.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { minutes: true, cost: true } }).catch(() => []),
+    db.callLog.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { status: true, duration: true } }),
   ]);
   const totalMin = usage.reduce((s: number, u: any) => s + (u.minutes || 0), 0);
   const totalCost = usage.reduce((s: number, u: any) => s + (u.cost || 0), 0);
@@ -951,10 +995,12 @@ export async function getVoiceAIAnalytics(userId: string, params: any) {
 
 export async function getConversationAnalytics(userId: string, params: any) {
   const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const since = new Date(Date.now() - days * 86400000);
   const [conversations, messages] = await Promise.all([
-    prisma.conversation.findMany({ where: { userId }, select: { id: true, channel: true, status: true, lastMessageAt: true } }),
-    prisma.conversationMessage.findMany({ where: { conversation: { userId }, sentAt: { gte: since } }, select: { direction: true, channel: true, sentAt: true } }),
+    db.conversation.findMany({ where: { userId: ctx.userId }, select: { id: true, channel: true, status: true, lastMessageAt: true } }),
+    db.conversationMessage.findMany({ where: { conversation: { userId: ctx.userId }, sentAt: { gte: since } }, select: { direction: true, channel: true, sentAt: true } }),
   ]);
   const channelCounts: Record<string, number> = {};
   messages.forEach((m: any) => { const c = m.channel || 'unknown'; channelCounts[c] = (channelCounts[c] || 0) + 1; });
@@ -964,7 +1010,9 @@ export async function getConversationAnalytics(userId: string, params: any) {
 }
 
 export async function getDeliveryAnalytics(userId: string) {
-  const orders = await prisma.deliveryOrder?.findMany?.({ where: { userId }, select: { status: true, createdAt: true } })?.catch(() => []) || [];
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const orders = await db.deliveryOrder?.findMany?.({ where: { userId: ctx.userId }, select: { status: true, createdAt: true } })?.catch(() => []) || [];
   const delivered = orders.filter((o: any) => o.status === 'DELIVERED').length;
   const pending = orders.filter((o: any) => o.status === 'PENDING' || o.status === 'IN_TRANSIT').length;
   return { success: true, statistics: { totalOrders: orders.length, delivered, pending, deliveryRate: orders.length > 0 ? Math.round((delivered / orders.length) * 100) : 0 }, message: `${orders.length} delivery orders: ${delivered} delivered, ${pending} pending. Completion rate: ${orders.length > 0 ? Math.round((delivered / orders.length) * 100) : 0}%.` };
@@ -972,23 +1020,27 @@ export async function getDeliveryAnalytics(userId: string) {
 
 export async function manageReservations(userId: string, params: any) {
   const action = params?.action || 'list';
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   if (action === 'stats' || action === 'peak_hours') {
-    const reservations = await prisma.reservation.findMany({ where: { userId }, select: { status: true, partySize: true, date: true } }).catch(() => []);
+    const reservations = await db.reservation.findMany({ where: { userId: ctx.userId }, select: { status: true, partySize: true, date: true } }).catch(() => []);
     const noShows = reservations.filter((r: any) => r.status === 'NO_SHOW').length;
     const hourBuckets: Record<number, number> = {};
     reservations.forEach((r: any) => { const h = new Date(r.date).getHours(); hourBuckets[h] = (hourBuckets[h] || 0) + 1; });
     const peakHour = Object.entries(hourBuckets).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
     return { success: true, triggerVisualization: true, statistics: { total: reservations.length, noShows, noShowRate: reservations.length > 0 ? Math.round((noShows / reservations.length) * 100) : 0, avgPartySize: reservations.length > 0 ? Math.round(reservations.reduce((s: number, r: any) => s + (r.partySize || 0), 0) / reservations.length) : 0, peakHour: peakHour ? `${peakHour[0]}:00` : 'N/A' }, message: `${reservations.length} total reservations. No-show rate: ${reservations.length > 0 ? Math.round((noShows / reservations.length) * 100) : 0}%. Peak hour: ${peakHour ? `${peakHour[0]}:00` : 'N/A'}. Avg party: ${reservations.length > 0 ? Math.round(reservations.reduce((s: number, r: any) => s + (r.partySize || 0), 0) / reservations.length) : 0}.`, dynamicCharts: [{ chartType: 'bar', dimension: 'reservations_by_hour', title: 'Reservations by Hour', data: Object.entries(hourBuckets).sort((a, b) => Number(a[0]) - Number(b[0])).map(([h, c]) => ({ name: `${h}:00`, value: c })) }] };
   }
-  const where: any = { userId };
+  const where: any = { userId: ctx.userId };
   if (action === 'upcoming') where.date = { gte: new Date() };
   if (params?.date) { const d = new Date(params.date); where.date = { gte: d, lt: new Date(d.getTime() + 86400000) }; }
-  const reservations = await prisma.reservation.findMany({ where, orderBy: { date: 'desc' }, take: 20, select: { id: true, status: true, partySize: true, date: true, guestName: true } }).catch(() => []);
+  const reservations = await db.reservation.findMany({ where, orderBy: { date: 'desc' }, take: 20, select: { id: true, status: true, partySize: true, date: true, guestName: true } }).catch(() => []);
   return { success: true, statistics: { reservations: reservations.map((r: any) => ({ guest: r.guestName, party: r.partySize, date: r.date, status: r.status })) }, message: `${reservations.length} reservation(s) found.${reservations.slice(0, 5).map((r: any) => ` ${r.guestName || 'Guest'} (${r.partySize}) - ${new Date(r.date).toLocaleString()}`).join(';')}` };
 }
 
 export async function manageTables(userId: string, params: any) {
-  const tables = await prisma.restaurantTable.findMany({ where: { userId }, select: { id: true, name: true, capacity: true, status: true } }).catch(() => []);
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const tables = await db.restaurantTable.findMany({ where: { userId: ctx.userId }, select: { id: true, name: true, capacity: true, status: true } }).catch(() => []);
   const available = tables.filter((t: any) => t.status === 'AVAILABLE');
   const occupied = tables.filter((t: any) => t.status === 'OCCUPIED');
   return { success: true, statistics: { total: tables.length, available: available.length, occupied: occupied.length, totalCapacity: tables.reduce((s: number, t: any) => s + (t.capacity || 0), 0), tables: tables.map((t: any) => ({ name: t.name, capacity: t.capacity, status: t.status })) }, message: `${tables.length} tables: ${available.length} available, ${occupied.length} occupied. Total capacity: ${tables.reduce((s: number, t: any) => s + (t.capacity || 0), 0)} seats.` };
@@ -996,11 +1048,13 @@ export async function manageTables(userId: string, params: any) {
 
 export async function getTeamPerformance(userId: string, params: any) {
   const days = params?.period === 'last_7_days' ? 7 : params?.period === 'last_90_days' ? 90 : 30;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const since = new Date(Date.now() - days * 86400000);
   const [members, tasks, deals] = await Promise.all([
-    prisma.teamMember.findMany({ where: { userId }, select: { id: true, role: true, status: true, user: { select: { name: true, email: true } } } }).catch(() => []),
-    prisma.task.findMany({ where: { userId, completedAt: { gte: since } }, select: { assignedToId: true } }),
-    prisma.deal.findMany({ where: { userId, actualCloseDate: { gte: since } }, select: { assignedToId: true, value: true } }),
+    db.teamMember.findMany({ where: { userId: ctx.userId }, select: { id: true, role: true, status: true, user: { select: { name: true, email: true } } } }).catch(() => []),
+    db.task.findMany({ where: { userId: ctx.userId, completedAt: { gte: since } }, select: { assignedToId: true } }),
+    db.deal.findMany({ where: { userId: ctx.userId, actualCloseDate: { gte: since } }, select: { assignedToId: true, value: true } }),
   ]);
   const perf = members.map((m: any) => ({ name: m.user?.name || m.user?.email || 'Unknown', role: m.role, tasksCompleted: tasks.filter((t: any) => t.assignedToId === m.id).length, dealsClosed: deals.filter((d: any) => d.assignedToId === m.id).length, revenue: deals.filter((d: any) => d.assignedToId === m.id).reduce((s: number, d: any) => s + (d.value || 0), 0) }));
   return { success: true, triggerVisualization: true, statistics: { teamSize: members.length, performance: perf }, message: `Team of ${members.length} (last ${days}d): ${perf.map((p) => `${p.name}: ${p.tasksCompleted} tasks, ${p.dealsClosed} deals, $${p.revenue.toLocaleString()}`).join('; ')}`, dynamicCharts: [{ chartType: 'bar', dimension: 'team_tasks', title: 'Tasks Completed by Team', data: perf.map((p) => ({ name: p.name, value: p.tasksCompleted })) }] };
@@ -1008,15 +1062,19 @@ export async function getTeamPerformance(userId: string, params: any) {
 
 export async function getAuditLog(userId: string, params: any) {
   const limit = params?.limit || 20;
-  const logs = await prisma.auditLog.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: limit, select: { action: true, details: true, createdAt: true } }).catch(() => []);
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const logs = await db.auditLog.findMany({ where: { userId: ctx.userId }, orderBy: { createdAt: 'desc' }, take: limit, select: { action: true, details: true, createdAt: true } }).catch(() => []);
   return { success: true, statistics: { entries: logs.map((l: any) => ({ action: l.action, details: l.details, time: l.createdAt })) }, message: `${logs.length} recent activities: ${logs.slice(0, 5).map((l: any) => `${l.action} (${new Date(l.createdAt).toLocaleString()})`).join('; ')}` };
 }
 
 export async function checkIntegrations(userId: string) {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const [channels, calendars, paymentProviders] = await Promise.all([
-    prisma.channelConnection.findMany({ where: { userId }, select: { channel: true, status: true, lastSyncAt: true } }),
-    prisma.calendarConnection.findMany({ where: { userId }, select: { provider: true, status: true, lastSyncAt: true } }),
-    prisma.paymentProviderSettings.findMany({ where: { userId }, select: { provider: true, isActive: true } }).catch(() => []),
+    db.channelConnection.findMany({ where: { userId: ctx.userId }, select: { channel: true, status: true, lastSyncAt: true } }),
+    db.calendarConnection.findMany({ where: { userId: ctx.userId }, select: { provider: true, status: true, lastSyncAt: true } }),
+    db.paymentProviderSettings.findMany({ where: { userId: ctx.userId }, select: { provider: true, isActive: true } }).catch(() => []),
   ]);
   const all = [...channels.map((c: any) => ({ name: c.channel, type: 'channel', status: c.status, lastSync: c.lastSyncAt })), ...calendars.map((c: any) => ({ name: c.provider, type: 'calendar', status: c.status, lastSync: c.lastSyncAt })), ...paymentProviders.map((p: any) => ({ name: p.provider, type: 'payment', status: p.isActive ? 'ACTIVE' : 'INACTIVE' }))];
   const active = all.filter((i) => i.status === 'ACTIVE' || i.status === 'CONNECTED');
@@ -1025,7 +1083,9 @@ export async function checkIntegrations(userId: string) {
 
 export async function manageReviews(userId: string, params: any) {
   const action = params?.action || 'stats';
-  const reviews = await prisma.review.findMany({ where: { campaign: { userId } }, orderBy: { createdAt: 'desc' }, take: params?.limit || 50, select: { rating: true, comment: true, customerName: true, platform: true, createdAt: true } }).catch(() => []);
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const reviews = await db.review.findMany({ where: { campaign: { userId: ctx.userId } }, orderBy: { createdAt: 'desc' }, take: params?.limit || 50, select: { rating: true, comment: true, customerName: true, platform: true, createdAt: true } }).catch(() => []);
   const avg = reviews.length > 0 ? (reviews.reduce((s: number, r: any) => s + (r.rating || 0), 0) / reviews.length).toFixed(1) : '0';
   const dist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   reviews.forEach((r: any) => { if (r.rating >= 1 && r.rating <= 5) dist[Math.round(r.rating)]++; });
@@ -1034,39 +1094,43 @@ export async function manageReviews(userId: string, params: any) {
 }
 
 export async function getReferralStats(userId: string) {
-  const referrals = await prisma.referral.findMany({ where: { referrerId: userId }, select: { status: true, rewardAmount: true, createdAt: true } }).catch(() => []);
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const referrals = await db.referral.findMany({ where: { referrerId: userId }, select: { status: true, rewardAmount: true, createdAt: true } }).catch(() => []);
   const converted = referrals.filter((r: any) => r.status === 'CONVERTED' || r.status === 'REWARDED').length;
   const totalRewards = referrals.reduce((s: number, r: any) => s + (r.rewardAmount || 0), 0);
   return { success: true, statistics: { total: referrals.length, converted, conversionRate: referrals.length > 0 ? Math.round((converted / referrals.length) * 100) : 0, totalRewards }, message: `Referral program: ${referrals.length} total, ${converted} converted (${referrals.length > 0 ? Math.round((converted / referrals.length) * 100) : 0}%). Total rewards: $${totalRewards.toLocaleString()}.` };
 }
 
 export async function getIndustryAnalytics(userId: string, params: any) {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { industry: true } });
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const user = await db.user.findUnique({ where: { id: userId }, select: { industry: true } });
   const industry = user?.industry || 'GENERAL';
 
   if (industry === 'REAL_ESTATE') {
     const [props, fsbo, cma, presentations] = await Promise.all([
-      prisma.rEProperty.count({ where: { userId } }).catch(() => 0),
-      prisma.rEFSBOListing.count({ where: { userId } }).catch(() => 0),
-      prisma.rECMAReport.count({ where: { userId } }).catch(() => 0),
-      prisma.rEListingPresentation.count({ where: { userId } }).catch(() => 0),
+      db.rEProperty.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      db.rEFSBOListing.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      db.rECMAReport.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      db.rEListingPresentation.count({ where: { userId: ctx.userId } }).catch(() => 0),
     ]);
     return { success: true, statistics: { industry, properties: props, fsboLeads: fsbo, cmaReports: cma, presentations }, message: `Real Estate: ${props} properties, ${fsbo} FSBO leads, ${cma} CMA reports, ${presentations} listing presentations.` };
   }
 
   if (industry === 'RESTAURANT' || industry === 'FOOD_SERVICE') {
     const [reservations, tables] = await Promise.all([
-      prisma.reservation.count({ where: { userId } }).catch(() => 0),
-      prisma.restaurantTable.count({ where: { userId } }).catch(() => 0),
+      db.reservation.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      db.restaurantTable.count({ where: { userId: ctx.userId } }).catch(() => 0),
     ]);
     return { success: true, statistics: { industry, reservations, tables }, message: `Restaurant: ${reservations} reservations, ${tables} tables.` };
   }
 
   if (industry === 'SPORTS_CLUB' || industry === 'YOUTH_SPORTS') {
     const [regs, programs, teams] = await Promise.all([
-      prisma.clubOSRegistration.count({ where: { program: { userId } } }).catch(() => 0),
-      prisma.clubOSProgram.count({ where: { userId } }).catch(() => 0),
-      prisma.clubOSTeam.count({ where: { division: { userId } } }).catch(() => 0),
+      db.clubOSRegistration.count({ where: { program: { userId: ctx.userId } } }).catch(() => 0),
+      db.clubOSProgram.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      db.clubOSTeam.count({ where: { division: { userId: ctx.userId } } }).catch(() => 0),
     ]);
     return { success: true, statistics: { industry, registrations: regs, programs, teams }, message: `ClubOS: ${regs} registrations, ${programs} programs, ${teams} teams.` };
   }
@@ -1081,12 +1145,14 @@ export async function getBusinessScore(userId: string) {
     aiBrainService.generatePredictiveAnalytics(userId),
   ]);
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const [leads, deals, tasks, payments, reviews] = await Promise.all([
-    prisma.lead.count({ where: { userId } }),
-    prisma.deal.findMany({ where: { userId }, select: { value: true, actualCloseDate: true, stageId: true } }),
-    prisma.task.findMany({ where: { userId }, select: { status: true } }),
-    prisma.payment.findMany({ where: { userId, status: 'SUCCEEDED' }, select: { amount: true } }),
-    prisma.review.findMany({ where: { campaign: { userId } }, select: { rating: true } }).catch(() => []),
+    db.lead.count({ where: { userId: ctx.userId } }),
+    db.deal.findMany({ where: { userId: ctx.userId }, select: { value: true, actualCloseDate: true, stageId: true } }),
+    db.task.findMany({ where: { userId: ctx.userId }, select: { status: true } }),
+    db.payment.findMany({ where: { userId: ctx.userId, status: 'SUCCEEDED' }, select: { amount: true } }),
+    db.review.findMany({ where: { campaign: { userId: ctx.userId } }, select: { rating: true } }).catch(() => []),
   ]);
 
   const revenue = payments.reduce((s, p) => s + (p.amount || 0), 0);
@@ -1114,11 +1180,13 @@ export async function getBusinessScore(userId: string) {
 }
 
 export async function getCostOptimization(userId: string) {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const [voiceUsage, smsCampaigns, payments, subscription] = await Promise.all([
-    prisma.voiceUsage.findMany({ where: { userId }, select: { minutes: true, cost: true, agentType: true }, orderBy: { createdAt: 'desc' }, take: 100 }).catch(() => []),
-    prisma.smsCampaign.findMany({ where: { userId }, select: { totalSent: true, totalReplied: true } }).catch(() => []),
-    prisma.payment.findMany({ where: { userId, status: 'SUCCEEDED' }, select: { amount: true }, orderBy: { createdAt: 'desc' }, take: 100 }),
-    prisma.userSubscription.findFirst({ where: { userId }, select: { plan: true, amount: true } }).catch(() => null),
+    db.voiceUsage.findMany({ where: { userId: ctx.userId }, select: { minutes: true, cost: true, agentType: true }, orderBy: { createdAt: 'desc' }, take: 100 }).catch(() => []),
+    db.smsCampaign.findMany({ where: { userId: ctx.userId }, select: { totalSent: true, totalReplied: true } }).catch(() => []),
+    db.payment.findMany({ where: { userId: ctx.userId, status: 'SUCCEEDED' }, select: { amount: true }, orderBy: { createdAt: 'desc' }, take: 100 }),
+    db.userSubscription.findFirst({ where: { userId: ctx.userId }, select: { plan: true, amount: true } }).catch(() => null),
   ]);
 
   const suggestions: string[] = [];
@@ -1146,15 +1214,17 @@ export async function createInvoice(userId: string, params: any) {
     throw new Error("Contact name and amount are required");
   }
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   let lead;
   if (leadId) {
-    lead = await prisma.lead.findFirst({
-      where: { id: leadId, userId },
+    lead = await db.lead.findFirst({
+      where: { id: leadId, userId: ctx.userId },
     });
   } else {
-    lead = await prisma.lead.findFirst({
+    lead = await db.lead.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         OR: [
           { contactPerson: { contains: contactName, mode: "insensitive" } },
           { businessName: { contains: contactName, mode: "insensitive" } },
@@ -1171,9 +1241,9 @@ export async function createInvoice(userId: string, params: any) {
   const totalAmount = Number(amount);
   const itemDesc = description || "Services";
 
-  const invoice = await prisma.invoice.create({
+  const invoice = await db.invoice.create({
     data: {
-      userId,
+      userId: ctx.userId,
       leadId: lead?.id || null,
       dealId: dealId || null,
       invoiceNumber,
@@ -1205,10 +1275,12 @@ export async function createInvoice(userId: string, params: any) {
 
 export async function listOverdueInvoices(userId: string, params: any) {
   const { limit = 20 } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
-  const overdue = await prisma.invoice.findMany({
+  const overdue = await db.invoice.findMany({
     where: {
-      userId,
+      userId: ctx.userId,
       status: { notIn: ["PAID", "CANCELLED", "REFUNDED"] },
       dueDate: { lt: new Date() },
     },
@@ -1232,15 +1304,17 @@ export async function listOverdueInvoices(userId: string, params: any) {
 
 export async function updateInvoiceStatus(userId: string, params: any) {
   const { invoiceId, invoiceNumber, status } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
   let invoice;
   if (invoiceId) {
-    invoice = await prisma.invoice.findFirst({
-      where: { id: invoiceId, userId },
+    invoice = await db.invoice.findFirst({
+      where: { id: invoiceId, userId: ctx.userId },
     });
   } else if (invoiceNumber) {
-    invoice = await prisma.invoice.findFirst({
-      where: { userId, invoiceNumber: { contains: invoiceNumber, mode: "insensitive" } },
+    invoice = await db.invoice.findFirst({
+      where: { userId: ctx.userId, invoiceNumber: { contains: invoiceNumber, mode: "insensitive" } },
     });
   }
 
@@ -1252,7 +1326,7 @@ export async function updateInvoiceStatus(userId: string, params: any) {
     updateData.paidAt = new Date();
   }
 
-  const updated = await prisma.invoice.update({
+  const updated = await db.invoice.update({
     where: { id: invoice.id },
     data: updateData,
   });
@@ -1265,21 +1339,23 @@ export async function updateInvoiceStatus(userId: string, params: any) {
 
 export async function sendInvoice(userId: string, params: any) {
   const { invoiceId, invoiceNumber } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
   let invoice;
   if (invoiceId) {
-    invoice = await prisma.invoice.findFirst({
-      where: { id: invoiceId, userId },
+    invoice = await db.invoice.findFirst({
+      where: { id: invoiceId, userId: ctx.userId },
     });
   } else if (invoiceNumber) {
-    invoice = await prisma.invoice.findFirst({
-      where: { userId, invoiceNumber: { contains: invoiceNumber, mode: "insensitive" } },
+    invoice = await db.invoice.findFirst({
+      where: { userId: ctx.userId, invoiceNumber: { contains: invoiceNumber, mode: "insensitive" } },
     });
   }
 
   if (!invoice) throw new Error("Invoice not found");
 
-  await prisma.invoice.update({
+  await db.invoice.update({
     where: { id: invoice.id },
     data: { status: "SENT" as any, sentAt: new Date() },
   });

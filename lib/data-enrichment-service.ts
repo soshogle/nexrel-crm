@@ -4,7 +4,8 @@
  * Includes intelligent caching to minimize API costs
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService } from '@/lib/dal';
 import fs from 'fs';
 import path from 'path';
 
@@ -70,8 +71,9 @@ export class DataEnrichmentService {
       const cacheKey = email || domain;
       if (!cacheKey) return null;
 
+      const db = getCrmDb(createDalContext('bootstrap'));
       // Check database for cached enrichment
-      const cached = await prisma.leadEnrichmentCache.findFirst({
+      const cached = await db.leadEnrichmentCache.findFirst({
         where: {
           OR: [
             email ? { email } : {},
@@ -115,7 +117,8 @@ export class DataEnrichmentService {
     try {
       const expiresAt = new Date(Date.now() + this.cacheTTL);
 
-      await prisma.leadEnrichmentCache.create({
+      const db = getCrmDb(createDalContext('bootstrap'));
+      await db.leadEnrichmentCache.create({
         data: {
           email,
           domain,
@@ -477,10 +480,11 @@ export class DataEnrichmentService {
         // We resolved domain from company name - persist as website for future reference
         updateData.website = `https://${domain}`;
       }
-      await prisma.lead.update({
-        where: { id: leadId },
-        data: updateData,
-      });
+      const existingLead = await getCrmDb(createDalContext('bootstrap')).lead.findUnique({ where: { id: leadId }, select: { userId: true } });
+      if (existingLead) {
+        const ctx = createDalContext(existingLead.userId);
+        await leadService.update(ctx, leadId, updateData);
+      }
 
       console.log(`✅ Enrichment complete for lead ${leadId} using: ${sources.join(', ')}`);
 
@@ -508,7 +512,8 @@ export class DataEnrichmentService {
 
     for (const leadId of leadIds) {
       try {
-        const lead = await prisma.lead.findUnique({
+        const db = getCrmDb(createDalContext('bootstrap'));
+        const lead = await db.lead.findUnique({
           where: { id: leadId },
         });
 

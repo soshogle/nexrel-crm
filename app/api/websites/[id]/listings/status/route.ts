@@ -6,7 +6,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService } from '@/lib/dal';
 import { getWebsiteListingsCount } from '@/lib/website-builder/listings-service';
 
 export async function GET(
@@ -15,14 +16,12 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: params.id, userId: session.user.id },
-      select: { id: true, templateType: true, neonDatabaseUrl: true },
-    });
+    const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });

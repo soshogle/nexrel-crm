@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { workflowEngine } from '@/lib/workflow-engine';
+import { createDalContext } from '@/lib/context/industry-context';
+import { conversationService } from '@/lib/dal/conversation-service';
+import { leadService } from '@/lib/dal/lead-service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -137,36 +140,26 @@ async function handleMessagingEvent(event: any) {
       }
     }
 
-    // Find or create conversation
-    let conversation = await prisma.conversation.findFirst({
-      where: {
-        userId: connection.userId,
-        channelConnectionId: connection.id,
-        contactIdentifier: senderId,
-      },
+    const ctx = createDalContext(connection.userId);
+    let conversation = await conversationService.findFirst(ctx, {
+      channelConnectionId: connection.id,
+      contactIdentifier: senderId,
     });
 
     if (!conversation) {
-      conversation = await prisma.conversation.create({
-        data: {
-          userId: connection.userId,
-          channelConnectionId: connection.id,
-          contactIdentifier: senderId,
-          contactName: senderName,
-          status: 'ACTIVE',
-          lastMessageAt: new Date(),
-        },
+      conversation = await conversationService.create(ctx, {
+        channelConnectionId: connection.id,
+        contactIdentifier: senderId,
+        contactName: senderName,
+        status: 'ACTIVE',
+        lastMessageAt: new Date(),
       });
       console.log('✨ Created new Instagram conversation:', conversation.id);
     } else {
-      // Update conversation
-      await prisma.conversation.update({
-        where: { id: conversation.id },
-        data: {
-          contactName: senderName,
-          lastMessageAt: new Date(),
-          status: 'ACTIVE',
-        },
+      await conversationService.update(ctx, conversation.id, {
+        contactName: senderName,
+        lastMessageAt: new Date(),
+        status: 'ACTIVE',
       });
     }
 
@@ -184,15 +177,11 @@ async function handleMessagingEvent(event: any) {
       },
     });
 
-    // Update conversation
-    await prisma.conversation.update({
-      where: { id: conversation.id },
-      data: {
-        lastMessageAt: new Date(),
-        lastMessagePreview: messageContent.substring(0, 100),
-        unreadCount: { increment: 1 },
-        status: 'UNREAD',
-      },
+    await conversationService.update(ctx, conversation.id, {
+      lastMessageAt: new Date(),
+      lastMessagePreview: messageContent.substring(0, 100),
+      unreadCount: { increment: 1 },
+      status: 'UNREAD',
     });
 
     // Trigger workflows for MESSAGE_RECEIVED (with channel type filtering)
@@ -225,24 +214,14 @@ async function handleMessagingEvent(event: any) {
       messageContent,
     }).catch(err => console.error('Instagram keyword workflow trigger failed:', err));
 
-    // Create or update lead
-    const existingLead = await prisma.lead.findFirst({
-      where: {
-        userId: connection.userId,
+    const leads = await leadService.findMany(ctx, { where: { phone: senderId }, take: 1 });
+    if (leads.length === 0) {
+      await leadService.create(ctx, {
+        businessName: senderName,
+        contactPerson: senderName,
         phone: senderId,
-      },
-    });
-
-    if (!existingLead) {
-      await prisma.lead.create({
-        data: {
-          userId: connection.userId,
-          businessName: senderName,
-          contactPerson: senderName,
-          phone: senderId,
-          source: 'Instagram DM',
-          status: 'NEW',
-        },
+        source: 'Instagram DM',
+        status: 'NEW',
       });
       console.log('✨ Created lead from Instagram message');
     }

@@ -1,11 +1,11 @@
-
 /**
  * Gmail API Integration Service
  * Handles fetching, sending, and syncing Gmail messages
  */
 
 import { google } from 'googleapis';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService, conversationService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 
 const gmail = google.gmail('v1');
 
@@ -165,9 +165,11 @@ export class GmailService {
    * Sync messages to database for a specific channel connection
    */
   async syncToDatabase(channelConnectionId: string, userId: string): Promise<number> {
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     try {
       // Get channel connection
-      const connection = await prisma.channelConnection.findUnique({
+      const connection = await db.channelConnection.findUnique({
         where: { id: channelConnectionId },
       });
 
@@ -192,7 +194,7 @@ export class GmailService {
         const contactName = contactRaw.split('<')[0].trim().replace(/^["']|["']$/g, '') || contactEmail;
 
         // Find or create conversation
-        let conversation = await prisma.conversation.findUnique({
+        let conversation = await db.conversation.findUnique({
           where: {
             channelConnectionId_contactIdentifier: {
               channelConnectionId,
@@ -203,53 +205,39 @@ export class GmailService {
 
         if (!conversation) {
           // Try to link to existing Lead by email; if none, auto-create Lead for unknown addresses
-          let lead = await prisma.lead.findFirst({
-            where: { userId, email: contactEmail },
-            select: { id: true },
-          });
+          let lead = await leadService.findMany(ctx, { where: { email: contactEmail }, take: 1 }).then((l) => l[0]);
+          if (lead) lead = { id: lead.id };
 
           if (!lead && contactEmail && contactEmail.includes('@')) {
             // Auto-create Lead for unknown email addresses (email sync creates contacts)
-            const newLead = await prisma.lead.create({
-              data: {
-                userId,
-                businessName: contactName || contactEmail,
-                contactPerson: contactName || undefined,
-                email: contactEmail,
-                source: 'email_sync',
-              },
+            const newLead = await leadService.create(ctx, {
+              businessName: contactName || contactEmail,
+              contactPerson: contactName || undefined,
+              email: contactEmail,
+              source: 'email_sync',
             });
             lead = { id: newLead.id };
           }
 
-          conversation = await prisma.conversation.create({
-            data: {
-              userId,
-              channelConnectionId,
-              leadId: lead?.id,
-              contactName,
-              contactIdentifier: contactEmail,
-              status: 'ACTIVE',
-              externalConversationId: gmailMessage.threadId,
-            },
-          });
+          conversation = await conversationService.create(ctx, {
+            channelConnection: { connect: { id: channelConnectionId } },
+            ...(lead?.id && { lead: { connect: { id: lead.id } } }),
+            contactName,
+            contactIdentifier: contactEmail,
+            status: 'ACTIVE',
+            externalConversationId: gmailMessage.threadId,
+          } as any);
         } else if (!conversation.leadId) {
           // Auto-link to Lead if not already linked
-          const lead = await prisma.lead.findFirst({
-            where: { userId, email: contactEmail },
-            select: { id: true },
-          });
+          const lead = await leadService.findMany(ctx, { where: { email: contactEmail }, take: 1 }).then((l) => l[0]);
           if (lead) {
-            await prisma.conversation.update({
-              where: { id: conversation.id },
-              data: { leadId: lead.id },
-            });
+            await conversationService.update(ctx, conversation.id, { leadId: lead.id });
             conversation.leadId = lead.id;
           }
         }
 
         // Check if message already exists
-        const existingMessage = await prisma.conversationMessage.findFirst({
+        const existingMessage = await db.conversationMessage.findFirst({
           where: {
             conversationId: conversation.id,
             externalMessageId: gmailMessage.id,
@@ -258,7 +246,7 @@ export class GmailService {
 
         if (!existingMessage) {
           // Create new message
-          await prisma.conversationMessage.create({
+          await db.conversationMessage.create({
             data: {
               conversationId: conversation.id,
               userId,
@@ -273,13 +261,11 @@ export class GmailService {
           });
 
           // Update conversation
-          await prisma.conversation.update({
+          await conversationService.update(ctx, conversation.id, {
             where: { id: conversation.id },
-            data: {
-              lastMessageAt: parsed.date,
-              lastMessagePreview: parsed.subject || parsed.body.substring(0, 100),
-              unreadCount: parsed.isInbound ? { increment: 1 } : undefined,
-            },
+            lastMessageAt: parsed.date,
+            lastMessagePreview: parsed.subject || parsed.body.substring(0, 100),
+            ...(parsed.isInbound && { unreadCount: { increment: 1 } }),
           });
 
           syncedCount++;
@@ -287,7 +273,7 @@ export class GmailService {
       }
 
       // Update sync cursor and timestamp
-      await prisma.channelConnection.update({
+      await db.channelConnection.update({
         where: { id: channelConnectionId },
         data: {
           lastSyncAt: new Date(),
@@ -300,7 +286,7 @@ export class GmailService {
       console.error('Error syncing Gmail to database:', error);
       
       // Update connection error status
-      await prisma.channelConnection.update({
+      await db.channelConnection.update({
         where: { id: channelConnectionId },
         data: {
           status: 'ERROR',

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -22,6 +23,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { id } = await context.params;
     const body = await req.json();
     const { leadIds } = body;
@@ -33,9 +37,10 @@ export async function POST(
       );
     }
 
+    const db = getCrmDb(ctx);
     // Verify campaign ownership and status
-    const campaign = await prisma.emailDripCampaign.findFirst({
-      where: { id, userId: session.user.id },
+    const campaign = await db.emailDripCampaign.findFirst({
+      where: { id, userId: ctx.userId },
       include: {
         sequences: {
           orderBy: { sequenceOrder: 'asc' },
@@ -66,10 +71,9 @@ export async function POST(
     }
 
     // Verify leads belong to user and have email
-    const leads = await prisma.lead.findMany({
+    const leads = await leadService.findMany(ctx, {
       where: {
         id: { in: leadIds },
-        userId: session.user.id,
         email: { not: null },
       },
     });
@@ -82,7 +86,7 @@ export async function POST(
     }
 
     // Check for already enrolled leads
-    const existingEnrollments = await prisma.emailDripEnrollment.findMany({
+    const existingEnrollments = await db.emailDripEnrollment.findMany({
       where: {
         campaignId: id,
         leadId: { in: leads.map(l => l.id) },
@@ -126,12 +130,12 @@ export async function POST(
     }
 
     // Create enrollments
-    await prisma.emailDripEnrollment.createMany({
+    await db.emailDripEnrollment.createMany({
       data: enrollments,
     });
 
     // Update campaign stats
-    await prisma.emailDripCampaign.update({
+    await db.emailDripCampaign.update({
       where: { id },
       data: {
         totalEnrolled: { increment: enrollments.length },

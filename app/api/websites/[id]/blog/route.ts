@@ -8,7 +8,8 @@
  * Landing page and CRM dashboard continue to use /api/blog.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -29,7 +30,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
+    const db = getCrmDb(createDalContext('bootstrap'));
+    const website = await db.website.findFirst({
       where: { id: websiteId },
       select: { id: true },
     });

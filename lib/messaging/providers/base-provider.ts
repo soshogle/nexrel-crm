@@ -1,8 +1,8 @@
-
 // Base provider with common functionality
 
 import { MessagingProvider, ChannelType, Conversation, Message } from '../types';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal/db';
+import { createDalContext } from '@/lib/context/industry-context';
 
 export abstract class BaseMessagingProvider implements MessagingProvider {
   abstract name: string;
@@ -11,6 +11,14 @@ export abstract class BaseMessagingProvider implements MessagingProvider {
   
   constructor(userId: string) {
     this.userId = userId;
+  }
+
+  protected get ctx() {
+    return createDalContext(this.userId);
+  }
+
+  protected get db() {
+    return getCrmDb(this.ctx);
   }
   
   // Store conversation locally in our database
@@ -22,7 +30,7 @@ export abstract class BaseMessagingProvider implements MessagingProvider {
     leadId?: string;
     externalConversationId?: string;
   }) {
-    return await prisma.conversation.upsert({
+    return await this.db.conversation.upsert({
       where: {
         channelConnectionId_contactIdentifier: {
           channelConnectionId: data.channelConnectionId,
@@ -59,7 +67,7 @@ export abstract class BaseMessagingProvider implements MessagingProvider {
     deliveredAt?: Date;
     readAt?: Date;
   }) {
-    const message = await prisma.conversationMessage.create({
+    const message = await this.db.conversationMessage.create({
       data: {
         conversationId: data.conversationId,
         userId: this.userId,
@@ -75,7 +83,7 @@ export abstract class BaseMessagingProvider implements MessagingProvider {
     });
     
     // Update conversation last message
-    await prisma.conversation.update({
+    await this.db.conversation.update({
       where: { id: data.conversationId },
       data: {
         lastMessageAt: message.sentAt,

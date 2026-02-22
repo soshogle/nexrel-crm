@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, websiteService } from '@/lib/dal';
+import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -30,9 +31,11 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findUnique({
-      where: { id: websiteId },
-    });
+    const ctx = session ? getDalContextFromSession(session) : null;
+    const db = getCrmDb(ctx ?? createDalContext('bootstrap'));
+    const website = ctx
+      ? await websiteService.findUnique(ctx, websiteId)
+      : await db.website.findUnique({ where: { id: websiteId } });
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
@@ -73,14 +76,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const websiteId = params.id;
     if (!websiteId) {
       return NextResponse.json({ error: 'Website ID required' }, { status: 400 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: websiteId, userId: session.user.id },
-    });
+    const website = await websiteService.findUnique(ctx, websiteId);
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
@@ -97,10 +103,7 @@ export async function PATCH(
       ...(body.siteConfig !== undefined && { siteConfig: body.siteConfig }),
     };
 
-    await prisma.website.update({
-      where: { id: websiteId },
-      data: { ecommerceContent: updated },
-    });
+    await websiteService.update(ctx, websiteId, { ecommerceContent: updated });
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

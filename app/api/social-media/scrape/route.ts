@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService } from '@/lib/dal';
 import fs from 'fs';
 
 export const dynamic = 'force-dynamic';
@@ -183,21 +184,20 @@ export async function POST(request: NextRequest) {
           leadData.notes = `Followers: ${profile.authorMeta?.fans || 0}\nLikes: ${profile.diggCount || 0}\nViews: ${profile.playCount || 0}`;
         }
 
+        const ctx = createDalContext(session.user.id);
         // Check for duplicates (by contact person name)
-        const existing = await prisma.lead.findFirst({
-          where: {
-            userId: session.user.id,
-            contactPerson: leadData.contactPerson,
-          },
+        const existing = await leadService.findMany(ctx, {
+          where: { contactPerson: leadData.contactPerson },
+          take: 1,
         });
 
-        if (existing) {
+        if (existing.length > 0) {
           duplicatesSkipped++;
           continue;
         }
 
         // Create the lead
-        await prisma.lead.create({ data: leadData });
+        await leadService.create(ctx, leadData);
         leadsCreated++;
       } catch (error) {
         console.error('Error creating lead from profile:', error);

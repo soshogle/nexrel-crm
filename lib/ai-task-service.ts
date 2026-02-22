@@ -4,7 +4,8 @@
  * Provides intelligent task suggestions and automation
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService, dealService, taskService } from '@/lib/dal';
 
 interface TaskSuggestion {
   title: string;
@@ -64,11 +65,9 @@ export class AITaskService {
    * Get suggestions for a new lead
    */
   private async getLeadBasedSuggestions(leadId: string, userId: string): Promise<TaskSuggestion[]> {
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-      include: {
-        notes: { orderBy: { createdAt: 'desc' }, take: 5 },
-      },
+    const ctx = createDalContext(userId);
+    const lead = await leadService.findUnique(ctx, leadId, {
+      notes: { orderBy: { createdAt: 'desc' }, take: 5 },
     });
 
     if (!lead) return [];
@@ -147,12 +146,10 @@ export class AITaskService {
    * Get suggestions for a deal
    */
   private async getDealBasedSuggestions(dealId: string, userId: string): Promise<TaskSuggestion[]> {
-    const deal = await prisma.deal.findUnique({
-      where: { id: dealId },
-      include: {
-        stage: true,
-        lead: true,
-      },
+    const ctx = createDalContext(userId);
+    const deal = await dealService.findUnique(ctx, dealId, {
+      stage: true,
+      lead: true,
     });
 
     if (!deal) return [];
@@ -337,8 +334,9 @@ export class AITaskService {
     reasoning: string;
   } | null> {
     try {
+      const db = getCrmDb(createDalContext(userId));
       // Get team members
-      const teamMembers = await prisma.teamMember.findMany({
+      const teamMembers = await db.teamMember.findMany({
         where: { userId },
         include: {
           user: {
@@ -360,10 +358,12 @@ export class AITaskService {
         };
       }
 
+      const ctx = createDalContext(userId);
+      const db = getCrmDb(ctx);
       // Get workload for each team member
       const workloads = await Promise.all(
         teamMembers.map(async (member) => {
-          const openTasks = await prisma.task.count({
+          const openTasks = await db.task.count({
             where: {
               assignedToId: member.user.id,
               status: { in: ['TODO', 'IN_PROGRESS'] },
@@ -507,7 +507,9 @@ export class AITaskService {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const tasks = await prisma.task.findMany({
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+    const tasks = await db.task.findMany({
       where: {
         OR: [{ userId }, { assignedToId: userId }],
         createdAt: { gte: thirtyDaysAgo },

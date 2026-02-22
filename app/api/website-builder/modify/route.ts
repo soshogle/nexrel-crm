@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, websiteService } from '@/lib/dal';
+import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
 import { changeApproval } from '@/lib/website-builder/approval';
 import { aiModificationService } from '@/lib/website-builder/ai-modification-service';
 
@@ -18,10 +19,10 @@ export async function POST(request: NextRequest) {
     const isInternalCall = internalSecret === process.env.NEXTAUTH_SECRET && internalUserId;
 
     let userId: string;
+    const session = await getServerSession(authOptions);
     if (isInternalCall) {
       userId = internalUserId;
     } else {
-      const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
@@ -37,12 +38,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const website = await prisma.website.findFirst({
-      where: {
-        id: websiteId,
-        userId,
-      },
-    });
+    const ctx = isInternalCall ? createDalContext(userId) : getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const website = await websiteService.findUnique(ctx, websiteId);
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
@@ -122,7 +120,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Create approval request
-    const approval = await prisma.websiteChangeApproval.create({
+    const approval = await getCrmDb(ctx).websiteChangeApproval.create({
       data: {
         websiteId,
         changeType: 'AI_MODIFICATION',
@@ -134,15 +132,13 @@ export async function POST(request: NextRequest) {
     });
 
     // Update website with pending changes
-    await prisma.website.update({
-      where: { id: websiteId },
-      data: {
+    await websiteService.update(ctx, websiteId, {
         pendingChanges: {
           approvalId: approval.id,
           changes,
           preview,
         },
-      },
+      } as any,
     });
 
     return NextResponse.json({

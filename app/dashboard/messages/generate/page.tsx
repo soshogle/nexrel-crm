@@ -3,7 +3,8 @@ export const dynamic = 'force-dynamic';
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
-import { prisma } from '@/lib/db'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
+import { leadService } from '@/lib/dal/lead-service'
 import { MessageGenerator } from '@/components/messages/message-generator'
 
 export default async function GenerateMessagePage({
@@ -21,12 +22,11 @@ export default async function GenerateMessagePage({
     redirect('/dashboard/leads')
   }
 
-  const lead = await prisma.lead.findFirst({
-    where: {
-      id: searchParams.leadId,
-      userId: session.user.id,
-    }
-  })
+  const ctx = getDalContextFromSession(session)
+  if (!ctx) {
+    redirect('/auth/signin')
+  }
+  const lead = await leadService.findUnique(ctx, searchParams.leadId)
 
   if (!lead) {
     notFound()

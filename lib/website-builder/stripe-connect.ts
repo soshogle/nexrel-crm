@@ -4,7 +4,8 @@
  */
 
 import Stripe from 'stripe';
-import { prisma } from '@/lib/db';
+import { getCrmDb, websiteService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { websiteOrderService } from './order-service';
 
 // Use platform Stripe account (your CRM's account)
@@ -18,7 +19,7 @@ export class WebsiteStripeConnectService {
    * Create Stripe Connect account link for onboarding
    */
   async createAccountLink(websiteId: string, returnUrl: string) {
-    const website = await prisma.website.findUnique({
+    const website = await getCrmDb(createDalContext('')).website.findUnique({
       where: { id: websiteId },
       include: { user: true },
     });
@@ -26,6 +27,9 @@ export class WebsiteStripeConnectService {
     if (!website) {
       throw new Error('Website not found');
     }
+
+    const ctx = createDalContext(website.userId);
+    const db = getCrmDb(ctx);
 
     let connectAccountId = website.stripeConnectAccountId;
 
@@ -48,10 +52,7 @@ export class WebsiteStripeConnectService {
       connectAccountId = account.id;
 
       // Save to database
-      await prisma.website.update({
-        where: { id: websiteId },
-        data: { stripeConnectAccountId: connectAccountId },
-      });
+      await websiteService.update(ctx, websiteId, { stripeConnectAccountId: connectAccountId });
     }
 
     // Create account link for onboarding
@@ -72,7 +73,7 @@ export class WebsiteStripeConnectService {
    * Get Connect account status
    */
   async getAccountStatus(websiteId: string) {
-    const website = await prisma.website.findUnique({
+    const website = await getCrmDb(createDalContext('')).website.findUnique({
       where: { id: websiteId },
     });
 
@@ -116,13 +117,16 @@ export class WebsiteStripeConnectService {
       metadata?: Record<string, string>;
     }
   ) {
-    const website = await prisma.website.findUnique({
+    const website = await getCrmDb(createDalContext('')).website.findUnique({
       where: { id: websiteId },
     });
 
     if (!website || !website.stripeConnectAccountId) {
       throw new Error('Stripe account not connected');
     }
+
+    const ctx = createDalContext(website.userId);
+    const db = getCrmDb(ctx);
 
     // Verify account is active
     const accountStatus = await this.getAccountStatus(websiteId);
@@ -150,7 +154,7 @@ export class WebsiteStripeConnectService {
     );
 
     // Store payment intent in database
-    await prisma.websiteIntegration.create({
+    await db.websiteIntegration.create({
       data: {
         websiteId,
         type: 'STRIPE',
@@ -180,7 +184,7 @@ export class WebsiteStripeConnectService {
 
       if (websiteId) {
         // Get website to find owner
-        const website = await prisma.website.findUnique({
+        const website = await getCrmDb(createDalContext('')).website.findUnique({
           where: { id: websiteId },
           select: { userId: true },
         });
@@ -190,8 +194,11 @@ export class WebsiteStripeConnectService {
           return;
         }
 
+        const ctx = createDalContext(website.userId);
+        const db = getCrmDb(ctx);
+
         // Update integration status
-        await prisma.websiteIntegration.updateMany({
+        await db.websiteIntegration.updateMany({
           where: {
             websiteId,
             type: 'STRIPE',
@@ -316,7 +323,7 @@ export class WebsiteStripeConnectService {
    * Create login link for Connect account dashboard
    */
   async createLoginLink(websiteId: string) {
-    const website = await prisma.website.findUnique({
+    const website = await getCrmDb(createDalContext('')).website.findUnique({
       where: { id: websiteId },
     });
 

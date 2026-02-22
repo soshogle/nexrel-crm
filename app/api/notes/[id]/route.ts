@@ -5,7 +5,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { noteService } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 
 export async function PUT(
   request: NextRequest,
@@ -24,22 +25,17 @@ export async function PUT(
       return NextResponse.json({ error: 'Content is required' }, { status: 400 })
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     // Verify note belongs to user
-    const note = await prisma.note.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      }
-    })
+    const note = await noteService.findFirst(ctx, { id: params.id })
 
     if (!note) {
       return NextResponse.json({ error: 'Note not found' }, { status: 404 })
     }
 
-    const updatedNote = await prisma.note.update({
-      where: { id: params.id },
-      data: { content: content.trim() }
-    })
+    const updatedNote = await noteService.update(ctx, params.id, { content: content.trim() })
 
     return NextResponse.json(updatedNote)
   } catch (error) {
@@ -62,21 +58,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     // Verify note belongs to user
-    const note = await prisma.note.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      }
-    })
+    const note = await noteService.findFirst(ctx, { id: params.id })
 
     if (!note) {
       return NextResponse.json({ error: 'Note not found' }, { status: 404 })
     }
 
-    await prisma.note.delete({
-      where: { id: params.id }
-    })
+    await noteService.delete(ctx, params.id)
 
     return NextResponse.json({ message: 'Note deleted successfully' })
   } catch (error) {

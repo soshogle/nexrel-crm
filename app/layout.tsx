@@ -7,6 +7,7 @@ import { Toaster as SonnerToaster } from '@/components/ui/sonner'
 import { SessionProvider } from '@/components/providers/session-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { IntlProviderWrapper } from '@/components/providers/intl-provider-wrapper'
+import { RootErrorBoundary } from '@/components/root-error-boundary'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -62,9 +63,11 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              {children}
-              <Toaster />
-              <SonnerToaster />
+              <RootErrorBoundary>
+                {children}
+                <Toaster />
+                <SonnerToaster />
+              </RootErrorBoundary>
             </ThemeProvider>
           </IntlProviderWrapper>
           </QueryProvider>

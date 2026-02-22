@@ -5,7 +5,8 @@
  */
 
 import axios from 'axios';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, conversationService } from '@/lib/dal';
 
 const WHATSAPP_API_URL = 'https://graph.facebook.com/v18.0';
 
@@ -136,8 +137,10 @@ export class WhatsAppService {
             break;
         }
 
+        const ctx = createDalContext(userId);
+        const db = getCrmDb(ctx);
         // Find or create conversation
-        let conversation = await prisma.conversation.findUnique({
+        let conversation = await db.conversation.findUnique({
           where: {
             channelConnectionId_contactIdentifier: {
               channelConnectionId,
@@ -147,19 +150,16 @@ export class WhatsAppService {
         });
 
         if (!conversation) {
-          conversation = await prisma.conversation.create({
-            data: {
-              userId,
-              channelConnectionId,
-              contactName,
-              contactIdentifier: fromNumber,
-              status: 'ACTIVE',
-            },
+          conversation = await conversationService.create(ctx, {
+            channelConnection: { connect: { id: channelConnectionId } },
+            contactName,
+            contactIdentifier: fromNumber,
+            status: 'ACTIVE',
           });
         }
 
         // Create message
-        await prisma.conversationMessage.create({
+        await db.conversationMessage.create({
           data: {
             conversationId: conversation.id,
             userId,
@@ -174,7 +174,7 @@ export class WhatsAppService {
         });
 
         // Update conversation
-        await prisma.conversation.update({
+        await db.conversation.update({
           where: { id: conversation.id },
           data: {
             lastMessageAt: timestamp,

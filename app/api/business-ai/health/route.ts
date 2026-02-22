@@ -12,7 +12,8 @@ import { authOptions } from '@/lib/auth';
 import { businessDataPipeline } from '@/lib/business-ai/data-pipeline';
 import { businessAnalyticsEngine } from '@/lib/business-ai/analytics-engine';
 import { addExplanations } from '@/lib/business-ai/prediction-explainer';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService, campaignService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,7 +31,9 @@ export async function GET(request: NextRequest) {
     let insights: any[] = [];
 
     try {
-      const user = await prisma.user.findUnique({
+      const ctx = createDalContext(userId);
+      const db = getCrmDb(ctx);
+      const user = await db.user.findUnique({
         where: { id: userId },
         select: { industry: true },
       });
@@ -88,10 +91,12 @@ export async function GET(request: NextRequest) {
 }
 
 async function getCrmFallbackHealth(userId: string) {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const [leads, deals, campaigns] = await Promise.all([
-    prisma.lead.count({ where: { userId } }),
-    prisma.deal.findMany({ where: { userId }, select: { value: true, actualCloseDate: true, lostReason: true } }),
-    prisma.campaign.count({ where: { userId } }),
+    leadService.count(ctx),
+    db.deal.findMany({ where: { userId }, select: { value: true, actualCloseDate: true, lostReason: true } }),
+    campaignService.count(ctx),
   ]);
 
   const openDeals = deals.filter(d => !d.actualCloseDate);

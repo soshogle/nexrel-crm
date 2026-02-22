@@ -1,4 +1,3 @@
-
 /**
  * Multi-Channel Orchestration Service
  * 
@@ -9,7 +8,8 @@
  * - Past response rates
  */
 
-import { prisma } from './db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 
 export interface ChannelPreference {
   channel: 'SMS' | 'EMAIL' | 'WHATSAPP' | 'FACEBOOK_MESSENGER' | 'INSTAGRAM';
@@ -23,17 +23,18 @@ export class MultiChannelOrchestrator {
    * Select the best channel for reaching a lead
    */
   async selectChannel(leadId: string, userId: string): Promise<ChannelPreference> {
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+
     // Get lead's contact information
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-    });
+    const lead = await leadService.findUnique(ctx, leadId);
 
     if (!lead) {
       throw new Error('Lead not found');
     }
 
     // Get user's active channels
-    const connections = await prisma.channelConnection.findMany({
+    const connections = await db.channelConnection.findMany({
       where: {
         userId,
         status: 'CONNECTED',
@@ -41,16 +42,10 @@ export class MultiChannelOrchestrator {
     });
 
     // Get lead's message history to determine preferences
-    const conversations = await prisma.conversation.findMany({
-      where: {
-        userId,
-        leadId,
-      },
+    const conversations = await db.conversation.findMany({
+      where: { userId, leadId },
       include: {
-        messages: {
-          orderBy: { sentAt: 'desc' },
-          take: 20,
-        },
+        messages: { orderBy: { sentAt: 'desc' }, take: 20 },
         channelConnection: true,
       },
     });
@@ -206,11 +201,8 @@ export class MultiChannelOrchestrator {
     message: string,
     channel: ChannelPreference['channel']
   ): Promise<boolean> {
-    const { prisma } = await import('@/lib/db');
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-      select: { email: true, phone: true, contactPerson: true, businessName: true },
-    });
+    const ctx = createDalContext(userId);
+    const lead = await leadService.findUnique(ctx, leadId);
 
     if (!lead) return false;
 

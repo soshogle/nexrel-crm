@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
@@ -23,14 +24,16 @@ export async function POST(
       return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+
     // Find the claim in all leads' insuranceInfo
-    const leads = await prisma.lead.findMany({
-      where: { userId: session.user.id },
+    const leads = await leadService.findMany(ctx, {
       select: {
         id: true,
         insuranceInfo: true,
       },
-    });
+    } as any);
 
     let claimFound = false;
     let updatedLeadId: string | null = null;
@@ -60,10 +63,7 @@ export async function POST(
             claimNumber: `RAMQ-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
           };
 
-          await prisma.lead.update({
-            where: { id: lead.id },
-            data: { insuranceInfo },
-          });
+          await leadService.update(ctx, lead.id, { insuranceInfo });
 
           claimFound = true;
           updatedLeadId = lead.id;

@@ -1,9 +1,8 @@
-
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-
+import { leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,22 +10,23 @@ export const runtime = 'nodejs';
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
+    const ctx = getDalContextFromSession(session);
+
     // Debug logging
     console.log('=== CONTACTS STATS API DEBUG ===');
     console.log('Session:', session ? 'exists' : 'null');
     console.log('Session.user.id:', session?.user?.id);
     console.log('Session.user.email:', session?.user?.email);
-    
-    if (!session?.user?.id) {
+
+    if (!ctx) {
       console.log('ERROR: No user ID in session for stats - returning 401');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    console.log('Fetching stats for userId:', session.user.id);
+
+    console.log('Fetching stats for userId:', ctx.userId);
 
     const [
       total,
@@ -36,41 +36,18 @@ export async function GET(request: Request) {
       partners,
       totalWithActivity,
     ] = await Promise.all([
-      prisma.lead.count({
-        where: { userId: session.user.id },
-      }),
-      prisma.lead.count({
-        where: {
-          userId: session.user.id,
-          createdAt: {
-            gte: firstDayOfMonth,
-          },
+      leadService.count(ctx),
+      leadService.count(ctx, {
+        createdAt: {
+          gte: firstDayOfMonth,
         },
       }),
-      prisma.lead.count({
-        where: {
-          userId: session.user.id,
-          contactType: 'customer',
-        },
-      }),
-      prisma.lead.count({
-        where: {
-          userId: session.user.id,
-          contactType: 'prospect',
-        },
-      }),
-      prisma.lead.count({
-        where: {
-          userId: session.user.id,
-          contactType: 'partner',
-        },
-      }),
-      prisma.lead.count({
-        where: {
-          userId: session.user.id,
-          lastContactedAt: {
-            not: null,
-          },
+      leadService.count(ctx, { contactType: 'customer' }),
+      leadService.count(ctx, { contactType: 'prospect' }),
+      leadService.count(ctx, { contactType: 'partner' }),
+      leadService.count(ctx, {
+        lastContactedAt: {
+          not: null,
         },
       }),
     ]);

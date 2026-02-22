@@ -1,9 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getMessagingProvider } from '@/lib/messaging';
-import { prisma } from '@/lib/db';
+import { getCrmDb, conversationService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 // GET /api/messaging/conversations/[id] - Get conversation details
 
@@ -20,10 +20,14 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const conversation = await prisma.conversation.findFirst({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
+    const conversation = await db.conversation.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
       include: {
         channelConnection: true,
@@ -68,10 +72,9 @@ export async function PATCH(
     
     // Update conversation status
     if (status) {
-      await prisma.conversation.update({
-        where: { id: params.id },
-        data: { status },
-      });
+      const ctx = getDalContextFromSession(session);
+      if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      await conversationService.update(ctx, params.id, { status });
     }
     
     return NextResponse.json({ success: true });

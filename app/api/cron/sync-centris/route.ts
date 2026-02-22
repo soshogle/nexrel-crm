@@ -9,7 +9,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runCentralCentrisSync, type BrokerOverride } from "@/lib/centris-sync";
 import { runRealtorSync } from "@/lib/realtor-sync";
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -38,8 +39,10 @@ export async function GET(req: NextRequest) {
   }
 
   // 2. Fallback: Website table (SERVICE template sites with neonDatabaseUrl)
+  const ctx = createDalContext('bootstrap');
+  const db = getCrmDb(ctx);
   if (databaseUrls.length === 0) {
-    const websites = await prisma.website.findMany({
+    const websites = await db.website.findMany({
       where: {
         templateType: "SERVICE",
         status: "READY",
@@ -76,7 +79,7 @@ export async function GET(req: NextRequest) {
 
   // Realtor.ca sync for brokers with realtorBrokerUrl
   const realtorOverrides: { databaseUrl: string; realtorBrokerUrl: string }[] = [];
-  const websites = await prisma.website.findMany({
+  const websitesRealtor = await db.website.findMany({
     where: {
       templateType: "SERVICE",
       status: "READY",

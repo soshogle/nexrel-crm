@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadStatus } from '@/lib/conversation-intelligence';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
@@ -22,7 +23,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fetch the call log with lead data
+    // Fetch the call log with lead data (no session - need prisma for initial lookup by id)
+    const { prisma } = await import('@/lib/db');
     const callLog = await prisma.callLog.findUnique({
       where: { id: callLogId },
       include: {
@@ -57,8 +59,11 @@ export async function POST(req: NextRequest) {
     const transcript = callLog.transcript || callLog.transcription || 'No transcript available';
     const duration = callLog.duration || 0;
 
+    const ctx = createDalContext(callLog.userId);
+    const crmDb = getCrmDb(ctx);
+
     // Get user's language preference
-    const user = await prisma.user.findUnique({
+    const user = await crmDb.user.findUnique({
       where: { id: callLog.userId },
       select: { language: true },
     });
@@ -68,7 +73,7 @@ export async function POST(req: NextRequest) {
     const leadContext = callLog.lead ? {
       status: callLog.lead.status,
       currentScore: callLog.lead.leadScore || 0,
-      previousInteractions: await prisma.callLog.count({
+      previousInteractions: await crmDb.callLog.count({
         where: {
           leadId: callLog.leadId || undefined,
           id: { not: callLogId },
@@ -83,7 +88,7 @@ export async function POST(req: NextRequest) {
     const scoreAdjustment = calculateLeadScoreAdjustment(analysis, duration);
 
     // Update the call log with analysis
-    await prisma.callLog.update({
+    await crmDb.callLog.update({
       where: { id: callLogId },
       data: {
         conversationAnalysis: analysis as any,
@@ -98,13 +103,10 @@ export async function POST(req: NextRequest) {
       const newScore = Math.max(0, Math.min(100, currentLeadScore + scoreAdjustment));
       const newStatus = determineNextLeadStatus(callLog.lead.status, analysis.callOutcome.outcome);
 
-      await prisma.lead.update({
-        where: { id: callLog.leadId },
-        data: {
-          leadScore: newScore,
-          status: newStatus,
-          lastContactedAt: new Date(),
-        },
+      await leadService.update(ctx, callLog.leadId, {
+        leadScore: newScore,
+        status: newStatus,
+        lastContactedAt: new Date(),
       });
     }
 

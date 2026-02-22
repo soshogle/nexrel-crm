@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, dealService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 interface ReengagingContact {
   id: string;
@@ -55,12 +56,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // 1. Find leads who were inactive but recently became active
     const reengagingContacts: ReengagingContact[] = [];
     
-    const leadsWithRecentNotes = await prisma.lead.findMany({
+    const leadsWithRecentNotes = await leadService.findMany(ctx, {
       where: {
-        userId: session.user.id,
         notes: {
           some: {
             createdAt: {
@@ -76,7 +79,7 @@ export async function GET(req: NextRequest) {
         },
       },
       take: 20,
-    });
+    } as any);
 
     for (const lead of leadsWithRecentNotes) {
       const notes = lead.notes;
@@ -107,13 +110,12 @@ export async function GET(req: NextRequest) {
     const referralOpportunities: ReferralOpportunity[] = [];
     
     // Get closed/won deals
-    const closedDeals = await prisma.deal.findMany({
+    const closedDeals = await dealService.findMany(ctx, {
       where: {
-        userId: session.user.id,
         actualCloseDate: {
           gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
           not: null,
-        },
+        } as any,
       },
       include: {
         lead: {
@@ -129,9 +131,9 @@ export async function GET(req: NextRequest) {
       },
       orderBy: {
         actualCloseDate: 'desc',
-      },
+      } as any,
       take: 20,
-    });
+    } as any);
 
     for (const deal of closedDeals) {
       if (!deal.lead || !deal.actualCloseDate) continue;
@@ -162,9 +164,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Also check converted leads
-    const convertedLeads = await prisma.lead.findMany({
+    const convertedLeads = await leadService.findMany(ctx, {
       where: {
-        userId: session.user.id,
         status: 'CONVERTED',
         lastContactedAt: {
           lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),

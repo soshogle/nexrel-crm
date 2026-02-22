@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { leadService } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
 import { emailService } from "@/lib/email-service";
 
 export const dynamic = "force-dynamic";
@@ -24,21 +25,18 @@ export async function POST(request: Request) {
 
     if (leadOwnerId) {
       try {
-        const lead = await prisma.lead.create({
-          data: {
-            userId: leadOwnerId,
-            businessName: companyName || fullName,
-            contactPerson: fullName,
-            email,
-            phone,
-            website: websiteUrl,
-            businessCategory: industry,
-            source: "soshogle_demo",
-            tags: ["demo", "landing-page"],
-            contactType: position || undefined,
-          },
-          select: { id: true },
-        });
+        const ctx = createDalContext(leadOwnerId);
+        const lead = await leadService.create(ctx, {
+          businessName: companyName || fullName,
+          contactPerson: fullName,
+          email,
+          phone: phone || null,
+          website: websiteUrl || null,
+          businessCategory: industry || undefined,
+          source: "soshogle_demo",
+          tags: ["demo", "landing-page"],
+          contactType: position || "CUSTOMER",
+        } as any);
         leadId = lead.id;
       } catch (dbError) {
         console.error("Failed to store demo lead:", dbError);

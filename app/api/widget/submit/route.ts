@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { processReferralTriggers } from '@/lib/referral-triggers';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 
@@ -20,8 +21,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+
     // Validate that the user exists
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
       select: { id: true, industry: true },
     });
@@ -61,39 +65,34 @@ export async function POST(request: NextRequest) {
     // If ref provided, resolve referrer and create referral + lead with source referral
     let referrerLead: { id: string } | null = null;
     if (referrerLeadId) {
-      referrerLead = await prisma.lead.findFirst({
-        where: { id: referrerLeadId, userId },
-        select: { id: true },
-      });
+      const found = await leadService.findUnique(ctx, referrerLeadId);
+      if (found) referrerLead = { id: found.id };
     }
 
-    const lead = await prisma.lead.create({
-      data: {
-        userId,
-        businessName: businessName || contactPerson || 'Unknown Business',
-        contactPerson: contactPerson || null,
-        email: email || null,
-        phone: phone || null,
-        website: website || null,
-        address: address || null,
-        city: city || null,
-        source: referrerLead ? 'referral' : 'Embedded Widget',
-        status: 'NEW',
-        notes: message || null,
-        enrichedData: {
-          widgetId: widgetId || 'default',
-          submittedAt: new Date().toISOString(),
-          userAgent: request.headers.get('user-agent') || 'Unknown',
-          referer: request.headers.get('referer') || 'Unknown',
-          ...(referrerLeadId ? { referralRef: referrerLeadId } : {}),
-        },
+    const lead = await leadService.create(ctx, {
+      businessName: businessName || contactPerson || 'Unknown Business',
+      contactPerson: contactPerson || null,
+      email: email || null,
+      phone: phone || null,
+      website: website || null,
+      address: address || null,
+      city: city || null,
+      source: referrerLead ? 'referral' : 'Embedded Widget',
+      status: 'NEW',
+      enrichedData: {
+        widgetId: widgetId || 'default',
+        submittedAt: new Date().toISOString(),
+        userAgent: request.headers.get('user-agent') || 'Unknown',
+        referer: request.headers.get('referer') || 'Unknown',
+        ...(referrerLeadId ? { referralRef: referrerLeadId } : {}),
       },
-    });
+      contactType: 'CUSTOMER',
+    } as any);
 
     if (referrerLead) {
-      const referral = await prisma.referral.create({
+      const referral = await db.referral.create({
         data: {
-          userId,
+          userId: ctx.userId,
           referrerId: referrerLead.id,
           referredName: contactPerson || businessName || 'Unknown',
           referredEmail: email || null,

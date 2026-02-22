@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { emailService } from '@/lib/email-service';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService } from '@/lib/dal/lead-service';
+import { noteService } from '@/lib/dal/note-service';
 import {
   triggerCallCompletedWorkflow,
   triggerMissedCallWorkflow,
@@ -479,20 +482,20 @@ async function sendEmailNotification(
   // Try to find caller in Leads database by phone number
   let callerName = from || 'Unknown';
   let callerEmail: string | undefined;
-  
+  const ctx = createDalContext(voiceAgent.userId);
+
   try {
     // Clean phone number for matching (remove +, spaces, dashes)
     const cleanPhone = (from || '').replace(/[\s\-\+\(\)]/g, '');
     
     // Check Leads
-    let lead = await prisma.lead.findFirst({
+    const leads = await leadService.findMany(ctx, {
       where: {
-        userId: voiceAgent.userId,
-        phone: {
-          contains: cleanPhone.slice(-10) // Match last 10 digits
-        }
-      }
+        phone: { contains: cleanPhone.slice(-10) }
+      },
+      take: 1
     });
+    let lead = leads[0];
 
     if (lead) {
       // Lead exists - update with call summary
@@ -507,22 +510,8 @@ async function sendEmailNotification(
         `Summary: ${aiSummary || 'No summary available'}\n\n` +
         `---\n${transcriptText || 'No transcript available'}`;
 
-      // Create a new Note entry for this call
-      await prisma.note.create({
-        data: {
-          leadId: lead.id,
-          userId: voiceAgent.userId,
-          content: callSummaryNote
-        }
-      });
-
-      // Update last contacted timestamp
-      await prisma.lead.update({
-        where: { id: lead.id },
-        data: {
-          lastContactedAt: new Date()
-        }
-      });
+      await noteService.create(ctx, { leadId: lead.id, content: callSummaryNote });
+      await leadService.update(ctx, lead.id, { lastContactedAt: new Date() });
 
       console.log('✅ Updated Lead with call summary note');
     } else {
@@ -544,24 +533,15 @@ async function sendEmailNotification(
         `Summary: ${aiSummary || 'Caller contacted via Voice AI. Follow up needed.'}\n\n` +
         `---\n${transcriptText || 'No transcript available'}`;
 
-      // Create new lead with a note
-      const newLead = await prisma.lead.create({
-        data: {
-          userId: voiceAgent.userId,
-          businessName: extractedName,
-          contactPerson: extractedName,
-          phone: from || '',
-          source: 'Voice AI Call',
-          status: 'NEW',
-          lastContactedAt: new Date(),
-          notes: {
-            create: {
-              userId: voiceAgent.userId,
-              content: initialNote
-            }
-          }
-        }
+      const newLead = await leadService.create(ctx, {
+        businessName: extractedName,
+        contactPerson: extractedName,
+        phone: from || '',
+        source: 'Voice AI Call',
+        status: 'NEW',
+        lastContactedAt: new Date(),
       });
+      await noteService.create(ctx, { leadId: newLead.id, content: initialNote });
 
       callerName = extractedName;
       console.log('✅ Created new Lead:', { id: newLead.id, name: extractedName, phone: from });

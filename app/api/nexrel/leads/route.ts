@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { leadService } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
 import { emailService } from "@/lib/email-service";
 
 export const dynamic = "force-dynamic";
@@ -12,19 +13,18 @@ export async function POST(request: Request) {
 
     if (leadOwnerId) {
       try {
-        await prisma.lead.create({
-          data: {
-            userId: leadOwnerId,
-            businessName: payload.companyName || `${payload.firstName || ""} ${payload.lastName || ""}`.trim() || "ROI Lead",
-            contactPerson: `${payload.firstName || ""} ${payload.lastName || ""}`.trim() || undefined,
-            email: payload.email || undefined,
-            phone: payload.phone || undefined,
-            website: payload.websiteUrl || undefined,
-            businessCategory: payload.industry || undefined,
-            source: payload.source || "roi_calculator",
-            tags: ["roi-calculator", "landing-page"],
-          },
-        });
+        const ctx = createDalContext(leadOwnerId);
+        await leadService.create(ctx, {
+          businessName: payload.companyName || `${payload.firstName || ""} ${payload.lastName || ""}`.trim() || "ROI Lead",
+          contactPerson: `${payload.firstName || ""} ${payload.lastName || ""}`.trim() || undefined,
+          email: payload.email || undefined,
+          phone: payload.phone || undefined,
+          website: payload.websiteUrl || undefined,
+          businessCategory: payload.industry || undefined,
+          source: payload.source || "roi_calculator",
+          tags: ["roi-calculator", "landing-page"],
+          contactType: "CUSTOMER",
+        } as any);
       } catch (dbError) {
         console.error("Failed to store ROI lead:", dbError);
       }

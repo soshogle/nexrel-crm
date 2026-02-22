@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, conversationService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 /**
  * Get call history for a specific phone number or conversation
@@ -28,21 +28,22 @@ export async function GET(request: NextRequest) {
 
     let calls: any[] = [];
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     if (conversationId) {
       // Get conversation to find contact identifier
-      const conversation = await prisma.conversation.findUnique({
-        where: { id: conversationId },
-        select: { contactIdentifier: true }
-      });
+      const conversation = await conversationService.findUnique(ctx, conversationId);
 
       if (!conversation) {
         return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
       }
 
       // Find calls for this contact
-      calls = await prisma.callLog.findMany({
+      const db = getCrmDb(ctx);
+      calls = await db.callLog.findMany({
         where: {
-          userId: session.user.id,
+          userId: ctx.userId,
           OR: [
             { fromNumber: conversation.contactIdentifier },
             { toNumber: conversation.contactIdentifier }
@@ -60,9 +61,10 @@ export async function GET(request: NextRequest) {
       });
     } else if (phoneNumber) {
       // Find calls for this phone number
-      calls = await prisma.callLog.findMany({
+      const db = getCrmDb(ctx);
+      calls = await db.callLog.findMany({
         where: {
-          userId: session.user.id,
+          userId: ctx.userId,
           OR: [
             { fromNumber: phoneNumber },
             { toNumber: phoneNumber }

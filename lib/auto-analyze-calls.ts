@@ -4,6 +4,8 @@
  */
 
 import { prisma, Prisma } from './db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService } from '@/lib/dal';
 import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadStatus } from './conversation-intelligence';
 
 export async function autoAnalyzeCall(callLogId: string) {
@@ -71,13 +73,11 @@ export async function autoAnalyzeCall(callLogId: string) {
       const newScore = Math.max(0, Math.min(100, currentLeadScore + scoreAdjustment));
       const newStatus = determineNextLeadStatus(callLog.lead.status, analysis.callOutcome.outcome) as any;
 
-      await prisma.lead.update({
-        where: { id: callLog.leadId },
-        data: {
-          leadScore: newScore,
-          status: newStatus,
-          lastContactedAt: new Date(),
-        },
+      const ctx = createDalContext(callLog.lead.userId);
+      await leadService.update(ctx, callLog.leadId, {
+        leadScore: newScore,
+        status: newStatus,
+        lastContactedAt: new Date(),
       });
     }
 

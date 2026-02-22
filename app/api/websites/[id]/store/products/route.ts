@@ -4,14 +4,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const website = await prisma.website.findUnique({
+    const ctx = createDalContext('bootstrap', null);
+    const website = await getCrmDb(ctx).website.findUnique({
       where: { id: params.id },
       select: { id: true, userId: true },
     });
@@ -20,7 +22,7 @@ export async function GET(
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
-    const websiteProducts = await prisma.websiteProduct.findMany({
+    const websiteProducts = await getCrmDb(ctx).websiteProduct.findMany({
       where: {
         websiteId: params.id,
         isVisible: true,

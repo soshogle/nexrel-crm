@@ -5,7 +5,8 @@
 
 import { WorkflowTask, WorkflowInstance } from '@prisma/client';
 import { executeMedicalAction } from './medical-executor';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService, getCrmDb } from '@/lib/dal';
 import { sendSMS } from '@/lib/twilio';
 import { EmailService } from '@/lib/email-service';
 
@@ -46,8 +47,9 @@ async function bookTreatment(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -62,7 +64,7 @@ async function bookTreatment(
   const duration = actionConfig?.duration || 60;
 
   try {
-    const appointment = await prisma.bookingAppointment.create({
+    const appointment = await getCrmDb(ctx).bookingAppointment.create({
       data: {
         userId: instance.userId,
         leadId: instance.leadId || undefined,
@@ -118,8 +120,9 @@ async function sendPackagePromotion(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {

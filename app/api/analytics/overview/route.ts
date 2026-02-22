@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService, dealService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +15,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const db = getCrmDb(ctx);
 
     // Get date range from query params (default to last 30 days)
     const { searchParams } = new URL(req.url);
@@ -41,40 +45,38 @@ export async function GET(req: NextRequest) {
       revenueByMonth,
     ] = await Promise.all([
       // Total leads
-      prisma.lead.count({ where: { userId } }),
+      leadService.count(ctx),
       // New leads in period
-      prisma.lead.count({
-        where: { userId, createdAt: { gte: startDate } },
-      }),
+      leadService.count(ctx, { createdAt: { gte: startDate } }),
       // Total deals
-      prisma.deal.count({ where: { userId } }),
+      dealService.count(ctx),
       // Total deal value
-      prisma.deal.aggregate({
-        where: { userId },
+      db.deal.aggregate({
+        where: { userId: ctx.userId },
         _sum: { value: true },
       }),
       // Won deals
-      prisma.deal.count({
+      db.deal.count({
         where: {
-          userId,
+          userId: ctx.userId,
           stage: { name: { contains: 'won', mode: 'insensitive' } },
         },
       }),
       // Won deal value
-      prisma.deal.aggregate({
+      db.deal.aggregate({
         where: {
-          userId,
+          userId: ctx.userId,
           stage: { name: { contains: 'won', mode: 'insensitive' } },
         },
         _sum: { value: true },
       }),
       // Total calls
-      prisma.callLog.count({ where: { userId } }),
+      db.callLog.count({ where: { userId: ctx.userId } }),
       // Total appointments
-      prisma.bookingAppointment.count({ where: { userId } }),
+      db.bookingAppointment.count({ where: { userId: ctx.userId } }),
       // Email campaigns
-      prisma.emailCampaign.findMany({
-        where: { userId },
+      db.emailCampaign.findMany({
+        where: { userId: ctx.userId },
         select: {
           id: true,
           recipients: {
@@ -85,8 +87,8 @@ export async function GET(req: NextRequest) {
         },
       }),
       // SMS campaigns
-      prisma.smsCampaign.findMany({
-        where: { userId },
+      db.smsCampaign.findMany({
+        where: { userId: ctx.userId },
         select: {
           id: true,
           recipients: {
@@ -97,8 +99,8 @@ export async function GET(req: NextRequest) {
         },
       }),
       // Workflows
-      prisma.workflow.findMany({
-        where: { userId },
+      db.workflow.findMany({
+        where: { userId: ctx.userId },
         select: {
           id: true,
           enrollments: {
@@ -109,26 +111,26 @@ export async function GET(req: NextRequest) {
         },
       }),
       // Leads by status
-      prisma.lead.groupBy({
+      db.lead.groupBy({
         by: ['status'],
-        where: { userId },
+        where: { userId: ctx.userId },
         _count: true,
       }),
       // Deals by stage
-      prisma.deal.groupBy({
+      db.deal.groupBy({
         by: ['stageId'],
-        where: { userId },
+        where: { userId: ctx.userId },
         _count: true,
         _sum: { value: true },
       }),
       // Revenue by month (last 6 months)
-      prisma.$queryRaw`
+      db.$queryRaw`
         SELECT 
           DATE_TRUNC('month', "actualCloseDate") as month,
           COUNT(*) as count,
           SUM(value) as revenue
         FROM "Deal"
-        WHERE "userId" = ${userId}
+        WHERE "userId" = ${ctx.userId}
           AND "actualCloseDate" IS NOT NULL
           AND "actualCloseDate" >= NOW() - INTERVAL '6 months'
         GROUP BY DATE_TRUNC('month', "actualCloseDate")

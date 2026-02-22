@@ -3,12 +3,15 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import { prisma } from '@/lib/db'
+import { getMetaDb } from '@/lib/db/meta-db'
 import bcrypt from 'bcryptjs'
+
+// Auth uses Meta DB (Phase 3–4). When DATABASE_URL_META not set, falls back to DATABASE_URL.
+const authDb = getMetaDb()
 
 // Always register Google provider so the button shows. Uses env vars when set.
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(authDb),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || 'placeholder',
@@ -31,13 +34,13 @@ export const authOptions: NextAuthOptions = {
         try {
           // Check database connection first
           try {
-            await prisma.$queryRaw`SELECT 1 as test`
+            await authDb.$queryRaw`SELECT 1 as test`
           } catch (dbError: any) {
             console.error('[AUTH] Database connection failed:', dbError.message)
             throw new Error(`Database connection failed: ${dbError.message}`)
           }
           
-          const user = await prisma.user.findUnique({
+          const user = await authDb.user.findUnique({
             where: {
               email: normalizedEmail
             },
@@ -83,7 +86,7 @@ export const authOptions: NextAuthOptions = {
     async signOut({ token }) {
       try {
         // End ALL active impersonation sessions for this Super Admin
-        await prisma.superAdminSession.updateMany({
+        await authDb.superAdminSession.updateMany({
           where: {
             superAdminId: token.id as string,
             isActive: true
@@ -104,7 +107,7 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === 'google' && user.email) {
         try {
           // Check if user exists in database
-          const existingUser = await prisma.user.findUnique({
+          const existingUser = await authDb.user.findUnique({
             where: { email: user.email },
             select: { id: true, accountStatus: true, createdAt: true }
           });
@@ -115,7 +118,7 @@ export const authOptions: NextAuthOptions = {
             const hasDefaultStatus = existingUser.accountStatus === 'ACTIVE';
             
             if (isNewUser && hasDefaultStatus) {
-              await prisma.user.update({
+              await authDb.user.update({
                 where: { id: existingUser.id },
                 data: { accountStatus: 'PENDING_APPROVAL' }
               });
@@ -142,7 +145,7 @@ export const authOptions: NextAuthOptions = {
         try {
           const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
 
-          const impersonationSession = await prisma.superAdminSession.findFirst({
+          const impersonationSession = await authDb.superAdminSession.findFirst({
             where: {
               superAdminId: originalUserId as string,
               isActive: true,
@@ -174,7 +177,7 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (impersonationSession?.impersonatedUser) {
-            await prisma.superAdminSession.update({
+            await authDb.superAdminSession.update({
               where: { id: impersonationSession.id },
               data: { lastActivity: new Date() },
             });
@@ -198,7 +201,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           if (wasImpersonating) {
-            const superAdmin = await prisma.user.findUnique({
+            const superAdmin = await authDb.user.findUnique({
               where: { id: originalUserId as string },
               select: {
                 id: true,
@@ -242,7 +245,7 @@ export const authOptions: NextAuthOptions = {
         if (userId) {
           try {
             // Fetch full user data to get role, parentRole, industry, and onboardingCompleted
-            const dbUser = await prisma.user.findUnique({
+            const dbUser = await authDb.user.findUnique({
               where: { id: userId as string },
               select: {
                 id: true,

@@ -7,17 +7,19 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService, getCrmDb } from '@/lib/dal';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const websites = await prisma.website.findMany({
-      where: { userId: session.user.id },
+    const websites = await getCrmDb(ctx).website.findMany({
+      where: { userId: ctx.userId },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,

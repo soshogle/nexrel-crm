@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { taskService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { aiTaskService } from '@/lib/ai-task-service';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +15,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
     const { eventType, leadId, dealId, contactId, eventData, autoAccept = false } = body;
@@ -38,55 +41,30 @@ export async function POST(request: NextRequest) {
 
       const createdTasks = await Promise.all(
         tasksToCreate.map(async (suggestion) => {
-          const task = await prisma.task.create({
-            data: {
-              title: suggestion.title,
-              description: suggestion.description,
-              priority: suggestion.priority,
-              status: 'TODO',
-              category: suggestion.category || null,
-              dueDate: suggestion.dueDate,
-              estimatedHours: suggestion.estimatedHours,
-              tags: suggestion.tags || [],
-              userId: session.user.id,
-              leadId: leadId || null,
-              dealId: dealId || null,
-              aiSuggested: true,
-              aiContext: {
-                eventType,
-                confidence: suggestion.confidence,
-                reasoning: suggestion.reasoning,
-              },
-            },
-            include: {
-              assignedTo: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  image: true,
-                },
-              },
-              lead: {
-                select: {
-                  id: true,
-                  businessName: true,
-                },
-              },
-              deal: {
-                select: {
-                  id: true,
-                  title: true,
-                },
-              },
+          const task = await taskService.create(ctx, {
+            title: suggestion.title,
+            description: suggestion.description,
+            priority: suggestion.priority,
+            status: 'TODO',
+            category: suggestion.category || null,
+            dueDate: suggestion.dueDate,
+            estimatedHours: suggestion.estimatedHours,
+            tags: suggestion.tags || [],
+            leadId: leadId || null,
+            dealId: dealId || null,
+            aiSuggested: true,
+            aiContext: {
+              eventType,
+              confidence: suggestion.confidence,
+              reasoning: suggestion.reasoning,
             },
           });
 
           // Create activity log
-          await prisma.taskActivity.create({
+          await getCrmDb(ctx).taskActivity.create({
             data: {
               taskId: task.id,
-              userId: session.user.id,
+              userId: ctx.userId,
               action: 'CREATED',
               newValue: 'AI Generated',
               metadata: {

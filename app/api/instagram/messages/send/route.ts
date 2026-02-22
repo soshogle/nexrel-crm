@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { conversationService } from '@/lib/dal/conversation-service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -73,34 +75,28 @@ export async function POST(request: NextRequest) {
 
     const responseData = await instagramResponse.json();
 
-    // Create or update conversation
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     let conversation;
     if (conversationId) {
-      conversation = await prisma.conversation.findUnique({
-        where: { id: conversationId },
-      });
+      conversation = await conversationService.findUnique(ctx, conversationId);
     }
 
     if (!conversation) {
-      // Create new conversation
-      conversation = await prisma.conversation.create({
-        data: {
-          userId: session.user.id,
-          channelConnectionId: connection.id,
-          contactIdentifier: recipientId,
-          contactName: recipientId, // Will be updated with actual name from Instagram
-          status: 'ACTIVE',
-          lastMessageAt: new Date(),
-        },
+      conversation = await conversationService.create(ctx, {
+        channelConnectionId: connection.id,
+        contactIdentifier: recipientId,
+        contactName: recipientId,
+        status: 'ACTIVE',
+        lastMessageAt: new Date(),
       });
     } else {
-      // Update existing conversation
-      await prisma.conversation.update({
-        where: { id: conversation.id },
-        data: {
-          lastMessageAt: new Date(),
-          status: 'ACTIVE',
-        },
+      await conversationService.update(ctx, conversation.id, {
+        lastMessageAt: new Date(),
+        status: 'ACTIVE',
       });
     }
 

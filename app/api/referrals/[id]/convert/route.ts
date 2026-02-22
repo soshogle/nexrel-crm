@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { getCrmDb, leadService } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { processReferralTriggers } from '@/lib/referral-triggers'
 
 export const dynamic = 'force-dynamic'
@@ -22,9 +22,13 @@ export async function POST(
     const body = await request.json()
     const { leadData } = body
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const db = getCrmDb(ctx)
     // Get referral
-    const referral = await prisma.referral.findUnique({
-      where: { id: params.id, userId: session.user.id },
+    const referral = await db.referral.findUnique({
+      where: { id: params.id, userId: ctx.userId },
     })
 
     if (!referral) {
@@ -39,21 +43,19 @@ export async function POST(
     }
 
     // Create new lead from referral
-    const newLead = await prisma.lead.create({
-      data: {
-        userId: session.user.id,
-        businessName: leadData?.businessName || referral.referredName,
-        contactPerson: referral.referredName,
-        email: referral.referredEmail,
-        phone: referral.referredPhone,
-        source: 'referral',
-        status: 'NEW',
-        ...leadData,
-      },
-    })
+    const newLead = await leadService.create(ctx, {
+      businessName: leadData?.businessName || referral.referredName,
+      contactPerson: referral.referredName,
+      email: referral.referredEmail,
+      phone: referral.referredPhone,
+      source: 'referral',
+      status: 'NEW',
+      ...leadData,
+      contactType: 'CUSTOMER',
+    } as any)
 
     // Update referral with converted lead
-    const updatedReferral = await prisma.referral.update({
+    const updatedReferral = await db.referral.update({
       where: { id: params.id },
       data: {
         status: 'CONVERTED',
@@ -67,7 +69,7 @@ export async function POST(
 
     // Fire referral-converted triggers (enroll new lead in campaigns/workflows)
     try {
-      await processReferralTriggers(session.user.id, newLead.id, 'REFERRAL_CONVERTED')
+      await processReferralTriggers(ctx.userId, newLead.id, 'REFERRAL_CONVERTED')
     } catch (triggerError) {
       console.error('Referral convert trigger processing failed:', triggerError)
     }

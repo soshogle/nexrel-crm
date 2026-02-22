@@ -1,6 +1,6 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { aiResponseService } from '@/lib/ai-response-service';
 import { workflowEngine } from '@/lib/workflow-engine';
 
@@ -33,9 +33,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+
     // Get or create conversation
     let conversation = conversationId
-      ? await prisma.conversation.findUnique({
+      ? await db.conversation.findUnique({
           where: { id: conversationId },
           include: {
             messages: {
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     if (!conversation && channelConnectionId && contactIdentifier) {
       // Create new conversation
-      conversation = await prisma.conversation.create({
+      conversation = await db.conversation.create({
         data: {
           userId,
           channelConnectionId,
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store incoming message
-    const incomingMessage = await prisma.conversationMessage.create({
+    const incomingMessage = await db.conversationMessage.create({
       data: {
         conversationId: conversation.id,
         userId,
@@ -86,7 +89,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update conversation
-    await prisma.conversation.update({
+    await db.conversation.update({
       where: { id: conversation.id },
       data: {
         lastMessageAt: new Date(),
@@ -127,7 +130,7 @@ export async function POST(request: NextRequest) {
     }).catch(err => console.error('Keyword workflow trigger failed:', err));
 
     // Check if auto-reply is enabled
-    const autoReplySettings = await prisma.autoReplySettings.findUnique({
+    const autoReplySettings = await db.autoReplySettings.findUnique({
       where: { userId },
     });
 
@@ -169,7 +172,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Save AI-generated response
-      const responseMessage = await prisma.conversationMessage.create({
+      const responseMessage = await db.conversationMessage.create({
         data: {
           conversationId: conversation.id,
           userId,
@@ -182,7 +185,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Message intelligence data stored in message providerData for future analysis
-      await prisma.conversationMessage.update({
+      await db.conversationMessage.update({
         where: { id: responseMessage.id },
         data: {
           providerData: {
@@ -201,7 +204,7 @@ export async function POST(request: NextRequest) {
 
       // Update conversation status if needs human review
       if (aiResponse.needsHumanReview) {
-        await prisma.conversation.update({
+        await db.conversation.update({
           where: { id: conversation.id },
           data: {
             status: 'UNREAD',
@@ -253,7 +256,7 @@ export async function POST(request: NextRequest) {
       console.error('AI response generation failed:', aiError);
       
       // Mark conversation as needing human review
-      await prisma.conversation.update({
+      await db.conversation.update({
         where: { id: conversation.id },
         data: {
           status: 'UNREAD',

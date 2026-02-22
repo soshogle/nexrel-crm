@@ -59,11 +59,15 @@ export async function POST(
     }
     
     // Get conversation details
-    const { prisma } = await import('@/lib/db');
-    const conversation = await prisma.conversation.findFirst({
+    const { getCrmDb } = await import('@/lib/dal');
+    const { getDalContextFromSession } = await import('@/lib/context/industry-context');
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const db = getCrmDb(ctx);
+    const conversation = await db.conversation.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
       include: {
         channelConnection: true,

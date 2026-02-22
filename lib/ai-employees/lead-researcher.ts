@@ -3,7 +3,8 @@
  * Researches companies and enriches lead data using web search, AI, Hunter.io, Clearbit, and Apify
  */
 
-import { prisma } from '../db';
+import { getCrmDb } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { aiOrchestrator } from '../ai-employee-orchestrator';
 import { AIEmployeeType } from '@prisma/client';
 import * as fs from 'fs';
@@ -237,7 +238,10 @@ export class LeadResearcher {
 
       // Update lead in database ONLY if leadId was provided
       if (leadId) {
-        await prisma.lead.update({
+        const leadUserId = await this.getLeadUserId(leadId);
+        const ctx = createDalContext(leadUserId);
+        const db = getCrmDb(ctx);
+        await db.lead.update({
           where: { id: leadId },
           data: {
             enrichedData: enrichedData,
@@ -1004,7 +1008,7 @@ Provide the response in JSON format:
    * Get lead's user ID
    */
   private async getLeadUserId(leadId: string): Promise<string> {
-    const lead = await prisma.lead.findUnique({
+    const lead = await getCrmDb(createDalContext('')).lead.findUnique({
       where: { id: leadId },
       select: { userId: true }
     });

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
 import { sendSMS } from '@/lib/twilio';
 
 export const dynamic = 'force-dynamic';
@@ -65,11 +66,15 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
     // Get campaign
-    const campaign = await prisma.smsCampaign.findFirst({
+    const campaign = await db.smsCampaign.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     });
 
@@ -107,8 +112,8 @@ export async function POST(
     }
 
     // Get user's Twilio config
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const user = await db.user.findUnique({
+      where: { id: ctx.userId },
       select: { smsProviderConfig: true, smsProviderConfigured: true },
     });
 
@@ -139,15 +144,14 @@ export async function POST(
     }
 
     // Update campaign status to SENDING
-    await prisma.smsCampaign.update({
+    await db.smsCampaign.update({
       where: { id: params.id },
       data: { status: 'SENDING' },
     });
 
     // Get target leads based on filters
-    const targetLeads = await prisma.lead.findMany({
+    const targetLeads = await leadService.findMany(ctx, {
       where: {
-        userId: session.user.id,
         leadScore: campaign.minLeadScore ? { gte: campaign.minLeadScore } : undefined,
         id: campaign.targetLeadIds ? { in: campaign.targetLeadIds as any } : undefined,
         phone: { not: null },
@@ -162,7 +166,7 @@ export async function POST(
     });
 
     if (targetLeads.length === 0) {
-      await prisma.smsCampaign.update({
+      await db.smsCampaign.update({
         where: { id: params.id },
         data: {
           status: 'SENT',
@@ -218,7 +222,7 @@ export async function POST(
         const result = await sendSMS(lead.phone!, personalizedMessage);
 
         // Create campaign recipient record
-        await prisma.smsCampaignDeal.create({
+        await db.smsCampaignDeal.create({
           data: {
             campaignId: params.id,
             leadId: lead.id,
@@ -243,7 +247,7 @@ export async function POST(
         failedCount++;
 
         // Create failed recipient record
-        await prisma.smsCampaignDeal.create({
+        await db.smsCampaignDeal.create({
           data: {
             campaignId: params.id,
             leadId: lead.id,
@@ -268,7 +272,7 @@ export async function POST(
     };
     const isNewWeek = !lastSent || getWeekNumber(lastSent) !== getWeekNumber(now);
 
-    await prisma.smsCampaign.update({
+    await db.smsCampaign.update({
       where: { id: params.id },
       data: {
         status: 'SENT',
@@ -296,10 +300,15 @@ export async function POST(
     
     // Update campaign status back to DRAFT on error
     try {
-      await prisma.smsCampaign.update({
-        where: { id: params.id },
-        data: { status: 'DRAFT' },
-      });
+      const session = await getServerSession(authOptions);
+      if (session?.user?.id) {
+        const ctx = createDalContext(session.user.id, session.user.industry);
+        const db = getCrmDb(ctx);
+        await db.smsCampaign.update({
+          where: { id: params.id },
+          data: { status: 'DRAFT' },
+        });
+      }
     } catch (e) {
       console.error('Failed to update campaign status:', e);
     }

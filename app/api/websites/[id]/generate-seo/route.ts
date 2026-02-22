@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { websiteService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { seoAutomation } from '@/lib/website-builder/seo-automation';
 import { extractPages } from '@/lib/website-builder/extract-pages';
 
@@ -21,18 +22,12 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: params.id, userId: session.user.id },
-      select: {
-        id: true,
-        name: true,
-        structure: true,
-        seoData: true,
-        vercelDeploymentUrl: true,
-        questionnaireAnswers: true,
-      },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
+    const website = await websiteService.findUnique(ctx, params.id);
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
@@ -81,12 +76,9 @@ export async function POST(
       }
     }
 
-    await prisma.website.update({
-      where: { id: website.id },
-      data: {
-        seoData: mergedSeo,
-        structure: updatedStructure,
-      },
+    await websiteService.update(ctx, website.id, {
+      seoData: mergedSeo,
+      structure: updatedStructure,
     });
 
     return NextResponse.json({

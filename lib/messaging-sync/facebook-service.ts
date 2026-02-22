@@ -1,11 +1,11 @@
-
 /**
  * Facebook Messenger Integration Service
  * Handles sending and receiving Facebook Messenger messages
  */
 
 import axios from 'axios';
-import { prisma } from '@/lib/db';
+import { getCrmDb, conversationService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 
 const FACEBOOK_GRAPH_API = 'https://graph.facebook.com/v18.0';
 
@@ -73,6 +73,8 @@ export class FacebookService {
     channelConnectionId: string,
     userId: string
   ): Promise<void> {
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     try {
       const messaging = webhookData.entry[0]?.messaging[0];
       if (!messaging) return;
@@ -86,7 +88,7 @@ export class FacebookService {
       const senderProfile = await this.getUserProfile(senderId);
 
       // Find or create conversation
-      let conversation = await prisma.conversation.findUnique({
+      let conversation = await db.conversation.findUnique({
         where: {
           channelConnectionId_contactIdentifier: {
             channelConnectionId,
@@ -96,16 +98,13 @@ export class FacebookService {
       });
 
       if (!conversation) {
-        conversation = await prisma.conversation.create({
-          data: {
-            userId,
-            channelConnectionId,
-            contactName: senderProfile.name,
-            contactIdentifier: senderId,
-            contactAvatar: senderProfile.profile_pic,
-            status: 'ACTIVE',
-          },
-        });
+        conversation = await conversationService.create(ctx, {
+          channelConnection: { connect: { id: channelConnectionId } },
+          contactName: senderProfile.name,
+          contactIdentifier: senderId,
+          contactAvatar: senderProfile.profile_pic,
+          status: 'ACTIVE',
+        } as any);
       }
 
       // Prepare attachments
@@ -116,7 +115,7 @@ export class FacebookService {
       }));
 
       // Create message
-      await prisma.conversationMessage.create({
+      await db.conversationMessage.create({
         data: {
           conversationId: conversation.id,
           userId,
@@ -130,13 +129,10 @@ export class FacebookService {
       });
 
       // Update conversation
-      await prisma.conversation.update({
-        where: { id: conversation.id },
-        data: {
-          lastMessageAt: new Date(),
-          lastMessagePreview: messageText.substring(0, 100) || '(attachment)',
-          unreadCount: { increment: 1 },
-        },
+      await conversationService.update(ctx, conversation.id, {
+        lastMessageAt: new Date(),
+        lastMessagePreview: messageText.substring(0, 100) || '(attachment)',
+        unreadCount: { increment: 1 },
       });
     } catch (error: any) {
       console.error('Error processing Facebook webhook:', error);

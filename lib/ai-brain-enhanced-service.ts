@@ -5,6 +5,8 @@
  */
 
 import { prisma } from './db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, taskService } from '@/lib/dal';
 
 export interface BrainDataPoint {
   id: string;
@@ -81,10 +83,12 @@ export class AIBrainEnhancedService {
     const cacheKey = `${userId}:enhanced`;
     const cached = this.getCached<ComprehensiveBrainData>(cacheKey);
     if (cached) return cached;
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     // Helper to fetch leads safely, handling dateOfBirth column issues
     const fetchLeadsSafely = async () => {
       try {
-        return await prisma.lead.findMany({
+        return await db.lead.findMany({
           where: { userId },
           orderBy: { createdAt: 'desc' },
         });
@@ -92,7 +96,7 @@ export class AIBrainEnhancedService {
         // If dateOfBirth column doesn't exist, fetch with explicit select
         if (error?.code === 'P2022' && error?.meta?.column === 'Lead.dateOfBirth') {
           console.warn('[AI Brain] dateOfBirth column missing, using select statement');
-          return await prisma.lead.findMany({
+          return await db.lead.findMany({
             where: { userId },
             select: {
               id: true,
@@ -127,40 +131,37 @@ export class AIBrainEnhancedService {
     const results = await Promise.allSettled([
       // Existing sources
       fetchLeadsSafely(),
-      prisma.deal.findMany({
+      db.deal.findMany({
         where: { userId },
         include: { stage: true, lead: true },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.task.findMany({
-        where: { OR: [{ userId }, { assignedToId: userId }] },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.bookingAppointment.findMany({
+      taskService.findMany(ctx),
+      db.bookingAppointment.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.callLog.findMany({
+      db.callLog.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
         take: 500,
       }),
 
       // Financial data
-      prisma.payment.findMany({
+      db.payment.findMany({
         where: { userId, status: 'SUCCEEDED' },
         orderBy: { createdAt: 'desc' },
         take: 1000,
       }),
       // Invoices
-      prisma.invoice.findMany({
+      db.invoice.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
         take: 500,
       }),
 
       // Marketing data
-      prisma.emailCampaign.findMany({
+      db.emailCampaign.findMany({
         where: { userId },
         include: {
           recipients: {
@@ -173,7 +174,7 @@ export class AIBrainEnhancedService {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.smsCampaign.findMany({
+      db.smsCampaign.findMany({
         where: { userId },
         include: {
           recipients: {
@@ -187,7 +188,7 @@ export class AIBrainEnhancedService {
       }),
 
       // Communication data
-      prisma.conversation.findMany({
+      db.conversation.findMany({
         where: { userId },
         include: {
           messages: {
@@ -197,7 +198,7 @@ export class AIBrainEnhancedService {
         },
         orderBy: { lastMessageAt: 'desc' },
       }),
-      prisma.conversationMessage.findMany({
+      db.conversationMessage.findMany({
         where: {
           conversation: { userId },
         },
@@ -206,19 +207,19 @@ export class AIBrainEnhancedService {
       }),
 
       // Customer feedback
-      prisma.review.findMany({
+      db.review.findMany({
         where: {
           campaign: { userId },
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.feedbackCollection.findMany({
+      db.feedbackCollection.findMany({
         where: { userId },
         orderBy: { triggeredAt: 'desc' },
       }),
 
       // Workflow data
-      prisma.workflow.findMany({
+      db.workflow.findMany({
         where: { userId, status: 'ACTIVE' },
         include: {
           enrollments: {
@@ -226,7 +227,7 @@ export class AIBrainEnhancedService {
           },
         },
       }),
-      prisma.workflowEnrollment.findMany({
+      db.workflowEnrollment.findMany({
         where: {
           workflow: { userId },
         },
@@ -237,7 +238,7 @@ export class AIBrainEnhancedService {
       // --- NEW DATA SOURCES ---
 
       // Email Drip Campaigns (detailed engagement stats)
-      prisma.emailDripCampaign.findMany({
+      db.emailDripCampaign.findMany({
         where: { userId },
         select: {
           id: true, name: true, status: true,
@@ -248,7 +249,7 @@ export class AIBrainEnhancedService {
       }),
 
       // Generic Campaigns (voice, multi-channel)
-      prisma.campaign.findMany({
+      db.campaign.findMany({
         where: { userId },
         select: {
           id: true, name: true, type: true, status: true,
@@ -260,7 +261,7 @@ export class AIBrainEnhancedService {
       }),
 
       // Outbound Calls
-      prisma.outboundCall.findMany({
+      db.outboundCall.findMany({
         where: { userId },
         select: {
           id: true, status: true, scheduledFor: true, completedAt: true,
@@ -271,7 +272,7 @@ export class AIBrainEnhancedService {
       }),
 
       // SMS Drip Campaigns
-      prisma.smsCampaign.findMany({
+      db.smsCampaign.findMany({
         where: { userId, isSequence: true },
         select: {
           id: true, name: true, status: true,
@@ -282,7 +283,7 @@ export class AIBrainEnhancedService {
       }),
 
       // Websites
-      prisma.website.findMany({
+      db.website.findMany({
         where: { userId },
         select: {
           id: true, name: true, status: true, type: true, buildProgress: true,
@@ -291,47 +292,47 @@ export class AIBrainEnhancedService {
       }),
 
       // Lead scoring distribution
-      prisma.lead.findMany({
+      db.lead.findMany({
         where: { userId, leadScore: { not: null } },
         select: { leadScore: true },
       }),
 
       // --- PHASE 1A: FINANCIAL & PAYMENT INTELLIGENCE ---
-      prisma.soshogleTransaction.findMany({
+      db.soshogleTransaction.findMany({
         where: { merchantId: userId },
         select: { id: true, amount: true, currency: true, status: true, type: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 500,
       }),
-      prisma.soshogleWallet.findMany({
+      db.soshogleWallet.findMany({
         where: { userId },
         select: { id: true, balance: true, currency: true },
       }),
-      prisma.creditScore.findMany({
+      db.creditScore.findMany({
         where: { userId },
         select: { id: true, score: true, factors: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),
-      prisma.achSettlement.findMany({
+      db.achSettlement.findMany({
         where: { userId },
         select: { id: true, amount: true, status: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
-      prisma.bnplApplication.findMany({
+      db.bnplApplication.findMany({
         where: { userId },
         select: { id: true, totalAmount: true, status: true, installmentCount: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
-      prisma.cashTransaction.findMany({
+      db.cashTransaction.findMany({
         where: { userId },
         select: { id: true, amount: true, type: true, status: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 500,
       }),
-      prisma.fraudAlert.findMany({
+      db.fraudAlert.findMany({
         where: { userId },
         select: { id: true, severity: true, status: true, type: true, amount: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
@@ -339,87 +340,87 @@ export class AIBrainEnhancedService {
       }),
 
       // --- PHASE 1B: E-COMMERCE & INVENTORY ---
-      prisma.product.findMany({
+      db.product.findMany({
         where: { userId },
         select: { id: true, name: true, price: true, stock: true, status: true, createdAt: true },
       }),
-      prisma.order.findMany({
+      db.order.findMany({
         where: { userId },
         select: { id: true, total: true, status: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 500,
       }),
-      prisma.storefront.findMany({
+      db.storefront.findMany({
         where: { userId },
         select: { id: true, name: true, status: true, createdAt: true },
       }),
-      prisma.inventoryItem.findMany({
+      db.inventoryItem.findMany({
         where: { userId },
         select: { id: true, name: true, quantity: true, minQuantity: true, price: true, status: true },
       }),
-      prisma.inventoryAlert.findMany({
+      db.inventoryAlert.findMany({
         where: { userId },
         select: { id: true, type: true, status: true, createdAt: true },
       }),
 
       // POS & Restaurant
-      prisma.reservation.findMany({
+      db.reservation.findMany({
         where: { userId },
         select: { id: true, status: true, partySize: true, date: true, createdAt: true },
         orderBy: { date: 'desc' },
         take: 500,
       }),
-      prisma.restaurantTable.findMany({
+      db.restaurantTable.findMany({
         where: { userId },
         select: { id: true, name: true, capacity: true, status: true },
       }),
 
       // --- PHASE 1C: TEAM, COMMS, VOICE, INTEGRATIONS ---
-      prisma.teamMember.findMany({
+      db.teamMember.findMany({
         where: { userId },
         select: { id: true, role: true, status: true, createdAt: true },
       }),
-      prisma.voiceAgent.findMany({
+      db.voiceAgent.findMany({
         where: { userId },
         select: { id: true, name: true, status: true, totalCalls: true, createdAt: true },
       }),
-      prisma.voiceUsage.findMany({
+      db.voiceUsage.findMany({
         where: { userId },
         select: { id: true, minutes: true, cost: true, agentType: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
-      prisma.channelConnection.findMany({
+      db.channelConnection.findMany({
         where: { userId },
         select: { id: true, channel: true, status: true, lastSyncAt: true },
       }),
-      prisma.calendarConnection.findMany({
+      db.calendarConnection.findMany({
         where: { userId },
         select: { id: true, provider: true, status: true, lastSyncAt: true },
       }),
-      prisma.scheduledEmail.findMany({
+      db.scheduledEmail.findMany({
         where: { userId },
         select: { id: true, status: true, scheduledFor: true },
       }),
-      prisma.scheduledSms.findMany({
+      db.scheduledSms.findMany({
         where: { userId },
         select: { id: true, status: true, scheduledFor: true },
       }),
-      prisma.referral.findMany({
+      db.referral.findMany({
         where: { referrerId: userId },
         select: { id: true, status: true, rewardAmount: true, createdAt: true },
       }),
-      prisma.pipeline.findMany({
+      db.pipeline.findMany({
         where: { userId },
         include: { stages: { select: { id: true, name: true, probability: true } } },
       }),
-      prisma.auditLog.findMany({
+      db.auditLog.findMany({
         where: { userId },
         select: { id: true, action: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
-      prisma.message.count({
+      db.message.count({
         where: { lead: { userId } },
       }),
     ]);
@@ -505,16 +506,16 @@ export class AIBrainEnhancedService {
     let reData = { properties: 0, fsbo: 0, cma: 0, presentations: 0, marketStats: 0 };
     let industryData: Record<string, any> = {};
     try {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { industry: true } });
+      const user = await db.user.findUnique({ where: { id: userId }, select: { industry: true } });
       const industry = user?.industry;
 
       if (industry === 'REAL_ESTATE') {
         const reResults = await Promise.allSettled([
-          prisma.rEProperty.count({ where: { userId } }),
-          prisma.rEFSBOListing.count({ where: { userId } }),
-          prisma.rECMAReport.count({ where: { userId } }),
-          prisma.rEListingPresentation.count({ where: { userId } }),
-          prisma.rEMarketStats.count({ where: { userId } }),
+          db.rEProperty.count({ where: { userId } }),
+          db.rEFSBOListing.count({ where: { userId } }),
+          db.rECMAReport.count({ where: { userId } }),
+          db.rEListingPresentation.count({ where: { userId } }),
+          db.rEMarketStats.count({ where: { userId } }),
         ]);
         reData = {
           properties: reResults[0].status === 'fulfilled' ? reResults[0].value : 0,
@@ -528,9 +529,9 @@ export class AIBrainEnhancedService {
 
       if (industry === 'DENTAL' || industry === 'HEALTHCARE' || industry === 'MEDICAL') {
         const dResults = await Promise.allSettled([
-          prisma.bookingAppointment.count({ where: { userId, startTime: { gte: new Date() } } }),
-          prisma.bookingAppointment.count({ where: { userId, status: 'NO_SHOW' } }),
-          prisma.bookingAppointment.count({ where: { userId } }),
+          db.bookingAppointment.count({ where: { userId, appointmentDate: { gte: new Date() } } }),
+          db.bookingAppointment.count({ where: { userId, status: 'NO_SHOW' } }),
+          db.bookingAppointment.count({ where: { userId } }),
         ]);
         industryData = {
           type: industry,
@@ -553,10 +554,10 @@ export class AIBrainEnhancedService {
 
       if (industry === 'SPORTS_CLUB' || industry === 'YOUTH_SPORTS') {
         const clubResults = await Promise.allSettled([
-          prisma.clubOSRegistration.count({ where: { program: { userId } } }),
-          prisma.clubOSProgram.count({ where: { userId } }),
-          prisma.clubOSTeam.count({ where: { division: { userId } } }),
-          prisma.clubOSSchedule.count({ where: { userId } }),
+          db.clubOSRegistration.count({ where: { program: { userId } } }),
+          db.clubOSProgram.count({ where: { userId } }),
+          db.clubOSTeam.count({ where: { division: { userId } } }),
+          db.clubOSSchedule.count({ where: { userId } }),
         ]);
         industryData = {
           type: industry,
@@ -596,15 +597,15 @@ export class AIBrainEnhancedService {
     const customerSatisfaction = (avgRating / 5) * 100;
 
     // Calculate overall health (weighted average of all data dimensions)
-    const orderCount = (extData.orders || []).length;
-    const fraudOpen = (extData.fraudAlerts || []).filter((f: any) => f.status === 'OPEN').length;
-    const invLow = (extData.inventoryItems || []).filter((i: any) => i.quantity <= (i.minQuantity || 5)).length;
+    const orderCount = (orders || []).length;
+    const fraudOpen = (fraudAlerts || []).filter((f: any) => f.status === 'OPEN').length;
+    const invLow = (inventoryItems || []).filter((i: any) => i.quantity <= (i.minQuantity || 5)).length;
     const healthFactors = {
       revenue: totalRevenue > 0 ? 100 : 50,
       leads: activeLeads > 0 ? 100 : 50,
       conversion: conversionRate > 10 ? 100 : conversionRate * 10,
       satisfaction: customerSatisfaction,
-      ecommerce: orderCount > 0 ? 100 : (extData.products || []).length > 0 ? 70 : 50,
+      ecommerce: orderCount > 0 ? 100 : (products || []).length > 0 ? 70 : 50,
       security: fraudOpen === 0 ? 100 : fraudOpen < 3 ? 60 : 20,
       inventory: invLow === 0 ? 100 : 50,
     };

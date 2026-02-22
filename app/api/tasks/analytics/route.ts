@@ -1,9 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { startOfWeek, startOfMonth, subDays, subWeeks, subMonths, format } from 'date-fns';
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { subDays, format } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '30d'; // 7d, 30d, 90d, 1y
@@ -39,10 +42,10 @@ export async function GET(request: NextRequest) {
         startDate = subDays(now, 30);
     }
 
-    const userId = session.user.id;
+    const userId = ctx.userId;
 
     // Fetch all tasks within period
-    const tasks = await prisma.task.findMany({
+    const tasks = await getCrmDb(ctx).task.findMany({
       where: {
         OR: [{ userId }, { assignedToId: userId }],
         createdAt: { gte: startDate },
@@ -55,11 +58,11 @@ export async function GET(request: NextRequest) {
     });
 
     // Completion trend (tasks completed over time)
-    const completionTrend = await generateCompletionTrend(userId, startDate, period);
+    const completionTrend = await generateCompletionTrend(ctx, userId, startDate, period);
 
     // Productivity metrics
-    const avgCompletionTime = await calculateAvgCompletionTime(userId, startDate);
-    const tasksCreatedVsCompleted = await getTasksCreatedVsCompleted(userId, startDate);
+    const avgCompletionTime = await calculateAvgCompletionTime(ctx, userId, startDate);
+    const tasksCreatedVsCompleted = await getTasksCreatedVsCompleted(ctx, userId, startDate);
 
     // Priority distribution
     const priorityDistribution = {
@@ -93,7 +96,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Team performance
-    const teamPerformance = await getTeamPerformance(userId, startDate);
+    const teamPerformance = await getTeamPerformance(ctx, userId, startDate);
 
     // Overdue analysis
     const overdueTasks = tasks.filter(
@@ -101,7 +104,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Predictive insights
-    const predictions = await generatePredictions(userId, tasks);
+    const predictions = await generatePredictions(ctx, userId, tasks);
 
     return NextResponse.json({
       period,
@@ -145,8 +148,8 @@ export async function GET(request: NextRequest) {
 }
 
 // Helper functions
-async function generateCompletionTrend(userId: string, startDate: Date, period: string) {
-  const completedTasks = await prisma.task.findMany({
+async function generateCompletionTrend(ctx: { userId: string }, userId: string, startDate: Date, period: string) {
+  const completedTasks = await getCrmDb(ctx).task.findMany({
     where: {
       OR: [{ userId }, { assignedToId: userId }],
       status: 'COMPLETED',
@@ -169,8 +172,8 @@ async function generateCompletionTrend(userId: string, startDate: Date, period: 
   return Object.entries(groupedByDate).map(([date, count]) => ({ date, count }));
 }
 
-async function calculateAvgCompletionTime(userId: string, startDate: Date) {
-  const completedTasks = await prisma.task.findMany({
+async function calculateAvgCompletionTime(ctx: { userId: string }, userId: string, startDate: Date) {
+  const completedTasks = await getCrmDb(ctx).task.findMany({
     where: {
       OR: [{ userId }, { assignedToId: userId }],
       status: 'COMPLETED',
@@ -196,15 +199,15 @@ async function calculateAvgCompletionTime(userId: string, startDate: Date) {
   return totalTime / completedTasks.length / (1000 * 60 * 60);
 }
 
-async function getTasksCreatedVsCompleted(userId: string, startDate: Date) {
-  const created = await prisma.task.count({
+async function getTasksCreatedVsCompleted(ctx: { userId: string }, userId: string, startDate: Date) {
+  const created = await getCrmDb(ctx).task.count({
     where: {
       OR: [{ userId }, { assignedToId: userId }],
       createdAt: { gte: startDate },
     },
   });
 
-  const completed = await prisma.task.count({
+  const completed = await getCrmDb(ctx).task.count({
     where: {
       OR: [{ userId }, { assignedToId: userId }],
       status: 'COMPLETED',
@@ -215,8 +218,8 @@ async function getTasksCreatedVsCompleted(userId: string, startDate: Date) {
   return { created, completed };
 }
 
-async function getTeamPerformance(userId: string, startDate: Date) {
-  const tasks = await prisma.task.findMany({
+async function getTeamPerformance(ctx: { userId: string }, userId: string, startDate: Date) {
+  const tasks = await getCrmDb(ctx).task.findMany({
     where: {
       userId,
       assignedToId: { not: null },
@@ -269,7 +272,7 @@ async function getTeamPerformance(userId: string, startDate: Date) {
   }));
 }
 
-async function generatePredictions(userId: string, recentTasks: any[]) {
+async function generatePredictions(ctx: { userId: string }, userId: string, recentTasks: any[]) {
   // Analyze patterns to generate predictions
   const predictions = [];
 

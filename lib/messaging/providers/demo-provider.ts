@@ -1,10 +1,8 @@
-
 // Demo provider for initial implementation (simulates messaging without external APIs)
 // This will be replaced with actual providers (Twilio, etc.)
 
 import { BaseMessagingProvider } from './base-provider';
 import { ChannelType, Conversation, Message } from '../types';
-import { prisma } from '@/lib/db';
 
 export class DemoMessagingProvider extends BaseMessagingProvider {
   name = 'demo';
@@ -21,7 +19,7 @@ export class DemoMessagingProvider extends BaseMessagingProvider {
   }> {
     try {
       // Find or create channel connection
-      const channelConnection = await prisma.channelConnection.findFirst({
+      const channelConnection = await this.db.channelConnection.findFirst({
         where: {
           userId: this.userId,
           channelType: params.channelType,
@@ -38,7 +36,7 @@ export class DemoMessagingProvider extends BaseMessagingProvider {
       }
       
       // Find or create conversation
-      let conversation = await prisma.conversation.findFirst({
+      let conversation = await this.db.conversation.findFirst({
         where: {
           channelConnectionId: channelConnection.id,
           contactIdentifier: params.to,
@@ -64,7 +62,7 @@ export class DemoMessagingProvider extends BaseMessagingProvider {
       
       // Simulate message delivery after 1 second
       setTimeout(async () => {
-        await prisma.conversationMessage.update({
+        await this.db.conversationMessage.update({
           where: { id: message.id },
           data: { 
             status: 'DELIVERED',
@@ -92,7 +90,7 @@ export class DemoMessagingProvider extends BaseMessagingProvider {
     limit?: number;
     offset?: number;
   }): Promise<Conversation[]> {
-    const conversations = await prisma.conversation.findMany({
+    const conversations = await this.db.conversation.findMany({
       where: {
         userId: this.userId,
         channelConnection: params.channelType ? {
@@ -127,7 +125,7 @@ export class DemoMessagingProvider extends BaseMessagingProvider {
     limit?: number;
     offset?: number;
   }): Promise<Message[]> {
-    const messages = await prisma.conversationMessage.findMany({
+    const messages = await this.db.conversationMessage.findMany({
       where: {
         conversationId: params.conversationId,
         userId: this.userId,
@@ -157,7 +155,7 @@ export class DemoMessagingProvider extends BaseMessagingProvider {
     messageId?: string;
   }): Promise<void> {
     if (params.messageId) {
-      await prisma.conversationMessage.update({
+      await this.db.conversationMessage.update({
         where: { id: params.messageId },
         data: { 
           status: 'READ',
@@ -165,7 +163,7 @@ export class DemoMessagingProvider extends BaseMessagingProvider {
         },
       });
     } else {
-      await prisma.conversationMessage.updateMany({
+      await this.db.conversationMessage.updateMany({
         where: {
           conversationId: params.conversationId,
           direction: 'INBOUND',
@@ -178,7 +176,7 @@ export class DemoMessagingProvider extends BaseMessagingProvider {
       });
     }
     
-    await prisma.conversation.update({
+    await this.db.conversation.update({
       where: { id: params.conversationId },
       data: { unreadCount: 0 },
     });
@@ -193,7 +191,7 @@ export class DemoMessagingProvider extends BaseMessagingProvider {
     error?: string;
   }> {
     try {
-      const channelConnection = await prisma.channelConnection.create({
+      const channelConnection = await this.db.channelConnection.create({
         data: {
           userId: this.userId,
           channelType: params.channelType,
@@ -222,7 +220,7 @@ export class DemoMessagingProvider extends BaseMessagingProvider {
   async disconnectChannel(params: {
     channelId: string;
   }): Promise<void> {
-    await prisma.channelConnection.update({
+    await this.db.channelConnection.update({
       where: { id: params.channelId },
       data: { status: 'DISCONNECTED' },
     });
@@ -234,7 +232,7 @@ export class DemoMessagingProvider extends BaseMessagingProvider {
     connected: boolean;
     error?: string;
   }> {
-    const channel = await prisma.channelConnection.findUnique({
+    const channel = await this.db.channelConnection.findUnique({
       where: { id: params.channelId },
     });
     

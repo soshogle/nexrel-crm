@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService, getCrmDb } from '@/lib/dal';
 import { updateSectionLayout } from '@/lib/website-builder/granular-tools';
 import { triggerWebsiteDeploy } from '@/lib/website-builder/deploy-trigger';
 
@@ -16,13 +17,12 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: params.id, userId: session.user.id },
-    });
+    const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
@@ -54,10 +54,7 @@ export async function PATCH(
           path: pagePath,
           components: [{ id: `${sectionType}-1`, type: sectionType, props }],
         });
-        await prisma.website.update({
-          where: { id: params.id },
-          data: { structure: newStructure },
-        });
+        await websiteService.update(ctx, params.id, { structure: newStructure });
         const deployResult = await triggerWebsiteDeploy(params.id);
         if (!deployResult.ok) console.warn('[Structure PATCH] Deploy:', deployResult.error);
         return NextResponse.json({ success: true, deploy: deployResult });
@@ -82,10 +79,7 @@ export async function PATCH(
         });
       }
 
-      await prisma.website.update({
-        where: { id: params.id },
-        data: { structure: newStructure },
-      });
+      await websiteService.update(ctx, params.id, { structure: newStructure });
       const deployResult = await triggerWebsiteDeploy(params.id);
       if (!deployResult.ok) {
         console.warn('[Structure PATCH] Deploy failed:', deployResult.error);
@@ -106,10 +100,7 @@ export async function PATCH(
         },
       });
 
-      await prisma.website.update({
-        where: { id: params.id },
-        data: { structure: newStructure },
-      });
+      await websiteService.update(ctx, params.id, { structure: newStructure });
       const deployResult = await triggerWebsiteDeploy(params.id);
       if (!deployResult.ok) console.warn('[Structure PATCH] Deploy:', deployResult.error);
       return NextResponse.json({ success: true, deploy: deployResult });
@@ -124,10 +115,7 @@ export async function PATCH(
         ...(globalStyles.spacing && { spacing: { ...(newStructure.globalStyles?.spacing || {}), ...globalStyles.spacing } }),
       };
 
-      await prisma.website.update({
-        where: { id: params.id },
-        data: { structure: newStructure },
-      });
+      await websiteService.update(ctx, params.id, { structure: newStructure });
       const deployResult = await triggerWebsiteDeploy(params.id);
       if (!deployResult.ok) console.warn('[Structure PATCH] Deploy:', deployResult.error);
       return NextResponse.json({ success: true, deploy: deployResult });
@@ -143,10 +131,7 @@ export async function PATCH(
         }
       }
       newStructure.pages = pages;
-      await prisma.website.update({
-        where: { id: params.id },
-        data: { structure: newStructure },
-      });
+      await websiteService.update(ctx, params.id, { structure: newStructure });
       const deployResult = await triggerWebsiteDeploy(params.id);
       if (!deployResult.ok) console.warn('[Structure PATCH] Deploy:', deployResult.error);
       return NextResponse.json({ success: true, deploy: deployResult });

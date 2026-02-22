@@ -2,7 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { leadService } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { DashboardOverview } from '@/components/dashboard/dashboard-overview'
 
 export default async function DashboardPage() {
@@ -13,18 +14,19 @@ export default async function DashboardPage() {
       return null
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return null
+
     // Fetch dashboard data
     const [leads, recentLeadsRaw] = await Promise.all([
-      prisma.lead.findMany({
-        where: { userId: session.user.id },
+      leadService.findMany(ctx, {
         select: {
           id: true,
           status: true,
           createdAt: true,
-        }
+        } as any,
       }),
-      prisma.lead.findMany({
-        where: { userId: session.user.id },
+      leadService.findMany(ctx, {
         select: {
           id: true,
           businessName: true,
@@ -32,9 +34,9 @@ export default async function DashboardPage() {
           createdAt: true,
           email: true,
           phone: true,
-        },
+        } as any,
         orderBy: { createdAt: 'desc' },
-        take: 5
+        take: 5,
       })
     ])
 

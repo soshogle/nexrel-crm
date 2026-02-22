@@ -3,7 +3,8 @@
  * Gathers comprehensive context about entities using the relationship graph
  */
 
-import { prisma } from './db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService, dealService, taskService } from '@/lib/dal';
 import { relationshipService } from './relationship-service';
 import { EntityType } from '@prisma/client';
 
@@ -34,9 +35,11 @@ export class AIContextBuilder {
    * Build comprehensive context for a lead
    */
   async buildLeadContext(userId: string, leadId: string): Promise<EntityContext> {
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     // Get the lead with all related data
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
+    const lead = await db.lead.findUnique({
+      where: { id: leadId, userId },
       include: {
         notes: {
           take: 10,
@@ -85,7 +88,7 @@ export class AIContextBuilder {
     );
 
     // Get metrics
-    const metrics = await prisma.relationshipMetrics.findUnique({
+    const metrics = await db.relationshipMetrics.findUnique({
       where: {
         userId_entityType_entityId: {
           userId,
@@ -124,8 +127,10 @@ export class AIContextBuilder {
    * Build comprehensive context for a deal
    */
   async buildDealContext(userId: string, dealId: string): Promise<EntityContext> {
-    const deal = await prisma.deal.findUnique({
-      where: { id: dealId },
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+    const deal = await db.deal.findUnique({
+      where: { id: dealId, userId },
       include: {
         lead: true,
         stage: true,
@@ -158,7 +163,7 @@ export class AIContextBuilder {
       dealId
     );
 
-    const metrics = await prisma.relationshipMetrics.findUnique({
+    const metrics = await db.relationshipMetrics.findUnique({
       where: {
         userId_entityType_entityId: {
           userId,
@@ -191,8 +196,13 @@ export class AIContextBuilder {
    * Build comprehensive context for a task
    */
   async buildTaskContext(userId: string, taskId: string): Promise<EntityContext> {
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+    const task = await db.task.findFirst({
+      where: {
+        id: taskId,
+        OR: [{ userId }, { assignedToId: userId }],
+      },
       include: {
         lead: true,
         deal: {
@@ -225,7 +235,7 @@ export class AIContextBuilder {
       taskId
     );
 
-    const metrics = await prisma.relationshipMetrics.findUnique({
+    const metrics = await db.relationshipMetrics.findUnique({
       where: {
         userId_entityType_entityId: {
           userId,

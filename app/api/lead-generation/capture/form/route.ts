@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { leadService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { validateLead } from '@/lib/lead-generation/data-validation';
 import { scoreAndSaveLead } from '@/lib/lead-generation/lead-scoring-db';
 
-
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-const prisma = new PrismaClient();
 
 /**
  * POST /api/lead-generation/capture/form
@@ -50,29 +48,28 @@ export async function POST(request: NextRequest) {
     });
     
     // Create lead
-    const lead = await prisma.lead.create({
-      data: {
-        userId,
-        businessName: company || fullName,
-        contactPerson: fullName,
-        email,
-        phone,
-        source: 'form_widget',
-        status: 'NEW',
-        validationScore: validation.validationScore,
-        validationErrors: validation.validationErrors,
-        qualityFlag: validation.qualityFlag,
-        engagementHistory: {
-          formSubmitted: true,
-          formSubmittedAt: new Date().toISOString(),
-          message
-        }
-      }
-    });
+    const ctx = createDalContext(userId);
+    const lead = await leadService.create(ctx, {
+      businessName: company || fullName,
+      contactPerson: fullName,
+      email,
+      phone,
+      source: 'form_widget',
+      status: 'NEW',
+      validationScore: validation.validationScore,
+      validationErrors: validation.validationErrors,
+      qualityFlag: validation.qualityFlag,
+      engagementHistory: {
+        formSubmitted: true,
+        formSubmittedAt: new Date().toISOString(),
+        message
+      },
+      contactType: 'CUSTOMER',
+    } as any);
     
     // Score the lead
     try {
-      await scoreAndSaveLead(lead.id);
+      await scoreAndSaveLead(lead.id, userId, null);
     } catch (error) {
       console.error('Error scoring lead:', error);
       // Continue even if scoring fails

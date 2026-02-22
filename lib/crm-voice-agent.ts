@@ -3,7 +3,8 @@
  * Manages the creation and configuration of CRM voice assistants
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { PLATFORM_SETTINGS_WITH_OVERRIDES } from '@/lib/elevenlabs-overrides';
 import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
 import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
@@ -19,8 +20,10 @@ export class CrmVoiceAgentService {
    * Get or create CRM voice agent for user
    */
   async getOrCreateCrmVoiceAgent(userId: string): Promise<{ agentId: string; created: boolean }> {
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     // Check if user already has a CRM voice agent
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -67,7 +70,7 @@ export class CrmVoiceAgentService {
     });
 
     // Update user with agent ID
-    await prisma.user.update({
+    await db.user.update({
       where: { id: userId },
       data: { crmVoiceAgentId: agentId },
     });
@@ -79,7 +82,9 @@ export class CrmVoiceAgentService {
    * Create a new CRM voice agent
    */
   private async createCrmVoiceAgent(config: CrmVoiceAgentConfig): Promise<string> {
-    const user = await prisma.user.findUnique({
+    const ctx = createDalContext(config.userId);
+    const db = getCrmDb(ctx);
+    const user = await db.user.findUnique({
       where: { id: config.userId },
       select: {
         name: true,
@@ -952,7 +957,9 @@ ${getConfidentialityGuard()}`;
     }
 
     try {
-      const user = await prisma.user.findUnique({
+      const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+    const user = await db.user.findUnique({
         where: { id: userId },
         select: { language: true },
       });
@@ -972,7 +979,7 @@ ${getConfidentialityGuard()}`;
       const currentAgent = await getResponse.json();
       const crmFunctions = this.buildCrmFunctions();
       const expectedServerUrl = this.getFunctionServerUrl();
-      const fullUser = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true, industry: true } });
+      const fullUser = await db.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true, industry: true } });
       const newPrompt = this.buildCrmSystemPrompt(fullUser, language);
 
       const currentTools = currentAgent.tools || [];
@@ -1045,7 +1052,9 @@ ${getConfidentialityGuard()}`;
    * Update CRM voice agent configuration
    */
   async updateCrmVoiceAgent(userId: string, updates: { voiceId?: string; language?: string }): Promise<void> {
-    const user = await prisma.user.findUnique({
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+    const user = await db.user.findUnique({
       where: { id: userId },
       select: { crmVoiceAgentId: true },
     });
@@ -1101,7 +1110,7 @@ ${getConfidentialityGuard()}`;
 
     // Update user language if changed
     if (updates.language) {
-      await prisma.user.update({
+      await db.user.update({
         where: { id: userId },
         data: { language: updates.language },
       });

@@ -4,6 +4,8 @@
  */
 
 import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal/db';
+import { createDalContext } from '@/lib/context/industry-context';
 import { EmailService } from '@/lib/email-service';
 
 export interface SendSMSParams {
@@ -75,12 +77,14 @@ async function sendSMSWithConfig(
  */
 export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean; message?: string; error?: string }> {
   const { userId, contactName, message, phoneNumber, leadId } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
   let finalPhone = phoneNumber;
   let resolvedLeadId = leadId;
 
   if (!finalPhone) {
-    const lead = await prisma.lead.findFirst({
+    const lead = await db.lead.findFirst({
       where: {
         userId,
         OR: [
@@ -110,7 +114,7 @@ export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean
     };
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await db.user.findUnique({
     where: { id: userId },
     select: { smsProviderConfig: true, smsProviderConfigured: true },
   });
@@ -146,12 +150,14 @@ export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean
  */
 export async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; message?: string; error?: string }> {
   const { userId, contactName, subject, body, email, leadId } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
   let finalEmail = email;
   let resolvedLeadId = leadId;
 
   if (!finalEmail) {
-    const lead = await prisma.lead.findFirst({
+    const lead = await db.lead.findFirst({
       where: {
         userId,
         OR: [
@@ -245,7 +251,8 @@ async function getLeadsByCriteria(
   if (startDate && endDate) where.createdAt = { gte: startDate, lt: endDate };
   else if (startDate) where.createdAt = { gte: startDate };
 
-  return prisma.lead.findMany({
+  const ctx = createDalContext(userId);
+  return getCrmDb(ctx).lead.findMany({
     where,
     take: criteria?.limit || 50,
     orderBy: { createdAt: 'desc' },

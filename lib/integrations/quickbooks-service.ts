@@ -1,10 +1,11 @@
-
 /**
  * QuickBooks Online Integration Service
  * Handles invoicing, customer sync, and payment tracking
  */
 
 import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService, noteService } from '@/lib/dal';
 import { decrypt } from '@/lib/encryption';
 
 interface QuickBooksCredentials {
@@ -384,10 +385,9 @@ export async function syncContactToQuickBooks(
   contactId: string
 ): Promise<{ success: boolean; customerId?: string; error?: string }> {
   try {
+    const ctx = createDalContext(userId);
     // Get lead from database
-    const lead = await prisma.lead.findUnique({
-      where: { id: contactId }
-    });
+    const lead = await leadService.findUnique(ctx, contactId);
 
     if (!lead) {
       return {
@@ -406,12 +406,9 @@ export async function syncContactToQuickBooks(
 
     if (result.success && result.customerId) {
       // Create a note with QuickBooks customer ID
-      await prisma.note.create({
-        data: {
-          userId,
-          leadId: contactId,
-          content: `QuickBooks Customer ID: ${result.customerId}`
-        }
+      await noteService.create(ctx, {
+        leadId: contactId,
+        content: `QuickBooks Customer ID: ${result.customerId}`,
       });
     }
 

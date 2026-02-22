@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { workflowTemplateService, leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -22,20 +23,13 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { id } = await params;
 
     // Verify workflow exists and belongs to user
-    const workflow = await prisma.workflowTemplate.findFirst({
-      where: {
-        id,
-        userId: session.user.id,
-      },
-      include: {
-        tasks: {
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
-    });
+    const workflow = await workflowTemplateService.findUnique(ctx, id);
 
     if (!workflow) {
       return NextResponse.json(
@@ -64,11 +58,8 @@ export async function POST(
     }
 
     // Verify leads belong to user
-    const leads = await prisma.lead.findMany({
-      where: {
-        id: { in: leadIds },
-        userId: session.user.id,
-      },
+    const leads = await leadService.findMany(ctx, {
+      where: { id: { in: leadIds } },
     });
 
     if (leads.length !== leadIds.length) {
@@ -79,7 +70,7 @@ export async function POST(
     }
 
     // Check for existing enrollments
-    const existingEnrollments = await prisma.$queryRaw<Array<{ leadId: string }>>`
+    const existingEnrollments = await getCrmDb(ctx).$queryRaw<Array<{ leadId: string }>>`
       SELECT "leadId" FROM "WorkflowTemplateEnrollment"
       WHERE "workflowId" = ${id} AND "leadId" = ANY(${leadIds})
     `;
@@ -112,7 +103,7 @@ export async function POST(
     // Create enrollments
     const enrollments = await Promise.all(
       leadsToEnroll.map((lead) =>
-        prisma.$executeRaw`
+        getCrmDb(ctx).$executeRaw`
           INSERT INTO "WorkflowTemplateEnrollment" (
             "id", "workflowId", "leadId", "status", "currentStep", 
             "nextSendAt", "enrolledAt", "abTestGroup"
@@ -158,15 +149,13 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { id } = await params;
 
     // Verify workflow exists and belongs to user
-    const workflow = await prisma.workflowTemplate.findFirst({
-      where: {
-        id,
-        userId: session.user.id,
-      },
-    });
+    const workflow = await workflowTemplateService.findUnique(ctx, id);
 
     if (!workflow) {
       return NextResponse.json(
@@ -176,7 +165,7 @@ export async function GET(
     }
 
     // Get enrollments using Prisma client
-    const enrollments = await prisma.workflowTemplateEnrollment.findMany({
+    const enrollments = await getCrmDb(ctx).workflowTemplateEnrollment.findMany({
       where: {
         workflowId: id,
       },
@@ -197,11 +186,8 @@ export async function GET(
 
     // Get lead details for enrollments
     const leadIds = enrollments.map(e => e.leadId);
-    const leads = await prisma.lead.findMany({
-      where: {
-        id: { in: leadIds },
-        userId: session.user.id,
-      },
+    const leads = await leadService.findMany(ctx, {
+      where: { id: { in: leadIds } },
       select: {
         id: true,
         businessName: true,

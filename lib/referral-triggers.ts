@@ -3,7 +3,8 @@
  * when a referral is created or converted.
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
 
 export type ReferralTriggerType = 'REFERRAL_CREATED' | 'REFERRAL_CONVERTED';
@@ -25,8 +26,11 @@ export async function processReferralTriggers(
     triggerType,
   });
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+
   // 2. Workflow template enrollments
-  const workflows = await prisma.workflowTemplate.findMany({
+  const workflows = await db.workflowTemplate.findMany({
     where: {
       userId,
       isActive: true,
@@ -44,7 +48,7 @@ export async function processReferralTriggers(
     if (!hasTrigger) continue;
 
     // Check existing enrollment
-    const existing = await prisma.workflowTemplateEnrollment.findUnique({
+    const existing = await db.workflowTemplateEnrollment.findUnique({
       where: {
         workflowId_leadId: { workflowId: workflow.id, leadId },
       },
@@ -72,7 +76,7 @@ export async function processReferralTriggers(
       abTestGroup = random < (config.splitPercentage ?? 50) ? 'A' : 'B';
     }
 
-    await prisma.workflowTemplateEnrollment.create({
+    await db.workflowTemplateEnrollment.create({
       data: {
         workflowId: workflow.id,
         leadId,

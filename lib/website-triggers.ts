@@ -3,7 +3,8 @@
  * (form submitted, visitor arrives, CTA clicked, booking created).
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 
 export type WebsiteTriggerType =
   | 'WEBSITE_FORM_SUBMITTED'
@@ -24,7 +25,9 @@ export async function processWebsiteTriggers(
   triggerType: WebsiteTriggerType,
   metadata?: { websiteId?: string }
 ) {
-  const workflows = await prisma.workflowTemplate.findMany({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const workflows = await db.workflowTemplate.findMany({
     where: {
       userId,
       isActive: true,
@@ -48,7 +51,7 @@ export async function processWebsiteTriggers(
     }
 
     // Check existing enrollment
-    const existing = await prisma.workflowTemplateEnrollment.findUnique({
+    const existing = await db.workflowTemplateEnrollment.findUnique({
       where: {
         workflowId_leadId: { workflowId: workflow.id, leadId },
       },
@@ -76,7 +79,7 @@ export async function processWebsiteTriggers(
       abTestGroup = random < (config.splitPercentage ?? 50) ? 'A' : 'B';
     }
 
-    await prisma.workflowTemplateEnrollment.create({
+    await db.workflowTemplateEnrollment.create({
       data: {
         workflowId: workflow.id,
         leadId,

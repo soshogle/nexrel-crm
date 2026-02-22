@@ -3,7 +3,8 @@
  * Used by CRM voice agent and AI assistant
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 
 export function parseChartIntent(text: string): { chartType: 'pie' | 'bar' | 'line'; dimension: string } | null {
   if (!text || typeof text !== 'string') return null;
@@ -38,9 +39,11 @@ export function parseChartIntent(text: string): { chartType: 'pie' | 'bar' | 'li
 }
 
 export async function getDynamicChartData(userId: string, dimension: string): Promise<{ name: string; value: number }[]> {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   switch (dimension) {
     case 'leads_by_status': {
-      const groups = await prisma.lead.groupBy({
+      const groups = await db.lead.groupBy({
         by: ['status'],
         where: { userId },
         _count: { id: true },
@@ -48,7 +51,7 @@ export async function getDynamicChartData(userId: string, dimension: string): Pr
       return groups.map(g => ({ name: String(g.status), value: g._count.id }));
     }
     case 'leads_by_source': {
-      const groups = await prisma.lead.groupBy({
+      const groups = await db.lead.groupBy({
         by: ['source'],
         where: { userId },
         _count: { id: true },
@@ -56,7 +59,7 @@ export async function getDynamicChartData(userId: string, dimension: string): Pr
       return groups.map(g => ({ name: g.source || 'Unknown', value: g._count.id }));
     }
     case 'deals_by_stage': {
-      const deals = await prisma.deal.findMany({
+      const deals = await db.deal.findMany({
         where: { userId },
         select: { stageId: true, stage: { select: { name: true } } },
       });
@@ -68,7 +71,7 @@ export async function getDynamicChartData(userId: string, dimension: string): Pr
       return Object.entries(byStage).map(([name, value]) => ({ name, value }));
     }
     case 'revenue_by_stage': {
-      const deals = await prisma.deal.findMany({
+      const deals = await db.deal.findMany({
         where: { userId },
         select: { value: true, stage: { select: { name: true } } },
       });

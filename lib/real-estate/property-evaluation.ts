@@ -4,7 +4,8 @@
  * Falls back to Centris regional stats when no comparables.
  */
 
-import { prisma } from "@/lib/db";
+import { createDalContext } from "@/lib/context/industry-context";
+import { websiteService } from "@/lib/dal";
 import { Pool } from "pg";
 import { getRegionalMedianPrice } from "./centris-regional-stats";
 
@@ -92,12 +93,12 @@ function haversineKm(
 export async function findComparables(
   websiteId: string,
   details: PropertyDetails,
-  limit = 5
+  userId: string,
+  limit = 5,
+  industry?: string | null
 ): Promise<ComparableProperty[]> {
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId },
-    select: { neonDatabaseUrl: true, templateType: true },
-  });
+  const ctx = createDalContext(userId, industry);
+  const website = await websiteService.findUnique(ctx, websiteId);
 
   if (!website?.neonDatabaseUrl || website.templateType !== "SERVICE") {
     return [];
@@ -235,9 +236,11 @@ export async function findComparables(
  */
 export async function runPropertyEvaluation(
   websiteId: string,
-  details: PropertyDetails
+  details: PropertyDetails,
+  userId: string,
+  industry?: string | null
 ): Promise<PropertyEvaluationResult> {
-  const comparables = await findComparables(websiteId, details, 5);
+  const comparables = await findComparables(websiteId, details, userId, 5, industry);
 
   const city = details.city || extractCityFromAddress(details.address) || "";
   const propType = details.propertyType || "house";

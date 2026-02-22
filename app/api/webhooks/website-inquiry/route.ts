@@ -5,7 +5,8 @@
  * sends an email notification to the broker, and triggers workflows.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService, noteService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { emailService } from '@/lib/email-service';
 import { processWebsiteTriggers } from '@/lib/website-triggers';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'name, email, and message are required' }, { status: 400 });
     }
 
-    const website = await prisma.website.findUnique({
+    const website = await getCrmDb(createDalContext('')).website.findUnique({
       where: { id: websiteId },
       select: { userId: true, name: true },
     });
@@ -35,6 +36,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
+    const ctx = createDalContext(website.userId);
+    const db = getCrmDb(ctx);
+
     const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
     if (expectedSecret && secret !== expectedSecret) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -42,33 +46,32 @@ export async function POST(request: NextRequest) {
 
     const leadOwnerId = website.userId;
 
-    const existingLead = await prisma.lead.findFirst({
-      where: { userId: leadOwnerId, email },
-    });
+    const existingLead = await leadService.findMany(ctx, {
+      where: { email },
+      take: 1,
+    }).then((r) => r[0]);
 
     let lead;
     if (existingLead) {
       lead = existingLead;
     } else {
-      lead = await prisma.lead.create({
-        data: {
-          userId: leadOwnerId,
-          businessName: name,
-          contactPerson: name,
-          email,
-          phone: phone || null,
-          source: 'Website Contact Form',
-          status: 'NEW',
-          enrichedData: {
-            source: 'website_contact_form',
-            websiteId,
-            websiteName: website.name,
-            propertyId: propertyId || null,
-            propertyAddress: propertyAddress || null,
-            receivedAt: new Date().toISOString(),
-          },
+      lead = await leadService.create(ctx, {
+        businessName: name,
+        contactPerson: name,
+        email,
+        phone: phone || null,
+        source: 'Website Contact Form',
+        status: 'NEW',
+        enrichedData: {
+          source: 'website_contact_form',
+          websiteId,
+          websiteName: website.name,
+          propertyId: propertyId || null,
+          propertyAddress: propertyAddress || null,
+          receivedAt: new Date().toISOString(),
         },
-      });
+        contactType: 'CUSTOMER',
+      } as any);
     }
 
     const noteContent = [
@@ -79,16 +82,10 @@ export async function POST(request: NextRequest) {
       message,
     ].join('\n');
 
-    await prisma.note.create({
-      data: {
-        leadId: lead.id,
-        userId: leadOwnerId,
-        content: noteContent,
-      },
-    });
+    await noteService.create(ctx, { leadId: lead.id, content: noteContent });
 
     // Notify the broker via email
-    const broker = await prisma.user.findUnique({
+    const broker = await db.user.findUnique({
       where: { id: leadOwnerId },
       select: { email: true, name: true },
     });

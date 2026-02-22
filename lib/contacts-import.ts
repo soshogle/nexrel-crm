@@ -1,5 +1,5 @@
-
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService } from '@/lib/dal';
 
 export interface ImportResult {
   success: number;
@@ -116,25 +116,23 @@ export async function importContactsFromCSV(
         continue;
       }
 
+      const ctx = createDalContext(userId);
       // Create contact
-      const contact = await prisma.lead.create({
-        data: {
-          userId: userId,
-          businessName: businessName,
-          contactPerson: row.contactperson || row['contact person'] || row.contact || businessName,
-          email: row.email || null,
-          phone: row.phone || null,
-          address: row.address || null,
-          city: row.city || null,
-          state: row.state || null,
-          zipCode: row.zipcode || row['zip code'] || null,
-          country: row.country || null,
-          website: row.website || null,
-          businessCategory: row.businesscategory || row['business category'] || null,
-          contactType: validateContactType(row.contacttype || row['contact type']) || 'prospect',
-          status: 'NEW',
-          source: 'AI Chat Import',
-        },
+      const contact = await leadService.create(ctx, {
+        businessName: businessName,
+        contactPerson: row.contactperson || row['contact person'] || row.contact || businessName,
+        email: row.email || null,
+        phone: row.phone || null,
+        address: row.address || null,
+        city: row.city || null,
+        state: row.state || null,
+        zipCode: row.zipcode || row['zip code'] || null,
+        country: row.country || null,
+        website: row.website || null,
+        businessCategory: row.businesscategory || row['business category'] || null,
+        contactType: validateContactType(row.contacttype || row['contact type']) || 'prospect',
+        status: 'NEW',
+        source: 'AI Chat Import',
       });
 
       success.push(contact);

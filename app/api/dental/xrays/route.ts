@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
 import { DicomParser } from '@/lib/dental/dicom-parser';
 import { DicomToImageConverter } from '@/lib/dental/dicom-to-image';
@@ -44,17 +45,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+
     // Build where clause with clinic filtering
     const where: any = {
       leadId,
-      userId: session.user.id,
+      userId: ctx.userId,
     };
     if (clinicId) {
       where.clinicId = clinicId;
     }
 
     // Use correct Prisma model name (capitalized)
-    const xrays = await prisma.dentalXRay.findMany({
+    const xrays = await getCrmDb(ctx).dentalXRay.findMany({
       where,
       orderBy: {
         dateTaken: 'desc',
@@ -102,9 +106,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify lead belongs to user
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId, userId },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+    const lead = await leadService.findUnique(ctx, leadId);
 
     if (!lead) {
       return NextResponse.json(
@@ -246,9 +250,9 @@ export async function POST(request: NextRequest) {
 
           // Phase 2: Route DICOM to VNA based on routing rules
           try {
-            const vnaConfigs = await prisma.vnaConfiguration.findMany({
+            const vnaConfigs = await getCrmDb(ctx).vnaConfiguration.findMany({
               where: {
-                userId,
+                userId: ctx.userId,
                 isActive: true,
               },
             });
@@ -375,7 +379,7 @@ export async function POST(request: NextRequest) {
     if (clinicId) {
       createData.clinicId = clinicId;
     }
-    const xray = await (prisma as any).dentalXRay.create({
+    const xray = await getCrmDb(ctx).dentalXRay.create({
       data: createData,
     });
 

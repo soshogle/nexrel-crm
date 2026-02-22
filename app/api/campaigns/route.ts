@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { campaignService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,23 +15,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const type = searchParams.get('type');
 
-    const where: any = {
-      userId: session.user.id,
-    };
-
-    if (status) {
-      where.status = status;
-    }
-    if (type) {
-      where.type = type;
-    }
-
-    const campaigns = await prisma.campaign.findMany({
-      where,
+    const campaigns = await campaignService.findMany(ctx, {
+      status: status || undefined,
+      type: type || undefined,
       include: {
         messages: {
           select: {
@@ -48,9 +42,6 @@ export async function GET(request: NextRequest) {
             campaignLeads: true,
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
       },
     });
 
@@ -71,6 +62,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
     const {
@@ -140,39 +134,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        userId: session.user.id,
-        name,
-        description,
-        type,
-        status: 'DRAFT',
-        emailSubject,
-        emailBody,
-        emailHtml,
-        smsTemplate,
-        voiceAgentId,
-        callScript,
-        targetAudience: targetAudience || {},
-        scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
-        frequency: frequency || 'ONE_TIME',
-        recurringDays: recurringDays || [],
-        aiGenerated: aiGenerated || false,
-        aiPrompt,
-        ...(type === 'VOICE_CALL' && {
-          minLeadScore: minLeadScore ?? 75,
-          maxCallsPerDay: maxCallsPerDay ?? 50,
-          callWindowStart: callWindowStart ?? '09:00',
-          callWindowEnd: callWindowEnd ?? '17:00',
-          retryFailedCalls: retryFailedCalls ?? true,
-          maxRetries: maxRetries ?? 2,
-        }),
-      },
-      include: {
-        _count: {
-          select: {
-            messages: true,
-          },
+    const campaign = await campaignService.create(ctx, {
+      name,
+      description,
+      type,
+      status: 'DRAFT',
+      emailSubject,
+      emailBody,
+      emailHtml,
+      smsTemplate,
+      voiceAgentId,
+      callScript,
+      targetAudience: targetAudience || {},
+      scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
+      frequency: frequency || 'ONE_TIME',
+      recurringDays: recurringDays || [],
+      aiGenerated: aiGenerated || false,
+      aiPrompt,
+      ...(type === 'VOICE_CALL' && {
+        minLeadScore: minLeadScore ?? 75,
+        maxCallsPerDay: maxCallsPerDay ?? 50,
+        callWindowStart: callWindowStart ?? '09:00',
+        callWindowEnd: callWindowEnd ?? '17:00',
+        retryFailedCalls: retryFailedCalls ?? true,
+        maxRetries: maxRetries ?? 2,
+      }),
+    } as any, {
+      _count: {
+        select: {
+          messages: true,
         },
       },
     });

@@ -1,12 +1,12 @@
-
 /**
  * Workflow Execution Engine
- * 
+ *
  * This service executes workflow actions when triggers are fired.
  * It handles action execution, delays, conditional logic, and error handling.
  */
 
-import { prisma } from './db';
+import { getCrmDb, leadService, dealService, taskService, conversationService, noteService, websiteService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { workflowJobQueue } from './workflow-job-queue';
 import { conditionEvaluator, type ConditionalBranch } from './workflow-conditions';
 import { executeDentalAction } from './dental/workflow-actions';
@@ -36,6 +36,14 @@ export interface ExecutionContext {
   variables?: Record<string, any>;
 }
 
+function getDb(context: ExecutionContext) {
+  return getCrmDb(createDalContext(context.userId));
+}
+
+function getCtx(context: ExecutionContext) {
+  return createDalContext(context.userId);
+}
+
 export class WorkflowEngine {
   /**
    * Trigger a workflow based on event type
@@ -45,9 +53,10 @@ export class WorkflowEngine {
     context: ExecutionContext,
     triggerData?: any
   ): Promise<void> {
+    const db = getDb(context);
     try {
       // Find active workflows matching this trigger
-      const workflows = await prisma.workflow.findMany({
+      const workflows = await db.workflow.findMany({
         where: {
           userId: context.userId,
           status: 'ACTIVE',
@@ -307,9 +316,10 @@ export class WorkflowEngine {
     workflow: Workflow & { actions: WorkflowAction[] },
     context: ExecutionContext
   ): Promise<void> {
+    const db = getDb(context);
     try {
       // Create enrollment
-      const enrollment = await prisma.workflowEnrollment.create({
+      const enrollment = await db.workflowEnrollment.create({
         data: {
           workflowId: workflow.id,
           userId: context.userId,
@@ -325,7 +335,7 @@ export class WorkflowEngine {
       }
 
       // Mark enrollment as completed
-      await prisma.workflowEnrollment.update({
+      await db.workflowEnrollment.update({
         where: { id: enrollment.id },
         data: {
           status: 'COMPLETED',
@@ -346,6 +356,7 @@ export class WorkflowEngine {
     enrollment: WorkflowEnrollment,
     context: ExecutionContext
   ): Promise<any> {
+    const db = getDb(context);
     try {
       // Handle delay if specified - use job queue for production
       if (action.delayMinutes && action.delayMinutes > 0) {
@@ -391,11 +402,11 @@ export class WorkflowEngine {
     
     // Get child actions to execute based on branch
     const actionsToExecute = branchPath === 'true' 
-      ? await prisma.workflowAction.findMany({
+      ? await db.workflowAction.findMany({
           where: { id: { in: branch.trueActions } },
           orderBy: { displayOrder: 'asc' },
         })
-      : await prisma.workflowAction.findMany({
+      : await db.workflowAction.findMany({
           where: { id: { in: branch.falseActions } },
           orderBy: { displayOrder: 'asc' },
         });
@@ -412,14 +423,15 @@ export class WorkflowEngine {
    * Get context data for condition evaluation
    */
   private async getContextData(context: ExecutionContext): Promise<any> {
+    const ctx = getCtx(context);
     const data: any = { ...context.variables };
-    
+
     if (context.leadId) {
-      data.lead = await prisma.lead.findUnique({ where: { id: context.leadId } });
+      data.lead = await leadService.findUnique(ctx, context.leadId);
     }
     
     if (context.dealId) {
-      data.deal = await prisma.deal.findUnique({ where: { id: context.dealId } });
+      data.deal = await dealService.findUnique(ctx, context.dealId);
     }
     
     return data;
@@ -550,8 +562,11 @@ export class WorkflowEngine {
       throw new Error('No conversation found for lead creation');
     }
 
+    const ctx = getCtx(context);
+    const db = getDb(context);
+
     // Get conversation details
-    const conversation = await prisma.conversation.findUnique({
+    const conversation = await db.conversation.findUnique({
       where: { id: context.conversationId },
       include: { channelConnection: true },
     });
@@ -561,7 +576,7 @@ export class WorkflowEngine {
     }
 
     // Check if lead already exists for this contact
-    const existingLead = await prisma.lead.findFirst({
+    const existingLead = await db.lead.findFirst({
       where: {
         userId: context.userId,
         OR: [
@@ -573,35 +588,26 @@ export class WorkflowEngine {
 
     if (existingLead) {
       // Link conversation to existing lead
-      await prisma.conversation.update({
-        where: { id: context.conversationId },
-        data: { leadId: existingLead.id },
-      });
+      await conversationService.update(ctx, context.conversationId, { leadId: existingLead.id });
       return { leadId: existingLead.id, action: 'linked_existing' };
     }
 
     // Create new lead
-    const lead = await prisma.lead.create({
-      data: {
-        userId: context.userId,
-        businessName: conversation.contactName,
-        contactPerson: conversation.contactName,
-        status: config.status || 'NEW',
-        source: config.source || 'messaging',
-        phone: conversation.channelConnection.channelType === 'SMS' || conversation.channelConnection.channelType === 'WHATSAPP'
-          ? conversation.contactIdentifier
-          : undefined,
-        email: conversation.channelConnection.channelType === 'EMAIL'
-          ? conversation.contactIdentifier
-          : undefined,
-      },
+    const lead = await leadService.create(ctx, {
+      businessName: conversation.contactName,
+      contactPerson: conversation.contactName,
+      status: config.status || 'NEW',
+      source: config.source || 'messaging',
+      phone: conversation.channelConnection.channelType === 'SMS' || conversation.channelConnection.channelType === 'WHATSAPP'
+        ? conversation.contactIdentifier
+        : undefined,
+      email: conversation.channelConnection.channelType === 'EMAIL'
+        ? conversation.contactIdentifier
+        : undefined,
     });
 
     // Link conversation to new lead
-    await prisma.conversation.update({
-      where: { id: context.conversationId },
-      data: { leadId: lead.id },
-    });
+    await conversationService.update(ctx, context.conversationId, { leadId: lead.id });
 
     return { leadId: lead.id, action: 'created' };
   }
@@ -614,16 +620,17 @@ export class WorkflowEngine {
       throw new Error('No lead found for deal creation');
     }
 
-    const lead = await prisma.lead.findUnique({
-      where: { id: context.leadId },
-    });
+    const ctx = getCtx(context);
+    const db = getDb(context);
+
+    const lead = await leadService.findUnique(ctx, context.leadId);
 
     if (!lead) {
       throw new Error('Lead not found');
     }
 
     // Get default pipeline
-    const pipeline = await prisma.pipeline.findFirst({
+    const pipeline = await db.pipeline.findFirst({
       where: {
         userId: context.userId,
         isDefault: true,
@@ -641,21 +648,18 @@ export class WorkflowEngine {
     }
 
     // Create deal
-    const deal = await prisma.deal.create({
-      data: {
-        userId: context.userId,
-        pipelineId: pipeline.id,
-        stageId: pipeline.stages[0].id,
-        leadId: lead.id,
-        title: this.replaceVariables(config.title || '{{businessName}} - New Deal', lead),
-        description: config.description,
-        priority: config.priority || 'MEDIUM',
-        value: config.value || 0,
-      },
+    const deal = await dealService.create(ctx, {
+      pipeline: { connect: { id: pipeline.id } },
+      stage: { connect: { id: pipeline.stages[0].id } },
+      lead: { connect: { id: lead.id } },
+      title: this.replaceVariables(config.title || '{{businessName}} - New Deal', lead),
+      description: config.description,
+      priority: config.priority || 'MEDIUM',
+      value: config.value || 0,
     });
 
     // Create activity
-    await prisma.dealActivity.create({
+    await db.dealActivity.create({
       data: {
         dealId: deal.id,
         userId: context.userId,
@@ -675,7 +679,8 @@ export class WorkflowEngine {
       throw new Error('No conversation found');
     }
 
-    const conversation = await prisma.conversation.findUnique({
+    const db = getDb(context);
+    const conversation = await db.conversation.findUnique({
       where: { id: context.conversationId },
       include: { 
         lead: true,
@@ -696,7 +701,7 @@ export class WorkflowEngine {
     let externalMessageId: string | undefined;
 
     // Create message record first (will be updated after sending)
-    const conversationMessage = await prisma.conversationMessage.create({
+    const conversationMessage = await db.conversationMessage.create({
       data: {
         conversationId: context.conversationId,
         userId: context.userId,
@@ -809,7 +814,7 @@ export class WorkflowEngine {
       }
 
       // Update message record with external message ID and mark as sent
-      await prisma.conversationMessage.update({
+      await db.conversationMessage.update({
         where: { id: conversationMessage.id },
         data: {
           externalMessageId,
@@ -819,7 +824,7 @@ export class WorkflowEngine {
       });
 
       // Update conversation
-      await prisma.conversation.update({
+      await db.conversation.update({
         where: { id: context.conversationId },
         data: {
           lastMessageAt: new Date(),
@@ -832,7 +837,7 @@ export class WorkflowEngine {
       console.error(`Error sending message via ${connection.channelType}:`, error);
       
       // Update message record with error status
-      await prisma.conversationMessage.update({
+      await db.conversationMessage.update({
         where: { id: conversationMessage.id },
         data: {
           status: 'FAILED',
@@ -850,9 +855,8 @@ export class WorkflowEngine {
    * Send SMS
    */
   private async sendSMS(context: ExecutionContext, config: any) {
-    const lead = context.leadId ? await prisma.lead.findUnique({
-      where: { id: context.leadId },
-    }) : null;
+    const db = getDb(context);
+    const lead = context.leadId ? await leadService.findUnique(getCtx(context), context.leadId!) : null;
 
     if (!lead?.phone) {
       throw new Error('No phone number found');
@@ -870,9 +874,8 @@ export class WorkflowEngine {
    * Send email
    */
   private async sendEmail(context: ExecutionContext, config: any) {
-    const lead = context.leadId ? await prisma.lead.findUnique({
-      where: { id: context.leadId },
-    }) : null;
+    const db = getDb(context);
+    const lead = context.leadId ? await leadService.findUnique(getCtx(context), context.leadId!) : null;
 
     if (!lead?.email) {
       throw new Error('No email found');
@@ -904,10 +907,7 @@ export class WorkflowEngine {
     if (config.status) updateData.status = config.status;
     if (config.businessCategory) updateData.businessCategory = config.businessCategory;
 
-    await prisma.lead.update({
-      where: { id: context.leadId },
-      data: updateData,
-    });
+    await leadService.update(getCtx(context), context.leadId!, updateData);
 
     return { leadId: context.leadId, action: 'updated' };
   }
@@ -920,10 +920,7 @@ export class WorkflowEngine {
       throw new Error('No lead to update');
     }
 
-    await prisma.lead.update({
-      where: { id: context.leadId },
-      data: { status: config.status },
-    });
+    await leadService.update(getCtx(context), context.leadId!, { status: config.status });
 
     return { leadId: context.leadId, newStatus: config.status };
   }
@@ -936,11 +933,12 @@ export class WorkflowEngine {
       throw new Error('No deal to update');
     }
 
+    const db = getDb(context);
     const updateData: any = {};
     if (config.value) updateData.value = config.value;
     if (config.priority) updateData.priority = config.priority;
 
-    await prisma.deal.update({
+    await db.deal.update({
       where: { id: context.dealId },
       data: updateData,
     });
@@ -956,13 +954,14 @@ export class WorkflowEngine {
       throw new Error('No deal to move');
     }
 
-    await prisma.deal.update({
+    const db = getDb(context);
+    await db.deal.update({
       where: { id: context.dealId },
       data: { stageId: config.stageId },
     });
 
     // Create activity
-    await prisma.dealActivity.create({
+    await db.dealActivity.create({
       data: {
         dealId: context.dealId,
         userId: context.userId,
@@ -978,15 +977,14 @@ export class WorkflowEngine {
    * Create task
    */
   private async createTask(context: ExecutionContext, config: any) {
-    const lead = context.leadId ? await prisma.lead.findUnique({
-      where: { id: context.leadId },
-    }) : null;
+    const db = getDb(context);
+    const lead = context.leadId ? await leadService.findUnique(getCtx(context), context.leadId!) : null;
 
     const dueDate = config.dueInDays
       ? new Date(Date.now() + config.dueInDays * 24 * 60 * 60 * 1000)
       : undefined;
 
-    const task = await prisma.task.create({
+    const task = await db.task.create({
       data: {
         userId: context.userId,
         title: this.replaceVariables(config.title, lead || {}),
@@ -1005,7 +1003,8 @@ export class WorkflowEngine {
    * Notify user
    */
   private async notifyUser(context: ExecutionContext, config: any) {
-    const user = await prisma.user.findUnique({
+    const db = getDb(context);
+    const user = await db.user.findUnique({
       where: { id: context.userId },
       select: { email: true, name: true },
     });
@@ -1032,7 +1031,7 @@ export class WorkflowEngine {
 
     // Store in-app notification
     try {
-      await prisma.notification.create({
+      await db.notification.create({
         data: {
           userId: context.userId,
           title: config.subject || 'Workflow Notification',
@@ -1055,19 +1054,14 @@ export class WorkflowEngine {
       throw new Error('Lead ID and tag are required');
     }
 
-    const lead = await prisma.lead.findUnique({
-      where: { id: context.leadId },
-      select: { tags: true },
-    });
+    const ctx = getCtx(context);
+    const lead = await leadService.findUnique(ctx, context.leadId);
 
     const existing: string[] = Array.isArray(lead?.tags) ? (lead.tags as string[]) : [];
     const tagsToAdd = Array.isArray(config.tag) ? config.tag : [config.tag];
     const merged = [...new Set([...existing, ...tagsToAdd])];
 
-    await prisma.lead.update({
-      where: { id: context.leadId },
-      data: { tags: JSON.parse(JSON.stringify(merged)) },
-    });
+    await leadService.update(getCtx(context), context.leadId!, { tags: JSON.parse(JSON.stringify(merged)) });
 
     return { action: 'tagged', tag: config.tag, leadId: context.leadId };
   }
@@ -1076,12 +1070,11 @@ export class WorkflowEngine {
    * AI Generate Message
    */
   private async aiGenerateMessage(context: ExecutionContext, config: any): Promise<any> {
-    const lead = context.leadId ? await prisma.lead.findUnique({
-      where: { id: context.leadId },
-    }) : null;
+    const db = getDb(context);
+    const lead = context.leadId ? await leadService.findUnique(getCtx(context), context.leadId!) : null;
 
     // Get user's language preference
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: context.userId },
       select: { language: true },
     });
@@ -1144,7 +1137,8 @@ export class WorkflowEngine {
       throw new Error('No lead to score');
     }
 
-    const lead = await prisma.lead.findUnique({
+    const db = getDb(context);
+    const lead = await db.lead.findUnique({
       where: { id: context.leadId },
       include: {
         conversations: {
@@ -1182,7 +1176,7 @@ export class WorkflowEngine {
     score = Math.min(score, 100);
 
     // Create a note with the lead score
-    await prisma.note.create({
+    await db.note.create({
       data: {
         userId: lead.userId,
         leadId: lead.id,
@@ -1235,17 +1229,15 @@ export class WorkflowEngine {
    * Make outbound call via voice AI agent
    */
   private async makeOutboundCall(context: ExecutionContext, config: any): Promise<any> {
-    const lead = context.leadId ? await prisma.lead.findUnique({
-      where: { id: context.leadId },
-      include: { user: true },
-    }) : null;
+    const db = getDb(context);
+    const lead = context.leadId ? await leadService.findUnique(getCtx(context), context.leadId!, { user: true } as any) : null;
 
     if (!lead?.phone) {
       throw new Error('No phone number found for lead');
     }
 
     // Get default active voice agent for user
-    const voiceAgent = await prisma.voiceAgent.findFirst({
+    const voiceAgent = await db.voiceAgent.findFirst({
       where: {
         userId: context.userId,
         status: 'ACTIVE',
@@ -1265,7 +1257,7 @@ export class WorkflowEngine {
     const contactName = lead.contactPerson || lead.businessName || 'Contact';
     
     // Create outbound call record
-    const outboundCall = await prisma.outboundCall.create({
+    const outboundCall = await db.outboundCall.create({
       data: {
         userId: context.userId,
         voiceAgentId: voiceAgent.id,
@@ -1289,7 +1281,7 @@ export class WorkflowEngine {
         );
 
         // Create call log
-        const callLog = await prisma.callLog.create({
+        const callLog = await db.callLog.create({
           data: {
             userId: context.userId,
             voiceAgentId: voiceAgent.id,
@@ -1303,7 +1295,7 @@ export class WorkflowEngine {
         });
 
         // Update outbound call
-        await prisma.outboundCall.update({
+        await db.outboundCall.update({
           where: { id: outboundCall.id },
           data: {
             status: 'IN_PROGRESS',
@@ -1314,7 +1306,7 @@ export class WorkflowEngine {
         });
       } catch (callError: any) {
         console.error('Error initiating call in workflow:', callError);
-        await prisma.outboundCall.update({
+        await db.outboundCall.update({
           where: { id: outboundCall.id },
           data: { status: 'FAILED' },
         });
@@ -1377,6 +1369,7 @@ export class WorkflowEngine {
    * Create website action
    */
   private async createWebsite(context: ExecutionContext, config: any) {
+    const db = getDb(context);
     const { resourceProvisioning } = await import('@/lib/website-builder/provisioning');
     const { websiteBuilder } = await import('@/lib/website-builder/builder');
     
@@ -1386,7 +1379,7 @@ export class WorkflowEngine {
     const questionnaireAnswers = config.questionnaireAnswers || {};
 
     // Create website
-    const website = await prisma.website.create({
+    const website = await db.website.create({
       data: {
         userId: context.userId,
         name: websiteName,
@@ -1411,7 +1404,7 @@ export class WorkflowEngine {
     if (templateType === 'PRODUCT') {
       const crypto = await import('crypto');
       websiteSecret = crypto.randomBytes(32).toString('hex');
-      await prisma.website.update({
+      await db.website.update({
         where: { id: website.id },
         data: { websiteSecret },
       });
@@ -1426,7 +1419,7 @@ export class WorkflowEngine {
     );
 
     // Update website
-    await prisma.website.update({
+    await db.website.update({
       where: { id: website.id },
       data: {
         structure,
@@ -1452,7 +1445,8 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const website = await prisma.website.findFirst({
+    const db = getDb(context);
+    const website = await db.website.findFirst({
       where: {
         id: websiteId,
         userId: context.userId,
@@ -1473,7 +1467,7 @@ export class WorkflowEngine {
       updates.structure = structure;
     }
 
-    await prisma.website.update({
+    await db.website.update({
       where: { id: websiteId },
       data: updates,
     });
@@ -1490,7 +1484,8 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const website = await prisma.website.findFirst({
+    const db = getDb(context);
+    const website = await db.website.findFirst({
       where: {
         id: websiteId,
         userId: context.userId,
@@ -1513,7 +1508,7 @@ export class WorkflowEngine {
       );
 
       // Store pending integration
-      const integration = await prisma.websiteIntegration.create({
+      const integration = await db.websiteIntegration.create({
         data: {
           websiteId,
           type: 'STRIPE',
@@ -1538,7 +1533,7 @@ export class WorkflowEngine {
     }
 
     // Create Stripe integration
-    const integration = await prisma.websiteIntegration.create({
+    const integration = await db.websiteIntegration.create({
       data: {
         websiteId,
         type: 'STRIPE',
@@ -1565,7 +1560,7 @@ export class WorkflowEngine {
         },
       });
 
-      await prisma.website.update({
+      await db.website.update({
         where: { id: websiteId },
         data: { structure },
       });
@@ -1583,7 +1578,8 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const website = await prisma.website.findFirst({
+    const db = getDb(context);
+    const website = await db.website.findFirst({
       where: {
         id: websiteId,
         userId: context.userId,
@@ -1595,13 +1591,13 @@ export class WorkflowEngine {
     }
 
     // Check if booking settings exist
-    const bookingSettings = await prisma.bookingSettings.findUnique({
+    const bookingSettings = await db.bookingSettings.findUnique({
       where: { userId: context.userId },
     });
 
     if (!bookingSettings) {
       // Create default booking settings
-      await prisma.bookingSettings.create({
+      await db.bookingSettings.create({
         data: {
           userId: context.userId,
           slotDuration: config.slotDuration || 30,
@@ -1618,7 +1614,7 @@ export class WorkflowEngine {
     }
 
     // Create booking integration
-    const integration = await prisma.websiteIntegration.create({
+    const integration = await db.websiteIntegration.create({
       data: {
         websiteId,
         type: 'BOOKING',
@@ -1644,7 +1640,7 @@ export class WorkflowEngine {
         },
       });
 
-      await prisma.website.update({
+      await db.website.update({
         where: { id: websiteId },
         data: { structure },
       });
@@ -1662,7 +1658,8 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const website = await prisma.website.findFirst({
+    const db = getDb(context);
+    const website = await db.website.findFirst({
       where: {
         id: websiteId,
         userId: context.userId,
@@ -1674,7 +1671,7 @@ export class WorkflowEngine {
     }
 
     // Create form integration
-    const integration = await prisma.websiteIntegration.create({
+    const integration = await db.websiteIntegration.create({
       data: {
         websiteId,
         type: 'FORM',
@@ -1701,7 +1698,7 @@ export class WorkflowEngine {
         },
       });
 
-      await prisma.website.update({
+      await db.website.update({
         where: { id: websiteId },
         data: { structure },
       });
@@ -1719,7 +1716,8 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const website = await prisma.website.findFirst({
+    const db = getDb(context);
+    const website = await db.website.findFirst({
       where: {
         id: websiteId,
         userId: context.userId,
@@ -1731,7 +1729,7 @@ export class WorkflowEngine {
     }
 
     // Create CTA integration
-    const integration = await prisma.websiteIntegration.create({
+    const integration = await db.websiteIntegration.create({
       data: {
         websiteId,
         type: 'CTA',
@@ -1758,7 +1756,7 @@ export class WorkflowEngine {
         },
       });
 
-      await prisma.website.update({
+      await db.website.update({
         where: { id: websiteId },
         data: { structure },
       });
@@ -1776,7 +1774,8 @@ export class WorkflowEngine {
       throw new Error('Website ID is required');
     }
 
-    const website = await prisma.website.findFirst({
+    const db = getDb(context);
+    const website = await db.website.findFirst({
       where: {
         id: websiteId,
         userId: context.userId,
@@ -1788,7 +1787,7 @@ export class WorkflowEngine {
     }
 
     // Update website status to published
-    await prisma.website.update({
+    await db.website.update({
       where: { id: websiteId },
       data: {
         status: 'PUBLISHED',
@@ -1824,13 +1823,14 @@ export class WorkflowEngine {
     const reviewId = (context.variables as any)?.reviewId;
     if (!reviewId) return { action: 'respond_to_review', status: 'skipped', reason: 'no reviewId' };
 
+    const db = getDb(context);
     const { generateAutoResponse } = await import('@/lib/reviews/review-intelligence-service');
-    const review = await prisma.review.findFirst({
+    const review = await db.review.findFirst({
       where: { id: reviewId, userId: context.userId },
     });
     if (!review) return { action: 'respond_to_review', status: 'skipped', reason: 'review not found' };
 
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: context.userId },
       select: { name: true, legalEntityName: true },
     });
@@ -1840,7 +1840,7 @@ export class WorkflowEngine {
       { tone: config?.tone || 'professional', ownerName: user?.name || undefined, includeOwnerName: true, customInstructions: config?.customInstructions }
     );
 
-    await prisma.review.update({
+    await db.review.update({
       where: { id: reviewId },
       data: { aiResponseDraft: draft, aiResponseStatus: config?.autoApprove ? 'APPROVED' : 'PENDING' },
     });

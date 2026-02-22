@@ -3,7 +3,8 @@
  * Phase 6: RAMQ and private insurance API integration
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 
 export interface InsuranceProvider {
   id: string;
@@ -44,11 +45,19 @@ export class RAMQInsuranceService {
   /**
    * Check patient eligibility with RAMQ
    */
-  async checkEligibility(patientId: string, insuranceNumber: string): Promise<InsuranceEligibility> {
+  async checkEligibility(
+    patientId: string,
+    insuranceNumber: string,
+    userId: string,
+    industry?: string | null
+  ): Promise<InsuranceEligibility> {
+    const ctx = createDalContext(userId, industry);
+    const db = getCrmDb(ctx);
+
     // In production, this would call RAMQ API
     // For now, return mock data
-    const lead = await prisma.lead.findUnique({
-      where: { id: patientId },
+    const lead = await db.lead.findFirst({
+      where: { id: patientId, userId },
       select: { insuranceInfo: true },
     });
 
@@ -74,20 +83,27 @@ export class RAMQInsuranceService {
   /**
    * Submit claim to RAMQ
    */
-  async submitClaim(claim: Omit<InsuranceClaim, 'id' | 'submittedDate' | 'status'>): Promise<InsuranceClaim> {
+  async submitClaim(
+    claim: Omit<InsuranceClaim, 'id' | 'submittedDate' | 'status'>,
+    userId: string,
+    industry?: string | null
+  ): Promise<InsuranceClaim> {
+    const ctx = createDalContext(userId, industry);
+    const db = getCrmDb(ctx);
+
     // In production, this would submit to RAMQ API
     // For now, create a claim record
     const claimNumber = `RAMQ-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
     // Fetch patient info
-    const lead = await prisma.lead.findUnique({
-      where: { id: claim.patientId },
+    const lead = await db.lead.findFirst({
+      where: { id: claim.patientId, userId },
       select: { businessName: true, contactPerson: true, email: true, phone: true, dateOfBirth: true },
     });
 
-    const claimRecord = await prisma.dentalInsuranceClaim.create({
+    const claimRecord = await db.dentalInsuranceClaim.create({
       data: {
         leadId: claim.patientId,
-        userId: '', // Will be set by caller
+        userId,
         claimNumber,
         insuranceType: 'RAMQ',
         providerName: 'RAMQ',
@@ -126,9 +142,16 @@ export class RAMQInsuranceService {
   /**
    * Check claim status
    */
-  async checkClaimStatus(claimId: string): Promise<InsuranceClaim> {
-    const claim = await prisma.dentalInsuranceClaim.findUnique({
-      where: { id: claimId },
+  async checkClaimStatus(
+    claimId: string,
+    userId: string,
+    industry?: string | null
+  ): Promise<InsuranceClaim> {
+    const ctx = createDalContext(userId, industry);
+    const db = getCrmDb(ctx);
+
+    const claim = await db.dentalInsuranceClaim.findFirst({
+      where: { id: claimId, userId },
     });
 
     if (!claim) {
@@ -164,11 +187,16 @@ export class PrivateInsuranceService {
    */
   async checkEligibility(
     patientId: string,
-    providerConfig: InsuranceProvider
+    providerConfig: InsuranceProvider,
+    userId: string,
+    industry?: string | null
   ): Promise<InsuranceEligibility> {
+    const ctx = createDalContext(userId, industry);
+    const db = getCrmDb(ctx);
+
     // In production, this would call the provider's API
-    const lead = await prisma.lead.findUnique({
-      where: { id: patientId },
+    const lead = await db.lead.findFirst({
+      where: { id: patientId, userId },
       select: { insuranceInfo: true },
     });
 
@@ -196,21 +224,26 @@ export class PrivateInsuranceService {
    */
   async submitClaim(
     claim: Omit<InsuranceClaim, 'id' | 'submittedDate' | 'status'>,
-    providerConfig: InsuranceProvider
+    providerConfig: InsuranceProvider,
+    userId: string,
+    industry?: string | null
   ): Promise<InsuranceClaim> {
+    const ctx = createDalContext(userId, industry);
+    const db = getCrmDb(ctx);
+
     // In production, this would submit to provider's API
     const claimNumber = `${providerConfig.name}-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-    
+
     // Fetch patient info
-    const lead = await prisma.lead.findUnique({
-      where: { id: claim.patientId },
+    const lead = await db.lead.findFirst({
+      where: { id: claim.patientId, userId },
       select: { businessName: true, contactPerson: true, email: true, phone: true, dateOfBirth: true },
     });
 
-    const claimRecord = await prisma.dentalInsuranceClaim.create({
+    const claimRecord = await db.dentalInsuranceClaim.create({
       data: {
         leadId: claim.patientId,
-        userId: '', // Will be set by caller
+        userId,
         claimNumber,
         insuranceType: 'PRIVATE',
         providerName: providerConfig.name,
@@ -264,17 +297,21 @@ export class InsuranceManager {
    */
   async checkEligibility(
     patientId: string,
-    provider: InsuranceProvider
+    provider: InsuranceProvider,
+    userId: string,
+    industry?: string | null
   ): Promise<InsuranceEligibility> {
     if (provider.type === 'RAMQ') {
-      const insuranceInfo = await prisma.lead.findUnique({
-        where: { id: patientId },
+      const ctx = createDalContext(userId, industry);
+      const db = getCrmDb(ctx);
+      const insuranceInfo = await db.lead.findFirst({
+        where: { id: patientId, userId },
         select: { insuranceInfo: true },
       });
       const info = insuranceInfo?.insuranceInfo as any;
-      return this.ramqService.checkEligibility(patientId, info?.policyNumber || '');
+      return this.ramqService.checkEligibility(patientId, info?.policyNumber || '', userId, industry);
     } else {
-      return this.privateService.checkEligibility(patientId, provider);
+      return this.privateService.checkEligibility(patientId, provider, userId, industry);
     }
   }
 
@@ -283,13 +320,14 @@ export class InsuranceManager {
    */
   async submitClaim(
     claim: Omit<InsuranceClaim, 'id' | 'submittedDate' | 'status'>,
-    provider: InsuranceProvider
+    provider: InsuranceProvider,
+    userId: string,
+    industry?: string | null
   ): Promise<InsuranceClaim> {
     if (provider.type === 'RAMQ') {
-      const result = await this.ramqService.submitClaim(claim);
-      return result;
+      return this.ramqService.submitClaim(claim, userId, industry);
     } else {
-      return await this.privateService.submitClaim(claim, provider);
+      return this.privateService.submitClaim(claim, provider, userId, industry);
     }
   }
 }

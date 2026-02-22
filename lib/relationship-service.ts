@@ -3,7 +3,8 @@
  * Manages connections and relationships between CRM entities
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService } from '@/lib/dal';
 import { EntityType, RelationshipType } from '@prisma/client';
 
 interface CreateRelationshipParams {
@@ -311,10 +312,11 @@ export class RelationshipService {
       appointments: [] as any[],
     };
 
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     // Search leads
-    const leads = await prisma.lead.findMany({
+    const leads = await leadService.findMany(ctx, {
       where: {
-        userId,
         OR: [
           { businessName: { contains: query, mode: 'insensitive' } },
           { contactPerson: { contains: query, mode: 'insensitive' } },
@@ -335,7 +337,7 @@ export class RelationshipService {
 
     // Get relationship metrics for each lead
     for (const lead of leads) {
-      const metrics = await prisma.relationshipMetrics.findUnique({
+      const metrics = await db.relationshipMetrics.findUnique({
         where: {
           userId_entityType_entityId: {
             userId,
@@ -348,7 +350,7 @@ export class RelationshipService {
     }
 
     // Search deals
-    const deals = await prisma.deal.findMany({
+    const deals = await db.deal.findMany({
       where: {
         userId,
         OR: [
@@ -366,7 +368,7 @@ export class RelationshipService {
     });
 
     for (const deal of deals) {
-      const metrics = await prisma.relationshipMetrics.findUnique({
+      const metrics = await db.relationshipMetrics.findUnique({
         where: {
           userId_entityType_entityId: {
             userId,
@@ -379,12 +381,16 @@ export class RelationshipService {
     }
 
     // Search tasks
-    const tasks = await prisma.task.findMany({
+    const tasks = await db.task.findMany({
       where: {
-        userId,
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
+        OR: [{ userId }, { assignedToId: userId }],
+        AND: [
+          {
+            OR: [
+              { title: { contains: query, mode: 'insensitive' } },
+              { description: { contains: query, mode: 'insensitive' } },
+            ],
+          },
         ],
       },
       take: limit,
@@ -398,7 +404,7 @@ export class RelationshipService {
     });
 
     for (const task of tasks) {
-      const metrics = await prisma.relationshipMetrics.findUnique({
+      const metrics = await db.relationshipMetrics.findUnique({
         where: {
           userId_entityType_entityId: {
             userId,

@@ -4,7 +4,8 @@
  * Creates lead in CRM with transcript as a Note, triggers workflows.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService, noteService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 
 export const dynamic = 'force-dynamic';
@@ -37,8 +38,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ctx = createDalContext(leadOwnerId);
+    const db = getCrmDb(ctx);
+
     // Validate user exists
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: leadOwnerId },
       select: { id: true, industry: true },
     });
@@ -47,30 +51,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid lead owner' }, { status: 404 });
     }
 
-    const lead = await prisma.lead.create({
-      data: {
-        userId: leadOwnerId,
-        businessName: name || 'Tavus AI Visitor',
-        contactPerson: name || null,
-        email: email || null,
-        phone: phone || null,
-        source: 'Tavus AI',
-        status: 'NEW',
-        enrichedData: {
-          source: 'tavus_webhook',
-          receivedAt: new Date().toISOString(),
-        },
+    const lead = await leadService.create(ctx, {
+      businessName: name || 'Tavus AI Visitor',
+      contactPerson: name || null,
+      email: email || null,
+      phone: phone || null,
+      source: 'Tavus AI',
+      status: 'NEW',
+      enrichedData: {
+        source: 'tavus_webhook',
+        receivedAt: new Date().toISOString(),
       },
-    });
+      contactType: 'CUSTOMER',
+    } as any);
 
     // Add transcript as a Note
     if (transcript && transcript.trim()) {
-      await prisma.note.create({
-        data: {
-          leadId: lead.id,
-          userId: leadOwnerId,
-          content: `[Tavus AI conversation]\n\n${transcript}`,
-        },
+      await noteService.create(ctx, {
+        leadId: lead.id,
+        content: `[Tavus AI conversation]\n\n${transcript}`,
       });
     }
 

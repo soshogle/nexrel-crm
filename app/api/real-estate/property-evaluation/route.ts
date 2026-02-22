@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { leadService, websiteService } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { runPropertyEvaluation } from "@/lib/real-estate/property-evaluation";
 
 export const dynamic = "force-dynamic";
@@ -17,8 +18,11 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const leads = await prisma.lead.findMany({
-      where: { userId: session.user.id, source: "property_evaluation" },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const leads = await leadService.findMany(ctx, {
+      where: { source: "property_evaluation" },
       select: {
         id: true,
         businessName: true,
@@ -32,7 +36,7 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
       take: 50,
-    });
+    } as any);
 
     const formatted = leads.map((l) => {
       const enriched = (l.enrichedData as Record<string, unknown>) || {};
@@ -71,6 +75,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await request.json();
     const { websiteId, address, city, postalCode, latitude, longitude, bedrooms, bathrooms, propertyType } =
       body;
@@ -85,20 +92,13 @@ export async function POST(request: NextRequest) {
     // Find a SERVICE website for the broker
     let targetWebsiteId = websiteId;
     if (!targetWebsiteId) {
-      const site = await prisma.website.findFirst({
-        where: {
-          userId: session.user.id,
-          templateType: "SERVICE",
-          neonDatabaseUrl: { not: null },
-        },
-        select: { id: true },
+      const site = await websiteService.findFirst(ctx, {
+        templateType: "SERVICE",
+        neonDatabaseUrl: { not: null },
       });
       targetWebsiteId = site?.id;
     } else {
-      const site = await prisma.website.findFirst({
-        where: { id: targetWebsiteId, userId: session.user.id },
-        select: { id: true },
-      });
+      const site = await websiteService.findUnique(ctx, targetWebsiteId);
       if (!site) {
         return NextResponse.json(
           { error: "Website not found" },
@@ -117,16 +117,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const evaluation = await runPropertyEvaluation(targetWebsiteId, {
-      address: address.trim(),
-      city: city?.trim() || undefined,
-      postalCode: postalCode?.trim() || undefined,
-      latitude: latitude != null ? parseFloat(latitude) : undefined,
-      longitude: longitude != null ? parseFloat(longitude) : undefined,
-      bedrooms: bedrooms ? parseInt(bedrooms, 10) : undefined,
-      bathrooms: bathrooms ? parseFloat(bathrooms) : undefined,
-      propertyType: propertyType || "house",
-    });
+    const evaluation = await runPropertyEvaluation(
+      targetWebsiteId,
+      {
+        address: address.trim(),
+        city: city?.trim() || undefined,
+        postalCode: postalCode?.trim() || undefined,
+        latitude: latitude != null ? parseFloat(latitude) : undefined,
+        longitude: longitude != null ? parseFloat(longitude) : undefined,
+        bedrooms: bedrooms ? parseInt(bedrooms, 10) : undefined,
+        bathrooms: bathrooms ? parseFloat(bathrooms) : undefined,
+        propertyType: propertyType || "house",
+      },
+      session.user.id,
+      (session.user as any).industry ?? null
+    );
 
     return NextResponse.json({ evaluation });
   } catch (error: unknown) {

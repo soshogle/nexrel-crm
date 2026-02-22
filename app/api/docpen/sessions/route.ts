@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { leadService } from '@/lib/dal/lead-service';
 import { sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
 import { logDocpenAudit, DOCPEN_AUDIT_EVENTS } from '@/lib/docpen/audit-log';
 
@@ -112,9 +114,11 @@ export async function POST(request: NextRequest) {
 
     // Verify lead belongs to user if provided
     if (leadId) {
-      const lead = await prisma.lead.findFirst({
-        where: { id: leadId, userId: session.user.id },
-      });
+      const ctx = getDalContextFromSession(session);
+      if (!ctx) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const lead = await leadService.findUnique(ctx, leadId);
       if (!lead) {
         return NextResponse.json(
           { error: 'Client record not found' },

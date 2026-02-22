@@ -3,7 +3,8 @@
  * Uses AI to predict when products need restocking based on sales history
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, websiteService } from '@/lib/dal';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -38,8 +39,9 @@ export class PredictiveRestockingService {
     websiteId: string,
     productIds?: string[]
   ): Promise<RestockingPrediction[]> {
-    // Get website and products
-    const website = await prisma.website.findUnique({
+    const db = getCrmDb(createDalContext('bootstrap'));
+    // Get website and products (need userId from website for context)
+    const website = await db.website.findUnique({
       where: { id: websiteId },
       include: {
         websiteProducts: {
@@ -59,7 +61,7 @@ export class PredictiveRestockingService {
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-    const orders = await prisma.order.findMany({
+    const orders = await db.order.findMany({
       where: {
         userId: website.userId,
         createdAt: { gte: ninetyDaysAgo },

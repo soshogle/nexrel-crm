@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import OpenAI from 'openai';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService } from '@/lib/dal/lead-service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -38,16 +40,16 @@ async function lookupPatientHistory(params: {
 }) {
   const { patientName, historyType = 'all', userId } = params;
 
-  // Search leads (patients) in CRM - using contactPerson and businessName fields
-  const leads = await prisma.lead.findMany({
+  const ctx = createDalContext(userId);
+  const leads = await leadService.findMany(ctx, {
     where: {
-      userId,
       OR: [
         { contactPerson: { contains: patientName, mode: 'insensitive' } },
         { businessName: { contains: patientName, mode: 'insensitive' } },
         { email: { contains: patientName, mode: 'insensitive' } },
       ],
     },
+    take: 3,
     include: {
       notes: {
         orderBy: { createdAt: 'desc' },
@@ -64,7 +66,6 @@ async function lookupPatientHistory(params: {
         },
       },
     },
-    take: 3,
   });
 
   if (leads.length === 0) {

@@ -3,7 +3,8 @@
  * Sends email/SMS notifications for stock alerts
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, websiteService } from '@/lib/dal';
 import { EmailService } from '@/lib/email-service';
 import { sendSMS } from '@/lib/twilio';
 
@@ -39,8 +40,9 @@ export class WebsiteStockNotificationService {
     let smsSent = false;
 
     try {
+      const db = getCrmDb(createDalContext(alert.userId));
       // Get user preferences
-      const user = await prisma.user.findUnique({
+      const user = await db.user.findUnique({
         where: { id: alert.userId },
         select: {
           email: true,
@@ -54,11 +56,9 @@ export class WebsiteStockNotificationService {
       }
 
       // Get website stock settings
-      const website = await prisma.website.findUnique({
+      const website = await db.website.findUnique({
         where: { id: alert.websiteId },
-        include: {
-          stockSettings: true,
-        },
+        include: { stockSettings: true },
       });
 
       // Prepare notification content

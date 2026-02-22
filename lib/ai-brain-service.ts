@@ -4,7 +4,8 @@
  * Not entity-specific - focuses on overall patterns and predictions
  */
 
-import { prisma } from './db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService, dealService, taskService } from '@/lib/dal';
 import { crmEvents } from './crm-event-emitter';
 
 interface GeneralInsight {
@@ -95,29 +96,18 @@ export class AIBrainService {
     if (cached) return cached;
     const insights: GeneralInsight[] = [];
 
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     // Fetch all relevant data with error handling
     const results = await Promise.allSettled([
-      prisma.lead.findMany({
-        where: { userId },
-        include: { notes: true },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.deal.findMany({
-        where: { userId },
-        include: { stage: true },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.task.findMany({
-        where: {
-          OR: [{ userId }, { assignedToId: userId }],
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.bookingAppointment.findMany({
+      leadService.findMany(ctx, { include: { notes: true } }),
+      dealService.findMany(ctx, { include: { stage: true } }),
+      taskService.findMany(ctx),
+      db.bookingAppointment.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.callLog.findMany({
+      db.callLog.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
         take: 100,
@@ -481,17 +471,11 @@ Respond ONLY with valid JSON array, no markdown.`;
     const cached = this.getCached<PredictiveAnalytics>(cacheKey);
     if (cached) return cached;
 
+    const ctx = createDalContext(userId);
     // Fetch data with error handling
     const results = await Promise.allSettled([
-      prisma.lead.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.deal.findMany({
-        where: { userId },
-        include: { lead: true, stage: true },
-        orderBy: { createdAt: 'desc' },
-      }),
+      leadService.findMany(ctx),
+      dealService.findMany(ctx, { include: { lead: true, stage: true } }),
     ]);
 
     // Extract results with error handling
@@ -625,15 +609,12 @@ Respond ONLY with valid JSON array, no markdown.`;
 
     const recommendations: WorkflowRecommendation[] = [];
 
+    const ctx = createDalContext(userId);
     // Fetch data with error handling
     const results = await Promise.allSettled([
-      prisma.lead.findMany({ where: { userId } }),
-      prisma.task.findMany({
-        where: {
-          OR: [{ userId }, { assignedToId: userId }],
-        },
-      }),
-      prisma.deal.findMany({ where: { userId } }),
+      leadService.findMany(ctx),
+      taskService.findMany(ctx),
+      dealService.findMany(ctx),
     ]);
 
     // Extract results with error handling

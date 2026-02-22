@@ -5,7 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService, getCrmDb } from '@/lib/dal';
 import { websiteVoiceAI } from '@/lib/website-builder/voice-ai';
 import { triggerWebsiteDeploy } from '@/lib/website-builder/deploy-trigger';
 import { resourceProvisioning } from '@/lib/website-builder/provisioning';
@@ -16,7 +17,8 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -27,10 +29,10 @@ export async function GET(
 
     let website;
     try {
-      website = await prisma.website.findFirst({
+      website = await getCrmDb(ctx).website.findFirst({
         where: {
           id: websiteId,
-          userId: session.user.id,
+          userId: ctx.userId,
         },
         include: {
           builds: {
@@ -44,8 +46,8 @@ export async function GET(
       console.error('[Website GET] Prisma query error:', queryError);
       // Fallback: try without includes (can fail if structure/json is corrupted)
       try {
-        website = await prisma.website.findFirst({
-          where: { id: websiteId, userId: session.user.id },
+        website = await getCrmDb(ctx).website.findFirst({
+          where: { id: websiteId, userId: ctx.userId },
         });
         if (website) {
           (website as any).builds = [];
@@ -109,44 +111,32 @@ export async function PATCH(
     // Merge voiceAIConfig with existing if partial update
     let finalVoiceAIConfig = voiceAIConfig;
     if (voiceAIConfig !== undefined) {
-      const existing = await prisma.website.findUnique({
-        where: { id: params.id, userId: session.user.id },
-        select: { voiceAIConfig: true },
-      });
-      const existingConfig = (existing?.voiceAIConfig as Record<string, unknown>) || {};
+      const existing = await websiteService.findUnique(ctx, params.id);
+      const existingConfig = existing ? ((existing.voiceAIConfig as Record<string, unknown>) || {}) : {};
       finalVoiceAIConfig = { ...existingConfig, ...voiceAIConfig };
     }
 
     // Merge agencyConfig with existing if partial update
     let finalAgencyConfig = agencyConfig;
     if (agencyConfig !== undefined) {
-      const existing = await prisma.website.findUnique({
-        where: { id: params.id, userId: session.user.id },
-        select: { agencyConfig: true },
-      });
-      const existingConfig = (existing?.agencyConfig as Record<string, unknown>) || {};
+      const existingForAgency = await websiteService.findUnique(ctx, params.id);
+      const existingConfig = existingForAgency ? ((existingForAgency.agencyConfig as Record<string, unknown>) || {}) : {};
       finalAgencyConfig = { ...existingConfig, ...agencyConfig };
     }
 
-    const website = await prisma.website.update({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-      data: {
-        ...(name && { name }),
-        ...(structure && { structure }),
-        ...(seoData && { seoData }),
-        ...(voiceAIEnabled !== undefined && { voiceAIEnabled }),
-        ...(finalVoiceAIConfig !== undefined && { voiceAIConfig: finalVoiceAIConfig }),
-        ...(enableTavusAvatar !== undefined && { enableTavusAvatar }),
-        ...(status && ['BUILDING', 'READY', 'PUBLISHED', 'FAILED'].includes(status) && { status }),
-        ...(finalAgencyConfig !== undefined && { agencyConfig: finalAgencyConfig }),
-        ...(navConfig !== undefined && { navConfig }),
-        ...(pageLabels !== undefined && { pageLabels }),
-        ...(neonDatabaseUrl !== undefined && { neonDatabaseUrl: neonDatabaseUrl || null }),
-        ...(vercelDeployHookUrl !== undefined && { vercelDeployHookUrl: (vercelDeployHookUrl as string)?.trim() || null }),
-      },
+    const website = await websiteService.update(ctx, params.id, {
+      ...(name && { name }),
+      ...(structure && { structure }),
+      ...(seoData && { seoData }),
+      ...(voiceAIEnabled !== undefined && { voiceAIEnabled }),
+      ...(finalVoiceAIConfig !== undefined && { voiceAIConfig: finalVoiceAIConfig }),
+      ...(enableTavusAvatar !== undefined && { enableTavusAvatar }),
+      ...(status && ['BUILDING', 'READY', 'PUBLISHED', 'FAILED'].includes(status) && { status }),
+      ...(finalAgencyConfig !== undefined && { agencyConfig: finalAgencyConfig }),
+      ...(navConfig !== undefined && { navConfig }),
+      ...(pageLabels !== undefined && { pageLabels }),
+      ...(neonDatabaseUrl !== undefined && { neonDatabaseUrl: neonDatabaseUrl || null }),
+      ...(vercelDeployHookUrl !== undefined && { vercelDeployHookUrl: (vercelDeployHookUrl as string)?.trim() || null }),
     });
 
     // Auto-sync owner's custom prompt to ElevenLabs agent (no manual {{custom_prompt}} setup needed)
@@ -195,16 +185,12 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-    });
+    const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
@@ -213,7 +199,7 @@ export async function DELETE(
     // Delete related records first (cascading deletes)
     // Use a transaction to ensure atomicity
     try {
-      await prisma.$transaction(async (tx) => {
+      await getCrmDb(ctx).$transaction(async (tx) => {
         // Delete website stock settings first (has unique constraint)
         // Check if exists to avoid errors
         try {
@@ -276,7 +262,7 @@ export async function DELETE(
         vercelProjectId: website.vercelProjectId,
         neonDatabaseUrl: website.neonDatabaseUrl,
         elevenLabsAgentId: website.elevenLabsAgentId,
-        userId: session.user.id,
+        userId: ctx.userId,
         websiteId: params.id,
       });
       // Fire-and-forget but log errors

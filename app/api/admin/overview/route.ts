@@ -1,8 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal/db';
+import { createDalContext } from '@/lib/context/industry-context';
 
 
 export const dynamic = 'force-dynamic';
@@ -78,8 +79,11 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    const ctx = createDalContext(session.user.id!);
+    const db = getCrmDb(ctx);
+
     // Get total revenue across all sub-accounts (deals with actualCloseDate are considered won)
-    const allDeals = await prisma.deal.findMany({
+    const allDeals = await db.deal.findMany({
       where: {
         user: {
           agencyId,
@@ -96,7 +100,7 @@ export async function GET(req: NextRequest) {
     const totalRevenue = allDeals.reduce((sum, deal) => sum + (deal.value || 0), 0);
 
     // Get total leads across all sub-accounts
-    const totalLeads = await prisma.lead.count({
+    const totalLeads = await db.lead.count({
       where: {
         user: {
           agencyId,
@@ -105,7 +109,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Get total converted leads
-    const convertedLeads = await prisma.lead.count({
+    const convertedLeads = await db.lead.count({
       where: {
         user: {
           agencyId,
@@ -117,7 +121,7 @@ export async function GET(req: NextRequest) {
     const overallConversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
 
     // Get total campaigns
-    const totalCampaigns = await prisma.campaign.count({
+    const totalCampaigns = await db.campaign.count({
       where: {
         user: {
           agencyId,
@@ -126,7 +130,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Get total conversations
-    const totalConversations = await prisma.conversation.count({
+    const totalConversations = await db.conversation.count({
       where: {
         user: {
           agencyId,
@@ -147,7 +151,7 @@ export async function GET(req: NextRequest) {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const monthlyLeads = await prisma.lead.groupBy({
+    const monthlyLeads = await db.lead.groupBy({
       by: ['createdAt'],
       where: {
         user: {

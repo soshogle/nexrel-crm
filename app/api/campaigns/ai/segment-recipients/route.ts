@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, dealService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { aiCampaignGenerator } from '@/lib/ai-campaign-generator';
 
 export const dynamic = 'force-dynamic';
@@ -27,12 +27,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Fetch user's leads or deals
     let availableData: any[] = [];
 
     if (recipientType === 'deals') {
-      availableData = await prisma.deal.findMany({
-        where: { userId: session.user.id },
+      availableData = await dealService.findMany(ctx, {
         include: {
           lead: {
             select: {
@@ -47,8 +49,7 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Default to leads
-      availableData = await prisma.lead.findMany({
-        where: { userId: session.user.id },
+      availableData = await leadService.findMany(ctx, {
         select: {
           id: true,
           businessName: true,

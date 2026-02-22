@@ -4,7 +4,8 @@
  * Creates lead in CRM, adds transcript as note, triggers workflows.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService, noteService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 import { processWebsiteTriggers } from '@/lib/website-triggers';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const website = await prisma.website.findUnique({
+    const website = await getCrmDb(createDalContext('')).website.findUnique({
       where: { id: websiteId },
       select: { userId: true },
     });
@@ -45,27 +46,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
+    const ctx = createDalContext(website.userId);
+    const db = getCrmDb(ctx);
     const leadOwnerId = website.userId;
 
     const leadSource = source || 'Website Voice AI';
-    const lead = await prisma.lead.create({
-      data: {
-        userId: leadOwnerId,
-        businessName: name || (leadSource.includes('Report') ? 'Secret Properties Visitor' : 'Voice AI Visitor'),
-        contactPerson: name || null,
-        email: email || null,
-        phone: phone || null,
-        source: leadSource,
-        status: 'NEW',
-        enrichedData: {
-          source: leadSource.includes('Report') ? 'website_secret_report' : 'website_voice_ai',
-          websiteId,
-          receivedAt: new Date().toISOString(),
-          appointmentRequest: appointmentRequest || null,
-          notes: notes || null,
-        },
+    const lead = await leadService.create(ctx, {
+      businessName: name || (leadSource.includes('Report') ? 'Secret Properties Visitor' : 'Voice AI Visitor'),
+      contactPerson: name || null,
+      email: email || null,
+      phone: phone || null,
+      source: leadSource,
+      status: 'NEW',
+      enrichedData: {
+        source: leadSource.includes('Report') ? 'website_secret_report' : 'website_voice_ai',
+        websiteId,
+        receivedAt: new Date().toISOString(),
+        appointmentRequest: appointmentRequest || null,
+        notes: notes || null,
       },
-    });
+      contactType: 'CUSTOMER',
+    } as any);
 
     // Add transcript as note
     const noteParts: string[] = [];
@@ -80,19 +81,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (noteParts.length > 0) {
-      await prisma.note.create({
-        data: {
-          leadId: lead.id,
-          userId: leadOwnerId,
-          content: noteParts.join('\n'),
-        },
-      });
+      await noteService.create(ctx, { leadId: lead.id, content: noteParts.join('\n') });
     }
 
     // Create booking appointment if requested
     if (appointmentRequest?.date && appointmentRequest?.time) {
       try {
-        await prisma.bookingAppointment.create({
+        await db.bookingAppointment.create({
           data: {
             userId: leadOwnerId,
             leadId: lead.id,
@@ -128,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     // Trigger workflows on lead creation (RE and industry auto-run)
     try {
-      const user = await prisma.user.findUnique({
+      const user = await db.user.findUnique({
         where: { id: leadOwnerId },
         select: { industry: true },
       });

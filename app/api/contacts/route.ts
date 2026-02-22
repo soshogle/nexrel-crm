@@ -1,9 +1,8 @@
-
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,6 +14,9 @@ export async function POST(request: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
     const {
@@ -36,7 +38,6 @@ export async function POST(request: Request) {
 
     console.log('Creating contact/lead with data:', { name, email, phone, company, notes });
 
-    // Validation
     if (!name || (!email && !phone)) {
       return NextResponse.json(
         { error: 'Name and at least one of email or phone are required' },
@@ -44,46 +45,29 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create the contact as a Lead (notes will be added separately if provided)
-    const contact = await prisma.lead.create({
-      data: {
-        userId: session.user.id,
-        businessName: company || name, // Use name as fallback if no company provided
-        contactPerson: name,
-        email: email || null,
-        phone: phone || null,
-        website: null,
-        address: address || null,
-        city: city || null,
-        state: state || null,
-        zipCode: zipCode || null,
-        country: country || null,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        contactType: contactType || 'CUSTOMER',
-        status: status || 'ACTIVE',
-        source: 'Manual Entry',
-        tags: [],
-        // Create a note if notes are provided
-        ...(notes && notes.trim() ? {
-          notes: {
-            create: {
-              userId: session.user.id,
-              content: notes.trim(),
-            }
+    const contact = await leadService.create(ctx, {
+      businessName: company || name,
+      contactPerson: name,
+      email: email || null,
+      phone: phone || null,
+      website: null,
+      address: address || null,
+      city: city || null,
+      state: state || null,
+      zipCode: zipCode || null,
+      country: country || null,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      contactType: contactType || 'CUSTOMER',
+      status: status || 'ACTIVE',
+      source: 'Manual Entry',
+      tags: [],
+      ...(notes && notes.trim() ? {
+        notes: {
+          create: {
+            userId: ctx.userId,
+            content: notes.trim(),
           }
-        } : {})
-      },
-      select: {
-        id: true,
-        businessName: true,
-        contactPerson: true,
-        email: true,
-        phone: true,
-        status: true,
-        contactType: true,
-        tags: true,
-        createdAt: true,
-      },
+        } as any : {}),
     });
 
     console.log('Contact created successfully:', contact.id);
@@ -124,9 +108,11 @@ export async function GET(request: Request) {
 
     console.log('Querying contacts for userId:', session.user.id);
     
-    const where: any = {
-      userId: session.user.id,
-    };
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
+    const where: any = { userId: ctx.userId };
 
     if (search) {
       where.OR = [
@@ -145,12 +131,9 @@ export async function GET(request: Request) {
       where.status = status;
     }
 
-    // Fetch contacts with counts separately to avoid potential query issues
     let contacts;
     try {
-      // First, get the contacts without _count
-      // Explicitly select fields to avoid issues with missing columns like dateOfBirth
-      contacts = await prisma.lead.findMany({
+      contacts = await leadService.findMany(ctx, {
         where,
         select: {
           id: true,
@@ -162,29 +145,24 @@ export async function GET(request: Request) {
           contactType: true,
           tags: true,
           lastContactedAt: true,
-          // Exclude dateOfBirth if it doesn't exist in database yet
           createdAt: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        } as any,
+        orderBy: { createdAt: 'desc' },
       });
 
-      // Fetch counts separately using simple queries (more reliable than groupBy)
       if (contacts.length > 0) {
-        const contactIds = contacts.map(c => c.id);
+        const contactIds = contacts.map((c: any) => c.id);
         
-        // Use count queries instead of groupBy - more reliable
         const [dealsData, messagesData, callLogsData] = await Promise.all([
-          prisma.deal.findMany({
+          db.deal.findMany({
             where: { leadId: { in: contactIds } },
             select: { leadId: true },
           }).catch(() => []),
-          prisma.message.findMany({
+          db.message.findMany({
             where: { leadId: { in: contactIds } },
             select: { leadId: true },
           }).catch(() => []),
-          prisma.callLog.findMany({
+          db.callLog.findMany({
             where: { leadId: { in: contactIds } },
             select: { leadId: true },
           }).catch(() => []),

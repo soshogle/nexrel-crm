@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { emailService } from '@/lib/email-service';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService } from '@/lib/dal/lead-service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -127,15 +129,13 @@ export async function POST(request: NextRequest) {
         let callerEmail = undefined;
 
         try {
+          const ctx = createDalContext(voiceAgent.userId);
           const cleanPhone = (callLog.fromNumber || '').replace(/[\s\-\+\(\)]/g, '');
-          const lead = await prisma.lead.findFirst({
-            where: {
-              userId: voiceAgent.userId,
-              phone: {
-                contains: cleanPhone.slice(-10)
-              }
-            }
+          const leads = await leadService.findMany(ctx, {
+            where: { phone: { contains: cleanPhone.slice(-10) } },
+            take: 1
           });
+          const lead = leads[0];
 
           if (lead) {
             callerName = lead.contactPerson || lead.businessName || callLog.fromNumber || 'Unknown';

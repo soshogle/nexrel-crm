@@ -1,9 +1,8 @@
-
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-
+import { leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,7 +10,8 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -33,11 +33,8 @@ export async function POST(request: Request) {
     }
 
     // Verify all contacts belong to the user
-    const contacts = await prisma.lead.findMany({
-      where: {
-        id: { in: contactIds },
-        userId: session.user.id,
-      },
+    const contacts = await leadService.findMany(ctx, {
+      where: { id: { in: contactIds } },
       select: { id: true, tags: true },
     });
 
@@ -66,11 +63,8 @@ export async function POST(request: Request) {
         newTags = existingTags;
       }
 
-      return prisma.lead.update({
-        where: { id: contact.id },
-        data: {
-          tags: JSON.parse(JSON.stringify(newTags)),
-        },
+      return leadService.update(ctx, contact.id, {
+        tags: JSON.parse(JSON.stringify(newTags)),
       });
     });
 

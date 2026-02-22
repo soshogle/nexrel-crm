@@ -5,7 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, websiteService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { changeApproval } from '@/lib/website-builder/approval';
 import { triggerWebsiteDeploy } from '@/lib/website-builder/deploy-trigger';
 
@@ -13,6 +14,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -26,18 +32,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const website = await prisma.website.findFirst({
-      where: {
-        id: websiteId,
-        userId: session.user.id,
-      },
-    });
+    const website = await websiteService.findUnique(ctx, websiteId);
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
-    const approval = await prisma.websiteChangeApproval.findUnique({
+    const db = getCrmDb(ctx);
+    const approval = await db.websiteChangeApproval.findUnique({
       where: { id: approvalId },
     });
 
@@ -53,13 +55,10 @@ export async function POST(request: NextRequest) {
       );
 
       // Update website
-      await prisma.website.update({
-        where: { id: websiteId },
-        data: { structure: newStructure },
-      });
+      await websiteService.update(ctx, websiteId, { structure: newStructure });
 
       // Update approval status
-      await prisma.websiteChangeApproval.update({
+      await db.websiteChangeApproval.update({
         where: { id: approvalId },
         data: {
           status: 'APPROVED',
@@ -73,7 +72,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, structure: newStructure });
     } else if (action === 'reject') {
       // Update approval status
-      await prisma.websiteChangeApproval.update({
+      await db.websiteChangeApproval.update({
         where: { id: approvalId },
         data: {
           status: 'REJECTED',

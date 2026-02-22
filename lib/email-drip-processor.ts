@@ -1,4 +1,5 @@
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService } from '@/lib/dal';
 import { sendDripEmail } from '@/lib/email-sender';
 
 /**
@@ -9,8 +10,9 @@ export async function processDripEmails() {
   try {
     console.log('[Drip Processor] Starting email processing...');
 
+    const db = getCrmDb(createDalContext('bootstrap'));
     // Find active campaigns
-    const activeCampaigns = await prisma.emailDripCampaign.findMany({
+    const activeCampaigns = await db.emailDripCampaign.findMany({
       where: {
         status: 'ACTIVE',
       },
@@ -44,7 +46,8 @@ async function processCampaignEmails(campaign: any) {
 
     // Find enrollments ready for next email
     const now = new Date();
-    const readyEnrollments = await prisma.emailDripEnrollment.findMany({
+    const db = getCrmDb(createDalContext(campaign.userId));
+    const readyEnrollments = await db.emailDripEnrollment.findMany({
       where: {
         campaignId: campaign.id,
         status: 'ACTIVE',
@@ -76,10 +79,8 @@ async function processCampaignEmails(campaign: any) {
  */
 async function processEnrollment(enrollment: any, campaign: any) {
   try {
-    // Get lead data
-    const lead = await prisma.lead.findUnique({
-      where: { id: enrollment.leadId },
-    });
+    const ctx = createDalContext(campaign.userId);
+    const lead = await leadService.findUnique(ctx, enrollment.leadId);
 
     if (!lead || !lead.email) {
       console.log(`[Drip Processor] Lead ${enrollment.leadId} has no email, skipping`);
@@ -101,7 +102,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
 
     if (!nextSequence) {
       // No more sequences, mark as completed
-      await prisma.emailDripEnrollment.update({
+      await db.emailDripEnrollment.update({
         where: { id: enrollment.id },
         data: {
           status: 'COMPLETED',
@@ -109,7 +110,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
         },
       });
 
-      await prisma.emailDripCampaign.update({
+      await db.emailDripCampaign.update({
         where: { id: campaign.id },
         data: {
           totalCompleted: { increment: 1 },
@@ -159,7 +160,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
     }
 
     // Create message record
-    const message = await prisma.emailDripMessage.create({
+    const message = await db.emailDripMessage.create({
       data: {
         enrollmentId: enrollment.id,
         sequenceId: nextSequence.id,
@@ -189,7 +190,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
 
       if (sent) {
         // Update message status
-        await prisma.emailDripMessage.update({
+        await db.emailDripMessage.update({
           where: { id: message.id },
           data: {
             status: 'SENT',
@@ -198,7 +199,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
         });
 
         // Update sequence stats
-        await prisma.emailDripSequence.update({
+        await db.emailDripSequence.update({
           where: { id: nextSequence.id },
           data: {
             totalSent: { increment: 1 },
@@ -211,7 +212,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
         console.log(`[Drip Processor] Sent email to ${lead.email}`);
       } else {
         // Mark as failed
-        await prisma.emailDripMessage.update({
+        await db.emailDripMessage.update({
           where: { id: message.id },
           data: {
             status: 'FAILED',

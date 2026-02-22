@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
@@ -29,22 +30,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+
     // For now, store RAMQ claims in Lead.insuranceInfo JSON field
     // In production, you'd want a dedicated RAMQClaim model
-    const where: any = { userId };
+    const where: any = {};
     if (leadId) {
       where.id = leadId;
     }
 
-    const leads = await prisma.lead.findMany({
-      where,
+    const leads = await leadService.findMany(ctx, {
+      where: Object.keys(where).length ? where : undefined,
       select: {
         id: true,
         contactPerson: true,
         businessName: true,
         insuranceInfo: true,
       },
-    });
+    } as any);
 
     // Extract RAMQ claims from insuranceInfo
     const claims: any[] = [];
@@ -124,9 +128,9 @@ export async function POST(request: NextRequest) {
 
     // Store in Lead.insuranceInfo JSON field
     if (leadId) {
-      const lead = await prisma.lead.findUnique({
-        where: { id: leadId, userId },
-      });
+      const ctx = getDalContextFromSession(session);
+      if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      const lead = await leadService.findUnique(ctx, leadId);
 
       if (!lead) {
         return NextResponse.json(
@@ -142,10 +146,7 @@ export async function POST(request: NextRequest) {
       insuranceInfo.ramqClaims.push(claim);
       insuranceInfo.ramqNumber = patientRAMQNumber;
 
-      await prisma.lead.update({
-        where: { id: leadId },
-        data: { insuranceInfo },
-      });
+      await leadService.update(ctx, leadId, { insuranceInfo });
     } else {
       // If no leadId, create a new lead or store in user metadata
       // For now, we'll require a leadId

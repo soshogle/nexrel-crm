@@ -1,8 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal/db';
+import { createDalContext } from '@/lib/context/industry-context';
 
 
 export const dynamic = 'force-dynamic';
@@ -52,8 +53,9 @@ export async function GET(req: NextRequest) {
     // Calculate performance metrics for each sub-account
     const subAccountsWithMetrics = await Promise.all(
       subAccounts.map(async (account) => {
-        // Get revenue from deals (deals with actualCloseDate are considered won)
-        const deals = await prisma.deal.findMany({
+        const accountCtx = createDalContext(account.id);
+        const db = getCrmDb(accountCtx);
+        const deals = await db.deal.findMany({
           where: {
             userId: account.id,
             actualCloseDate: {
@@ -67,9 +69,8 @@ export async function GET(req: NextRequest) {
 
         const totalRevenue = deals.reduce((sum, deal) => sum + (deal.value || 0), 0);
 
-        // Get conversion rate
         const totalLeads = account._count.leads;
-        const convertedLeads = await prisma.lead.count({
+        const convertedLeads = await db.lead.count({
           where: {
             userId: account.id,
             status: 'CONVERTED',

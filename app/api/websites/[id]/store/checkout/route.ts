@@ -4,7 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { websiteStripeConnect } from '@/lib/website-builder/stripe-connect';
 
 export async function POST(
@@ -35,7 +36,8 @@ export async function POST(
       );
     }
 
-    const website = await prisma.website.findUnique({
+    const ctx = createDalContext('bootstrap', null);
+    const website = await getCrmDb(ctx).website.findUnique({
       where: { id: params.id },
       include: { user: true },
     });
@@ -49,7 +51,7 @@ export async function POST(
 
     // Validate items and get prices from DB
     const productIds = items.map((i: { productId: string }) => i.productId);
-    const websiteProducts = await prisma.websiteProduct.findMany({
+    const websiteProducts = await getCrmDb(ctx).websiteProduct.findMany({
       where: {
         websiteId: params.id,
         productId: { in: productIds },

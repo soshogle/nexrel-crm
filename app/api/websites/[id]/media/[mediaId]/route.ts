@@ -5,7 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, websiteService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export async function PATCH(
   request: NextRequest,
@@ -17,17 +18,21 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: params.id, userId: session.user.id },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const website = await websiteService.findUnique(ctx, params.id);
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
+    const db = getCrmDb(ctx);
     const body = await request.json();
     const { alt, description } = body;
 
-    const existing = await prisma.websiteMedia.findFirst({
+    const existing = await db.websiteMedia.findFirst({
       where: { id: params.mediaId, websiteId: params.id },
     });
     if (!existing) {
@@ -43,7 +48,7 @@ export async function PATCH(
       updateData.metadata = Object.keys(metadata).length ? metadata : null;
     }
 
-    const media = await prisma.websiteMedia.update({
+    const media = await db.websiteMedia.update({
       where: { id: params.mediaId },
       data: updateData,
     });

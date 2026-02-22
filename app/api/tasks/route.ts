@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { taskService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -29,7 +32,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '100');
 
     const where: any = {
-      userId: session.user.id,
+      OR: [{ userId: ctx.userId }, { assignedToId: ctx.userId }],
     };
 
     if (status) where.status = status;
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
       where.status = { notIn: ['COMPLETED', 'CANCELLED'] };
     }
 
-    const tasks = await prisma.task.findMany({
+    const tasks = await getCrmDb(ctx).task.findMany({
       where,
       include: {
         assignedTo: {
@@ -159,11 +162,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Check if dependency task exists and is not completed
     if (dependsOnId) {
-      const dependsTask = await prisma.task.findUnique({
-        where: { id: dependsOnId },
-      });
+      const dependsTask = await taskService.findUnique(ctx, dependsOnId);
       if (!dependsTask) {
         return NextResponse.json(
           { error: 'Dependency task not found' },
@@ -172,28 +176,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const task = await prisma.task.create({
-      data: {
-        userId: session.user.id,
-        title,
-        description,
-        priority: priority || 'MEDIUM',
-        status: status || 'TODO',
-        assignedToId,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        startDate: startDate ? new Date(startDate) : null,
-        category,
-        tags: tags || [],
-        leadId,
-        dealId,
-        dependsOnId,
-        parentTaskId,
-        estimatedHours,
-        aiSuggested: aiSuggested || false,
-        aiContext,
-        autoCreated: autoCreated || false,
-        automationRule,
-      },
+    const task = await taskService.create(ctx, {
+      title,
+      description,
+      priority: priority || 'MEDIUM',
+      status: status || 'TODO',
+      assignedToId,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      startDate: startDate ? new Date(startDate) : null,
+      category,
+      tags: tags || [],
+      leadId,
+      dealId,
+      dependsOnId,
+      parentTaskId,
+      estimatedHours,
+      aiSuggested: aiSuggested || false,
+      aiContext,
+      autoCreated: autoCreated || false,
+      automationRule,
+    });
+
+    const taskWithInclude = await getCrmDb(ctx).task.findUnique({
+      where: { id: task.id },
       include: {
         assignedTo: {
           select: {
@@ -220,13 +225,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    emitCRMEvent('task_created', session.user.id, { entityId: task.id, entityType: 'Task', data: { title } });
+    emitCRMEvent('task_created', ctx.userId, { entityId: task.id, entityType: 'Task', data: { title } });
 
     // Create activity log
-    await prisma.taskActivity.create({
+    await getCrmDb(ctx).taskActivity.create({
       data: {
         taskId: task.id,
-        userId: session.user.id,
+        userId: ctx.userId,
         action: 'CREATED',
         newValue: 'Task created',
       },
@@ -236,7 +241,7 @@ export async function POST(request: NextRequest) {
     try {
       const { RelationshipHooks } = await import('@/lib/relationship-hooks');
       await RelationshipHooks.onTaskCreated({
-        userId: session.user.id,
+        userId: ctx.userId,
         taskId: task.id,
         leadId: leadId,
         dealId: dealId,
@@ -246,7 +251,7 @@ export async function POST(request: NextRequest) {
       // Don't fail the request if relationship tracking fails
     }
 
-    return NextResponse.json({ task }, { status: 201 });
+    return NextResponse.json({ task: taskWithInclude ?? task }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating task:', error);
     return NextResponse.json(

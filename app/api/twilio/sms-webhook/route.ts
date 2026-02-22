@@ -1,6 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { conversationService } from '@/lib/dal/conversation-service';
+import { getCrmDb } from '@/lib/dal/db';
 
 /**
  * Twilio SMS Webhook Handler
@@ -66,32 +68,25 @@ export async function POST(req: NextRequest) {
       console.log('Created new channel connection:', channelConnection.id);
     }
 
-    // Find or create conversation for this contact
-    let conversation = await prisma.conversation.findFirst({
-      where: {
-        userId: user.id,
-        contactIdentifier: from,
-        channelConnectionId: channelConnection.id
-      }
+    const ctx = createDalContext(user.id);
+    let conversation = await conversationService.findFirst(ctx, {
+      contactIdentifier: from,
+      channelConnectionId: channelConnection.id
     });
 
     if (!conversation) {
-      // Create new conversation for incoming SMS
-      conversation = await prisma.conversation.create({
-        data: {
-          userId: user.id,
-          channelConnectionId: channelConnection.id,
-          contactIdentifier: from,
-          contactName: from, // Will show phone number until contact is identified
-          lastMessageAt: new Date(),
-          status: 'ACTIVE'
-        }
+      conversation = await conversationService.create(ctx, {
+        channelConnectionId: channelConnection.id,
+        contactIdentifier: from,
+        contactName: from,
+        lastMessageAt: new Date(),
+        status: 'ACTIVE'
       });
       console.log('Created new conversation:', conversation.id);
     }
 
-    // Store the incoming message
-    await prisma.conversationMessage.create({
+    const db = getCrmDb(ctx);
+    await db.conversationMessage.create({
       data: {
         conversationId: conversation.id,
         userId: user.id,
@@ -102,11 +97,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Update conversation last message time
-    await prisma.conversation.update({
-      where: { id: conversation.id },
-      data: { lastMessageAt: new Date() }
-    });
+    await conversationService.update(ctx, conversation.id, { lastMessageAt: new Date() });
 
     console.log('Saved incoming SMS to conversation:', conversation.id);
 

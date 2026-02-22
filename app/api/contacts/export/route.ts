@@ -1,9 +1,8 @@
-
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-
+import { leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,10 +14,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const contacts = await prisma.lead.findMany({
-      where: {
-        userId: session.user.id,
-      },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const contacts = await leadService.findMany(ctx, {
       select: {
         businessName: true,
         contactPerson: true,
@@ -36,10 +35,8 @@ export async function GET(request: Request) {
         tags: true,
         lastContactedAt: true,
         createdAt: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      } as any,
+      orderBy: { createdAt: 'desc' },
     });
 
     // Convert to CSV

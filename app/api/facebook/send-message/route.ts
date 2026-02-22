@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, conversationService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { facebookMessengerService } from '@/lib/facebook-messenger-service';
 
 export const dynamic = 'force-dynamic';
@@ -27,13 +28,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Get conversation details
-    const conversation = await prisma.conversation.findUnique({
-      where: { id: conversationId },
-      include: {
-        channelConnection: true,
-      },
-    });
+    const conversation = await conversationService.findUnique(ctx, conversationId);
 
     if (!conversation || conversation.userId !== session.user.id) {
       return NextResponse.json(
@@ -84,10 +83,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Save outbound message to database
-    const savedMessage = await prisma.conversationMessage.create({
+    const savedMessage = await getCrmDb(ctx).conversationMessage.create({
       data: {
         conversationId,
-        userId: session.user.id,
+        userId: ctx.userId,
         externalMessageId: result.messageId || `temp-${Date.now()}`,
         content: message,
         direction: 'OUTBOUND',

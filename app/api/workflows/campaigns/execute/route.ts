@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { workflowTemplateService, leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +15,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
     const { workflowId } = body;
@@ -23,17 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch workflow template
-    const workflow = await prisma.workflowTemplate.findFirst({
-      where: {
-        id: workflowId,
-        userId: session.user.id,
-      },
-      include: {
-        tasks: {
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
-    });
+    const workflow = await workflowTemplateService.findUnique(ctx, workflowId);
 
     if (!workflow) {
       return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
@@ -56,10 +50,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build lead query based on audience filters
-    const leadWhere: any = {
-      userId: session.user.id,
-    };
+    // Build lead query based on audience filters (leadService adds userId)
+    const leadWhere: any = {};
 
     if (audience.filters?.minLeadScore) {
       leadWhere.leadScore = { gte: audience.filters.minLeadScore };
@@ -84,15 +76,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get matching leads
-    const leads = await prisma.lead.findMany({
+    const leads = await leadService.findMany(ctx, {
       where: leadWhere,
       select: {
         id: true,
         email: true,
         phone: true,
-        name: true,
         businessName: true,
-      },
+      } as any,
     });
 
     const totalRecipients = leads.length;
@@ -105,8 +96,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Update workflow template with recipient count
-    await prisma.workflowTemplate.update({
-      where: { id: workflowId },
+    await getCrmDb(ctx).workflowTemplate.update({
+      where: { id: workflowId, userId: ctx.userId },
       data: {
         totalRecipients: totalRecipients as any,
         isActive: true,
@@ -116,10 +107,10 @@ export async function POST(request: NextRequest) {
     // Create workflow instances for each lead
     const instances = await Promise.all(
       leads.map((lead) =>
-        prisma.workflowInstance.create({
+        getCrmDb(ctx).workflowInstance.create({
           data: {
             templateId: workflow.id,
-            userId: session.user.id,
+            userId: ctx.userId,
             leadId: lead.id,
             status: 'ACTIVE',
           },

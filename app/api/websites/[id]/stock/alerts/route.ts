@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, websiteService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
 
 export async function GET(
@@ -19,11 +20,13 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Get website to verify ownership
-    const website = await prisma.website.findUnique({
-      where: { id: params.id },
-      select: { userId: true },
-    });
+    const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website || website.userId !== session.user.id) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
@@ -42,9 +45,10 @@ export async function GET(
     // Get recent low stock alerts (from tasks)
     let alertTasks: any[] = [];
     try {
-      const allAlerts = await prisma.task.findMany({
+      const db = getCrmDb(ctx);
+      const allAlerts = await db.task.findMany({
         where: {
-          userId: session.user.id,
+          userId: ctx.userId,
           status: { in: ['PENDING', 'IN_PROGRESS'] },
         },
         orderBy: { createdAt: 'desc' },

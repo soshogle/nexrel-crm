@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { leadService, getCrmDb } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { emitCRMEvent } from '@/lib/crm-event-emitter'
 
 // GET /api/appointments - List all appointments for the user
@@ -17,13 +18,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
     const where: any = {
-      userId: session.user.id,
+      userId: ctx.userId,
     }
 
     if (status) {
@@ -40,7 +44,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const appointments = await prisma.bookingAppointment.findMany({
+    const appointments = await getCrmDb(ctx).bookingAppointment.findMany({
       where,
       include: {
         lead: {
@@ -76,9 +80,9 @@ export async function GET(request: NextRequest) {
     })
 
     // Also fetch voice AI reservations and include them in the calendar
-    const reservations = await prisma.reservation.findMany({
+    const reservations = await getCrmDb(ctx).reservation.findMany({
       where: {
-        userId: session.user.id,
+        userId: ctx.userId,
         ...(status && {
           status: status === 'SCHEDULED' ? 'CONFIRMED' : 
                   status === 'COMPLETED' ? 'COMPLETED' : 
@@ -207,6 +211,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await request.json()
     const {
       title,
@@ -269,9 +276,9 @@ export async function POST(request: NextRequest) {
     const duration = Math.round((end.getTime() - start.getTime()) / (1000 * 60))
 
     // Check for conflicts
-    const conflictingAppointment = await prisma.bookingAppointment.findFirst({
+    const conflictingAppointment = await getCrmDb(ctx).bookingAppointment.findFirst({
       where: {
-        userId: session.user.id,
+        userId: ctx.userId,
         status: {
           notIn: ['CANCELLED', 'NO_SHOW'],
         },
@@ -295,29 +302,23 @@ export async function POST(request: NextRequest) {
     let customerPhone = ''
 
     if (leadId) {
-      const lead = await prisma.lead.findUnique({
-        where: { id: leadId },
-        select: { contactPerson: true, email: true, phone: true },
-      })
+      const lead = await leadService.findUnique(ctx, leadId)
       if (lead) {
-        customerName = lead.contactPerson || customerName
-        customerEmail = lead.email || ''
-        customerPhone = lead.phone || ''
+        customerName = (lead as any).contactPerson || customerName
+        customerEmail = (lead as any).email || ''
+        customerPhone = (lead as any).phone || ''
       }
     } else if (contactId) {
-      const contact = await prisma.lead.findUnique({
-        where: { id: contactId },
-        select: { contactPerson: true, businessName: true, email: true, phone: true },
-      })
+      const contact = await leadService.findUnique(ctx, contactId)
       if (contact) {
-        customerName = contact.contactPerson || contact.businessName || customerName
-        customerEmail = contact.email || ''
-        customerPhone = contact.phone || ''
+        customerName = (contact as any).contactPerson || (contact as any).businessName || customerName
+        customerEmail = (contact as any).email || ''
+        customerPhone = (contact as any).phone || ''
       }
     }
 
     // Create appointment
-    const appointment = await prisma.bookingAppointment.create({
+    const appointment = await getCrmDb(ctx).bookingAppointment.create({
       data: {
         appointmentDate: start,
         duration,
@@ -326,7 +327,7 @@ export async function POST(request: NextRequest) {
         requiresPayment: requiresPayment || false,
         notes,
         status: 'SCHEDULED',
-        userId: session.user.id,
+        userId: ctx.userId,
         leadId: leadId || null,
         contactId: contactId || null,
         customerName,

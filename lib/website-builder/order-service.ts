@@ -3,7 +3,8 @@
  * Handles order creation from website sales and CRM integration
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { websiteStockSyncService } from './stock-sync-service';
 
 export interface OrderItemData {
@@ -68,15 +69,17 @@ export class WebsiteOrderService {
    * Create or update Lead from customer data
    */
   private async createOrUpdateLead(
-    userId: string,
+    ctx: { userId: string; industry?: string | null },
     customer: CustomerData,
     websiteId: string,
     orderTotal: number
   ) {
+    const db = getCrmDb(ctx);
+
     // Check if lead exists by email
-    let lead = await prisma.lead.findFirst({
+    let lead = await db.lead.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         email: customer.email,
       },
     });
@@ -115,46 +118,40 @@ export class WebsiteOrderService {
 
     if (lead) {
       // Update existing lead
-      lead = await prisma.lead.update({
-        where: { id: lead.id },
-        data: {
-          contactPerson: customer.name,
-          phone: customer.phone || lead.phone,
-          address: shippingAddress.line1 || lead.address,
-          city: shippingAddress.city || lead.city,
-          state: shippingAddress.state || lead.state,
-          zipCode: shippingAddress.postal_code || lead.zipCode,
-          country: shippingAddress.country || lead.country || 'US',
-          status: 'CONVERTED', // They're a paying customer
-          contactType: 'CUSTOMER',
-          enrichedData,
-          leadScore,
-          lastContactedAt: new Date(),
-          tags: Array.isArray(lead.tags) ? [...(lead.tags as string[]), 'customer', 'website_buyer'] : ['customer', 'website_buyer'],
-        },
+      lead = await leadService.update(ctx, lead.id, {
+        contactPerson: customer.name,
+        phone: customer.phone || lead.phone,
+        address: shippingAddress.line1 || lead.address,
+        city: shippingAddress.city || lead.city,
+        state: shippingAddress.state || lead.state,
+        zipCode: shippingAddress.postal_code || lead.zipCode,
+        country: shippingAddress.country || lead.country || 'US',
+        status: 'CONVERTED', // They're a paying customer
+        contactType: 'CUSTOMER',
+        enrichedData,
+        leadScore,
+        lastContactedAt: new Date(),
+        tags: Array.isArray(lead.tags) ? [...(lead.tags as string[]), 'customer', 'website_buyer'] : ['customer', 'website_buyer'],
       });
     } else {
       // Create new lead
-      lead = await prisma.lead.create({
-        data: {
-          userId,
-          businessName: customer.name,
-          contactPerson: customer.name,
-          email: customer.email,
-          phone: customer.phone || null,
-          address: shippingAddress.line1 || null,
-          city: shippingAddress.city || null,
-          state: shippingAddress.state || null,
-          zipCode: shippingAddress.postal_code || null,
-          country: shippingAddress.country || 'US',
-          status: 'CONVERTED',
-          source: 'website_sale',
-          contactType: 'CUSTOMER',
-          enrichedData,
-          leadScore,
-          tags: ['customer', 'website_buyer', 'first_time_buyer'],
-        },
-      });
+      lead = await leadService.create(ctx, {
+        businessName: customer.name,
+        contactPerson: customer.name,
+        email: customer.email,
+        phone: customer.phone || null,
+        address: shippingAddress.line1 || null,
+        city: shippingAddress.city || null,
+        state: shippingAddress.state || null,
+        zipCode: shippingAddress.postal_code || null,
+        country: shippingAddress.country || 'US',
+        status: 'CONVERTED',
+        source: 'website_sale',
+        contactType: 'CUSTOMER',
+        enrichedData,
+        leadScore,
+        tags: ['customer', 'website_buyer', 'first_time_buyer'],
+      } as any);
     }
 
     return lead;
@@ -179,10 +176,13 @@ export class WebsiteOrderService {
       metadata = {},
     } = params;
 
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+
     // Start transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       // 1. Create or update Lead
-      const lead = await this.createOrUpdateLead(userId, customer, websiteId, total);
+      const lead = await this.createOrUpdateLead(ctx, customer, websiteId, total);
 
       // 2. Create Order
       const order = await tx.order.create({
@@ -314,7 +314,7 @@ export class WebsiteOrderService {
     // This prevents long-running transactions and allows for better error handling
     if (result.inventoryUpdates) {
       for (const update of result.inventoryUpdates) {
-        const product = await prisma.product.findUnique({
+        const product = await db.product.findUnique({
           where: { id: update.productId },
           select: { inventory: true, sku: true },
         });
@@ -338,13 +338,12 @@ export class WebsiteOrderService {
     }
 
     // Digital product fulfillment: assign access codes, send download email
-    this.fulfillDigitalProducts({
+    this.fulfillDigitalProducts(ctx, {
       orderId: result.order.id,
       orderNumber: result.order.orderNumber,
       customerEmail: customer.email,
       customerName: customer.name,
       items,
-      userId,
     }).catch((err) => console.error('Digital fulfillment error:', err));
 
     return result;
@@ -353,20 +352,23 @@ export class WebsiteOrderService {
   /**
    * Fulfill digital products: assign access codes, email download links
    */
-  private async fulfillDigitalProducts(params: {
-    orderId: string;
-    orderNumber: string;
-    customerEmail: string;
-    customerName: string;
-    items: OrderItemData[];
-    userId: string;
-  }) {
-    const { orderId, orderNumber, customerEmail, customerName, items, userId } = params;
+  private async fulfillDigitalProducts(
+    ctx: { userId: string; industry?: string | null },
+    params: {
+      orderId: string;
+      orderNumber: string;
+      customerEmail: string;
+      customerName: string;
+      items: OrderItemData[];
+    }
+  ) {
+    const { orderId, orderNumber, customerEmail, customerName, items } = params;
+    const db = getCrmDb(ctx);
 
     const digitalItems: Array<{ productId: string; productName: string; quantity: number; url?: string; codes?: string[] }> = [];
 
     for (const item of items) {
-      const product = await prisma.product.findUnique({
+      const product = await db.product.findUnique({
         where: { id: item.productId },
         select: { productType: true, downloadUrl: true, accessCodeTemplate: true },
       });
@@ -375,7 +377,7 @@ export class WebsiteOrderService {
 
       const entry: { productId: string; productName: string; quantity: number; url?: string; codes?: string[] } = {
         productId: item.productId,
-        productName: item.name,
+        productName: item.productName,
         quantity: item.quantity,
       };
 
@@ -384,7 +386,7 @@ export class WebsiteOrderService {
       }
 
       if (product.accessCodeTemplate) {
-        const codes = await prisma.productAccessCode.findMany({
+        const codes = await db.productAccessCode.findMany({
           where: {
             productId: item.productId,
             redeemedAt: null,
@@ -394,7 +396,7 @@ export class WebsiteOrderService {
 
         if (codes.length >= item.quantity) {
           const codeStrings = codes.map((c) => c.code);
-          await prisma.productAccessCode.updateMany({
+          await db.productAccessCode.updateMany({
             where: { id: { in: codes.map((c) => c.id) } },
             data: { orderId, redeemedAt: new Date() },
           });
@@ -427,7 +429,7 @@ export class WebsiteOrderService {
       subject: `Your order ${orderNumber} - Digital delivery`,
       html,
       text: lines.join('\n'),
-      userId,
+      userId: ctx.userId,
     });
   }
 
@@ -435,7 +437,8 @@ export class WebsiteOrderService {
    * Get order by ID
    */
   async getOrder(orderId: string) {
-    return await prisma.order.findUnique({
+    const db = getCrmDb(createDalContext('bootstrap'));
+    return await db.order.findUnique({
       where: { id: orderId },
       include: {
         items: {
@@ -451,7 +454,16 @@ export class WebsiteOrderService {
    * Get orders for a website
    */
   async getWebsiteOrders(websiteId: string) {
-    const websiteOrders = await prisma.websiteOrder.findMany({
+    const website = await getCrmDb(createDalContext('bootstrap')).website.findUnique({
+      where: { id: websiteId },
+      select: { userId: true },
+    });
+    if (!website) return [];
+
+    const ctx = createDalContext(website.userId);
+    const db = getCrmDb(ctx);
+
+    const websiteOrders = await db.websiteOrder.findMany({
       where: { websiteId },
       select: { orderId: true },
     });
@@ -462,7 +474,7 @@ export class WebsiteOrderService {
       return [];
     }
 
-    return await prisma.order.findMany({
+    return await db.order.findMany({
       where: {
         id: { in: orderIds },
       },

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { campaignService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { voiceCampaignScheduler } from '@/lib/voice-campaign-scheduler';
 
 export async function GET(request: NextRequest) {
@@ -17,17 +19,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 });
     }
 
-    const { prisma } = await import('@/lib/db');
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: campaignId },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const campaign = await campaignService.findUnique(ctx, campaignId);
 
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
-    }
-
-    if (campaign.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const analytics = await voiceCampaignScheduler.getCampaignAnalytics(campaignId);

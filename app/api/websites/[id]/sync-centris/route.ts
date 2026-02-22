@@ -8,7 +8,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, websiteService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { runCentralCentrisSync, type BrokerOverride } from '@/lib/centris-sync';
 import { runRealtorSync } from '@/lib/realtor-sync';
 
@@ -25,10 +26,12 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: params.id, userId: session.user.id },
-      select: { id: true, templateType: true, neonDatabaseUrl: true, agencyConfig: true },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
@@ -60,8 +63,9 @@ export async function POST(
     }
 
     // 2. Fallback: Website table (SERVICE with neonDatabaseUrl)
+    const db = getCrmDb(ctx);
     if (databaseUrls.length === 0) {
-      const websites = await prisma.website.findMany({
+      const websites = await db.website.findMany({
         where: {
           templateType: 'SERVICE',
           status: 'READY',

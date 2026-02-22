@@ -4,7 +4,8 @@
  * Features: Screen pops, patient matching, call routing, workflow automation
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService } from '@/lib/dal';
 import { elevenLabsService } from '@/lib/elevenlabs';
 import {
   triggerIncomingCallWorkflow,
@@ -41,8 +42,9 @@ export class EnhancedCallHandler {
       // Normalize phone number (remove formatting)
       const normalized = phoneNumber.replace(/\D/g, '');
       
-      // Try exact match first
-      let lead = await prisma.lead.findFirst({
+      const db = getCrmDb(createDalContext(''));
+      // Try exact match first (no userId - matching by phone across users for screen pop)
+      let lead = await db.lead.findFirst({
         where: {
           phone: {
             contains: normalized.slice(-10), // Last 10 digits
@@ -66,7 +68,7 @@ export class EnhancedCallHandler {
         ];
 
         for (const variant of variations) {
-          lead = await prisma.lead.findFirst({
+          lead = await db.lead.findFirst({
             where: {
               OR: [
                 { phone: { contains: variant } },
@@ -89,11 +91,11 @@ export class EnhancedCallHandler {
       }
 
       // Get recent appointments
-      const appointments = await prisma.appointment.findMany({
+      const appointments = await db.bookingAppointment.findMany({
         where: {
           leadId: lead.id,
         },
-        orderBy: { scheduledDate: 'desc' },
+        orderBy: { appointmentDate: 'desc' },
         take: 3,
       });
 
@@ -132,8 +134,9 @@ export class EnhancedCallHandler {
     // Match patient
     const patientMatch = await this.matchPatientToCall(callEvent.fromNumber);
 
+    const db = getCrmDb(createDalContext(userId));
     // Create call log with patient match
-    const callLog = await prisma.callLog.create({
+    const callLog = await db.callLog.create({
       data: {
         userId,
         twilioCallSid: callEvent.callSid,

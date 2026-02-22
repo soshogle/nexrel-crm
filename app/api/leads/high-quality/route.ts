@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,8 +20,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '100');
     const hasPhone = searchParams.get('hasPhone') === 'true';
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const where: any = {
-      userId: session.user.id,
       leadScore: { gte: minScore },
     };
 
@@ -28,7 +31,7 @@ export async function GET(request: NextRequest) {
       where.phone = { not: null };
     }
 
-    const leads = await prisma.lead.findMany({
+    const leads = await leadService.findMany(ctx, {
       where,
       select: {
         id: true,
@@ -53,9 +56,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Count total high-quality leads
-    const totalCount = await prisma.lead.count({
-      where,
-    });
+    const totalCount = await leadService.count(ctx, where);
 
     return NextResponse.json({
       leads,

@@ -1,13 +1,13 @@
 /**
  * Automated Task Creation System
- * 
+ *
  * Creates tasks automatically based on lead activity and triggers
  * Ensures no lead falls through the cracks with perfect follow-up timing
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
+import { leadService, taskService } from '@/lib/dal';
 
 export interface TaskTrigger {
   type: 'manual_followup' | 'send_proposal' | 're_engagement' | 'meeting_prep' | 'competitor_alert' | 'objection_response';
@@ -21,51 +21,44 @@ export interface TaskTrigger {
 /**
  * Create task based on trigger
  */
-export async function createTaskFromTrigger(trigger: TaskTrigger) {
+export async function createTaskFromTrigger(
+  trigger: TaskTrigger,
+  industry?: string | null
+) {
+  const ctx = createDalContext(trigger.userId, industry);
   const taskConfig = getTaskConfig(trigger.type);
-  
+
   // Get lead data for context
-  const lead = await prisma.lead.findUnique({
-    where: { id: trigger.leadId },
-    select: {
-      businessName: true,
-      contactPerson: true,
-      leadScore: true,
-      enrichedData: true
-    }
-  });
+  const lead = await leadService.findUnique(ctx, trigger.leadId);
   
   if (!lead) {
     throw new Error(`Lead not found: ${trigger.leadId}`);
   }
-  
+
   // Determine assignee (default to lowest workload)
   let assignedToId = trigger.assignedToId;
   if (!assignedToId) {
-    assignedToId = await findBestAssignee(trigger.userId);
+    assignedToId = await findBestAssignee(trigger.userId, industry);
   }
-  
+
   // Calculate due date
   const dueDate = trigger.dueDate || calculateDueDate(trigger.type);
-  
+
   // Create task
-  const task = await prisma.task.create({
-    data: {
-      title: taskConfig.title.replace('{leadName}', lead.businessName),
-      description: taskConfig.description.replace('{leadName}', lead.businessName),
-      priority: determinePriority(lead.leadScore) as any,
-      status: 'TODO',
-      dueDate,
-      userId: trigger.userId,
-      assignedToId,
-      leadId: trigger.leadId,
-      autoCreated: true,
-      automationRule: 'lead_generation',
-      aiContext: {
-        ...trigger.metadata,
-        automatedTrigger: trigger.type,
-        createdAt: new Date().toISOString()
-      }
+  const task = await taskService.create(ctx, {
+    title: taskConfig.title.replace('{leadName}', lead.businessName),
+    description: taskConfig.description.replace('{leadName}', lead.businessName),
+    priority: determinePriority(lead.leadScore) as any,
+    status: 'TODO',
+    dueDate,
+    assignedToId: assignedToId ? { connect: { id: assignedToId } } : undefined,
+    lead: { connect: { id: trigger.leadId } },
+    autoCreated: true,
+    automationRule: 'lead_generation',
+    aiContext: {
+      ...trigger.metadata,
+      automatedTrigger: trigger.type,
+      createdAt: new Date().toISOString()
     }
   });
   
@@ -145,10 +138,16 @@ function determinePriority(leadScore?: number | null): string {
 /**
  * Find best assignee based on current workload
  */
-async function findBestAssignee(userId: string): Promise<string | undefined> {
+async function findBestAssignee(
+  userId: string,
+  industry?: string | null
+): Promise<string | undefined> {
+  const ctx = createDalContext(userId, industry);
+  const db = getCrmDb(ctx);
+
   try {
     // Get all team members with task counts
-    const teamMembers = await prisma.teamMember.findMany({
+    const teamMembers = await db.teamMember.findMany({
       where: {
         userId
       }
@@ -161,7 +160,7 @@ async function findBestAssignee(userId: string): Promise<string | undefined> {
     // Get task counts for each team member
     const memberTaskCounts = await Promise.all(
       teamMembers.map(async (member) => {
-        const taskCount = await prisma.task.count({
+        const taskCount = await db.task.count({
           where: {
             assignedToId: member.id,
             status: {
@@ -188,12 +187,18 @@ async function findBestAssignee(userId: string): Promise<string | undefined> {
 /**
  * Monitor leads and create tasks automatically
  */
-export async function monitorLeadsForTasks(userId: string) {
+export async function monitorLeadsForTasks(
+  userId: string,
+  industry?: string | null
+) {
+  const ctx = createDalContext(userId, industry);
+  const db = getCrmDb(ctx);
+
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  
+
   // Find leads that need re-engagement (not contacted in 30 days, score > 50)
-  const reEngagementLeads = await prisma.lead.findMany({
+  const reEngagementLeads = await db.lead.findMany({
     where: {
       userId,
       leadScore: { gte: 50 },
@@ -207,7 +212,7 @@ export async function monitorLeadsForTasks(userId: string) {
   for (const lead of reEngagementLeads) {
     try {
       // Check if task already exists
-      const existingTask = await prisma.task.findFirst({
+      const existingTask = await db.task.findFirst({
         where: {
           leadId: lead.id,
           autoCreated: true,
@@ -220,11 +225,14 @@ export async function monitorLeadsForTasks(userId: string) {
         (existingTask.aiContext as any)?.automatedTrigger === 're_engagement';
       
       if (!existingTask || !isReengagementTask) {
-        await createTaskFromTrigger({
-          type: 're_engagement',
-          leadId: lead.id,
-          userId
-        });
+        await createTaskFromTrigger(
+          {
+            type: 're_engagement',
+            leadId: lead.id,
+            userId
+          },
+          industry
+        );
       }
     } catch (error) {
       console.error(`Error creating re-engagement task for lead ${lead.id}:`, error);
@@ -232,7 +240,7 @@ export async function monitorLeadsForTasks(userId: string) {
   }
   
   // Find leads with no response to 2+ emails
-  const noResponseLeads = await prisma.lead.findMany({
+  const noResponseLeads = await db.lead.findMany({
     where: {
       userId,
       leadScore: { gte: 60, lt: 80 },
@@ -252,7 +260,7 @@ export async function monitorLeadsForTasks(userId: string) {
     if (emailsSent >= 2 && emailReplies === 0) {
       try {
         // Check if task already exists
-        const existingTask = await prisma.task.findFirst({
+        const existingTask = await db.task.findFirst({
           where: {
             leadId: lead.id,
             autoCreated: true,
@@ -265,11 +273,14 @@ export async function monitorLeadsForTasks(userId: string) {
           (existingTask.aiContext as any)?.automatedTrigger === 'manual_followup';
         
         if (!existingTask || !isManualFollowupTask) {
-          await createTaskFromTrigger({
-            type: 'manual_followup',
-            leadId: lead.id,
-            userId
-          });
+          await createTaskFromTrigger(
+            {
+              type: 'manual_followup',
+              leadId: lead.id,
+              userId
+            },
+            industry
+          );
         }
       } catch (error) {
         console.error(`Error creating manual followup task for lead ${lead.id}:`, error);
@@ -289,64 +300,80 @@ export async function monitorLeadsForTasks(userId: string) {
 export async function createTaskFromCallTranscript(
   leadId: string,
   userId: string,
-  transcript: string
+  transcript: string,
+  industry?: string | null
 ) {
   const lowerTranscript = transcript.toLowerCase();
-  
+
   // Check for pricing/proposal mentions
   if (lowerTranscript.includes('pricing') || lowerTranscript.includes('proposal') || lowerTranscript.includes('quote')) {
-    await createTaskFromTrigger({
-      type: 'send_proposal',
-      leadId,
-      userId,
-      metadata: { transcriptTrigger: 'pricing_mentioned' }
-    });
+    await createTaskFromTrigger(
+      {
+        type: 'send_proposal',
+        leadId,
+        userId,
+        metadata: { transcriptTrigger: 'pricing_mentioned' }
+      },
+      industry
+    );
   }
-  
+
   // Check for competitor mentions
   const competitors = ['competitor', 'alternative', 'other option', 'currently using'];
   if (competitors.some(comp => lowerTranscript.includes(comp))) {
-    await createTaskFromTrigger({
-      type: 'competitor_alert',
-      leadId,
-      userId,
-      metadata: { transcriptTrigger: 'competitor_mentioned' }
-    });
+    await createTaskFromTrigger(
+      {
+        type: 'competitor_alert',
+        leadId,
+        userId,
+        metadata: { transcriptTrigger: 'competitor_mentioned' }
+      },
+      industry
+    );
   }
-  
+
   // Check for objections
   const objections = ['too expensive', 'not sure', 'need to think', 'talk to my team'];
   if (objections.some(obj => lowerTranscript.includes(obj))) {
-    await createTaskFromTrigger({
-      type: 'objection_response',
-      leadId,
-      userId,
-      metadata: {
-        transcriptTrigger: 'objection_raised',
-        objection: objections.find(obj => lowerTranscript.includes(obj))
-      }
-    });
+    await createTaskFromTrigger(
+      {
+        type: 'objection_response',
+        leadId,
+        userId,
+        metadata: {
+          transcriptTrigger: 'objection_raised',
+          objection: objections.find(obj => lowerTranscript.includes(obj))
+        }
+      },
+      industry
+    );
   }
 }
 
 /**
  * Get task automation stats
  */
-export async function getTaskAutomationStats(userId: string) {
-  const totalTasks = await prisma.task.count({
+export async function getTaskAutomationStats(
+  userId: string,
+  industry?: string | null
+) {
+  const ctx = createDalContext(userId, industry);
+  const db = getCrmDb(ctx);
+
+  const totalTasks = await db.task.count({
     where: {
       userId
     }
   });
   
-  const completedTasks = await prisma.task.count({
+  const completedTasks = await db.task.count({
     where: {
       userId,
       status: 'COMPLETED'
     }
   });
   
-  const pendingTasks = await prisma.task.count({
+  const pendingTasks = await db.task.count({
     where: {
       userId,
       status: { in: ['TODO', 'IN_PROGRESS'] }

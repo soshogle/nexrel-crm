@@ -4,7 +4,8 @@
  */
 
 import OpenAI from 'openai';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, noteService } from '@/lib/dal';
 
 function getOpenAI(): OpenAI {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -25,7 +26,8 @@ export async function summarizeCallAndAddNote(
   callLogId: string,
   userId: string
 ): Promise<CallSummaryResult> {
-  const call = await prisma.callLog.findFirst({
+  const db = getCrmDb(createDalContext(userId));
+  const call = await db.callLog.findFirst({
     where: { id: callLogId, userId },
     include: { lead: true },
   });
@@ -64,12 +66,10 @@ export async function summarizeCallAndAddNote(
       `\nSentiment: ${sentiment}`,
     ].join('\n');
 
-    const note = await prisma.note.create({
-      data: {
-        userId,
-        leadId: call.leadId,
-        content: noteContent,
-      },
+    const ctx = createDalContext(userId);
+    const note = await noteService.create(ctx, {
+      leadId: call.leadId,
+      content: noteContent,
     });
     noteId = note.id;
   }

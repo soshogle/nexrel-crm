@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { Lead, Note } from '@prisma/client';
 
 // AI Contact Scoring Formula:
@@ -157,10 +158,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Fetch leads (our contacts) with real estate tags or FSBO sources
-    const leads = await prisma.lead.findMany({
+    const leads = await leadService.findMany(ctx, {
       where: {
-        userId: session.user.id,
         OR: [
           { source: { contains: 'FSBO' } },
           { source: { contains: 'DUPROPRIO' } },

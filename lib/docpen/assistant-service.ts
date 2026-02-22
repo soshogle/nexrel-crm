@@ -9,7 +9,8 @@
  */
 
 import { getAssistantPrompt, DocpenProfessionType } from './prompts';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { chatCompletion } from '@/lib/openai-client';
 
 export interface AssistantQuery {
@@ -78,7 +79,8 @@ export async function processAssistantQuery(
 async function getPatientHistory(leadId: string, userId: string): Promise<string> {
   try {
     // Fetch lead with notes and previous sessions
-    const lead = await prisma.lead.findFirst({
+    const db = getCrmDb(createDalContext(userId));
+    const lead = await db.lead.findFirst({
       where: {
         id: leadId,
         userId: userId,

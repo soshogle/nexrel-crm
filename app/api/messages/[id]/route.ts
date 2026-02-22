@@ -1,11 +1,11 @@
-
 export const dynamic = "force-dynamic";
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
+import { messageService } from '@/lib/dal/message-service'
 
 export async function PUT(
   request: NextRequest,
@@ -24,22 +24,15 @@ export async function PUT(
       return NextResponse.json({ error: 'isUsed must be a boolean' }, { status: 400 })
     }
 
-    // Verify message belongs to user
-    const message = await prisma.message.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      }
-    })
-
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const message = await messageService.findFirst(ctx, { id: params.id })
     if (!message) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 })
     }
-
-    const updatedMessage = await prisma.message.update({
-      where: { id: params.id },
-      data: { isUsed }
-    })
+    const updatedMessage = await messageService.update(ctx, params.id, { isUsed })
 
     return NextResponse.json(updatedMessage)
   } catch (error) {

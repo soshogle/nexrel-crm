@@ -5,7 +5,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { websiteService } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { triggerWebsiteDeploy } from "@/lib/website-builder/deploy-trigger";
 
 export const dynamic = "force-dynamic";
@@ -21,10 +22,9 @@ export async function POST(
     }
 
     const { id } = await params;
-    const website = await prisma.website.findFirst({
-      where: { id, userId: session.user.id },
-      select: { id: true },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const website = await websiteService.findUnique(ctx, id);
 
     if (!website) {
       return NextResponse.json({ error: "Website not found" }, { status: 404 });

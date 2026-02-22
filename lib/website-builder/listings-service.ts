@@ -3,7 +3,8 @@
  * Fetches and updates property listings in the service template's Neon DB
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { Pool } from 'pg';
 
 export type GalleryItem = string | { url: string; motionDisabled?: boolean };
@@ -30,7 +31,7 @@ function getPool(connectionString: string): Pool {
 
 export async function getWebsiteListingsCount(websiteId: string): Promise<{ count: number; error?: string }> {
   try {
-    const website = await prisma.website.findFirst({
+    const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
       where: { id: websiteId },
       select: { neonDatabaseUrl: true, templateType: true },
     });
@@ -49,7 +50,7 @@ export async function getWebsiteListingsCount(websiteId: string): Promise<{ coun
 }
 
 export async function getWebsiteListings(websiteId: string): Promise<PropertyListing[]> {
-  const website = await prisma.website.findFirst({
+  const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
     where: { id: websiteId },
     select: { neonDatabaseUrl: true, templateType: true },
   });
@@ -85,7 +86,7 @@ export async function updatePropertyGallery(
   propertyId: number,
   galleryImages: GalleryItem[]
 ): Promise<void> {
-  const website = await prisma.website.findFirst({
+  const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
     where: { id: websiteId },
     select: { neonDatabaseUrl: true, templateType: true },
   });
@@ -137,8 +138,10 @@ export async function syncListingToWebsite(
   }
 ): Promise<{ success: boolean; websiteId?: string; error?: string }> {
   try {
-    const website = await prisma.website.findFirst({
-      where: { userId, templateType: 'SERVICE' },
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+    const website = await db.website.findFirst({
+      where: { userId: ctx.userId, templateType: 'SERVICE' },
       select: { id: true, neonDatabaseUrl: true },
     });
 
@@ -243,8 +246,10 @@ export async function searchWebsiteListings(
   error?: string;
 }> {
   try {
-    const website = await prisma.website.findFirst({
-      where: { userId, templateType: 'SERVICE' },
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+    const website = await db.website.findFirst({
+      where: { userId: ctx.userId, templateType: 'SERVICE' },
       select: { id: true, neonDatabaseUrl: true },
     });
 
@@ -283,8 +288,10 @@ export async function syncStatusToWebsite(
   status: string
 ): Promise<{ success: boolean; updated: number; error?: string }> {
   try {
-    const website = await prisma.website.findFirst({
-      where: { userId, templateType: 'SERVICE' },
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+    const website = await db.website.findFirst({
+      where: { userId: ctx.userId, templateType: 'SERVICE' },
       select: { id: true, neonDatabaseUrl: true },
     });
 
@@ -322,7 +329,7 @@ export async function syncStatusToWebsite(
 }
 
 export async function getPropertyForEdit(websiteId: string, propertyId: number): Promise<PropertyListing | null> {
-  const website = await prisma.website.findFirst({
+  const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
     where: { id: websiteId },
     select: { neonDatabaseUrl: true, templateType: true },
   });

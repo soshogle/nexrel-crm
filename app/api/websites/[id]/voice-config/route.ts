@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
+import { websiteService, getCrmDb } from '@/lib/dal';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -31,17 +32,20 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findUnique({
-      where: { id: websiteId },
-      select: {
-        id: true,
-        userId: true,
-        elevenLabsAgentId: true,
-        voiceAIEnabled: true,
-        enableTavusAvatar: true,
-        voiceAIConfig: true,
-      },
-    });
+    const ctx = session?.user?.id ? getDalContextFromSession(session) : null;
+    const website = ctx
+      ? await websiteService.findUnique(ctx, websiteId)
+      : await getCrmDb(createDalContext('bootstrap', null)).website.findUnique({
+          where: { id: websiteId },
+          select: {
+            id: true,
+            userId: true,
+            elevenLabsAgentId: true,
+            voiceAIEnabled: true,
+            enableTavusAvatar: true,
+            voiceAIConfig: true,
+          },
+        });
 
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });

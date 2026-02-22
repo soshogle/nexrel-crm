@@ -4,7 +4,8 @@
  * Mirrors RE behavior: start most recent non-auto-run workflow + auto-run workflows
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService } from '@/lib/dal';
 import { Industry } from '@prisma/client';
 import { startWorkflowInstance } from '@/lib/workflows/workflow-engine';
 import { triggerIndustryAutoRunOnLeadCreated } from '@/lib/ai-employees/auto-run-triggers';
@@ -20,15 +21,14 @@ export async function detectIndustryLeadWorkflowTriggers(
   industry: Industry
 ): Promise<void> {
   try {
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-      select: { id: true, status: true },
-    });
+    const ctx = createDalContext(userId);
+    const lead = await leadService.findUnique(ctx, leadId, undefined);
 
     if (!lead) return;
 
     // Exclude workflows linked to auto-run (those are started by triggerIndustryAutoRunOnLeadCreated)
-    const autoRunWorkflowIds = await prisma.aIEmployeeAutoRun.findMany({
+    const db = getCrmDb(ctx);
+    const autoRunWorkflowIds = await db.aIEmployeeAutoRun.findMany({
       where: {
         userId,
         industry,
@@ -39,7 +39,7 @@ export async function detectIndustryLeadWorkflowTriggers(
     }).then((rows) => rows.map((r) => r.workflowId).filter(Boolean) as string[]);
 
     // Find most recent active workflow template for this industry (not linked to auto-run)
-    const templates = await prisma.workflowTemplate.findMany({
+    const templates = await db.workflowTemplate.findMany({
       where: {
         userId,
         industry,

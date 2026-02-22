@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { taskService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,10 +18,13 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const template = await prisma.taskTemplate.findUnique({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const template = await getCrmDb(ctx).taskTemplate.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     });
 
@@ -50,13 +53,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
 
     // Verify ownership
-    const existingTemplate = await prisma.taskTemplate.findUnique({
+    const existingTemplate = await getCrmDb(ctx).taskTemplate.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     });
 
@@ -64,11 +70,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 
-    const template = await prisma.taskTemplate.update({
+    const template = await getCrmDb(ctx).taskTemplate.update({
       where: { id: params.id },
       data: {
         ...body,
-        userId: session.user.id, // Ensure ownership
+        userId: ctx.userId, // Ensure ownership
       },
     });
 
@@ -93,11 +99,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Verify ownership
-    const existingTemplate = await prisma.taskTemplate.findUnique({
+    const existingTemplate = await getCrmDb(ctx).taskTemplate.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     });
 
@@ -106,7 +115,7 @@ export async function DELETE(
     }
 
     // Delete the template
-    await prisma.taskTemplate.delete({
+    await getCrmDb(ctx).taskTemplate.delete({
       where: { id: params.id },
     });
 
@@ -131,10 +140,13 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const template = await prisma.taskTemplate.findUnique({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const template = await getCrmDb(ctx).taskTemplate.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     });
 
@@ -146,53 +158,28 @@ export async function POST(
     const { leadId, dealId, customTitle, customDescription } = body;
 
     // Create task from template
-    const task = await prisma.task.create({
-      data: {
-        title: customTitle || template.name,
-        description: customDescription || template.description || '',
-        priority: template.defaultPriority,
-        status: 'TODO',
-        category: template.category,
-        estimatedHours: template.estimatedHours,
-        tags: template.tags,
-        userId: session.user.id,
-        leadId: leadId || null,
-        dealId: dealId || null,
-        aiContext: {
-          createdFromTemplate: true,
-          templateId: template.id,
-          templateName: template.name,
-        },
-      },
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
-        lead: {
-          select: {
-            id: true,
-            businessName: true,
-          },
-        },
-        deal: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
+    const task = await taskService.create(ctx, {
+      title: customTitle || template.name,
+      description: customDescription || template.description || '',
+      priority: template.defaultPriority,
+      status: 'TODO',
+      category: template.category,
+      estimatedHours: template.estimatedHours,
+      tags: template.tags,
+      leadId: leadId || null,
+      dealId: dealId || null,
+      aiContext: {
+        createdFromTemplate: true,
+        templateId: template.id,
+        templateName: template.name,
       },
     });
 
     // Create activity log
-    await prisma.taskActivity.create({
+    await getCrmDb(ctx).taskActivity.create({
       data: {
         taskId: task.id,
-        userId: session.user.id,
+        userId: ctx.userId,
         action: 'CREATED',
         newValue: `From template: ${template.name}`,
         metadata: {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal/db";
+import { createDalContext } from "@/lib/context/industry-context";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -43,7 +44,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ leads: [], calls: [] });
     }
 
-    const leads = await prisma.lead.findMany({
+    const ctx = createDalContext(leadOwnerId);
+    const db = getCrmDb(ctx);
+    const leads = await db.lead.findMany({
       where: {
         userId: leadOwnerId,
         OR: [
@@ -57,7 +60,7 @@ export async function GET(request: Request) {
       take: 200,
     });
 
-    const calls = await prisma.callLog.findMany({
+    const calls = await db.callLog.findMany({
       where: {
         userId: leadOwnerId,
         OR: [

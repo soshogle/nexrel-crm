@@ -1,4 +1,5 @@
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService } from '@/lib/dal';
 import { sendSMS } from '@/lib/twilio';
 
 /**
@@ -9,7 +10,8 @@ export async function processSmsDripMessages() {
   try {
     console.log('[SMS Drip] Starting processing...');
 
-    const activeCampaigns = await prisma.smsCampaign.findMany({
+    const db = getCrmDb(createDalContext('bootstrap'));
+    const activeCampaigns = await db.smsCampaign.findMany({
       where: {
         status: 'ACTIVE',
         isSequence: true,
@@ -38,7 +40,8 @@ async function processCampaignSms(campaign: any) {
     console.log(`[SMS Drip] Processing campaign: ${campaign.name} (${campaign.id})`);
 
     const now = new Date();
-    const readyEnrollments = await prisma.smsEnrollment.findMany({
+    const db = getCrmDb(createDalContext(campaign.userId));
+    const readyEnrollments = await db.smsEnrollment.findMany({
       where: {
         campaignId: campaign.id,
         status: 'ACTIVE',
@@ -62,9 +65,9 @@ async function processCampaignSms(campaign: any) {
 
 async function processEnrollment(enrollment: any, campaign: any) {
   try {
-    const lead = await prisma.lead.findUnique({
-      where: { id: enrollment.leadId },
-    });
+    const ctx = createDalContext(campaign.userId);
+    const db = getCrmDb(ctx);
+    const lead = await leadService.findUnique(ctx, enrollment.leadId);
 
     if (!lead || !lead.phone) {
       console.log(`[SMS Drip] Lead ${enrollment.leadId} has no phone, skipping`);
@@ -76,11 +79,11 @@ async function processEnrollment(enrollment: any, campaign: any) {
     );
 
     if (!nextSequence) {
-      await prisma.smsEnrollment.update({
+      await db.smsEnrollment.update({
         where: { id: enrollment.id },
         data: { status: 'COMPLETED', completedAt: new Date() },
       });
-      await prisma.smsCampaign.update({
+      await db.smsCampaign.update({
         where: { id: campaign.id },
         data: { totalCompleted: { increment: 1 } },
       });
@@ -114,7 +117,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
       return;
     }
 
-    const message = await prisma.smsSequenceMessage.create({
+    const message = await db.smsSequenceMessage.create({
       data: {
         enrollmentId: enrollment.id,
         sequenceId: nextSequence.id,
@@ -129,7 +132,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
     try {
       const result = await sendSMS(lead.phone, personalizedMessage);
 
-      await prisma.smsSequenceMessage.update({
+      await db.smsSequenceMessage.update({
         where: { id: message.id },
         data: {
           status: 'SENT',
@@ -138,12 +141,12 @@ async function processEnrollment(enrollment: any, campaign: any) {
         },
       });
 
-      await prisma.smsSequence.update({
+      await db.smsSequence.update({
         where: { id: nextSequence.id },
         data: { totalSent: { increment: 1 } },
       });
 
-      await prisma.smsCampaign.update({
+      await db.smsCampaign.update({
         where: { id: campaign.id },
         data: {
           totalSent: { increment: 1 },
@@ -157,14 +160,14 @@ async function processEnrollment(enrollment: any, campaign: any) {
       console.log(`[SMS Drip] Sent SMS to ${lead.phone}`);
     } catch (sendError) {
       console.error(`[SMS Drip] Failed to send:`, sendError);
-      await prisma.smsSequenceMessage.update({
+      await db.smsSequenceMessage.update({
         where: { id: message.id },
         data: {
           status: 'FAILED',
           errorMessage: String(sendError),
         },
       });
-      await prisma.smsSequence.update({
+      await db.smsSequence.update({
         where: { id: nextSequence.id },
         data: { totalFailed: { increment: 1 } },
       });
@@ -178,6 +181,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
 }
 
 async function moveToNextSequence(enrollment: any, campaign: any, currentSequence: any) {
+  const db = getCrmDb(createDalContext(campaign.userId));
   const nextStep = enrollment.currentStep + 1;
   const nextSequence = campaign.sequences.find(
     (s: any) => s.sequenceOrder === nextStep
@@ -188,7 +192,7 @@ async function moveToNextSequence(enrollment: any, campaign: any, currentSequenc
     nextSendAt.setDate(nextSendAt.getDate() + nextSequence.delayDays);
     nextSendAt.setHours(nextSendAt.getHours() + nextSequence.delayHours);
 
-    await prisma.smsEnrollment.update({
+    await db.smsEnrollment.update({
       where: { id: enrollment.id },
       data: {
         currentSequenceId: nextSequence.id,
@@ -197,11 +201,11 @@ async function moveToNextSequence(enrollment: any, campaign: any, currentSequenc
       },
     });
   } else {
-    await prisma.smsEnrollment.update({
+    await db.smsEnrollment.update({
       where: { id: enrollment.id },
       data: { status: 'COMPLETED', completedAt: new Date() },
     });
-    await prisma.smsCampaign.update({
+    await db.smsCampaign.update({
       where: { id: campaign.id },
       data: { totalCompleted: { increment: 1 } },
     });

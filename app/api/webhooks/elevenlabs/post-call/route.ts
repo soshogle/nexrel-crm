@@ -1,5 +1,6 @@
-
 import { NextRequest, NextResponse } from 'next/server';
+import { getCrmDb } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { prisma } from '@/lib/db';
 import crypto from 'crypto';
 
@@ -269,7 +270,9 @@ export async function POST(request: NextRequest) {
       });
 
       // Update call log
-      const updatedCallLog = await prisma.callLog.update({
+      const ctx = createDalContext(callLog.userId);
+      const db = getCrmDb(ctx);
+      const updatedCallLog = await db.callLog.update({
         where: { id: callLog.id },
         data: {
           status: data.status === 'done' ? 'COMPLETED' : callLog.status,
@@ -299,7 +302,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Create conversation in messaging system
-      await createConversationFromCall(callLog.id, {
+      await createConversationFromCall(ctx, callLog.id, {
         fromNumber: callLog.fromNumber,
         toNumber: callLog.toNumber,
         userId: callLog.userId,
@@ -318,7 +321,8 @@ export async function POST(request: NextRequest) {
       // In a production system, you might want to upload this to S3
       const recordingUrl = `/api/calls/audio/${conversationId}`;
 
-      await prisma.callLog.update({
+      const ctx = createDalContext(callLog.userId);
+      await getCrmDb(ctx).callLog.update({
         where: { id: callLog.id },
         data: {
           recordingUrl: recordingUrl,
@@ -330,7 +334,8 @@ export async function POST(request: NextRequest) {
 
     if (webhookType === 'call_initiation_failure') {
       // Handle failed call
-      await prisma.callLog.update({
+      const ctx = createDalContext(callLog.userId);
+      await getCrmDb(ctx).callLog.update({
         where: { id: callLog.id },
         data: {
           status: 'FAILED',
@@ -355,6 +360,7 @@ export async function POST(request: NextRequest) {
  * Create a conversation in the messaging system from a completed call
  */
 async function createConversationFromCall(
+  ctx: { userId: string; industry?: string | null },
   callLogId: string,
   params: {
     fromNumber: string;
@@ -372,7 +378,8 @@ async function createConversationFromCall(
     // Determine contact identifier (the other party)
     // If it's an inbound call, fromNumber is the contact
     // If it's an outbound call, toNumber is the contact
-    const callLog = await prisma.callLog.findUnique({
+    const db = getCrmDb(ctx);
+    const callLog = await db.callLog.findUnique({
       where: { id: callLogId },
       select: { direction: true, voiceAgent: { select: { twilioPhoneNumber: true } } },
     });
@@ -385,7 +392,7 @@ async function createConversationFromCall(
 
     // Find or create a channel connection for voice calls
     // Use SMS channel type since there's no dedicated VOICE type
-    let channelConnection = await prisma.channelConnection.findFirst({
+    let channelConnection = await db.channelConnection.findFirst({
       where: {
         userId,
         channelIdentifier: businessPhoneNumber,
@@ -396,7 +403,7 @@ async function createConversationFromCall(
 
     if (!channelConnection) {
       // Create new channel connection for this phone number
-      channelConnection = await prisma.channelConnection.create({
+      channelConnection = await db.channelConnection.create({
         data: {
           userId,
           channelType: 'SMS',
@@ -416,7 +423,7 @@ async function createConversationFromCall(
     }
 
     // Find or create conversation
-    let conversation = await prisma.conversation.findFirst({
+    let conversation = await db.conversation.findFirst({
       where: {
         userId,
         contactIdentifier,
@@ -426,7 +433,7 @@ async function createConversationFromCall(
 
     if (!conversation) {
       // Create new conversation
-      conversation = await prisma.conversation.create({
+      conversation = await db.conversation.create({
         data: {
           userId,
           channelConnectionId: channelConnection.id,
@@ -457,7 +464,7 @@ async function createConversationFromCall(
     }
 
     // Create message in conversation
-    await prisma.conversationMessage.create({
+    await db.conversationMessage.create({
       data: {
         conversationId: conversation.id,
         userId,
@@ -474,7 +481,7 @@ async function createConversationFromCall(
     });
 
     // Update conversation lastMessageAt
-    await prisma.conversation.update({
+    await db.conversation.update({
       where: { id: conversation.id },
       data: { lastMessageAt: new Date() },
     });

@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, websiteService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { websiteScraper } from '@/lib/website-builder/scraper';
 import { convertScrapedToStructure } from '@/lib/website-builder/convert-scraped-to-structure';
 import { websiteBuilder } from '@/lib/website-builder/builder';
@@ -53,9 +54,12 @@ export async function POST(request: NextRequest) {
       googleSearchConsoleSiteUrl,
     } = body;
 
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+
     // Pre-fill questionnaire from user/onboarding when building from template
     if ((type === 'SERVICE_TEMPLATE' || type === 'PRODUCT_TEMPLATE') && prefillFromUser && !questionnaireAnswers?.businessName) {
-      const user = await prisma.user.findUnique({
+      const user = await db.user.findUnique({
         where: { id: userId },
         select: {
           name: true,
@@ -101,9 +105,7 @@ export async function POST(request: NextRequest) {
     }
 
     // One website per profile: reject if user already has any website
-    const existingCount = await prisma.website.count({
-      where: { userId },
-    });
+    const existingCount = await websiteService.count(ctx);
     if (existingCount >= 1) {
       return NextResponse.json(
         { error: 'You already have a website. You can modify it from the Websites page.' },
@@ -123,10 +125,8 @@ export async function POST(request: NextRequest) {
     };
 
     // Create website record
-    const website = await prisma.website.create({
-      data: {
-        userId,
-        name,
+    const website = await websiteService.create(ctx, {
+      name,
         type: type as any,
         sourceUrl: type === 'REBUILT' ? sourceUrl : null,
         templateType: templateType as any,
@@ -147,11 +147,10 @@ export async function POST(request: NextRequest) {
           googleSearchConsoleSiteUrl: googleSearchConsoleSiteUrl || null,
           googleSearchConsoleVerified: false, // Will be verified during build
         }),
-      },
-    });
+      });
 
     // Create build record
-    const build = await prisma.websiteBuild.create({
+    const build = await db.websiteBuild.create({
       data: {
         websiteId: website.id,
         buildType: 'INITIAL',
@@ -162,17 +161,16 @@ export async function POST(request: NextRequest) {
     });
 
     // Start build process asynchronously
-    processWebsiteBuild(website.id, build.id, buildConfig).catch(async (error) => {
+    processWebsiteBuild(website.id, build.id, buildConfig, userId).catch(async (error) => {
       console.error('Website build failed:', error);
+      const errCtx = createDalContext(userId);
+      const errDb = getCrmDb(errCtx);
       await Promise.all([
-        prisma.websiteBuild.update({
+        errDb.websiteBuild.update({
           where: { id: build.id },
           data: { status: 'FAILED', error: error?.message || String(error) },
         }),
-        prisma.website.update({
-          where: { id: website.id },
-          data: { status: 'FAILED', buildProgress: 0 },
-        }),
+        websiteService.update(errCtx, website.id, { status: 'FAILED', buildProgress: 0 }),
       ]);
     });
 
@@ -210,18 +208,18 @@ async function processWebsiteBuild(
     questionnaireAnswers?: any;
     enableVoiceAI: boolean;
     enableTavusAvatar?: boolean;
-  }
+  },
+  userId: string
 ) {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   try {
     // Update progress (sync to Website so list page shows progress)
-    await prisma.websiteBuild.update({
+    await db.websiteBuild.update({
       where: { id: buildId },
       data: { progress: 10 },
     });
-    await prisma.website.update({
-      where: { id: websiteId },
-      data: { buildProgress: 10 },
-    });
+    await websiteService.update(ctx, websiteId, { buildProgress: 10 });
 
     let structure: any;
     let seoData: any;
@@ -229,20 +227,14 @@ async function processWebsiteBuild(
 
     if (config.type === 'REBUILT') {
       // Scrape existing website
-      await prisma.websiteBuild.update({
+      await db.websiteBuild.update({
         where: { id: buildId },
         data: { progress: 20 },
       });
-      await prisma.website.update({
-        where: { id: websiteId },
-        data: { buildProgress: 20 },
-      });
+      await websiteService.update(ctx, websiteId, { buildProgress: 20 });
 
       // Get user ID for image storage
-      const website = await prisma.website.findUnique({
-        where: { id: websiteId },
-        select: { userId: true, name: true },
-      });
+      const website = await websiteService.findUnique(ctx, websiteId);
 
       // Scrape website - use Playwright for JS-rendered sites (SPAs, React, etc.)
       const downloadImages = process.env.ENABLE_IMAGE_DOWNLOAD === 'true';
@@ -275,14 +267,11 @@ async function processWebsiteBuild(
       seoData = scrapedData.seo;
     } else {
       // Build from template
-      await prisma.websiteBuild.update({
+      await db.websiteBuild.update({
         where: { id: buildId },
         data: { progress: 30 },
       });
-      await prisma.website.update({
-        where: { id: websiteId },
-        data: { buildProgress: 30 },
-      });
+      await websiteService.update(ctx, websiteId, { buildProgress: 30 });
 
       structure = await websiteBuilder.buildFromQuestionnaire(
         config.questionnaireAnswers!,
@@ -293,10 +282,7 @@ async function processWebsiteBuild(
     }
 
     // Download external images to blob storage (one store for all; paths: website-images/{userId}/{websiteId}/)
-    const websiteForImages = await prisma.website.findUnique({
-      where: { id: websiteId },
-      select: { userId: true },
-    });
+    const websiteForImages = await websiteService.findUnique(ctx, websiteId);
     if (websiteForImages?.userId) {
       try {
         structure = await downloadExternalImagesInStructure(
@@ -310,27 +296,21 @@ async function processWebsiteBuild(
     }
 
     // Update progress
-    await prisma.websiteBuild.update({
+    await db.websiteBuild.update({
       where: { id: buildId },
       data: { progress: 50 },
     });
-    await prisma.website.update({
-      where: { id: websiteId },
-      data: { buildProgress: 50 },
-    });
+    await websiteService.update(ctx, websiteId, { buildProgress: 50 });
 
     // Generate websiteSecret for PRODUCT sites (CRM → /api/nexrel/products auth)
-    const website = await prisma.website.findUnique({ where: { id: websiteId } });
+    const website = await websiteService.findUnique(ctx, websiteId);
     if (!website) throw new Error('Website not found');
     const templateType = (config.templateType || 'SERVICE') as 'SERVICE' | 'PRODUCT';
     let websiteSecret: string | undefined;
     if (templateType === 'PRODUCT') {
       const crypto = await import('crypto');
       websiteSecret = crypto.randomBytes(32).toString('hex');
-      await prisma.website.update({
-        where: { id: websiteId },
-        data: { websiteSecret },
-      });
+      await websiteService.update(ctx, websiteId, { websiteSecret });
     }
 
     // Provision resources (GitHub, Neon, Vercel) - with 3min timeout to avoid stuck builds
@@ -351,21 +331,18 @@ async function processWebsiteBuild(
     ]);
 
     // Update progress
-    await prisma.websiteBuild.update({
+    await db.websiteBuild.update({
       where: { id: buildId },
       data: { progress: 70 },
     });
-    await prisma.website.update({
-      where: { id: websiteId },
-      data: { buildProgress: 70 },
-    });
+    await websiteService.update(ctx, websiteId, { buildProgress: 70 });
 
     // Create voice AI agent if enabled (with timeout to avoid stuck builds)
     let voiceAIConfig = null;
     if (config.enableVoiceAI) {
       try {
-        const website = await prisma.website.findUnique({ where: { id: websiteId } });
-        const user = await prisma.user.findUnique({ where: { id: website!.userId }, select: { industry: true } });
+        const website = await websiteService.findUnique(ctx, websiteId);
+        const user = await db.user.findUnique({ where: { id: website!.userId }, select: { industry: true } });
         const businessInfo = config.questionnaireAnswers || {
           businessName: website!.name,
           businessDescription: '',
@@ -391,14 +368,11 @@ async function processWebsiteBuild(
     }
 
     // Update progress
-    await prisma.websiteBuild.update({
+    await db.websiteBuild.update({
       where: { id: buildId },
       data: { progress: 85 },
     });
-    await prisma.website.update({
-      where: { id: websiteId },
-      data: { buildProgress: 85 },
-    });
+    await websiteService.update(ctx, websiteId, { buildProgress: 85 });
 
     // website already fetched above for provisioning
     // SEO Automation (if Google credentials are provided)
@@ -505,13 +479,10 @@ async function processWebsiteBuild(
 
             // Update tokens if refreshed
             if (accessToken !== website.googleSearchConsoleAccessToken) {
-              await prisma.website.update({
-                where: { id: websiteId },
-                data: {
-                  googleSearchConsoleAccessToken: accessToken,
-                  googleSearchConsoleRefreshToken: refreshToken,
-                  googleSearchConsoleTokenExpiry: new Date(Date.now() + 3600000), // 1 hour from now
-                },
+              await websiteService.update(ctx, websiteId, {
+                googleSearchConsoleAccessToken: accessToken,
+                googleSearchConsoleRefreshToken: refreshToken,
+                googleSearchConsoleTokenExpiry: new Date(Date.now() + 3600000), // 1 hour from now
               });
             }
           }
@@ -526,14 +497,11 @@ async function processWebsiteBuild(
     }
 
     // Update progress
-    await prisma.websiteBuild.update({
+    await db.websiteBuild.update({
       where: { id: buildId },
       data: { progress: 95 },
     });
-    await prisma.website.update({
-      where: { id: websiteId },
-      data: { buildProgress: 95 },
-    });
+    await websiteService.update(ctx, websiteId, { buildProgress: 95 });
 
     // Auto-generate comprehensive per-page SEO so owners only edit, not create
     const questionnaireAnswers = config.questionnaireAnswers || {};
@@ -565,26 +533,23 @@ async function processWebsiteBuild(
       structuredData: seoFiles.structuredData,
     };
 
-    await prisma.website.update({
-      where: { id: websiteId },
-      data: {
-        structure,
-        seoData: finalSeoData,
-        extractedData,
-        status: 'READY',
-        buildProgress: 100,
-        githubRepoUrl: provisioningResult.githubRepoUrl,
-        neonDatabaseUrl: provisioningResult.neonDatabaseUrl,
-        vercelProjectId: provisioningResult.vercelProjectId,
-        vercelDeploymentUrl: provisioningResult.vercelDeploymentUrl,
-        vercelDeployHookUrl: provisioningResult.vercelDeployHookUrl,
-        elevenLabsAgentId: voiceAIConfig?.agentId || null,
-        voiceAIConfig: voiceAIConfig || null,
-      },
+    await websiteService.update(ctx, websiteId, {
+      structure,
+      seoData: finalSeoData,
+      extractedData,
+      status: 'READY',
+      buildProgress: 100,
+      githubRepoUrl: provisioningResult.githubRepoUrl,
+      neonDatabaseUrl: provisioningResult.neonDatabaseUrl,
+      vercelProjectId: provisioningResult.vercelProjectId,
+      vercelDeploymentUrl: provisioningResult.vercelDeploymentUrl,
+      vercelDeployHookUrl: provisioningResult.vercelDeployHookUrl,
+      elevenLabsAgentId: voiceAIConfig?.agentId || null,
+      voiceAIConfig: voiceAIConfig || null,
     });
 
     // Mark build as completed
-    await prisma.websiteBuild.update({
+    await db.websiteBuild.update({
       where: { id: buildId },
       data: {
         status: 'COMPLETED',

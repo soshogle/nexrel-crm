@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { scrapeGoogleMaps, GoogleMapsSearchQuery, DEFAULT_SEARCH_QUERIES } from '@/lib/lead-generation/google-maps-scraper';
 import { batchScoreLeads } from '@/lib/lead-generation/lead-scoring-db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal/db';
+import { leadService } from '@/lib/dal/lead-service';
 
 /**
  * POST /api/lead-generation/scrape/google-maps
@@ -80,26 +83,26 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
-    
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const db = getCrmDb(ctx);
+
     // Get stats
-    const stats = await prisma.lead.aggregate({
+    const stats = await db.lead.aggregate({
       where: {
-        userId: session.user.id,
+        userId: ctx.userId,
         source: 'google_maps'
       },
       _count: true
     });
-    
+
     // Get latest leads
-    const latestLeads = await prisma.lead.findMany({
-      where: {
-        userId: session.user.id,
-        source: 'google_maps'
-      },
-      orderBy: { createdAt: 'desc' },
+    const latestLeads = await leadService.findMany(ctx, {
+      where: { source: 'google_maps' },
       take: 10,
+      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         businessName: true,

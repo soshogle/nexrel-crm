@@ -1,4 +1,3 @@
-
 /**
  * Create New Conversation API
  * Creates a new conversation and channel connection for messaging
@@ -7,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 
 export const dynamic = 'force-dynamic';
@@ -38,54 +38,47 @@ export async function POST(req: NextRequest) {
     const isEmail = contactIdentifier.includes('@');
     const isPhone = contactIdentifier.match(/^\+?[\d\s\-()]+$/);
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
+
     if (isEmail) {
       // Search for existing Lead by email
-      existingLead = await prisma.lead.findFirst({
-        where: {
-          userId: session.user.id,
-          email: contactIdentifier,
-        },
-      });
+      const leadsByEmail = await leadService.findMany(ctx, { where: { email: contactIdentifier }, take: 1 });
+      existingLead = leadsByEmail[0] ?? null;
 
       if (!existingLead) {
         console.log('✨ No existing Lead found. Creating new Lead...');
         // Create new Lead
-        existingLead = await prisma.lead.create({
-          data: {
-            userId: session.user.id,
-            email: contactIdentifier,
-            contactPerson: contactName,
-            businessName: contactName, // Use contact name as business name initially
-            source: 'Messages',
-            status: 'NEW',
-          },
-        });
+        existingLead = await leadService.create(ctx, {
+          email: contactIdentifier,
+          contactPerson: contactName,
+          businessName: contactName, // Use contact name as business name initially
+          source: 'Messages',
+          status: 'NEW',
+          contactType: 'CUSTOMER',
+        } as any);
         console.log('✅ Created new Lead:', existingLead.id);
       } else {
         console.log('✅ Found existing Lead:', existingLead.id);
       }
     } else if (isPhone) {
       // Search for existing Lead by phone
-      existingLead = await prisma.lead.findFirst({
-        where: {
-          userId: session.user.id,
-          phone: contactIdentifier,
-        },
-      });
+      const leadsByPhone = await leadService.findMany(ctx, { where: { phone: contactIdentifier }, take: 1 });
+      existingLead = leadsByPhone[0] ?? null;
 
       if (!existingLead) {
         console.log('✨ No existing Lead found. Creating new Lead...');
         // Create new Lead
-        existingLead = await prisma.lead.create({
-          data: {
-            userId: session.user.id,
-            phone: contactIdentifier,
-            contactPerson: contactName,
-            businessName: contactName, // Use contact name as business name initially
-            source: 'Messages',
-            status: 'NEW',
-          },
-        });
+        existingLead = await leadService.create(ctx, {
+          phone: contactIdentifier,
+          contactPerson: contactName,
+          businessName: contactName, // Use contact name as business name initially
+          source: 'Messages',
+          status: 'NEW',
+          contactType: 'CUSTOMER',
+        } as any);
         console.log('✅ Created new Lead:', existingLead.id);
       } else {
         console.log('✅ Found existing Lead:', existingLead.id);
@@ -120,18 +113,18 @@ export async function POST(req: NextRequest) {
       }
 
       // Find or create SMS channel connection for this phone number
-      channelConnection = await prisma.channelConnection.findFirst({
+      channelConnection = await db.channelConnection.findFirst({
         where: {
-          userId: session.user.id,
+          userId: ctx.userId,
           channelType: 'SMS',
           channelIdentifier: fromPhoneNumber,
         },
       });
 
       if (!channelConnection) {
-        channelConnection = await prisma.channelConnection.create({
+        channelConnection = await db.channelConnection.create({
           data: {
-            userId: session.user.id,
+            userId: ctx.userId,
             channelType: 'SMS',
             channelIdentifier: fromPhoneNumber,
             displayName: `SMS - ${fromPhoneNumber}`,
@@ -145,9 +138,9 @@ export async function POST(req: NextRequest) {
       }
     } else if (channelType === 'EMAIL') {
       // Find or create EMAIL channel connection
-      channelConnection = await prisma.channelConnection.findFirst({
+      channelConnection = await db.channelConnection.findFirst({
         where: {
-          userId: session.user.id,
+          userId: ctx.userId,
           channelType: 'EMAIL',
           providerType: 'GMAIL', // Assuming Gmail is the provider
         },
@@ -169,9 +162,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if conversation already exists
-    const existingConversation = await prisma.conversation.findFirst({
+    const existingConversation = await db.conversation.findFirst({
       where: {
-        userId: session.user.id,
+        userId: ctx.userId,
         channelConnectionId: channelConnection.id,
         contactIdentifier,
       },
@@ -186,9 +179,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Create new conversation
-    const conversation = await prisma.conversation.create({
+    const conversation = await db.conversation.create({
       data: {
-        userId: session.user.id,
+        userId: ctx.userId,
         channelConnectionId: channelConnection.id,
         contactName,
         contactIdentifier,

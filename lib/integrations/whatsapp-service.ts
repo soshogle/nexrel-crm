@@ -4,7 +4,8 @@
  * Handles messaging via Twilio WhatsApp Business API
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 
 interface WhatsAppCredentials {
   accountSid: string;
@@ -16,7 +17,8 @@ interface WhatsAppCredentials {
  * Get WhatsApp credentials from user config
  */
 async function getWhatsAppCredentials(userId: string): Promise<WhatsAppCredentials | null> {
-  const user = await prisma.user.findUnique({
+  const db = getCrmDb(createDalContext(userId));
+  const user = await db.user.findUnique({
     where: { id: userId },
     select: { whatsappConfig: true }
   });
@@ -211,7 +213,8 @@ export async function handleWhatsAppWebhook(
     }
 
     // Find user by WhatsApp number
-    const user = await prisma.user.findFirst({
+    const db = getCrmDb(createDalContext('bootstrap'));
+    const user = await db.user.findFirst({
       where: {
         OR: [
           { whatsappConfig: { contains: toPhone } },
@@ -233,7 +236,7 @@ export async function handleWhatsAppWebhook(
     console.log('WhatsApp message received:', { from: fromPhone, to: toPhone, body: Body });
 
     // Check for auto-reply settings
-    const autoReplySettings = await prisma.autoReplySettings.findUnique({
+    const autoReplySettings = await db.autoReplySettings.findUnique({
       where: { userId: user.id }
     });
 
@@ -274,7 +277,9 @@ export async function getWhatsAppConversations(
 ): Promise<{ success: boolean; conversations?: any[]; error?: string }> {
   try {
     // Find channel connection for WhatsApp
-    const channelConnection = await prisma.channelConnection.findFirst({
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+    const channelConnection = await db.channelConnection.findFirst({
       where: {
         userId,
         channelType: 'WHATSAPP'
@@ -289,7 +294,7 @@ export async function getWhatsAppConversations(
     }
 
     // Fetch conversations
-    const conversations = await prisma.conversation.findMany({
+    const conversations = await db.conversation.findMany({
       where: {
         userId,
         channelConnectionId: channelConnection.id,

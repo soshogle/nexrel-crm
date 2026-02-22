@@ -5,9 +5,8 @@
  * Implements caching to minimize API calls and costs
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { getCrmDb, leadService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 
 const CACHE_EXPIRY_DAYS = 90; // Cache enrichment data for 90 days
 
@@ -39,8 +38,9 @@ export async function enrichLead(
     findCompanyInfo?: boolean;
   } = {}
 ): Promise<EnrichmentResult> {
-  const lead = await prisma.lead.findUnique({
-    where: { id: leadId }
+  const lead = await getCrmDb(createDalContext('')).lead.findUnique({
+    where: { id: leadId },
+    select: { userId: true, businessName: true, website: true, email: true, enrichedData: true },
   });
   
   if (!lead) {
@@ -60,14 +60,12 @@ export async function enrichLead(
     );
     
     if (cached) {
+      const ctx = createDalContext(lead.userId);
       // Update lead with cached data
-      await prisma.lead.update({
-        where: { id: leadId },
-        data: {
-          enrichedData: cached.enrichedData,
-          lastEnrichedAt: new Date()
-        }
-      });
+      await leadService.update(ctx, leadId, {
+        enrichedData: cached.enrichedData,
+        lastEnrichedAt: new Date()
+      } as any);
       
       return {
         success: true,
@@ -111,15 +109,13 @@ export async function enrichLead(
       enrichedData
     );
     
+    const ctx = createDalContext(lead.userId);
     // Update lead
-    await prisma.lead.update({
-      where: { id: leadId },
-      data: {
-        enrichedData,
-        lastEnrichedAt: new Date(),
-        email: enrichedData.email || lead.email
-      }
-    });
+    await leadService.update(ctx, leadId, {
+      enrichedData,
+      lastEnrichedAt: new Date(),
+      email: enrichedData.email || lead.email
+    } as any);
     
     return {
       success: true,
@@ -255,7 +251,7 @@ async function getCachedEnrichment(
     const expiresAfter = new Date();
     expiresAfter.setDate(expiresAfter.getDate() - CACHE_EXPIRY_DAYS);
     
-    const cached = await prisma.enrichmentCache.findFirst({
+    const cached = await getCrmDb(createDalContext('')).enrichmentCache.findFirst({
       where: {
         OR: domain ? [
           { companyName },
@@ -292,7 +288,7 @@ async function cacheEnrichmentData(
     expiresAt.setDate(expiresAt.getDate() + CACHE_EXPIRY_DAYS);
     
     // Upsert cache entry
-    await prisma.enrichmentCache.upsert({
+    await getCrmDb(createDalContext('')).enrichmentCache.upsert({
       where: {
         companyId: `${companyName}_${domain}`.toLowerCase().replace(/\s+/g, '_')
       },
@@ -365,19 +361,21 @@ export async function batchEnrichLeads(
  * Get enrichment stats
  */
 export async function getEnrichmentStats(userId: string) {
-  const total = await prisma.lead.count({
-    where: { userId }
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const total = await db.lead.count({
+    where: { userId: ctx.userId },
   });
   
   // Get all leads and manually count enriched ones
-  const allLeads = await prisma.lead.findMany({
-    where: { userId },
+  const allLeads = await db.lead.findMany({
+    where: { userId: ctx.userId },
     select: { enrichedData: true }
   });
   
   const enriched = allLeads.filter(l => l.enrichedData !== null).length;
   
-  const cacheHits = await prisma.enrichmentCache.count();
+  const cacheHits = await db.enrichmentCache.count();
   
   return {
     total,

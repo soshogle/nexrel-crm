@@ -4,7 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { processWebsiteTriggers } from '@/lib/website-triggers';
 
@@ -24,8 +25,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get website to find user
-    const website = await prisma.website.findUnique({
+    // Get website to find user (no session - fetch first to get userId)
+    const website = await getCrmDb(createDalContext('bootstrap')).website.findUnique({
       where: { id: websiteId },
     });
 
@@ -51,9 +52,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ctx = createDalContext(website.userId);
+    const db = getCrmDb(ctx);
+
     // Store visitor data if it's a visitor event
     if (eventType === 'visitor') {
-      await prisma.websiteVisitor.create({
+      await db.websiteVisitor.create({
         data: {
           websiteId,
           sessionId: data.sessionId || `session-${Date.now()}`,
@@ -68,19 +72,19 @@ export async function POST(request: NextRequest) {
 
     // Store form submission if it's a form event
     if (eventType === 'form_submitted' && data.formData) {
-      await prisma.websiteVisitor.create({
+      await db.websiteVisitor.create({
         data: {
           websiteId,
           sessionId: data.sessionId || `session-${Date.now()}`,
-          formData: data.formData,
+          formData: data.formData as any,
           interactions: {
             formSubmissions: [data.formData],
-          },
+          } as any,
         },
       });
 
       // Create lead from form submission if configured
-      const integration = await prisma.websiteIntegration.findFirst({
+      const integration = await db.websiteIntegration.findFirst({
         where: {
           websiteId,
           type: 'FORM',
@@ -89,17 +93,15 @@ export async function POST(request: NextRequest) {
       });
 
       if (integration && (integration.config as any).createLead) {
-        const lead = await prisma.lead.create({
-          data: {
-            userId: website.userId,
-            businessName: data.formData.name || data.formData.businessName || 'Website Visitor',
-            contactPerson: data.formData.name,
-            email: data.formData.email,
-            phone: data.formData.phone,
-            source: 'Website Form',
-            status: 'NEW',
-          },
-        });
+        const lead = await leadService.create(ctx, {
+          businessName: data.formData.name || data.formData.businessName || 'Website Visitor',
+          contactPerson: data.formData.name,
+          email: data.formData.email,
+          phone: data.formData.phone || null,
+          source: 'Website Form',
+          status: 'NEW',
+          contactType: 'CUSTOMER',
+        } as any);
         // Auto-enroll in drip workflows with WEBSITE_FORM_SUBMITTED trigger
         await processWebsiteTriggers(website.userId, lead.id, 'WEBSITE_FORM_SUBMITTED', { websiteId });
       }

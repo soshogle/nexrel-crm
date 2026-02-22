@@ -8,7 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService } from '@/lib/dal';
 
 const EYAL_DARKSWORD_WEBSITE_ID = 'cmlkk9awe0002puiqm64iqw7t';
 const EYAL_PRODUCTS_ENABLED = process.env.EYAL_PRODUCTS_API_ENABLED === 'true';
@@ -17,20 +18,13 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 async function proxyToOwnerSite(
+  ctx: { userId: string; industry?: string | null },
   websiteId: string,
   method: string,
   path: string,
   body?: unknown
 ): Promise<NextResponse> {
-  const website = await prisma.website.findUnique({
-    where: { id: websiteId },
-    select: {
-      vercelDeploymentUrl: true,
-      websiteSecret: true,
-      templateType: true,
-    },
-  });
-
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) {
     return NextResponse.json({ error: 'Website not found' }, { status: 404 });
   }
@@ -78,7 +72,8 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -94,9 +89,7 @@ export async function GET(
       );
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: websiteId, userId: session.user.id },
-    });
+    const website = await websiteService.findUnique(ctx, websiteId);
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
@@ -106,7 +99,7 @@ export async function GET(
     const limit = searchParams.get('limit') || '50';
     const path = `/api/nexrel/products?page=${page}&limit=${limit}`;
 
-    return proxyToOwnerSite(websiteId, 'GET', path);
+    return proxyToOwnerSite(ctx, websiteId, 'GET', path);
   } catch (error: unknown) {
     console.error('[products GET]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -119,7 +112,8 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -135,15 +129,13 @@ export async function POST(
       );
     }
 
-    const website = await prisma.website.findFirst({
-      where: { id: websiteId, userId: session.user.id },
-    });
+    const website = await websiteService.findUnique(ctx, websiteId);
     if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
     const body = await request.json().catch(() => ({}));
-    return proxyToOwnerSite(websiteId, 'POST', '/api/nexrel/products', body);
+    return proxyToOwnerSite(ctx, websiteId, 'POST', '/api/nexrel/products', body);
   } catch (error: unknown) {
     console.error('[products POST]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

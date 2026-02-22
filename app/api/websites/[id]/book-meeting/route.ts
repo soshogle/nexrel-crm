@@ -5,7 +5,9 @@
  * Auth: x-website-secret header.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal/db";
+import { createDalContext } from "@/lib/context/industry-context";
+import { leadService } from "@/lib/dal/lead-service";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
+    const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
       where: { id: websiteId },
       select: { userId: true },
     });
@@ -41,16 +43,14 @@ export async function POST(
       );
     }
 
-    await prisma.lead.create({
-      data: {
-        userId: website.userId,
-        businessName: name.trim(),
-        contactPerson: name.trim(),
-        email: email.trim(),
-        phone: (phone as string)?.trim() || null,
-        source: "market_appraisal_booking",
-        enrichedData: { wantsFullComparables: true },
-      },
+    const ctx = createDalContext(website.userId);
+    await leadService.create(ctx, {
+      businessName: name.trim(),
+      contactPerson: name.trim(),
+      email: email.trim(),
+      phone: (phone as string)?.trim() || null,
+      source: "market_appraisal_booking",
+      enrichedData: { wantsFullComparables: true },
     });
 
     return NextResponse.json({ success: true, message: "We'll be in touch to schedule your meeting." });

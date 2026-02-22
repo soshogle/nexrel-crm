@@ -4,7 +4,8 @@
  */
 
 import { WorkflowTask, WorkflowInstance } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService, taskService, getCrmDb } from '@/lib/dal';
 import { CalendarService } from '@/lib/calendar/calendar-service';
 import { sendSMS } from '@/lib/twilio';
 import { EmailService } from '@/lib/email-service';
@@ -54,8 +55,9 @@ async function bookAppointment(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -72,7 +74,7 @@ async function bookAppointment(
 
   try {
     // Create appointment
-    const appointment = await prisma.bookingAppointment.create({
+    const appointment = await getCrmDb(ctx).bookingAppointment.create({
       data: {
         userId: instance.userId,
         leadId: instance.leadId || undefined,
@@ -115,8 +117,9 @@ async function sendAppointmentReminder(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -128,8 +131,8 @@ async function sendAppointmentReminder(
 
   // Get appointment if ID provided, otherwise use most recent
   let appointment = appointmentId
-    ? await prisma.bookingAppointment.findUnique({ where: { id: appointmentId } })
-    : await prisma.bookingAppointment.findFirst({
+    ? await getCrmDb(ctx).bookingAppointment.findUnique({ where: { id: appointmentId } })
+    : await getCrmDb(ctx).bookingAppointment.findFirst({
         where: { leadId: instance.leadId || undefined, userId: instance.userId },
         orderBy: { appointmentDate: 'desc' },
       });
@@ -189,8 +192,9 @@ async function researchPatient(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -219,7 +223,7 @@ async function researchPatient(
     });
 
     // Get patient's appointment history
-    const appointments = await prisma.bookingAppointment.findMany({
+    const appointments = await getCrmDb(ctx).bookingAppointment.findMany({
       where: {
         leadId: instance.leadId || undefined,
         userId: instance.userId,
@@ -257,8 +261,9 @@ async function verifyInsurance(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -273,16 +278,13 @@ async function verifyInsurance(
   // In a real implementation, this would call an insurance verification API
   // For now, we'll create a task for manual verification
   try {
-    await prisma.task.create({
-      data: {
-        userId: instance.userId,
-        title: `Verify Insurance: ${lead.contactPerson || lead.businessName}`,
-        description: `Insurance Provider: ${insuranceProvider || 'Unknown'}\nPolicy Number: ${policyNumber || 'Not provided'}\nPatient: ${lead.contactPerson || lead.businessName}`,
-        status: 'TODO',
-        priority: 'HIGH',
-        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        leadId: instance.leadId || undefined,
-      },
+    await taskService.create(ctx, {
+      title: `Verify Insurance: ${lead.contactPerson || lead.businessName}`,
+      description: `Insurance Provider: ${insuranceProvider || 'Unknown'}\nPolicy Number: ${policyNumber || 'Not provided'}\nPatient: ${lead.contactPerson || lead.businessName}`,
+      status: 'TODO',
+      priority: 'HIGH',
+      dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      leadId: instance.leadId || undefined,
     });
 
     return {
@@ -311,8 +313,9 @@ async function sendPrescriptionReminder(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -379,8 +382,9 @@ async function notifyTestResults(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -435,8 +439,9 @@ async function coordinateReferral(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -449,16 +454,13 @@ async function coordinateReferral(
 
   try {
     // Create referral task
-    await prisma.task.create({
-      data: {
-        userId: instance.userId,
-        title: `Referral: ${lead.contactPerson || lead.businessName} to ${specialistType}`,
-        description: `Patient: ${lead.contactPerson || lead.businessName}\nSpecialist Type: ${specialistType}\nReason: ${referralReason}`,
-        status: 'TODO',
-        priority: 'MEDIUM',
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Due in 7 days
-        leadId: instance.leadId || undefined,
-      },
+    await taskService.create(ctx, {
+      title: `Referral: ${lead.contactPerson || lead.businessName} to ${specialistType}`,
+      description: `Patient: ${lead.contactPerson || lead.businessName}\nSpecialist Type: ${specialistType}\nReason: ${referralReason}`,
+      status: 'TODO',
+      priority: 'MEDIUM',
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Due in 7 days
+      leadId: instance.leadId || undefined,
     });
 
     return {
@@ -486,8 +488,9 @@ async function onboardPatient(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -505,16 +508,13 @@ async function onboardPatient(
 
     await Promise.all(
       onboardingTasks.map((t, index) =>
-        prisma.task.create({
-          data: {
-            userId: instance.userId,
-            title: t.title,
-            description: `Patient: ${lead.contactPerson || lead.businessName}`,
-            status: 'TODO',
-            priority: t.priority as any,
-            dueDate: new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000),
-            leadId: instance.leadId || undefined,
-          },
+        taskService.create(ctx, {
+          title: t.title,
+          description: `Patient: ${lead.contactPerson || lead.businessName}`,
+          status: 'TODO',
+          priority: t.priority as any,
+          dueDate: new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000),
+          leadId: instance.leadId || undefined,
         })
       )
     );
@@ -559,8 +559,9 @@ async function postVisitFollowup(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -595,16 +596,13 @@ async function postVisitFollowup(
     }
 
     // Request feedback
-    await prisma.task.create({
-      data: {
-        userId: instance.userId,
-        title: `Request Feedback: ${lead.contactPerson || lead.businessName}`,
-        description: 'Follow up with patient to request feedback on their visit',
-        status: 'TODO',
-        priority: 'LOW',
-        dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // Due in 3 days
-        leadId: instance.leadId || undefined,
-      },
+    await taskService.create(ctx, {
+      title: `Request Feedback: ${lead.contactPerson || lead.businessName}`,
+      description: 'Follow up with patient to request feedback on their visit',
+      status: 'TODO',
+      priority: 'LOW',
+      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // Due in 3 days
+      leadId: instance.leadId || undefined,
     });
 
     return {

@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/db";
+import { getCrmDb, taskService, leadService } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
 
 export async function createTask(userId: string, params: any) {
   const { title, description, dueDate, leadId, dealId, priority } = params;
@@ -7,27 +8,22 @@ export async function createTask(userId: string, params: any) {
     throw new Error("Task title is required");
   }
 
-  const task = await prisma.task.create({
-    data: {
-      userId,
-      title,
-      description: description || null,
-      dueDate: dueDate ? new Date(dueDate) : null,
-      leadId: leadId || null,
-      dealId: dealId || null,
-      priority: (priority as any) || "MEDIUM",
-      status: "TODO",
-    },
-    include: {
-      lead: { select: { id: true, businessName: true, contactPerson: true } },
-      deal: { select: { id: true, title: true } },
-    },
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const task = await taskService.create(ctx, {
+    title,
+    description: description || null,
+    dueDate: dueDate ? new Date(dueDate) : null,
+    leadId: leadId || null,
+    dealId: dealId || null,
+    priority: (priority as any) || "MEDIUM",
+    status: "TODO",
   });
 
-  await prisma.taskActivity.create({
+  await db.taskActivity.create({
     data: {
       taskId: task.id,
-      userId,
+      userId: ctx.userId,
       action: "CREATED",
       newValue: "Task created",
     },
@@ -46,15 +42,17 @@ export async function createTask(userId: string, params: any) {
 
 export async function listTasks(userId: string, params: any) {
   const { status, overdue, limit = 20 } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
-  const where: any = { userId };
+  const where: any = { userId: ctx.userId };
   if (status) where.status = status;
   if (overdue === true) {
     where.dueDate = { lt: new Date() };
     where.status = { notIn: ["COMPLETED", "CANCELLED"] };
   }
 
-  const tasks = await prisma.task.findMany({
+  const tasks = await db.task.findMany({
     where,
     take: Math.min(limit, 50),
     orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
@@ -80,16 +78,18 @@ export async function listTasks(userId: string, params: any) {
 
 export async function completeTask(userId: string, params: any) {
   const { taskId, taskTitle } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
   let task;
   if (taskId) {
-    task = await prisma.task.findFirst({
-      where: { id: taskId, userId },
+    task = await db.task.findFirst({
+      where: { id: taskId, userId: ctx.userId },
     });
   } else if (taskTitle) {
-    task = await prisma.task.findFirst({
+    task = await db.task.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         title: { contains: taskTitle, mode: "insensitive" },
         status: { notIn: ["COMPLETED", "CANCELLED"] },
       },
@@ -100,15 +100,12 @@ export async function completeTask(userId: string, params: any) {
     throw new Error(taskId ? "Task not found" : `No matching task found for "${taskTitle}"`);
   }
 
-  await prisma.task.update({
-    where: { id: task.id },
-    data: { status: "COMPLETED", completedAt: new Date(), progressPercent: 100 },
-  });
+  await taskService.update(ctx, task.id, { status: "COMPLETED", completedAt: new Date(), progressPercent: 100 });
 
-  await prisma.taskActivity.create({
+  await db.taskActivity.create({
     data: {
       taskId: task.id,
-      userId,
+      userId: ctx.userId,
       action: "STATUS_CHANGED",
       oldValue: task.status,
       newValue: "COMPLETED",
@@ -123,16 +120,14 @@ export async function completeTask(userId: string, params: any) {
 
 export async function updateTask(userId: string, params: any) {
   const { taskId, taskTitle, title, dueDate, priority } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
   let task;
   if (taskId) {
-    task = await prisma.task.findFirst({
-      where: { id: taskId, userId },
-    });
+    task = await db.task.findFirst({ where: { id: taskId, userId: ctx.userId } });
   } else if (taskTitle) {
-    task = await prisma.task.findFirst({
-      where: { userId, title: { contains: taskTitle, mode: "insensitive" } },
-    });
+    task = await db.task.findFirst({ where: { userId: ctx.userId, title: { contains: taskTitle, mode: "insensitive" } } });
   }
 
   if (!task) throw new Error("Task not found");
@@ -146,37 +141,29 @@ export async function updateTask(userId: string, params: any) {
     throw new Error("At least one field (title, dueDate, or priority) is required to update");
   }
 
-  const updated = await prisma.task.update({
-    where: { id: task.id },
-    data: updates,
-  });
+  await taskService.update(ctx, task.id, updates);
 
   return {
-    message: `Task "${updated.title}" updated successfully!`,
-    task: { id: updated.id, title: updated.title },
+    message: `Task "${task.title}" updated successfully!`,
+    task: { id: task.id, title: title ?? task.title },
   };
 }
 
 export async function cancelTask(userId: string, params: any) {
   const { taskId, taskTitle } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
   let task;
   if (taskId) {
-    task = await prisma.task.findFirst({
-      where: { id: taskId, userId },
-    });
+    task = await db.task.findFirst({ where: { id: taskId, userId: ctx.userId } });
   } else if (taskTitle) {
-    task = await prisma.task.findFirst({
-      where: { userId, title: { contains: taskTitle, mode: "insensitive" } },
-    });
+    task = await db.task.findFirst({ where: { userId: ctx.userId, title: { contains: taskTitle, mode: "insensitive" } } });
   }
 
   if (!task) throw new Error("Task not found");
 
-  await prisma.task.update({
-    where: { id: task.id },
-    data: { status: "CANCELLED" },
-  });
+  await taskService.update(ctx, task.id, { status: "CANCELLED" });
 
   return {
     message: `Task "${task.title}" cancelled.`,
@@ -188,13 +175,15 @@ export async function rescheduleTask(userId: string, params: any) {
   const { taskId, taskTitle, dueDate } = params;
   if (!dueDate) throw new Error("New due date is required (YYYY-MM-DD)");
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   let task;
   if (taskId) {
-    task = await prisma.task.findFirst({ where: { id: taskId, userId } });
+    task = await db.task.findFirst({ where: { id: taskId, userId: ctx.userId } });
   } else if (taskTitle) {
-    task = await prisma.task.findFirst({
+    task = await db.task.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         title: { contains: taskTitle, mode: "insensitive" },
         status: { notIn: ["COMPLETED", "CANCELLED"] },
       },
@@ -205,15 +194,12 @@ export async function rescheduleTask(userId: string, params: any) {
   const newDueDate = new Date(dueDate);
   if (isNaN(newDueDate.getTime())) throw new Error("Invalid date format. Use YYYY-MM-DD");
 
-  await prisma.task.update({
-    where: { id: task.id },
-    data: { dueDate: newDueDate },
-  });
+  await taskService.update(ctx, task.id, { dueDate: newDueDate });
 
-  await prisma.taskActivity.create({
+  await db.taskActivity.create({
     data: {
       taskId: task.id,
-      userId,
+      userId: ctx.userId,
       action: "UPDATED",
       oldValue: task.dueDate?.toISOString() || "",
       newValue: newDueDate.toISOString(),
@@ -233,6 +219,8 @@ export async function createBulkTasks(userId: string, params: any) {
     throw new Error("Task title is required");
   }
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const now = new Date();
   let startDate: Date;
   if (period === "today") {
@@ -243,9 +231,10 @@ export async function createBulkTasks(userId: string, params: any) {
     startDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
   }
 
-  const leads = await prisma.lead.findMany({
-    where: {
-      userId,
+  const leads = await leadService.findMany(ctx, {
+    where: { createdAt: { gte: startDate } },
+    take: 50,
+  });
       createdAt: { gte: startDate },
     },
     take: 50,
@@ -257,15 +246,12 @@ export async function createBulkTasks(userId: string, params: any) {
   const created = [];
   for (const lead of leads) {
     const title = taskTitle.replace(/\{name\}/g, lead.contactPerson || lead.businessName || "Contact");
-    const task = await prisma.task.create({
-      data: {
-        userId,
-        leadId: lead.id,
-        title,
-        dueDate,
-        status: "TODO",
-        priority: "MEDIUM",
-      },
+    const task = await taskService.create(ctx, {
+      leadId: lead.id,
+      title,
+      dueDate,
+      status: "TODO",
+      priority: "MEDIUM",
     });
     created.push({ id: task.id, title, lead: lead.contactPerson || lead.businessName });
   }
@@ -280,29 +266,32 @@ export async function createBulkTasks(userId: string, params: any) {
 export async function createWorkflow(userId: string, params: any) {
   const { description, goal, keywords, autoReply, trigger, actions } = params;
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+
   // If description is provided, use AI to generate the workflow
   if (description) {
     const { aiWorkflowGenerator } = await import('@/lib/ai-workflow-generator');
     
     // Get user context for workflow generation
     const [pipelines, leadStatuses, user] = await Promise.all([
-      prisma.pipeline.findMany({
-        where: { userId },
+      db.pipeline.findMany({
+        where: { userId: ctx.userId },
         include: { stages: true },
       }),
-      prisma.lead.findMany({
-        where: { userId },
+      db.lead.findMany({
+        where: { userId: ctx.userId },
         distinct: ['status'],
         select: { status: true },
       }),
-      prisma.user.findUnique({
+      db.user.findUnique({
         where: { id: userId },
         select: { language: true },
       }),
     ]);
 
     // Get user's industry and role for dental context
-    const userRecord = await prisma.user.findUnique({
+    const userRecord = await db.user.findUnique({
       where: { id: userId },
       select: { industry: true, role: true },
     });
@@ -337,9 +326,9 @@ export async function createWorkflow(userId: string, params: any) {
     });
 
     // Create the workflow with generated configuration
-    const workflow = await prisma.workflow.create({
+    const workflow = await db.workflow.create({
       data: {
-        userId,
+        userId: ctx.userId,
         name: generatedWorkflow.name,
         description: generatedWorkflow.description,
         triggerType: generatedWorkflow.triggerType as any,
@@ -422,9 +411,9 @@ export async function createWorkflow(userId: string, params: any) {
   // Fallback: Manual workflow creation (legacy)
   const name = params.name || 'New Workflow';
   
-  const workflow = await prisma.workflow.create({
+  const workflow = await db.workflow.create({
     data: {
-      userId,
+      userId: ctx.userId,
       name,
       triggerType: trigger || "MANUAL",
       status: "ACTIVE",
@@ -464,8 +453,10 @@ export async function addWorkflowTask(userId: string, params: any) {
   if (!workflowId || !name) {
     return { success: false, error: 'workflowId and name are required' };
   }
-  const existing = await prisma.workflowTemplate.findFirst({
-    where: { id: workflowId, userId },
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const existing = await db.workflowTemplate.findFirst({
+    where: { id: workflowId, userId: ctx.userId },
     include: { tasks: { orderBy: { displayOrder: 'asc' } } },
   });
   if (!existing) {
@@ -474,7 +465,7 @@ export async function addWorkflowTask(userId: string, params: any) {
   const maxOrder = existing.tasks.length > 0
     ? Math.max(...existing.tasks.map((t) => t.displayOrder))
     : 0;
-  const task = await prisma.workflowTask.create({
+  const task = await db.workflowTask.create({
     data: {
       templateId: workflowId,
       name,
@@ -515,9 +506,11 @@ export async function createAppointment(userId: string, params: any) {
   // Parse date and time
   const appointmentDate = new Date(`${date}T${time}`);
 
-  const appointment = await prisma.bookingAppointment.create({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const appointment = await db.bookingAppointment.create({
     data: {
-      userId,
+      userId: ctx.userId,
       customerName,
       customerEmail,
       customerPhone: customerPhone || "",
@@ -546,8 +539,10 @@ export async function createAppointment(userId: string, params: any) {
 
 export async function listAppointments(userId: string, params: any) {
   const { date, limit = 20 } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
-  const where: any = { userId };
+  const where: any = { userId: ctx.userId };
   if (date) {
     const d = new Date(date);
     const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -556,7 +551,7 @@ export async function listAppointments(userId: string, params: any) {
     where.appointmentDate = { gte: start, lt: end };
   }
 
-  const appointments = await prisma.bookingAppointment.findMany({
+  const appointments = await db.bookingAppointment.findMany({
     where,
     take: Math.min(limit, 50),
     orderBy: { appointmentDate: "asc" },
@@ -577,16 +572,18 @@ export async function listAppointments(userId: string, params: any) {
 
 export async function updateAppointment(userId: string, params: any) {
   const { appointmentId, customerName, date, time } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
   let appointment;
   if (appointmentId) {
-    appointment = await prisma.bookingAppointment.findFirst({
-      where: { id: appointmentId, userId },
+    appointment = await db.bookingAppointment.findFirst({
+      where: { id: appointmentId, userId: ctx.userId },
     });
   } else if (customerName) {
-    appointment = await prisma.bookingAppointment.findFirst({
+    appointment = await db.bookingAppointment.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         customerName: { contains: customerName, mode: "insensitive" },
         status: { not: "CANCELLED" },
       },
@@ -611,7 +608,7 @@ export async function updateAppointment(userId: string, params: any) {
     throw new Error("Provide date and/or time to reschedule");
   }
 
-  const updated = await prisma.bookingAppointment.update({
+  const updated = await db.bookingAppointment.update({
     where: { id: appointment.id },
     data: updates,
   });
@@ -624,16 +621,18 @@ export async function updateAppointment(userId: string, params: any) {
 
 export async function cancelAppointment(userId: string, params: any) {
   const { appointmentId, customerName } = params;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
   let appointment;
   if (appointmentId) {
-    appointment = await prisma.bookingAppointment.findFirst({
-      where: { id: appointmentId, userId },
+    appointment = await db.bookingAppointment.findFirst({
+      where: { id: appointmentId, userId: ctx.userId },
     });
   } else if (customerName) {
-    appointment = await prisma.bookingAppointment.findFirst({
+    appointment = await db.bookingAppointment.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         customerName: { contains: customerName, mode: "insensitive" },
         status: { not: "CANCELLED" },
       },
@@ -643,7 +642,7 @@ export async function cancelAppointment(userId: string, params: any) {
 
   if (!appointment) throw new Error("Appointment not found");
 
-  await prisma.bookingAppointment.update({
+  await db.bookingAppointment.update({
     where: { id: appointment.id },
     data: { status: "CANCELLED" as any, cancelledAt: new Date() },
   });
@@ -661,9 +660,11 @@ export async function createAIEmployee(userId: string, params: any) {
     throw new Error("profession and customName are required for AI Team employee");
   }
 
-  const employee = await prisma.userAIEmployee.create({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const employee = await db.userAIEmployee.create({
     data: {
-      userId,
+      userId: ctx.userId,
       profession: String(profession),
       customName: String(customName),
       isActive: true,
@@ -681,8 +682,10 @@ export async function createAIEmployee(userId: string, params: any) {
 }
 
 export async function listAIEmployees(userId: string) {
-  const employees = await prisma.userAIEmployee.findMany({
-    where: { userId },
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const employees = await db.userAIEmployee.findMany({
+    where: { userId: ctx.userId },
     orderBy: { createdAt: "asc" },
   });
 

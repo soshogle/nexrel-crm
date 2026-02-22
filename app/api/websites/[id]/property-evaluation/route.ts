@@ -12,6 +12,10 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal/db";
+import { createDalContext } from "@/lib/context/industry-context";
+import { leadService } from "@/lib/dal/lead-service";
+import { noteService } from "@/lib/dal/note-service";
 import { runPropertyEvaluation } from "@/lib/real-estate/property-evaluation";
 import type { ComparableProperty } from "@/lib/real-estate/property-evaluation";
 import { Resend } from "resend";
@@ -60,7 +64,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const website = await prisma.website.findFirst({
+    const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
       where: { id: websiteId },
       select: {
         id: true,
@@ -92,17 +96,22 @@ export async function POST(
       );
     }
 
-    const evaluation = await runPropertyEvaluation(websiteId, {
-      address: propertyDetails.address,
-      city: propertyDetails.city,
-      postalCode: propertyDetails.postalCode ?? propertyDetails.zip,
-      latitude: propertyDetails.latitude,
-      longitude: propertyDetails.longitude,
-      bedrooms: propertyDetails.bedrooms,
-      bathrooms: propertyDetails.bathrooms,
-      propertyType: propertyDetails.propertyType,
-      livingArea: propertyDetails.livingArea,
-    });
+    const evaluation = await runPropertyEvaluation(
+      websiteId,
+      {
+        address: propertyDetails.address,
+        city: propertyDetails.city,
+        postalCode: propertyDetails.postalCode ?? propertyDetails.zip,
+        latitude: propertyDetails.latitude,
+        longitude: propertyDetails.longitude,
+        bedrooms: propertyDetails.bedrooms,
+        bathrooms: propertyDetails.bathrooms,
+        propertyType: propertyDetails.propertyType,
+        livingArea: propertyDetails.livingArea,
+      },
+      website.userId,
+      null
+    );
 
     const blurredComparables = blurComparables(evaluation.comparables);
 
@@ -117,29 +126,24 @@ export async function POST(
       (agencyConfig.email as string)?.trim() || (user?.email as string)?.trim() || null;
 
     if (user) {
-      const lead = await prisma.lead.create({
-        data: {
-          userId: user.id,
-          businessName: contact.name || "Property Evaluation Visitor",
-          contactPerson: contact.name || null,
-          email: contact.email || null,
-          phone: contact.phone || null,
-          address: propertyDetails.address,
-          source: "property_evaluation",
-          enrichedData: {
-            propertyEvaluation: true,
-            estimatedValue: evaluation.estimatedValue,
-            comparablesCount: evaluation.comparables.length,
-            propertyDetails,
-          },
+      const ctx = createDalContext(user.id);
+      const lead = await leadService.create(ctx, {
+        businessName: contact.name || "Property Evaluation Visitor",
+        contactPerson: contact.name || null,
+        email: contact.email || null,
+        phone: contact.phone || null,
+        address: propertyDetails.address,
+        source: "property_evaluation",
+        enrichedData: {
+          propertyEvaluation: true,
+          estimatedValue: evaluation.estimatedValue,
+          comparablesCount: evaluation.comparables.length,
+          propertyDetails,
         },
       });
-      await prisma.note.create({
-        data: {
-          leadId: lead.id,
-          userId: user.id,
-          content: `Property Evaluation: ${propertyDetails.address}\nEstimated value: $${evaluation.estimatedValue.toLocaleString()}\nComparables: ${evaluation.comparables.length}`,
-        },
+      await noteService.create(ctx, {
+        leadId: lead.id,
+        content: `Property Evaluation: ${propertyDetails.address}\nEstimated value: $${evaluation.estimatedValue.toLocaleString()}\nComparables: ${evaluation.comparables.length}`,
       });
     }
 

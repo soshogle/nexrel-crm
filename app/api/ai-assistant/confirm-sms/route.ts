@@ -8,6 +8,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sendSMS } from "@/lib/messaging-service";
 import { prisma } from "@/lib/db";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
+import { leadService } from "@/lib/dal/lead-service";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -76,20 +78,22 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const ctx = getDalContextFromSession(session);
+      if (!ctx) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
       const lead = leadId
-        ? await prisma.lead.findFirst({
-            where: { id: leadId, userId: session.user.id },
-          })
-        : await prisma.lead.findFirst({
+        ? await leadService.findUnique(ctx, leadId)
+        : (await leadService.findMany(ctx, {
             where: {
-              userId: session.user.id,
               OR: [
                 { contactPerson: { contains: contactName, mode: "insensitive" } },
                 { businessName: { contains: contactName, mode: "insensitive" } },
               ],
             },
+            take: 1,
             orderBy: { createdAt: "desc" },
-          });
+          }))[0];
 
       if (!lead?.phone) {
         return NextResponse.json(

@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { getCrmDb, leadService } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { processReferralTriggers } from '@/lib/referral-triggers'
 
 export const dynamic = 'force-dynamic'
@@ -16,8 +16,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const referrals = await prisma.referral.findMany({
-      where: { userId: session.user.id },
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const db = getCrmDb(ctx)
+    const referrals = await db.referral.findMany({
+      where: { userId: ctx.userId },
       include: {
         referrer: {
           select: {
@@ -68,10 +72,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const db = getCrmDb(ctx)
     // Verify referrer exists and belongs to user
-    const referrer = await prisma.lead.findUnique({
-      where: { id: referrerId, userId: session.user.id },
-    })
+    const referrer = await leadService.findUnique(ctx, referrerId)
 
     if (!referrer) {
       return NextResponse.json(
@@ -81,9 +87,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create referral
-    const referral = await prisma.referral.create({
+    const referral = await db.referral.create({
       data: {
-        userId: session.user.id,
+        userId: ctx.userId,
         referrerId,
         referredName,
         referredEmail,

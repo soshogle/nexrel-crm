@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,10 +18,14 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const campaign = await prisma.smsCampaign.findFirst({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
+    const campaign = await db.smsCampaign.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
       include: {
         recipients: {
@@ -80,11 +85,15 @@ export async function PUT(
       targetLeadIds,
     } = body;
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
     // Check if campaign exists and belongs to user
-    const existingCampaign = await prisma.smsCampaign.findFirst({
+    const existingCampaign = await db.smsCampaign.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     });
 
@@ -123,9 +132,8 @@ export async function PUT(
 
     // If minLeadScore or targetLeadIds changed, recalculate totalRecipients
     if (minLeadScore !== undefined || targetLeadIds !== undefined) {
-      const targetLeads = await prisma.lead.findMany({
+      const targetLeads = await leadService.findMany(ctx, {
         where: {
-          userId: session.user.id,
           leadScore: (minLeadScore || existingCampaign.minLeadScore) ? {
             gte: minLeadScore || existingCampaign.minLeadScore || 75,
           } : undefined,
@@ -139,7 +147,7 @@ export async function PUT(
       updateData.totalRecipients = targetLeads.length;
     }
 
-    const campaign = await prisma.smsCampaign.update({
+    const campaign = await db.smsCampaign.update({
       where: { id: params.id },
       data: updateData,
       include: {
@@ -172,11 +180,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
     // Check if campaign exists and belongs to user
-    const existingCampaign = await prisma.smsCampaign.findFirst({
+    const existingCampaign = await db.smsCampaign.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     });
 
@@ -193,7 +205,7 @@ export async function DELETE(
     }
 
     // Delete the campaign (this will cascade delete recipients)
-    await prisma.smsCampaign.delete({
+    await db.smsCampaign.delete({
       where: { id: params.id },
     });
 

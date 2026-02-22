@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { ReviewSource } from '@prisma/client';
 import { processIncomingReview } from '@/lib/reviews/review-intelligence-service';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { campaignService } from '@/lib/dal/campaign-service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -83,9 +85,11 @@ export async function POST(request: NextRequest) {
 
     // If campaignId provided, verify ownership
     if (campaignId) {
-      const campaign = await prisma.campaign.findUnique({
-        where: { id: campaignId, userId: session.user.id },
-      });
+      const ctx = getDalContextFromSession(session);
+      if (!ctx) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const campaign = await campaignService.findUnique(ctx, campaignId);
       if (!campaign) {
         return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
       }

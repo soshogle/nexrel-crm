@@ -9,7 +9,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { Prisma } from '@prisma/client';
 
 export async function POST(request: NextRequest) {
@@ -19,6 +20,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
     const { filters, websiteId } = body;
 
@@ -26,10 +30,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Filters are required' }, { status: 400 });
     }
 
-    // Build Prisma query based on filters
-    const where: any = {
-      userId: session.user.id,
-    };
+    // Build Prisma query based on filters (leadService adds userId)
+    const where: any = {};
 
     // Lead score filter (Lead model uses leadScore, not score)
     if (filters.minLeadScore != null) {
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
         ' OR '
       );
       const conditions = [
-        Prisma.sql`"userId" = ${session.user.id}`,
+        Prisma.sql`"userId" = ${ctx.userId}`,
         Prisma.sql`(${tagConditions})`,
       ];
       if (filters.minLeadScore != null) conditions.push(Prisma.sql`"leadScore" >= ${filters.minLeadScore}`);
@@ -64,7 +66,7 @@ export async function POST(request: NextRequest) {
       if (filters.sources?.length) conditions.push(Prisma.sql`source IN (${Prisma.join(filters.sources.map((s: string) => Prisma.sql`${s}`), ', ')})`);
       if (filters.hasPhone) conditions.push(Prisma.sql`phone IS NOT NULL`);
       if (filters.hasEmail) conditions.push(Prisma.sql`email IS NOT NULL`);
-      const [row] = await prisma.$queryRaw<[{ count: number }]>`
+      const [row] = await getCrmDb(ctx).$queryRaw<[{ count: number }]>`
         SELECT COUNT(*)::int as count FROM "Lead"
         WHERE ${Prisma.join(conditions, ' AND ')}
       `;
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Count matching leads
-    const count = await prisma.lead.count({ where });
+    const count = await leadService.count(ctx, where);
 
     return NextResponse.json({ count });
   } catch (error: any) {

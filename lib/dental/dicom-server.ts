@@ -3,7 +3,8 @@
  * Handles integration with Orthanc DICOM server for C-STORE, C-FIND, C-MOVE
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { DicomParser } from './dicom-parser';
 import { DicomToImageConverter } from './dicom-to-image';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
@@ -48,16 +49,23 @@ export class DicomServerService {
    * Handle incoming C-STORE request (webhook from Orthanc)
    * This is called when Orthanc receives a new DICOM file
    */
-  static async handleCStoreWebhook(instanceId: string, userId: string): Promise<void> {
+  static async handleCStoreWebhook(
+    instanceId: string,
+    userId: string,
+    industry?: string | null
+  ): Promise<void> {
     try {
+      const ctx = createDalContext(userId, industry);
+      const db = getCrmDb(ctx);
+
       // Download DICOM file from Orthanc
       const dicomBuffer = await this.downloadInstance(instanceId);
-      
+
       // Parse DICOM metadata
       const { metadata } = DicomParser.parseDicom(dicomBuffer);
-      
+
       // Find matching patient by Patient ID or Name
-      const lead = await this.findPatient(metadata.patientId, metadata.patientName, userId);
+      const lead = await this.findPatient(db, metadata.patientId, metadata.patientName, userId);
       
       if (!lead) {
         console.warn(`[DICOM Server] Patient not found for DICOM: ${metadata.patientId || metadata.patientName}`);
@@ -70,6 +78,7 @@ export class DicomServerService {
       
       // Process and store DICOM
       await this.processAndStoreDicom(
+        db,
         dicomBuffer,
         lead.id,
         userId,
@@ -108,13 +117,14 @@ export class DicomServerService {
    * Find patient by Patient ID or Name
    */
   private static async findPatient(
+    db: Awaited<ReturnType<typeof getCrmDb>>,
     patientId: string | undefined,
     patientName: string | undefined,
     userId: string
   ) {
     // Try Patient ID first
     if (patientId) {
-      const lead = await prisma.lead.findFirst({
+      const lead = await db.lead.findFirst({
         where: {
           userId,
           // In production, you'd have a patientId field or match via email/phone
@@ -131,7 +141,7 @@ export class DicomServerService {
       const lastName = nameParts[0];
       const firstName = nameParts[1];
 
-      const lead = await prisma.lead.findFirst({
+      const lead = await db.lead.findFirst({
         where: {
           userId,
           OR: [
@@ -168,6 +178,7 @@ export class DicomServerService {
    * Process and store DICOM file
    */
   private static async processAndStoreDicom(
+    db: Awaited<ReturnType<typeof getCrmDb>>,
     buffer: Buffer,
     leadId: string,
     userId: string,
@@ -205,7 +216,7 @@ export class DicomServerService {
     );
 
     // Create X-ray record
-    await (prisma as any).dentalXRay.create({
+    await (db as any).dentalXRay.create({
       data: {
         leadId,
         userId,

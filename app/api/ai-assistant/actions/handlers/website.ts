@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/db";
+import { getCrmDb, websiteService } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
 
 function normalizeUrl(url: string): string {
   let u = url.trim();
@@ -103,8 +104,10 @@ export async function createWebsite(userId: string, params: any) {
 }
 
 export async function listWebsites(userId: string, params: any) {
-  const websites = await prisma.website.findMany({
-    where: { userId },
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const websites = await db.website.findMany({
+    where: { userId: ctx.userId },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -137,9 +140,8 @@ export async function modifyWebsite(userId: string, params: any) {
     throw new Error("websiteId and message are required. Describe the change you want (e.g. 'Change the hero title to Welcome')");
   }
 
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) {
     throw new Error("Website not found");
   }
@@ -177,9 +179,8 @@ export async function getWebsiteStructure(userId: string, params: any) {
   const { websiteId } = params;
   if (!websiteId) throw new Error("websiteId is required");
 
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
   const { getWebsiteStructureSummary } = await import("@/lib/website-builder/granular-tools");
@@ -200,9 +201,8 @@ export async function updateHero(userId: string, params: any) {
     throw new Error("At least one of title, subtitle, ctaText, ctaLink is required");
   }
 
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
   const {
@@ -226,10 +226,7 @@ export async function updateHero(userId: string, params: any) {
     data: updates,
   });
 
-  await prisma.website.update({
-    where: { id: websiteId },
-    data: { structure: newStructure },
-  });
+  await websiteService.update(ctx, websiteId, { structure: newStructure });
 
   return {
     message: `✅ Hero section updated.`,
@@ -242,9 +239,8 @@ export async function addSection(userId: string, params: any) {
   const { websiteId, sectionType, pagePath = "/", title, content, ctaText, ctaLink } = params;
   if (!websiteId || !sectionType) throw new Error("websiteId and sectionType are required");
 
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
   const structure = website.structure as any;
@@ -277,10 +273,7 @@ export async function addSection(userId: string, params: any) {
     data: newComponent,
   });
 
-  await prisma.website.update({
-    where: { id: websiteId },
-    data: { structure: newStructure },
-  });
+  await websiteService.update(ctx, websiteId, { structure: newStructure });
 
   return {
     message: `✅ Added ${sectionType} to ${pagePath}.`,
@@ -296,9 +289,8 @@ export async function updateSectionContent(userId: string, params: any) {
     throw new Error("At least one of title, content, ctaText, ctaLink is required");
   }
 
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
   const { findSection, applyStructureChange } = await import("@/lib/website-builder/granular-tools");
@@ -319,10 +311,7 @@ export async function updateSectionContent(userId: string, params: any) {
     data: updates,
   });
 
-  await prisma.website.update({
-    where: { id: websiteId },
-    data: { structure: newStructure },
-  });
+  await websiteService.update(ctx, websiteId, { structure: newStructure });
 
   return {
     message: `✅ Updated ${sectionType} section.`,
@@ -335,9 +324,8 @@ export async function addCTA(userId: string, params: any) {
   const { websiteId, title, description, ctaText, ctaLink, pagePath = "/" } = params;
   if (!websiteId || !ctaText || !ctaLink) throw new Error("websiteId, ctaText, and ctaLink are required");
 
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
   const { findCTAComponent, findSection, applyStructureChange } = await import("@/lib/website-builder/granular-tools");
@@ -356,10 +344,7 @@ export async function addCTA(userId: string, params: any) {
       path,
       data: updates,
     });
-    await prisma.website.update({
-      where: { id: websiteId },
-      data: { structure: newStructure },
-    });
+    await websiteService.update(ctx, websiteId, { structure: newStructure });
     return {
       message: `✅ Updated CTA section.`,
       websiteId,
@@ -388,10 +373,7 @@ export async function addCTA(userId: string, params: any) {
     data: newComponent,
   });
 
-  await prisma.website.update({
-    where: { id: websiteId },
-    data: { structure: newStructure },
-  });
+  await websiteService.update(ctx, websiteId, { structure: newStructure });
 
   return {
     message: `✅ Added CTA section.`,
@@ -406,17 +388,13 @@ export async function reorderSection(userId: string, params: any) {
     throw new Error("websiteId, fromIndex, and toIndex are required");
   }
 
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
   const { reorderSections } = await import("@/lib/website-builder/granular-tools");
   const newStructure = reorderSections(website.structure as any, pagePath, fromIndex, toIndex);
-  await prisma.website.update({
-    where: { id: websiteId },
-    data: { structure: newStructure },
-  });
+  await websiteService.update(ctx, websiteId, { structure: newStructure });
   return { message: `✓ Section reordered.`, websiteId, navigateTo: `/dashboard/websites/${websiteId}` };
 }
 
@@ -424,17 +402,13 @@ export async function deleteSection(userId: string, params: any) {
   const { websiteId, sectionType, pagePath = "/" } = params;
   if (!websiteId || !sectionType) throw new Error("websiteId and sectionType are required");
 
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
   const { deleteSection: deleteSectionTool } = await import("@/lib/website-builder/granular-tools");
   const newStructure = deleteSectionTool(website.structure as any, { pagePath, sectionType });
-  await prisma.website.update({
-    where: { id: websiteId },
-    data: { structure: newStructure },
-  });
+  await websiteService.update(ctx, websiteId, { structure: newStructure });
   return { message: `✓ Removed ${sectionType}.`, websiteId, navigateTo: `/dashboard/websites/${websiteId}` };
 }
 
@@ -442,12 +416,12 @@ export async function listWebsiteMedia(userId: string, params: any) {
   const { websiteId, type } = params;
   if (!websiteId) throw new Error("websiteId is required");
 
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
-  const media = await prisma.websiteMedia.findMany({
+  const db = getCrmDb(ctx);
+  const media = await db.websiteMedia.findMany({
     where: { websiteId, ...(type && { type }) },
     orderBy: { createdAt: "desc" },
     take: 50,
@@ -465,9 +439,8 @@ export async function addWebsiteImage(userId: string, params: any) {
     throw new Error("websiteId, sectionType, and imageUrl are required");
   }
 
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
 
   const { findSection, applyStructureChange } = await import("@/lib/website-builder/granular-tools");
@@ -478,10 +451,7 @@ export async function addWebsiteImage(userId: string, params: any) {
   const updates: Record<string, string> = { imageUrl };
   if (alt) updates.alt = alt;
   const newStructure = applyStructureChange(website.structure as any, { type: "update", path, data: updates });
-  await prisma.website.update({
-    where: { id: websiteId },
-    data: { structure: newStructure },
-  });
+  await websiteService.update(ctx, websiteId, { structure: newStructure });
   return { message: `✓ Image added to ${sectionType}.`, websiteId, navigateTo: `/dashboard/websites/${websiteId}` };
 }
 
@@ -490,9 +460,8 @@ export async function makeItLookLike(userId: string, params: any) {
   if (!websiteId || !referenceUrl) {
     throw new Error("websiteId and referenceUrl are required");
   }
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
   const { analyzeReferenceAndSuggest } = await import("@/lib/website-builder/make-it-look-like-service");
   const result = await analyzeReferenceAndSuggest(referenceUrl, website.structure, websiteId);
@@ -506,9 +475,8 @@ export async function makeItLookLike(userId: string, params: any) {
 export async function suggestHeroVariants(userId: string, params: any) {
   const { websiteId } = params;
   if (!websiteId) throw new Error("websiteId is required");
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
   const hero = (website.structure as any)?.pages?.[0]?.components?.find((c: any) => c.type === "Hero" || c.type === "HeroSection");
   const current = hero?.props || {};
@@ -527,9 +495,8 @@ export async function suggestHeroVariants(userId: string, params: any) {
 export async function checkWebsiteAccessibility(userId: string, params: any) {
   const { websiteId } = params;
   if (!websiteId) throw new Error("websiteId is required");
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) throw new Error("Website not found");
   const { checkWebsiteAccessibility } = await import("@/lib/website-builder/accessibility-checker");
   const issues = checkWebsiteAccessibility(website.structure);

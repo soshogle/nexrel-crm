@@ -4,7 +4,8 @@
  */
 
 import { WorkflowTask, WorkflowInstance } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService, taskService, getCrmDb } from '@/lib/dal';
 import { sendSMS } from '@/lib/twilio';
 import { EmailService } from '@/lib/email-service';
 import { CalendarService } from '@/lib/calendar/calendar-service';
@@ -54,8 +55,9 @@ async function confirmReservation(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -71,7 +73,7 @@ async function confirmReservation(
 
   try {
     // Create reservation/appointment
-    const reservation = await prisma.bookingAppointment.create({
+    const reservation = await getCrmDb(ctx).bookingAppointment.create({
       data: {
         userId: instance.userId,
         leadId: instance.leadId || undefined,
@@ -131,8 +133,9 @@ async function sendReservationReminder(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -143,8 +146,8 @@ async function sendReservationReminder(
   const reservationId = actionConfig?.reservationId;
 
   const reservation = reservationId
-    ? await prisma.bookingAppointment.findUnique({ where: { id: reservationId } })
-    : await prisma.bookingAppointment.findFirst({
+    ? await getCrmDb(ctx).bookingAppointment.findUnique({ where: { id: reservationId } })
+    : await getCrmDb(ctx).bookingAppointment.findFirst({
         where: { leadId: instance.leadId || undefined, userId: instance.userId },
         orderBy: { appointmentDate: 'desc' },
       });
@@ -207,8 +210,9 @@ async function researchCustomer(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -217,7 +221,7 @@ async function researchCustomer(
 
   try {
     // Get customer's reservation history
-    const reservations = await prisma.bookingAppointment.findMany({
+    const reservations = await getCrmDb(ctx).bookingAppointment.findMany({
       where: {
         leadId: instance.leadId || undefined,
         userId: instance.userId,
@@ -268,8 +272,9 @@ async function trackOrder(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -283,15 +288,12 @@ async function trackOrder(
   // In a real implementation, this would integrate with POS system
   // For now, create a task to track the order
   try {
-    await prisma.task.create({
-      data: {
-        userId: instance.userId,
-        title: `Track Order: ${orderId}`,
-        description: `Customer: ${lead.contactPerson || lead.businessName}\nStatus: ${orderStatus}`,
-        status: 'TODO',
-        priority: 'MEDIUM',
-        leadId: instance.leadId || undefined,
-      },
+    await taskService.create(ctx, {
+      title: `Track Order: ${orderId}`,
+      description: `Customer: ${lead.contactPerson || lead.businessName}\nStatus: ${orderStatus}`,
+      status: 'TODO',
+      priority: 'MEDIUM',
+      leadId: instance.leadId || undefined,
     });
 
     // Notify customer
@@ -325,8 +327,9 @@ async function recommendMenu(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -381,8 +384,9 @@ async function updateLoyaltyPoints(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -400,15 +404,12 @@ async function updateLoyaltyPoints(
     const currentPoints = leadEnrichedData?.loyaltyPoints || 0;
     const newPoints = currentPoints + points;
 
-    await prisma.lead.update({
-      where: { id: lead.id },
-      data: {
-        enrichedData: {
-          ...(leadEnrichedData || {}),
-          loyaltyPoints: newPoints,
-          lastPointsUpdate: new Date().toISOString(),
-        } as any,
-      },
+    await leadService.update(ctx, lead.id, {
+      enrichedData: {
+        ...(leadEnrichedData || {}),
+        loyaltyPoints: newPoints,
+        lastPointsUpdate: new Date().toISOString(),
+      } as any,
     });
 
     // Notify customer
@@ -441,8 +442,9 @@ async function requestFeedback(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -488,8 +490,9 @@ async function sendSpecialOffer(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -557,8 +560,9 @@ async function sendBirthdayGreeting(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {

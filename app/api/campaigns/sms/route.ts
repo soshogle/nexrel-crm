@@ -1,9 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-
+import { getCrmDb, leadService, dealService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,8 +14,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const campaigns = await prisma.smsCampaign.findMany({
-      where: { userId: session.user.id },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
+    const campaigns = await db.smsCampaign.findMany({
+      where: { userId: ctx.userId },
       include: {
         recipients: {
           select: {
@@ -61,10 +64,14 @@ export async function POST(req: NextRequest) {
       recipientType, // 'leads' or 'deals'
     } = body;
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
     // Create campaign
-    const campaign = await prisma.smsCampaign.create({
+    const campaign = await db.smsCampaign.create({
       data: {
-        userId: session.user.id,
+        userId: ctx.userId,
         name,
         message,
         fromNumber,
@@ -78,10 +85,9 @@ export async function POST(req: NextRequest) {
       const recipientData = [];
 
       if (recipientType === 'leads') {
-        const leads = await prisma.lead.findMany({
+        const leads = await leadService.findMany(ctx, {
           where: {
             id: { in: recipientIds },
-            userId: session.user.id,
             phone: { not: null },
           },
           select: { id: true, phone: true, businessName: true },
@@ -98,11 +104,8 @@ export async function POST(req: NextRequest) {
           }
         }
       } else if (recipientType === 'deals') {
-        const deals = await prisma.deal.findMany({
-          where: {
-            id: { in: recipientIds },
-            userId: session.user.id,
-          },
+        const deals = await dealService.findMany(ctx, {
+          where: { id: { in: recipientIds } },
           include: {
             lead: {
               select: { phone: true, businessName: true },
@@ -124,7 +127,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (recipientData.length > 0) {
-        await prisma.smsCampaignDeal.createMany({
+        await db.smsCampaignDeal.createMany({
           data: recipientData,
         });
       }

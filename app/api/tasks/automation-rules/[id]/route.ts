@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,18 +18,21 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
 
     // Verify ownership
-    const existingRule = await prisma.taskAutomation.findUnique({
+    const existingRule = await getCrmDb(ctx).taskAutomation.findUnique({
       where: { id: params.id },
     });
 
-    if (!existingRule || existingRule.userId !== session.user.id) {
+    if (!existingRule || existingRule.userId !== ctx.userId) {
       return NextResponse.json({ error: 'Rule not found' }, { status: 404 });
     }
 
-    const rule = await prisma.taskAutomation.update({
+    const rule = await getCrmDb(ctx).taskAutomation.update({
       where: { id: params.id },
       data: {
         ...body,
@@ -59,16 +62,19 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Verify ownership
-    const existingRule = await prisma.taskAutomation.findUnique({
+    const existingRule = await getCrmDb(ctx).taskAutomation.findUnique({
       where: { id: params.id },
     });
 
-    if (!existingRule || existingRule.userId !== session.user.id) {
+    if (!existingRule || existingRule.userId !== ctx.userId) {
       return NextResponse.json({ error: 'Rule not found' }, { status: 404 });
     }
 
-    await prisma.taskAutomation.delete({
+    await getCrmDb(ctx).taskAutomation.delete({
       where: { id: params.id },
     });
 

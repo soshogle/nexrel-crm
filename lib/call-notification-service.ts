@@ -4,7 +4,8 @@
  * Uses existing call data from the database instead of webhooks
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { emailService } from '@/lib/email-service';
 
 export class CallNotificationService {
@@ -32,8 +33,9 @@ export class CallNotificationService {
       whereClause.userId = userId;
     }
 
+    const db = userId ? getCrmDb(createDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
     // Find completed calls that need email notifications
-    const callLogs = await prisma.callLog.findMany({
+    const callLogs = await db.callLog.findMany({
       where: whereClause,
       include: {
         voiceAgent: {
@@ -73,7 +75,7 @@ export class CallNotificationService {
         await this.sendNotificationForCall(callLog);
 
         // Mark as email sent
-        await prisma.callLog.update({
+        await db.callLog.update({
           where: { id: callLog.id },
           data: { emailSent: true, emailSentAt: new Date() }
         });
@@ -132,7 +134,8 @@ export class CallNotificationService {
 
     try {
       const cleanPhone = (callLog.fromNumber || '').replace(/[\s\-\+\(\)]/g, '');
-      const lead = await prisma.lead.findFirst({
+      const leadDb = getCrmDb(createDalContext(voiceAgent.userId));
+      const lead = await leadDb.lead.findFirst({
         where: {
           userId: voiceAgent.userId,
           phone: {
@@ -190,9 +193,10 @@ export class CallNotificationService {
       whereClause.userId = userId;
     }
 
+    const db = userId ? getCrmDb(createDalContext(userId)) : getCrmDb(createDalContext('bootstrap'));
     const [pendingCount, totalCompleted, emailsSent] = await Promise.all([
       // Pending notifications
-      prisma.callLog.count({
+      db.callLog.count({
         where: {
           ...whereClause,
           emailSent: false,
@@ -203,11 +207,11 @@ export class CallNotificationService {
         }
       }),
       // Total completed calls
-      prisma.callLog.count({
+      db.callLog.count({
         where: whereClause
       }),
       // Emails already sent
-      prisma.callLog.count({
+      db.callLog.count({
         where: {
           ...whereClause,
           emailSent: true
@@ -228,7 +232,8 @@ export class CallNotificationService {
    * @param callLogId - ID of the call log
    */
   async resendNotification(callLogId: string) {
-    const callLog = await prisma.callLog.findUnique({
+    const db = getCrmDb(createDalContext('bootstrap'));
+    const callLog = await db.callLog.findUnique({
       where: { id: callLogId },
       include: {
         voiceAgent: {
@@ -248,7 +253,7 @@ export class CallNotificationService {
     await this.sendNotificationForCall(callLog);
 
     // Update sent status
-    await prisma.callLog.update({
+    await db.callLog.update({
       where: { id: callLogId },
       data: { emailSent: true, emailSentAt: new Date() }
     });

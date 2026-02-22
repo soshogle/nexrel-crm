@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { campaignService, getCrmDb } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs';
@@ -18,6 +18,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await request.json()
     const { leadIds } = body
 
@@ -29,16 +32,14 @@ export async function POST(
     }
 
     // Verify campaign ownership
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: params.id, userId: session.user.id },
-    })
+    const campaign = await campaignService.findUnique(ctx, params.id)
 
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
     // Add leads to campaign
-    await prisma.campaignLead.createMany({
+    await getCrmDb(ctx).campaignLead.createMany({
       data: leadIds.map((leadId: string) => ({
         campaignId: params.id,
         leadId,
@@ -68,6 +69,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { searchParams } = new URL(request.url)
     const leadId = searchParams.get('leadId')
 
@@ -79,16 +83,14 @@ export async function DELETE(
     }
 
     // Verify campaign ownership
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: params.id, userId: session.user.id },
-    })
+    const campaign = await campaignService.findUnique(ctx, params.id)
 
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
     // Remove lead from campaign
-    await prisma.campaignLead.deleteMany({
+    await getCrmDb(ctx).campaignLead.deleteMany({
       where: {
         campaignId: params.id,
         leadId,

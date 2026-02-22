@@ -3,7 +3,8 @@
  * Automatically starts RE workflows based on lead/deal events
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService, getCrmDb } from '@/lib/dal';
 import { startWorkflowInstance } from './workflow-engine';
 import { triggerAutoRunOnLeadCreated } from '@/lib/ai-employees/auto-run-triggers';
 
@@ -15,19 +16,12 @@ export async function detectLeadWorkflowTriggers(
   leadId: string
 ): Promise<void> {
   try {
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-      select: { 
-        id: true, 
-        status: true,
-        tags: true,
-        businessCategory: true,
-      },
-    });
+    const ctx = createDalContext(userId, 'REAL_ESTATE');
+    const lead = await leadService.findUnique(ctx, leadId);
 
     if (!lead) return;
 
-    // Determine workflow type based on lead tags or business category
+    // Determine workflow type based on lead tags or business category (select only needed fields)
     const tagsArray = (lead.tags as any) || [];
     const leadType = Array.isArray(tagsArray) 
       ? tagsArray.find((tag: string) => tag.toLowerCase().includes('buyer') || tag.toLowerCase().includes('seller'))
@@ -38,7 +32,7 @@ export async function detectLeadWorkflowTriggers(
 
     // Find active workflow templates for this type
     // Exclude workflows linked to auto-run (those are started by triggerAutoRunOnLeadCreated)
-    const autoRunWorkflowIds = await prisma.aIEmployeeAutoRun.findMany({
+    const autoRunWorkflowIds = await getCrmDb(ctx).aIEmployeeAutoRun.findMany({
       where: {
         userId,
         autoRunEnabled: true,
@@ -47,7 +41,7 @@ export async function detectLeadWorkflowTriggers(
       select: { workflowId: true },
     }).then((rows) => rows.map((r) => r.workflowId).filter(Boolean) as string[]);
 
-    const templates = await prisma.rEWorkflowTemplate.findMany({
+    const templates = await getCrmDb(ctx).rEWorkflowTemplate.findMany({
       where: {
         userId,
         type: workflowType,
@@ -93,7 +87,8 @@ export async function detectDealStageWorkflowTriggers(
   newStageName: string
 ): Promise<void> {
   try {
-    const deal = await prisma.deal.findUnique({
+    const ctx = createDalContext(userId, 'REAL_ESTATE');
+    const deal = await getCrmDb(ctx).deal.findUnique({
       where: { id: dealId },
       include: {
         lead: true,
@@ -115,7 +110,7 @@ export async function detectDealStageWorkflowTriggers(
                         'BUYER';
 
     // Find active workflow templates
-    const templates = await prisma.rEWorkflowTemplate.findMany({
+    const templates = await getCrmDb(ctx).rEWorkflowTemplate.findMany({
       where: {
         userId,
         type: workflowType,
@@ -127,7 +122,7 @@ export async function detectDealStageWorkflowTriggers(
 
     // Start workflow if not already running
     for (const template of templates) {
-      const existingInstance = await prisma.rEWorkflowInstance.findFirst({
+      const existingInstance = await getCrmDb(ctx).rEWorkflowInstance.findFirst({
         where: {
           templateId: template.id,
           dealId,

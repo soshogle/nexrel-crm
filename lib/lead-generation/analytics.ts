@@ -1,12 +1,11 @@
 /**
  * Predictive Analytics & Reporting
- * 
+ *
  * Track key metrics, generate daily reports, and provide optimization recommendations
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 
 export interface AnalyticsDashboard {
   leadGeneration: {
@@ -67,22 +66,28 @@ export interface AnalyticsDashboard {
 /**
  * Get analytics dashboard data
  */
-export async function getAnalyticsDashboard(userId: string): Promise<AnalyticsDashboard> {
+export async function getAnalyticsDashboard(
+  userId: string,
+  industry?: string | null
+): Promise<AnalyticsDashboard> {
+  const ctx = createDalContext(userId, industry);
+  const db = getCrmDb(ctx);
+
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  
+
   // Lead Generation
-  const newLeadsToday = await prisma.lead.count({
+  const newLeadsToday = await db.lead.count({
     where: { userId, createdAt: { gte: todayStart } }
   });
   
-  const newLeadsThisWeek = await prisma.lead.count({
+  const newLeadsThisWeek = await db.lead.count({
     where: { userId, createdAt: { gte: weekStart } }
   });
   
-  const newLeadsThisMonth = await prisma.lead.count({
+  const newLeadsThisMonth = await db.lead.count({
     where: { userId, createdAt: { gte: monthStart } }
   });
   
@@ -90,7 +95,7 @@ export async function getAnalyticsDashboard(userId: string): Promise<AnalyticsDa
   const leadTarget = 50;
   
   // Lead Quality
-  const leadsWithScores = await prisma.lead.findMany({
+  const leadsWithScores = await db.lead.findMany({
     where: { userId, leadScore: { not: null } },
     select: { leadScore: true, source: true }
   });
@@ -112,11 +117,11 @@ export async function getAnalyticsDashboard(userId: string): Promise<AnalyticsDa
     .sort(([, a], [, b]) => b - a)[0]?.[0] || 'google_maps';
   
   // Outreach Performance
-  const callsMadeToday = await prisma.callLog.count({
+  const callsMadeToday = await db.callLog.count({
     where: { userId, createdAt: { gte: todayStart }, direction: 'OUTBOUND' }
   });
   
-  const answeredCalls = await prisma.callLog.count({
+  const answeredCalls = await db.callLog.count({
     where: { userId, createdAt: { gte: todayStart }, direction: 'OUTBOUND', status: 'COMPLETED' }
   });
   
@@ -139,11 +144,11 @@ export async function getAnalyticsDashboard(userId: string): Promise<AnalyticsDa
   const responseRate = smsSentToday > 0 ? (smsReplied / smsSentToday) * 100 : 0;
   
   // Conversion Metrics
-  const meetingsBookedToday = await prisma.bookingAppointment.count({
+  const meetingsBookedToday = await db.bookingAppointment.count({
     where: { userId, createdAt: { gte: todayStart } }
   });
   
-  const meetingsBookedThisWeek = await prisma.bookingAppointment.count({
+  const meetingsBookedThisWeek = await db.bookingAppointment.count({
     where: { userId, createdAt: { gte: weekStart } }
   });
   
@@ -242,8 +247,11 @@ export async function getAnalyticsDashboard(userId: string): Promise<AnalyticsDa
 /**
  * Generate daily report email content
  */
-export async function generateDailyReport(userId: string): Promise<string> {
-  const dashboard = await getAnalyticsDashboard(userId);
+export async function generateDailyReport(
+  userId: string,
+  industry?: string | null
+): Promise<string> {
+  const dashboard = await getAnalyticsDashboard(userId, industry);
   
   const report = `
 <html>
@@ -390,11 +398,17 @@ export async function generateDailyReport(userId: string): Promise<string> {
 /**
  * Get performance trends (last 30 days)
  */
-export async function getPerformanceTrends(userId: string) {
+export async function getPerformanceTrends(
+  userId: string,
+  industry?: string | null
+) {
+  const ctx = createDalContext(userId, industry);
+  const db = getCrmDb(ctx);
+
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  
-  const dailyLeads = await prisma.lead.groupBy({
+
+  const dailyLeads = await db.lead.groupBy({
     by: ['createdAt'],
     where: {
       userId,

@@ -3,7 +3,8 @@
  * Handles both Google Analytics and basic tracking for website visitors
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 
 export interface VisitorEvent {
   websiteId: string;
@@ -34,8 +35,17 @@ export class WebsiteVisitorTrackingService {
    * Track a visitor event
    */
   async trackEvent(event: VisitorEvent) {
+    const website = await getCrmDb(createDalContext('bootstrap')).website.findUnique({
+      where: { id: event.websiteId },
+      select: { userId: true },
+    });
+    if (!website) return;
+
+    const ctx = createDalContext(website.userId);
+    const db = getCrmDb(ctx);
+
     // Get or create visitor session
-    let visitor = await prisma.websiteVisitor.findFirst({
+    let visitor = await db.websiteVisitor.findFirst({
       where: {
         websiteId: event.websiteId,
         sessionId: event.sessionId,
@@ -59,7 +69,7 @@ export class WebsiteVisitorTrackingService {
 
     // Update or create visitor record
     if (visitor) {
-      await prisma.websiteVisitor.update({
+      await db.websiteVisitor.update({
         where: { id: visitor.id },
         data: {
           pagesVisited,
@@ -79,7 +89,7 @@ export class WebsiteVisitorTrackingService {
       });
     } else {
       // Check if returning visitor (by IP or other identifier)
-      const existingVisitor = await prisma.websiteVisitor.findFirst({
+      const existingVisitor = await db.websiteVisitor.findFirst({
         where: {
           websiteId: event.websiteId,
           ipAddress: event.ipAddress,
@@ -90,7 +100,7 @@ export class WebsiteVisitorTrackingService {
         orderBy: { createdAt: 'desc' },
       });
 
-      visitor = await prisma.websiteVisitor.create({
+      visitor = await db.websiteVisitor.create({
         data: {
           websiteId: event.websiteId,
           sessionId: event.sessionId,
@@ -116,7 +126,7 @@ export class WebsiteVisitorTrackingService {
         // Trigger returning visitor workflow
         const workflowEngine = (await import('@/lib/workflow-engine')).workflowEngine;
         await workflowEngine.triggerWorkflow('WEBSITE_VISITOR_RETURNING', {
-          userId: (await prisma.website.findUnique({ where: { id: event.websiteId }, select: { userId: true } }))?.userId || '',
+          userId: website.userId,
           variables: {
             websiteId: event.websiteId,
             sessionId: event.sessionId,
@@ -127,17 +137,17 @@ export class WebsiteVisitorTrackingService {
     }
 
     // Send to Google Analytics if configured
-    const website = await prisma.website.findUnique({
+    const websiteConfig = await db.website.findUnique({
       where: { id: event.websiteId },
       select: { googleAnalyticsId: true },
     });
 
-    if (website?.googleAnalyticsId) {
-      await this.sendToGoogleAnalytics(event, website.googleAnalyticsId);
+    if (websiteConfig?.googleAnalyticsId) {
+      await this.sendToGoogleAnalytics(event, websiteConfig.googleAnalyticsId);
     }
 
     // Send to Facebook Pixel if configured
-    const websiteWithPixel = await prisma.website.findUnique({
+    const websiteWithPixel = await db.website.findUnique({
       where: { id: event.websiteId },
       select: { facebookPixelId: true },
     });
@@ -172,7 +182,16 @@ export class WebsiteVisitorTrackingService {
    * Get visitor session data
    */
   async getVisitorSession(websiteId: string, sessionId: string): Promise<VisitorSession | null> {
-    const visitor = await prisma.websiteVisitor.findFirst({
+    const website = await getCrmDb(createDalContext('bootstrap')).website.findUnique({
+      where: { id: websiteId },
+      select: { userId: true },
+    });
+    if (!website) return null;
+
+    const ctx = createDalContext(website.userId);
+    const db = getCrmDb(ctx);
+
+    const visitor = await db.websiteVisitor.findFirst({
       where: {
         websiteId,
         sessionId,
@@ -187,7 +206,7 @@ export class WebsiteVisitorTrackingService {
     );
 
     // Check if returning visitor
-    const previousVisit = await prisma.websiteVisitor.findFirst({
+    const previousVisit = await db.websiteVisitor.findFirst({
       where: {
         websiteId,
         ipAddress: visitor.ipAddress,
@@ -233,11 +252,21 @@ export class WebsiteVisitorTrackingService {
     const visitor = await this.getVisitorSession(websiteId, sessionId);
     
     if (visitor && cartData.items && cartData.items.length > 0) {
+      const website = await getCrmDb(createDalContext('bootstrap')).website.findUnique({
+        where: { id: websiteId },
+        select: { userId: true },
+      });
+      const userId = website?.userId;
+      if (!userId) return;
+
+      const ctx = createDalContext(userId);
+      const db = getCrmDb(ctx);
+
       // Wait 30 minutes - if no purchase, trigger abandonment
       setTimeout(async () => {
-        const order = await prisma.order.findFirst({
+        const order = await db.order.findFirst({
           where: {
-            userId: (await prisma.website.findUnique({ where: { id: websiteId }, select: { userId: true } }))?.userId || '',
+            userId,
             createdAt: {
               gte: new Date(Date.now() - 30 * 60 * 1000), // Last 30 minutes
             },
@@ -253,7 +282,7 @@ export class WebsiteVisitorTrackingService {
           // Cart was abandoned - trigger workflow
           const workflowEngine = (await import('@/lib/workflow-engine')).workflowEngine;
           await workflowEngine.triggerWorkflow('WEBSITE_VISITOR_ABANDONED_CART', {
-            userId: (await prisma.website.findUnique({ where: { id: websiteId }, select: { userId: true } }))?.userId || '',
+            userId,
             variables: {
               websiteId,
               sessionId,

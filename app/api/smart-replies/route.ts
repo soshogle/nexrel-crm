@@ -7,6 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { leadService } from '@/lib/dal/lead-service';
+import { conversationService } from '@/lib/dal/conversation-service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -30,25 +33,24 @@ export async function GET(request: NextRequest) {
     let leadId = searchParams.get('leadId');
     const conversationId = searchParams.get('conversationId');
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     if (!leadId && conversationId) {
-      const conv = await prisma.conversation.findFirst({
-        where: { id: conversationId, userId: user.id },
-        select: { leadId: true },
-      });
+      const conv = await conversationService.findFirst(ctx, { id: conversationId });
       leadId = conv?.leadId ?? null;
     }
 
     const lead = leadId
-      ? await prisma.lead.findFirst({
-          where: { id: leadId, userId: user.id },
-          include: {
-            deals: { take: 1, include: { stage: true } },
-            notes: { take: 3, orderBy: { createdAt: 'desc' } },
-            tasks: {
-              where: { status: { notIn: ['COMPLETED', 'CANCELLED'] } },
-              take: 1,
-              orderBy: { dueDate: 'asc' },
-            },
+      ? await leadService.findUnique(ctx, leadId, {
+          deals: { take: 1, include: { stage: true } },
+          notes: { take: 3, orderBy: { createdAt: 'desc' } },
+          tasks: {
+            where: { status: { notIn: ['COMPLETED', 'CANCELLED'] } },
+            take: 1,
+            orderBy: { dueDate: 'asc' },
           },
         })
       : null;

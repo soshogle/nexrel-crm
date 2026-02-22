@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,8 +14,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tasks = await prisma.task.findMany({
-      where: { userId: session.user.id },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const tasks = await getCrmDb(ctx).task.findMany({
+      where: { userId: ctx.userId },
       include: {
         assignedTo: {
           select: {
@@ -45,12 +48,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await req.json();
     const { title, description, priority, dueDate, assignedToId, dealId, leadId } = body;
 
-    const task = await prisma.task.create({
+    const task = await getCrmDb(ctx).task.create({
       data: {
-        userId: session.user.id,
+        userId: ctx.userId,
         title,
         description,
         priority: priority || 'MEDIUM',

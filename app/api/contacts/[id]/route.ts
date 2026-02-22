@@ -1,9 +1,8 @@
-
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-
+import { leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,22 +13,17 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const contact = await prisma.lead.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-      include: {
-        _count: {
-          select: {
-            deals: true,
-            messages: true,
-            callLogs: true,
-          },
+    const contact = await leadService.findUnique(ctx, params.id, {
+      _count: {
+        select: {
+          deals: true,
+          messages: true,
+          callLogs: true,
         },
       },
     });
@@ -57,32 +51,24 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { contactType, tags, lastContactedAt, ...otherFields } = body;
 
-    const contact = await prisma.lead.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-    });
-
+    const contact = await leadService.findUnique(ctx, params.id);
     if (!contact) {
       return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
     }
 
-    const updatedContact = await prisma.lead.update({
-      where: { id: params.id },
-      data: {
-        ...otherFields,
-        contactType,
-        tags: tags ? JSON.parse(JSON.stringify(tags)) : undefined,
-        lastContactedAt: lastContactedAt ? new Date(lastContactedAt) : undefined,
-      },
+    const updatedContact = await leadService.update(ctx, params.id, {
+      ...otherFields,
+      contactType,
+      tags: tags ? JSON.parse(JSON.stringify(tags)) : undefined,
+      lastContactedAt: lastContactedAt ? new Date(lastContactedAt) : undefined,
     });
 
     return NextResponse.json({
@@ -104,24 +90,17 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const contact = await prisma.lead.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-    });
-
+    const contact = await leadService.findUnique(ctx, params.id);
     if (!contact) {
       return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
     }
 
-    await prisma.lead.delete({
-      where: { id: params.id },
-    });
+    await leadService.delete(ctx, params.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

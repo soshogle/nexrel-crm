@@ -1,6 +1,6 @@
 /**
  * Lead Deduplication Engine
- * 
+ *
  * Multi-layer deduplication with intelligent merge logic:
  * Layer 1: Exact match (Email + Phone)
  * Layer 2: Email-only match (high confidence)
@@ -8,10 +8,8 @@
  * Layer 4: Fuzzy matching (company name + location)
  */
 
-import { PrismaClient } from '@prisma/client';
-import { scoreAndSaveLead } from './lead-scoring-db';
-
-const prisma = new PrismaClient();
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 
 export interface DeduplicationResult {
   isDuplicate: boolean;
@@ -32,11 +30,15 @@ export async function deduplicateLead(
     phone?: string;
     city?: string;
     state?: string;
-  }
+  },
+  industry?: string | null
 ): Promise<DeduplicationResult> {
+  const ctx = createDalContext(userId, industry);
+  const db = getCrmDb(ctx);
+
   // Layer 1: Exact match (Email + Phone)
   if (newLead.email && newLead.phone) {
-    const exactMatch = await prisma.lead.findFirst({
+    const exactMatch = await db.lead.findFirst({
       where: {
         userId,
         email: newLead.email,
@@ -56,7 +58,7 @@ export async function deduplicateLead(
   
   // Layer 2: Email-only match (high confidence)
   if (newLead.email) {
-    const emailMatch = await prisma.lead.findFirst({
+    const emailMatch = await db.lead.findFirst({
       where: {
         userId,
         email: newLead.email
@@ -78,7 +80,7 @@ export async function deduplicateLead(
   
   // Layer 3: Phone-only match (medium confidence)
   if (newLead.phone) {
-    const phoneMatch = await prisma.lead.findFirst({
+    const phoneMatch = await db.lead.findFirst({
       where: {
         userId,
         phone: newLead.phone
@@ -100,7 +102,7 @@ export async function deduplicateLead(
   
   // Layer 4: Fuzzy matching (company name + location)
   if (newLead.city && newLead.state) {
-    const fuzzyMatches = await prisma.lead.findMany({
+    const fuzzyMatches = await db.lead.findMany({
       where: {
         userId,
         city: newLead.city,
@@ -136,11 +138,16 @@ export async function deduplicateLead(
  * Merge duplicate lead data
  */
 export async function mergeLead(
+  userId: string,
   primaryLeadId: string,
-  secondaryData: any
+  secondaryData: any,
+  industry?: string | null
 ): Promise<void> {
-  const primaryLead = await prisma.lead.findUnique({
-    where: { id: primaryLeadId }
+  const ctx = createDalContext(userId, industry);
+  const db = getCrmDb(ctx);
+
+  const primaryLead = await db.lead.findFirst({
+    where: { id: primaryLeadId, userId }
   });
   
   if (!primaryLead) {
@@ -196,9 +203,9 @@ export async function mergeLead(
     mergedAt: new Date().toISOString(),
     source: secondaryData.source
   });
-  
+
   // Update primary lead
-  await prisma.lead.update({
+  await db.lead.update({
     where: { id: primaryLeadId },
     data: {
       ...mergedData,
@@ -300,27 +307,31 @@ function isValidPhone(phone?: string | null): boolean {
  * Batch deduplicate leads
  */
 export async function batchDeduplicateLeads(
-  userId: string
+  userId: string,
+  industry?: string | null
 ): Promise<{
   processed: number;
   duplicates: number;
   merged: number;
 }> {
+  const ctx = createDalContext(userId, industry);
+  const db = getCrmDb(ctx);
+
   const stats = {
     processed: 0,
     duplicates: 0,
     merged: 0
   };
-  
+
   // Get all leads without lead scores (recently added)
-  const leads = await prisma.lead.findMany({
+  const leads = await db.lead.findMany({
     where: {
       userId,
       leadScore: null
     },
     orderBy: { createdAt: 'desc' }
   });
-  
+
   for (const lead of leads) {
     try {
       const result = await deduplicateLead(userId, {
@@ -329,14 +340,14 @@ export async function batchDeduplicateLeads(
         phone: lead.phone || undefined,
         city: lead.city || undefined,
         state: lead.state || undefined
-      });
-      
+      }, industry);
+
       if (result.isDuplicate && result.duplicateId) {
-        // Merge data
-        await mergeLead(result.duplicateId, lead);
-        
+        // Merge data (primary=duplicateId, secondary=lead we're about to delete)
+        await mergeLead(userId, result.duplicateId, lead, industry);
+
         // Delete duplicate lead
-        await prisma.lead.delete({
+        await db.lead.delete({
           where: { id: lead.id }
         });
         
@@ -358,14 +369,18 @@ export async function batchDeduplicateLeads(
  */
 export async function findPotentialDuplicates(
   userId: string,
-  threshold: number = 0.85
+  threshold: number = 0.85,
+  industry?: string | null
 ): Promise<Array<{
   lead1: any;
   lead2: any;
   similarity: number;
   matchType: string;
 }>> {
-  const leads = await prisma.lead.findMany({
+  const ctx = createDalContext(userId, industry);
+  const db = getCrmDb(ctx);
+
+  const leads = await db.lead.findMany({
     where: { userId },
     select: {
       id: true,

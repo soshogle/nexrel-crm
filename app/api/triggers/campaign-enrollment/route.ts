@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
 
 /**
@@ -18,7 +19,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
+    const user = await db.user.findUnique({
       where: { email: session.user.email },
     });
 
@@ -37,12 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify lead exists and belongs to user
-    const lead = await prisma.lead.findFirst({
-      where: {
-        id: leadId,
-        userId: user.id,
-      },
-    });
+    const lead = await leadService.findUnique(ctx, leadId);
 
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });

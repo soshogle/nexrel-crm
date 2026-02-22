@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { campaignService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,28 +18,24 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: params.id },
-      include: {
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 100,
-        },
-        _count: {
-          select: {
-            messages: true,
-            campaignLeads: true,
-          },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const campaign = await campaignService.findUnique(ctx, params.id, {
+      messages: {
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      },
+      _count: {
+        select: {
+          messages: true,
+          campaignLeads: true,
         },
       },
     });
 
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
-    }
-
-    if (campaign.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     return NextResponse.json({ campaign });
@@ -62,16 +59,13 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: params.id },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const campaign = await campaignService.findUnique(ctx, params.id);
 
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
-    }
-
-    if (campaign.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     // Can't edit running campaigns
@@ -98,27 +92,23 @@ export async function PUT(
       recurringDays,
     } = body;
 
-    const updatedCampaign = await prisma.campaign.update({
-      where: { id: params.id },
-      data: {
-        name,
-        description,
-        type,
-        status,
-        emailSubject,
-        emailBody,
-        emailHtml,
-        smsTemplate,
-        targetAudience,
-        scheduledFor: scheduledFor ? new Date(scheduledFor) : campaign.scheduledFor,
-        frequency,
-        recurringDays,
-      },
-      include: {
-        _count: {
-          select: {
-            messages: true,
-          },
+    const updatedCampaign = await campaignService.update(ctx, params.id, {
+      name,
+      description,
+      type,
+      status,
+      emailSubject,
+      emailBody,
+      emailHtml,
+      smsTemplate,
+      targetAudience,
+      scheduledFor: scheduledFor ? new Date(scheduledFor) : campaign.scheduledFor,
+      frequency,
+      recurringDays,
+    }, {
+      _count: {
+        select: {
+          messages: true,
         },
       },
     });
@@ -144,16 +134,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: params.id },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const campaign = await campaignService.findUnique(ctx, params.id);
 
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
-    }
-
-    if (campaign.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     // Can't delete running campaigns
@@ -164,9 +151,7 @@ export async function DELETE(
       );
     }
 
-    await prisma.campaign.delete({
-      where: { id: params.id },
-    });
+    await campaignService.delete(ctx, params.id);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

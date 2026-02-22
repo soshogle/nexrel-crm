@@ -1,4 +1,6 @@
-import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
+import { leadService } from "@/lib/dal";
 
 export async function setupTwilio(userId: string, params: any) {
   const { accountSid, authToken, phoneNumber } = params;
@@ -7,7 +9,9 @@ export async function setupTwilio(userId: string, params: any) {
     throw new Error("Twilio Account SID, Auth Token, and Phone Number are all required");
   }
 
-  const user = await prisma.user.update({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const user = await db.user.update({
     where: { id: userId },
     data: {
       smsProvider: "Twilio",
@@ -30,7 +34,9 @@ export async function setupTwilio(userId: string, params: any) {
 
 export async function purchaseTwilioNumber(userId: string, params: any) {
   // Check if user has Twilio credentials configured
-  const user = await prisma.user.findUnique({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const user = await db.user.findUnique({
     where: { id: userId },
     select: {
       smsProvider: true,
@@ -73,9 +79,11 @@ export async function createVoiceAgent(userId: string, params: any) {
     throw new Error("Voice agent name is required");
   }
 
-  const voiceAgent = await prisma.voiceAgent.create({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const voiceAgent = await db.voiceAgent.create({
     data: {
-      userId,
+      userId: ctx.userId,
       name,
       businessName: businessName || name,
       voiceId: voiceId || "rachel",
@@ -104,16 +112,19 @@ export async function createVoiceAgent(userId: string, params: any) {
 export async function debugVoiceAgent(userId: string, params: any) {
   const { agentId, name } = params;
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+
   // Find the agent
   let agent;
   if (agentId) {
-    agent = await prisma.voiceAgent.findFirst({
-      where: { id: agentId, userId },
+    agent = await db.voiceAgent.findFirst({
+      where: { id: agentId, userId: ctx.userId },
     });
   } else if (name) {
-    agent = await prisma.voiceAgent.findFirst({
+    agent = await db.voiceAgent.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         name: { contains: name, mode: "insensitive" },
       },
     });
@@ -128,7 +139,7 @@ export async function debugVoiceAgent(userId: string, params: any) {
   }
 
   // Check user's Twilio configuration
-  const user = await prisma.user.findUnique({
+  const user = await db.user.findUnique({
     where: { id: userId },
     select: {
       smsProvider: true,
@@ -258,8 +269,10 @@ export async function fixVoiceAgent(userId: string, params: any) {
   const updateData: any = {};
 
   // Get the agent
-  const agent = await prisma.voiceAgent.findFirst({
-    where: diagnostics.agent?.id ? { id: diagnostics.agent.id } : { userId, name: { contains: name, mode: "insensitive" } },
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const agent = await db.voiceAgent.findFirst({
+    where: diagnostics.agent?.id ? { id: diagnostics.agent.id } : { userId: ctx.userId, name: { contains: name, mode: "insensitive" } },
   });
 
   if (!agent) {
@@ -267,7 +280,7 @@ export async function fixVoiceAgent(userId: string, params: any) {
   }
 
   // Get user data
-  const user = await prisma.user.findUnique({
+  const user = await db.user.findUnique({
     where: { id: userId },
   });
 
@@ -300,7 +313,7 @@ export async function fixVoiceAgent(userId: string, params: any) {
 
   // Apply fixes
   if (Object.keys(updateData).length > 0) {
-    await prisma.voiceAgent.update({
+    await db.voiceAgent.update({
       where: { id: agent.id },
       data: updateData,
     });
@@ -357,16 +370,18 @@ export async function fixVoiceAgent(userId: string, params: any) {
 export async function getVoiceAgent(userId: string, params: any) {
   const { agentId, name } = params;
 
-  let agent;
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
 
+  let agent;
   if (agentId) {
-    agent = await prisma.voiceAgent.findFirst({
-      where: { id: agentId, userId },
+    agent = await db.voiceAgent.findFirst({
+      where: { id: agentId, userId: ctx.userId },
     });
   } else if (name) {
-    agent = await prisma.voiceAgent.findFirst({
+    agent = await db.voiceAgent.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         name: { contains: name, mode: "insensitive" },
       },
     });
@@ -380,8 +395,10 @@ export async function getVoiceAgent(userId: string, params: any) {
 }
 
 export async function listVoiceAgents(userId: string, params: any) {
-  const agents = await prisma.voiceAgent.findMany({
-    where: { userId },
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const agents = await db.voiceAgent.findMany({
+    where: { userId: ctx.userId },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -408,16 +425,19 @@ export async function updateVoiceAgent(userId: string, params: any) {
     throw new Error("Agent ID or name is required");
   }
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+
   // Find the agent
   let agent;
   if (agentId) {
-    agent = await prisma.voiceAgent.findFirst({
-      where: { id: agentId, userId },
+    agent = await db.voiceAgent.findFirst({
+      where: { id: agentId, userId: ctx.userId },
     });
   } else if (name) {
-    agent = await prisma.voiceAgent.findFirst({
+    agent = await db.voiceAgent.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         name: { contains: name, mode: "insensitive" },
       },
     });
@@ -428,7 +448,7 @@ export async function updateVoiceAgent(userId: string, params: any) {
   }
 
   // Update the agent
-  const updatedAgent = await prisma.voiceAgent.update({
+  const updatedAgent = await db.voiceAgent.update({
     where: { id: agent.id },
     data: updates,
   });
@@ -455,16 +475,19 @@ export async function assignPhoneToVoiceAgent(userId: string, params: any) {
     throw new Error("Agent ID or name is required");
   }
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+
   // Find the agent
   let agent;
   if (agentId) {
-    agent = await prisma.voiceAgent.findFirst({
-      where: { id: agentId, userId },
+    agent = await db.voiceAgent.findFirst({
+      where: { id: agentId, userId: ctx.userId },
     });
   } else if (name) {
-    agent = await prisma.voiceAgent.findFirst({
+    agent = await db.voiceAgent.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         name: { contains: name, mode: "insensitive" },
       },
     });
@@ -475,7 +498,7 @@ export async function assignPhoneToVoiceAgent(userId: string, params: any) {
   }
 
   // Update the agent with the phone number
-  const updatedAgent = await prisma.voiceAgent.update({
+  const updatedAgent = await db.voiceAgent.update({
     where: { id: agent.id },
     data: {
       twilioPhoneNumber: phoneNumber,
@@ -501,7 +524,9 @@ export async function configureAutoReply(userId: string, params: any) {
     throw new Error("Auto-reply message is required when enabling");
   }
 
-  const user = await prisma.user.update({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const user = await db.user.update({
     where: { id: userId },
     data: {
       // Store auto-reply settings in user config
@@ -578,21 +603,22 @@ export async function callLeadsAction(userId: string, params: any) {
 }
 
 export async function draftSMSAction(userId: string, params: any) {
-  const { prisma } = await import("@/lib/db");
   const { contactName, message, phoneNumber } = params;
   if (!contactName || !message) {
     throw new Error("contactName and message are required");
   }
-  const lead = await prisma.lead.findFirst({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const leads = await leadService.findMany(ctx, {
     where: {
-      userId,
       OR: [
         { contactPerson: { contains: contactName, mode: "insensitive" } },
         { businessName: { contains: contactName, mode: "insensitive" } },
       ],
     },
-    orderBy: { createdAt: "desc" },
+    take: 1,
   });
+  const lead = leads[0];
   const toPhone = phoneNumber || lead?.phone;
   if (!toPhone) {
     throw new Error(`Contact "${contactName}" not found or has no phone number.`);
@@ -622,21 +648,22 @@ export async function sendSMSAction(userId: string, params: any) {
 }
 
 export async function scheduleSMSAction(userId: string, params: any) {
-  const { prisma } = await import("@/lib/db");
   const { contactName, message, scheduledFor } = params;
   if (!contactName || !message || !scheduledFor) {
     throw new Error("contactName, message, and scheduledFor are required");
   }
-  const lead = await prisma.lead.findFirst({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const leads = await leadService.findMany(ctx, {
     where: {
-      userId,
       OR: [
         { contactPerson: { contains: contactName, mode: "insensitive" } },
         { businessName: { contains: contactName, mode: "insensitive" } },
       ],
     },
-    orderBy: { createdAt: "desc" },
+    take: 1,
   });
+  const lead = leads[0];
   if (!lead?.phone) {
     throw new Error(`Contact "${contactName}" not found or has no phone number.`);
   }
@@ -644,9 +671,9 @@ export async function scheduleSMSAction(userId: string, params: any) {
   if (scheduledDate <= new Date()) {
     throw new Error("Scheduled time must be in the future.");
   }
-  await prisma.scheduledSms.create({
+  await db.scheduledSms.create({
     data: {
-      userId,
+      userId: ctx.userId,
       leadId: lead.id,
       toPhone: lead.phone,
       toName: lead.contactPerson || lead.businessName,
@@ -661,21 +688,22 @@ export async function scheduleSMSAction(userId: string, params: any) {
 }
 
 export async function draftEmailAction(userId: string, params: any) {
-  const { prisma } = await import("@/lib/db");
   const { contactName, subject, body, email } = params;
   if (!contactName || !subject || !body) {
     throw new Error("contactName, subject, and body are required");
   }
-  const lead = await prisma.lead.findFirst({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const leads = await leadService.findMany(ctx, {
     where: {
-      userId,
       OR: [
         { contactPerson: { contains: contactName, mode: "insensitive" } },
         { businessName: { contains: contactName, mode: "insensitive" } },
       ],
     },
-    orderBy: { createdAt: "desc" },
+    take: 1,
   });
+  const lead = leads[0];
   const toEmail = email || lead?.email;
   if (!toEmail) {
     throw new Error(`Contact "${contactName}" not found or has no email.`);
@@ -707,21 +735,22 @@ export async function sendEmailAction(userId: string, params: any) {
 }
 
 export async function scheduleEmailAction(userId: string, params: any) {
-  const { prisma } = await import("@/lib/db");
   const { contactName, subject, body, scheduledFor } = params;
   if (!contactName || !subject || !body || !scheduledFor) {
     throw new Error("contactName, subject, body, and scheduledFor are required");
   }
-  const lead = await prisma.lead.findFirst({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const leads = await leadService.findMany(ctx, {
     where: {
-      userId,
       OR: [
         { contactPerson: { contains: contactName, mode: "insensitive" } },
         { businessName: { contains: contactName, mode: "insensitive" } },
       ],
     },
-    orderBy: { createdAt: "desc" },
+    take: 1,
   });
+  const lead = leads[0];
   if (!lead?.email) {
     throw new Error(`Contact "${contactName}" not found or has no email.`);
   }
@@ -729,9 +758,9 @@ export async function scheduleEmailAction(userId: string, params: any) {
   if (scheduledDate <= new Date()) {
     throw new Error("Scheduled time must be in the future.");
   }
-  await prisma.scheduledEmail.create({
+  await db.scheduledEmail.create({
     data: {
-      userId,
+      userId: ctx.userId,
       leadId: lead.id,
       toEmail: lead.email,
       toName: lead.contactPerson || lead.businessName,
@@ -887,9 +916,11 @@ export async function summarizeCall(userId: string, params: any) {
 
 export async function getSmartReplies(userId: string, params: any) {
   const { leadId, context } = params;
-  const lead = leadId ? await prisma.lead.findFirst({
-    where: { id: leadId, userId },
-    include: { deals: { take: 1 }, notes: { take: 1, orderBy: { createdAt: "desc" } } },
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const lead = leadId ? await leadService.findUnique(ctx, leadId, {
+    deals: { take: 1 },
+    notes: { take: 1, orderBy: { createdAt: "desc" } },
   }) : null;
   const replies = [
     { id: "follow_up", label: "Follow up", text: "Hi! Just following up on our conversation. Would love to connect soon." },

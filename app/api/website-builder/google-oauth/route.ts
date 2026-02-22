@@ -7,7 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { googleSearchConsole } from '@/lib/website-builder/google-search-console';
-import { prisma } from '@/lib/db';
+import { websiteService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 /**
  * GET - Get authorization URL
@@ -103,12 +104,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify website belongs to user
-    const website = await prisma.website.findFirst({
-      where: {
-        id: targetWebsiteId,
-        userId: session.user.id,
-      },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const website = await websiteService.findUnique(ctx, targetWebsiteId);
 
     if (!website) {
       return NextResponse.json(
@@ -141,14 +141,11 @@ export async function POST(request: NextRequest) {
     );
 
     // Update website with tokens
-    await prisma.website.update({
-      where: { id: targetWebsiteId },
-      data: {
-        googleSearchConsoleAccessToken: tokens.accessToken,
-        googleSearchConsoleRefreshToken: tokens.refreshToken,
-        googleSearchConsoleTokenExpiry: tokens.expiryDate,
-        googleSearchConsoleVerified: false, // Will be verified during build
-      },
+    await websiteService.update(ctx, targetWebsiteId, {
+      googleSearchConsoleAccessToken: tokens.accessToken,
+      googleSearchConsoleRefreshToken: tokens.refreshToken,
+      googleSearchConsoleTokenExpiry: tokens.expiryDate,
+      googleSearchConsoleVerified: false, // Will be verified during build
     });
 
     return NextResponse.json({

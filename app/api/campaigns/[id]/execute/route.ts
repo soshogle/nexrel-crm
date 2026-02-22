@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { campaignService, getCrmDb, leadService } from '@/lib/dal';
+import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
 import { emailService } from '@/lib/email-service';
 import { sendSMS } from '@/lib/twilio';
 
@@ -19,16 +20,13 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: params.id },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const campaign = await campaignService.findUnique(ctx, params.id);
 
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
-    }
-
-    if (campaign.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     if (campaign.status === 'RUNNING') {
@@ -46,7 +44,7 @@ export async function POST(
     }
 
     // Get recipients based on targetAudience
-    const recipients = await getRecipients(campaign.userId, campaign.targetAudience as any);
+    const recipients = await getRecipients(ctx, campaign.targetAudience as any);
 
     if (recipients.length === 0) {
       return NextResponse.json(
@@ -66,12 +64,13 @@ export async function POST(
       status: 'PENDING',
     }));
 
+    const db = getCrmDb(ctx);
     // Create all messages in a transaction
-    await prisma.$transaction([
-      prisma.campaignMessage.createMany({
+    await db.$transaction([
+      db.campaignMessage.createMany({
         data: messages,
       }),
-      prisma.campaign.update({
+      db.campaign.update({
         where: { id: params.id },
         data: {
           status: 'RUNNING',
@@ -83,7 +82,7 @@ export async function POST(
 
     // Start async processing (in real app, this would be a queue/worker)
     // For now, we'll mark it as running and process messages gradually
-    processCampaignMessages(campaign.id, session.user.id).catch((error) => {
+    processCampaignMessages(campaign.id, createDalContext(session.user.id)).catch((error) => {
       console.error('Error processing campaign messages:', error);
     });
 
@@ -112,19 +111,16 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
 
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: params.id },
-    });
+    const campaign = await campaignService.findUnique(ctx, params.id);
 
     if (!campaign) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
-    }
-
-    if (campaign.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     if (action === 'pause') {
@@ -135,10 +131,7 @@ export async function PATCH(
         );
       }
 
-      await prisma.campaign.update({
-        where: { id: params.id },
-        data: { status: 'PAUSED' },
-      });
+      await campaignService.update(ctx, params.id, { status: 'PAUSED' });
 
       return NextResponse.json({ success: true, message: 'Campaign paused' });
     }
@@ -151,13 +144,10 @@ export async function PATCH(
         );
       }
 
-      await prisma.campaign.update({
-        where: { id: params.id },
-        data: { status: 'RUNNING' },
-      });
+      await campaignService.update(ctx, params.id, { status: 'RUNNING' });
 
       // Resume processing
-      processCampaignMessages(campaign.id, session.user.id).catch((error) => {
+      processCampaignMessages(campaign.id, ctx).catch((error) => {
         console.error('Error resuming campaign:', error);
       });
 
@@ -176,29 +166,29 @@ export async function PATCH(
 
 // Helper: Get recipients based on target audience filters
 async function getRecipients(
-  userId: string,
+  ctx: { userId: string; industry?: string | null },
   targetAudience: any
 ): Promise<Array<{ id: string; type: 'LEAD'; email?: string | null; phone?: string | null; name: string }>> {
   const recipients: any[] = [];
 
   // Get leads
-  const leadFilters: any = { userId };
+  const where: any = {};
   if (targetAudience?.status) {
-    leadFilters.status = targetAudience.status;
+    where.status = targetAudience.status;
   }
   if (targetAudience?.tags && Array.isArray(targetAudience.tags)) {
-    leadFilters.tags = { hasSome: targetAudience.tags };
+    where.tags = { hasSome: targetAudience.tags };
   }
 
-  const leads = await prisma.lead.findMany({
-    where: leadFilters,
+  const leads = await leadService.findMany(ctx, {
+    where,
     select: {
       id: true,
       businessName: true,
       contactPerson: true,
       email: true,
       phone: true,
-    },
+    } as any,
   });
 
   recipients.push(
@@ -217,13 +207,16 @@ async function getRecipients(
 }
 
 // Helper: Process campaign messages (simulate sending)
-async function processCampaignMessages(campaignId: string, userId: string) {
+async function processCampaignMessages(
+  campaignId: string,
+  ctx: { userId: string; industry?: string | null }
+) {
   console.log(`🚀 Starting campaign message processing for campaign: ${campaignId}`);
 
+  const db = getCrmDb(ctx);
+
   // Get campaign details
-  const campaign = await prisma.campaign.findUnique({
-    where: { id: campaignId },
-  });
+  const campaign = await campaignService.findUnique(ctx, campaignId);
 
   if (!campaign) {
     console.error('Campaign not found');
@@ -231,7 +224,7 @@ async function processCampaignMessages(campaignId: string, userId: string) {
   }
 
   // Get pending messages
-  const pendingMessages = await prisma.campaignMessage.findMany({
+  const pendingMessages = await db.campaignMessage.findMany({
     where: {
       campaignId,
       status: 'PENDING',
@@ -271,7 +264,7 @@ async function processCampaignMessages(campaignId: string, userId: string) {
           to: message.recipientEmail,
           subject: personalizedSubject,
           html: personalizedBody,
-          userId,
+          userId: ctx.userId,
         });
       }
 
@@ -306,9 +299,9 @@ async function processCampaignMessages(campaignId: string, userId: string) {
       ) {
         try {
           // Create outbound call
-          const outboundCall = await prisma.outboundCall.create({
+          const outboundCall = await db.outboundCall.create({
             data: {
-              userId,
+              userId: ctx.userId,
               voiceAgentId: campaign.voiceAgentId,
               leadId: message.recipientId,
               name: message.recipientName || 'Unknown',
@@ -321,7 +314,7 @@ async function processCampaignMessages(campaignId: string, userId: string) {
           });
 
           // Update campaign message with call reference
-          await prisma.campaignMessage.update({
+          await db.campaignMessage.update({
             where: { id: message.id },
             data: {
               status: 'SENT',
@@ -334,7 +327,7 @@ async function processCampaignMessages(campaignId: string, userId: string) {
           continue; // Skip the default message update below
         } catch (callError) {
           console.error(`Error scheduling voice call:`, callError);
-          await prisma.campaignMessage.update({
+          await db.campaignMessage.update({
             where: { id: message.id },
             data: {
               status: 'FAILED',
@@ -346,7 +339,7 @@ async function processCampaignMessages(campaignId: string, userId: string) {
       }
 
       // Update message status (for non-voice campaigns)
-      await prisma.campaignMessage.update({
+      await db.campaignMessage.update({
         where: { id: message.id },
         data: {
           status: 'SENT',
@@ -356,7 +349,7 @@ async function processCampaignMessages(campaignId: string, userId: string) {
       });
 
       // Update campaign stats
-      await prisma.campaign.update({
+      await db.campaign.update({
         where: { id: campaignId },
         data: {
           sentCount: { increment: 1 },
@@ -365,7 +358,7 @@ async function processCampaignMessages(campaignId: string, userId: string) {
       });
     } catch (error) {
       console.error(`Error processing message ${message.id}:`, error);
-      await prisma.campaignMessage.update({
+      await db.campaignMessage.update({
         where: { id: message.id },
         data: {
           status: 'FAILED',
@@ -376,7 +369,7 @@ async function processCampaignMessages(campaignId: string, userId: string) {
   }
 
   // Check if more messages to process
-  const remainingMessages = await prisma.campaignMessage.count({
+  const remainingMessages = await db.campaignMessage.count({
     where: {
       campaignId,
       status: 'PENDING',
@@ -390,7 +383,7 @@ async function processCampaignMessages(campaignId: string, userId: string) {
   } else {
     // Mark campaign as completed
     console.log(`✅ Campaign ${campaignId} completed`);
-    await prisma.campaign.update({
+    await db.campaign.update({
       where: { id: campaignId },
       data: {
         status: 'COMPLETED',
@@ -398,16 +391,16 @@ async function processCampaignMessages(campaignId: string, userId: string) {
     });
 
     // Calculate final analytics
-    const stats = await prisma.campaignMessage.groupBy({
+    const stats = await db.campaignMessage.groupBy({
       by: ['status'],
       where: { campaignId },
       _count: true,
     });
 
     const delivered = stats.find((s) => s.status === 'DELIVERED')?._count || 0;
-    const total = await prisma.campaignMessage.count({ where: { campaignId } });
+    const total = await db.campaignMessage.count({ where: { campaignId } });
 
-    await prisma.campaign.update({
+    await db.campaign.update({
       where: { id: campaignId },
       data: {
         openRate: delivered > 0 ? 0.21 : 0,

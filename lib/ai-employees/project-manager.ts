@@ -4,6 +4,8 @@
  */
 
 import { prisma } from '../db';
+import { getCrmDb } from '@/lib/dal/db';
+import { createDalContext } from '@/lib/context/industry-context';
 import { aiOrchestrator } from '../ai-employee-orchestrator';
 import { AIEmployeeType } from '@prisma/client';
 
@@ -82,15 +84,18 @@ export class ProjectManager {
   }
 
   private async createProjectDeal(userId: string, customerId: string, projectData: any) {
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+
     // Get or create a default pipeline and stage
-    let pipeline = await prisma.pipeline.findFirst({
+    let pipeline = await db.pipeline.findFirst({
       where: { userId },
       include: { stages: true }
     });
 
     if (!pipeline) {
       // Create default pipeline if none exists
-      pipeline = await prisma.pipeline.create({
+      pipeline = await db.pipeline.create({
         data: {
           userId,
           name: 'Default Pipeline',
@@ -104,7 +109,7 @@ export class ProjectManager {
       });
     }
 
-    const deal = await prisma.deal.create({
+    const deal = await db.deal.create({
       data: {
         userId,
         pipelineId: pipeline.id,
@@ -122,6 +127,8 @@ export class ProjectManager {
   }
 
   private async generateProjectTasks(userId: string, dealId: string, projectData: any) {
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     const taskTemplates = [
       { title: 'Project Kickoff Meeting', priority: 'HIGH' as const },
       { title: 'Requirements Gathering', priority: 'HIGH' as const },
@@ -135,7 +142,7 @@ export class ProjectManager {
     const tasks = [];
     
     for (const template of taskTemplates) {
-      const task = await prisma.task.create({
+      const task = await db.task.create({
         data: {
           userId,
           dealId: dealId,
@@ -154,8 +161,11 @@ export class ProjectManager {
   }
 
   private async assignTeam(userId: string, dealId: string, projectData: any): Promise<string[]> {
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+
     // Fetch REAL team members from database
-    const teamMembers = await prisma.teamMember.findMany({
+    const teamMembers = await db.teamMember.findMany({
       where: { 
         userId,
         status: 'ACTIVE'
@@ -170,7 +180,7 @@ export class ProjectManager {
       const primaryAssignee = teamMembers[0];
       
       try {
-        await prisma.deal.update({
+        await db.deal.update({
           where: { id: dealId },
           data: {
             assignedToId: primaryAssignee.id

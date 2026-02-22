@@ -7,6 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getCrmDb, leadService, dealService, campaignService, workflowTemplateService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { parseChartIntent, getDynamicChartData } from '@/lib/crm-chart-intent';
@@ -265,15 +267,18 @@ async function getStatistics(userId: string, params: any = {}) {
       compareWhereClause.createdAt = { gte: compareStartDate, lte: compareEndDate };
     }
 
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+
     const [leads, deals, contacts, campaigns] = await Promise.all([
-      prisma.lead.count({ where: whereClause }),
-      prisma.deal.count({ where: whereClause }),
-      prisma.lead.count({ where: whereClause }), // Contacts are leads
-      prisma.campaign.count({ where: whereClause }),
+      leadService.count(ctx, whereClause),
+      dealService.count(ctx, whereClause),
+      leadService.count(ctx, whereClause), // Contacts are leads
+      campaignService.count(ctx, whereClause),
     ]);
 
     // Get all deals with dates for time-series analysis
-    const allDeals = await prisma.deal.findMany({
+    const allDeals = await db.deal.findMany({
       where: whereClause,
       select: { 
         value: true,
@@ -313,7 +318,7 @@ async function getStatistics(userId: string, params: any = {}) {
     // Get comparison data if requested
     let comparisonData: any = null;
     if (compareStartDate && compareEndDate) {
-      const compareDeals = await prisma.deal.findMany({
+      const compareDeals = await db.deal.findMany({
         where: compareWhereClause,
         select: { 
           value: true,
@@ -346,9 +351,7 @@ async function getStatistics(userId: string, params: any = {}) {
       };
     }
 
-    const recentLeads = await prisma.lead.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
+    const recentLeads = await leadService.findMany(ctx, {
       take: 5,
       select: { 
         businessName: true,
@@ -484,17 +487,15 @@ async function createLead(userId: string, params: any) {
       return { error: 'Name is required' };
     }
 
-    const lead = await prisma.lead.create({
-      data: {
-        contactPerson: name,
-        businessName: company || name,
-        email,
-        phone,
-        status: status as any,
-        userId,
-        source: 'Voice AI',
-      },
-    });
+    const ctx = createDalContext(userId);
+    const lead = await leadService.create(ctx, {
+      contactPerson: name,
+      businessName: company || name,
+      email,
+      phone,
+      status: status as any,
+      source: 'Voice AI',
+    } as any);
 
     return {
       success: true,
@@ -526,15 +527,13 @@ async function createDeal(userId: string, params: any) {
       return { error: 'Title is required' };
     }
 
-    const deal = await prisma.deal.create({
-      data: {
-        title,
-        value: value ? parseFloat(value) : null,
-        leadId,
-        userId,
-        status: 'OPEN',
-      },
-    });
+    const ctx = createDalContext(userId);
+    const deal = await dealService.create(ctx, {
+      title,
+      value: value ? parseFloat(value) : null,
+      leadId,
+      status: 'OPEN',
+    } as any);
 
     return {
       success: true,
@@ -582,10 +581,10 @@ async function listLeads(userId: string, params: any) {
     if (status) where.status = status;
     if (startOfToday) where.createdAt = { gte: startOfToday };
 
-    const leads = await prisma.lead.findMany({
+    const ctx = createDalContext(userId);
+    const leads = await leadService.findMany(ctx, {
       where,
       take: limit,
-      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         contactPerson: true,
@@ -631,7 +630,9 @@ async function listDeals(userId: string, params: any) {
 
     const { limit = 10 } = params;
 
-    const deals = await prisma.deal.findMany({
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+    const deals = await db.deal.findMany({
       where: { userId },
       take: limit,
       orderBy: { createdAt: 'desc' },
@@ -680,9 +681,9 @@ async function searchContacts(userId: string, params: any) {
       return { error: 'Search query is required' };
     }
 
-    const leads = await prisma.lead.findMany({
+    const ctx = createDalContext(userId);
+    const leads = await leadService.findMany(ctx, {
       where: {
-        userId,
         OR: [
           { contactPerson: { contains: query, mode: 'insensitive' } },
           { businessName: { contains: query, mode: 'insensitive' } },
@@ -720,11 +721,11 @@ async function getRecentActivity(userId: string, params: any) {
   try {
     const { limit = 10 } = params;
 
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     const [recentLeads, recentDeals] = await Promise.all([
-      prisma.lead.findMany({
-        where: { userId },
+      leadService.findMany(ctx, {
         take: Math.floor(limit / 2),
-        orderBy: { createdAt: 'desc' },
         select: {
           id: true,
           contactPerson: true,
@@ -733,7 +734,7 @@ async function getRecentActivity(userId: string, params: any) {
           createdAt: true,
         },
       }),
-      prisma.deal.findMany({
+      db.deal.findMany({
         where: { userId },
         take: Math.floor(limit / 2),
         orderBy: { createdAt: 'desc' },
@@ -875,16 +876,17 @@ async function handleListVoiceAgents(userId: string) {
 async function handleDraftSMS(userId: string, params: any) {
   const { contactName, message, phoneNumber } = params;
   if (!contactName || !message) return { error: 'contactName and message are required' };
-  const lead = await prisma.lead.findFirst({
+  const ctx = createDalContext(userId);
+  const leads = await leadService.findMany(ctx, {
     where: {
-      userId,
       OR: [
         { contactPerson: { contains: contactName, mode: 'insensitive' } },
         { businessName: { contains: contactName, mode: 'insensitive' } },
       ],
     },
-    orderBy: { createdAt: 'desc' },
+    take: 1,
   });
+  const lead = leads[0] ?? null;
   const toPhone = phoneNumber || lead?.phone;
   if (!toPhone) return { error: `Contact "${contactName}" not found or has no phone number.` };
   return {
@@ -913,20 +915,21 @@ async function handleScheduleSMS(userId: string, params: any) {
   if (!contactName || !message || !scheduledFor) {
     return { error: 'contactName, message, and scheduledFor are required' };
   }
-  const lead = await prisma.lead.findFirst({
+  const ctx = createDalContext(userId);
+  const leads = await leadService.findMany(ctx, {
     where: {
-      userId,
       OR: [
         { contactPerson: { contains: contactName, mode: 'insensitive' } },
         { businessName: { contains: contactName, mode: 'insensitive' } },
       ],
     },
-    orderBy: { createdAt: 'desc' },
+    take: 1,
   });
+  const lead = leads[0] ?? null;
   if (!lead?.phone) return { error: `Contact "${contactName}" not found or has no phone number.` };
   const scheduledDate = new Date(scheduledFor);
   if (scheduledDate <= new Date()) return { error: 'Scheduled time must be in the future.' };
-  await prisma.scheduledSms.create({
+  await getCrmDb(ctx).scheduledSms.create({
     data: {
       userId,
       leadId: lead.id,
@@ -947,16 +950,17 @@ async function handleScheduleSMS(userId: string, params: any) {
 async function handleDraftEmail(userId: string, params: any) {
   const { contactName, subject, body, email } = params;
   if (!contactName || !subject || !body) return { error: 'contactName, subject, and body are required' };
-  const lead = await prisma.lead.findFirst({
+  const ctx = createDalContext(userId);
+  const leads = await leadService.findMany(ctx, {
     where: {
-      userId,
       OR: [
         { contactPerson: { contains: contactName, mode: 'insensitive' } },
         { businessName: { contains: contactName, mode: 'insensitive' } },
       ],
     },
-    orderBy: { createdAt: 'desc' },
+    take: 1,
   });
+  const lead = leads[0] ?? null;
   const toEmail = email || lead?.email;
   if (!toEmail) return { error: `Contact "${contactName}" not found or has no email.` };
   return {
@@ -986,20 +990,21 @@ async function handleScheduleEmail(userId: string, params: any) {
   if (!contactName || !subject || !body || !scheduledFor) {
     return { error: 'contactName, subject, body, and scheduledFor are required' };
   }
-  const lead = await prisma.lead.findFirst({
+  const ctx = createDalContext(userId);
+  const leads = await leadService.findMany(ctx, {
     where: {
-      userId,
       OR: [
         { contactPerson: { contains: contactName, mode: 'insensitive' } },
         { businessName: { contains: contactName, mode: 'insensitive' } },
       ],
     },
-    orderBy: { createdAt: 'desc' },
+    take: 1,
   });
+  const lead = leads[0] ?? null;
   if (!lead?.email) return { error: `Contact "${contactName}" not found or has no email.` };
   const scheduledDate = new Date(scheduledFor);
   if (scheduledDate <= new Date()) return { error: 'Scheduled time must be in the future.' };
-  await prisma.scheduledEmail.create({
+  await getCrmDb(ctx).scheduledEmail.create({
     data: {
       userId,
       leadId: lead.id,
@@ -1058,13 +1063,13 @@ async function handleAddWorkflowTask(userId: string, params: any) {
   if (!workflowId || !name) {
     return { error: 'No active workflow. Say "create workflow" first to start a new one, or provide workflowId.' };
   }
-  const existing = await prisma.workflowTemplate.findFirst({
-    where: { id: workflowId, userId },
-    include: { tasks: { orderBy: { displayOrder: 'asc' } } },
-  });
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const existing = await workflowTemplateService.findUnique(ctx, workflowId);
   if (!existing) return { error: 'Workflow not found' };
-  const maxOrder = existing.tasks.length > 0 ? Math.max(...existing.tasks.map((t) => t.displayOrder)) : 0;
-  const task = await prisma.workflowTask.create({
+  const tasks = (existing as any).tasks || [];
+  const maxOrder = tasks.length > 0 ? Math.max(...tasks.map((t: any) => t.displayOrder)) : 0;
+  const task = await db.workflowTask.create({
     data: {
       templateId: workflowId,
       name,

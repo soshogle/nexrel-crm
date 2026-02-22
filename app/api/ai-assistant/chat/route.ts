@@ -1,8 +1,9 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getCrmDb } from "@/lib/dal";
+import { getDalContextFromSession } from "@/lib/context/industry-context";
 import {
   getAIAssistantFunctions,
   mapFunctionToAction,
@@ -62,6 +63,10 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const db = getCrmDb(ctx);
 
     // Get user's language preference (default to 'en' if not set)
     const userLanguage = user.language || 'en';
@@ -197,15 +202,15 @@ export async function POST(req: NextRequest) {
         emailCampaignsCount,
         smsCampaignsCount,
       ] = await Promise.all([
-        prisma.lead.count({ where: { userId: user.id } }).catch(() => 0),
-        prisma.deal.count({ where: { userId: user.id } }).catch(() => 0),
-        prisma.campaign.count({ where: { userId: user.id } }).catch(() => 0),
-        prisma.voiceAgent.count({ where: { userId: user.id } }).catch(() => 0),
-        prisma.bookingAppointment.count({ where: { userId: user.id } }).catch(() => 0),
-        prisma.workflow.count({ where: { userId: user.id } }).catch(() => 0),
-        prisma.message.count({ where: { userId: user.id } }).catch(() => 0),
-        prisma.emailCampaign.count({ where: { userId: user.id } }).catch(() => 0),
-        prisma.smsCampaign.count({ where: { userId: user.id } }).catch(() => 0),
+        db.lead.count({ where: { userId: user.id } }).catch(() => 0),
+        db.deal.count({ where: { userId: user.id } }).catch(() => 0),
+        db.campaign.count({ where: { userId: user.id } }).catch(() => 0),
+        db.voiceAgent.count({ where: { userId: user.id } }).catch(() => 0),
+        db.bookingAppointment.count({ where: { userId: user.id } }).catch(() => 0),
+        db.workflow.count({ where: { userId: user.id } }).catch(() => 0),
+        db.message.count({ where: { userId: user.id } }).catch(() => 0),
+        db.emailCampaign.count({ where: { userId: user.id } }).catch(() => 0),
+        db.smsCampaign.count({ where: { userId: user.id } }).catch(() => 0),
       ]);
 
       userStats = {
@@ -229,32 +234,9 @@ export async function POST(req: NextRequest) {
     let recentActivity = "";
     try {
       const [recentLeads, recentDeals, recentCampaigns] = await Promise.all([
-        prisma.lead
-          .findMany({
-            where: { userId: user.id },
-            take: 3,
-            orderBy: { createdAt: "desc" },
-            select: { businessName: true, contactPerson: true, status: true, createdAt: true },
-          })
-          .catch(() => []),
-        prisma.deal
-          .findMany({
-            where: { userId: user.id },
-            take: 3,
-            orderBy: { createdAt: "desc" },
-            include: {
-              stage: true,
-            },
-          })
-          .catch(() => []),
-        prisma.campaign
-          .findMany({
-            where: { userId: user.id },
-            take: 3,
-            orderBy: { createdAt: "desc" },
-            select: { name: true, status: true, createdAt: true },
-          })
-          .catch(() => []),
+        db.lead.findMany({ where: { userId: user.id }, take: 3, orderBy: { createdAt: "desc" }, select: { businessName: true, contactPerson: true, status: true, createdAt: true } }).catch(() => []),
+        db.deal.findMany({ where: { userId: user.id }, take: 3, orderBy: { createdAt: "desc" }, include: { stage: true } }).catch(() => []),
+        db.campaign.findMany({ where: { userId: user.id }, take: 3, orderBy: { createdAt: "desc" }, select: { name: true, status: true, createdAt: true } }).catch(() => []),
       ]);
 
       if (recentLeads.length > 0) {

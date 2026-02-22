@@ -7,6 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -74,28 +76,19 @@ export async function POST(request: NextRequest) {
 
       let existing: { id: string; businessName: string } | null = null;
 
+      const ctx = createDalContext(auth.userId);
+      const db = getCrmDb(ctx);
+
       if (email) {
-        existing = await prisma.lead.findFirst({
-          where: { userId: auth.userId, email },
-          select: { id: true, businessName: true },
-        });
+        existing = (await leadService.findMany(ctx, { where: { email }, take: 1 }))[0] as { id: string; businessName: string } | null;
       }
       if (!existing && phone) {
-        const leads = await prisma.lead.findMany({
-          where: { userId: auth.userId },
-          select: { id: true, businessName: true, phone: true },
-        });
+        const leads = await leadService.findMany(ctx, { select: { id: true, businessName: true, phone: true } });
         const phoneDigits = normalizePhone(phone);
         existing = leads.find((l) => l.phone && normalizePhone(l.phone) === phoneDigits) || null;
       }
       if (!existing && patientName) {
-        existing = await prisma.lead.findFirst({
-          where: {
-            userId: auth.userId,
-            contactPerson: { equals: patientName, mode: 'insensitive' },
-          },
-          select: { id: true, businessName: true },
-        });
+        existing = (await leadService.findMany(ctx, { where: { contactPerson: { equals: patientName, mode: 'insensitive' } }, take: 1 }))[0] as { id: string; businessName: string } | null;
       }
 
       const updateData: Record<string, unknown> = {};
@@ -107,10 +100,7 @@ export async function POST(request: NextRequest) {
 
       if (existing) {
         if (data.priorNotes || data.lastVisitDate) {
-          const current = await prisma.lead.findUnique({
-            where: { id: existing.id },
-            select: { dentalHistory: true },
-          });
+          const current = await leadService.findUnique(ctx, existing.id);
           const existingDh = (current?.dentalHistory as Record<string, unknown>) || {};
           updateData.dentalHistory = {
             ...existingDh,
@@ -118,29 +108,23 @@ export async function POST(request: NextRequest) {
             ...(data.lastVisitDate && { lastVisitDate: data.lastVisitDate }),
           };
         }
-        await prisma.lead.update({
-          where: { id: existing.id },
-          data: updateData as any,
-        });
+        await leadService.update(ctx, existing.id, updateData as any);
         result = { created: false, leadId: existing.id, matched: email ? 'email' : 'phone' };
       } else {
         const dentalHistory =
           data.priorNotes || data.lastVisitDate
             ? { priorNotes: data.priorNotes, lastVisitDate: data.lastVisitDate }
             : undefined;
-        const lead = await prisma.lead.create({
-          data: {
-            userId: auth.userId,
-            businessName: patientName || 'Unknown',
-            contactPerson: patientName,
-            email: email || null,
-            phone: phone || null,
-            address: (data.address as string) || null,
-            dateOfBirth: parseDob(data.dob),
-            dentalHistory: dentalHistory as any,
-            source: 'ehr_bridge',
-          },
-        });
+        const lead = await leadService.create(ctx, {
+          businessName: patientName || 'Unknown',
+          contactPerson: patientName,
+          email: email || null,
+          phone: phone || null,
+          address: (data.address as string) || null,
+          dateOfBirth: parseDob(data.dob),
+          dentalHistory: dentalHistory as any,
+          source: 'ehr_bridge',
+        } as any);
         result = { created: true, leadId: lead.id };
       }
     } else if (dataType === 'calendar' && Array.isArray(data.appointments)) {

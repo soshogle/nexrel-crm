@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService } from '@/lib/dal';
 import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
 import { websiteOrderService } from '@/lib/website-builder/order-service';
 
@@ -16,7 +17,8 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -24,12 +26,9 @@ export async function GET(
     const period = searchParams.get('period') || '30'; // days
 
     // Get website
-    const website = await prisma.website.findUnique({
-      where: { id: params.id },
-      select: { userId: true },
-    });
+    const website = await websiteService.findUnique(ctx, params.id);
 
-    if (!website || website.userId !== session.user.id) {
+    if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 

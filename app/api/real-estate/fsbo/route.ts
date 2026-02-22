@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { REFSBOStatus } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
@@ -14,6 +15,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') as REFSBOStatus | null;
     const city = searchParams.get('city');
@@ -21,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const where: any = {
       OR: [
-        { assignedUserId: session.user.id },
+        { assignedUserId: ctx.userId },
         { assignedUserId: null },
       ],
     };
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
     if (city) where.city = { contains: city, mode: 'insensitive' };
 
     const [listings, total, stats] = await Promise.all([
-      prisma.rEFSBOListing.findMany({
+      getCrmDb(ctx).rEFSBOListing.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         take: limit,
@@ -37,15 +41,15 @@ export async function GET(request: NextRequest) {
           convertedLead: { select: { id: true, contactPerson: true } },
         },
       }),
-      prisma.rEFSBOListing.count({ where }),
+      getCrmDb(ctx).rEFSBOListing.count({ where }),
       Promise.all([
-        prisma.rEFSBOListing.count({
+        getCrmDb(ctx).rEFSBOListing.count({
           where: {
             ...where,
             createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
           },
         }),
-        prisma.rEFSBOListing.count({
+        getCrmDb(ctx).rEFSBOListing.count({
           where: {
             ...where,
             OR: [
@@ -54,7 +58,7 @@ export async function GET(request: NextRequest) {
             ],
           },
         }),
-        prisma.rEFSBOListing.count({
+        getCrmDb(ctx).rEFSBOListing.count({
           where: { ...where, daysOnMarket: { gte: 60 } },
         }),
       ]),
@@ -82,6 +86,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
     const { id, status, notes, assignedUserId } = body;
 
@@ -99,38 +106,35 @@ export async function PUT(request: NextRequest) {
       data.contactAttempts = { increment: 1 };
     }
 
-    const listing = await prisma.rEFSBOListing.update({
+    const listing = await getCrmDb(ctx).rEFSBOListing.update({
       where: { id },
       data,
     });
 
     // If converting to lead, create a CRM lead
     if (status === 'CONVERTED' && !listing.convertedLeadId) {
-      const lead = await prisma.lead.create({
-        data: {
-          userId: session.user.id,
-          businessName: listing.sellerName || listing.address,
-          contactPerson: listing.sellerName || null,
-          email: listing.sellerEmail || null,
-          phone: listing.sellerPhone || null,
-          source: `FSBO - ${listing.source}`,
-          status: 'NEW',
-          address: listing.address,
-          city: listing.city || undefined,
-          state: listing.state || undefined,
-          enrichedData: {
-            source: 'fsbo_conversion',
-            fsboListingId: listing.id,
-            listPrice: listing.listPrice,
-            beds: listing.beds,
-            baths: listing.baths,
-            sqft: listing.sqft,
-            daysOnMarket: listing.daysOnMarket,
-          },
+      const lead = await leadService.create(ctx, {
+        businessName: listing.sellerName || listing.address,
+        contactPerson: listing.sellerName || null,
+        email: listing.sellerEmail || null,
+        phone: listing.sellerPhone || null,
+        source: `FSBO - ${listing.source}`,
+        status: 'NEW',
+        address: listing.address,
+        city: listing.city || undefined,
+        state: listing.state || undefined,
+        enrichedData: {
+          source: 'fsbo_conversion',
+          fsboListingId: listing.id,
+          listPrice: listing.listPrice,
+          beds: listing.beds,
+          baths: listing.baths,
+          sqft: listing.sqft,
+          daysOnMarket: listing.daysOnMarket,
         },
-      });
+      } as any);
 
-      await prisma.rEFSBOListing.update({
+      await getCrmDb(ctx).rEFSBOListing.update({
         where: { id },
         data: { convertedLeadId: lead.id },
       });
@@ -152,6 +156,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -159,7 +166,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Listing ID required' }, { status: 400 });
     }
 
-    await prisma.rEFSBOListing.delete({ where: { id } });
+    await getCrmDb(ctx).rEFSBOListing.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

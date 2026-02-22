@@ -4,7 +4,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { createDalContext, getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb, websiteService } from '@/lib/dal';
 
 const EYAL_DARKSWORD_WEBSITE_ID = 'cmlkk9awe0002puiqm64iqw7t';
 const EYAL_PRODUCTS_ENABLED = process.env.EYAL_PRODUCTS_API_ENABLED === 'true';
@@ -18,7 +19,8 @@ async function proxyToOwnerSite(
   path: string,
   body?: unknown
 ): Promise<NextResponse> {
-  const website = await prisma.website.findUnique({
+  const db = getCrmDb(createDalContext('bootstrap'));
+  const website = await db.website.findUnique({
     where: { id: websiteId },
     select: {
       vercelDeploymentUrl: true,
@@ -89,9 +91,9 @@ async function handle(
     );
   }
 
-  const website = await prisma.website.findFirst({
-    where: { id: websiteId, userId: session.user.id },
-  });
+  const ctx = getDalContextFromSession(session);
+  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) {
     return NextResponse.json({ error: 'Website not found' }, { status: 404 });
   }

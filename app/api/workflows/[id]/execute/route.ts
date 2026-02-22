@@ -6,9 +6,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
 import { startWorkflowInstance } from '@/lib/workflows/workflow-engine';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { workflowTemplateService } from '@/lib/dal/workflow-template-service';
+import { leadService } from '@/lib/dal/lead-service';
+import { dealService } from '@/lib/dal/deal-service';
+import { getCrmDb } from '@/lib/dal/db';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -24,18 +28,11 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify workflow ownership
-    const workflow = await prisma.workflowTemplate.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id
-      },
-      include: {
-        tasks: {
-          orderBy: { displayOrder: 'asc' }
-        }
-      }
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const workflow = await workflowTemplateService.findUnique(ctx, params.id);
 
     if (!workflow) {
       return NextResponse.json(
@@ -68,15 +65,8 @@ export async function POST(
       );
     }
 
-    // Verify lead/deal exists and belongs to user
     if (leadId) {
-      const lead = await prisma.lead.findFirst({
-        where: {
-          id: leadId,
-          userId: session.user.id
-        }
-      });
-
+      const lead = await leadService.findUnique(ctx, leadId);
       if (!lead) {
         return NextResponse.json(
           { error: 'Lead not found' },
@@ -86,13 +76,7 @@ export async function POST(
     }
 
     if (dealId) {
-      const deal = await prisma.deal.findFirst({
-        where: {
-          id: dealId,
-          userId: session.user.id
-        }
-      });
-
+      const deal = await dealService.findUnique(ctx, dealId);
       if (!deal) {
         return NextResponse.json(
           { error: 'Deal not found' },
@@ -101,8 +85,8 @@ export async function POST(
       }
     }
 
-    // Check for existing active instance
-    const existingInstance = await prisma.workflowInstance.findFirst({
+    const db = getCrmDb(ctx);
+    const existingInstance = await db.workflowInstance.findFirst({
       where: {
         templateId: params.id,
         ...(leadId && { leadId }),
@@ -126,10 +110,10 @@ export async function POST(
       metadata: metadata || {},
     });
 
-    emitCRMEvent('workflow_started', session.user.id, { entityId: params.id, entityType: 'Workflow' });
+    emitCRMEvent('workflow_started', ctx.userId, { entityId: params.id, entityType: 'Workflow' });
 
     // Get the created instance with executions
-    const instance = await prisma.workflowInstance.findUnique({
+    const instance = await getCrmDb(ctx).workflowInstance.findUnique({
       where: { id: instanceId },
       include: {
         template: {
@@ -183,13 +167,11 @@ export async function GET(
     const status = searchParams.get('status');
     const limit = parseInt(searchParams.get('limit') || '20');
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Verify workflow ownership
-    const workflow = await prisma.workflowTemplate.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id
-      }
-    });
+    const workflow = await workflowTemplateService.findUnique(ctx, params.id);
 
     if (!workflow) {
       return NextResponse.json(
@@ -198,7 +180,7 @@ export async function GET(
       );
     }
 
-    const instances = await prisma.workflowInstance.findMany({
+    const instances = await getCrmDb(ctx).workflowInstance.findMany({
       where: {
         templateId: params.id,
         ...(status && { status: status as 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED' })

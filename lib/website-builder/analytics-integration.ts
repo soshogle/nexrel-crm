@@ -3,7 +3,8 @@
  * Manages Google Analytics and Facebook Pixel integrations
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, websiteService } from '@/lib/dal';
 
 export interface AnalyticsConfig {
   googleAnalyticsId?: string;
@@ -15,7 +16,8 @@ export class WebsiteAnalyticsIntegrationService {
    * Update analytics configuration for a website
    */
   async updateAnalyticsConfig(websiteId: string, config: AnalyticsConfig) {
-    const website = await prisma.website.findUnique({
+    const db = getCrmDb(createDalContext('bootstrap'));
+    const website = await db.website.findUnique({
       where: { id: websiteId },
     });
 
@@ -23,12 +25,10 @@ export class WebsiteAnalyticsIntegrationService {
       throw new Error('Website not found');
     }
 
-    return await prisma.website.update({
-      where: { id: websiteId },
-      data: {
-        googleAnalyticsId: config.googleAnalyticsId || null,
-        facebookPixelId: config.facebookPixelId || null,
-      },
+    const ctx = createDalContext(website.userId);
+    return await websiteService.update(ctx, websiteId, {
+      googleAnalyticsId: config.googleAnalyticsId || null,
+      facebookPixelId: config.facebookPixelId || null,
     });
   }
 
@@ -36,7 +36,8 @@ export class WebsiteAnalyticsIntegrationService {
    * Get analytics configuration
    */
   async getAnalyticsConfig(websiteId: string): Promise<AnalyticsConfig> {
-    const website = await prisma.website.findUnique({
+    const db = getCrmDb(createDalContext('bootstrap'));
+    const website = await db.website.findUnique({
       where: { id: websiteId },
       select: {
         googleAnalyticsId: true,

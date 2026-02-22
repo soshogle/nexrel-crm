@@ -4,7 +4,8 @@
  */
 
 import { WorkflowTask, WorkflowInstance } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService, taskService, dealService, getCrmDb } from '@/lib/dal';
 import { sendSMS } from '@/lib/twilio';
 import { EmailService } from '@/lib/email-service';
 import { CalendarService } from '@/lib/calendar/calendar-service';
@@ -50,8 +51,9 @@ async function generateEstimate(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -65,13 +67,13 @@ async function generateEstimate(
 
   try {
     // Get or create default pipeline
-    let pipeline = await prisma.pipeline.findFirst({
+    let pipeline = await getCrmDb(ctx).pipeline.findFirst({
       where: { userId: instance.userId, isDefault: true },
       include: { stages: { orderBy: { displayOrder: 'asc' } } },
     });
 
     if (!pipeline) {
-      pipeline = await prisma.pipeline.create({
+      pipeline = await getCrmDb(ctx).pipeline.create({
         data: {
           userId: instance.userId,
           name: 'Default Pipeline',
@@ -92,26 +94,21 @@ async function generateEstimate(
     const estimateStage = pipeline.stages.find(s => s.name === 'Estimate') || pipeline.stages[0];
 
     // Create estimate as a deal
-    const estimate = await prisma.deal.create({
-      data: {
-        userId: instance.userId,
-        pipelineId: pipeline.id,
-        stageId: estimateStage.id,
-        leadId: instance.leadId || undefined,
-        title: `Estimate: ${projectType}`,
-        value: estimatedCost,
-        probability: estimateStage.probability,
-        expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-        description: projectDescription,
-      },
+    const estimate = await dealService.create(ctx, {
+      pipeline: { connect: { id: pipeline.id } },
+      stage: { connect: { id: estimateStage.id } },
+      ...(instance.leadId && { lead: { connect: { id: instance.leadId } } }),
+      title: `Estimate: ${projectType}`,
+      value: estimatedCost,
+      probability: estimateStage.probability,
+      expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      description: projectDescription,
     });
 
     // Create task for estimate review
-    await prisma.task.create({
-      data: {
-        userId: instance.userId,
-        title: `Review Estimate: ${projectType}`,
-        description: `Estimated Cost: $${estimatedCost.toLocaleString()}\n${projectDescription}`,
+    await taskService.create(ctx, {
+      title: `Review Estimate: ${projectType}`,
+      description: `Estimated Cost: $${estimatedCost.toLocaleString()}\n${projectDescription}`,
         status: 'TODO',
         priority: 'HIGH',
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -163,8 +160,9 @@ async function scheduleProject(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -180,13 +178,13 @@ async function scheduleProject(
 
   try {
     // Get or create default pipeline
-    let pipeline = await prisma.pipeline.findFirst({
+    let pipeline = await getCrmDb(ctx).pipeline.findFirst({
       where: { userId: instance.userId, isDefault: true },
       include: { stages: { orderBy: { displayOrder: 'asc' } } },
     });
 
     if (!pipeline) {
-      pipeline = await prisma.pipeline.create({
+      pipeline = await getCrmDb(ctx).pipeline.create({
         data: {
           userId: instance.userId,
           name: 'Default Pipeline',
@@ -206,22 +204,19 @@ async function scheduleProject(
     const scheduledStage = pipeline.stages.find(s => s.name === 'Scheduled') || pipeline.stages[1] || pipeline.stages[0];
 
     // Create project as a deal
-    const project = await prisma.deal.create({
-      data: {
-        userId: instance.userId,
-        pipelineId: pipeline.id,
-        stageId: scheduledStage.id,
-        leadId: instance.leadId || undefined,
-        title: projectType,
-        probability: scheduledStage.probability,
-        expectedCloseDate: new Date(projectStartDate.getTime() + projectDuration * 24 * 60 * 60 * 1000),
-        description: `Project scheduled to start on ${projectStartDate.toLocaleDateString()}`,
-      },
+    const project = await dealService.create(ctx, {
+      pipeline: { connect: { id: pipeline.id } },
+      stage: { connect: { id: scheduledStage.id } },
+      ...(instance.leadId && { lead: { connect: { id: instance.leadId } } }),
+      title: projectType,
+      probability: scheduledStage.probability,
+      expectedCloseDate: new Date(projectStartDate.getTime() + projectDuration * 24 * 60 * 60 * 1000),
+      description: `Project scheduled to start on ${projectStartDate.toLocaleDateString()}`,
     });
 
     // Create calendar appointment for project kickoff
     try {
-      await prisma.bookingAppointment.create({
+      await getCrmDb(ctx).bookingAppointment.create({
         data: {
           userId: instance.userId,
           customerName: lead.contactPerson || lead.businessName || 'Contact',
@@ -231,7 +226,6 @@ async function scheduleProject(
           duration: 120, // 2 hours
           status: 'SCHEDULED',
           notes: `Project kickoff for ${projectType}`,
-          meetingLocation: 'ONSITE',
           leadId: instance.leadId || undefined,
         },
       });
@@ -275,23 +269,21 @@ async function orderMaterials(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const actionConfig = task.actionConfig as any;
   const materials = actionConfig?.materials || ['Standard Materials'];
   const supplier = actionConfig?.supplier || 'Default Supplier';
 
   try {
     // Create task for material ordering
-    await prisma.task.create({
-      data: {
-        userId: instance.userId,
-        title: `Order Materials: ${materials.join(', ')}`,
-        description: `Supplier: ${supplier}\nMaterials: ${materials.join(', ')}`,
-        status: 'TODO',
-        priority: 'HIGH',
-        dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // Due in 3 days
-        dealId: instance.dealId || undefined,
-        leadId: instance.leadId || undefined,
-      },
+    await taskService.create(ctx, {
+      title: `Order Materials: ${materials.join(', ')}`,
+      description: `Supplier: ${supplier}\nMaterials: ${materials.join(', ')}`,
+      status: 'TODO',
+      priority: 'HIGH',
+      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // Due in 3 days
+      dealId: instance.dealId || undefined,
+      leadId: instance.leadId || undefined,
     });
 
     return {
@@ -318,8 +310,9 @@ async function scheduleInspection(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   const actionConfig = task.actionConfig as any;
@@ -330,7 +323,7 @@ async function scheduleInspection(
 
   try {
     // Create inspection appointment
-    const inspection = await prisma.bookingAppointment.create({
+    const inspection = await getCrmDb(ctx).bookingAppointment.create({
       data: {
         userId: instance.userId,
         leadId: instance.leadId || undefined,
@@ -371,8 +364,9 @@ async function sendProgressUpdate(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead) {
@@ -422,8 +416,9 @@ async function createChangeOrder(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   const actionConfig = task.actionConfig as any;
@@ -432,17 +427,14 @@ async function createChangeOrder(
 
   try {
     // Create change order task
-    await prisma.task.create({
-      data: {
-        userId: instance.userId,
-        title: `Change Order: ${changeDescription}`,
-        description: `Additional Cost: $${additionalCost.toLocaleString()}\n${changeDescription}`,
-        status: 'TODO',
-        priority: 'HIGH',
-        dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-        leadId: instance.leadId || undefined,
-        dealId: instance.dealId || undefined,
-      },
+    await taskService.create(ctx, {
+      title: `Change Order: ${changeDescription}`,
+      description: `Additional Cost: $${additionalCost.toLocaleString()}\n${changeDescription}`,
+      status: 'TODO',
+      priority: 'HIGH',
+      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      leadId: instance.leadId || undefined,
+      dealId: instance.dealId || undefined,
     });
 
     // Notify client if available
@@ -480,8 +472,9 @@ async function completeProject(
   task: WorkflowTask,
   instance: WorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, instance.industry);
   const deal = instance.dealId 
-    ? await prisma.deal.findUnique({ where: { id: instance.dealId } })
+    ? await dealService.findUnique(ctx, instance.dealId)
     : null;
 
   if (!deal) {
@@ -490,7 +483,7 @@ async function completeProject(
 
   try {
     // Get deal to find pipeline
-    const dealToUpdate = await prisma.deal.findUnique({
+    const dealToUpdate = await getCrmDb(ctx).deal.findUnique({
       where: { id: deal.id },
       include: { pipeline: { include: { stages: true } } },
     });
@@ -501,19 +494,16 @@ async function completeProject(
         || dealToUpdate.pipeline.stages[dealToUpdate.pipeline.stages.length - 1];
 
       if (completedStage) {
-        await prisma.deal.update({
-          where: { id: deal.id },
-          data: {
-            stageId: completedStage.id,
-            probability: 100,
-          },
+        await dealService.update(ctx, deal.id, {
+          stageId: completedStage.id,
+          probability: 100,
         });
       }
     }
 
     // Get lead for notification
     const lead = deal.leadId 
-      ? await prisma.lead.findUnique({ where: { id: deal.leadId } })
+      ? await leadService.findUnique(ctx, deal.leadId)
       : null;
 
     if (lead?.email) {

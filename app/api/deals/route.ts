@@ -1,12 +1,10 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { dealService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
-
-// GET /api/deals - Get all deals
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,20 +12,14 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const deals = await prisma.deal.findMany({
-      where: { userId: user.id },
+    const deals = await dealService.findMany(ctx, {
       include: {
         lead: {
           select: {
@@ -47,8 +39,7 @@ export async function GET(request: NextRequest) {
         },
         stage: true,
         pipeline: true,
-      },
-      orderBy: { createdAt: 'desc' },
+      } as any,
     });
 
     return NextResponse.json(deals);
@@ -65,17 +56,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const {
       title,
@@ -88,59 +74,46 @@ export async function POST(request: NextRequest) {
       expectedCloseDate,
     } = await request.json();
 
-    // Get stage probability
-    const stage = await prisma.pipelineStage.findUnique({
+    const stage = await getCrmDb(ctx).pipelineStage.findUnique({
       where: { id: stageId },
     });
 
-    const deal = await prisma.deal.create({
-      data: {
-        title,
-        description,
-        value,
-        pipelineId,
-        stageId,
-        leadId: leadId || null,
-        priority: priority || 'MEDIUM',
-        probability: stage?.probability || 0,
-        expectedCloseDate: expectedCloseDate ? new Date(expectedCloseDate) : null,
-        userId: user.id,
-      },
-      include: {
-        lead: true,
-        assignedTo: true,
-        stage: true,
-      },
-    });
+    const deal = await dealService.create(ctx, {
+      title,
+      description: description ?? '',
+      value: value ?? 0,
+      pipelineId,
+      stageId,
+      leadId: leadId || null,
+      priority: (priority as any) || 'MEDIUM',
+      probability: stage?.probability ?? 0,
+      expectedCloseDate: expectedCloseDate ? new Date(expectedCloseDate) : null,
+    } as any);
 
-    emitCRMEvent('deal_created', user.id, { entityId: deal.id, entityType: 'Deal', data: { title, value } });
+    emitCRMEvent('deal_created', ctx.userId, { entityId: deal.id, entityType: 'Deal', data: { title, value } });
 
-    // Create activity log
-    await prisma.dealActivity.create({
+    await getCrmDb(ctx).dealActivity.create({
       data: {
         dealId: deal.id,
-        userId: user.id,
+        userId: ctx.userId,
         type: 'CREATED',
         description: `Deal created: ${title}`,
       },
     });
 
-    // Track relationships automatically
     try {
       const { RelationshipHooks } = await import('@/lib/relationship-hooks');
       await RelationshipHooks.onDealCreated({
-        userId: user.id,
+        userId: ctx.userId,
         dealId: deal.id,
         leadId: leadId,
       });
     } catch (error) {
       console.error('Error tracking deal relationships:', error);
-      // Don't fail the request if relationship tracking fails
     }
 
-    // Trigger DEAL_CREATED workflows
     workflowEngine.triggerWorkflow('DEAL_CREATED', {
-      userId: user.id,
+      userId: ctx.userId,
       dealId: deal.id,
       leadId: deal.leadId || undefined,
       variables: {

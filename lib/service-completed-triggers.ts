@@ -4,7 +4,8 @@
  * Powers the "reviews + referral" flow: feedback → review link → ask for referral.
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
 
 export type ServiceCompletedTriggerType = 'SERVICE_COMPLETED';
@@ -26,8 +27,10 @@ export async function processServiceCompletedTriggers(
     metadata,
   });
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   // Workflow template enrollments
-  const workflows = await prisma.workflowTemplate.findMany({
+  const workflows = await db.workflowTemplate.findMany({
     where: {
       userId,
       isActive: true,
@@ -44,7 +47,7 @@ export async function processServiceCompletedTriggers(
     const hasTrigger = triggers.some((t) => t.type === 'SERVICE_COMPLETED');
     if (!hasTrigger) continue;
 
-    const existing = await prisma.workflowTemplateEnrollment.findUnique({
+    const existing = await db.workflowTemplateEnrollment.findUnique({
       where: {
         workflowId_leadId: { workflowId: workflow.id, leadId },
       },
@@ -72,7 +75,7 @@ export async function processServiceCompletedTriggers(
       abTestGroup = random < (config.splitPercentage ?? 50) ? 'A' : 'B';
     }
 
-    await prisma.workflowTemplateEnrollment.create({
+    await db.workflowTemplateEnrollment.create({
       data: {
         workflowId: workflow.id,
         leadId,

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { dataEnrichmentService } from '@/lib/data-enrichment-service';
-import { prisma } from '@/lib/db';
+import { leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -25,14 +26,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Verify all leads belong to user
-    const leads = await prisma.lead.findMany({
-      where: {
-        id: { in: leadIds },
-        userId: session.user.id,
-      },
+    const leads = await leadService.findMany(ctx, {
+      where: { id: { in: leadIds } },
       select: { id: true },
-    });
+      take: leadIds.length,
+    } as any);
 
     if (leads.length !== leadIds.length) {
       return NextResponse.json(

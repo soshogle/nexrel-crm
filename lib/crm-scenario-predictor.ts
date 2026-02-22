@@ -3,7 +3,8 @@
  * Parses natural language requests and projects impact based on assumptions
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService, getCrmDb } from '@/lib/dal';
 
 export interface ScenarioResult {
   scenario: string;
@@ -81,13 +82,15 @@ export async function calculateScenario(
   scenarioType: string,
   params: Record<string, number>
 ): Promise<ScenarioResult | null> {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const [leads, deals, openDeals] = await Promise.all([
-    prisma.lead.count({ where: { userId } }),
-    prisma.deal.findMany({
+    leadService.count(ctx),
+    db.deal.findMany({
       where: { userId },
       select: { value: true, actualCloseDate: true },
     }),
-    prisma.deal.findMany({
+    db.deal.findMany({
       where: { userId, actualCloseDate: null },
       select: { value: true },
     }),

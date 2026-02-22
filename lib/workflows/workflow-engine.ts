@@ -3,7 +3,8 @@
  * Handles workflow instance creation, task scheduling, and execution
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb, workflowTemplateService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { TaskExecutionStatus, WorkflowInstanceStatus } from '@prisma/client';
 import { executeTask } from './workflow-task-executor';
 import { createHITLNotification } from './hitl-notification-service';
@@ -24,17 +25,16 @@ export async function startWorkflowInstance(
   templateId: string,
   trigger: WorkflowTrigger
 ): Promise<string> {
-  const template = await prisma.workflowTemplate.findUnique({
-    where: { id: templateId },
-    include: { tasks: { orderBy: { displayOrder: 'asc' } } },
-  });
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const template = await workflowTemplateService.findUnique(ctx, templateId);
 
   if (!template) {
     throw new Error('Workflow template not found');
   }
 
   // Create workflow instance
-  const instance = await prisma.workflowInstance.create({
+  const instance = await db.workflowInstance.create({
     data: {
       templateId,
       userId,
@@ -49,7 +49,7 @@ export async function startWorkflowInstance(
   // Create task executions for all tasks
   const executions = await Promise.all(
     template.tasks.map((task, index) =>
-      prisma.taskExecution.create({
+      db.taskExecution.create({
         data: {
           instanceId: instance.id,
           taskId: task.id,
@@ -74,7 +74,8 @@ export async function startWorkflowInstance(
  * Process a task execution
  */
 export async function processTaskExecution(executionId: string): Promise<void> {
-  const execution = await prisma.taskExecution.findUnique({
+  const db = getCrmDb(createDalContext('bootstrap'));
+  const execution = await db.taskExecution.findUnique({
     where: { id: executionId },
     include: {
       task: {
@@ -100,7 +101,7 @@ export async function processTaskExecution(executionId: string): Promise<void> {
 
   // Check if task has a parent (branching)
   if (execution.task.parentTaskId) {
-    const parentExecution = await prisma.taskExecution.findFirst({
+    const parentExecution = await db.taskExecution.findFirst({
       where: {
         instanceId: execution.instanceId,
         taskId: execution.task.parentTaskId,
@@ -117,11 +118,11 @@ export async function processTaskExecution(executionId: string): Promise<void> {
       const branchCondition = execution.task.branchCondition as { field: string; operator: string; value: string } | null;
       if (!branchCondition || !branchCondition.field || !branchCondition.operator || !branchCondition.value) {
         // Invalid branch condition, skip
-        await prisma.taskExecution.update({
+        await db.taskExecution.update({
           where: { id: executionId },
           data: { status: TaskExecutionStatus.SKIPPED },
         });
-        await processNextTask(execution.instanceId);
+        await processNextTask(execution.instanceId, db);
         return;
       }
       const resultData = (parentExecution.result as Record<string, any>) || {};
@@ -132,18 +133,18 @@ export async function processTaskExecution(executionId: string): Promise<void> {
 
       if (!conditionMet) {
         // Condition not met, skip this task
-        await prisma.taskExecution.update({
+        await db.taskExecution.update({
           where: { id: executionId },
           data: { status: TaskExecutionStatus.SKIPPED },
         });
-        await processNextTask(execution.instanceId);
+        await processNextTask(execution.instanceId, db);
         return;
       }
     }
   }
 
   // Update status to IN_PROGRESS
-  await prisma.taskExecution.update({
+  await db.taskExecution.update({
     where: { id: executionId },
     data: {
       status: TaskExecutionStatus.IN_PROGRESS,
@@ -153,7 +154,7 @@ export async function processTaskExecution(executionId: string): Promise<void> {
 
   // Check if HITL gate
   if (execution.task.isHITL) {
-    await prisma.taskExecution.update({
+    await db.taskExecution.update({
       where: { id: executionId },
       data: { status: TaskExecutionStatus.AWAITING_HITL },
     });
@@ -181,7 +182,7 @@ export async function processTaskExecution(executionId: string): Promise<void> {
   try {
     const result = await executeTask(execution.task, execution.instance);
 
-    await prisma.taskExecution.update({
+    await db.taskExecution.update({
       where: { id: executionId },
       data: {
         status: TaskExecutionStatus.COMPLETED,
@@ -191,9 +192,9 @@ export async function processTaskExecution(executionId: string): Promise<void> {
     });
 
     // Process next task
-    await processNextTask(execution.instanceId);
+    await processNextTask(execution.instanceId, db);
   } catch (error: any) {
-    await prisma.taskExecution.update({
+    await db.taskExecution.update({
       where: { id: executionId },
       data: {
         status: TaskExecutionStatus.FAILED,
@@ -206,8 +207,8 @@ export async function processTaskExecution(executionId: string): Promise<void> {
 /**
  * Process the next task in the workflow
  */
-async function processNextTask(instanceId: string): Promise<void> {
-  const instance = await prisma.workflowInstance.findUnique({
+async function processNextTask(instanceId: string, db: ReturnType<typeof getCrmDb>): Promise<void> {
+  const instance = await db.workflowInstance.findUnique({
     where: { id: instanceId },
     include: {
       template: {
@@ -233,7 +234,7 @@ async function processNextTask(instanceId: string): Promise<void> {
 
   if (!nextTask) {
     // All tasks completed
-    await prisma.workflowInstance.update({
+    await db.workflowInstance.update({
       where: { id: instanceId },
       data: {
         status: WorkflowInstanceStatus.COMPLETED,
@@ -247,7 +248,7 @@ async function processNextTask(instanceId: string): Promise<void> {
   let nextExecution = instance.executions.find(e => e.taskId === nextTask.id);
 
   if (!nextExecution) {
-    nextExecution = await prisma.taskExecution.create({
+    nextExecution = await db.taskExecution.create({
       data: {
         instanceId,
         taskId: nextTask.id,
@@ -271,7 +272,8 @@ export async function approveHITLGate(
   userId: string,
   notes?: string
 ): Promise<void> {
-  const execution = await prisma.taskExecution.findUnique({
+  const db = getCrmDb(createDalContext(userId));
+  const execution = await db.taskExecution.findUnique({
     where: { id: executionId },
     include: { task: true, instance: true },
   });
@@ -281,7 +283,7 @@ export async function approveHITLGate(
   }
 
   // Update execution
-  await prisma.taskExecution.update({
+  await db.taskExecution.update({
     where: { id: executionId },
     data: {
       status: TaskExecutionStatus.APPROVED,
@@ -292,7 +294,7 @@ export async function approveHITLGate(
   });
 
   // Mark HITL notification as actioned
-  await prisma.hITLNotification.updateMany({
+  await db.hITLNotification.updateMany({
     where: { executionId },
     data: { isActioned: true },
   });
@@ -301,7 +303,7 @@ export async function approveHITLGate(
   try {
     const result = await executeTask(execution.task, execution.instance);
 
-    await prisma.taskExecution.update({
+    await db.taskExecution.update({
       where: { id: executionId },
       data: {
         status: TaskExecutionStatus.COMPLETED,
@@ -311,9 +313,9 @@ export async function approveHITLGate(
     });
 
     // Process next task
-    await processNextTask(execution.instanceId);
+    await processNextTask(execution.instanceId, db);
   } catch (error: any) {
-    await prisma.taskExecution.update({
+    await db.taskExecution.update({
       where: { id: executionId },
       data: {
         status: TaskExecutionStatus.FAILED,
@@ -331,7 +333,8 @@ export async function rejectHITLGate(
   userId: string,
   notes?: string
 ): Promise<void> {
-  const execution = await prisma.taskExecution.findUnique({
+  const db = getCrmDb(createDalContext(userId));
+  const execution = await db.taskExecution.findUnique({
     where: { id: executionId },
   });
 
@@ -339,7 +342,7 @@ export async function rejectHITLGate(
     throw new Error('Invalid HITL gate or already processed');
   }
 
-  await prisma.taskExecution.update({
+  await db.taskExecution.update({
     where: { id: executionId },
     data: {
       status: TaskExecutionStatus.REJECTED,
@@ -350,7 +353,7 @@ export async function rejectHITLGate(
   });
 
   // Mark HITL notification as actioned
-  await prisma.hITLNotification.updateMany({
+  await db.hITLNotification.updateMany({
     where: { executionId },
     data: { isActioned: true },
   });

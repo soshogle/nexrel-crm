@@ -1,8 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { conversationService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { aiResponseService } from '@/lib/ai-response-service';
 
 /**
@@ -27,6 +28,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
     const { conversationId, incomingMessage } = body;
 
@@ -38,19 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get conversation details
-    const conversation = await prisma.conversation.findFirst({
-      where: {
-        id: conversationId,
-        userId: user.id,
-      },
-      include: {
-        messages: {
-          orderBy: { sentAt: 'desc' },
-          take: 10,
-        },
-        channelConnection: true,
-      },
-    });
+    const conversation = await conversationService.findUnique(ctx, conversationId);
 
     if (!conversation) {
       return NextResponse.json(
@@ -59,7 +51,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const conversationHistory = conversation.messages.map((msg) => ({
+    const sortedMessages = (conversation.messages || []).sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()).slice(0, 10);
+    const conversationHistory = sortedMessages.map((msg) => ({
       role: msg.direction === 'INBOUND' ? ('user' as const) : ('assistant' as const),
       content: msg.content,
       timestamp: msg.sentAt,
@@ -70,7 +63,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       incomingMessage,
       contactName: conversation.contactName,
-      channelType: conversation.channelConnection.channelType,
+      channelType: (conversation as any).channelConnection?.channelType,
       conversationHistory,
     });
 

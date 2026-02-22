@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
+import { websiteService, getCrmDb } from '@/lib/dal';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -71,8 +72,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const website = await prisma.website.findUnique({
-      where: { id: websiteId },
+    const ctx = session?.user?.id ? getDalContextFromSession(session) : null;
+    const db = ctx ? getCrmDb(ctx) : getCrmDb(createDalContext('bootstrap', null));
+    const website = await db.website.findFirst({
+      where: ctx ? { id: websiteId, userId: ctx.userId } : { id: websiteId },
       include: {
         user: {
           select: {

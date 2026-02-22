@@ -6,7 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadResearcher } from '@/lib/ai-employees/lead-researcher';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { leadService } from '@/lib/dal';
 
 
 export const dynamic = 'force-dynamic';
@@ -37,12 +38,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // If leadId is provided, fetch lead data
     let leadData;
     if (leadId) {
-      leadData = await prisma.lead.findUnique({
-        where: { id: leadId }
-      });
+      leadData = await leadService.findUnique(ctx, leadId);
 
       if (!leadData) {
         return NextResponse.json(

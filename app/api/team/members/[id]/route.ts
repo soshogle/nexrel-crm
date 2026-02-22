@@ -1,9 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,14 +17,17 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await req.json();
     const { email, name, role, phone, status, permissions } = body;
 
     // Verify ownership
-    const existingMember = await prisma.teamMember.findFirst({
+    const existingMember = await getCrmDb(ctx).teamMember.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     });
 
@@ -36,7 +38,7 @@ export async function PUT(
       );
     }
 
-    const updatedMember = await prisma.teamMember.update({
+    const updatedMember = await getCrmDb(ctx).teamMember.update({
       where: { id: params.id },
       data: {
         email,
@@ -68,11 +70,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     // Verify ownership
-    const existingMember = await prisma.teamMember.findFirst({
+    const existingMember = await getCrmDb(ctx).teamMember.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id,
+        userId: ctx.userId,
       },
     });
 
@@ -83,8 +88,8 @@ export async function DELETE(
       );
     }
 
-    // Check if member has assigned tasks or deals
-    const hasAssignments = await prisma.task.count({
+    // Check if member has assigned tasks or deals (tasks assigned to this team member)
+    const hasAssignments = await getCrmDb(ctx).task.count({
       where: { assignedToId: params.id, status: { not: 'COMPLETED' } },
     });
 
@@ -97,7 +102,7 @@ export async function DELETE(
       );
     }
 
-    await prisma.teamMember.delete({
+    await getCrmDb(ctx).teamMember.delete({
       where: { id: params.id },
     });
 

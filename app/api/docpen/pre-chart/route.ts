@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -23,17 +24,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'leadId required' }, { status: 400 });
     }
 
-    const lead = await prisma.lead.findFirst({
-      where: { id: leadId, userId: session.user.id },
-      select: { id: true },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const lead = await leadService.findUnique(ctx, leadId);
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
     const [priorSessions, xrays, procedures, appointments] = await Promise.all([
-      prisma.docpenSession.findMany({
-        where: { leadId, userId: session.user.id },
+      getCrmDb(ctx).docpenSession.findMany({
+        where: { leadId, userId: ctx.userId },
         orderBy: { sessionDate: 'desc' },
         take: 5,
         include: {
@@ -43,8 +43,8 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.dentalXRay.findMany({
-        where: { leadId, userId: session.user.id },
+      getCrmDb(ctx).dentalXRay.findMany({
+        where: { leadId, userId: ctx.userId },
         orderBy: { dateTaken: 'desc' },
         take: 10,
         select: {
@@ -55,10 +55,10 @@ export async function GET(request: NextRequest) {
           thumbnailUrl: true,
         },
       }).catch(() => []),
-      prisma.dentalProcedure.findMany({
+      getCrmDb(ctx).dentalProcedure.findMany({
         where: {
           leadId,
-          userId: session.user.id,
+          userId: ctx.userId,
           status: { notIn: ['COMPLETED', 'CANCELLED'] },
         },
         orderBy: { scheduledDate: 'asc' },
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
           status: true,
         },
       }).catch(() => []),
-      prisma.bookingAppointment.findMany({
+      getCrmDb(ctx).bookingAppointment.findMany({
         where: {
           leadId,
           status: { notIn: ['CANCELLED', 'COMPLETED'] },

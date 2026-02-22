@@ -8,10 +8,9 @@
  * - Volume: 100-200 leads/day
  */
 
-import { PrismaClient } from '@prisma/client';
+import { getCrmDb } from '@/lib/dal/db';
+import { createDalContext } from '@/lib/context/industry-context';
 import { chromium, Browser, Page } from 'playwright';
-
-const prisma = new PrismaClient();
 
 export interface GoogleMapsSearchQuery {
   query: string; // e.g., "restaurants in New York", "plumbers in Austin"
@@ -80,11 +79,14 @@ export async function scrapeGoogleMaps(
       try {
         const businesses = await scrapeQuery(page, searchQuery);
         
+        const ctx = createDalContext(userId);
+        const db = getCrmDb(ctx);
+
         // Save to database
         for (const business of businesses) {
           try {
             // Check for duplicate
-            const existing = await prisma.lead.findFirst({
+            const existing = await db.lead.findFirst({
               where: {
                 userId,
                 OR: [
@@ -105,7 +107,7 @@ export async function scrapeGoogleMaps(
             }
             
             // Create new lead
-            const lead = await prisma.lead.create({
+            const lead = await db.lead.create({
               data: {
                 userId,
                 businessName: business.businessName,

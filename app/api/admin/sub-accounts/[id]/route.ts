@@ -1,8 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getCrmDb, leadService, dealService, campaignService, conversationService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 
 
 export const dynamic = 'force-dynamic';
@@ -52,6 +53,9 @@ export async function GET(
       return NextResponse.json({ error: 'Sub-account not found' }, { status: 404 });
     }
 
+    const ctx = createDalContext(subAccountId);
+    const db = getCrmDb(ctx);
+
     // Get detailed metrics
     const [
       totalLeads,
@@ -65,61 +69,34 @@ export async function GET(
       completedAppointments,
       totalVoiceAgents,
     ] = await Promise.all([
-      prisma.lead.count({ where: { userId: subAccountId } }),
-      prisma.lead.count({ where: { userId: subAccountId, status: 'CONVERTED' } }),
-      prisma.deal.count({ where: { userId: subAccountId } }),
-      prisma.deal.count({ where: { userId: subAccountId, actualCloseDate: { not: null } } }),
-      prisma.campaign.count({ where: { userId: subAccountId } }),
-      prisma.campaign.count({ where: { userId: subAccountId, status: 'ACTIVE' } }),
-      prisma.conversation.count({ where: { userId: subAccountId } }),
-      prisma.bookingAppointment.count({ where: { userId: subAccountId } }),
-      prisma.bookingAppointment.count({ where: { userId: subAccountId, status: 'CONFIRMED' } }),
-      prisma.voiceAgent.count({ where: { userId: subAccountId } }),
+      leadService.count(ctx),
+      leadService.count(ctx, { status: 'CONVERTED' }),
+      dealService.count(ctx),
+      dealService.count(ctx, { actualCloseDate: { not: null } }),
+      campaignService.count(ctx),
+      campaignService.count(ctx, { status: 'ACTIVE' }),
+      conversationService.count(ctx),
+      db.bookingAppointment.count({ where: { userId: subAccountId } }),
+      db.bookingAppointment.count({ where: { userId: subAccountId, status: 'CONFIRMED' } }),
+      db.voiceAgent.count({ where: { userId: subAccountId } }),
     ]);
 
     // Get revenue (deals with actualCloseDate are considered won)
-    const deals = await prisma.deal.findMany({
-      where: {
-        userId: subAccountId,
-        actualCloseDate: {
-          not: null,
-        },
-      },
-      select: {
-        value: true,
-      },
+    const deals = await db.deal.findMany({
+      where: { userId: subAccountId, actualCloseDate: { not: null } },
+      select: { value: true },
     });
 
     const totalRevenue = deals.reduce((sum, deal) => sum + (deal.value || 0), 0);
 
     // Get recent activity
-    const recentLeads = await prisma.lead.findMany({
-      where: { userId: subAccountId },
-      orderBy: { createdAt: 'desc' },
+    const recentLeads = await leadService.findMany(ctx, {
       take: 5,
-      select: {
-        id: true,
-        businessName: true,
-        status: true,
-        createdAt: true,
-      },
+      select: { id: true, businessName: true, status: true, createdAt: true },
     });
 
-    const recentDeals = await prisma.deal.findMany({
-      where: { userId: subAccountId },
-      orderBy: { createdAt: 'desc' },
+    const recentDeals = await dealService.findMany(ctx, {
       take: 5,
-      select: {
-        id: true,
-        title: true,
-        value: true,
-        createdAt: true,
-        stage: {
-          select: {
-            name: true,
-          },
-        },
-      },
     });
 
     return NextResponse.json({

@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { workflowTemplateService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,15 +22,10 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const existing = await prisma.workflowTemplate.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-      include: {
-        tasks: { orderBy: { displayOrder: 'asc' } },
-      },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const existing = await workflowTemplateService.findUnique(ctx, params.id);
 
     if (!existing) {
       return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
@@ -53,7 +49,7 @@ export async function POST(
       ? Math.max(...existing.tasks.map((t) => t.displayOrder))
       : 0;
 
-    const task = await prisma.workflowTask.create({
+    const task = await getCrmDb(ctx).workflowTask.create({
       data: {
         templateId: params.id,
         name,

@@ -3,7 +3,8 @@
  * Handles single and bulk outbound calls with smart agent selection
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService } from '@/lib/dal';
 
 export interface MakeOutboundCallParams {
   userId: string;
@@ -53,15 +54,17 @@ export async function selectBestAgentForTask(
   preferAgentId?: string,
   preferAgentName?: string
 ): Promise<string | null> {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   // Explicit preference wins
   if (preferAgentId) {
-    const agent = await prisma.voiceAgent.findFirst({
+    const agent = await db.voiceAgent.findFirst({
       where: { id: preferAgentId, userId },
     });
     return agent?.id ?? null;
   }
   if (preferAgentName) {
-    const agent = await prisma.voiceAgent.findFirst({
+    const agent = await db.voiceAgent.findFirst({
       where: {
         userId,
         name: { contains: preferAgentName, mode: 'insensitive' },
@@ -73,7 +76,7 @@ export async function selectBestAgentForTask(
   }
 
   const text = `${purpose} ${notes || ''}`.toLowerCase();
-  const agents = await prisma.voiceAgent.findMany({
+  const agents = await db.voiceAgent.findMany({
     where: {
       userId,
       status: 'ACTIVE',
@@ -123,7 +126,18 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
   let finalLeadId = leadId;
 
   if (!finalPhoneNumber) {
-    const lead = await prisma.lead.findFirst({
+    const ctx = createDalContext(userId);
+    const leads = await leadService.findMany(ctx, {
+      where: {
+        OR: [
+          { contactPerson: { contains: contactName, mode: 'insensitive' } },
+          { businessName: { contains: contactName, mode: 'insensitive' } },
+          ...(leadId ? [{ id: leadId }] : []),
+        ],
+      },
+      take: 1,
+    });
+    const lead = leads[0];
       where: {
         userId,
         OR: [
@@ -161,8 +175,10 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
     voiceAgentName
   );
 
+  const outboundCtx = createDalContext(userId);
+  const outboundDb = getCrmDb(outboundCtx);
   if (!agentId) {
-    const defaultAgent = await prisma.voiceAgent.findFirst({
+    const defaultAgent = await outboundDb.voiceAgent.findFirst({
       where: {
         userId,
         status: 'ACTIVE',
@@ -178,7 +194,7 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
     }
   }
 
-  const resolvedAgentId = agentId || (await prisma.voiceAgent.findFirst({
+  const resolvedAgentId = agentId || (await outboundDb.voiceAgent.findFirst({
     where: { userId, status: 'ACTIVE', elevenLabsAgentId: { not: null } },
     orderBy: { createdAt: 'desc' },
   }))?.id;
@@ -190,7 +206,7 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
     };
   }
 
-  const voiceAgent = await prisma.voiceAgent.findUnique({
+  const voiceAgent = await outboundDb.voiceAgent.findUnique({
     where: { id: resolvedAgentId },
   });
 
@@ -217,7 +233,7 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
     return { success: false, error: e?.message || 'Agent validation failed' };
   }
 
-  const outboundCall = await prisma.outboundCall.create({
+  const outboundCall = await outboundDb.outboundCall.create({
     data: {
       userId,
       voiceAgentId: resolvedAgentId,
@@ -240,7 +256,7 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
         finalPhoneNumber
       );
 
-      const callLog = await prisma.callLog.create({
+      const callLog = await outboundDb.callLog.create({
         data: {
           userId,
           voiceAgentId: resolvedAgentId,
@@ -257,7 +273,7 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
         },
       });
 
-      await prisma.outboundCall.update({
+      await outboundDb.outboundCall.update({
         where: { id: outboundCall.id },
         data: {
           status: 'IN_PROGRESS',
@@ -275,7 +291,7 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
         leadId: finalLeadId ?? undefined,
       };
     } catch (callError: any) {
-      await prisma.outboundCall.update({
+      await outboundDb.outboundCall.update({
         where: { id: outboundCall.id },
         data: { status: 'FAILED' },
       });
@@ -319,8 +335,10 @@ export async function makeBulkOutboundCalls(params: BulkCallParams): Promise<{
 
   let leads: { id: string; contactPerson: string; businessName: string; phone: string | null }[] = [];
 
+  const bulkCtx = createDalContext(userId);
+  const bulkDb = getCrmDb(bulkCtx);
   if (leadIds?.length) {
-    leads = await prisma.lead.findMany({
+    leads = await bulkDb.lead.findMany({
       where: { id: { in: leadIds }, userId },
       select: { id: true, contactPerson: true, businessName: true, phone: true },
     });
@@ -351,7 +369,7 @@ export async function makeBulkOutboundCalls(params: BulkCallParams): Promise<{
       where.createdAt = { gte: startDate };
     }
 
-    leads = await prisma.lead.findMany({
+    leads = await bulkDb.lead.findMany({
       where,
       take: criteria?.limit || 50,
       orderBy: { createdAt: 'desc' },

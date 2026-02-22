@@ -1,8 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { taskService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,47 +15,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const now = new Date();
 
     // Get counts
     const [total, completed, inProgress, overdue] = await Promise.all([
-      prisma.task.count({
-        where: {
-          OR: [
-            { userId },
-            { assignedToId: userId },
-          ],
-        },
-      }),
-      prisma.task.count({
-        where: {
-          OR: [
-            { userId },
-            { assignedToId: userId },
-          ],
-          status: 'COMPLETED',
-        },
-      }),
-      prisma.task.count({
-        where: {
-          OR: [
-            { userId },
-            { assignedToId: userId },
-          ],
-          status: 'IN_PROGRESS',
-        },
-      }),
-      prisma.task.count({
-        where: {
-          OR: [
-            { userId },
-            { assignedToId: userId },
-          ],
-          status: { not: 'COMPLETED' },
-          dueDate: { lt: now },
-        },
-      }),
+      taskService.count(ctx),
+      taskService.count(ctx, { status: 'COMPLETED' as any }),
+      taskService.count(ctx, { status: 'IN_PROGRESS' as any }),
+      taskService.count(ctx, { status: { not: 'COMPLETED' } as any, dueDate: { lt: now } }),
     ]);
 
     // Calculate completion rate

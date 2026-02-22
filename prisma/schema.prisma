@@ -309,6 +309,8 @@ model User {
   voiceAIBillingRecords       VoiceAIBillingRecord[]       @relation("VoiceAIBillingRecordUser")
   // Website Builder Relations
   websites                    Website[]
+
+  @@index([industry])
 }
 
 model Lead {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { leadService, getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context'
 
 // POST /api/appointments/public/book - Public booking endpoint for widget
 
@@ -29,7 +30,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify user exists
+    // Verify user exists (User model stays on prisma - meta DB)
+    const { prisma } = await import('@/lib/db');
     const user = await prisma.user.findUnique({
       where: { id: userId },
     })
@@ -53,10 +55,12 @@ export async function POST(request: NextRequest) {
 
     const duration = Math.round((end.getTime() - start.getTime()) / (1000 * 60))
 
+    const ctx = createDalContext(userId);
+
     // Check for conflicts
-    const conflictingAppointment = await prisma.bookingAppointment.findFirst({
+    const conflictingAppointment = await getCrmDb(ctx).bookingAppointment.findFirst({
       where: {
-        userId: userId,
+        userId: ctx.userId,
         status: {
           notIn: ['CANCELLED', 'NO_SHOW'],
         },
@@ -75,29 +79,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Create or find lead
-    let lead = await prisma.lead.findFirst({
-      where: {
-        userId: userId,
-        email: customerEmail,
-      },
-    })
+    let lead = await leadService.findMany(ctx, {
+      where: { email: customerEmail },
+      take: 1,
+    }).then((r) => r[0]);
 
     if (!lead) {
-      lead = await prisma.lead.create({
-        data: {
-          businessName: customerName,
-          contactPerson: customerName,
-          email: customerEmail,
-          phone: customerPhone || '',
-          status: 'NEW',
-          source: 'BOOKING_WIDGET',
-          userId: userId,
-        },
+      lead = await leadService.create(ctx, {
+        businessName: customerName,
+        contactPerson: customerName,
+        email: customerEmail,
+        phone: customerPhone || '',
+        status: 'NEW',
+        source: 'BOOKING_WIDGET',
       })
     }
 
     // Create appointment
-    const appointment = await prisma.bookingAppointment.create({
+    const appointment = await getCrmDb(ctx).bookingAppointment.create({
       data: {
         appointmentDate: start,
         duration,
@@ -108,7 +107,7 @@ export async function POST(request: NextRequest) {
         meetingLink: meetingType === 'VIDEO_CALL' ? location : null,
         notes: notes || '',
         status: 'SCHEDULED',
-        userId: userId,
+        userId: ctx.userId,
         leadId: lead.id,
       },
       include: {

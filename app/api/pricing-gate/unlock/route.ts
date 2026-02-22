@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { createDalContext } from "@/lib/context/industry-context";
+import { leadService } from "@/lib/dal/lead-service";
 import { emailService } from "@/lib/email-service";
 
 export const dynamic = "force-dynamic";
@@ -18,15 +19,13 @@ export async function POST(request: Request) {
     const leadOwnerId = process.env.DEMO_LEAD_OWNER_ID || "";
     if (leadOwnerId) {
       try {
-        await prisma.lead.create({
-          data: {
-            userId: leadOwnerId,
-            businessName: "Pricing Gate",
-            contactPerson: email,
-            email,
-            source: "pricing_gate",
-            tags: ["pricing-gate", "landing-page"],
-          },
+        const ctx = createDalContext(leadOwnerId);
+        await leadService.create(ctx, {
+          businessName: "Pricing Gate",
+          contactPerson: email,
+          email,
+          source: "pricing_gate",
+          tags: ["pricing-gate", "landing-page"],
         });
       } catch (error) {
         console.error("Failed to store pricing gate lead:", error);

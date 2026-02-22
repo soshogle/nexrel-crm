@@ -2,7 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { leadService, noteService, messageService } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { LeadsList } from '@/components/leads/leads-list'
 import { redirect } from 'next/navigation'
 
@@ -14,8 +15,10 @@ export default async function LeadsPage() {
       redirect('/login')
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) redirect('/login')
+
     // Fetch leads without relations first to avoid potential issues
-    // Explicitly select fields to avoid issues with missing columns like dateOfBirth
     let leadsData: Array<{
       id: string;
       businessName: string;
@@ -37,8 +40,7 @@ export default async function LeadsPage() {
       lastContactedAt: Date | null;
     }> = [];
     try {
-      leadsData = await prisma.lead.findMany({
-        where: { userId: session.user.id },
+      leadsData = await leadService.findMany(ctx, {
         select: {
           id: true,
           businessName: true,
@@ -58,43 +60,33 @@ export default async function LeadsPage() {
           createdAt: true,
           updatedAt: true,
           lastContactedAt: true,
-          // Exclude dateOfBirth if it doesn't exist in database yet
-        },
-        orderBy: { createdAt: 'desc' }
+        } as any,
       });
     } catch (dbError: any) {
-      // Handle Prisma schema mismatch errors gracefully
       if (dbError?.code === 'P2022' || dbError?.code === 'P2021') {
         console.warn('Database schema mismatch, fetching without explicit select:', dbError.message);
-        // Fallback: try without explicit select but catch any errors
         try {
-          leadsData = await prisma.lead.findMany({
-            where: { userId: session.user.id },
-            orderBy: { createdAt: 'desc' }
-          });
+          leadsData = await leadService.findMany(ctx, {});
         } catch (fallbackError: any) {
           console.error('Fallback query also failed:', fallbackError);
           leadsData = [];
         }
       } else {
-        throw dbError; // Re-throw non-schema errors
+        throw dbError;
       }
     }
 
-    // Then fetch notes and messages separately if needed
     let notesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
     let messagesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
 
     if (leadsData.length > 0) {
       const leadIds = leadsData.map(l => l.id);
       const [notes, messages] = await Promise.all([
-        prisma.note.findMany({
-          where: { leadId: { in: leadIds } },
-          select: { id: true, leadId: true, createdAt: true },
+        noteService.findMany(ctx, { leadId: { in: leadIds } }, {
+          select: { id: true, leadId: true, createdAt: true } as any,
         }).catch(() => []),
-        prisma.message.findMany({
-          where: { leadId: { in: leadIds } },
-          select: { id: true, leadId: true, createdAt: true },
+        messageService.findMany(ctx, { leadId: { in: leadIds } }, {
+          select: { id: true, leadId: true, createdAt: true } as any,
         }).catch(() => []),
       ]);
 

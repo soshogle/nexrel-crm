@@ -4,7 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService, campaignService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { emailService } from '@/lib/email-service';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const users = await prisma.user.findMany({
+  const db = getCrmDb(createDalContext('bootstrap'));
+  const users = await db.user.findMany({
     where: { accountStatus: 'APPROVED' },
     select: { id: true, email: true, name: true, onboardingProgress: true },
   });
@@ -37,26 +39,21 @@ export async function GET(req: NextRequest) {
         campaignsActive,
         upcomingAppointments,
       ] = await Promise.all([
-        prisma.lead.count({ where: { userId: user.id } }),
-        prisma.lead.count({
-          where: {
-            userId: user.id,
-            createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) },
-          },
-        }),
-        prisma.deal.count({ where: { userId: user.id, status: { in: ['IN_PROGRESS', 'NEGOTIATION'] } } }),
-        prisma.deal.aggregate({
+        leadService.count(createDalContext(user.id)),
+        leadService.count(createDalContext(user.id), { createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) } }),
+        db.deal.count({ where: { userId: user.id, status: { in: ['IN_PROGRESS', 'NEGOTIATION'] } } }),
+        db.deal.aggregate({
           where: { userId: user.id, status: { in: ['IN_PROGRESS', 'NEGOTIATION'] } },
           _sum: { value: true },
         }),
-        prisma.callLog.count({
+        db.callLog.count({
           where: {
             userId: user.id,
             createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) },
           },
         }),
-        prisma.campaign.count({ where: { userId: user.id, status: 'ACTIVE' } }),
-        prisma.bookingAppointment.count({
+        campaignService.count(createDalContext(user.id), { status: 'ACTIVE' }),
+        db.bookingAppointment.count({
           where: {
             userId: user.id,
             appointmentDate: { gte: new Date(), lte: new Date(Date.now() + 7 * 86_400_000) },

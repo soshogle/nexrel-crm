@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService, getCrmDb } from '@/lib/dal';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,8 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -26,12 +28,9 @@ export async function POST(
       return NextResponse.json({ error: 'Website ID required' }, { status: 400 });
     }
 
-    const website = await prisma.website.findUnique({
-      where: { id: websiteId },
-      select: { userId: true },
-    });
+    const website = await websiteService.findUnique(ctx, websiteId);
 
-    if (!website || website.userId !== session.user.id) {
+    if (!website) {
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
@@ -50,10 +49,10 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid reportType' }, { status: 400 });
     }
 
-    const report = await prisma.rEWebsiteReport.create({
+    const report = await getCrmDb(ctx).rEWebsiteReport.create({
       data: {
         websiteId,
-        userId: session.user.id,
+        userId: ctx.userId,
         reportType,
         title,
         region: region || null,

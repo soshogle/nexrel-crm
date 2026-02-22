@@ -1,9 +1,8 @@
-
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-
+import { leadService, dealService, messageService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,38 +13,25 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const contact = await prisma.lead.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-    });
-
+    const contact = await leadService.findUnique(ctx, params.id);
     if (!contact) {
       return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
     }
 
-    // Fetch recent activities
+    // Fetch recent activities (callLog not in DAL - use getCrmDb)
     const [messages, calls, deals] = await Promise.all([
-      prisma.message.findMany({
+      messageService.findMany(ctx, { leadId: params.id }, { take: 10 }),
+      getCrmDb(ctx).callLog.findMany({
         where: { leadId: params.id },
         orderBy: { createdAt: 'desc' },
         take: 10,
       }),
-      prisma.callLog.findMany({
-        where: { leadId: params.id },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      }),
-      prisma.deal.findMany({
-        where: { leadId: params.id },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      }),
+      dealService.findMany(ctx, { leadId: params.id, take: 10 }),
     ]);
 
     // Combine and format activities

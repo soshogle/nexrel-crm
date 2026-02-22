@@ -1,9 +1,8 @@
-
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-
+import { leadService, dealService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,25 +13,17 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const contact = await prisma.lead.findFirst({
-      where: {
-        id: params.id,
-        userId: session.user.id,
-      },
-    });
-
+    const contact = await leadService.findUnique(ctx, params.id);
     if (!contact) {
       return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
     }
 
-    const deals = await prisma.deal.findMany({
-      where: { leadId: params.id },
-      orderBy: { createdAt: 'desc' },
-    });
+    const deals = await dealService.findMany(ctx, { leadId: params.id });
 
     return NextResponse.json(deals);
   } catch (error) {

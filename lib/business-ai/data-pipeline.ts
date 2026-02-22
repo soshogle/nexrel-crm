@@ -3,7 +3,8 @@
  * Aggregates all CRM data in real-time for the AI brain
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { Industry } from '@prisma/client';
 
 export interface BusinessDataSnapshot {
@@ -133,6 +134,8 @@ export class BusinessDataPipeline {
     industry?: Industry,
     period: 'day' | 'week' | 'month' | 'quarter' | 'year' = 'month'
   ): Promise<BusinessDataSnapshot> {
+    const ctx = createDalContext(userId, industry ?? undefined);
+    const db = getCrmDb(ctx);
     const now = new Date();
     const periodStart = this.getPeriodStart(now, period);
     const periodEnd = now;
@@ -155,20 +158,20 @@ export class BusinessDataPipeline {
       workflowsData,
       appointmentsData,
     ] = await Promise.all([
-      this.getRevenueData(userId, periodStart, periodEnd, lastPeriodStart, lastPeriodEnd),
-      this.getLeadsData(userId, periodStart, periodEnd),
-      this.getDealsData(userId, periodStart, periodEnd),
-      this.getCustomersData(userId, periodStart, periodEnd),
-      this.getProductsData(userId),
-      this.getOrdersData(userId, periodStart, periodEnd),
-      this.getCommunicationData(userId, periodStart, periodEnd),
-      this.getWorkflowsData(userId, periodStart, periodEnd),
-      this.getAppointmentsData(userId, periodStart, periodEnd),
+      this.getRevenueData(ctx, periodStart, periodEnd, lastPeriodStart, lastPeriodEnd),
+      this.getLeadsData(ctx, periodStart, periodEnd),
+      this.getDealsData(ctx, periodStart, periodEnd),
+      this.getCustomersData(ctx, periodStart, periodEnd),
+      this.getProductsData(ctx),
+      this.getOrdersData(ctx, periodStart, periodEnd),
+      this.getCommunicationData(ctx, periodStart, periodEnd),
+      this.getWorkflowsData(ctx, periodStart, periodEnd),
+      this.getAppointmentsData(ctx, periodStart, periodEnd),
     ]);
 
     // Get industry-specific data
     const industryData = industry
-      ? await this.getIndustrySpecificData(userId, industry, periodStart, periodEnd)
+      ? await this.getIndustrySpecificData(ctx, industry, periodStart, periodEnd)
       : {};
 
     return {
@@ -192,24 +195,25 @@ export class BusinessDataPipeline {
    * Get revenue data
    */
   private async getRevenueData(
-    userId: string,
+    ctx: { userId: string; industry?: Industry | null },
     periodStart: Date,
     periodEnd: Date,
     lastPeriodStart: Date,
     lastPeriodEnd: Date
   ) {
+    const db = getCrmDb(ctx);
     // Get payments/revenue
-    const payments = await prisma.payment.findMany({
+    const payments = await db.payment.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         createdAt: { gte: periodStart, lte: periodEnd },
         status: 'SUCCEEDED',
       },
     });
 
-    const lastPeriodPayments = await prisma.payment.findMany({
+    const lastPeriodPayments = await db.payment.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         createdAt: { gte: lastPeriodStart, lte: lastPeriodEnd },
         status: 'SUCCEEDED',
       },
@@ -219,9 +223,9 @@ export class BusinessDataPipeline {
     const lastMonthRevenue = lastPeriodPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
     // Get revenue by product
-    const orders = await prisma.order.findMany({
+    const orders = await db.order.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         createdAt: { gte: periodStart, lte: periodEnd },
         status: { not: 'CANCELED' as any },
       },
@@ -255,9 +259,9 @@ export class BusinessDataPipeline {
       const dayStart = new Date(date.setHours(0, 0, 0, 0));
       const dayEnd = new Date(date.setHours(23, 59, 59, 999));
       
-      const dayPayments = await prisma.payment.findMany({
+      const dayPayments = await db.payment.findMany({
         where: {
-          userId,
+          userId: ctx.userId,
           createdAt: { gte: dayStart, lte: dayEnd },
           status: 'SUCCEEDED',
         },
@@ -289,9 +293,10 @@ export class BusinessDataPipeline {
   /**
    * Get leads data
    */
-  private async getLeadsData(userId: string, periodStart: Date, periodEnd: Date) {
-    const allLeads = await prisma.lead.findMany({
-      where: { userId },
+  private async getLeadsData(ctx: { userId: string; industry?: Industry | null }, periodStart: Date, periodEnd: Date) {
+    const db = getCrmDb(ctx);
+    const allLeads = await db.lead.findMany({
+      where: { userId: ctx.userId },
     });
 
     const periodLeads = allLeads.filter(
@@ -341,9 +346,10 @@ export class BusinessDataPipeline {
   /**
    * Get deals data
    */
-  private async getDealsData(userId: string, periodStart: Date, periodEnd: Date) {
-    const deals = await prisma.deal.findMany({
-      where: { userId },
+  private async getDealsData(ctx: { userId: string; industry?: Industry | null }, periodStart: Date, periodEnd: Date) {
+    const db = getCrmDb(ctx);
+    const deals = await db.deal.findMany({
+      where: { userId: ctx.userId },
       include: {
         stage: true,
       },
@@ -426,17 +432,18 @@ export class BusinessDataPipeline {
   /**
    * Get customers data
    */
-  private async getCustomersData(userId: string, periodStart: Date, periodEnd: Date) {
+  private async getCustomersData(ctx: { userId: string; industry?: Industry | null }, periodStart: Date, periodEnd: Date) {
+    const db = getCrmDb(ctx);
     // Customers are leads that converted or have orders
-    const convertedLeads = await prisma.lead.findMany({
+    const convertedLeads = await db.lead.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         status: 'CONVERTED',
       },
     });
 
-    const orders = await prisma.order.findMany({
-      where: { userId },
+    const orders = await db.order.findMany({
+      where: { userId: ctx.userId },
       distinct: ['customerEmail'],
     });
 
@@ -446,8 +453,8 @@ export class BusinessDataPipeline {
     ]);
 
     // Calculate customer lifetime value from orders
-    const customerOrders = await prisma.order.findMany({
-      where: { userId },
+    const customerOrders = await db.order.findMany({
+      where: { userId: ctx.userId },
       include: { items: true },
     });
 
@@ -481,9 +488,10 @@ export class BusinessDataPipeline {
   /**
    * Get products data
    */
-  private async getProductsData(userId: string) {
-    const products = await prisma.product.findMany({
-      where: { userId },
+  private async getProductsData(ctx: { userId: string; industry?: Industry | null }) {
+    const db = getCrmDb(ctx);
+    const products = await db.product.findMany({
+      where: { userId: ctx.userId },
       include: {
         orders: true,
       },
@@ -517,10 +525,11 @@ export class BusinessDataPipeline {
   /**
    * Get orders data
    */
-  private async getOrdersData(userId: string, periodStart: Date, periodEnd: Date) {
-    const orders = await prisma.order.findMany({
+  private async getOrdersData(ctx: { userId: string; industry?: Industry | null }, periodStart: Date, periodEnd: Date) {
+    const db = getCrmDb(ctx);
+    const orders = await db.order.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         createdAt: { gte: periodStart, lte: periodEnd },
       },
       include: { items: true },
@@ -559,11 +568,12 @@ export class BusinessDataPipeline {
   /**
    * Get communication data
    */
-  private async getCommunicationData(userId: string, periodStart: Date, periodEnd: Date) {
+  private async getCommunicationData(ctx: { userId: string; industry?: Industry | null }, periodStart: Date, periodEnd: Date) {
+    const db = getCrmDb(ctx);
     // Email campaigns
-    const emailCampaigns = await prisma.emailCampaign.findMany({
+    const emailCampaigns = await db.emailCampaign.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         createdAt: { gte: periodStart, lte: periodEnd },
       },
       include: {
@@ -585,9 +595,9 @@ export class BusinessDataPipeline {
     });
 
     // SMS campaigns
-    const smsCampaigns = await prisma.smsCampaign.findMany({
+    const smsCampaigns = await db.smsCampaign.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         createdAt: { gte: periodStart, lte: periodEnd },
       },
     });
@@ -596,9 +606,9 @@ export class BusinessDataPipeline {
     const smsReplied = 0; // Would need SMS reply tracking
 
     // Calls
-    const calls = await prisma.callLog.findMany({
+    const calls = await db.callLog.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         createdAt: { gte: periodStart, lte: periodEnd },
       },
     });
@@ -625,14 +635,15 @@ export class BusinessDataPipeline {
   /**
    * Get workflows data
    */
-  private async getWorkflowsData(userId: string, periodStart: Date, periodEnd: Date) {
-    const workflows = await prisma.workflow.findMany({
-      where: { userId },
+  private async getWorkflowsData(ctx: { userId: string; industry?: Industry | null }, periodStart: Date, periodEnd: Date) {
+    const db = getCrmDb(ctx);
+    const workflows = await db.workflow.findMany({
+      where: { userId: ctx.userId },
     });
 
-    const enrollments = await prisma.workflowEnrollment.findMany({
+    const enrollments = await db.workflowEnrollment.findMany({
       where: {
-        userId,
+        userId: ctx.userId,
         createdAt: { gte: periodStart, lte: periodEnd },
       },
     });
@@ -678,16 +689,17 @@ export class BusinessDataPipeline {
   /**
    * Get appointments data
    */
-  private async getAppointmentsData(userId: string, periodStart: Date, periodEnd: Date) {
-    const appointments = await prisma.bookingAppointment.findMany({
+  private async getAppointmentsData(ctx: { userId: string; industry?: Industry | null }, periodStart: Date, periodEnd: Date) {
+    const db = getCrmDb(ctx);
+    const appointments = await db.bookingAppointment.findMany({
       where: {
-        userId,
-        startTime: { gte: periodStart, lte: periodEnd },
+        userId: ctx.userId,
+        appointmentDate: { gte: periodStart, lte: periodEnd },
       },
     });
 
     const now = new Date();
-    const upcoming = appointments.filter(a => a.startTime > now).length;
+    const upcoming = appointments.filter(a => a.appointmentDate > now).length;
     const completed = appointments.filter(a => a.status === 'COMPLETED').length;
     const canceled = appointments.filter(a => a.status === 'CANCELED').length;
 
@@ -709,18 +721,19 @@ export class BusinessDataPipeline {
    * Get industry-specific data
    */
   private async getIndustrySpecificData(
-    userId: string,
+    ctx: { userId: string; industry?: Industry | null },
     industry: Industry,
     periodStart: Date,
     periodEnd: Date
   ): Promise<Record<string, any>> {
+    const db = getCrmDb(ctx);
     const data: Record<string, any> = {};
 
     switch (industry) {
       case 'REAL_ESTATE':
         // Real estate specific metrics
-        const reProperties = await prisma.rEProperty.findMany({
-          where: { userId },
+        const reProperties = await db.rEProperty.findMany({
+          where: { userId: ctx.userId },
         });
         data.properties = {
           total: reProperties.length,
@@ -732,8 +745,8 @@ export class BusinessDataPipeline {
       case 'DENTAL':
       case 'MEDICAL':
         // Medical/dental specific metrics
-        const patients = await prisma.lead.findMany({
-          where: { userId },
+        const patients = await db.lead.findMany({
+          where: { userId: ctx.userId },
         });
         data.patients = {
           total: patients.length,
@@ -746,8 +759,8 @@ export class BusinessDataPipeline {
 
       case 'RESTAURANT':
         // Restaurant specific metrics
-        const reservations = await prisma.reservation.findMany({
-          where: { userId },
+        const reservations = await db.reservation.findMany({
+          where: { userId: ctx.userId },
         });
         data.reservations = {
           total: reservations.length,

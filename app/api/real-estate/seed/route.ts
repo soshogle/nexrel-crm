@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     let created = { leads: 0, fsboListings: 0 };
 
     // Create sample RE leads
@@ -51,17 +53,15 @@ export async function POST(request: NextRequest) {
     ];
 
     for (const leadData of sampleLeads) {
-      const existing = await prisma.lead.findFirst({
-        where: { userId, email: leadData.email },
+      const [existing] = await leadService.findMany(ctx, {
+        where: { email: leadData.email },
+        take: 1,
       });
 
       if (!existing) {
-        await prisma.lead.create({
-          data: {
-            userId,
-            ...leadData,
-            status: leadData.status as any,
-          },
+        await leadService.create(ctx, {
+          ...leadData,
+          status: leadData.status as any,
         });
         created.leads++;
       }
@@ -109,9 +109,9 @@ export async function POST(request: NextRequest) {
 
     for (const fsbo of fsboSamples) {
       try {
-        await prisma.rEFSBOListing.create({
+        await getCrmDb(ctx).rEFSBOListing.create({
           data: {
-            assignedUserId: userId,
+            assignedUserId: ctx.userId,
             source: fsbo.source as any,
             sourceUrl: fsbo.sourceUrl,
             address: fsbo.address,

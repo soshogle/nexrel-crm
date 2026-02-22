@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { t } from '@/lib/i18n-server';
 
 export const dynamic = 'force-dynamic';
@@ -44,20 +45,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+
     // Store signature in DentalFormResponse if documentId is a form response
     // Otherwise, store in document metadata or create a signature record
     // For now, we'll store in DentalFormResponse.signatureData if documentId matches
     
     if (documentId) {
       // Check if documentId is a form response ID
-      const formResponse = await prisma.dentalFormResponse.findUnique({
+      const formResponse = await getCrmDb(ctx).dentalFormResponse.findUnique({
         where: { id: documentId },
       });
 
       if (formResponse) {
         // Update form response with signature
         // signatureData is a JSON field, so we need to structure it properly
-        await prisma.dentalFormResponse.update({
+        await getCrmDb(ctx).dentalFormResponse.update({
           where: { id: documentId },
           data: {
             signatureData: {
@@ -78,7 +82,7 @@ export async function POST(request: NextRequest) {
       }
 
       // If not a form response, store in document metadata
-      const document = await prisma.patientDocument.findUnique({
+      const document = await getCrmDb(ctx).patientDocument.findUnique({
         where: { id: documentId },
       });
 
@@ -96,7 +100,7 @@ export async function POST(request: NextRequest) {
           createdAt: new Date().toISOString(),
         });
 
-        await prisma.patientDocument.update({
+        await getCrmDb(ctx).patientDocument.update({
           where: { id: documentId },
           data: { metadata },
         });
@@ -112,9 +116,7 @@ export async function POST(request: NextRequest) {
     // If no documentId, create a standalone signature record
     // Store in Lead's dentalHistory or create a new signature entry
     if (leadId) {
-      const lead = await prisma.lead.findUnique({
-        where: { id: leadId, userId },
-      });
+      const lead = await leadService.findUnique(ctx, leadId);
 
       if (lead) {
         const dentalHistory = (lead.dentalHistory as any) || {};
@@ -131,10 +133,7 @@ export async function POST(request: NextRequest) {
           createdAt: new Date().toISOString(),
         });
 
-        await prisma.lead.update({
-          where: { id: leadId },
-          data: { dentalHistory },
-        });
+        await leadService.update(ctx, leadId, { dentalHistory });
 
         return NextResponse.json({
           success: true,

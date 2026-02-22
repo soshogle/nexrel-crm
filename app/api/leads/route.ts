@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { leadService } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers'
 import { apiErrors } from '@/lib/api-error'
 import { LeadCreateBodySchema, LeadsGetQuerySchema } from '@/lib/api-validation'
@@ -18,6 +20,9 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized()
     }
 
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return apiErrors.unauthorized()
+
     const { searchParams } = new URL(request.url)
     const queryResult = LeadsGetQuerySchema.safeParse({
       status: searchParams.get('status') ?? undefined,
@@ -28,35 +33,7 @@ export async function GET(request: NextRequest) {
     }
     const { status, search } = queryResult.data
 
-    const where: { userId: string; status?: string; OR?: Array<Record<string, unknown>> } = {
-      userId: session.user.id,
-    }
-    
-    if (status && status !== 'ALL') {
-      where.status = status
-    }
-    
-    if (search) {
-      where.OR = [
-        { businessName: { contains: search, mode: 'insensitive' } },
-        { contactPerson: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search } },
-      ]
-    }
-
-    const leads = await prisma.lead.findMany({
-      where,
-      include: {
-        notes: {
-          select: { id: true, createdAt: true }
-        },
-        messages: {
-          select: { id: true, createdAt: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
+    const leads = await leadService.findMany(ctx, { status, search })
 
     return NextResponse.json(leads)
   } catch (error) {
@@ -86,16 +63,10 @@ export async function POST(request: NextRequest) {
     }
     const data = parseResult.data
 
-    const lead = await prisma.lead.create({
-      data: {
-        ...data,
-        userId: session.user.id,
-      },
-      include: {
-        notes: true,
-        messages: true,
-      }
-    })
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) return apiErrors.unauthorized()
+
+    const lead = await leadService.create(ctx, data)
 
     emitCRMEvent('lead_created', session.user.id, { entityId: lead.id, entityType: 'Lead', data: { name: lead.businessName || lead.contactPerson } });
 

@@ -4,7 +4,8 @@
  * (Workflows define the behavior; auto-run is the trigger switch)
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService, workflowTemplateService } from '@/lib/dal';
 import { Industry } from '@prisma/client';
 import { startWorkflowInstance } from '@/lib/real-estate/workflow-engine';
 import { startWorkflowInstance as startIndustryWorkflowInstance } from '@/lib/workflows/workflow-engine';
@@ -34,7 +35,8 @@ export async function triggerAutoRunOnLeadCreated(
   leadId: string
 ): Promise<void> {
   try {
-    const setting = await prisma.aIEmployeeAutoRun.findFirst({
+    const db = getCrmDb(createDalContext(userId));
+    const setting = await db.aIEmployeeAutoRun.findFirst({
       where: {
         userId,
         employeeType: 'RE_SPEED_TO_LEAD',
@@ -46,10 +48,8 @@ export async function triggerAutoRunOnLeadCreated(
 
     if (!setting?.workflowId) return;
 
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-      select: { id: true, status: true, tags: true },
-    });
+    const ctx = createDalContext(userId);
+    const lead = await leadService.findUnique(ctx, leadId);
     if (!lead) return;
 
     const tagsArray = (lead.tags as any) || [];
@@ -58,7 +58,7 @@ export async function triggerAutoRunOnLeadCreated(
       : null;
     const workflowType = leadType?.toLowerCase?.().includes('seller') ? 'SELLER' : 'BUYER';
 
-    const template = await prisma.rEWorkflowTemplate.findUnique({
+    const template = await db.rEWorkflowTemplate.findUnique({
       where: { id: setting.workflowId },
     });
     if (!template || template.userId !== userId || !template.isActive) return;
@@ -89,7 +89,8 @@ export async function triggerIndustryAutoRunOnLeadCreated(
   industry: Industry
 ): Promise<void> {
   try {
-    const settings = await prisma.aIEmployeeAutoRun.findMany({
+    const db = getCrmDb(createDalContext(userId));
+    const settings = await db.aIEmployeeAutoRun.findMany({
       where: {
         userId,
         industry,
@@ -100,18 +101,14 @@ export async function triggerIndustryAutoRunOnLeadCreated(
 
     if (settings.length === 0) return;
 
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-      select: { id: true, status: true },
-    });
+    const ctx = createDalContext(userId);
+    const lead = await leadService.findUnique(ctx, leadId);
     if (!lead) return;
 
     for (const setting of settings) {
       if (!setting.workflowId) continue;
 
-      const template = await prisma.workflowTemplate.findUnique({
-        where: { id: setting.workflowId },
-      });
+      const template = await workflowTemplateService.findUnique(ctx, setting.workflowId);
       if (!template || template.userId !== userId || template.industry !== industry || !template.isActive) continue;
 
       await startIndustryWorkflowInstance(userId, setting.workflowId, {

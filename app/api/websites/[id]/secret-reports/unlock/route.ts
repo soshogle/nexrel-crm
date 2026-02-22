@@ -4,7 +4,8 @@
  * Auth: x-website-secret header (template server proxy)
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -36,7 +37,8 @@ export async function POST(
       );
     }
 
-    const website = await prisma.website.findUnique({
+    const ctx = createDalContext('bootstrap', null);
+    const website = await getCrmDb(ctx).website.findUnique({
       where: { id: websiteId },
       select: { userId: true },
     });
@@ -45,7 +47,7 @@ export async function POST(
       return NextResponse.json({ error: 'Website not found' }, { status: 404 });
     }
 
-    const report = await prisma.rEWebsiteReport.findFirst({
+    const report = await getCrmDb(ctx).rEWebsiteReport.findFirst({
       where: { id: reportId, websiteId },
       select: {
         id: true,
@@ -63,8 +65,9 @@ export async function POST(
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
+    const userCtx = createDalContext(website.userId);
     // Create lead
-    const lead = await prisma.lead.create({
+    const lead = await getCrmDb(userCtx).lead.create({
       data: {
         userId: website.userId,
         businessName: name.trim(),
@@ -83,7 +86,7 @@ export async function POST(
       },
     });
 
-    await prisma.note.create({
+    await getCrmDb(userCtx).note.create({
       data: {
         leadId: lead.id,
         userId: website.userId,

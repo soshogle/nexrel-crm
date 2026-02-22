@@ -1,8 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { dealService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { detectDealStageWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
@@ -19,22 +20,22 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const deal = await prisma.deal.findUnique({
-      where: { id: params.id },
-      include: {
-        lead: true,
-        assignedTo: true,
-        stage: true,
-        pipeline: true,
-        activities: {
-          orderBy: { createdAt: 'desc' },
-        },
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const deal = await dealService.findUnique(ctx, params.id, {
+      lead: true,
+      assignedTo: true,
+      stage: true,
+      pipeline: true,
+      activities: {
+        orderBy: { createdAt: 'desc' },
       },
-    });
+    } as any);
 
     if (!deal) {
       return NextResponse.json({ error: 'Deal not found' }, { status: 404 });
@@ -57,12 +58,15 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: session.user.id },
     });
 
     if (!user) {
@@ -70,10 +74,7 @@ export async function PATCH(
     }
 
     const data = await request.json();
-    const existingDeal = await prisma.deal.findUnique({
-      where: { id: params.id },
-      include: { stage: true },
-    });
+    const existingDeal = await dealService.findUnique(ctx, params.id, { stage: true });
 
     if (!existingDeal) {
       return NextResponse.json({ error: 'Deal not found' }, { status: 404 });
@@ -86,7 +87,7 @@ export async function PATCH(
 
     if (data.stageId && data.stageId !== existingDeal.stageId) {
       stageChanged = true;
-      newStage = await prisma.pipelineStage.findUnique({
+      newStage = await getCrmDb(ctx).pipelineStage.findUnique({
         where: { id: data.stageId },
       });
       if (newStage) {
@@ -95,23 +96,19 @@ export async function PATCH(
     }
 
     // Update deal
-    const updatedDeal = await prisma.deal.update({
-      where: { id: params.id },
-      data: {
-        ...data,
-        probability: data.stageId ? newProbability : existingDeal.probability,
-        expectedCloseDate: data.expectedCloseDate ? new Date(data.expectedCloseDate) : existingDeal.expectedCloseDate,
-      },
-      include: {
-        lead: true,
-        assignedTo: true,
-        stage: true,
-      },
-    });
+    const updatedDeal = await dealService.update(ctx, params.id, {
+      ...data,
+      probability: data.stageId ? newProbability : existingDeal.probability,
+      expectedCloseDate: data.expectedCloseDate ? new Date(data.expectedCloseDate) : existingDeal.expectedCloseDate,
+    }, {
+      lead: true,
+      assignedTo: true,
+      stage: true,
+    } as any);
 
     // Log activity
     if (stageChanged) {
-      await prisma.dealActivity.create({
+      await getCrmDb(ctx).dealActivity.create({
         data: {
           dealId: params.id,
           userId: user.id,
@@ -169,7 +166,7 @@ export async function PATCH(
         }
       }
     } else if (data.value && data.value !== existingDeal.value) {
-      await prisma.dealActivity.create({
+      await getCrmDb(ctx).dealActivity.create({
         data: {
           dealId: params.id,
           userId: user.id,
@@ -196,13 +193,14 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await prisma.deal.delete({
-      where: { id: params.id },
-    });
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    await dealService.delete(ctx, params.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

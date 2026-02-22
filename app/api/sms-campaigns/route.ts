@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,15 +18,19 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
     const where: any = {
-      userId: session.user.id,
+      userId: ctx.userId,
     };
 
     if (status && status !== 'ALL') {
       where.status = status;
     }
 
-    const campaigns = await prisma.smsCampaign.findMany({
+    const campaigns = await db.smsCampaign.findMany({
       where,
       include: {
         recipients: {
@@ -108,9 +113,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
     // Get user's SMS provider (Twilio) phone number
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const user = await db.user.findUnique({
+      where: { id: ctx.userId },
       select: { smsProviderConfig: true },
     });
 
@@ -125,9 +134,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Count target leads based on filters
-    const targetLeads = await prisma.lead.findMany({
+    const targetLeads = await leadService.findMany(ctx, {
       where: {
-        userId: session.user.id,
         leadScore: minLeadScore ? { gte: minLeadScore } : undefined,
         id: targetLeadIds ? { in: targetLeadIds } : undefined,
         phone: { not: null },
@@ -138,9 +146,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Create the campaign
-    const campaign = await prisma.smsCampaign.create({
+    const campaign = await db.smsCampaign.create({
       data: {
-        userId: session.user.id,
+        userId: ctx.userId,
         name,
         message,
         minLeadScore,

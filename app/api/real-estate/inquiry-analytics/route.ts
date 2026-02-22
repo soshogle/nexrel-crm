@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
@@ -26,9 +28,9 @@ export async function GET(request: NextRequest) {
       websites,
       properties,
     ] = await Promise.all([
-      prisma.lead.count({ where: { userId } }),
-      prisma.lead.findMany({
-        where: { userId, createdAt: { gte: thirtyDaysAgo } },
+      leadService.count(ctx),
+      leadService.findMany(ctx, {
+        where: { createdAt: { gte: thirtyDaysAgo } },
         select: {
           id: true, businessName: true, contactPerson: true, email: true,
           phone: true, source: true, status: true, tags: true, address: true,
@@ -36,24 +38,24 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.lead.count({ where: { userId, createdAt: { gte: sevenDaysAgo } } }),
-      prisma.lead.groupBy({
+      leadService.count(ctx, { createdAt: { gte: sevenDaysAgo } }),
+      getCrmDb(ctx).lead.groupBy({
         by: ['source'],
-        where: { userId },
+        where: { userId: ctx.userId },
         _count: true,
         orderBy: { _count: { source: 'desc' } },
       }),
-      prisma.lead.groupBy({
+      getCrmDb(ctx).lead.groupBy({
         by: ['status'],
-        where: { userId },
+        where: { userId: ctx.userId },
         _count: true,
       }),
-      prisma.website.findMany({
-        where: { userId },
+      getCrmDb(ctx).website.findMany({
+        where: { userId: ctx.userId },
         select: { id: true, name: true, vercelDeploymentUrl: true },
       }),
-      prisma.rEProperty.findMany({
-        where: { userId },
+      getCrmDb(ctx).rEProperty.findMany({
+        where: { userId: ctx.userId },
         select: { id: true, address: true, listingStatus: true, listPrice: true },
       }),
     ]);

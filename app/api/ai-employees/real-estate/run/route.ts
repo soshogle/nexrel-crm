@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { leadService } from '@/lib/dal/lead-service';
 
 // AI Employee type definitions
 type REAIEmployeeType = 
@@ -31,10 +33,9 @@ interface ExecutionResult {
 
 // Execute Speed to Lead - Respond instantly to new leads
 async function executeSpeedToLead(userId: string): Promise<ExecutionResult> {
-  // Find new leads from the last hour that haven't been contacted
-  const newLeads = await prisma.lead.findMany({
+  const ctx = createDalContext(userId);
+  const newLeads = await leadService.findMany(ctx, {
     where: {
-      userId,
       status: 'NEW',
       lastContactedAt: null,
       createdAt: {
@@ -44,14 +45,10 @@ async function executeSpeedToLead(userId: string): Promise<ExecutionResult> {
     take: 10
   });
 
-  // Mark them as being processed
   for (const lead of newLeads) {
-    await prisma.lead.update({
-      where: { id: lead.id },
-      data: {
-        status: 'CONTACTED',
-        lastContactedAt: new Date()
-      }
+    await leadService.update(ctx, lead.id, {
+      status: 'CONTACTED',
+      lastContactedAt: new Date()
     });
   }
 
@@ -218,26 +215,19 @@ async function executeMarketReport(userId: string, reportType: 'WEEKLY_MARKET_UP
 
 // Execute Cold Lead Reactivation
 async function executeColdReactivation(userId: string): Promise<ExecutionResult> {
-  // Find leads that haven't been contacted in 30+ days
+  const ctx = createDalContext(userId);
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   
-  const coldLeads = await prisma.lead.findMany({
+  const coldLeads = await leadService.findMany(ctx, {
     where: {
-      userId,
       status: { in: ['CONTACTED', 'QUALIFIED'] },
       lastContactedAt: { lt: thirtyDaysAgo }
     },
     take: 25
   });
 
-  // Mark for reactivation
   for (const lead of coldLeads) {
-    await prisma.lead.update({
-      where: { id: lead.id },
-      data: {
-        lastContactedAt: new Date()
-      }
-    });
+    await leadService.update(ctx, lead.id, { lastContactedAt: new Date() });
   }
 
   return {
@@ -251,12 +241,11 @@ async function executeColdReactivation(userId: string): Promise<ExecutionResult>
 
 // Execute Sphere of Influence Nurture
 async function executeSphereNurture(userId: string): Promise<ExecutionResult> {
-  // Find past clients that could use a touchpoint
+  const ctx = createDalContext(userId);
   const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
   
-  const pastClients = await prisma.lead.findMany({
+  const pastClients = await leadService.findMany(ctx, {
     where: {
-      userId,
       status: 'CONVERTED',
       lastContactedAt: { lt: sixtyDaysAgo }
     },
@@ -264,12 +253,7 @@ async function executeSphereNurture(userId: string): Promise<ExecutionResult> {
   });
 
   for (const client of pastClients) {
-    await prisma.lead.update({
-      where: { id: client.id },
-      data: {
-        lastContactedAt: new Date()
-      }
-    });
+    await leadService.update(ctx, client.id, { lastContactedAt: new Date() });
   }
 
   return {

@@ -6,7 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { startWorkflowInstance } from '@/lib/real-estate/workflow-engine';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,7 @@ export async function POST(
     const workflow = await prisma.rEWorkflowTemplate.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id
+        userId: ctx.userId
       },
       include: {
         tasks: {
@@ -69,12 +70,7 @@ export async function POST(
 
     // Verify lead/deal exists and belongs to user
     if (leadId) {
-      const lead = await prisma.lead.findFirst({
-        where: {
-          id: leadId,
-          userId: session.user.id
-        }
-      });
+      const lead = await leadService.findUnique(ctx, leadId);
 
       if (!lead) {
         return NextResponse.json(
@@ -85,10 +81,10 @@ export async function POST(
     }
 
     if (dealId) {
-      const deal = await prisma.deal.findFirst({
+      const deal = await getCrmDb(ctx).deal.findFirst({
         where: {
           id: dealId,
-          userId: session.user.id
+          userId: ctx.userId
         }
       });
 
@@ -101,7 +97,7 @@ export async function POST(
     }
 
     // Check for existing active instance
-    const existingInstance = await prisma.rEWorkflowInstance.findFirst({
+    const existingInstance = await getCrmDb(ctx).rEWorkflowInstance.findFirst({
       where: {
         templateId: params.id,
         ...(leadId && { leadId }),
@@ -118,7 +114,7 @@ export async function POST(
     }
 
     // Start workflow instance using the engine
-    const instanceId = await startWorkflowInstance(session.user.id, params.id, {
+    const instanceId = await startWorkflowInstance(ctx.userId, params.id, {
       leadId: leadId || undefined,
       dealId: dealId || undefined,
       triggerType: 'MANUAL',
@@ -126,7 +122,7 @@ export async function POST(
     });
 
     // Get the created instance with executions
-    const instance = await prisma.rEWorkflowInstance.findUnique({
+    const instance = await getCrmDb(ctx).rEWorkflowInstance.findUnique({
       where: { id: instanceId },
       include: {
         template: true,
@@ -170,15 +166,18 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const limit = parseInt(searchParams.get('limit') || '20');
 
     // Verify workflow ownership
-    const workflow = await prisma.rEWorkflowTemplate.findFirst({
+    const workflow = await getCrmDb(ctx).rEWorkflowTemplate.findFirst({
       where: {
         id: params.id,
-        userId: session.user.id
+        userId: ctx.userId
       }
     });
 
@@ -189,7 +188,7 @@ export async function GET(
       );
     }
 
-    const instances = await prisma.rEWorkflowInstance.findMany({
+    const instances = await getCrmDb(ctx).rEWorkflowInstance.findMany({
       where: {
         templateId: params.id,
         ...(status && { status: status as 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED' })

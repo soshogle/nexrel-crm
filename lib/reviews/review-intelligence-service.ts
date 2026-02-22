@@ -6,7 +6,8 @@
  * - Review request orchestration via SMS/email
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService } from '@/lib/dal';
 
 interface ReviewAnalysis {
   sentiment: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' | 'MIXED';
@@ -172,7 +173,8 @@ Return JSON with: {"response": "the response text"}`;
 }
 
 export async function generateBrandInsights(userId: string): Promise<BrandInsightsReport> {
-  const reviews = await prisma.review.findMany({
+  const db = getCrmDb(createDalContext(userId));
+  const reviews = await db.review.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: 500,
@@ -297,13 +299,13 @@ Return JSON: {"recommendations": ["recommendation 1", ...]}`;
   let lastScanAt: string | null = null;
 
   try {
-    const lastScan = await prisma.brandScan.findFirst({
+    const lastScan = await db.brandScan.findFirst({
       where: { userId, status: 'COMPLETED' },
       orderBy: { completedAt: 'desc' },
     });
     lastScanAt = lastScan?.completedAt?.toISOString() ?? null;
 
-    const mentions = await prisma.brandMention.findMany({
+    const mentions = await db.brandMention.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       take: 500,
@@ -397,15 +399,18 @@ export async function sendReviewRequest(
   customMessage?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     const [user, lead] = await Promise.all([
-      prisma.user.findUnique({ where: { id: userId }, select: { name: true, legalEntityName: true } }),
-      prisma.lead.findUnique({ where: { id: leadId }, select: { name: true, email: true, phone: true } }),
+      db.user.findUnique({ where: { id: userId }, select: { name: true, legalEntityName: true } }),
+      leadService.findUnique(ctx, leadId),
     ]);
 
     if (!lead) return { success: false, error: 'Lead not found' };
 
     const businessName = user?.legalEntityName || user?.name || 'Our Business';
-    const defaultMessage = `Hi ${lead.name || 'there'}! Thank you for choosing ${businessName}. We'd love to hear about your experience. Could you take a moment to leave us a review? ${reviewUrl || 'It would mean a lot to us!'}\n\nThank you!\n${user?.name || businessName}`;
+    const leadName = (lead as any).name ?? lead.contactPerson ?? lead.businessName ?? 'there';
+    const defaultMessage = `Hi ${leadName}! Thank you for choosing ${businessName}. We'd love to hear about your experience. Could you take a moment to leave us a review? ${reviewUrl || 'It would mean a lot to us!'}\n\nThank you!\n${user?.name || businessName}`;
     const message = customMessage || defaultMessage;
 
     if ((method === 'SMS' || method === 'BOTH') && lead.phone) {
@@ -477,8 +482,9 @@ export async function processIncomingReview(
         summary: '',
       };
 
+  const db = getCrmDb(createDalContext(userId));
   // Create the review record
-  const review = await prisma.review.create({
+  const review = await db.review.create({
     data: {
       userId,
       source: reviewData.source as any,

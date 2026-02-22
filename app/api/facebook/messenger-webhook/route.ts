@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { workflowEngine } from '@/lib/workflow-engine';
+import { createDalContext } from '@/lib/context/industry-context';
+import { conversationService } from '@/lib/dal/conversation-service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -90,26 +92,20 @@ async function processMessagingEvent(event: any, pageId: string) {
     const senderProfile = await getSenderProfile(senderId, channelConnection.accessToken!);
     const senderName = senderProfile?.name || `Messenger User ${senderId}`;
 
-    // Find or create conversation
-    let conversation = await prisma.conversation.findFirst({
-      where: {
-        userId: channelConnection.userId,
-        channelConnectionId: channelConnection.id,
-        contactIdentifier: senderId,
-      },
+    const ctx = createDalContext(channelConnection.userId);
+    let conversation = await conversationService.findFirst(ctx, {
+      channelConnectionId: channelConnection.id,
+      contactIdentifier: senderId,
     });
 
     if (!conversation) {
       console.log(`📝 Creating new Messenger conversation for ${senderName}`);
-      conversation = await prisma.conversation.create({
-        data: {
-          userId: channelConnection.userId,
-          channelConnectionId: channelConnection.id,
-          contactName: senderName,
-          contactIdentifier: senderId,
-          externalConversationId: senderId,
-          status: 'ACTIVE',
-        },
+      conversation = await conversationService.create(ctx, {
+        channelConnectionId: channelConnection.id,
+        contactName: senderName,
+        contactIdentifier: senderId,
+        externalConversationId: senderId,
+        status: 'ACTIVE',
       });
     }
 
@@ -132,15 +128,11 @@ async function processMessagingEvent(event: any, pageId: string) {
       },
     });
 
-    // Update conversation
-    await prisma.conversation.update({
-      where: { id: conversation.id },
-      data: {
-        lastMessageAt: new Date(),
-        lastMessagePreview: messageText.substring(0, 100),
-        unreadCount: { increment: 1 },
-        status: 'UNREAD',
-      },
+    await conversationService.update(ctx, conversation.id, {
+      lastMessageAt: new Date(),
+      lastMessagePreview: messageText.substring(0, 100),
+      unreadCount: { increment: 1 },
+      status: 'UNREAD',
     });
 
     // Trigger workflows for MESSAGE_RECEIVED (with channel type filtering)

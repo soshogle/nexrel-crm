@@ -4,7 +4,8 @@
  * after the review step in the "reviews → referral" sequence.
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
 
 /**
@@ -24,7 +25,9 @@ export async function processFeedbackPositiveTriggers(
     metadata,
   });
 
-  const workflows = await prisma.workflowTemplate.findMany({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const workflows = await db.workflowTemplate.findMany({
     where: {
       userId,
       isActive: true,
@@ -41,7 +44,7 @@ export async function processFeedbackPositiveTriggers(
     const hasTrigger = triggers.some((t) => t.type === 'FEEDBACK_POSITIVE');
     if (!hasTrigger) continue;
 
-    const existing = await prisma.workflowTemplateEnrollment.findUnique({
+    const existing = await db.workflowTemplateEnrollment.findUnique({
       where: {
         workflowId_leadId: { workflowId: workflow.id, leadId },
       },
@@ -69,7 +72,7 @@ export async function processFeedbackPositiveTriggers(
       abTestGroup = random < (config.splitPercentage ?? 50) ? 'A' : 'B';
     }
 
-    await prisma.workflowTemplateEnrollment.create({
+    await db.workflowTemplateEnrollment.create({
       data: {
         workflowId: workflow.id,
         leadId,

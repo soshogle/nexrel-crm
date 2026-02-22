@@ -5,6 +5,8 @@
  */
 
 import { prisma } from '../db';
+import { getCrmDb } from '@/lib/dal/db';
+import { createDalContext } from '@/lib/context/industry-context';
 import { aiOrchestrator } from '../ai-employee-orchestrator';
 import { AIEmployeeType } from '@prisma/client';
 import sgMail from '@sendgrid/mail';
@@ -93,7 +95,9 @@ export class CustomerOnboardingAgent {
   }
 
   private async createCustomerRecord(userId: string, customerData: any) {
-    const lead = await prisma.lead.create({
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
+    const lead = await db.lead.create({
       data: {
         userId,
         businessName: customerData.company || customerData.name || 'New Customer',
@@ -111,10 +115,12 @@ export class CustomerOnboardingAgent {
   }
 
   private async generateInvoice(userId: string, leadId: string, purchaseData: any) {
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
     const amount = purchaseData.amount || 0;
 
-    const invoice = await prisma.invoice.create({
+    const invoice = await db.invoice.create({
       data: {
         userId,
         leadId,

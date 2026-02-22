@@ -4,7 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
 import { addMinutes, parse, isAfter, isBefore } from 'date-fns';
 
 export async function POST(
@@ -34,7 +35,7 @@ export async function POST(
     }
 
     // Get website and user
-    const website = await prisma.website.findUnique({
+    const website = await getCrmDb(createDalContext('bootstrap', null)).website.findUnique({
       where: { id: params.id },
       include: { user: true },
     });
@@ -46,8 +47,9 @@ export async function POST(
       );
     }
 
+    const ctx = createDalContext(website.userId);
     // Get booking settings
-    const bookingSettings = await prisma.bookingSettings.findUnique({
+    const bookingSettings = await getCrmDb(ctx).bookingSettings.findUnique({
       where: { userId: website.userId },
     });
 
@@ -69,7 +71,7 @@ export async function POST(
     const endOfDay = new Date(requestedDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const existingAppointments = await prisma.bookingAppointment.findMany({
+    const existingAppointments = await getCrmDb(ctx).bookingAppointment.findMany({
       where: {
         userId: website.userId,
         appointmentDate: {
@@ -106,7 +108,7 @@ export async function POST(
     }
 
     // Create or find lead
-    let lead = await prisma.lead.findFirst({
+    let lead = await getCrmDb(ctx).lead.findFirst({
       where: {
         userId: website.userId,
         email: customerEmail,
@@ -114,7 +116,7 @@ export async function POST(
     });
 
     if (!lead) {
-      lead = await prisma.lead.create({
+      lead = await getCrmDb(ctx).lead.create({
         data: {
           userId: website.userId,
           businessName: customerName,
@@ -131,7 +133,7 @@ export async function POST(
     const status = bookingSettings.requireApproval ? 'SCHEDULED' : 'CONFIRMED';
 
     // Create appointment
-    const appointment = await prisma.bookingAppointment.create({
+    const appointment = await getCrmDb(ctx).bookingAppointment.create({
       data: {
         userId: website.userId,
         leadId: lead.id,
@@ -148,7 +150,7 @@ export async function POST(
     });
 
     // Create website visitor record
-    await prisma.websiteVisitor.create({
+    await getCrmDb(ctx).websiteVisitor.create({
       data: {
         websiteId: params.id,
         sessionId: `booking-${Date.now()}`,
@@ -217,7 +219,7 @@ export async function GET(
     }
 
     // Get website
-    const website = await prisma.website.findUnique({
+    const website = await getCrmDb(createDalContext('bootstrap', null)).website.findUnique({
       where: { id: params.id },
       include: { user: true },
     });
@@ -229,8 +231,9 @@ export async function GET(
       );
     }
 
+    const ctx = createDalContext(website.userId);
     // Get booking settings
-    const bookingSettings = await prisma.bookingSettings.findUnique({
+    const bookingSettings = await getCrmDb(ctx).bookingSettings.findUnique({
       where: { userId: website.userId },
     });
 
@@ -248,7 +251,7 @@ export async function GET(
     const endOfDay = new Date(requestedDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const existingAppointments = await prisma.bookingAppointment.findMany({
+    const existingAppointments = await getCrmDb(ctx).bookingAppointment.findMany({
       where: {
         userId: website.userId,
         appointmentDate: {

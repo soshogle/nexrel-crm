@@ -1,4 +1,6 @@
-import { prisma } from "@/lib/db";
+import { leadService, dealService, campaignService, noteService, taskService } from "@/lib/dal";
+import { getCrmDb } from "@/lib/dal";
+import { createDalContext } from "@/lib/context/industry-context";
 
 export async function createLead(userId: string, params: any) {
   const { name, email, phone, company, status } = params;
@@ -7,16 +9,14 @@ export async function createLead(userId: string, params: any) {
     throw new Error("Lead name is required");
   }
 
-  const lead = await prisma.lead.create({
-    data: {
-      userId,
-      businessName: company || name,
-      contactPerson: name,
-      email: email || null,
-      phone: phone || null,
-      status: status || "NEW",
-      source: "AI Assistant",
-    },
+  const ctx = createDalContext(userId);
+  const lead = await leadService.create(ctx, {
+    businessName: company || name,
+    contactPerson: name,
+    email: email || null,
+    phone: phone || null,
+    status: status || "NEW",
+    source: "AI Assistant",
   });
 
   return {
@@ -35,19 +35,20 @@ export async function createLead(userId: string, params: any) {
 export async function updateLead(userId: string, params: any) {
   const { leadId, contactName, email, phone, status, company, name, ...rest } = params;
 
+  const ctx = createDalContext(userId);
   let targetLeadId = leadId;
   if (!targetLeadId && contactName) {
-    const found = await prisma.lead.findFirst({
+    const found = await leadService.findMany(ctx, {
       where: {
-        userId,
         OR: [
           { businessName: { contains: contactName, mode: "insensitive" } },
           { contactPerson: { contains: contactName, mode: "insensitive" } },
         ],
       },
+      take: 1,
     });
-    if (!found) throw new Error(`Lead "${contactName}" not found`);
-    targetLeadId = found.id;
+    if (!found?.[0]) throw new Error(`Lead "${contactName}" not found`);
+    targetLeadId = found[0].id;
   }
 
   if (!targetLeadId) {
@@ -61,18 +62,13 @@ export async function updateLead(userId: string, params: any) {
   if (company !== undefined) updates.businessName = company;
   if (name !== undefined) updates.contactPerson = name;
 
-  const existingLead = await prisma.lead.findFirst({
-    where: { id: targetLeadId, userId },
-  });
+  const existingLead = await leadService.findUnique(ctx, targetLeadId);
 
   if (!existingLead) {
     throw new Error("Lead not found");
   }
 
-  const lead = await prisma.lead.update({
-    where: { id: targetLeadId },
-    data: updates,
-  });
+  const lead = await leadService.update(ctx, targetLeadId, updates);
 
   return {
     message: `Lead "${lead.businessName}" updated successfully!`,
@@ -89,11 +85,13 @@ export async function getLeadDetails(userId: string, params: any) {
   const { leadId, name, contactName } = params;
   const searchName = name || contactName;
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   let lead;
 
   if (leadId) {
-    lead = await prisma.lead.findFirst({
-      where: { id: leadId, userId },
+    lead = await db.lead.findFirst({
+      where: { id: leadId, userId: ctx.userId },
       include: {
         notes: { orderBy: { createdAt: "desc" }, take: 5 },
         deals: { include: { stage: true } },
@@ -101,9 +99,9 @@ export async function getLeadDetails(userId: string, params: any) {
       },
     });
   } else if (searchName) {
-    lead = await prisma.lead.findFirst({
+    lead = await db.lead.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         OR: [
           { businessName: { contains: searchName, mode: "insensitive" } },
           { contactPerson: { contains: searchName, mode: "insensitive" } },
@@ -141,31 +139,28 @@ export async function getLeadDetails(userId: string, params: any) {
 export async function deleteLead(userId: string, params: any) {
   const { leadId, contactName } = params;
 
+  const ctx = createDalContext(userId);
   let targetId = leadId;
   if (!targetId && contactName) {
-    const found = await prisma.lead.findFirst({
+    const found = await leadService.findMany(ctx, {
       where: {
-        userId,
         OR: [
           { businessName: { contains: contactName, mode: "insensitive" } },
           { contactPerson: { contains: contactName, mode: "insensitive" } },
         ],
       },
+      take: 1,
     });
-    if (!found) throw new Error(`Lead "${contactName}" not found`);
-    targetId = found.id;
+    if (!found?.[0]) throw new Error(`Lead "${contactName}" not found`);
+    targetId = found[0].id;
   }
 
   if (!targetId) throw new Error("Lead ID or contact name is required");
 
-  const existing = await prisma.lead.findFirst({
-    where: { id: targetId, userId },
-  });
+  const existing = await leadService.findUnique(ctx, targetId);
   if (!existing) throw new Error("Lead not found");
 
-  await prisma.lead.delete({
-    where: { id: targetId },
-  });
+  await leadService.delete(ctx, targetId);
 
   return {
     message: `Lead "${existing.contactPerson || existing.businessName}" deleted successfully.`,
@@ -176,24 +171,11 @@ export async function deleteLead(userId: string, params: any) {
 export async function listLeads(userId: string, params: any) {
   const { status, limit = 10, search } = params;
 
-  const where: any = { userId };
-
-  if (status) {
-    where.status = status;
-  }
-
-  if (search) {
-    where.OR = [
-      { businessName: { contains: search, mode: "insensitive" } },
-      { contactPerson: { contains: search, mode: "insensitive" } },
-      { email: { contains: search, mode: "insensitive" } },
-    ];
-  }
-
-  const leads = await prisma.lead.findMany({
-    where,
-    take: Math.min(limit, 50), // Max 50 leads
-    orderBy: { createdAt: "desc" },
+  const ctx = createDalContext(userId);
+  const leads = await leadService.findMany(ctx, {
+    status: status || undefined,
+    search: search || undefined,
+    take: Math.min(limit, 50),
     select: {
       id: true,
       businessName: true,
@@ -218,17 +200,20 @@ export async function createDeal(userId: string, params: any) {
     throw new Error("Deal title is required");
   }
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+
   // Get or create default pipeline
-  let pipeline = await prisma.pipeline.findFirst({
-    where: { userId, isDefault: true },
+  let pipeline = await db.pipeline.findFirst({
+    where: { userId: ctx.userId, isDefault: true },
     include: { stages: { orderBy: { displayOrder: "asc" } } },
   });
 
   if (!pipeline) {
     // Create default pipeline with stages
-    pipeline = await prisma.pipeline.create({
+    pipeline = await db.pipeline.create({
       data: {
-        userId,
+        userId: ctx.userId,
         name: "Sales Pipeline",
         isDefault: true,
         stages: {
@@ -248,16 +233,13 @@ export async function createDeal(userId: string, params: any) {
 
   const firstStage = pipeline.stages[0];
 
-  const deal = await prisma.deal.create({
-    data: {
-      userId,
-      pipelineId: pipeline.id,
-      stageId: firstStage.id,
-      title,
-      value: value || 0,
-      leadId: leadId || null,
-      probability: firstStage.probability,
-    },
+  const deal = await dealService.create(ctx, {
+    pipeline: { connect: { id: pipeline.id } },
+    stage: { connect: { id: firstStage.id } },
+    title,
+    value: value || 0,
+    leadId: leadId || undefined,
+    probability: firstStage.probability,
   });
 
   return {
@@ -278,25 +260,15 @@ export async function updateDeal(userId: string, params: any) {
     throw new Error("Deal ID is required");
   }
 
-  // Verify ownership
-  const existingDeal = await prisma.deal.findFirst({
-    where: { id: dealId, userId },
-  });
+  const ctx = createDalContext(userId);
+  const existingDeal = await dealService.findUnique(ctx, dealId);
 
   if (!existingDeal) {
     throw new Error("Deal not found");
   }
 
-  const deal = await prisma.deal.update({
-    where: { id: dealId },
-    data: updates,
-    include: {
-      stage: {
-        select: {
-          name: true,
-        },
-      },
-    },
+  const deal = await dealService.update(ctx, dealId, updates, {
+    stage: { select: { name: true } },
   });
 
   return {
@@ -313,17 +285,20 @@ export async function updateDeal(userId: string, params: any) {
 export async function getDealDetails(userId: string, params: any) {
   const { dealId, dealTitle } = params;
 
+  const ctx = createDalContext(userId);
   let deal;
   if (dealId) {
-    deal = await prisma.deal.findFirst({
-      where: { id: dealId, userId },
-      include: { lead: { select: { id: true, businessName: true, contactPerson: true, email: true, phone: true } }, stage: true },
+    deal = await dealService.findUnique(ctx, dealId, {
+      lead: { select: { id: true, businessName: true, contactPerson: true, email: true, phone: true } },
+      stage: true,
     });
   } else if (dealTitle) {
-    deal = await prisma.deal.findFirst({
-      where: { userId, title: { contains: dealTitle, mode: "insensitive" } },
+    const deals = await dealService.findMany(ctx, {
+      where: { title: { contains: dealTitle, mode: "insensitive" } },
+      take: 1,
       include: { lead: { select: { id: true, businessName: true, contactPerson: true, email: true, phone: true } }, stage: true },
     });
+    deal = deals[0];
   }
 
   if (!deal) {
@@ -339,23 +314,23 @@ export async function getDealDetails(userId: string, params: any) {
 export async function deleteDeal(userId: string, params: any) {
   const { dealId, dealTitle } = params;
 
+  const ctx = createDalContext(userId);
   let targetId = dealId;
   if (!targetId && dealTitle) {
-    const found = await prisma.deal.findFirst({
-      where: { userId, title: { contains: dealTitle, mode: "insensitive" } },
+    const found = await dealService.findMany(ctx, {
+      where: { title: { contains: dealTitle, mode: "insensitive" } },
+      take: 1,
     });
-    if (!found) throw new Error(`Deal "${dealTitle}" not found`);
-    targetId = found.id;
+    if (!found?.[0]) throw new Error(`Deal "${dealTitle}" not found`);
+    targetId = found[0].id;
   }
 
   if (!targetId) throw new Error("Deal ID or deal title is required");
 
-  const existing = await prisma.deal.findFirst({
-    where: { id: targetId, userId },
-  });
+  const existing = await dealService.findUnique(ctx, targetId);
   if (!existing) throw new Error("Deal not found");
 
-  await prisma.deal.delete({ where: { id: targetId } });
+  await dealService.delete(ctx, targetId);
 
   return {
     message: `Deal "${existing.title}" deleted successfully.`,
@@ -368,7 +343,9 @@ export async function createPipeline(userId: string, params: any) {
 
   if (!name) throw new Error("Pipeline name is required");
 
-  const pipeline = await prisma.pipeline.create({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const pipeline = await db.pipeline.create({
     data: {
       userId,
       name,
@@ -388,8 +365,10 @@ export async function createPipelineStage(userId: string, params: any) {
 
   if (!pipelineName || !stageName) throw new Error("Pipeline name and stage name are required");
 
-  const pipeline = await prisma.pipeline.findFirst({
-    where: { userId, name: { contains: pipelineName, mode: "insensitive" } },
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const pipeline = await db.pipeline.findFirst({
+    where: { userId: ctx.userId, name: { contains: pipelineName, mode: "insensitive" } },
     include: { stages: { orderBy: { displayOrder: "asc" } } },
   });
 
@@ -397,7 +376,7 @@ export async function createPipelineStage(userId: string, params: any) {
 
   const maxOrder = pipeline.stages.length > 0 ? Math.max(...pipeline.stages.map((s) => s.displayOrder)) + 1 : 0;
 
-  const stage = await prisma.pipelineStage.create({
+  const stage = await db.pipelineStage.create({
     data: {
       pipelineId: pipeline.id,
       name: stageName,
@@ -415,12 +394,9 @@ export async function createPipelineStage(userId: string, params: any) {
 export async function listDeals(userId: string, params: any) {
   const { stage, limit = 10 } = params;
 
-  const where: any = { userId };
-
-  const deals = await prisma.deal.findMany({
-    where,
+  const ctx = createDalContext(userId);
+  const deals = await dealService.findMany(ctx, {
     take: Math.min(limit, 50),
-    orderBy: { createdAt: "desc" },
     include: {
       lead: true,
       stage: true,
@@ -440,14 +416,12 @@ export async function createCampaign(userId: string, params: any) {
     throw new Error("Campaign name is required");
   }
 
-  const campaign = await prisma.campaign.create({
-    data: {
-      userId,
-      name,
-      type: type || "SMS",
-      status: status || "DRAFT",
-      smsTemplate: "Default SMS template - please update",
-    },
+  const ctx = createDalContext(userId);
+  const campaign = await campaignService.create(ctx, {
+    name,
+    type: type || "SMS",
+    status: status || "DRAFT",
+    smsTemplate: "Default SMS template - please update",
   });
 
   return {
@@ -464,15 +438,16 @@ export async function createCampaign(userId: string, params: any) {
 export async function updateCampaign(userId: string, params: any) {
   const { campaignId, campaignName, name, status } = params;
 
+  const ctx = createDalContext(userId);
   let campaign;
   if (campaignId) {
-    campaign = await prisma.campaign.findFirst({
-      where: { id: campaignId, userId },
-    });
+    campaign = await campaignService.findUnique(ctx, campaignId);
   } else if (campaignName) {
-    campaign = await prisma.campaign.findFirst({
-      where: { userId, name: { contains: campaignName, mode: "insensitive" } },
+    const campaigns = await campaignService.findMany(ctx, {
+      where: { name: { contains: campaignName, mode: "insensitive" } },
+      take: 1,
     });
+    campaign = campaigns[0];
   }
 
   if (!campaign) throw new Error("Campaign not found");
@@ -485,10 +460,7 @@ export async function updateCampaign(userId: string, params: any) {
     throw new Error("At least one field (name or status) is required to update");
   }
 
-  const updated = await prisma.campaign.update({
-    where: { id: campaign.id },
-    data: updates,
-  });
+  const updated = await campaignService.update(ctx, campaign.id, updates);
 
   return {
     message: `Campaign "${updated.name}" updated successfully!`,
@@ -499,15 +471,16 @@ export async function updateCampaign(userId: string, params: any) {
 export async function getCampaignDetails(userId: string, params: any) {
   const { campaignId, campaignName } = params;
 
+  const ctx = createDalContext(userId);
   let campaign;
   if (campaignId) {
-    campaign = await prisma.campaign.findFirst({
-      where: { id: campaignId, userId },
-    });
+    campaign = await campaignService.findUnique(ctx, campaignId);
   } else if (campaignName) {
-    campaign = await prisma.campaign.findFirst({
-      where: { userId, name: { contains: campaignName, mode: "insensitive" } },
+    const campaigns = await campaignService.findMany(ctx, {
+      where: { name: { contains: campaignName, mode: "insensitive" } },
+      take: 1,
     });
+    campaign = campaigns[0];
   }
 
   if (!campaign) {
@@ -523,16 +496,10 @@ export async function getCampaignDetails(userId: string, params: any) {
 export async function listCampaigns(userId: string, params: any) {
   const { status, limit = 10 } = params;
 
-  const where: any = { userId };
-
-  if (status) {
-    where.status = status;
-  }
-
-  const campaigns = await prisma.campaign.findMany({
-    where,
+  const ctx = createDalContext(userId);
+  const campaigns = await campaignService.findMany(ctx, {
+    status: status || undefined,
     take: Math.min(limit, 50),
-    orderBy: { createdAt: "desc" },
   });
 
   return {
@@ -548,16 +515,9 @@ export async function searchContacts(userId: string, params: any) {
     throw new Error("Search query is required");
   }
 
-  const leads = await prisma.lead.findMany({
-    where: {
-      userId,
-      OR: [
-        { businessName: { contains: query, mode: "insensitive" } },
-        { contactPerson: { contains: query, mode: "insensitive" } },
-        { email: { contains: query, mode: "insensitive" } },
-      ],
-    },
-    take: Math.min(limit, 20),
+  const ctx = createDalContext(userId);
+  const leads = await leadService.findMany(ctx, {
+    search: query,
     select: {
       id: true,
       businessName: true,
@@ -578,27 +538,26 @@ export async function searchContacts(userId: string, params: any) {
 export async function updateDealStage(userId: string, params: any) {
   const { dealTitle, stageName, dealId } = params;
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+
   let deal;
   if (dealId) {
-    deal = await prisma.deal.findFirst({
-      where: { id: dealId, userId },
-      include: { stage: true, pipeline: true },
-    });
+    deal = await dealService.findUnique(ctx, dealId, { stage: true, pipeline: true });
   } else if (dealTitle) {
-    deal = await prisma.deal.findFirst({
-      where: {
-        userId,
-        title: { contains: dealTitle, mode: "insensitive" },
-      },
+    const deals = await dealService.findMany(ctx, {
+      where: { title: { contains: dealTitle, mode: "insensitive" } },
+      take: 1,
       include: { stage: true, pipeline: true },
     });
+    deal = deals[0];
   }
 
   if (!deal) {
     throw new Error(`Deal "${dealTitle || dealId}" not found`);
   }
 
-  const stage = await prisma.pipelineStage.findFirst({
+  const stage = await db.pipelineStage.findFirst({
     where: {
       pipelineId: deal.pipelineId,
       name: { contains: stageName, mode: "insensitive" },
@@ -606,7 +565,7 @@ export async function updateDealStage(userId: string, params: any) {
   });
 
   if (!stage) {
-    const stages = await prisma.pipelineStage.findMany({
+    const stages = await db.pipelineStage.findMany({
       where: { pipelineId: deal.pipelineId },
       orderBy: { displayOrder: "asc" },
     });
@@ -615,23 +574,15 @@ export async function updateDealStage(userId: string, params: any) {
     );
   }
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  const updatedDeal = await prisma.deal.update({
-    where: { id: deal.id },
-    data: {
-      stageId: stage.id,
-      probability: stage.probability,
-    },
-    include: {
-      lead: true,
-      stage: true,
-    },
-  });
+  const updatedDeal = await dealService.update(ctx, deal.id, {
+    stageId: stage.id,
+    probability: stage.probability,
+  }, { lead: true, stage: true });
 
-  await prisma.dealActivity.create({
+  await db.dealActivity.create({
     data: {
       dealId: deal.id,
-      userId,
+      userId: ctx.userId,
       type: "STAGE_CHANGED",
       description: `Deal moved from "${deal.stage.name}" to "${stage.name}"`,
     },
@@ -669,18 +620,17 @@ export async function updateDealStage(userId: string, params: any) {
 export async function updateDealOrByTitle(userId: string, params: any) {
   const { dealId, dealTitle, value, expectedCloseDate, ...rest } = params;
 
+  const ctx = createDalContext(userId);
   let targetDealId = dealId;
   if (!targetDealId && dealTitle) {
-    const deal = await prisma.deal.findFirst({
-      where: {
-        userId,
-        title: { contains: dealTitle, mode: "insensitive" },
-      },
+    const deals = await dealService.findMany(ctx, {
+      where: { title: { contains: dealTitle, mode: "insensitive" } },
+      take: 1,
     });
-    if (!deal) {
+    if (!deals?.[0]) {
       throw new Error(`Deal "${dealTitle}" not found`);
     }
-    targetDealId = deal.id;
+    targetDealId = deals[0].id;
   }
 
   if (!targetDealId) {
@@ -697,36 +647,37 @@ export async function updateDealOrByTitle(userId: string, params: any) {
 export async function assignDealToLead(userId: string, params: any) {
   const { dealId, dealTitle, leadId, contactName } = params;
 
+  const ctx = createDalContext(userId);
   let deal;
   if (dealId) {
-    deal = await prisma.deal.findFirst({ where: { id: dealId, userId } });
+    deal = await dealService.findUnique(ctx, dealId);
   } else if (dealTitle) {
-    deal = await prisma.deal.findFirst({
-      where: { userId, title: { contains: dealTitle, mode: "insensitive" } },
+    const deals = await dealService.findMany(ctx, {
+      where: { title: { contains: dealTitle, mode: "insensitive" } },
+      take: 1,
     });
+    deal = deals[0];
   }
   if (!deal) throw new Error(`Deal "${dealTitle || dealId}" not found`);
 
   let lead;
   if (leadId) {
-    lead = await prisma.lead.findFirst({ where: { id: leadId, userId } });
+    lead = await leadService.findUnique(ctx, leadId);
   } else if (contactName) {
-    lead = await prisma.lead.findFirst({
+    const leads = await leadService.findMany(ctx, {
       where: {
-        userId,
         OR: [
           { contactPerson: { contains: contactName, mode: "insensitive" } },
           { businessName: { contains: contactName, mode: "insensitive" } },
         ],
       },
+      take: 1,
     });
+    lead = leads[0];
   }
   if (!lead) throw new Error(contactName ? `Contact "${contactName}" not found` : "Lead ID or contact name is required");
 
-  await prisma.deal.update({
-    where: { id: deal.id },
-    data: { leadId: lead.id },
-  });
+  await dealService.update(ctx, deal.id, { leadId: lead.id });
 
   return {
     message: `✓ Deal "${deal.title}" linked to ${lead.contactPerson || lead.businessName}`,
@@ -738,20 +689,22 @@ export async function assignDealToLead(userId: string, params: any) {
 export async function getPipelineStages(userId: string, params: any) {
   const { pipelineName } = params;
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   let pipeline;
   if (pipelineName) {
-    pipeline = await prisma.pipeline.findFirst({
-      where: { userId, name: { contains: pipelineName, mode: "insensitive" } },
+    pipeline = await db.pipeline.findFirst({
+      where: { userId: ctx.userId, name: { contains: pipelineName, mode: "insensitive" } },
       include: { stages: { orderBy: { displayOrder: "asc" } } },
     });
   } else {
-    pipeline = await prisma.pipeline.findFirst({
-      where: { userId, isDefault: true },
+    pipeline = await db.pipeline.findFirst({
+      where: { userId: ctx.userId, isDefault: true },
       include: { stages: { orderBy: { displayOrder: "asc" } } },
     });
     if (!pipeline) {
-      pipeline = await prisma.pipeline.findFirst({
-        where: { userId },
+      pipeline = await db.pipeline.findFirst({
+        where: { userId: ctx.userId },
         include: { stages: { orderBy: { displayOrder: "asc" } } },
       });
     }
@@ -771,19 +724,21 @@ export async function addLeadTag(userId: string, params: any) {
   const { leadId, contactName, tag } = params;
   if (!tag?.trim()) throw new Error("Tag is required");
 
+  const ctx = createDalContext(userId);
   let lead;
   if (leadId) {
-    lead = await prisma.lead.findFirst({ where: { id: leadId, userId } });
+    lead = await leadService.findUnique(ctx, leadId);
   } else if (contactName) {
-    lead = await prisma.lead.findFirst({
+    const leads = await leadService.findMany(ctx, {
       where: {
-        userId,
         OR: [
           { contactPerson: { contains: contactName, mode: "insensitive" } },
           { businessName: { contains: contactName, mode: "insensitive" } },
         ],
       },
+      take: 1,
     });
+    lead = leads[0];
   }
   if (!lead) throw new Error(contactName ? `Contact "${contactName}" not found` : "Lead ID or contact name is required");
 
@@ -791,10 +746,7 @@ export async function addLeadTag(userId: string, params: any) {
   const tagValue = tag.trim();
   if (!tags.includes(tagValue)) tags.push(tagValue);
 
-  await prisma.lead.update({
-    where: { id: lead.id },
-    data: { tags: tags as any },
-  });
+  await leadService.update(ctx, lead.id, { tags: tags as any });
 
   return {
     message: `✓ Tag "${tagValue}" added to ${lead.contactPerson || lead.businessName}`,
@@ -809,26 +761,25 @@ export async function updateLeadStatus(userId: string, params: any) {
   const validStatuses = ["NEW", "CONTACTED", "RESPONDED", "QUALIFIED", "CONVERTED", "LOST"];
   if (!validStatuses.includes(status)) throw new Error(`Invalid status. Use: ${validStatuses.join(", ")}`);
 
+  const ctx = createDalContext(userId);
   let lead;
   if (leadId) {
-    lead = await prisma.lead.findFirst({ where: { id: leadId, userId } });
+    lead = await leadService.findUnique(ctx, leadId);
   } else if (contactName) {
-    lead = await prisma.lead.findFirst({
+    const leads = await leadService.findMany(ctx, {
       where: {
-        userId,
         OR: [
           { contactPerson: { contains: contactName, mode: "insensitive" } },
           { businessName: { contains: contactName, mode: "insensitive" } },
         ],
       },
+      take: 1,
     });
+    lead = leads[0];
   }
   if (!lead) throw new Error(contactName ? `Contact "${contactName}" not found` : "Lead ID or contact name is required");
 
-  await prisma.lead.update({
-    where: { id: lead.id },
-    data: { status: status as any },
-  });
+  await leadService.update(ctx, lead.id, { status: status as any });
 
   return {
     message: `✓ ${lead.contactPerson || lead.businessName} status updated to ${status}`,
@@ -840,16 +791,19 @@ export async function updateLeadStatus(userId: string, params: any) {
 export async function listNotes(userId: string, params: any) {
   const { contactName, dealTitle, leadId, dealId, limit = 10 } = params;
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+
   if (dealId || dealTitle) {
     let deal;
     if (dealId) {
-      deal = await prisma.deal.findFirst({
-        where: { id: dealId, userId },
+      deal = await db.deal.findFirst({
+        where: { id: dealId, userId: ctx.userId },
         include: { activities: { where: { type: "NOTE" }, orderBy: { createdAt: "desc" }, take: Math.min(limit, 50) } },
       });
     } else {
-      deal = await prisma.deal.findFirst({
-        where: { userId, title: { contains: dealTitle, mode: "insensitive" } },
+      deal = await db.deal.findFirst({
+        where: { userId: ctx.userId, title: { contains: dealTitle, mode: "insensitive" } },
         include: { activities: { where: { type: "NOTE" }, orderBy: { createdAt: "desc" }, take: Math.min(limit, 50) } },
       });
     }
@@ -865,14 +819,14 @@ export async function listNotes(userId: string, params: any) {
 
   let lead;
   if (leadId) {
-    lead = await prisma.lead.findFirst({
-      where: { id: leadId, userId },
+    lead = await db.lead.findFirst({
+      where: { id: leadId, userId: ctx.userId },
       include: { notes: { orderBy: { createdAt: "desc" }, take: Math.min(limit, 50) } },
     });
   } else if (contactName) {
-    lead = await prisma.lead.findFirst({
+    lead = await db.lead.findFirst({
       where: {
-        userId,
+        userId: ctx.userId,
         OR: [
           { contactPerson: { contains: contactName, mode: "insensitive" } },
           { businessName: { contains: contactName, mode: "insensitive" } },
@@ -898,16 +852,19 @@ export async function addNote(userId: string, params: any) {
     throw new Error("Note content is required");
   }
 
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+
   if (dealId || dealTitle) {
     let deal;
     if (dealId) {
-      deal = await prisma.deal.findFirst({
-        where: { id: dealId, userId },
+      deal = await db.deal.findFirst({
+        where: { id: dealId, userId: ctx.userId },
       });
     } else {
-      deal = await prisma.deal.findFirst({
+      deal = await db.deal.findFirst({
         where: {
-          userId,
+          userId: ctx.userId,
           title: { contains: dealTitle, mode: "insensitive" },
         },
       });
@@ -917,10 +874,10 @@ export async function addNote(userId: string, params: any) {
       throw new Error(`Deal "${dealTitle || dealId}" not found`);
     }
 
-    await prisma.dealActivity.create({
+    await db.dealActivity.create({
       data: {
         dealId: deal.id,
-        userId,
+        userId: ctx.userId,
         type: "NOTE",
         description: content.trim(),
       },
@@ -935,31 +892,27 @@ export async function addNote(userId: string, params: any) {
 
   let lead;
   if (leadId) {
-    lead = await prisma.lead.findFirst({
-      where: { id: leadId, userId },
-    });
+    lead = await leadService.findUnique(ctx, leadId);
   } else if (contactName) {
-    lead = await prisma.lead.findFirst({
+    const leads = await leadService.findMany(ctx, {
       where: {
-        userId,
         OR: [
           { contactPerson: { contains: contactName, mode: "insensitive" } },
           { businessName: { contains: contactName, mode: "insensitive" } },
         ],
       },
+      take: 1,
     });
+    lead = leads[0];
   }
 
   if (!lead) {
     throw new Error(contactName ? `Contact "${contactName}" not found` : "Contact or lead ID is required");
   }
 
-  await prisma.note.create({
-    data: {
-      leadId: lead.id,
-      userId,
-      content: content.trim(),
-    },
+  await noteService.create(ctx, {
+    leadId: lead.id,
+    content: content.trim(),
   });
 
   return {
@@ -973,18 +926,19 @@ export async function bulkUpdateLeadStatus(userId: string, params: any) {
   const { fromStatus, toStatus, limit = 100 } = params;
   if (!toStatus) throw new Error("toStatus is required");
 
-  const where: any = { userId };
-  if (fromStatus) where.status = fromStatus;
-
-  const leads = await prisma.lead.findMany({
-    where,
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const leads = await leadService.findMany(ctx, {
+    where: fromStatus ? { status: fromStatus } : undefined,
     take: Math.min(limit, 500),
   });
 
-  await prisma.lead.updateMany({
-    where: { id: { in: leads.map((l) => l.id) } },
-    data: { status: toStatus as any },
-  });
+  if (leads.length > 0) {
+    await db.lead.updateMany({
+      where: { id: { in: leads.map((l) => l.id) } },
+      data: { status: toStatus as any },
+    });
+  }
 
   return {
     message: `✓ Updated ${leads.length} lead(s) to ${toStatus}.`,
@@ -1007,8 +961,8 @@ export async function bulkAddTag(userId: string, params: any) {
     else if (period === "last_month") where.createdAt = { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
   }
 
-  const leads = await prisma.lead.findMany({
-    where,
+  const leads = await leadService.findMany(ctx, {
+    where: Object.keys(where).length > 0 ? where : undefined,
     take: Math.min(limit, 500),
   });
 
@@ -1017,10 +971,7 @@ export async function bulkAddTag(userId: string, params: any) {
     const tags = Array.isArray(lead.tags) ? [...(lead.tags as string[])] : [];
     if (!tags.includes(tag.trim())) {
       tags.push(tag.trim());
-      await prisma.lead.update({
-        where: { id: lead.id },
-        data: { tags: tags as any },
-      });
+      await leadService.update(ctx, lead.id, { tags: tags as any });
       count++;
     }
   }
@@ -1035,9 +986,10 @@ export async function bulkAddTag(userId: string, params: any) {
 export async function exportPipelineCsv(userId: string, params: any) {
   const { type = "deals", limit = 1000 } = params;
 
+  const ctx = createDalContext(userId);
+
   if (type === "leads") {
-    const leads = await prisma.lead.findMany({
-      where: { userId },
+    const leads = await leadService.findMany(ctx, {
       take: Math.min(limit, 5000),
       select: { id: true, contactPerson: true, businessName: true, email: true, phone: true, status: true, createdAt: true },
     });
@@ -1048,11 +1000,9 @@ export async function exportPipelineCsv(userId: string, params: any) {
   }
 
   if (type === "deals" || type === "pipeline") {
-    const deals = await prisma.deal.findMany({
-      where: { userId },
+    const deals = await dealService.findMany(ctx, {
       take: Math.min(limit, 5000),
       include: { lead: true, stage: true },
-      orderBy: { createdAt: "desc" },
     });
     const headers = ["ID", "Title", "Value", "Stage", "Lead", "Status", "Created"];
     const rows = deals.map((d) => [d.id, d.title, d.value || 0, d.stage?.name || "", d.lead?.contactPerson || d.lead?.businessName || "", d.status || "", d.createdAt?.toISOString() || ""]);
@@ -1067,9 +1017,11 @@ export async function getDealRiskAlerts(userId: string, params: any) {
   const { staleDays = 7, limit = 10 } = params;
   const cutoff = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000);
 
-  const deals = await prisma.deal.findMany({
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const deals = await db.deal.findMany({
     where: {
-      userId,
+      userId: ctx.userId,
       status: "OPEN",
       actualCloseDate: null,
     },
@@ -1105,25 +1057,32 @@ export async function getDealRiskAlerts(userId: string, params: any) {
 export async function doEverythingForContact(userId: string, params: any) {
   const { contactName, actions } = params;
   if (!contactName) throw new Error("contactName is required");
-  const lead = await prisma.lead.findFirst({
-    where: { userId, contactPerson: { contains: contactName, mode: "insensitive" } },
+
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
+  const leads = await leadService.findMany(ctx, {
+    where: { contactPerson: { contains: contactName, mode: "insensitive" } },
+    take: 1,
     include: { deals: { take: 1 }, tasks: { where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, take: 1 } },
   });
+  const lead = leads[0];
   if (!lead) throw new Error(`Contact "${contactName}" not found`);
   const actionsToRun = actions || ["add_note", "create_deal", "schedule_follow_up", "draft_email"];
   const results: string[] = [];
   if (actionsToRun.includes("add_note") || !actions) {
-    await prisma.note.create({
-      data: { userId, leadId: lead.id, content: `Composite action: prepared for ${contactName}.` },
-    });
+    await noteService.create(ctx, { leadId: lead.id, content: `Composite action: prepared for ${contactName}.` });
     results.push("Added note");
   }
   if ((actionsToRun.includes("create_deal") || !actions) && lead.deals.length === 0) {
-    const pipeline = await prisma.pipeline.findFirst({ where: { userId }, include: { stages: true } });
+    const pipeline = await db.pipeline.findFirst({ where: { userId: ctx.userId }, include: { stages: true } });
     const firstStage = pipeline?.stages?.[0];
     if (pipeline && firstStage) {
-      await prisma.deal.create({
-        data: { userId, leadId: lead.id, pipelineId: pipeline.id, stageId: firstStage.id, title: `${lead.contactPerson || lead.businessName} - New` },
+      await dealService.create(ctx, {
+        pipeline: { connect: { id: pipeline.id } },
+        stage: { connect: { id: firstStage.id } },
+        lead: { connect: { id: lead.id } },
+        title: `${lead.contactPerson || lead.businessName} - New`,
+        probability: firstStage.probability,
       });
       results.push("Created deal");
     }
@@ -1131,8 +1090,10 @@ export async function doEverythingForContact(userId: string, params: any) {
   if (actionsToRun.includes("schedule_follow_up") || !actions) {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 3);
-    await prisma.task.create({
-      data: { userId, leadId: lead.id, title: `Follow up with ${lead.contactPerson || "contact"}`, dueDate, status: "TODO" },
+    await taskService.create(ctx, {
+      leadId: lead.id,
+      title: `Follow up with ${lead.contactPerson || "contact"}`,
+      dueDate,
     });
     results.push("Scheduled follow-up");
   }
@@ -1146,17 +1107,21 @@ export async function doEverythingForContact(userId: string, params: any) {
 
 export async function logEmailToContact(userId: string, params: any) {
   const { contactName, subject, body, leadId } = params;
-  const lid = leadId || (contactName ? (await prisma.lead.findFirst({
-    where: { userId, contactPerson: { contains: contactName, mode: "insensitive" } },
-    select: { id: true },
-  }))?.id : null);
+
+  const ctx = createDalContext(userId);
+  let lid = leadId;
+  if (!lid && contactName) {
+    const leads = await leadService.findMany(ctx, {
+      where: { contactPerson: { contains: contactName, mode: "insensitive" } },
+      take: 1,
+      select: { id: true },
+    });
+    lid = leads[0]?.id ?? null;
+  }
   if (!lid) throw new Error("Contact not found. Provide contactName or leadId.");
-  await prisma.note.create({
-    data: {
-      userId,
-      leadId: lid,
-      content: `[Email logged] Subject: ${subject || "(no subject)"}\n\n${body || ""}`,
-    },
+  await noteService.create(ctx, {
+    leadId: lid,
+    content: `[Email logged] Subject: ${subject || "(no subject)"}\n\n${body || ""}`,
   });
   return {
     message: "Email logged to contact.",
@@ -1166,6 +1131,8 @@ export async function logEmailToContact(userId: string, params: any) {
 }
 
 export async function deleteDuplicateContacts(userId: string, params: any) {
+  const ctx = createDalContext(userId);
+  const db = getCrmDb(ctx);
   const { findPotentialDuplicates } = await import('@/lib/lead-generation/deduplication');
   
   console.log(`[DELETE_DUPLICATES] Starting duplicate deletion for user ${userId}...`);
@@ -1200,12 +1167,12 @@ export async function deleteDuplicateContacts(userId: string, params: any) {
     processedPairs.add(pairKey);
     
     // Get full lead data with createdAt
-    const lead1 = await prisma.lead.findUnique({
+    const lead1 = await db.lead.findUnique({
       where: { id: duplicate.lead1.id },
       select: { id: true, createdAt: true },
     });
     
-    const lead2 = await prisma.lead.findUnique({
+    const lead2 = await db.lead.findUnique({
       where: { id: duplicate.lead2.id },
       select: { id: true, createdAt: true },
     });
@@ -1238,11 +1205,8 @@ export async function deleteDuplicateContacts(userId: string, params: any) {
   // Delete the duplicate leads
   let deletedCount = 0;
   if (leadsToDelete.size > 0) {
-    const deleteResult = await prisma.lead.deleteMany({
-      where: {
-        id: { in: Array.from(leadsToDelete) },
-        userId, // Ensure we only delete user's own contacts
-      },
+    const deleteResult = await leadService.deleteMany(ctx, {
+      id: { in: Array.from(leadsToDelete) },
     });
     
     deletedCount = deleteResult.count;

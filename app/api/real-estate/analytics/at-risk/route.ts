@@ -4,7 +4,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 
 interface AtRiskItem {
   id: string;
@@ -77,15 +78,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const atRiskItems: AtRiskItem[] = [];
 
     // 1. Fetch stale FSBO/seller leads (listings at risk)
-    const staleListings = await prisma.lead.findMany({
+    const staleListings = await leadService.findMany(ctx, {
       where: {
-        userId: session.user.id,
-        status: {
-          in: ['NEW', 'CONTACTED', 'QUALIFIED'],
-        },
+        status: { in: ['NEW', 'CONTACTED', 'QUALIFIED'] } as any,
         OR: [
           { source: { contains: 'FSBO' } },
           { source: { contains: 'DUPROPRIO' } },
@@ -96,9 +97,7 @@ export async function GET(req: NextRequest) {
           lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         },
       },
-      orderBy: {
-        updatedAt: 'asc',
-      },
+      orderBy: { updatedAt: 'asc' },
       take: 10,
     });
 
@@ -121,22 +120,17 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. Fetch inactive buyer leads
-    const inactiveBuyers = await prisma.lead.findMany({
+    const inactiveBuyers = await leadService.findMany(ctx, {
       where: {
-        userId: session.user.id,
         OR: [
           { contactType: { contains: 'buyer' } },
         ],
         updatedAt: {
           lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         },
-        status: {
-          notIn: ['CONVERTED', 'LOST'],
-        },
+        status: { notIn: ['CONVERTED', 'LOST'] } as any,
       },
-      orderBy: {
-        updatedAt: 'asc',
-      },
+      orderBy: { updatedAt: 'asc' },
       take: 10,
     });
 
@@ -158,9 +152,9 @@ export async function GET(req: NextRequest) {
     }
 
     // 3. Fetch stalled deals
-    const stalledDeals = await prisma.deal.findMany({
+    const stalledDeals = await getCrmDb(ctx).deal.findMany({
       where: {
-        userId: session.user.id,
+        userId: ctx.userId,
         actualCloseDate: null,
         updatedAt: {
           lt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),

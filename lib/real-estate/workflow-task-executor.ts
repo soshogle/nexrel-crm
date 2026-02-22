@@ -4,7 +4,9 @@
  */
 
 import { REWorkflowTask, REWorkflowInstance, REAIEmployeeType } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import type { PrismaClient } from '@prisma/client';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService } from '@/lib/dal';
 import { sendSMS } from '@/lib/twilio';
 import { EmailService } from '@/lib/email-service';
 import { CalendarService } from '@/lib/calendar/calendar-service';
@@ -20,8 +22,12 @@ interface TaskResult {
  */
 export async function executeTask(
   task: REWorkflowTask,
-  instance: REWorkflowInstance
+  instance: REWorkflowInstance,
+  industry?: string | null
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId, industry);
+  const db = getCrmDb(ctx);
+
   const actionConfig = task.actionConfig as any;
   const actions = actionConfig?.actions || [];
 
@@ -33,31 +39,31 @@ export async function executeTask(
 
       switch (action) {
         case 'voice_call':
-          result = await executeVoiceCall(task, instance);
+          result = await executeVoiceCall(task, instance, db);
           break;
         case 'sms':
-          result = await executeSMS(task, instance);
+          result = await executeSMS(task, instance, db);
           break;
         case 'email':
-          result = await executeEmail(task, instance);
+          result = await executeEmail(task, instance, db);
           break;
         case 'task':
-          result = await createTask(task, instance);
+          result = await createTaskAction(task, instance, db);
           break;
         case 'calendar':
-          result = await createCalendarEvent(task, instance);
+          result = await createCalendarEvent(task, instance, db);
           break;
         case 'cma_generation':
-          result = await generateCMA(task, instance);
+          result = await generateCMA(task, instance, db);
           break;
         case 'presentation_generation':
-          result = await generatePresentation(task, instance);
+          result = await generatePresentation(task, instance, db);
           break;
         case 'market_research':
-          result = await generateMarketResearch(task, instance);
+          result = await generateMarketResearch(task, instance, db);
           break;
         case 'document':
-          result = await generateDocument(task, instance);
+          result = await generateDocument(task, instance, db);
           break;
         default:
           result = { success: false, error: `Unknown action: ${action}` };
@@ -86,7 +92,8 @@ export async function executeTask(
  */
 async function executeVoiceCall(
   task: REWorkflowTask,
-  instance: REWorkflowInstance
+  instance: REWorkflowInstance,
+  db: PrismaClient
 ): Promise<TaskResult> {
   const actionConfig = task.actionConfig as any;
 
@@ -102,7 +109,7 @@ async function executeVoiceCall(
   } | undefined;
 
     if (actionConfig?.assignedAIEmployeeId) {
-      const aiEmployee = await prisma.userAIEmployee.findFirst({
+      const aiEmployee = await db.userAIEmployee.findFirst({
         where: {
           id: actionConfig.assignedAIEmployeeId,
           userId: instance.userId,
@@ -110,7 +117,7 @@ async function executeVoiceCall(
         },
       });
       if (aiEmployee?.voiceAgentId) {
-        const voiceAgent = await prisma.voiceAgent.findFirst({
+        const voiceAgent = await db.voiceAgent.findFirst({
           where: {
             id: aiEmployee.voiceAgentId,
             userId: instance.userId,
@@ -147,7 +154,7 @@ async function executeVoiceCall(
 
     // Fallback to user language when no override yet
     if (!voiceOverride?.agent?.language) {
-      const user = await prisma.user.findUnique({
+      const user = await db.user.findUnique({
         where: { id: instance.userId },
         select: { language: true },
       });
@@ -191,7 +198,7 @@ async function executeVoiceCall(
 
   // Get contact phone number
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await db.lead.findFirst({ where: { id: instance.leadId, userId: instance.userId } })
     : null;
 
   if (!lead?.phone) {
@@ -226,7 +233,7 @@ async function executeVoiceCall(
     );
 
     // Create call log
-    const callLog = await prisma.callLog.create({
+    const callLog = await db.callLog.create({
       data: {
         userId: instance.userId,
         voiceAgentId: null, // REAIEmployeeAgent doesn't have voiceAgentId, using ElevenLabs directly
@@ -265,8 +272,9 @@ async function executeSMS(
   task: REWorkflowTask,
   instance: REWorkflowInstance
 ): Promise<TaskResult> {
+  const ctx = createDalContext(instance.userId);
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await leadService.findUnique(ctx, instance.leadId)
     : null;
 
   if (!lead?.phone) {
@@ -317,10 +325,11 @@ async function executeSMS(
  */
 async function executeEmail(
   task: REWorkflowTask,
-  instance: REWorkflowInstance
+  instance: REWorkflowInstance,
+  db: PrismaClient
 ): Promise<TaskResult> {
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await db.lead.findFirst({ where: { id: instance.leadId, userId: instance.userId } })
     : null;
 
   if (!lead?.email) {
@@ -394,15 +403,16 @@ async function executeEmail(
 /**
  * Create task
  */
-async function createTask(
+async function createTaskAction(
   task: REWorkflowTask,
-  instance: REWorkflowInstance
+  instance: REWorkflowInstance,
+  db: PrismaClient
 ): Promise<TaskResult> {
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await db.lead.findFirst({ where: { id: instance.leadId, userId: instance.userId } })
     : null;
 
-  await prisma.task.create({
+  await db.task.create({
     data: {
       userId: instance.userId,
       title: task.name,
@@ -422,10 +432,11 @@ async function createTask(
  */
 async function createCalendarEvent(
   task: REWorkflowTask,
-  instance: REWorkflowInstance
+  instance: REWorkflowInstance,
+  db: PrismaClient
 ): Promise<TaskResult> {
   const lead = instance.leadId 
-    ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+    ? await db.lead.findFirst({ where: { id: instance.leadId, userId: instance.userId } })
     : null;
 
   if (!lead) {
@@ -445,7 +456,7 @@ async function createCalendarEvent(
 
   try {
     // Create appointment in database first
-    const appointment = await prisma.bookingAppointment.create({
+    const appointment = await db.bookingAppointment.create({
       data: {
         userId: instance.userId,
         customerName: lead.businessName || lead.contactPerson || 'Contact',
@@ -461,7 +472,7 @@ async function createCalendarEvent(
     });
 
     // Sync to calendar if connection exists
-    const calendarConnection = await prisma.calendarConnection.findFirst({
+    const calendarConnection = await db.calendarConnection.findFirst({
       where: {
         userId: instance.userId,
         syncEnabled: true,
@@ -471,7 +482,7 @@ async function createCalendarEvent(
 
     if (calendarConnection) {
       // Update appointment with calendar connection
-      await prisma.bookingAppointment.update({
+      await db.bookingAppointment.update({
         where: { id: appointment.id },
         data: {
           calendarConnectionId: calendarConnection.id,
@@ -512,13 +523,14 @@ async function createCalendarEvent(
  */
 async function generateCMA(
   task: REWorkflowTask,
-  instance: REWorkflowInstance
+  instance: REWorkflowInstance,
+  db: PrismaClient
 ): Promise<TaskResult> {
   try {
     // Get property data from task config or lead/deal
     const actionConfig = task.actionConfig as any;
     const lead = instance.leadId 
-      ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+      ? await db.lead.findFirst({ where: { id: instance.leadId, userId: instance.userId } })
       : null;
 
     // Extract property address from lead or task config
@@ -563,7 +575,7 @@ async function generateCMA(
     const instanceMetadata = (instance.metadata as any) || {};
     instanceMetadata.cmaReportId = cmaResult.id;
     
-    await prisma.rEWorkflowInstance.update({
+    await db.rEWorkflowInstance.update({
       where: { id: instance.id },
       data: { metadata: instanceMetadata },
     });
@@ -592,12 +604,13 @@ async function generateCMA(
  */
 async function generatePresentation(
   task: REWorkflowTask,
-  instance: REWorkflowInstance
+  instance: REWorkflowInstance,
+  db: PrismaClient
 ): Promise<TaskResult> {
   try {
     const actionConfig = task.actionConfig as any;
     const lead = instance.leadId 
-      ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+      ? await db.lead.findFirst({ where: { id: instance.leadId, userId: instance.userId } })
       : null;
 
     // Get property data
@@ -622,7 +635,7 @@ async function generatePresentation(
     }
 
     // Get agent info from user
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: instance.userId },
       select: { name: true, email: true, phone: true },
     });
@@ -636,7 +649,7 @@ async function generatePresentation(
     };
 
     // Create a presentation record using REListingPresentation model
-    const presentationRecord = await prisma.rEListingPresentation.create({
+    const presentationRecord = await db.rEListingPresentation.create({
       data: {
         userId: instance.userId,
         address: propertyData.address,
@@ -656,7 +669,7 @@ async function generatePresentation(
     const instanceMetadata = (instance.metadata as any) || {};
     instanceMetadata.presentationId = presentationRecord.id;
     
-    await prisma.rEWorkflowInstance.update({
+    await db.rEWorkflowInstance.update({
       where: { id: instance.id },
       data: { metadata: instanceMetadata },
     });
@@ -692,12 +705,13 @@ async function generatePresentation(
  */
 async function generateMarketResearch(
   task: REWorkflowTask,
-  instance: REWorkflowInstance
+  instance: REWorkflowInstance,
+  db: PrismaClient
 ): Promise<TaskResult> {
   try {
     const actionConfig = task.actionConfig as any;
     const lead = instance.leadId 
-      ? await prisma.lead.findUnique({ where: { id: instance.leadId } })
+      ? await db.lead.findFirst({ where: { id: instance.leadId, userId: instance.userId } })
       : null;
 
     // Determine report type (buyer or seller)
@@ -775,7 +789,7 @@ async function generateMarketResearch(
     instanceMetadata.marketResearchReportId = result.report?.id || result.id;
     instanceMetadata.marketResearchType = reportType;
     
-    await prisma.rEWorkflowInstance.update({
+    await db.rEWorkflowInstance.update({
       where: { id: instance.id },
       data: { metadata: instanceMetadata },
     });
@@ -804,7 +818,8 @@ async function generateMarketResearch(
  */
 async function generateDocument(
   task: REWorkflowTask,
-  instance: REWorkflowInstance
+  instance: REWorkflowInstance,
+  _db: PrismaClient
 ): Promise<TaskResult> {
   // Generic document generation - can be extended for other document types
   try {

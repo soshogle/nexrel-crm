@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { GmailService } from '@/lib/messaging-sync/gmail-service';
 import { TwilioService } from '@/lib/messaging-sync/twilio-service';
 import { FacebookService } from '@/lib/messaging-sync/facebook-service';
@@ -40,8 +41,12 @@ export async function POST(
       );
     }
 
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const db = getCrmDb(ctx);
     // Get conversation with channel connection
-    const conversation = await prisma.conversation.findUnique({
+    const conversation = await db.conversation.findUnique({
       where: { id: conversationId },
       include: {
         channelConnection: true,
@@ -55,7 +60,7 @@ export async function POST(
       );
     }
 
-    if (conversation.userId !== session.user.id) {
+    if (conversation.userId !== ctx.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -171,10 +176,10 @@ export async function POST(
     }
 
     // Save outbound message to database
-    const savedMessage = await prisma.conversationMessage.create({
+    const savedMessage = await db.conversationMessage.create({
       data: {
         conversationId,
-        userId: session.user.id,
+        userId: ctx.userId,
         direction: 'OUTBOUND',
         status: 'SENT',
         content: message,
@@ -184,7 +189,7 @@ export async function POST(
     });
 
     // Update conversation
-    await prisma.conversation.update({
+    await db.conversation.update({
       where: { id: conversationId },
       data: {
         lastMessageAt: new Date(),

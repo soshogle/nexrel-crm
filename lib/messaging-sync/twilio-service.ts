@@ -5,7 +5,8 @@
  */
 
 import twilio from 'twilio';
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, conversationService } from '@/lib/dal';
 
 export class TwilioService {
   private client: ReturnType<typeof twilio>;
@@ -54,8 +55,10 @@ export class TwilioService {
     try {
       const { MessageSid, From, To, Body, NumMedia, MediaUrl0, MediaContentType0 } = webhookData;
 
+      const ctx = createDalContext(userId);
+      const db = getCrmDb(ctx);
       // Find or create conversation
-      let conversation = await prisma.conversation.findUnique({
+      let conversation = await db.conversation.findUnique({
         where: {
           channelConnectionId_contactIdentifier: {
             channelConnectionId,
@@ -65,14 +68,11 @@ export class TwilioService {
       });
 
       if (!conversation) {
-        conversation = await prisma.conversation.create({
-          data: {
-            userId,
-            channelConnectionId,
-            contactName: From, // Just use phone number as name initially
-            contactIdentifier: From,
-            status: 'ACTIVE',
-          },
+        conversation = await conversationService.create(ctx, {
+          channelConnection: { connect: { id: channelConnectionId } },
+          contactName: From,
+          contactIdentifier: From,
+          status: 'ACTIVE',
         });
       }
 
@@ -87,7 +87,7 @@ export class TwilioService {
       }
 
       // Create message
-      await prisma.conversationMessage.create({
+      await db.conversationMessage.create({
         data: {
           conversationId: conversation.id,
           userId,
@@ -101,7 +101,7 @@ export class TwilioService {
       });
 
       // Update conversation
-      await prisma.conversation.update({
+      await db.conversation.update({
         where: { id: conversation.id },
         data: {
           lastMessageAt: new Date(),
@@ -144,15 +144,16 @@ export class TwilioService {
    */
   async syncToDatabase(channelConnectionId: string, userId: string): Promise<number> {
     try {
+      const ctx = createDalContext(userId);
+      const db = getCrmDb(ctx);
       const messages = await this.fetchMessageHistory();
       let syncedCount = 0;
 
       for (const twilioMessage of messages) {
         const isInbound = twilioMessage.to === this.phoneNumber;
         const contactPhone = isInbound ? twilioMessage.from : twilioMessage.to;
-
         // Find or create conversation
-        let conversation = await prisma.conversation.findUnique({
+        let conversation = await db.conversation.findUnique({
           where: {
             channelConnectionId_contactIdentifier: {
               channelConnectionId,
@@ -162,19 +163,16 @@ export class TwilioService {
         });
 
         if (!conversation) {
-          conversation = await prisma.conversation.create({
-            data: {
-              userId,
-              channelConnectionId,
-              contactName: contactPhone,
-              contactIdentifier: contactPhone,
-              status: 'ACTIVE',
-            },
+          conversation = await conversationService.create(ctx, {
+            channelConnection: { connect: { id: channelConnectionId } },
+            contactName: contactPhone,
+            contactIdentifier: contactPhone,
+            status: 'ACTIVE',
           });
         }
 
         // Check if message already exists
-        const existingMessage = await prisma.conversationMessage.findFirst({
+        const existingMessage = await db.conversationMessage.findFirst({
           where: {
             conversationId: conversation.id,
             externalMessageId: twilioMessage.sid,
@@ -182,7 +180,7 @@ export class TwilioService {
         });
 
         if (!existingMessage) {
-          await prisma.conversationMessage.create({
+          await db.conversationMessage.create({
             data: {
               conversationId: conversation.id,
               userId,
@@ -200,7 +198,7 @@ export class TwilioService {
       }
 
       // Update sync timestamp
-      await prisma.channelConnection.update({
+      await db.channelConnection.update({
         where: { id: channelConnectionId },
         data: {
           lastSyncAt: new Date(),

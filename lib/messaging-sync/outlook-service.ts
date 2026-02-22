@@ -3,7 +3,8 @@
  * Handles fetching, sending, and syncing Outlook messages via Microsoft Graph
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb, leadService, conversationService } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 
 function extractEmail(str: string): string | null {
   const match = str.match(/<([^>]+)>/);
@@ -101,8 +102,10 @@ export class OutlookService {
   }
 
   async syncToDatabase(channelConnectionId: string, userId: string): Promise<number> {
+    const ctx = createDalContext(userId);
+    const db = getCrmDb(ctx);
     try {
-      const connection = await prisma.channelConnection.findUnique({
+      const connection = await db.channelConnection.findUnique({
         where: { id: channelConnectionId },
       });
 
@@ -125,7 +128,7 @@ export class OutlookService {
         const contactEmail = extractEmail(contactRaw) || contactRaw;
         const contactName = contactRaw.split('<')[0].trim().replace(/^["']|["']$/g, '') || contactEmail;
 
-        let conversation = await prisma.conversation.findUnique({
+        let conversation = await db.conversation.findUnique({
           where: {
             channelConnectionId_contactIdentifier: {
               channelConnectionId,
@@ -135,50 +138,36 @@ export class OutlookService {
         });
 
         if (!conversation) {
-          let lead = await prisma.lead.findFirst({
-            where: { userId, email: contactEmail },
-            select: { id: true },
-          });
+          let lead = await leadService.findMany(ctx, { where: { email: contactEmail }, take: 1 }).then((l) => l[0]);
+          if (lead) lead = { id: lead.id };
 
           if (!lead && contactEmail?.includes('@')) {
-            const newLead = await prisma.lead.create({
-              data: {
-                userId,
-                businessName: contactName || contactEmail,
-                contactPerson: contactName || undefined,
-                email: contactEmail,
-                source: 'email_sync',
-              },
+            const newLead = await leadService.create(ctx, {
+              businessName: contactName || contactEmail,
+              contactPerson: contactName || undefined,
+              email: contactEmail,
+              source: 'email_sync',
             });
             lead = { id: newLead.id };
           }
 
-          conversation = await prisma.conversation.create({
-            data: {
-              userId,
-              channelConnectionId,
-              leadId: lead?.id,
-              contactName,
-              contactIdentifier: contactEmail,
-              status: 'ACTIVE',
-              externalConversationId: msg.conversationId,
-            },
-          });
+          conversation = await conversationService.create(ctx, {
+            channelConnection: { connect: { id: channelConnectionId } },
+            ...(lead?.id && { lead: { connect: { id: lead.id } } }),
+            contactName,
+            contactIdentifier: contactEmail,
+            status: 'ACTIVE',
+            externalConversationId: msg.conversationId,
+          } as any);
         } else if (!conversation.leadId) {
-          const lead = await prisma.lead.findFirst({
-            where: { userId, email: contactEmail },
-            select: { id: true },
-          });
+          const lead = await leadService.findMany(ctx, { where: { email: contactEmail }, take: 1 }).then((l) => l[0]);
           if (lead) {
-            await prisma.conversation.update({
-              where: { id: conversation.id },
-              data: { leadId: lead.id },
-            });
+            await conversationService.update(ctx, conversation.id, { leadId: lead.id });
             conversation.leadId = lead.id;
           }
         }
 
-        const existing = await prisma.conversationMessage.findFirst({
+        const existing = await db.conversationMessage.findFirst({
           where: {
             conversationId: conversation.id,
             externalMessageId: msg.id,
@@ -186,7 +175,7 @@ export class OutlookService {
         });
 
         if (!existing) {
-          await prisma.conversationMessage.create({
+          await db.conversationMessage.create({
             data: {
               conversationId: conversation.id,
               userId,
@@ -200,20 +189,17 @@ export class OutlookService {
             },
           });
 
-          await prisma.conversation.update({
-            where: { id: conversation.id },
-            data: {
-              lastMessageAt: parsed.date,
-              lastMessagePreview: parsed.subject || parsed.body.substring(0, 100),
-              unreadCount: parsed.isInbound ? { increment: 1 } : undefined,
-            },
+          await conversationService.update(ctx, conversation.id, {
+            lastMessageAt: parsed.date,
+            lastMessagePreview: parsed.subject || parsed.body.substring(0, 100),
+            ...(parsed.isInbound && { unreadCount: { increment: 1 } }),
           });
 
           syncedCount++;
         }
       }
 
-      await prisma.channelConnection.update({
+      await db.channelConnection.update({
         where: { id: channelConnectionId },
         data: {
           lastSyncAt: new Date(),
@@ -224,7 +210,7 @@ export class OutlookService {
       return syncedCount;
     } catch (error: any) {
       console.error('Error syncing Outlook to database:', error);
-      await prisma.channelConnection.update({
+      await db.channelConnection.update({
         where: { id: channelConnectionId },
         data: {
           status: 'ERROR',

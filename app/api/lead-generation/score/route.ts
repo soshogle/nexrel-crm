@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { scoreAndSaveLead, batchScoreLeads } from '@/lib/lead-generation/lead-scoring-db';
+import {
+  scoreAndSaveLead,
+  batchScoreLeads,
+  getLeadScoreHistory
+} from '@/lib/lead-generation/lead-scoring-db';
+import { leadService } from '@/lib/dal';
 
 /**
  * POST /api/lead-generation/score
@@ -26,7 +31,11 @@ export async function POST(request: NextRequest) {
     
     // Single lead scoring
     if (body.leadId) {
-      const result = await scoreAndSaveLead(body.leadId);
+      const result = await scoreAndSaveLead(
+        body.leadId,
+        session.user.id,
+        (session.user as any).industry ?? null
+      );
       
       return NextResponse.json({
         success: true,
@@ -39,7 +48,11 @@ export async function POST(request: NextRequest) {
     
     // Batch scoring
     if (body.batch) {
-      const result = await batchScoreLeads(session.user.id, body.filter);
+      const result = await batchScoreLeads(
+        session.user.id,
+        body.filter,
+        (session.user as any).industry ?? null
+      );
       
       return NextResponse.json({
         success: true,
@@ -87,31 +100,28 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
-    
+    const ctx = {
+      userId: session.user.id,
+      industry: (session.user as any).industry ?? null
+    };
+
     // Get lead score history
-    const scores = await prisma.leadScore.findMany({
-      where: { leadId },
-      orderBy: { calculatedAt: 'desc' },
-      take: 10
-    });
-    
+    const scores = await getLeadScoreHistory(leadId, ctx.userId, ctx.industry);
+
     // Get current lead data
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-      select: {
-        id: true,
-        businessName: true,
-        leadScore: true,
-        nextAction: true,
-        nextActionDate: true
-      }
-    });
-    
+    const lead = await leadService.findUnique(ctx, leadId, undefined);
+
     return NextResponse.json({
       success: true,
-      lead,
+      lead: lead
+        ? {
+            id: lead.id,
+            businessName: lead.businessName,
+            leadScore: lead.leadScore,
+            nextAction: lead.nextAction,
+            nextActionDate: lead.nextActionDate
+          }
+        : null,
       history: scores
     });
   } catch (error) {

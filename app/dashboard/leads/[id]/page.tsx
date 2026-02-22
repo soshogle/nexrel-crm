@@ -2,7 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { leadService } from '@/lib/dal'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { redirect, notFound } from 'next/navigation'
 import { LeadDetail } from '@/components/leads/lead-detail'
 
@@ -17,25 +18,18 @@ export default async function LeadDetailPage({
     redirect('/auth/signin')
   }
 
-  const lead = await prisma.lead.findFirst({
-    where: {
-      id: params.id,
-      userId: session.user.id,
+  const ctx = getDalContextFromSession(session)
+  if (!ctx) redirect('/auth/signin')
+
+  const lead = await leadService.findUnique(ctx, params.id, {
+    notes: { orderBy: { createdAt: 'desc' } },
+    messages: { orderBy: { createdAt: 'desc' } },
+    callLogs: {
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      include: { voiceAgent: { select: { name: true } } },
     },
-    include: {
-      notes: {
-        orderBy: { createdAt: 'desc' }
-      },
-      messages: {
-        orderBy: { createdAt: 'desc' }
-      },
-      callLogs: {
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-        include: { voiceAgent: { select: { name: true } } },
-      },
-    }
-  })
+  } as any)
 
   if (!lead) {
     notFound()

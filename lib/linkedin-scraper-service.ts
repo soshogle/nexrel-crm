@@ -4,7 +4,8 @@
  * Auto-enriches new leads with Hunter.io in background when email/company missing
  */
 
-import { prisma } from '@/lib/db';
+import { createDalContext } from '@/lib/context/industry-context';
+import { getCrmDb, leadService } from '@/lib/dal';
 import fs from 'fs';
 import path from 'path';
 
@@ -62,13 +63,11 @@ export class LinkedInScraperService {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const scrapedCount = await prisma.lead.count({
-      where: {
-        userId,
-        source: 'Soshogle Lead Finder',
-        createdAt: {
-          gte: oneWeekAgo,
-        },
+    const ctx = createDalContext(userId);
+    const scrapedCount = await leadService.count(ctx, {
+      source: 'Soshogle Lead Finder',
+      createdAt: {
+        gte: oneWeekAgo,
       },
     });
 
@@ -126,26 +125,24 @@ export class LinkedInScraperService {
       const createdLeadIds: string[] = [];
       for (const profile of profiles) {
         try {
-          const lead = await prisma.lead.create({
-            data: {
-              userId,
-              businessName: profile.company || 'Unknown Company',
-              contactPerson: profile.name,
-              email: profile.email || null,
-              phone: profile.phone || null,
-              website: profile.profileUrl,
-              source: 'Soshogle Lead Finder',
-              status: 'NEW',
-              enrichedData: {
-                linkedInProfile: profile.profileUrl,
-                headline: profile.headline,
-                location: profile.location,
-                about: profile.about,
-                scrapedAt: new Date().toISOString(),
-                scrapedNotes: `${profile.headline || ''}\n\nLocation: ${profile.location || 'N/A'}\n\nAbout: ${profile.about || 'N/A'}`,
-              },
+          const ctx = createDalContext(userId);
+          const lead = await leadService.create(ctx, {
+            businessName: profile.company || 'Unknown Company',
+            contactPerson: profile.name,
+            email: profile.email || null,
+            phone: profile.phone || null,
+            website: profile.profileUrl,
+            source: 'Soshogle Lead Finder',
+            status: 'NEW',
+            enrichedData: {
+              linkedInProfile: profile.profileUrl,
+              headline: profile.headline,
+              location: profile.location,
+              about: profile.about,
+              scrapedAt: new Date().toISOString(),
+              scrapedNotes: `${profile.headline || ''}\n\nLocation: ${profile.location || 'N/A'}\n\nAbout: ${profile.about || 'N/A'}`,
             },
-          });
+          } as any);
           createdCount++;
           createdLeadIds.push(lead.id);
         } catch (createError: any) {
@@ -181,7 +178,8 @@ export class LinkedInScraperService {
   private async enrichLeadsInBackground(leadIds: string[]): Promise<void> {
     try {
       const { dataEnrichmentService } = await import('@/lib/data-enrichment-service');
-      const leads = await prisma.lead.findMany({
+      const db = getCrmDb(createDalContext('bootstrap'));
+      const leads = await db.lead.findMany({
         where: {
           id: { in: leadIds },
           OR: [{ email: null }, { email: '' }],

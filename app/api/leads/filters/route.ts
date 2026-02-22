@@ -6,7 +6,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { leadService } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { LeadStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -20,13 +21,13 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Available statuses from Lead model
+    const ctx = getDalContextFromSession(session);
+    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const statuses = Object.values(LeadStatus);
 
-    // Fetch distinct tags from user's leads (tags stored as JSON array)
-    const leads = await prisma.lead.findMany({
-      where: { userId: session.user.id },
-      select: { tags: true },
+    const leads = await leadService.findMany(ctx, {
+      select: { tags: true } as any,
     });
 
     const tagSet = new Set<string>();

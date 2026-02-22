@@ -1,4 +1,3 @@
-
 export const dynamic = "force-dynamic";
 export const runtime = 'nodejs';
 
@@ -6,6 +5,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { getDalContextFromSession } from '@/lib/context/industry-context'
+import { leadService } from '@/lib/dal/lead-service'
+import { messageService } from '@/lib/dal/message-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,13 +23,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Lead ID is required' }, { status: 400 })
     }
 
-    // Verify lead belongs to user
-    const lead = await prisma.lead.findFirst({
-      where: {
-        id: leadId,
-        userId: session.user.id,
-      }
-    })
+    const ctx = getDalContextFromSession(session)
+    if (!ctx) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const lead = await leadService.findUnique(ctx, leadId)
 
     if (!lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
@@ -130,14 +130,11 @@ The message should be suitable for email outreach and be around 150-200 words.`
                 if (data === '[DONE]') {
                   // Save the generated message to database
                   try {
-                    const message = await prisma.message.create({
-                      data: {
-                        leadId,
-                        userId: session.user.id,
-                        content: buffer.trim(),
-                        messageType: 'ai_generated',
-                        isUsed: false,
-                      }
+                    const message = await messageService.create(ctx, {
+                      leadId,
+                      content: buffer.trim(),
+                      messageType: 'ai_generated',
+                      isUsed: false,
                     })
 
                     const finalData = JSON.stringify({
