@@ -38,18 +38,20 @@ export async function GET(request: NextRequest) {
     }
 
     const result = data.result;
+    const loc = result.geometry?.location;
     const placeData: any = {
       placeId: result.place_id,
       description: result.formatted_address,
-      lat: result.geometry?.location?.lat,
-      lng: result.geometry?.location?.lng,
+      lat: typeof loc?.lat === 'number' ? loc.lat : undefined,
+      lng: typeof loc?.lng === 'number' ? loc.lng : undefined,
     };
 
-    // Extract city, state, country from address components
+    // Extract city, state, country, zip from address components
     result.address_components?.forEach((comp: any) => {
       if (comp.types.includes('locality')) placeData.city = comp.long_name;
       if (comp.types.includes('administrative_area_level_1')) placeData.state = comp.short_name;
       if (comp.types.includes('country')) placeData.country = comp.long_name;
+      if (comp.types.includes('postal_code')) placeData.zip = comp.long_name;
     });
 
     return NextResponse.json({ place: placeData });

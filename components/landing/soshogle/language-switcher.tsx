@@ -54,7 +54,7 @@ export function LanguageSwitcher() {
         {languages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
-            onClick={() => changeLanguage(lang.code)}
+            onSelect={() => changeLanguage(lang.code)}
             className={`cursor-pointer ${language.code === lang.code ? "bg-accent" : ""}`}
           >
             <span className="mr-2 text-lg">{lang.flag}</span>

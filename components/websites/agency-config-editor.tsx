@@ -135,12 +135,21 @@ export function AgencyConfigEditor({
         <Label htmlFor="agency-logo" className="text-sm">
           Logo
         </Label>
+        <p className="text-xs text-muted-foreground">
+          Recommended: 200×60px. PNG or SVG for crisp display. Or paste a direct image URL below.
+        </p>
+        <Input
+          placeholder="https://... or upload"
+          value={form.logoUrl}
+          onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value.trim() }))}
+          className="text-sm font-mono"
+        />
         <div className="flex items-center gap-3">
           {form.logoUrl ? (
             <img
               src={form.logoUrl}
               alt="Agency logo"
-              className="h-12 w-auto max-w-[120px] object-contain rounded border"
+              className="h-12 w-auto max-w-[180px] object-contain object-left rounded border bg-white/80"
             />
           ) : (
             <div className="h-12 w-20 rounded border bg-muted flex items-center justify-center">

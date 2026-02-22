@@ -542,7 +542,7 @@ export default function WebsiteEditorPage() {
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6 space-y-6">
-            {showNeonDatabaseSection && (
+            {isSuperAdmin && showNeonDatabaseSection && (
               <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
                 <Label htmlFor="neonDatabaseUrl" className="text-sm font-medium">Neon Database URL (required for sync)</Label>
                 <Input
@@ -574,6 +574,7 @@ export default function WebsiteEditorPage() {
                 </p>
               </div>
             )}
+            {isSuperAdmin && (
             <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
               <Label htmlFor="vercelDeployHookUrl" className="text-sm font-medium">Auto-deploy on save</Label>
               <p className="text-xs text-muted-foreground">
@@ -635,6 +636,7 @@ export default function WebsiteEditorPage() {
                 )}
               </Button>
             </div>
+            )}
             {website.vercelDeploymentUrl && (
               <a
                 href={website.vercelDeploymentUrl}
