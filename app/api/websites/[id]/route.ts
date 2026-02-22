@@ -104,7 +104,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name, structure, seoData, voiceAIEnabled, voiceAIConfig, enableTavusAvatar, status, agencyConfig, navConfig, pageLabels, neonDatabaseUrl } = body;
+    const { name, structure, seoData, voiceAIEnabled, voiceAIConfig, enableTavusAvatar, status, agencyConfig, navConfig, pageLabels, neonDatabaseUrl, vercelDeployHookUrl } = body;
 
     // Merge voiceAIConfig with existing if partial update
     let finalVoiceAIConfig = voiceAIConfig;
@@ -145,6 +145,7 @@ export async function PATCH(
         ...(navConfig !== undefined && { navConfig }),
         ...(pageLabels !== undefined && { pageLabels }),
         ...(neonDatabaseUrl !== undefined && { neonDatabaseUrl: neonDatabaseUrl || null }),
+        ...(vercelDeployHookUrl !== undefined && { vercelDeployHookUrl: (vercelDeployHookUrl as string)?.trim() || null }),
       },
     });
 
@@ -170,8 +171,9 @@ export async function PATCH(
         .catch((err) => console.warn('[Website PATCH] ElevenLabs prompt sync error:', err));
     }
 
-    // Trigger deploy when structure changes (Eyal, Theodora, future sites)
-    if (structure) {
+    // Trigger deploy when structure, nav, or content changes (Model B: auto-deploy on save)
+    const contentChanged = structure || navConfig !== undefined || pageLabels !== undefined || agencyConfig !== undefined;
+    if (contentChanged) {
       triggerWebsiteDeploy(params.id).then((r) => {
         if (!r.ok) console.warn('[Website PATCH] Deploy trigger:', r.error);
       });

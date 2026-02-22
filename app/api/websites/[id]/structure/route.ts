@@ -58,8 +58,9 @@ export async function PATCH(
           where: { id: params.id },
           data: { structure: newStructure },
         });
-        triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
-        return NextResponse.json({ success: true });
+        const deployResult = await triggerWebsiteDeploy(params.id);
+        if (!deployResult.ok) console.warn('[Structure PATCH] Deploy:', deployResult.error);
+        return NextResponse.json({ success: true, deploy: deployResult });
       }
 
       if (!Array.isArray(newStructure.pages[pageIndex].components)) {
@@ -85,8 +86,11 @@ export async function PATCH(
         where: { id: params.id },
         data: { structure: newStructure },
       });
-      triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
-      return NextResponse.json({ success: true });
+      const deployResult = await triggerWebsiteDeploy(params.id);
+      if (!deployResult.ok) {
+        console.warn('[Structure PATCH] Deploy failed:', deployResult.error);
+      }
+      return NextResponse.json({ success: true, deploy: deployResult });
     }
 
     if (type === 'section_layout' && layout) {
@@ -106,8 +110,9 @@ export async function PATCH(
         where: { id: params.id },
         data: { structure: newStructure },
       });
-      triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
-      return NextResponse.json({ success: true });
+      const deployResult = await triggerWebsiteDeploy(params.id);
+      if (!deployResult.ok) console.warn('[Structure PATCH] Deploy:', deployResult.error);
+      return NextResponse.json({ success: true, deploy: deployResult });
     }
 
     if (type === 'global_styles' && globalStyles) {
@@ -123,8 +128,9 @@ export async function PATCH(
         where: { id: params.id },
         data: { structure: newStructure },
       });
-      triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
-      return NextResponse.json({ success: true });
+      const deployResult = await triggerWebsiteDeploy(params.id);
+      if (!deployResult.ok) console.warn('[Structure PATCH] Deploy:', deployResult.error);
+      return NextResponse.json({ success: true, deploy: deployResult });
     }
 
     if (type === 'page_seo' && pageSeo && typeof pageSeo === 'object') {
@@ -141,8 +147,9 @@ export async function PATCH(
         where: { id: params.id },
         data: { structure: newStructure },
       });
-      triggerWebsiteDeploy(params.id).catch((e) => console.warn('[Structure PATCH] Deploy:', e));
-      return NextResponse.json({ success: true });
+      const deployResult = await triggerWebsiteDeploy(params.id);
+      if (!deployResult.ok) console.warn('[Structure PATCH] Deploy:', deployResult.error);
+      return NextResponse.json({ success: true, deploy: deployResult });
     }
 
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

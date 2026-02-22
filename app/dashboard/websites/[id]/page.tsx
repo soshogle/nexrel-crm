@@ -49,6 +49,7 @@ interface Website {
   structure: any;
   seoData: any;
   vercelDeploymentUrl?: string;
+  vercelDeployHookUrl?: string | null;
   voiceAIEnabled: boolean;
   voiceAIConfig?: any;
   elevenLabsAgentId?: string;
@@ -81,6 +82,7 @@ export default function WebsiteEditorPage() {
   const [activeTab, setActiveTab] = useState('editor');
   const [editorMode, setEditorMode] = useState<'simple' | 'advanced'>('simple');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [deployTriggering, setDeployTriggering] = useState(false);
   const [selectedPageIndex, setSelectedPageIndex] = useState(0);
   const prevImportInProgressRef = useRef(false);
   const [listingsCount, setListingsCount] = useState<number | null>(null);
@@ -572,6 +574,67 @@ export default function WebsiteEditorPage() {
                 </p>
               </div>
             )}
+            <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
+              <Label htmlFor="vercelDeployHookUrl" className="text-sm font-medium">Auto-deploy on save</Label>
+              <p className="text-xs text-muted-foreground">
+                Changes to structure, menu, or content trigger an automatic redeploy. If it&apos;s not working, create a Deploy Hook in Vercel (Project → Settings → Git → Deploy Hooks) and paste the URL below.
+              </p>
+              <Input
+                id="vercelDeployHookUrl"
+                type="url"
+                placeholder="https://api.vercel.com/v1/integrations/deploy/..."
+                className="text-sm font-mono"
+                defaultValue={website.vercelDeployHookUrl ?? ''}
+                onBlur={async (e) => {
+                  const val = e.target.value.trim();
+                  const current = website.vercelDeployHookUrl ?? '';
+                  if (val === current) return;
+                  try {
+                    const res = await fetch(`/api/websites/${website.id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ vercelDeployHookUrl: val || null }),
+                    });
+                    if (!res.ok) throw new Error('Failed to save');
+                    setWebsite((w) => (w ? { ...w, vercelDeployHookUrl: val || null } : null));
+                    toast.success(val ? 'Deploy hook saved.' : 'Deploy hook cleared');
+                  } catch {
+                    toast.error('Failed to save');
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={deployTriggering}
+                onClick={async () => {
+                  setDeployTriggering(true);
+                  try {
+                    const res = await fetch(`/api/websites/${website.id}/trigger-deploy`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.ok) {
+                      toast.success('Deploy triggered! Check Vercel in 1–2 min.');
+                    } else {
+                      toast.error(data.error || 'Deploy failed');
+                    }
+                  } catch {
+                    toast.error('Failed to trigger deploy');
+                  } finally {
+                    setDeployTriggering(false);
+                  }
+                }}
+              >
+                {deployTriggering ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Triggering…
+                  </>
+                ) : (
+                  'Deploy now (test)'
+                )}
+              </Button>
+            </div>
             {website.vercelDeploymentUrl && (
               <a
                 href={website.vercelDeploymentUrl}

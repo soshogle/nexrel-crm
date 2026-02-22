@@ -238,6 +238,7 @@ export interface ProvisioningResult {
   neonDatabaseUrl?: string;
   vercelProjectId?: string;
   vercelDeploymentUrl?: string;
+  vercelDeployHookUrl?: string;
 }
 
 export interface ProvisioningOptions {

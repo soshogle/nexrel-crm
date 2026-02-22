@@ -5,6 +5,7 @@
 
 import type { ProvisioningResult, ProvisioningOptions } from './types';
 import { randomBytes } from 'crypto';
+import { createOrFetchDeployHook } from './deploy-hook';
 
 /** Eyal's Darksword Armory - never provision, migrate, or modify (phase0 isolation) */
 const EYAL_DARKSWORD_WEBSITE_ID = 'cmlkk9awe0002puiqm64iqw7t';
@@ -35,6 +36,7 @@ export class ResourceProvisioningService {
     let neonDatabaseUrl: string | null = null;
     let vercelProjectId: string | null = null;
     let vercelDeploymentUrl: string | null = null;
+    let vercelDeployHookUrl: string | null = null;
 
     try {
       try {
@@ -74,6 +76,14 @@ export class ResourceProvisioningService {
           );
           vercelProjectId = vercelResult.vercelProjectId;
           vercelDeploymentUrl = vercelResult.vercelDeploymentUrl || null;
+          // Auto-create deploy hook so owners get auto-deploy on save without manual setup
+          if (vercelProjectId) {
+            try {
+              vercelDeployHookUrl = await createOrFetchDeployHook(vercelProjectId) || null;
+            } catch (e: any) {
+              console.warn('[Provisioning] Deploy hook creation failed (continuing):', e?.message);
+            }
+          }
         } catch (error: any) {
           console.warn('Vercel project creation failed (continuing):', error.message);
         }
@@ -86,6 +96,7 @@ export class ResourceProvisioningService {
         neonDatabaseUrl: neonDatabaseUrl || undefined,
         vercelProjectId: vercelProjectId || undefined,
         vercelDeploymentUrl: vercelDeploymentUrl || undefined,
+        vercelDeployHookUrl: vercelDeployHookUrl || undefined,
       };
     } catch (error: any) {
       console.error('Provisioning encountered errors:', error);
@@ -94,6 +105,7 @@ export class ResourceProvisioningService {
         neonDatabaseUrl: neonDatabaseUrl || undefined,
         vercelProjectId: vercelProjectId || undefined,
         vercelDeploymentUrl: vercelDeploymentUrl || undefined,
+        vercelDeployHookUrl: vercelDeployHookUrl || undefined,
       };
     }
   }

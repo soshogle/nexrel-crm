@@ -1436,6 +1436,7 @@ export class WorkflowEngine {
         neonDatabaseUrl: provisioningResult.neonDatabaseUrl,
         vercelProjectId: provisioningResult.vercelProjectId,
         vercelDeploymentUrl: provisioningResult.vercelDeploymentUrl,
+        vercelDeployHookUrl: provisioningResult.vercelDeployHookUrl,
       },
     });
 

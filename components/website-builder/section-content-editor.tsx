@@ -210,7 +210,16 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
         }),
       });
       if (!res.ok) throw new Error('Failed to save');
-      toast.success(`${humanize(sectionType)} updated!`);
+      const data = await res.json().catch(() => ({}));
+      if (data.deploy?.ok) {
+        toast.success(`${humanize(sectionType)} updated! Deploying to live site…`);
+      } else if (data.deploy?.error) {
+        toast.success(`${humanize(sectionType)} updated!`, {
+          description: `Deploy failed: ${data.deploy.error}. Add a Deploy Hook in Settings.`,
+        });
+      } else {
+        toast.success(`${humanize(sectionType)} updated!`);
+      }
       setEditingProps(prev => { const next = { ...prev }; delete next[sectionType]; return next; });
       onStructureUpdate();
     } catch {

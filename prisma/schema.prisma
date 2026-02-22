@@ -9637,6 +9637,7 @@ model Website {
   neonDatabaseUrl     String?
   vercelProjectId     String?
   vercelDeploymentUrl String?
+  vercelDeployHookUrl String? // Deploy hook URL from Vercel → triggers redeploy on POST (no token needed)
 
   // Voice AI
   voiceAIEnabled    Boolean @default(false)

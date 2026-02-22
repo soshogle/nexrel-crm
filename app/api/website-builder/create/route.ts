@@ -577,6 +577,7 @@ async function processWebsiteBuild(
         neonDatabaseUrl: provisioningResult.neonDatabaseUrl,
         vercelProjectId: provisioningResult.vercelProjectId,
         vercelDeploymentUrl: provisioningResult.vercelDeploymentUrl,
+        vercelDeployHookUrl: provisioningResult.vercelDeployHookUrl,
         elevenLabsAgentId: voiceAIConfig?.agentId || null,
         voiceAIConfig: voiceAIConfig || null,
       },

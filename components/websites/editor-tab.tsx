@@ -338,7 +338,13 @@ export function EditorTab({
                   props,
                 }),
               });
-              if (!res.ok) throw new Error((await res.json()).error);
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok) throw new Error(data.error || 'Failed to save');
+              if (data.deploy?.ok) {
+                toast.success('Saved! Deploying to live site…');
+              } else if (data.deploy?.error) {
+                toast.warning('Saved, but deploy failed: ' + data.deploy.error);
+              }
               await fetchWebsite();
             }}
           />
