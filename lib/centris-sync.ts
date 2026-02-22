@@ -6,6 +6,7 @@
  */
 import pg from "pg";
 import { runApifyActorAndGetItems } from "@/lib/apify-fetch";
+import { enrichPostalCodesFromLatLng } from "@/lib/geocode-postal";
 import { verifyAndUpdateListings } from "@/lib/listing-verification";
 
 const CENTRIS_URLS = [
@@ -242,6 +243,8 @@ export async function runCentralCentrisSync(
     .map((item: Record<string, unknown>) => mapApifyItemToProperty(item))
     .filter(Boolean) as Record<string, unknown>[];
 
+  await enrichPostalCodesFromLatLng(properties);
+
   const mainCentrisMls = new Set(properties.map((p) => String(p.mls_number)));
   const activeCentrisByDb = new Map<string, Set<string>>();
   for (const url of databaseUrls) {
@@ -279,6 +282,7 @@ export async function runCentralCentrisSync(
               mapApifyItemToPropertyWithFeatured(item, true, "active")
             )
             .filter(Boolean) as Record<string, unknown>[];
+          await enrichPostalCodesFromLatLng(brokerProperties);
           const brokerResult = await importToDatabase(databaseUrl, brokerProperties);
           const idx = databaseUrls.indexOf(databaseUrl);
           if (idx >= 0) databases[idx].brokerFeatured = brokerResult.count;
@@ -306,6 +310,7 @@ export async function runCentralCentrisSync(
               mapApifyItemToPropertyWithFeatured(item, false, "sold")
             )
             .filter(Boolean) as Record<string, unknown>[];
+          await enrichPostalCodesFromLatLng(soldProperties);
           await importToDatabase(databaseUrl, soldProperties);
         } catch (err) {
           console.warn("[centris-sync] Broker sold URL fetch failed:", centrisBrokerSoldUrl, err);

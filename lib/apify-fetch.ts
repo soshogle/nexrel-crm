@@ -29,17 +29,21 @@ export async function runApifyActorAndGetItems(
   const runId = runData.data.id;
 
   // Poll until SUCCEEDED (max ~3 min)
+  let status = "RUNNING";
   for (let i = 0; i < 36; i++) {
     await new Promise((r) => setTimeout(r, 5000));
     const statusRes = await fetch(
       `https://api.apify.com/v2/actor-runs/${runId}?token=${encodeURIComponent(token)}`
     );
     const statusData = (await statusRes.json()) as { data: { status: string } };
-    const status = statusData.data.status;
+    status = statusData.data.status;
     if (status === "SUCCEEDED") break;
     if (status === "FAILED" || status === "ABORTED" || status === "TIMED-OUT") {
       throw new Error(`Apify run ${status}`);
     }
+  }
+  if (status !== "SUCCEEDED") {
+    throw new Error(`Apify run timed out after ~3 min (status: ${status})`);
   }
 
   const itemsRes = await fetch(

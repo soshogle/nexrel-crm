@@ -2,16 +2,51 @@
   "version": 2,
   "buildCommand": "NODE_OPTIONS='--max-old-space-size=8192' npx next build",
   "functions": {
-    "app/api/**/*.ts": {"maxDuration": 30, "memory": 1024},
-    "app/api/cron/monitor-listings/route.ts": {"maxDuration": 300, "memory": 1024}
+    "app/api/**/*.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
+    "app/api/cron/monitor-listings/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
+    "app/api/cron/sync-centris/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
+    "app/api/websites/[id]/sync-centris/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024
+    }
   },
   "crons": [
-    {"path": "/api/cron/twilio-health-monitor", "schedule": "*/2 * * * *"},
-    {"path": "/api/cron/blog-generator", "schedule": "0 9,15 * * *"},
-    {"path": "/api/cron/sync-centris", "schedule": "0 12 * * *"},
-    {"path": "/api/cron/monitor-listings", "schedule": "0 6,18 * * *"},
-    {"path": "/api/cron/scheduled-reports", "schedule": "0 9 * * 1"},
-    {"path": "/api/campaigns/drip/process", "schedule": "*/5 * * * *"},
-    {"path": "/api/campaigns/sms-drip/process", "schedule": "*/5 * * * *"}
+    {
+      "path": "/api/cron/twilio-health-monitor",
+      "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/blog-generator",
+      "schedule": "0 9,15 * * *"
+    },
+    {
+      "path": "/api/cron/sync-centris",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/monitor-listings",
+      "schedule": "0 6,18 * * *"
+    },
+    {
+      "path": "/api/cron/scheduled-reports",
+      "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/campaigns/drip/process",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/campaigns/sms-drip/process",
+      "schedule": "*/5 * * * *"
+    }
   ]
 }

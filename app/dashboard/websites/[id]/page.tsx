@@ -788,6 +788,7 @@ export default function WebsiteEditorPage() {
                     disabled={syncCentrisLoading || !website.neonDatabaseUrl}
                     onClick={async () => {
                       setSyncCentrisLoading(true);
+                      toast.info('Syncing… This may take 2–5 minutes.');
                       try {
                         const res = await fetch(`/api/websites/${website.id}/sync-centris`, {
                           method: 'POST',

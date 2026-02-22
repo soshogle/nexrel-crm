@@ -9,6 +9,7 @@
  */
 import pg from "pg";
 import { runApifyActorAndGetItems } from "@/lib/apify-fetch";
+import { enrichPostalCodesFromLatLng } from "@/lib/geocode-postal";
 import { verifyAndUpdateListings } from "@/lib/listing-verification";
 
 const REALTOR_ACTORS = [
@@ -278,6 +279,8 @@ export async function runRealtorSync(
     .filter((item) => item.MlsNumber || item.mlsNumber || (item.Id && item.Property))
     .map((item: Record<string, unknown>) => mapRealtorItemToProperty(item))
     .filter(Boolean) as Record<string, unknown>[];
+
+  await enrichPostalCodesFromLatLng(properties);
 
   // Map URL listings (fallback or direct) are not broker's own — don't mark as featured
   if (usedMapFallback || url === REALTOR_MAP_FALLBACK_URL) {
