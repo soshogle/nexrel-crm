@@ -109,12 +109,11 @@ async function generateEstimate(
     await taskService.create(ctx, {
       title: `Review Estimate: ${projectType}`,
       description: `Estimated Cost: $${estimatedCost.toLocaleString()}\n${projectDescription}`,
-        status: 'TODO',
-        priority: 'HIGH',
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        leadId: instance.leadId || undefined,
-        dealId: estimate.id,
-      },
+      status: 'TODO',
+      priority: 'HIGH',
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      leadId: instance.leadId || undefined,
+      dealId: estimate.id,
     });
 
     // Send estimate to client
