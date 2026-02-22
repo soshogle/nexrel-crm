@@ -5,7 +5,6 @@ const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
   output: process.env.NEXT_OUTPUT_MODE,
   // Removed outputFileTracingRoot - causes path0/path0 error on Vercel
-  serverExternalPackages: ['proxy-agent', 'apify-client'],
   eslint: {
     ignoreDuringBuilds: true,
   },

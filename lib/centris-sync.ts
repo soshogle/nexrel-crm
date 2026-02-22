@@ -2,9 +2,10 @@
  * Central Centris sync — fetch from Apify once, write to all broker databases.
  * Used by nexrel-crm cron. Each broker keeps their own DB; we write the same
  * Montreal listings to all of them.
+ * Uses fetch (not apify-client) to avoid proxy-agent dependency in Vercel serverless.
  */
 import pg from "pg";
-import { ApifyClient } from "apify-client";
+import { runApifyActorAndGetItems } from "@/lib/apify-fetch";
 import { verifyAndUpdateListings } from "@/lib/listing-verification";
 
 const CENTRIS_URLS = [
@@ -224,7 +225,6 @@ export async function runCentralCentrisSync(
     throw new Error("APIFY_TOKEN not configured");
   }
 
-  const client = new ApifyClient({ token: APIFY_TOKEN });
   const input = {
     urls: CENTRIS_URLS,
     max_items_per_url: maxPerUrl,
@@ -232,8 +232,11 @@ export async function runCentralCentrisSync(
     proxy: { useApifyProxy: true, apifyProxyCountry: "CA" },
   };
 
-  const run = await client.actor("ecomscrape/centris-property-search-scraper").call(input);
-  const { items } = await client.dataset(run.defaultDatasetId).listItems();
+  const items = await runApifyActorAndGetItems(
+    APIFY_TOKEN,
+    "ecomscrape/centris-property-search-scraper",
+    input
+  );
 
   const properties = items
     .map((item: Record<string, unknown>) => mapApifyItemToProperty(item))
@@ -261,13 +264,16 @@ export async function runCentralCentrisSync(
     for (const { databaseUrl, centrisBrokerUrl, centrisBrokerSoldUrl } of brokerOverrides) {
       if (centrisBrokerUrl?.trim()) {
         try {
-          const brokerRun = await client.actor("ecomscrape/centris-property-search-scraper").call({
-            urls: [centrisBrokerUrl.trim()],
-            max_items_per_url: 20,
-            max_retries_per_url: 2,
-            proxy: { useApifyProxy: true, apifyProxyCountry: "CA" },
-          });
-          const { items: brokerItems } = await client.dataset(brokerRun.defaultDatasetId).listItems();
+          const brokerItems = await runApifyActorAndGetItems(
+            APIFY_TOKEN,
+            "ecomscrape/centris-property-search-scraper",
+            {
+              urls: [centrisBrokerUrl.trim()],
+              max_items_per_url: 20,
+              max_retries_per_url: 2,
+              proxy: { useApifyProxy: true, apifyProxyCountry: "CA" },
+            }
+          );
           const brokerProperties = brokerItems
             .map((item: Record<string, unknown>) =>
               mapApifyItemToPropertyWithFeatured(item, true, "active")
@@ -285,13 +291,16 @@ export async function runCentralCentrisSync(
       }
       if (centrisBrokerSoldUrl?.trim()) {
         try {
-          const soldRun = await client.actor("ecomscrape/centris-property-search-scraper").call({
-            urls: [centrisBrokerSoldUrl.trim()],
-            max_items_per_url: 30,
-            max_retries_per_url: 2,
-            proxy: { useApifyProxy: true, apifyProxyCountry: "CA" },
-          });
-          const { items: soldItems } = await client.dataset(soldRun.defaultDatasetId).listItems();
+          const soldItems = await runApifyActorAndGetItems(
+            APIFY_TOKEN,
+            "ecomscrape/centris-property-search-scraper",
+            {
+              urls: [centrisBrokerSoldUrl.trim()],
+              max_items_per_url: 30,
+              max_retries_per_url: 2,
+              proxy: { useApifyProxy: true, apifyProxyCountry: "CA" },
+            }
+          );
           const soldProperties = soldItems
             .map((item: Record<string, unknown>) =>
               mapApifyItemToPropertyWithFeatured(item, false, "sold")

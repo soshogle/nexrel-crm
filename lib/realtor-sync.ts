@@ -5,9 +5,10 @@
  *
  * Uses memo23/realtor-canada-search-cheerio ($25/mo) — accepts agent profile URLs
  * as startUrls and extracts property listings. Fallback: scrapemind/realtor-ca-scraper.
+ * Uses fetch (not apify-client) to avoid proxy-agent dependency in Vercel serverless.
  */
 import pg from "pg";
-import { ApifyClient } from "apify-client";
+import { runApifyActorAndGetItems } from "@/lib/apify-fetch";
 import { verifyAndUpdateListings } from "@/lib/listing-verification";
 
 const REALTOR_ACTORS = [
@@ -220,7 +221,6 @@ export async function runRealtorSync(
     throw new Error("APIFY_TOKEN not configured");
   }
 
-  const client = new ApifyClient({ token: APIFY_TOKEN });
   const url = agentUrl.trim();
 
   const runWithUrl = async (
@@ -245,9 +245,8 @@ export async function runRealtorSync(
     for (const actor of REALTOR_ACTORS) {
       try {
         const input = actor === "memo23/realtor-canada-search-cheerio" ? memo23Input : scrapemindInput;
-        const run = await client.actor(actor).call(input);
-        const dataset = await client.dataset(run.defaultDatasetId).listItems();
-        return { items: (dataset.items || []) as Record<string, unknown>[] };
+        const items = await runApifyActorAndGetItems(APIFY_TOKEN, actor, input);
+        return { items };
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
       }
