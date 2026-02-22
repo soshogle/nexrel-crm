@@ -1,14 +1,20 @@
 /**
  * Apify REST API helper — run actors and get dataset items via fetch.
  * Avoids apify-client (and its proxy-agent dependency) for Vercel serverless compatibility.
+ * Actor IDs like "owner/actor-name" must use tilde in URL: "owner~actor-name"
  */
+function toApifyActorId(id: string): string {
+  return id.replace(/\//g, "~");
+}
+
 export async function runApifyActorAndGetItems(
   token: string,
   actorId: string,
   input: Record<string, unknown>
 ): Promise<Record<string, unknown>[]> {
+  const apiActorId = toApifyActorId(actorId);
   const runRes = await fetch(
-    `https://api.apify.com/v2/acts/${actorId}/runs?token=${encodeURIComponent(token)}`,
+    `https://api.apify.com/v2/acts/${apiActorId}/runs?token=${encodeURIComponent(token)}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
