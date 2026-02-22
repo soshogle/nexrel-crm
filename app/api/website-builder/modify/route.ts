@@ -133,13 +133,12 @@ export async function POST(request: NextRequest) {
 
     // Update website with pending changes
     await websiteService.update(ctx, websiteId, {
-        pendingChanges: {
-          approvalId: approval.id,
-          changes,
-          preview,
-        },
-      } as any,
-    });
+      pendingChanges: {
+        approvalId: approval.id,
+        changes,
+        preview,
+      },
+    } as any);
 
     return NextResponse.json({
       success: true,

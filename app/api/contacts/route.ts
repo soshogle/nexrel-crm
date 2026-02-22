@@ -66,8 +66,9 @@ export async function POST(request: Request) {
           create: {
             userId: ctx.userId,
             content: notes.trim(),
-          }
-        } as any : {}),
+          },
+        },
+      } as any : {}),
     });
 
     console.log('Contact created successfully:', contact.id);

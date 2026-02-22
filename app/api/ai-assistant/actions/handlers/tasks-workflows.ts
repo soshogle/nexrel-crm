@@ -235,10 +235,6 @@ export async function createBulkTasks(userId: string, params: any) {
     where: { createdAt: { gte: startDate } },
     take: 50,
   });
-      createdAt: { gte: startDate },
-    },
-    take: 50,
-  });
 
   const dueDate = new Date(now);
   dueDate.setDate(dueDate.getDate() + dueInDays);

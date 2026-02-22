@@ -334,7 +334,8 @@ export class AITaskService {
     reasoning: string;
   } | null> {
     try {
-      const db = getCrmDb(createDalContext(userId));
+      const ctx = createDalContext(userId);
+      const db = getCrmDb(ctx);
       // Get team members
       const teamMembers = await db.teamMember.findMany({
         where: { userId },
@@ -350,16 +351,12 @@ export class AITaskService {
       });
 
       if (teamMembers.length === 0) {
-        // No team members, suggest owner
         return {
           suggestedUserId: userId,
           confidence: 100,
           reasoning: 'You are the only team member',
         };
       }
-
-      const ctx = createDalContext(userId);
-      const db = getCrmDb(ctx);
       // Get workload for each team member
       const workloads = await Promise.all(
         teamMembers.map(async (member) => {

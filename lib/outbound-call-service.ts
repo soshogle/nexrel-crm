@@ -135,19 +135,10 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
           ...(leadId ? [{ id: leadId }] : []),
         ],
       },
+      orderBy: { createdAt: 'desc' },
       take: 1,
     });
     const lead = leads[0];
-      where: {
-        userId,
-        OR: [
-          { contactPerson: { contains: contactName, mode: 'insensitive' } },
-          { businessName: { contains: contactName, mode: 'insensitive' } },
-          ...(leadId ? [{ id: leadId }] : []),
-        ],
-      },
-      orderBy: { createdAt: 'desc' },
-    });
 
     if (lead) {
       finalPhoneNumber = lead.phone || null;
