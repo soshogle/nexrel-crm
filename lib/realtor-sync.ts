@@ -25,6 +25,13 @@ function parsePrice(priceStr: string | undefined): number | null {
   return num ? parseInt(num, 10) : null;
 }
 
+/** Extract Canadian postal code (A1A 1A1) from text */
+function extractPostalCode(text: string | undefined): string | null {
+  if (!text || typeof text !== "string") return null;
+  const match = text.match(/\b([A-Za-z]\d[A-Za-z])[ -]?(\d[A-Za-z]\d)\b/);
+  return match ? (match[1] + match[2]).toUpperCase().replace(/\s/g, "") : null;
+}
+
 function mapPropertyType(type: string | undefined): "apartment" | "condo" | "house" | "townhouse" | "duplex" | "triplex" | "commercial" | "land" {
   const t = (type || "").toLowerCase();
   if (t.includes("condo") || t.includes("apartment")) return "condo";
@@ -82,6 +89,10 @@ function mapRealtorItemToProperty(item: Record<string, unknown>): Record<string,
   const slug = `realtor-${mls}`.replace(/[^a-z0-9-]/gi, "-").slice(0, 500);
   const title = (addressText || `Property ${mls}`).split("|")[0]?.trim().slice(0, 500) || `Property ${mls}`;
 
+  const postalCode =
+    (address?.PostalCode || address?.postalCode || item.PostalCode || item.postalCode) as string | undefined;
+  const postalCodeNorm = extractPostalCode(postalCode) ?? extractPostalCode(addressText ?? "") ?? null;
+
   const priceVal = priceNum ?? 0;
   const isPrestige = listingType === "sale" && priceVal >= 1_000_000;
   return {
@@ -110,8 +121,14 @@ function mapRealtorItemToProperty(item: Record<string, unknown>): Record<string,
     is_featured: true,
     is_prestige: isPrestige,
     original_url: `https://www.realtor.ca/real-estate/${item.Id || mls}/`,
+    postal_code: postalCodeNorm,
   };
 }
+
+const ADD_POSTAL_CODE_SQL = `
+  ALTER TABLE properties ADD COLUMN IF NOT EXISTS postal_code VARCHAR(10);
+  CREATE INDEX IF NOT EXISTS idx_properties_postal_code ON properties (postal_code) WHERE postal_code IS NOT NULL;
+`;
 
 async function importToDatabase(
   databaseUrl: string,
@@ -121,7 +138,7 @@ async function importToDatabase(
     "mls_number", "title", "slug", "property_type", "listing_type", "status", "price", "price_label",
     "address", "neighborhood", "city", "province", "bedrooms", "bathrooms", "area", "area_unit",
     "description", "main_image_url", "gallery_images", "is_featured", "is_prestige", "room_details", "original_url",
-    "latitude", "longitude",
+    "latitude", "longitude", "postal_code",
   ];
   const updateCols = cols.filter((c) => c !== "mls_number");
   const updateSet = updateCols.map((c) => `${c} = EXCLUDED.${c}`).join(", ");
@@ -129,6 +146,11 @@ async function importToDatabase(
   const client = new pg.Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: true } });
   try {
     await client.connect();
+    try {
+      await client.query(ADD_POSTAL_CODE_SQL);
+    } catch {
+      // Column may already exist
+    }
     let count = 0;
     for (const p of properties) {
       const vals = [
@@ -157,6 +179,7 @@ async function importToDatabase(
         p.original_url,
         p.latitude ?? null,
         p.longitude ?? null,
+        p.postal_code ?? null,
       ];
       const placeholders = vals.map((_, i) => `$${i + 1}`).join(", ");
       await client.query(

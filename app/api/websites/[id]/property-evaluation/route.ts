@@ -95,6 +95,9 @@ export async function POST(
     const evaluation = await runPropertyEvaluation(websiteId, {
       address: propertyDetails.address,
       city: propertyDetails.city,
+      postalCode: propertyDetails.postalCode ?? propertyDetails.zip,
+      latitude: propertyDetails.latitude,
+      longitude: propertyDetails.longitude,
       bedrooms: propertyDetails.bedrooms,
       bathrooms: propertyDetails.bathrooms,
       propertyType: propertyDetails.propertyType,

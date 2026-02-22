@@ -101,9 +101,17 @@ function BrokerEvaluationForm() {
   const [result, setResult] = useState<EvaluationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [postalCode, setPostalCode] = useState('');
+  const [subjectLat, setSubjectLat] = useState<number | undefined>();
+  const [subjectLng, setSubjectLng] = useState<number | undefined>();
+
   const handleAddressSelect = (value: string, data?: PlaceData) => {
     setAddress(value);
     if (data?.city) setCity(data.city);
+    if (data?.zip) setPostalCode(data.zip);
+    else setPostalCode('');
+    setSubjectLat(data?.lat);
+    setSubjectLng(data?.lng);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,6 +129,9 @@ function BrokerEvaluationForm() {
         body: JSON.stringify({
           address: address.trim(),
           city: city.trim() || undefined,
+          postalCode: postalCode.trim() || undefined,
+          latitude: subjectLat,
+          longitude: subjectLng,
           bedrooms: bedrooms || undefined,
           bathrooms: bathrooms || undefined,
           propertyType,
@@ -142,6 +153,9 @@ function BrokerEvaluationForm() {
   const handleReset = () => {
     setAddress('');
     setCity('');
+    setPostalCode('');
+    setSubjectLat(undefined);
+    setSubjectLng(undefined);
     setBedrooms('');
     setBathrooms('');
     setPropertyType('house');

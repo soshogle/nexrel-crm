@@ -21,6 +21,13 @@ function parsePrice(priceStr: string | undefined): number | null {
   return num ? parseInt(num, 10) : null;
 }
 
+/** Extract Canadian postal code (A1A 1A1) from text */
+function extractPostalCode(text: string | undefined): string | null {
+  if (!text || typeof text !== "string") return null;
+  const match = text.match(/\b([A-Za-z]\d[A-Za-z])[ -]?(\d[A-Za-z]\d)\b/);
+  return match ? (match[1] + match[2]).toUpperCase().replace(/\s/g, "") : null;
+}
+
 function mapApifyItemToProperty(item: Record<string, unknown>): Record<string, unknown> | null {
   const mls = String(item.id || "").trim();
   if (!mls) return null;
@@ -59,6 +66,14 @@ function mapApifyItemToProperty(item: Record<string, unknown>): Record<string, u
   const latitude = latStr != null ? parseFloat(String(latStr)) : null;
   const longitude = lngStr != null ? parseFloat(String(lngStr)) : null;
 
+  // Postal code: from item field or extract from address/title
+  const postalCode =
+    extractPostalCode((item as Record<string, unknown>).postalCode as string) ??
+    extractPostalCode((item as Record<string, unknown>).postal_code as string) ??
+    extractPostalCode((item as Record<string, unknown>).address as string) ??
+    extractPostalCode(title) ??
+    null;
+
   return {
     mls_number: mls,
     title: title.slice(0, 500),
@@ -89,8 +104,14 @@ function mapApifyItemToProperty(item: Record<string, unknown>): Record<string, u
     original_url: item.url || `https://www.centris.ca/en/property/${mls}`,
     latitude: Number.isFinite(latitude) ? latitude : null,
     longitude: Number.isFinite(longitude) ? longitude : null,
+    postal_code: postalCode,
   };
 }
+
+const ADD_POSTAL_CODE_SQL = `
+  ALTER TABLE properties ADD COLUMN IF NOT EXISTS postal_code VARCHAR(10);
+  CREATE INDEX IF NOT EXISTS idx_properties_postal_code ON properties (postal_code) WHERE postal_code IS NOT NULL;
+`;
 
 async function importToDatabase(
   databaseUrl: string,
@@ -100,7 +121,7 @@ async function importToDatabase(
     "mls_number", "title", "slug", "property_type", "listing_type", "status", "price", "price_label",
     "address", "neighborhood", "city", "province", "bedrooms", "bathrooms", "area", "area_unit",
     "description", "main_image_url", "gallery_images", "is_featured", "is_prestige", "room_details", "original_url",
-    "latitude", "longitude",
+    "latitude", "longitude", "postal_code",
   ];
   const updateCols = cols.filter((c) => c !== "mls_number");
   const updateSet = updateCols.map((c) => `${c} = EXCLUDED.${c}`).join(", ");
@@ -108,6 +129,12 @@ async function importToDatabase(
   const client = new pg.Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: true } });
   try {
     await client.connect();
+    // Ensure postal_code column exists (for property evaluation comparables)
+    try {
+      await client.query(ADD_POSTAL_CODE_SQL);
+    } catch {
+      // Column may already exist; continue
+    }
     let count = 0;
     for (const p of properties) {
       const vals = [
@@ -136,6 +163,7 @@ async function importToDatabase(
         p.original_url,
         p.latitude ?? null,
         p.longitude ?? null,
+        p.postal_code ?? null,
       ];
       const placeholders = vals.map((_, i) => `$${i + 1}`).join(", ");
       await client.query(

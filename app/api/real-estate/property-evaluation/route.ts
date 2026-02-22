@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { websiteId, address, city, bedrooms, bathrooms, propertyType } =
+    const { websiteId, address, city, postalCode, latitude, longitude, bedrooms, bathrooms, propertyType } =
       body;
 
     if (!address?.trim()) {
@@ -120,6 +120,9 @@ export async function POST(request: NextRequest) {
     const evaluation = await runPropertyEvaluation(targetWebsiteId, {
       address: address.trim(),
       city: city?.trim() || undefined,
+      postalCode: postalCode?.trim() || undefined,
+      latitude: latitude != null ? parseFloat(latitude) : undefined,
+      longitude: longitude != null ? parseFloat(longitude) : undefined,
       bedrooms: bedrooms ? parseInt(bedrooms, 10) : undefined,
       bathrooms: bathrooms ? parseFloat(bathrooms) : undefined,
       propertyType: propertyType || "house",

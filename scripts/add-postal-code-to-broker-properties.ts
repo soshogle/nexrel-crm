@@ -36,18 +36,23 @@ async function main() {
     }
   }
 
-  // Fallback: Website records with neonDatabaseUrl
+  // Fallback: All real estate broker websites (SERVICE template) with neonDatabaseUrl
   if (urls.length === 0) {
     const websites = await prisma.website.findMany({
       where: {
         templateType: "SERVICE",
         neonDatabaseUrl: { not: null },
       },
-      select: { neonDatabaseUrl: true },
+      select: { neonDatabaseUrl: true, name: true },
     });
+    const seen = new Set<string>();
     for (const w of websites) {
-      if (w.neonDatabaseUrl) urls.push(w.neonDatabaseUrl);
+      if (w.neonDatabaseUrl && !seen.has(w.neonDatabaseUrl)) {
+        seen.add(w.neonDatabaseUrl);
+        urls.push(w.neonDatabaseUrl);
+      }
     }
+    console.log(`   Found ${websites.length} real estate website(s) with database`);
   }
 
   // Single broker DB override (use BROKER_DATABASE_URL; do NOT use DATABASE_URL - that's the CRM)
