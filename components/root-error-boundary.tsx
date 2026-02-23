@@ -12,23 +12,44 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  retryCount: number;
+}
+
+const MAX_AUTO_RETRIES = 1;
+
+function isDomReconciliationError(error: Error): boolean {
+  const msg = error.message || '';
+  return (
+    msg.includes('removeChild') ||
+    msg.includes('insertBefore') ||
+    msg.includes('appendChild') ||
+    msg.includes('The node to be removed is not a child')
+  );
 }
 
 /**
  * Root-level error boundary to catch React render errors (e.g. #185 Maximum update depth)
  * and prevent full app crashes on client browsers.
+ * Automatically retries once for benign DOM reconciliation errors caused by
+ * browser extensions or hydration mismatches.
  */
 export class RootErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, retryCount: 0 };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (isDomReconciliationError(error) && this.state.retryCount < MAX_AUTO_RETRIES) {
+      console.warn('[RootErrorBoundary] DOM reconciliation error, auto-retrying render…', error.message);
+      this.setState((prev) => ({ hasError: false, error: null, retryCount: prev.retryCount + 1 }));
+      return;
+    }
+
     console.error('[RootErrorBoundary] Caught error:', error.message, errorInfo.componentStack);
     if (typeof window !== 'undefined') {
       import('@sentry/nextjs').then((Sentry) => {

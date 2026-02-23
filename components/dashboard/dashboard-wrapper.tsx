@@ -48,8 +48,8 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
 
   return (
     <AIBrainVoiceProvider>
-      {/* Impersonation Banner - Always renders but only shows when impersonating */}
-      <ImpersonationBanner />
+      {/* Impersonation Banner - Only renders after client mount to prevent hydration mismatch */}
+      {mounted && <ImpersonationBanner />}
       
       <div className="flex h-screen bg-gray-50">
         {/* Sidebar - Positioned to account for potential impersonation banner */}
@@ -106,7 +106,7 @@ export function DashboardWrapper({ children }: DashboardWrapperProps) {
                 </ErrorBoundary>
               )}
               <div className="w-96">
-                <GlobalSearchTrigger />
+                {mounted && <GlobalSearchTrigger />}
               </div>
               {/* Admin Settings - Only for AGENCY_ADMIN or SUPER_ADMIN */}
               {mounted && ((session?.user as any)?.role === 'AGENCY_ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN') && (

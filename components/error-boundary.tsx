@@ -13,26 +13,45 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  retryCount: number;
+}
+
+const MAX_AUTO_RETRIES = 1;
+
+function isDomReconciliationError(error: Error): boolean {
+  const msg = error.message || '';
+  return (
+    msg.includes('removeChild') ||
+    msg.includes('insertBefore') ||
+    msg.includes('appendChild') ||
+    msg.includes('The node to be removed is not a child')
+  );
 }
 
 /**
  * Error boundary to catch React render errors and prevent full app crashes.
- * Use to wrap layout-level or risky components (HITL, voice assistants, etc).
+ * Automatically retries once for benign DOM reconciliation errors caused by
+ * browser extensions or hydration mismatches before showing the error UI.
  */
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, retryCount: 0 };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (isDomReconciliationError(error) && this.state.retryCount < MAX_AUTO_RETRIES) {
+      console.warn('[ErrorBoundary] DOM reconciliation error, auto-retrying render…', error.message);
+      this.setState((prev) => ({ hasError: false, error: null, retryCount: prev.retryCount + 1 }));
+      return;
+    }
+
     console.error('[ErrorBoundary] Caught error:', error, errorInfo);
     this.props.onError?.(error, errorInfo);
-    // Sentry captures when @sentry/nextjs is configured (client-side)
     if (typeof window !== 'undefined') {
       import('@sentry/nextjs').then((Sentry) => {
         Sentry.captureException(error, { extra: errorInfo } as any);
@@ -55,7 +74,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => this.setState({ hasError: false, error: null })}
+            onClick={() => this.setState({ hasError: false, error: null, retryCount: 0 })}
             className="gap-2"
           >
             <RefreshCw className="h-4 w-4" />
