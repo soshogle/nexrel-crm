@@ -32,50 +32,21 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Check database connection first
-          try {
-            await authDb.$queryRaw`SELECT 1 as test`
-          } catch (dbError: any) {
-            console.error('[AUTH] Database connection failed:', dbError.message)
-            throw new Error(`Database connection failed: ${dbError.message}`)
-          }
-          
-          // Use select to avoid schema mismatch (e.g. meta DB missing deletedAt column)
-          let user: { id: string; email: string; password: string; name: string | null; role: string; agencyId: string | null; agency: { name: string | null } | null; deletedAt?: Date | null } | null
-          try {
-            user = await authDb.user.findUnique({
-              where: { email: normalizedEmail },
-              select: {
-                id: true,
-                email: true,
-                password: true,
-                name: true,
-                role: true,
-                agencyId: true,
-                deletedAt: true,
-                agency: { select: { name: true } },
-              },
-            })
-          } catch (colErr: any) {
-            if (colErr?.message?.includes('deletedAt')) {
-              user = await authDb.user.findUnique({
-                where: { email: normalizedEmail },
-                select: {
-                  id: true,
-                  email: true,
-                  password: true,
-                  name: true,
-                  role: true,
-                  agencyId: true,
-                  agency: { select: { name: true } },
-                },
-              }) as typeof user
-            } else {
-              throw colErr
-            }
-          }
+          await authDb.$queryRaw`SELECT 1 as test`
+        } catch (dbError: any) {
+          console.error('[AUTH] Database connection failed:', dbError.message)
+          return null
+        }
 
-          if (!user || !user.password || user.deletedAt) {
+        try {
+          // Raw query to avoid Prisma schema mismatch (meta DB may have different columns)
+          const rows = await authDb.$queryRaw<Array<{ id: string; email: string; password: string; name: string | null; role: string; agencyId: string | null }>>`
+            SELECT id, email, password, name, role, "agencyId"
+            FROM "User"
+            WHERE LOWER(email) = LOWER(${normalizedEmail})
+          `
+          const user = rows[0]
+          if (!user?.password) {
             return null
           }
 
@@ -83,7 +54,6 @@ export const authOptions: NextAuthOptions = {
             credentials.password,
             user.password
           )
-
           if (!isPasswordValid) {
             return null
           }
@@ -93,7 +63,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             role: user.role,
             agencyId: user.agencyId,
-            agencyName: user.agency?.name,
+            agencyName: null,
           }
         } catch (error: any) {
           console.error('[AUTH] Error during authorize:', error?.message ?? error)
