@@ -151,7 +151,7 @@ function ClinicalDashboardPageContent() {
       const response = await fetch('/api/leads');
       if (response.ok) {
         const data = await response.json();
-        const leadsArray = Array.isArray(data) ? data : (data.leads || []);
+        const leadsArray = Array.isArray(data) ? data : Array.isArray(data?.leads) ? data.leads : [];
         setLeads(leadsArray);
       }
     } catch (error) {
@@ -203,7 +203,7 @@ function ClinicalDashboardPageContent() {
       const response = await fetch(`/api/dental/treatment-plans?leadId=${selectedLeadId}${clinicIdParam}`);
       if (response.ok) {
         const data = await response.json();
-        setTreatmentPlans(data.plans || []);
+        setTreatmentPlans(Array.isArray(data?.plans) ? data.plans : []);
       }
     } catch (error) {
       console.error('Error fetching treatment plans:', error);
@@ -219,7 +219,7 @@ function ClinicalDashboardPageContent() {
       const response = await fetch(`/api/dental/procedures?leadId=${selectedLeadId}${clinicIdParam}`);
       if (response.ok) {
         const data = await response.json();
-        setProcedures(data.procedures || []);
+        setProcedures(Array.isArray(data?.procedures) ? data.procedures : []);
       }
     } catch (error) {
       console.error('Error fetching procedures:', error);

@@ -63,12 +63,12 @@ export default function ContactDetailDialog({
 
       if (activitiesRes.ok) {
         const activitiesData = await activitiesRes.json();
-        setActivities(activitiesData);
+        setActivities(Array.isArray(activitiesData) ? activitiesData : Array.isArray(activitiesData?.activities) ? activitiesData.activities : Array.isArray(activitiesData?.data) ? activitiesData.data : []);
       }
 
       if (dealsRes.ok) {
         const dealsData = await dealsRes.json();
-        setDeals(dealsData);
+        setDeals(Array.isArray(dealsData) ? dealsData : Array.isArray(dealsData?.deals) ? dealsData.deals : Array.isArray(dealsData?.data) ? dealsData.data : []);
       }
     } catch (error) {
       console.error('Error fetching contact details:', error);

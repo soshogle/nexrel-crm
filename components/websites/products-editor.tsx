@@ -61,7 +61,7 @@ export function ProductsEditor({ websiteId, vercelDeploymentUrl }: ProductsEdito
         setTotal(0);
         return;
       }
-      setProducts(data.products ?? []);
+      setProducts(Array.isArray(data?.products) ? data.products : []);
       setTotal(data.total ?? 0);
     } catch {
       setError('Failed to reach your site. Is it deployed and running?');

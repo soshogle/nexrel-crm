@@ -52,7 +52,7 @@ export function FormResponsesViewer({ leadId, formId }: FormResponsesViewerProps
       const response = await fetch('/api/dental/forms?type=templates');
       const data = await response.json();
       if (data.success) {
-        setForms(data.forms || []);
+        setForms(Array.isArray(data?.forms) ? data.forms : []);
       }
     } catch (error) {
       console.error('Failed to load forms:', error);
@@ -70,7 +70,7 @@ export function FormResponsesViewer({ leadId, formId }: FormResponsesViewerProps
       const response = await fetch(url);
       const data = await response.json();
       if (data.success) {
-        setResponses(data.responses || []);
+        setResponses(Array.isArray(data?.responses) ? data.responses : []);
       }
     } catch (error) {
       console.error('Failed to load responses:', error);

@@ -92,7 +92,7 @@ export default function AdministrativeDashboardPage() {
       const response = await fetch('/api/leads');
       if (response.ok) {
         const data = await response.json();
-        const leadsArray = Array.isArray(data) ? data : (data.leads || []);
+        const leadsArray = Array.isArray(data) ? data : Array.isArray(data?.leads) ? data.leads : [];
         setLeads(leadsArray);
       }
     } catch (error) {
@@ -146,7 +146,7 @@ export default function AdministrativeDashboardPage() {
       const response = await fetch(`/api/dental/forms?type=responses&leadId=${selectedLeadId}`);
       if (response.ok) {
         const data = await response.json();
-        setFormResponses(data.responses || []);
+        setFormResponses(Array.isArray(data?.responses) ? data.responses : []);
       }
     } catch (error) {
       console.error('Error fetching form responses:', error);

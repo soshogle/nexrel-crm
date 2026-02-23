@@ -77,10 +77,11 @@ export function MessagingPage() {
       const data = await response.json();
 
       if (data.success && data.numbers) {
-        setTwilioNumbers(data.numbers);
+        const numbersArray = Array.isArray(data?.numbers) ? data.numbers : [];
+        setTwilioNumbers(numbersArray);
         // Auto-select first number if available
-        if (data.numbers.length > 0 && !fromPhoneNumber) {
-          setFromPhoneNumber(data.numbers[0].phoneNumber);
+        if (numbersArray.length > 0 && !fromPhoneNumber) {
+          setFromPhoneNumber(numbersArray[0].phoneNumber);
         }
       } else {
         toast.error('No phone numbers found. Please configure in Settings.');

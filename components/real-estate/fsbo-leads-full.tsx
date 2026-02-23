@@ -231,9 +231,9 @@ export function FSBOLeadsFull() {
         throw new Error(data.error || 'Search failed');
       }
 
-      setResults(data.results || []);
+      setResults(Array.isArray(data?.results) ? data.results : []);
       if (data.errors) {
-        setSearchErrors(data.errors);
+        setSearchErrors(Array.isArray(data?.errors) ? data.errors : []);
       }
 
       toast({

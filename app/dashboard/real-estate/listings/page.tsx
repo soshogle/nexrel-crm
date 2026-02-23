@@ -123,7 +123,7 @@ export default function ListingsPage() {
       const res = await fetch(`/api/real-estate/properties?${params}`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
-      setProperties(data.properties || []);
+      setProperties(Array.isArray(data?.properties) ? data.properties : []);
     } catch {
       toast({ title: 'Error', description: 'Failed to fetch listings', variant: 'destructive' });
     } finally {
@@ -304,7 +304,7 @@ export default function ListingsPage() {
     try {
       const res = await fetch(`/api/real-estate/properties/search-website?q=${encodeURIComponent(query)}`);
       const data = await res.json();
-      setWebsiteResults(data.results || []);
+      setWebsiteResults(Array.isArray(data?.results) ? data.results : []);
       setShowWebsiteResults(data.results?.length > 0);
     } catch {
       setWebsiteResults([]);

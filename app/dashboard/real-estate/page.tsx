@@ -119,7 +119,7 @@ export default function RealEstateDashboard() {
           { label: 'FSBO Leads', value: String(fsboData.pagination?.total || live.fsboListings || 0), change: 0, trend: (fsboData.pagination?.total || 0) > 0 ? 'up' : 'neutral', icon: Users },
         ]);
 
-        setRecentActivity(activityData.activities || []);
+        setRecentActivity(Array.isArray(activityData?.activities) ? activityData.activities : []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         setMarketStats([

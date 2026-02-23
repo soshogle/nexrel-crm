@@ -47,7 +47,7 @@ export default function KitchenPage() {
       const ordersRes = await fetch('/api/kitchen/orders/active');
       if (ordersRes.ok) {
         const data = await ordersRes.json();
-        setActiveOrders(data.orders || []);
+        setActiveOrders(Array.isArray(data?.orders) ? data.orders : []);
       }
 
       setLoading(false);

@@ -26,7 +26,7 @@ export function TransactionHistory() {
       const res = await fetch('/api/payments/soshogle/transactions?limit=50');
       if (res.ok) {
         const data = await res.json();
-        setTransactions(data.transactions || []);
+        setTransactions(Array.isArray(data?.transactions) ? data.transactions : []);
       }
     } catch (error) {
       toast.error('Failed to load transactions');

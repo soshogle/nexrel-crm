@@ -118,7 +118,7 @@ function TasksEmbed() {
       if (!response.ok) throw new Error('Failed to fetch tasks');
 
       const data = await response.json();
-      setTasks(data.tasks || []);
+      setTasks(Array.isArray(data?.tasks) ? data.tasks : []);
     } catch (error: any) {
       console.error('Error fetching tasks:', error);
       toast.error('Failed to load tasks');
@@ -605,7 +605,7 @@ export default function AIEmployeesPage() {
       const res = await fetch('/api/elevenlabs/voices');
       if (res.ok) {
         const data = await res.json();
-        const list = Array.isArray(data) ? data : (data?.voices || []);
+        const list = Array.isArray(data) ? data : (Array.isArray(data?.voices) ? data.voices : []);
         setElevenLabsVoices(list);
       }
     } catch {
@@ -766,7 +766,7 @@ export default function AIEmployeesPage() {
       const res = await fetch('/api/team');
       if (res.ok) {
         const data = await res.json();
-        setTeamMembers(data.members || []);
+        setTeamMembers(Array.isArray(data?.members) ? data.members : []);
       }
     } catch (e) { console.error('Failed to fetch team', e); }
   };
@@ -868,7 +868,7 @@ export default function AIEmployeesPage() {
       const res = await fetch('/api/appointments');
       if (res.ok) {
         const data = await res.json();
-        setAppointments(data.appointments || []);
+        setAppointments(Array.isArray(data?.appointments) ? data.appointments : []);
       }
     } catch (e) { console.error('Failed to fetch appointments', e); }
   };
@@ -885,7 +885,7 @@ export default function AIEmployeesPage() {
       
       const data = await response.json();
       if (data.success) {
-        setJobs(data.data || []);
+        setJobs(Array.isArray(data?.data) ? data.data : []);
       } else {
         throw new Error(data.error || 'Failed to fetch jobs');
       }

@@ -73,7 +73,7 @@ export function ProcedureLog({ leadId, treatmentPlanId, readOnly = false }: Proc
       const response = await fetch(url);
       const data = await response.json();
       if (data.success) {
-        setProcedures(data.procedures || []);
+        setProcedures(Array.isArray(data?.procedures) ? data.procedures : []);
       }
     } catch (error) {
       console.error('Failed to load procedures:', error);

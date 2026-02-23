@@ -50,7 +50,7 @@ export default function FailoverEventsTab() {
       const response = await fetch('/api/admin/twilio-failover/events');
       const data = await response.json();
       if (data.success) {
-        setEvents(data.events);
+        setEvents(Array.isArray(data?.events) ? data.events : []);
       }
     } catch (error) {
       console.error('Error fetching events:', error);

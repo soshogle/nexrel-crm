@@ -70,7 +70,7 @@ export default function BlogManagementPage() {
       if (filterCategory !== 'all') params.set('category', filterCategory);
       const res = await fetch(`/api/blog?${params}`);
       const data = await res.json();
-      setPosts(data.posts || []);
+      setPosts(Array.isArray(data?.posts) ? data.posts : []);
       setTotal(data.total || 0);
     } catch {
       toast.error('Failed to load blog posts');

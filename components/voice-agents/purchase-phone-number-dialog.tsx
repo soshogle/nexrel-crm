@@ -110,7 +110,7 @@ export default function PurchasePhoneNumberDialog({
       }
 
       if (data.numbers && data.numbers.length > 0) {
-        setAvailableNumbers(data.numbers);
+        setAvailableNumbers(Array.isArray(data?.numbers) ? data.numbers : []);
         setTwilioAccountId(data.twilioAccountId || null);
         toast.success(`Found ${data.numbers.length} available numbers`);
       } else {

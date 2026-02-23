@@ -87,7 +87,7 @@ export function ConversationList({
       
       const response = await fetch(`/api/messaging/conversations?${params}`);
       const data = await response.json();
-      setConversations(data.conversations || []);
+      setConversations(Array.isArray(data?.conversations) ? data.conversations : []);
     } catch (error) {
       console.error('Error loading conversations:', error);
     } finally {

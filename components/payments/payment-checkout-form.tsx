@@ -48,7 +48,7 @@ export function PaymentCheckoutForm({
       const methodsRes = await fetch('/api/payments/soshogle/payment-methods');
       if (methodsRes.ok) {
         const data = await methodsRes.json();
-        setPaymentMethods(data.methods || []);
+        setPaymentMethods(Array.isArray(data?.methods) ? data.methods : []);
         
         // Set default method if available
         const defaultMethod = data.methods?.find((m: any) => m.isDefault);

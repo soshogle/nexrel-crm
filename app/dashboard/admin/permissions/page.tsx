@@ -53,8 +53,8 @@ export default function PermissionsManagementPage() {
       if (!response.ok) throw new Error('Failed to fetch permissions');
 
       const data = await response.json();
-      setTeamMembers(data.teamMembers || []);
-      setRolePresets(data.rolePresets || []);
+      setTeamMembers(Array.isArray(data?.teamMembers) ? data.teamMembers : []);
+      setRolePresets(Array.isArray(data?.rolePresets) ? data.rolePresets : []);
       
       if (data.teamMembers?.length > 0) {
         setSelectedMember(data.teamMembers[0]);

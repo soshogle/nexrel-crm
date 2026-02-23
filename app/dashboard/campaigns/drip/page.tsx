@@ -77,7 +77,7 @@ export default function DripCampaignsPage() {
       const response = await fetch('/api/campaigns/drip');
       if (response.ok) {
         const data = await response.json();
-        setCampaigns(data);
+        setCampaigns(Array.isArray(data) ? data : Array.isArray(data?.campaigns) ? data.campaigns : Array.isArray(data?.data) ? data.data : []);
       } else {
         toast.error('Failed to load campaigns');
       }

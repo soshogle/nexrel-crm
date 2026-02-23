@@ -123,22 +123,22 @@ export default function GeneralInventoryPage() {
 
       if (itemsRes.ok) {
         const data = await itemsRes.json();
-        setItems(data.items || []);
+        setItems(Array.isArray(data?.items) ? data.items : []);
       }
 
       if (categoriesRes.ok) {
         const data = await categoriesRes.json();
-        setCategories(data.categories || []);
+        setCategories(Array.isArray(data?.categories) ? data.categories : []);
       }
 
       if (suppliersRes.ok) {
         const data = await suppliersRes.json();
-        setSuppliers(data.suppliers || []);
+        setSuppliers(Array.isArray(data?.suppliers) ? data.suppliers : []);
       }
 
       if (locationsRes.ok) {
         const data = await locationsRes.json();
-        setLocations(data.locations || []);
+        setLocations(Array.isArray(data?.locations) ? data.locations : []);
       }
     } catch (error) {
       console.error('Error loading inventory data:', error);

@@ -95,7 +95,7 @@ export function LabOrderForm({ leadId, orderId, onSuccess, onCancel }: LabOrderF
       const response = await fetch('/api/integrations/lab-orders/systems');
       if (response.ok) {
         const data = await response.json();
-        setLabSystems(data.systems || []);
+        setLabSystems(Array.isArray(data?.systems) ? data.systems : []);
       }
     } catch (error) {
       console.error('Error fetching lab systems:', error);

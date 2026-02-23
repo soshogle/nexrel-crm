@@ -174,7 +174,7 @@ export function EditVoiceAgentDialog({
       const response = await fetch('/api/elevenlabs/voices');
       if (response.ok) {
         const data = await response.json();
-        setVoices(data.voices || []);
+        setVoices(Array.isArray(data?.voices) ? data.voices : []);
       }
     } catch (err) {
       console.error('Failed to fetch voices:', err);
@@ -192,7 +192,7 @@ export function EditVoiceAgentDialog({
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setKnowledgeBaseFiles(data.knowledgeBase || []);
+        setKnowledgeBaseFiles(Array.isArray(data?.knowledgeBase) ? data.knowledgeBase : []);
       }
     } catch (err) {
       console.error('Failed to fetch knowledge base files:', err);

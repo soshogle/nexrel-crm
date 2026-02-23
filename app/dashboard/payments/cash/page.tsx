@@ -52,7 +52,7 @@ export default function CashPaymentsPage() {
       const data = await response.json();
 
       if (data.success) {
-        setTransactions(data.transactions);
+        setTransactions(Array.isArray(data?.transactions) ? data.transactions : []);
       }
     } catch (error) {
       console.error('Error loading transactions:', error);

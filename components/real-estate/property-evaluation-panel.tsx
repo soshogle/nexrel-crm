@@ -398,7 +398,7 @@ function EvaluationLeadsFeed() {
     setLoading(true);
     fetch('/api/real-estate/property-evaluation')
       .then((r) => (r.ok ? r.json() : { leads: [] }))
-      .then((data) => setLeads(data.leads || []))
+      .then((data) => setLeads(Array.isArray(data?.leads) ? data.leads : []))
       .catch(() => setLeads([]))
       .finally(() => setLoading(false));
   }, []);

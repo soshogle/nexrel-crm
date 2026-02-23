@@ -57,7 +57,7 @@ export function FraudDetectionDashboard() {
       if (!response.ok) throw new Error('Failed to load fraud data');
       const data = await response.json();
       
-      setAlerts(data.alerts || []);
+      setAlerts(Array.isArray(data?.alerts) ? data.alerts : []);
       setStats(data.stats || null);
     } catch (error) {
       console.error('Error loading fraud data:', error);

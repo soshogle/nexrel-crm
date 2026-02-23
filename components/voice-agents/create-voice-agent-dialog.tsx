@@ -193,7 +193,7 @@ export function CreateVoiceAgentDialog({
       const response = await fetch('/api/elevenlabs/voices');
       if (response.ok) {
         const data = await response.json();
-        setVoices(data.voices || []);
+        setVoices(Array.isArray(data?.voices) ? data.voices : []);
       }
     } catch (err) {
       console.error('Failed to fetch voices:', err);

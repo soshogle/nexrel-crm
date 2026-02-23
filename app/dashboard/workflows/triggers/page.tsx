@@ -165,7 +165,7 @@ export default function WorkflowTriggersPage() {
       const response = await fetch('/api/workflows');
       if (response.ok) {
         const data = await response.json();
-        setWorkflows(data.workflows || []);
+        setWorkflows(Array.isArray(data?.workflows) ? data.workflows : []);
       }
     } catch (error) {
       console.error('Error fetching workflows:', error);

@@ -61,7 +61,7 @@ export default function FamilyMembersPage() {
         throw new Error('Failed to fetch family members');
       }
       const data = await response.json();
-      setMembers(data.members || []);
+      setMembers(Array.isArray(data?.members) ? data.members : []);
     } catch (error: any) {
       console.error('Error fetching family members:', error);
       toast.error('Failed to load family members');

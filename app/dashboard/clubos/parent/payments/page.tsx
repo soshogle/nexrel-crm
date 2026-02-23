@@ -55,7 +55,7 @@ export default function ParentPaymentsPage() {
         throw new Error('Failed to fetch registrations');
       }
       const data = await response.json();
-      setRegistrations(data.registrations || []);
+      setRegistrations(Array.isArray(data?.registrations) ? data.registrations : []);
     } catch (error: any) {
       console.error('Error fetching registrations:', error);
       toast.error('Failed to load payment information');

@@ -95,7 +95,7 @@ export default function ParentPortalPage() {
     try {
       const response = await fetch(`/api/clubos/parent-approvals?status=${statusFilter}`);
       const data = await response.json();
-      setHouseholds(data.households || []);
+      setHouseholds(Array.isArray(data?.households) ? data.households : []);
       setStats(data.stats || { pending: 0, active: 0, suspended: 0, total: 0 });
     } catch (error) {
       console.error('Error fetching households:', error);

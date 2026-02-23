@@ -27,7 +27,7 @@ export function LoyaltyPointsCard() {
       const res = await fetch('/api/payments/soshogle/loyalty');
       if (res.ok) {
         const data = await res.json();
-        setLoyaltyData(data.loyaltyPoints || []);
+        setLoyaltyData(Array.isArray(data?.loyaltyPoints) ? data.loyaltyPoints : []);
       }
     } catch (error) {
       toast.error('Failed to load loyalty points');

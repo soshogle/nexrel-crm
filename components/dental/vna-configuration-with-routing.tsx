@@ -45,7 +45,7 @@ export function VnaConfigurationWithRouting() {
       const response = await fetch('/api/dental/vna');
       if (response.ok) {
         const data = await response.json();
-        setVnas((data.vnas || []).map((v: any) => ({ id: v.id, name: v.name })));
+        setVnas((Array.isArray(data?.vnas) ? data.vnas : []).map((v: any) => ({ id: v.id, name: v.name })));
       }
     } catch (error) {
       console.error('Error fetching VNAs:', error);

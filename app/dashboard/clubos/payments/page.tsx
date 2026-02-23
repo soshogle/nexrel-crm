@@ -46,7 +46,7 @@ export default function ClubOSPaymentsPage() {
         const regData = await regResponse.json();
         
         // Filter registrations with balances
-        const withBalance = (regData.registrations || []).filter(
+        const withBalance = (Array.isArray(regData?.registrations) ? regData.registrations : []).filter(
           (r: Registration) => r.balanceDue > 0
         );
         setRegistrations(withBalance);

@@ -43,7 +43,7 @@ export function ClinicSelector({ onClinicChange }: ClinicSelectorProps) {
       const response = await fetch('/api/clinics');
       if (response.ok) {
         const data = await response.json();
-        setClinics(data.clinics || []);
+        setClinics(Array.isArray(data?.clinics) ? data.clinics : []);
         
         // Set primary clinic as default
         const primary = data.clinics?.find((c: Clinic) => c.isPrimary);

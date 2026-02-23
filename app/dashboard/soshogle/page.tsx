@@ -86,7 +86,7 @@ export default function SoshoglePage() {
       const response = await fetch('/api/soshogle/connections');
       if (response.ok) {
         const data = await response.json();
-        setConnections(data.connections || []);
+        setConnections(Array.isArray(data?.connections) ? data.connections : []);
       }
     } catch (error) {
       console.error('Error fetching connections:', error);

@@ -129,7 +129,7 @@ export default function CallHistoryPanel({ selectedConversationId, source = 'ele
         totalCount: data.conversations?.length || 0,
         hasMore: data.has_more || false,
       });
-      setConversations(data.conversations || []);
+      setConversations(Array.isArray(data?.conversations) ? data.conversations : []);
     } catch (error: any) {
       console.error('❌ [CallHistoryPanel] Error fetching conversations:', error);
       toast.error('Failed to load call history');

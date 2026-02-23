@@ -65,9 +65,10 @@ export default function TwilioMonitoringTab() {
       const response = await fetch('/api/admin/twilio-failover/accounts');
       const data = await response.json();
       if (data.success) {
-        setAccounts(data.accounts);
-        if (data.accounts.length > 0 && !selectedAccount) {
-          setSelectedAccount(data.accounts[0].id);
+        const accountsArray = Array.isArray(data?.accounts) ? data.accounts : [];
+        setAccounts(accountsArray);
+        if (accountsArray.length > 0 && !selectedAccount) {
+          setSelectedAccount(accountsArray[0].id);
         }
       }
     } catch (error) {

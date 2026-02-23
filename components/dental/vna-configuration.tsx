@@ -72,7 +72,7 @@ export function VnaConfigurationManager() {
       const response = await fetch('/api/dental/vna');
       if (response.ok) {
         const data = await response.json();
-        setVnas(data.vnas || []);
+        setVnas(Array.isArray(data?.vnas) ? data.vnas : []);
       }
     } catch (error) {
       console.error('Error fetching VNAs:', error);

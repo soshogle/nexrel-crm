@@ -59,7 +59,7 @@ export function XRayUpload({ leadId, userId, onUploadComplete }: XRayUploadProps
       const response = await fetch(`/api/dental/xrays?leadId=${leadId}`);
       if (response.ok) {
         const data = await response.json();
-        setXrays(data);
+        setXrays(Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : Array.isArray(data?.xrays) ? data.xrays : []);
       }
     } catch (error) {
       console.error('Error fetching X-rays:', error);

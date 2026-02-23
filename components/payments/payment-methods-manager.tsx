@@ -41,7 +41,7 @@ export function PaymentMethodsManager() {
       const res = await fetch('/api/payments/soshogle/payment-methods');
       if (res.ok) {
         const data = await res.json();
-        setMethods(data.methods || []);
+        setMethods(Array.isArray(data?.methods) ? data.methods : []);
       }
     } catch (error) {
       toast.error('Failed to load payment methods');

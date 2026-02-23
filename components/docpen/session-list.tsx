@@ -70,7 +70,7 @@ export function SessionList({ onSessionSelect }: SessionListProps) {
       const response = await fetch('/api/docpen/sessions');
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      setSessions(data.sessions);
+      setSessions(Array.isArray(data?.sessions) ? data.sessions : []);
     } catch (error) {
       toast.error('Failed to load sessions');
     } finally {

@@ -64,7 +64,7 @@ export default function LowStockAlertsDialog({
       if (!response.ok) throw new Error('Failed to fetch items');
       
       const data = await response.json();
-      setLowStockItems(data.items || []);
+      setLowStockItems(Array.isArray(data?.items) ? data.items : []);
     } catch (error: any) {
       console.error('Error fetching items:', error);
     }

@@ -97,8 +97,9 @@ export default function AdminSubscriptionsPage() {
       }
 
       const data = await response.json();
-      setUsers(data.users);
-      setFilteredUsers(data.users);
+      const usersArray = Array.isArray(data?.users) ? data.users : [];
+      setUsers(usersArray);
+      setFilteredUsers(usersArray);
 
       // Calculate stats
       const totalRevenue = data.users.reduce(

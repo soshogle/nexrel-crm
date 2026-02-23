@@ -93,7 +93,7 @@ export function DataMonetizationDashboard() {
       const response = await fetch('/api/payments/data-monetization/insights');
       if (!response.ok) throw new Error('Failed to fetch insights');
       const data = await response.json();
-      setInsights(data.insights || []);
+      setInsights(Array.isArray(data?.insights) ? data.insights : []);
     } catch (error: any) {
       console.error('Error fetching insights:', error);
       toast.error('Failed to load insights');
@@ -107,7 +107,7 @@ export function DataMonetizationDashboard() {
       const response = await fetch('/api/payments/data-monetization/exports');
       if (!response.ok) throw new Error('Failed to fetch exports');
       const data = await response.json();
-      setExports(data.exports || []);
+      setExports(Array.isArray(data?.exports) ? data.exports : []);
     } catch (error: any) {
       console.error('Error fetching exports:', error);
     }

@@ -57,7 +57,7 @@ export default function WidgetsPage() {
       const response = await fetch('/api/ecommerce/widgets');
       if (!response.ok) throw new Error('Failed to fetch widgets');
       const data = await response.json();
-      setWidgets(data.widgets || []);
+      setWidgets(Array.isArray(data?.widgets) ? data.widgets : []);
     } catch (error: any) {
       console.error('Error fetching widgets:', error);
       toast.error('Failed to load widgets');

@@ -107,7 +107,7 @@ export function NewWebsiteForm({ onBack }: NewWebsiteFormProps) {
       const response = await fetch('/api/ecommerce/products');
       if (response.ok) {
         const data = await response.json();
-        setAvailableProducts(data.products || []);
+        setAvailableProducts(Array.isArray(data?.products) ? data.products : []);
       }
     } catch (error) {
       console.error('Failed to load products:', error);

@@ -40,7 +40,7 @@ export default function TablesPage() {
       if (!response.ok) throw new Error('Failed to fetch tables');
 
       const data = await response.json();
-      setTables(data.tables || []);
+      setTables(Array.isArray(data?.tables) ? data.tables : []);
     } catch (error) {
       console.error('Error fetching tables:', error);
       toast.error('Failed to load tables');

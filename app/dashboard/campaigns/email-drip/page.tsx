@@ -69,7 +69,7 @@ export default function EmailDripCampaignsPage() {
       }
 
       const data = await response.json();
-      setCampaigns(data.campaigns || []);
+      setCampaigns(Array.isArray(data?.campaigns) ? data.campaigns : []);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
       toast.error('Failed to load email drip campaigns');

@@ -94,11 +94,11 @@ export default function TemplatesPage() {
       ]);
       if (emailRes.ok) {
         const d = await emailRes.json();
-        setEmailTemplates(d.templates || []);
+        setEmailTemplates(Array.isArray(d?.templates) ? d.templates : []);
       }
       if (smsRes.ok) {
         const d = await smsRes.json();
-        setSmsTemplates(d.templates || []);
+        setSmsTemplates(Array.isArray(d?.templates) ? d.templates : []);
       }
     } catch {
       toast({ title: 'Error', description: 'Failed to fetch templates', variant: 'destructive' });

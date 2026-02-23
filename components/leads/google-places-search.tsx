@@ -92,7 +92,7 @@ export function GooglePlacesSearch() {
 
       if (response.ok) {
         const data = await response.json()
-        setResults(data.results || [])
+        setResults(Array.isArray(data?.results) ? data.results : [])
         if (data.results?.length === 0) {
           setError('No businesses found. Try different search terms.')
         }

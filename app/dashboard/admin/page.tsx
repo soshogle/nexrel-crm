@@ -84,7 +84,7 @@ export default function AdminDashboard() {
 
       if (subAccountsRes.ok) {
         const data = await subAccountsRes.json();
-        setSubAccounts(data.subAccounts || []);
+        setSubAccounts(Array.isArray(data?.subAccounts) ? data.subAccounts : []);
       }
 
       if (overviewRes.ok) {

@@ -202,7 +202,7 @@ export function ReviewsPage() {
       const res = await fetch('/api/reviews');
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
-      setReviews(data.reviews || []);
+      setReviews(Array.isArray(data?.reviews) ? data.reviews : []);
     } catch {
       toast.error('Failed to load reviews');
     } finally {
@@ -229,7 +229,7 @@ export function ReviewsPage() {
       const res = await fetch('/api/leads?limit=200');
       if (res.ok) {
         const data = await res.json();
-        setLeads((data.leads || []).map((l: any) => ({
+        setLeads((Array.isArray(data?.leads) ? data.leads : []).map((l: any) => ({
           id: l.id, name: l.name || l.contactPerson || l.businessName || 'Unknown',
           email: l.email, phone: l.phone,
         })));
