@@ -145,7 +145,11 @@
     "newPassword": "Nueva contraseña",
     "confirmPassword": "Confirmar contraseña",
     "languagePreference": "Preferencia de idioma",
-    "selectLanguage": "Seleccionar idioma"
+    "selectLanguage": "Seleccionar idioma",
+    "profile": "Perfil",
+    "calendar": "Calendario",
+    "messaging": "Mensajería",
+    "permissions": "Permisos"
   },
   "languages": {
     "en": "Inglés",

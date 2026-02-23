@@ -185,7 +185,11 @@
     "newPassword": "New Password",
     "confirmPassword": "Confirm Password",
     "languagePreference": "Language Preference",
-    "selectLanguage": "Select Language"
+    "selectLanguage": "Select Language",
+    "profile": "Profile",
+    "calendar": "Calendar",
+    "messaging": "Messaging",
+    "permissions": "Permissions"
   },
   "languages": {
     "en": "English",

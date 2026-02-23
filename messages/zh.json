@@ -145,7 +145,11 @@
     "newPassword": "新密码",
     "confirmPassword": "确认密码",
     "languagePreference": "语言偏好",
-    "selectLanguage": "选择语言"
+    "selectLanguage": "选择语言",
+    "profile": "个人资料",
+    "calendar": "日历",
+    "messaging": "消息",
+    "permissions": "权限"
   },
   "languages": {
     "en": "英语",

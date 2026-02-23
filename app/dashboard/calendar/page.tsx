@@ -42,15 +42,15 @@ export default function AppointmentsPage() {
       if (response.ok) {
         const data = await response.json();
         
-        // Validate data is an array
-        if (Array.isArray(data)) {
-          console.log('📅 Loaded', data.length, 'appointments');
-          setAppointments(data);
-        } else {
-          console.error('❌ API returned non-array data:', data);
-          toast.error('Invalid appointment data received');
-          setAppointments([]);
-        }
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.appointments)
+            ? data.appointments
+            : Array.isArray(data?.data)
+              ? data.data
+              : [];
+        console.log('📅 Loaded', list.length, 'appointments');
+        setAppointments(list);
       } else {
         throw new Error('Failed to fetch appointments');
       }
