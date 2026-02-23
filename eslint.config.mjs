@@ -34,6 +34,19 @@ const config = [
       "@next/next/no-img-element": "off",
       "@next/next/no-assign-module-variable": "warn",
       "@next/next/no-html-link-for-pages": "warn",
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@/lib/db",
+              importNames: ["prisma"],
+              message:
+                "Direct prisma imports bypass DAL routing. Use getCrmDb() from @/lib/dal or getRouteDb() from @/lib/dal/get-route-db instead.",
+            },
+          ],
+        },
+      ],
     },
   },
 ];

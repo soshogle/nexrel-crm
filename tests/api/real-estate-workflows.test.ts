@@ -49,7 +49,7 @@ describe('Real Estate Workflows API', () => {
       (prisma.rEWorkflowTemplate.findMany as any).mockResolvedValue([mockREWorkflow]);
 
       const request = new Request('http://localhost:3000/api/real-estate/workflows');
-      const response = await GET(request);
+      const response = await GET(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -64,7 +64,7 @@ describe('Real Estate Workflows API', () => {
       });
 
       const request = new Request('http://localhost:3000/api/real-estate/workflows');
-      const response = await GET(request);
+      const response = await GET(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(403);
@@ -87,7 +87,7 @@ describe('Real Estate Workflows API', () => {
         }),
       });
 
-      const response = await POST(request);
+      const response = await POST(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -99,7 +99,7 @@ describe('Real Estate Workflows API', () => {
   describe('GET /api/real-estate/workflows/templates', () => {
     it('should return RE templates', async () => {
       const request = new Request('http://localhost:3000/api/real-estate/workflows/templates');
-      const response = await GETTemplate(request);
+      const response = await GETTemplate(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -109,7 +109,7 @@ describe('Real Estate Workflows API', () => {
 
     it('should return specific template by type', async () => {
       const request = new Request('http://localhost:3000/api/real-estate/workflows/templates?type=BUYER_PIPELINE');
-      const response = await GETTemplate(request);
+      const response = await GETTemplate(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -141,7 +141,7 @@ describe('Real Estate Workflows API', () => {
         }),
       });
 
-      const response = await POSTExecute(request, { params: { id: 're-workflow-1' } });
+      const response = await POSTExecute(request as any, { params: { id: 're-workflow-1' } });
       const data = await response.json();
 
       expect(response.status).toBe(200);

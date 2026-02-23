@@ -52,7 +52,7 @@ describe('Workflows API', () => {
       (prisma.workflowTemplate.findMany as any).mockResolvedValue([mockWorkflow]);
 
       const request = new Request('http://localhost:3000/api/workflows');
-      const response = await GET(request);
+      const response = await GET(request as any);
       
       if (!response) {
         throw new Error('GET returned undefined - route handler may have thrown an error');
@@ -72,7 +72,7 @@ describe('Workflows API', () => {
       });
 
       const request = new Request('http://localhost:3000/api/workflows');
-      const response = await GET(request);
+      const response = await GET(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(403);
@@ -83,7 +83,7 @@ describe('Workflows API', () => {
       (getServerSession as any).mockResolvedValue(null);
 
       const request = new Request('http://localhost:3000/api/workflows');
-      const response = await GET(request);
+      const response = await GET(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -109,7 +109,7 @@ describe('Workflows API', () => {
       });
       request.json = vi.fn().mockResolvedValue(requestBody);
 
-      const response = await POST(request);
+      const response = await POST(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -131,7 +131,7 @@ describe('Workflows API', () => {
       });
       request.json = vi.fn().mockResolvedValue(requestBody);
 
-      const response = await POST(request);
+      const response = await POST(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -142,7 +142,7 @@ describe('Workflows API', () => {
   describe('GET /api/workflows/templates', () => {
     it('should return industry templates', async () => {
       const request = new Request('http://localhost:3000/api/workflows/templates');
-      const response = await GETTemplate(request);
+      const response = await GETTemplate(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -152,7 +152,7 @@ describe('Workflows API', () => {
 
     it('should return specific template by ID', async () => {
       const request = new Request('http://localhost:3000/api/workflows/templates?id=patient-onboarding');
-      const response = await GETTemplate(request);
+      const response = await GETTemplate(request as any);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -184,7 +184,7 @@ describe('Workflows API', () => {
       });
       request.json = vi.fn().mockResolvedValue(requestBody);
 
-      const response = await POSTExecute(request, { params: { id: 'workflow-1' } });
+      const response = await POSTExecute(request as any, { params: { id: 'workflow-1' } });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -203,7 +203,7 @@ describe('Workflows API', () => {
       });
       request.json = vi.fn().mockResolvedValue(requestBody);
 
-      const response = await POSTExecute(request, { params: { id: 'invalid' } });
+      const response = await POSTExecute(request as any, { params: { id: 'invalid' } });
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -259,7 +259,7 @@ describe('Workflows API', () => {
 
       let response;
       try {
-        response = await POSTApprove(request, { params: { id: 'execution-1' } });
+        response = await POSTApprove(request as any, { params: { id: 'execution-1' } });
       } catch (error) {
         console.error('POSTApprove error:', error);
         throw error;
@@ -311,7 +311,7 @@ describe('Workflows API', () => {
 
       let response;
       try {
-        response = await POSTReject(request, { params: { id: 'execution-1' } });
+        response = await POSTReject(request as any, { params: { id: 'execution-1' } });
       } catch (error) {
         console.error('POSTReject error:', error);
         throw error;

@@ -81,7 +81,7 @@ describe('Medical Executor', () => {
 
     it.skip('should sync to calendar when available', async () => {
       // Implementation does not yet sync to external calendar; bookingAppointment is DB-only
-      const calendarService = new CalendarService('user-1');
+      const calendarService = new (CalendarService as any)('user-1');
       (CalendarService as any).mockImplementation(() => calendarService);
 
       await executeMedicalAction(
@@ -90,7 +90,7 @@ describe('Medical Executor', () => {
         mockInstance as WorkflowInstance
       );
 
-      expect(calendarService.createEvent).toHaveBeenCalled();
+      expect((calendarService as any).createEvent).toHaveBeenCalled();
     });
   });
 

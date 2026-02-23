@@ -129,6 +129,8 @@
     "@types/pg": "^8.16.0",
     "@types/plotly.js": "2.35.5",
     "@types/react-plotly.js": "2.6.3",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.36.2",
     "@vercel/blob": "^2.2.0",
     "@vercel/functions": "^3.4.2",
     "apify-client": "^2.22.1",
