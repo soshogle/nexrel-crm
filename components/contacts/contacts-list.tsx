@@ -105,7 +105,7 @@ export default function ContactsList({
       const response = await fetch(`/api/contacts?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
-        setContacts(data);
+        setContacts(Array.isArray(data) ? data : Array.isArray(data?.contacts) ? data.contacts : Array.isArray(data?.data) ? data.data : []);
       } else {
         toast.error('Failed to fetch contacts');
       }
