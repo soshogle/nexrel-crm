@@ -5,6 +5,8 @@
 
 import { getCrmDb } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
+import { resolveWebsiteDb } from '@/lib/dal/resolve-website-db';
+import { getMetaDb } from '@/lib/db/meta-db';
 import { Pool } from 'pg';
 
 export type GalleryItem = string | { url: string; motionDisabled?: boolean };
@@ -31,7 +33,10 @@ function getPool(connectionString: string): Pool {
 
 export async function getWebsiteListingsCount(websiteId: string): Promise<{ count: number; error?: string }> {
   try {
-    const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
+    const resolved = await resolveWebsiteDb(websiteId);
+    if (!resolved) return { count: 0 };
+
+    const website = await resolved.db.website.findFirst({
       where: { id: websiteId },
       select: { neonDatabaseUrl: true, templateType: true },
     });
@@ -50,7 +55,10 @@ export async function getWebsiteListingsCount(websiteId: string): Promise<{ coun
 }
 
 export async function getWebsiteListings(websiteId: string): Promise<PropertyListing[]> {
-  const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
+  const resolved = await resolveWebsiteDb(websiteId);
+  if (!resolved) throw new Error('Website not found');
+
+  const website = await resolved.db.website.findFirst({
     where: { id: websiteId },
     select: { neonDatabaseUrl: true, templateType: true },
   });
@@ -86,7 +94,10 @@ export async function updatePropertyGallery(
   propertyId: number,
   galleryImages: GalleryItem[]
 ): Promise<void> {
-  const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
+  const resolved = await resolveWebsiteDb(websiteId);
+  if (!resolved) throw new Error('Website not found');
+
+  const website = await resolved.db.website.findFirst({
     where: { id: websiteId },
     select: { neonDatabaseUrl: true, templateType: true },
   });
@@ -138,7 +149,8 @@ export async function syncListingToWebsite(
   }
 ): Promise<{ success: boolean; websiteId?: string; error?: string }> {
   try {
-    const ctx = createDalContext(userId);
+    const industry = await getUserIndustry(userId);
+    const ctx = createDalContext(userId, industry);
     const db = getCrmDb(ctx);
     const website = await db.website.findFirst({
       where: { userId: ctx.userId, templateType: 'SERVICE' },
@@ -246,7 +258,8 @@ export async function searchWebsiteListings(
   error?: string;
 }> {
   try {
-    const ctx = createDalContext(userId);
+    const industry = await getUserIndustry(userId);
+    const ctx = createDalContext(userId, industry);
     const db = getCrmDb(ctx);
     const website = await db.website.findFirst({
       where: { userId: ctx.userId, templateType: 'SERVICE' },
@@ -288,7 +301,8 @@ export async function syncStatusToWebsite(
   status: string
 ): Promise<{ success: boolean; updated: number; error?: string }> {
   try {
-    const ctx = createDalContext(userId);
+    const industry = await getUserIndustry(userId);
+    const ctx = createDalContext(userId, industry);
     const db = getCrmDb(ctx);
     const website = await db.website.findFirst({
       where: { userId: ctx.userId, templateType: 'SERVICE' },
@@ -329,7 +343,10 @@ export async function syncStatusToWebsite(
 }
 
 export async function getPropertyForEdit(websiteId: string, propertyId: number): Promise<PropertyListing | null> {
-  const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
+  const resolved = await resolveWebsiteDb(websiteId);
+  if (!resolved) return null;
+
+  const website = await resolved.db.website.findFirst({
     where: { id: websiteId },
     select: { neonDatabaseUrl: true, templateType: true },
   });
@@ -358,4 +375,16 @@ export async function getPropertyForEdit(websiteId: string, propertyId: number):
     mainImageUrl: row.main_image_url,
     galleryImages: row.gallery_images as GalleryItem[] | null,
   };
+}
+
+async function getUserIndustry(userId: string): Promise<string | null> {
+  try {
+    const user = await getMetaDb().user.findUnique({
+      where: { id: userId },
+      select: { industry: true },
+    });
+    return user?.industry ?? null;
+  } catch {
+    return null;
+  }
 }

@@ -10,6 +10,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb, websiteService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { resolveWebsiteDb } from '@/lib/dal/resolve-website-db';
 import { runCentralCentrisSync, type BrokerOverride } from '@/lib/centris-sync';
 import { runRealtorSync } from '@/lib/realtor-sync';
 import { apiErrors } from '@/lib/api-error';
@@ -32,7 +33,17 @@ export async function POST(
       return apiErrors.unauthorized();
     }
 
-    const website = await websiteService.findUnique(ctx, params.id);
+    let website = await websiteService.findUnique(ctx, params.id);
+
+    // Fallback: if session-based routing didn't find it, resolve via multi-DB scan
+    if (!website) {
+      const resolved = await resolveWebsiteDb(params.id);
+      if (resolved) {
+        website = await resolved.db.website.findFirst({
+          where: { id: params.id },
+        });
+      }
+    }
 
     if (!website) {
       return apiErrors.notFound('Website not found');

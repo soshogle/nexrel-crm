@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteService, getCrmDb } from '@/lib/dal';
+import { resolveWebsiteDb } from '@/lib/dal/resolve-website-db';
 import { websiteVoiceAI } from '@/lib/website-builder/voice-ai';
 import { triggerWebsiteDeploy } from '@/lib/website-builder/deploy-trigger';
 import { resourceProvisioning } from '@/lib/website-builder/provisioning';
@@ -29,34 +30,31 @@ export async function GET(
     }
 
     let website;
-    try {
-      website = await getCrmDb(ctx).website.findFirst({
-        where: {
-          id: websiteId,
-          userId: ctx.userId,
-        },
-        include: {
-          builds: {
-            orderBy: { startedAt: 'desc' },
-            take: 3,
-          },
-          websiteIntegrations: true,
-        },
-      } as any);
-    } catch (queryError: any) {
-      console.error('[Website GET] Prisma query error:', queryError);
-      // Fallback: try without includes (can fail if structure/json is corrupted)
+    const tryFindWebsite = async (db: any) => {
       try {
-        website = await getCrmDb(ctx).website.findFirst({
+        return await db.website.findFirst({
+          where: { id: websiteId, userId: ctx.userId },
+          include: {
+            builds: { orderBy: { startedAt: 'desc' }, take: 3 },
+            websiteIntegrations: true,
+          },
+        });
+      } catch {
+        const w = await db.website.findFirst({
           where: { id: websiteId, userId: ctx.userId },
         });
-        if (website) {
-          (website as any).builds = [];
-          (website as any).websiteIntegrations = [];
-        }
-      } catch (fallbackError: any) {
-        console.error('[Website GET] Fallback query also failed:', fallbackError);
-        throw queryError;
+        if (w) { (w as any).builds = []; (w as any).websiteIntegrations = []; }
+        return w;
+      }
+    };
+
+    website = await tryFindWebsite(getCrmDb(ctx));
+
+    // Fallback: resolve via multi-DB scan if session routing missed it
+    if (!website) {
+      const resolved = await resolveWebsiteDb(websiteId);
+      if (resolved) {
+        website = await tryFindWebsite(resolved.db);
       }
     }
 
