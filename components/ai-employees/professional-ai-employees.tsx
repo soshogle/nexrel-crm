@@ -76,7 +76,7 @@ const PROFESSIONAL_EMPLOYEES = PROFESSIONAL_EMPLOYEE_TYPES.map((type) => {
   };
 });
 
-export function ProfessionalAIEmployees() {
+export function ProfessionalAIEmployees({ isAdmin = true }: { isAdmin?: boolean } = { isAdmin: true }) {
   const [provisionedAgents, setProvisionedAgents] = useState<ProvisionedAgent[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   const [isProvisioning, setIsProvisioning] = useState(false);
@@ -218,16 +218,18 @@ export function ProfessionalAIEmployees() {
             <Mic className="w-3 h-3 mr-1" />
             {provisionedAgents.length} / 12 Voice Agents
           </Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleProvisionAll}
-            disabled={isProvisioning}
-            className="border-slate-600 text-slate-300 hover:bg-slate-800"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isProvisioning ? 'animate-spin' : ''}`} />
-            {provisionedAgents.length < 12 ? 'Provision All' : 'Refresh'}
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleProvisionAll}
+              disabled={isProvisioning}
+              className="border-slate-600 text-slate-300 hover:bg-slate-800"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isProvisioning ? 'animate-spin' : ''}`} />
+              {provisionedAgents.length < 12 ? 'Provision All' : 'Refresh'}
+            </Button>
+          )}
         </div>
       </div>
 

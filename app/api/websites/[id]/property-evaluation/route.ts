@@ -12,12 +12,14 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createDalContext } from "@/lib/context/industry-context";
+import { prisma } from "@/lib/db";
 import { leadService } from "@/lib/dal/lead-service";
 import { noteService } from "@/lib/dal/note-service";
 import { resolveWebsiteDb } from "@/lib/dal/resolve-website-db";
 import { runPropertyEvaluation } from "@/lib/real-estate/property-evaluation";
 import type { ComparableProperty } from "@/lib/real-estate/property-evaluation";
 import { Resend } from "resend";
+import { syncLeadCreatedToPipeline } from "@/lib/lead-pipeline-sync";
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
@@ -112,17 +114,20 @@ export async function POST(
 
     const blurredComparables = blurComparables(evaluation.comparables);
 
-    const user = await resolved.db.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: website.userId },
-      select: { id: true, email: true },
+      select: { id: true, email: true, industry: true },
     });
 
     const agencyConfig = (website.agencyConfig as Record<string, unknown> | null) || {};
     const replyToEmail =
       (agencyConfig.email as string)?.trim() || (user?.email as string)?.trim() || null;
 
+    // Use user's industry for lead/sync (pipeline lives in user's industry DB)
+    const userIndustry = (user?.industry as string) || resolved.industry || null;
+
     if (user) {
-      const ctx = createDalContext(user.id, resolved.industry);
+      const ctx = createDalContext(user.id, userIndustry);
       const lead = await leadService.create(ctx, {
         businessName: contact.name || "Property Evaluation Visitor",
         contactPerson: contact.name || null,
@@ -140,6 +145,9 @@ export async function POST(
       await noteService.create(ctx, {
         leadId: lead.id,
         content: `Property Evaluation: ${propertyDetails.address}\nEstimated value: $${evaluation.estimatedValue.toLocaleString()}\nComparables: ${evaluation.comparables.length}`,
+      });
+      syncLeadCreatedToPipeline(user.id, lead, userIndustry).catch((err) => {
+        console.error("[property-evaluation] Failed to sync lead to pipeline:", err);
       });
     }
 

@@ -11,6 +11,7 @@ import { prisma } from '@/lib/db';
 import { Industry } from '@prisma/client';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
 import { attachToolsToElevenLabsAgent } from '@/lib/ai-employee-tools';
+import { provisionAIEmployeesForUser } from '@/lib/ai-employee-auto-provision';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -51,7 +52,8 @@ async function createElevenLabsAgent(
             prompt: fullPrompt,
           },
           first_message: config.firstMessage,
-          language: 'en', // API only accepts single codes. Multilingual via prompt.
+          language: 'en',
+          llm: 'gpt-4o-mini', // English agents require turbo/flash v2
         },
         asr: {
           quality: 'high',
@@ -184,6 +186,9 @@ export async function GET(request: NextRequest) {
     }
 
     const agents = await getExistingAgents(session.user.id, industry);
+
+    // Trigger auto-provision/fix in background (fixes existing agents' LLM + tools)
+    provisionAIEmployeesForUser(session.user.id);
 
     return NextResponse.json({
       success: true,

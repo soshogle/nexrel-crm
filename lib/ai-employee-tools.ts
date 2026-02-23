@@ -108,14 +108,17 @@ export async function attachToolsToElevenLabsAgent(
   const current = await response.json();
   const agentPrompt = current.conversation_config?.agent?.prompt?.prompt || '';
   const newPrompt = agentPrompt.includes('Task Tools') ? agentPrompt : agentPrompt + TASK_TOOLS_PROMPT;
+  // English agents require turbo or flash v2 LLM - set explicitly to avoid "English Agents must use turbo or flash v2" error
+  const agentConfig = {
+    ...current.conversation_config?.agent,
+    prompt: { prompt: newPrompt },
+    llm: 'gpt-4o-mini',
+  };
   const updatePayload = {
     name: current.name,
     conversation_config: {
       ...current.conversation_config,
-      agent: {
-        ...current.conversation_config?.agent,
-        prompt: { prompt: newPrompt },
-      },
+      agent: agentConfig,
     },
     platform_settings: current.platform_settings || {},
     tools,

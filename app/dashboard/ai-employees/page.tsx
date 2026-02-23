@@ -1215,7 +1215,7 @@ export default function AIEmployeesPage() {
           </Card>
 
           {/* Professional AI Experts - 12 roles, RE-style cards */}
-          <ProfessionalAIEmployees />
+          <ProfessionalAIEmployees isAdmin={(session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN'} />
         </TabsContent>
 
         <SetupDialog

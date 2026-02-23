@@ -11,6 +11,7 @@ import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
 import { PROFESSIONAL_EMPLOYEE_PROMPTS } from '@/lib/professional-ai-employees/prompts';
+import { attachToolsToElevenLabsAgent } from '@/lib/ai-employee-tools';
 const db = getCrmDb({ userId: '', industry: null })
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
@@ -41,7 +42,8 @@ async function createElevenLabsAgent(
         agent: {
           prompt: { prompt: fullPrompt },
           first_message: config.firstMessage,
-          language: 'en', // API only accepts single codes. Multilingual via prompt.
+          language: 'en',
+          llm: 'gpt-4o-mini', // English agents require turbo/flash v2
         },
         asr: { quality: 'high', provider: 'elevenlabs' },
         tts: {
@@ -102,7 +104,7 @@ async function provisionREAgents(userId: string): Promise<{ success: number; fai
         voiceId: promptConfig.voiceId,
       });
 
-      await db.rEAIEmployeeAgent.upsert({
+      const record = await db.rEAIEmployeeAgent.upsert({
         where: { userId_employeeType: { userId, employeeType } },
         create: {
           userId,
@@ -119,6 +121,9 @@ async function provisionREAgents(userId: string): Promise<{ success: number; fai
         },
       });
 
+      await attachToolsToElevenLabsAgent(apiKey, agentId, record.id).catch((err) =>
+        console.warn(`[AutoProvision] RE ${employeeType} tools attach failed:`, err.message)
+      );
       success++;
       console.log(`[AutoProvision] RE ${employeeType} provisioned`);
     } catch (err) {
@@ -171,7 +176,7 @@ async function provisionIndustryAgents(
         voiceId: promptConfig.voiceId,
       });
 
-      await db.industryAIEmployeeAgent.upsert({
+      const record = await db.industryAIEmployeeAgent.upsert({
         where: {
           userId_industry_employeeType: { userId, industry, employeeType },
         },
@@ -191,6 +196,9 @@ async function provisionIndustryAgents(
         },
       });
 
+      await attachToolsToElevenLabsAgent(apiKey, agentId, record.id).catch((err) =>
+        console.warn(`[AutoProvision] ${industry}.${employeeType} tools attach failed:`, err.message)
+      );
       success++;
       console.log(`[AutoProvision] ${industry}.${employeeType} provisioned`);
     } catch (err) {
@@ -239,7 +247,7 @@ async function provisionProfessionalAgents(userId: string): Promise<{ success: n
         voiceId: promptConfig.voiceId,
       });
 
-      await db.professionalAIEmployeeAgent.upsert({
+      const record = await db.professionalAIEmployeeAgent.upsert({
         where: { userId_employeeType: { userId, employeeType } },
         create: {
           userId,
@@ -256,6 +264,9 @@ async function provisionProfessionalAgents(userId: string): Promise<{ success: n
         },
       });
 
+      await attachToolsToElevenLabsAgent(apiKey, agentId, record.id).catch((err) =>
+        console.warn(`[AutoProvision] Professional ${employeeType} tools attach failed:`, err.message)
+      );
       success++;
       console.log(`[AutoProvision] Professional ${employeeType} provisioned`);
     } catch (err) {
@@ -269,9 +280,47 @@ async function provisionProfessionalAgents(userId: string): Promise<{ success: n
 }
 
 /**
+ * Fix existing agents: PATCH LLM and attach tools (for agents created before the fix).
+ */
+async function fixExistingAgents(userId: string): Promise<void> {
+  const apiKey = getIndustryApiKey() || getREApiKey();
+  if (!apiKey) return;
+
+  const [industryAgents, reAgents, profAgents] = await Promise.all([
+    db.industryAIEmployeeAgent.findMany({ where: { userId }, select: { id: true, elevenLabsAgentId: true } }),
+    db.rEAIEmployeeAgent.findMany({ where: { userId }, select: { id: true, elevenLabsAgentId: true } }),
+    db.professionalAIEmployeeAgent.findMany({ where: { userId }, select: { id: true, elevenLabsAgentId: true } }),
+  ]);
+
+  const reApiKey = getREApiKey();
+  for (const a of industryAgents) {
+    if (a.elevenLabsAgentId) {
+      await attachToolsToElevenLabsAgent(apiKey!, a.elevenLabsAgentId, a.id).catch((e) =>
+        console.warn(`[AutoProvision] Fix industry agent ${a.id}:`, e?.message)
+      );
+    }
+  }
+  for (const a of reAgents) {
+    if (a.elevenLabsAgentId && reApiKey) {
+      await attachToolsToElevenLabsAgent(reApiKey, a.elevenLabsAgentId, a.id).catch((e) =>
+        console.warn(`[AutoProvision] Fix RE agent ${a.id}:`, e?.message)
+      );
+    }
+  }
+  for (const a of profAgents) {
+    if (a.elevenLabsAgentId) {
+      await attachToolsToElevenLabsAgent(apiKey!, a.elevenLabsAgentId, a.id).catch((e) =>
+        console.warn(`[AutoProvision] Fix professional agent ${a.id}:`, e?.message)
+      );
+    }
+  }
+}
+
+/**
  * Provision all AI employees for a user based on their industry.
  * Fire-and-forget: call and return immediately; provisioning runs in background.
  * Safe to call multiple times; skips already-provisioned agents.
+ * Also fixes existing agents (LLM + tools) when run.
  */
 export function provisionAIEmployeesForUser(userId: string): void {
   (async () => {
@@ -286,6 +335,9 @@ export function provisionAIEmployeesForUser(userId: string): void {
       }
 
       const industry = user.industry as Industry;
+
+      // Fix existing agents (LLM + tools) - runs every time, safe to call repeatedly
+      await fixExistingAgents(userId);
 
       // Professional agents: available to ALL users, provisioned on industry set
       const { success: profSuccess, failed: profFailed } = await provisionProfessionalAgents(userId);

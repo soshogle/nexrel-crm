@@ -370,10 +370,12 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
             <Mic className="w-3 h-3 mr-1" />
             {provisionedAgents.length} / {employees.length} Voice Agents
           </Badge>
-          <Button variant="outline" size="sm" onClick={handleProvisionAll} disabled={isProvisioning} className="border-slate-600 text-slate-300 hover:bg-slate-800">
-            <RefreshCw className={`w-4 h-4 mr-2 ${isProvisioning ? 'animate-spin' : ''}`} />
-            {provisionedAgents.length < employees.length ? 'Provision All' : 'Refresh'}
-          </Button>
+          {isAdmin && (
+            <Button variant="outline" size="sm" onClick={handleProvisionAll} disabled={isProvisioning} className="border-slate-600 text-slate-300 hover:bg-slate-800">
+              <RefreshCw className={`w-4 h-4 mr-2 ${isProvisioning ? 'animate-spin' : ''}`} />
+              {provisionedAgents.length < employees.length ? 'Provision All' : 'Refresh'}
+            </Button>
+          )}
         </div>
       </div>
 
