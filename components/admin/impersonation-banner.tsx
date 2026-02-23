@@ -103,19 +103,16 @@ export function ImpersonationBanner() {
       }
 
       // Clear localStorage
-      console.log('🧹 Clearing localStorage');
       localStorage.removeItem('impersonationToken');
       localStorage.removeItem('impersonatedUserId');
       localStorage.removeItem('impersonatedUserName');
 
-      console.log('🔄 Triggering session update with NextAuth');
-      // Force NextAuth to refresh the JWT token (which will check the database and remove impersonation flags)
-      await update();
-
       toast.success('Exiting impersonation mode...');
 
-      console.log('🔀 Redirecting to /platform-admin with full page reload');
-      // Use window.location.href for a full page reload to ensure JWT callback runs with fresh database state
+      // Redirect immediately with full page reload - do NOT call session.update() first.
+      // session.update() causes status to flicker to 'loading', making the sidebar user/logout
+      // section blink. The full page load will trigger a fresh session fetch; the JWT callback
+      // will see impersonation was ended and return the super admin session.
       window.location.href = '/platform-admin';
     } catch (error: any) {
       console.error('❌ Error ending impersonation:', error);

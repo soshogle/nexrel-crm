@@ -623,30 +623,43 @@ export function SidebarNav({ isExpanded }: SidebarNavProps) {
   }, [session?.user?.id, isLoadingRole]); // Only depend on user ID to prevent repeated calls
 
   const handleLogout = async () => {
-    // First, end any active impersonation sessions on the server
+    // When impersonating, end impersonation and return to platform-admin (don't full sign out)
+    if (session?.user?.isImpersonating) {
+      try {
+        const sessionToken = localStorage.getItem('impersonationToken');
+        if (sessionToken) {
+          await fetch(`/api/platform-admin/impersonate?sessionToken=${sessionToken}`, {
+            method: 'DELETE',
+          });
+        }
+        await fetch('/api/platform-admin/impersonate/end-all', { method: 'POST' });
+      } catch {
+        // Continue even if cleanup fails
+      }
+      localStorage.removeItem('impersonationToken');
+      localStorage.removeItem('impersonatedUserId');
+      localStorage.removeItem('impersonatedUserName');
+      // Full page reload so JWT callback runs with fresh DB state and restores super admin session
+      window.location.href = '/platform-admin';
+      return;
+    }
+
+    // Normal logout: end any impersonation remnants, then sign out
     try {
       const sessionToken = localStorage.getItem('impersonationToken');
-      
       if (sessionToken) {
         await fetch(`/api/platform-admin/impersonate?sessionToken=${sessionToken}`, {
           method: 'DELETE',
         });
       }
-      
-      await fetch('/api/platform-admin/impersonate/end-all', {
-        method: 'POST',
-      });
-    } catch (error) {
-      // Impersonation cleanup failed - continue with logout
+      await fetch('/api/platform-admin/impersonate/end-all', { method: 'POST' });
+    } catch {
       // Continue with logout even if this fails
     }
-    
-    // Clear any impersonation data from localStorage
     localStorage.removeItem('impersonationToken');
     localStorage.removeItem('impersonatedUserId');
     localStorage.removeItem('impersonatedUserName');
 
-    // Sign out and redirect to signin page
     await signOut({ callbackUrl: '/auth/signin', redirect: true });
   };
 
