@@ -107,7 +107,7 @@ export default function BillingUpgradeCard() {
     );
   }
 
-  if (!subscription) {
+  if (!subscription || !subscription.plan) {
     return null;
   }
 

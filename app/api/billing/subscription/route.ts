@@ -26,10 +26,15 @@ export async function GET(req: NextRequest) {
     );
 
     if (!subscription) {
+      const defaultPlan = SUBSCRIPTION_PLANS.PRO;
       return NextResponse.json({
         tier: 'PRO',
         status: 'ACTIVE',
-        features: SUBSCRIPTION_PLANS.PRO.features,
+        plan: {
+          name: defaultPlan.name,
+          price: defaultPlan.priceMonthly,
+          features: defaultPlan.features,
+        },
       });
     }
 
