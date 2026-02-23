@@ -103,16 +103,15 @@ class DocpenAgentProvisioning {
               // Agent exists in ElevenLabs - reuse it
               console.log(`✅ [Docpen] Verified agent ${existingAgent.elevenLabsAgentId} exists in ElevenLabs - reusing`);
               
-              // Automatically update agent functions in the background (non-blocking)
-              this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId)
-                .then(success => {
-                  if (success) {
-                    console.log(`✅ [Docpen] Auto-updated agent ${existingAgent.elevenLabsAgentId} with latest function configurations`);
-                  }
-                })
-                .catch(err => {
-                  console.warn(`⚠️ [Docpen] Failed to auto-update agent functions (non-critical):`, err.message);
-                });
+              // Fix agent (strip invalid llm, update function server_url) BEFORE returning
+              // so voice connection works immediately. Previously ran in background and caused
+              // "English agents must use turbo or flash v2" errors when user connected too soon.
+              try {
+                const updated = await this.updateAgentFunctions(existingAgent.elevenLabsAgentId, config.userId);
+                if (updated) console.log(`✅ [Docpen] Agent ${existingAgent.elevenLabsAgentId} updated with valid config`);
+              } catch (err: any) {
+                console.warn(`⚠️ [Docpen] Failed to update agent functions (non-critical):`, err.message);
+              }
               
               // Update session context if provided
               if (config.sessionContext) {
@@ -512,20 +511,22 @@ class DocpenAgentProvisioning {
 
       const currentAgent = await getResponse.json();
       
-      // Check if agent already has the correct server_url configured
       const currentTools = currentAgent.tools || [];
       const medicalFunctions = this.buildMedicalFunctions();
       const expectedServerUrl = this.getFunctionServerUrl();
+      const agentPrompt = currentAgent.conversation_config?.agent?.prompt || {};
+      const hasInvalidLlm = agentPrompt.llm === 'gemini-2.5-flash' || agentPrompt.llm === 'gemini-2.5-flash-lite';
       
-      // Check if any function is missing server_url or has wrong URL
-      const needsUpdate = currentTools.length === 0 || 
+      // Update if: tools need server_url fix, OR agent has invalid llm (English agents must use turbo/flash v2)
+      const needsToolUpdate = currentTools.length === 0 || 
         currentTools.some((tool: any) => {
           const func = tool.function;
           return !func?.server_url || func.server_url !== expectedServerUrl;
         });
+      const needsUpdate = needsToolUpdate || hasInvalidLlm;
 
       if (!needsUpdate) {
-        console.log(`✅ [Docpen] Agent ${agentId} already has correct function configurations`);
+        console.log(`✅ [Docpen] Agent ${agentId} already has correct configuration`);
         return true;
       }
       
