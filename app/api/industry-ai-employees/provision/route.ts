@@ -295,12 +295,14 @@ export async function POST(request: NextRequest) {
 
     const successCount = results.filter((r) => r.success).length;
     const failCount = results.filter((r) => !r.success).length;
+    const firstError = results.find((r) => !r.success)?.error;
 
     const updatedAgents = await getExistingAgents(session.user.id, industry);
 
     return NextResponse.json({
       success: failCount === 0,
       message: `Provisioned ${successCount} agents${failCount > 0 ? `, ${failCount} failed` : ''}`,
+      error: failCount > 0 ? (firstError || `Provisioning failed for ${failCount} agent(s)`) : undefined,
       results,
       agents: updatedAgents.map((a) => ({
         id: a.id,
@@ -314,6 +316,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error provisioning industry AI Employees:', error);
-    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to provision agents',);
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to provision agents');
   }
 }

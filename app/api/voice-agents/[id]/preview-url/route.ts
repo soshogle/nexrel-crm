@@ -21,13 +21,14 @@ export async function GET(
       return apiErrors.unauthorized();
     }
 
-    // Fetch the voice agent from the database (VoiceAgent or IndustryAIEmployeeAgent)
+    // Fetch the voice agent from the database (VoiceAgent, IndustryAIEmployeeAgent, REAIEmployeeAgent, or ProfessionalAIEmployeeAgent)
     let voiceAgent = await prisma.voiceAgent.findUnique({
       where: { id: params.id },
     });
 
     let elevenLabsAgentId: string | null = null;
     let agentName: string = '';
+    let useREApiKey = false; // RE agents use ELEVENLABS_RE_API_KEY
 
     if (voiceAgent) {
       elevenLabsAgentId = voiceAgent.elevenLabsAgentId;
@@ -46,24 +47,59 @@ export async function GET(
       }
     }
 
-    if (!voiceAgent && !elevenLabsAgentId) {
+    if (!elevenLabsAgentId) {
+      // Check REAIEmployeeAgent (Real Estate AI employees - Sarah, etc.)
+      const reAgent = await prisma.rEAIEmployeeAgent.findUnique({
+        where: { id: params.id },
+      });
+      if (reAgent) {
+        if (reAgent.userId !== session.user.id) {
+          return apiErrors.forbidden('Unauthorized access to this voice agent');
+        }
+        elevenLabsAgentId = reAgent.elevenLabsAgentId;
+        agentName = reAgent.name;
+        useREApiKey = true;
+      }
+    }
+
+    if (!elevenLabsAgentId) {
+      // Check ProfessionalAIEmployeeAgent (Accountant, Developer, etc.)
+      const profAgent = await prisma.professionalAIEmployeeAgent.findUnique({
+        where: { id: params.id },
+      });
+      if (profAgent) {
+        if (profAgent.userId !== session.user.id) {
+          return apiErrors.forbidden('Unauthorized access to this voice agent');
+        }
+        elevenLabsAgentId = profAgent.elevenLabsAgentId;
+        agentName = profAgent.name;
+      }
+    }
+
+    if (!elevenLabsAgentId) {
       return apiErrors.notFound('Voice agent not found');
     }
 
-    if (voiceAgent) {
-      // Verify ownership for VoiceAgent
-      if (voiceAgent.userId !== session.user.id) {
-        return apiErrors.forbidden('Unauthorized access to this voice agent');
-      }
+    if (voiceAgent && voiceAgent.userId !== session.user.id) {
+      return apiErrors.forbidden('Unauthorized access to this voice agent');
     }
 
     if (!elevenLabsAgentId) {
       return apiErrors.badRequest('Voice agent is not configured. Please run auto-configuration first.');
     }
 
-    // Get the ElevenLabs API key from environment or key manager
-    const { elevenLabsKeyManager } = await import('@/lib/elevenlabs-key-manager');
-    const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
+    // Get the ElevenLabs API key - RE agents use ELEVENLABS_RE_API_KEY
+    let apiKey: string | null = null;
+    if (useREApiKey) {
+      apiKey = process.env.ELEVENLABS_RE_API_KEY || null;
+    }
+    if (!apiKey) {
+      const { elevenLabsKeyManager } = await import('@/lib/elevenlabs-key-manager');
+      apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
+    }
+    if (!apiKey) {
+      apiKey = process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_RE_API_KEY || null;
+    }
 
     if (!apiKey) {
       return apiErrors.badRequest('Soshogle AI voice is not configured');

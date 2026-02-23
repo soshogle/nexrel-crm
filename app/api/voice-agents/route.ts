@@ -65,6 +65,34 @@ export async function GET(request: NextRequest) {
       source: 'industry' as const,
     }));
 
+    // Include RE AI Employee agents (Sarah, Michael, etc.) for preview
+    const reAgents = await (prisma as any).rEAIEmployeeAgent.findMany({
+      where: { userId: user.id, elevenLabsAgentId: { not: null } },
+    });
+    const reAgentsForPreview = reAgents.map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      elevenLabsAgentId: a.elevenLabsAgentId,
+      _count: { callLogs: 0, outboundCalls: 0, campaigns: 0 },
+      elevenLabsCallCount: 0,
+      aiEmployeeCount: 0,
+      source: 're' as const,
+    }));
+
+    // Include Professional AI Employee agents (Accountant, Developer, etc.) for preview
+    const profAgents = await (prisma as any).professionalAIEmployeeAgent.findMany({
+      where: { userId: user.id, elevenLabsAgentId: { not: null } },
+    });
+    const profAgentsForPreview = profAgents.map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      elevenLabsAgentId: a.elevenLabsAgentId,
+      _count: { callLogs: 0, outboundCalls: 0, campaigns: 0 },
+      elevenLabsCallCount: 0,
+      aiEmployeeCount: 0,
+      source: 'professional' as const,
+    }));
+
     // Get AI employee counts per agent
     const aiEmployeeCounts = await (prisma as any).userAIEmployee.groupBy({
       by: ['voiceAgentId'],
@@ -137,12 +165,12 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Merge industry agents for unified preview dropdown
+    // Merge all agent types for unified preview dropdown
     const allAgents = [
       ...enrichedAgents,
-      ...industryAgentsForPreview.filter(
-        (ia: any) => ia.elevenLabsAgentId
-      ),
+      ...industryAgentsForPreview.filter((ia: any) => ia.elevenLabsAgentId),
+      ...reAgentsForPreview.filter((a: any) => a.elevenLabsAgentId),
+      ...profAgentsForPreview.filter((a: any) => a.elevenLabsAgentId),
     ];
 
     const total = await (prisma as any).voiceAgent.count({ where: { userId: user.id } });

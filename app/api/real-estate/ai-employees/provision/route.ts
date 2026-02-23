@@ -264,10 +264,12 @@ export async function POST(request: NextRequest) {
 
     // Fetch updated list of agents
     const updatedAgents = await getExistingAgents(session.user.id);
+    const firstError = results.find((r) => !r.success)?.error;
 
     return NextResponse.json({
       success: failCount === 0,
       message: `Provisioned ${successCount} agents${failCount > 0 ? `, ${failCount} failed` : ''}`,
+      error: failCount > 0 ? (firstError || `Provisioning failed for ${failCount} agent(s)`) : undefined,
       results,
       agents: updatedAgents,
     });

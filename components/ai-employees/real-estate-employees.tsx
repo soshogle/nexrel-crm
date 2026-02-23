@@ -387,16 +387,18 @@ export function RealEstateAIEmployees() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ employeeTypes: [employeeId] }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (res.ok && data.success && data.agents?.length) {
           toast.success('Voice agent ready!', { id: 'test-agent' });
           setProvisionedAgents(data.agents);
           agent = data.agents.find((a: ProvisionedAgent) => a.employeeType === employeeId);
         } else {
-          toast.error(data.error || 'Failed to set up agent', { id: 'test-agent' });
+          const errMsg = data.error || data.message || (res.status === 403 ? 'This feature is only available for Real Estate users' : res.status === 401 ? 'Please sign in' : 'Failed to set up agent');
+          toast.error(errMsg, { id: 'test-agent', duration: 6000 });
         }
       } catch (error) {
-        toast.error('Failed to set up agent', { id: 'test-agent' });
+        const msg = error instanceof Error ? error.message : 'Network or server error';
+        toast.error(`Failed to set up agent: ${msg}`, { id: 'test-agent', duration: 6000 });
       } finally {
         setTestingAgentId(null);
       }
