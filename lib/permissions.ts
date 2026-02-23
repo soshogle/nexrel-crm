@@ -2,17 +2,26 @@
 /**
  * Permissions & Access Control System
  * 
- * This library provides utilities for checking and managing user permissions
- * across the CRM platform.
+ * Team member permissions are stored in TeamMember.permissions (JSON field)
+ * rather than the UserPermission table, because TeamMembers are not User
+ * accounts and the UserPermission FK references User.id.
  */
 
-import { getCrmDb } from '@/lib/dal'
-import { createDalContext } from '@/lib/context/industry-context';
-import { PageResource, PermissionAction } from '@prisma/client';
-const db = getCrmDb({ userId: '', industry: null })
+import { prisma } from '@/lib/db';
+import { PageResource } from '@prisma/client';
 
-// Role presets - define default permissions for each role
-export const ROLE_PRESETS = {
+export interface PermissionEntry {
+  resource: PageResource;
+  canRead: boolean;
+  canWrite: boolean;
+  canDelete: boolean;
+}
+
+export const ROLE_PRESETS: Record<string, {
+  name: string;
+  description: string;
+  permissions: PermissionEntry[];
+}> = {
   ADMIN: {
     name: 'Admin',
     description: 'Full access to all features',
@@ -46,12 +55,10 @@ export const ROLE_PRESETS = {
         PageResource.CALENDAR,
         PageResource.MESSAGES,
       ];
-      const isAgentResource = agentResources.includes(resource);
-      
       return {
         resource,
-        canRead: isAgentResource,
-        canWrite: isAgentResource,
+        canRead: agentResources.includes(resource),
+        canWrite: agentResources.includes(resource),
         canDelete: false,
       };
     }),
@@ -68,44 +75,37 @@ export const ROLE_PRESETS = {
   },
 };
 
+function parsePermissions(raw: unknown): PermissionEntry[] {
+  if (!raw || !Array.isArray(raw)) return [];
+  return raw.filter(
+    (p): p is PermissionEntry =>
+      p && typeof p === 'object' && 'resource' in p
+  );
+}
+
 /**
- * Check if a user has a specific permission for a resource
+ * Check if a team member has a specific permission for a resource
  */
 export async function hasPermission(
-  userId: string,
+  teamMemberId: string,
   resource: PageResource,
   action: 'READ' | 'WRITE' | 'DELETE'
 ): Promise<boolean> {
   try {
-    const permission = await db.userPermission.findUnique({
-      where: {
-        userId_resource: {
-          userId,
-          resource,
-        },
-      },
+    const member = await prisma.teamMember.findUnique({
+      where: { id: teamMemberId },
+      select: { permissions: true },
     });
 
-    if (!permission) {
-      // No explicit permission set - deny access
-      return false;
-    }
+    const entries = parsePermissions(member?.permissions);
+    const entry = entries.find(p => p.resource === resource);
+    if (!entry) return false;
 
-    // Check if permission is expired
-    if (permission.expiresAt && permission.expiresAt < new Date()) {
-      return false;
-    }
-
-    // Check specific action
     switch (action) {
-      case 'READ':
-        return permission.canRead;
-      case 'WRITE':
-        return permission.canWrite;
-      case 'DELETE':
-        return permission.canDelete;
-      default:
-        return false;
+      case 'READ':  return entry.canRead;
+      case 'WRITE': return entry.canWrite;
+      case 'DELETE': return entry.canDelete;
+      default: return false;
     }
   } catch (error) {
     console.error('Error checking permission:', error);
@@ -114,16 +114,16 @@ export async function hasPermission(
 }
 
 /**
- * Get all permissions for a user
+ * Get all permissions for a team member
  */
-export async function getUserPermissions(userId: string) {
+export async function getUserPermissions(teamMemberId: string): Promise<PermissionEntry[]> {
   try {
-    const permissions = await db.userPermission.findMany({
-      where: { userId },
-      orderBy: { resource: 'asc' },
+    const member = await prisma.teamMember.findUnique({
+      where: { id: teamMemberId },
+      select: { permissions: true },
     });
 
-    return permissions;
+    return parsePermissions(member?.permissions);
   } catch (error) {
     console.error('Error fetching user permissions:', error);
     return [];
@@ -131,99 +131,71 @@ export async function getUserPermissions(userId: string) {
 }
 
 /**
- * Apply a role preset to a user
+ * Apply a role preset to a team member
  */
 export async function applyRolePreset(
-  userId: string,
-  roleName: keyof typeof ROLE_PRESETS,
-  grantedBy: string
+  teamMemberId: string,
+  roleName: string,
+  _grantedBy: string
 ) {
-  try {
-    const preset = ROLE_PRESETS[roleName];
-    if (!preset) {
-      throw new Error(`Invalid role preset: ${roleName}`);
-    }
-
-    // Delete existing permissions
-    await db.userPermission.deleteMany({
-      where: { userId },
-    });
-
-    // Create new permissions based on preset
-    const permissions = await db.userPermission.createMany({
-      data: preset.permissions.map(p => ({
-        userId,
-        resource: p.resource,
-        canRead: p.canRead,
-        canWrite: p.canWrite,
-        canDelete: p.canDelete,
-        grantedBy,
-      })),
-    });
-
-    return permissions;
-  } catch (error) {
-    console.error('Error applying role preset:', error);
-    throw error;
+  const preset = ROLE_PRESETS[roleName];
+  if (!preset) {
+    throw new Error(`Invalid role preset: ${roleName}`);
   }
+
+  await prisma.teamMember.update({
+    where: { id: teamMemberId },
+    data: { permissions: preset.permissions as any },
+  });
+
+  return preset.permissions;
 }
 
 /**
- * Grant specific permission to a user
+ * Grant / update a specific permission for a team member
  */
 export async function grantPermission(
-  userId: string,
+  teamMemberId: string,
   resource: PageResource,
   actions: {
     canRead?: boolean;
     canWrite?: boolean;
     canDelete?: boolean;
   },
-  grantedBy: string
+  _grantedBy: string
 ) {
-  try {
-    const permission = await db.userPermission.upsert({
-      where: {
-        userId_resource: {
-          userId,
-          resource,
-        },
-      },
-      create: {
-        userId,
-        resource,
-        canRead: actions.canRead ?? false,
-        canWrite: actions.canWrite ?? false,
-        canDelete: actions.canDelete ?? false,
-        grantedBy,
-      },
-      update: {
-        canRead: actions.canRead ?? undefined,
-        canWrite: actions.canWrite ?? undefined,
-        canDelete: actions.canDelete ?? undefined,
-        grantedBy,
-      },
-    });
+  const current = await getUserPermissions(teamMemberId);
+  const idx = current.findIndex(p => p.resource === resource);
 
-    return permission;
-  } catch (error) {
-    console.error('Error granting permission:', error);
-    throw error;
+  const updated: PermissionEntry = {
+    resource,
+    canRead: actions.canRead ?? current[idx]?.canRead ?? false,
+    canWrite: actions.canWrite ?? current[idx]?.canWrite ?? false,
+    canDelete: actions.canDelete ?? current[idx]?.canDelete ?? false,
+  };
+
+  if (idx >= 0) {
+    current[idx] = updated;
+  } else {
+    current.push(updated);
   }
+
+  await prisma.teamMember.update({
+    where: { id: teamMemberId },
+    data: { permissions: current as any },
+  });
+
+  return updated;
 }
 
 /**
- * Revoke all permissions for a user
+ * Revoke all permissions for a team member
  */
-export async function revokeAllPermissions(userId: string) {
-  try {
-    await db.userPermission.deleteMany({
-      where: { userId },
-    });
-  } catch (error) {
-    console.error('Error revoking permissions:', error);
-    throw error;
-  }
+export async function revokeAllPermissions(teamMemberId: string) {
+  await prisma.teamMember.update({
+    where: { id: teamMemberId },
+    data: { permissions: [] },
+  });
 }
 
 /**
@@ -231,7 +203,7 @@ export async function revokeAllPermissions(userId: string) {
  */
 export async function hasValidAdminSession(userId: string): Promise<boolean> {
   try {
-    const session = await db.adminSession.findFirst({
+    const session = await prisma.adminSession.findFirst({
       where: {
         userId,
         isActive: true,
@@ -259,59 +231,43 @@ export async function createAdminSession(
   ipAddress?: string,
   userAgent?: string
 ): Promise<string> {
-  try {
-    // Admin sessions expire after 15 minutes
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    const sessionToken = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  const sessionToken = crypto.randomUUID();
 
-    await db.adminSession.create({
-      data: {
-        userId,
-        sessionToken,
-        ipAddress,
-        userAgent,
-        expiresAt,
-      },
-    });
+  await prisma.adminSession.create({
+    data: {
+      userId,
+      sessionToken,
+      ipAddress,
+      userAgent,
+      expiresAt,
+    },
+  });
 
-    return sessionToken;
-  } catch (error) {
-    console.error('Error creating admin session:', error);
-    throw error;
-  }
+  return sessionToken;
 }
 
 /**
  * Invalidate admin session
  */
 export async function invalidateAdminSession(sessionToken: string) {
-  try {
-    await db.adminSession.update({
-      where: { sessionToken },
-      data: { isActive: false },
-    });
-  } catch (error) {
-    console.error('Error invalidating admin session:', error);
-    throw error;
-  }
+  await prisma.adminSession.update({
+    where: { sessionToken },
+    data: { isActive: false },
+  });
 }
 
 /**
  * Update admin session activity (extends timeout)
  */
 export async function updateAdminSessionActivity(sessionToken: string) {
-  try {
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-    
-    await db.adminSession.update({
-      where: { sessionToken },
-      data: {
-        lastActivity: new Date(),
-        expiresAt,
-      },
-    });
-  } catch (error) {
-    console.error('Error updating admin session activity:', error);
-    throw error;
-  }
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+  await prisma.adminSession.update({
+    where: { sessionToken },
+    data: {
+      lastActivity: new Date(),
+      expiresAt,
+    },
+  });
 }

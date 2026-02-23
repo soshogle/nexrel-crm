@@ -4,7 +4,6 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getUserPermissions, applyRolePreset, ROLE_PRESETS } from '@/lib/permissions';
-import { PageResource } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
