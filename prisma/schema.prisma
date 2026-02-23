@@ -107,6 +107,7 @@ model User {
   lastLoginAt                 DateTime?
   suspendedAt                 DateTime?
   suspendedReason             String?
+  deletedAt                   DateTime?  // Soft delete - set by super admin; blocks login
   trialEndsAt                 DateTime?
   industry                    Industry?
   clubCode                    String?                      @unique
@@ -299,6 +300,7 @@ model User {
   professionalAIEmployeeAgents ProfessionalAIEmployeeAgent[] @relation("ProfessionalAIEmployeeAgentUser")
   aiEmployeeAutoRuns          AIEmployeeAutoRun[]          @relation("AIEmployeeAutoRunUser")
   aiEmployeeDailySchedules    AIEmployeeDailySchedule[]    @relation("AIEmployeeDailyScheduleUser")
+  aiEmployeeTaskSchedules     AIEmployeeTaskSchedule[]     @relation("AIEmployeeTaskScheduleUser")
   // Real Estate Workflow Relations
   reWorkflowTemplates         REWorkflowTemplate[]         @relation("UserREWorkflowTemplates")
   reWorkflowInstances         REWorkflowInstance[]         @relation("UserREWorkflowInstances")
@@ -7717,6 +7719,28 @@ model AIEmployeeDailySchedule {
   @@index([userId])
   @@index([employeeType])
   @@index([enabled])
+}
+
+// Per-task schedule: run specific task at specific time (e.g. FSBO monitoring at 5pm)
+model AIEmployeeTaskSchedule {
+  id             String    @id @default(cuid())
+  userId         String
+  employeeType   String
+  source         String    // "industry" | "re" | "professional"
+  industry       Industry? // for industry employees
+  taskKey        String
+  runAtTime      String    // "09:00" (HH:mm)
+  runAtTimezone  String    @default("America/New_York")
+  enabled        Boolean   @default(true)
+  lastRunAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation("AIEmployeeTaskScheduleUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, industry, employeeType, taskKey])
+  @@index([userId])
+  @@index([employeeType])
 }
 
 // Industry AI Employee execution history (Dental, Medical, etc.)

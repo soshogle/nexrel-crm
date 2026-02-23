@@ -60,10 +60,21 @@ export async function GET(request: NextRequest) {
     return apiErrors.unauthorized();
   }
 
-  const schedules = await (prisma as any).aIEmployeeDailySchedule.findMany({
+  const globalSchedules = await (prisma as any).aIEmployeeDailySchedule.findMany({
     where: { enabled: true },
     orderBy: { userId: 'asc' },
   });
+
+  const taskSchedules = await (prisma as any).aIEmployeeTaskSchedule.findMany({
+    where: { enabled: true },
+    orderBy: { userId: 'asc' },
+  });
+
+  // Build list: global schedules + task schedules (task schedules override for "when" to run)
+  const schedules = [
+    ...globalSchedules.map((s: any) => ({ ...s, _type: 'global' })),
+    ...taskSchedules.map((s: any) => ({ ...s, _type: 'task' })),
+  ];
 
   const results: Array<{
     scheduleId: string;
@@ -147,10 +158,17 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      await (prisma as any).aIEmployeeDailySchedule.update({
-        where: { id: schedule.id },
-        data: { lastRunAt: new Date() },
-      });
+      if (schedule._type === 'task') {
+        await (prisma as any).aIEmployeeTaskSchedule.update({
+          where: { id: schedule.id },
+          data: { lastRunAt: new Date() },
+        });
+      } else {
+        await (prisma as any).aIEmployeeDailySchedule.update({
+          where: { id: schedule.id },
+          data: { lastRunAt: new Date() },
+        });
+      }
     } catch (err: any) {
       results.push({
         scheduleId: schedule.id,
