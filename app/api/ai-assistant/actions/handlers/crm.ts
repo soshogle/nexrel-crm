@@ -1,6 +1,7 @@
 import { leadService, dealService, campaignService, noteService, taskService } from "@/lib/dal";
 import { getCrmDb } from "@/lib/dal";
 import { createDalContext } from "@/lib/context/industry-context";
+import { syncLeadStatusToPipeline, syncLeadCreatedToPipeline } from "@/lib/lead-pipeline-sync";
 
 export async function createLead(userId: string, params: any) {
   const { name, email, phone, company, status } = params;
@@ -17,6 +18,10 @@ export async function createLead(userId: string, params: any) {
     phone: phone || null,
     status: status || "NEW",
     source: "AI Assistant",
+  });
+
+  syncLeadCreatedToPipeline(userId, lead).catch(err => {
+    console.error('[LeadPipelineSync] Failed on AI lead creation:', err);
   });
 
   return {
@@ -780,6 +785,10 @@ export async function updateLeadStatus(userId: string, params: any) {
   if (!lead) throw new Error(contactName ? `Contact "${contactName}" not found` : "Lead ID or contact name is required");
 
   await leadService.update(ctx, lead.id, { status: status as any });
+
+  syncLeadStatusToPipeline(userId, lead.id, status).catch(err => {
+    console.error('[LeadPipelineSync] Failed on AI status update:', err);
+  });
 
   return {
     message: `✓ ${lead.contactPerson || lead.businessName} status updated to ${status}`,

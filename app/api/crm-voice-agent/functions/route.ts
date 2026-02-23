@@ -10,6 +10,7 @@ import { prisma } from '@/lib/db';
 import { getCrmDb, leadService, dealService, campaignService, workflowTemplateService } from '@/lib/dal';
 import { createDalContext, getDalContextFromSession } from '@/lib/context/industry-context';
 import type { Industry } from '@/lib/dal';
+import { syncLeadCreatedToPipeline } from '@/lib/lead-pipeline-sync';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { parseChartIntent, getDynamicChartData } from '@/lib/crm-chart-intent';
@@ -498,6 +499,10 @@ async function createLead(userId: string, params: any, industry: Industry | null
       status: status as any,
       source: 'Voice AI',
     } as any);
+
+    syncLeadCreatedToPipeline(userId, lead).catch(err => {
+      console.error('[LeadPipelineSync] Failed on Voice AI lead creation:', err);
+    });
 
     return {
       success: true,

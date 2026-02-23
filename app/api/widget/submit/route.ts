@@ -4,6 +4,7 @@ import { createDalContext } from '@/lib/context/industry-context';
 import { processReferralTriggers } from '@/lib/referral-triggers';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 import { apiErrors } from '@/lib/api-error';
+import { syncLeadCreatedToPipeline } from '@/lib/lead-pipeline-sync';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -112,6 +113,10 @@ export async function POST(request: NextRequest) {
         console.error('[Widget] Failed to trigger industry workflows for lead:', err);
       });
     }
+
+    syncLeadCreatedToPipeline(userId, lead).catch(err => {
+      console.error('[LeadPipelineSync] Failed on widget lead creation:', err);
+    });
 
     console.log(`✅ New lead created from widget: ${lead.id}`);
 

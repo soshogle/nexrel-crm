@@ -8,6 +8,7 @@ import { leadService } from '@/lib/dal'
 import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { emitCRMEvent } from '@/lib/crm-event-emitter'
 import { apiErrors } from '@/lib/api-error';
+import { syncLeadStatusToPipeline } from '@/lib/lead-pipeline-sync';
 
 export async function GET(
   request: NextRequest,
@@ -68,6 +69,12 @@ export async function PUT(
       emitCRMEvent('lead_lost', session.user.id, { entityId: params.id, entityType: 'Lead' });
     } else if (data.status) {
       emitCRMEvent('lead_updated', session.user.id, { entityId: params.id, entityType: 'Lead' });
+    }
+
+    if (data.status) {
+      syncLeadStatusToPipeline(session.user.id, params.id, data.status).catch(err => {
+        console.error('[LeadPipelineSync] Failed on status update:', err);
+      });
     }
 
     return NextResponse.json(updatedLead)

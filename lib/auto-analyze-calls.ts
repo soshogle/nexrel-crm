@@ -7,6 +7,7 @@ import { prisma, Prisma } from './db';
 import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadStatus } from './conversation-intelligence';
+import { syncLeadStatusToPipeline } from '@/lib/lead-pipeline-sync';
 
 export async function autoAnalyzeCall(callLogId: string) {
   try {
@@ -78,6 +79,10 @@ export async function autoAnalyzeCall(callLogId: string) {
         leadScore: newScore,
         status: newStatus,
         lastContactedAt: new Date(),
+      });
+
+      syncLeadStatusToPipeline(callLog.lead.userId, callLog.leadId, newStatus).catch(err => {
+        console.error('[LeadPipelineSync] Failed after voice call analysis:', err);
       });
     }
 

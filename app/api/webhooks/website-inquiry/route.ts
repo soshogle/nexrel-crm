@@ -11,6 +11,7 @@ import { emailService } from '@/lib/email-service';
 import { processWebsiteTriggers } from '@/lib/website-triggers';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
 import { apiErrors } from '@/lib/api-error';
+import { syncLeadCreatedToPipeline } from '@/lib/lead-pipeline-sync';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -134,6 +135,12 @@ export async function POST(request: NextRequest) {
       });
     } catch (campErr) {
       console.warn('[website-inquiry] processCampaignTriggers error:', campErr);
+    }
+
+    if (!existingLead) {
+      syncLeadCreatedToPipeline(leadOwnerId, lead).catch(err => {
+        console.error('[LeadPipelineSync] Failed on website inquiry lead:', err);
+      });
     }
 
     console.log(`[website-inquiry] Lead ${existingLead ? 'updated' : 'created'}: ${lead.id} (${name} ${email})`);

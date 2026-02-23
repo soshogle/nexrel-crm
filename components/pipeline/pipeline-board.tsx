@@ -97,7 +97,7 @@ export function PipelineBoard() {
         const arr = Array.isArray(json) ? json : (json.data ?? json.pipelines ?? []);
         setPipelines(arr);
         if (arr.length > 0 && !selectedPipeline) {
-          const defaultPipeline = arr.find((p: Pipeline) => p.name === 'Default') || arr[0];
+          const defaultPipeline = arr.find((p: Pipeline) => p.name === 'Default Pipeline' || p.name === 'Default') || arr[0];
           setSelectedPipeline(defaultPipeline.id);
         }
       }

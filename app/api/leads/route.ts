@@ -12,6 +12,7 @@ import { apiErrors } from '@/lib/api-error'
 import { LeadCreateBodySchema, LeadsGetQuerySchema } from '@/lib/api-validation'
 import { emitCRMEvent } from '@/lib/crm-event-emitter'
 import { parsePagination, paginatedResponse } from '@/lib/api-utils'
+import { syncLeadCreatedToPipeline } from '@/lib/lead-pipeline-sync'
 
 export async function GET(request: NextRequest) {
   try {
@@ -76,6 +77,10 @@ export async function POST(request: NextRequest) {
     const lead = await leadService.create(ctx, data)
 
     emitCRMEvent('lead_created', session.user.id, { entityId: lead.id, entityType: 'Lead', data: { name: lead.businessName || lead.contactPerson } });
+
+    syncLeadCreatedToPipeline(session.user.id, lead).catch(err => {
+      console.error('[LeadPipelineSync] Failed on lead creation:', err);
+    });
 
     // Trigger workflows on lead creation (RE and industry auto-run)
     const user = await prisma.user.findUnique({
