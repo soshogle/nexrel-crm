@@ -156,8 +156,8 @@ function BusinessAIPageContent() {
       if (response.ok) {
         const data = await response.json();
         setHealthScore(data.healthScore);
-        setPredictions(data.predictions || []);
-        setInsights(data.insights || []);
+        setPredictions(Array.isArray(data.predictions) ? data.predictions : []);
+        setInsights(Array.isArray(data.insights) ? data.insights : []);
       }
     } catch (error) {
       console.error('Error loading business data:', error);
@@ -182,7 +182,7 @@ function BusinessAIPageContent() {
       }
       if (insightsRes.status === 'fulfilled' && insightsRes.value.ok) {
         const data = await insightsRes.value.json();
-        setDetailedInsights(data.insights || []);
+        setDetailedInsights(Array.isArray(data.insights) ? data.insights : []);
       }
       if (predictionsRes.status === 'fulfilled' && predictionsRes.value.ok) {
         const data = await predictionsRes.value.json();
