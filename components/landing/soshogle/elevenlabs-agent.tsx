@@ -20,11 +20,15 @@ interface ConversationMessage {
 }
 
 interface ElevenLabsAgentProps {
-  agentId: string;
+  /** ElevenLabs agent ID - used when signedUrl not provided */
+  agentId?: string;
+  /** Pre-fetched signed URL - when provided, skips fetch (for voice preview with DB record id) */
+  signedUrl?: string;
   onAudioLevel?: (level: number) => void;
   onConversationEnd?: (transcript: ConversationMessage[], audioBlob?: Blob) => void;
   onAgentSpeakingChange?: (isSpeaking: boolean) => void;
   onMessage?: (message: ConversationMessage) => void;
+  onConnect?: () => void;
   dynamicVariables?: Record<string, string>;
   autoStart?: boolean;
   compactMode?: boolean;
@@ -33,23 +37,29 @@ interface ElevenLabsAgentProps {
   variant?: 'default' | 'frameless';
   /** When true, suppress console.log for user-initiated disconnects (site agents, website preview). Landing + CRM assistant keep full logging. */
   suppressUserDisconnectLog?: boolean;
+  /** When true, auto-start conversation on mount (requires agentId or signedUrl). Used for voice preview page. */
+  autoStart?: boolean;
 }
 
 type AgentStatus = "idle" | "connecting" | "listening" | "speaking" | "processing";
 
 export function ElevenLabsAgent({
-  agentId,
+  agentId: agentIdProp,
+  signedUrl: signedUrlProp,
   onAudioLevel,
   onConversationEnd,
   onAgentSpeakingChange,
   onMessage,
+  onConnect,
   dynamicVariables,
   compactMode = false,
   hideWhenIdle = false,
   variant = 'default',
   suppressUserDisconnectLog = false,
+  autoStart = false,
 }: ElevenLabsAgentProps) {
   const isFrameless = variant === 'frameless';
+  const agentId = agentIdProp ?? '';
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,17 +104,20 @@ export function ElevenLabsAgent({
         console.error("MediaRecorder setup failed:", recorderError);
       }
 
-      if (!agentId || agentId.trim() === "") {
-        throw new Error("Agent ID is required");
+      let signedUrl = signedUrlProp;
+      if (!signedUrl) {
+        if (!agentId || agentId.trim() === "") {
+          throw new Error("Agent ID or signed URL is required");
+        }
+        // Signed URL + WebSocket connects to api.elevenlabs.io - bypasses LiveKit (error_type crash)
+        const urlRes = await fetch(`/api/elevenlabs/signed-url?agentId=${encodeURIComponent(agentId.trim())}`);
+        if (!urlRes.ok) {
+          const err = await urlRes.json().catch(() => ({ error: "Failed to get connection" }));
+          throw new Error(err.error || "Failed to connect");
+        }
+        const data = await urlRes.json();
+        signedUrl = data.signedUrl ?? data.signed_url;
       }
-
-      // Signed URL + WebSocket connects to api.elevenlabs.io - bypasses LiveKit (error_type crash)
-      const urlRes = await fetch(`/api/elevenlabs/signed-url?agentId=${encodeURIComponent(agentId.trim())}`);
-      if (!urlRes.ok) {
-        const err = await urlRes.json().catch(() => ({ error: "Failed to get connection" }));
-        throw new Error(err.error || "Failed to connect");
-      }
-      const { signedUrl } = await urlRes.json();
       if (!signedUrl) throw new Error("No connection URL");
 
       // Create AudioContext before connection — onConnect will use it to route SDK audio
@@ -133,6 +146,7 @@ export function ElevenLabsAgent({
         onConnect: () => {
           setIsConnected(true);
           setIsLoading(false);
+          onConnect?.();
           try {
             conversationRef.current?.setVolume?.({ volume: 1 });
           } catch {}
@@ -316,6 +330,16 @@ export function ElevenLabsAgent({
   useEffect(() => {
     return () => stopConversation();
   }, []);
+
+  // Auto-start when signedUrl or agentId is provided (e.g. voice preview page)
+  const hasAutoStarted = useRef(false);
+  useEffect(() => {
+    if (autoStart && (signedUrlProp || agentId) && !hasAutoStarted.current && !isConnected && !isLoading) {
+      hasAutoStarted.current = true;
+      startConversation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart, !!signedUrlProp, !!agentId]);
 
   if (hideWhenIdle && !isConnected && !isLoading) {
     return <div className="hidden" aria-hidden="true" />;

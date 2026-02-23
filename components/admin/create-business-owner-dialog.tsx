@@ -13,8 +13,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Loader2, UserPlus, AlertCircle, CheckCircle2 } from 'lucide-react';
+
+const INDUSTRY_OPTIONS = [
+  { value: 'ACCOUNTING', label: 'Accounting' },
+  { value: 'RESTAURANT', label: 'Restaurant' },
+  { value: 'SPORTS_CLUB', label: 'Sports Club' },
+  { value: 'CONSTRUCTION', label: 'Construction' },
+  { value: 'LAW', label: 'Law' },
+  { value: 'DENTIST', label: 'Dentist' },
+  { value: 'MEDICAL', label: 'Medical' },
+  { value: 'MEDICAL_SPA', label: 'Medical Spa' },
+  { value: 'OPTOMETRIST', label: 'Optometrist' },
+  { value: 'HEALTH_CLINIC', label: 'Health Clinic' },
+  { value: 'REAL_ESTATE', label: 'Real Estate' },
+  { value: 'HOSPITAL', label: 'Hospital' },
+  { value: 'TECHNOLOGY', label: 'Technology' },
+  { value: 'ORTHODONTIST', label: 'Orthodontist' },
+  { value: 'RETAIL', label: 'Retail' },
+];
 
 interface CreateBusinessOwnerDialogProps {
   open: boolean;
@@ -37,6 +56,7 @@ export default function CreateBusinessOwnerDialog({
     name: '',
     phone: '',
     businessCategory: '',
+    industry: '',
   });
   const [createdUser, setCreatedUser] = useState<any>(null);
 
@@ -89,7 +109,11 @@ export default function CreateBusinessOwnerDialog({
 
       console.log('✅ Business owner created:', data);
       setCreatedUser(data.user);
-      toast.success('Business owner account created successfully!');
+      toast.success(
+        data.user?.industry
+          ? 'Business owner created. AI employees are being provisioned.'
+          : 'Business owner account created successfully!'
+      );
 
       // Clear the form data from localStorage after successful creation
       if (typeof window !== 'undefined') {
@@ -116,6 +140,7 @@ export default function CreateBusinessOwnerDialog({
       name: '',
       phone: '',
       businessCategory: '',
+      industry: '',
     });
     setCreatedUser(null);
     
@@ -172,6 +197,14 @@ export default function CreateBusinessOwnerDialog({
                   <span className="text-gray-400">Role:</span>{' '}
                   <span className="text-purple-400 font-medium">{createdUser.role}</span>
                 </div>
+                {createdUser.industry && (
+                  <div>
+                    <span className="text-gray-400">Industry:</span>{' '}
+                    <span className="text-white font-medium">
+                      {INDUSTRY_OPTIONS.find((o) => o.value === createdUser.industry)?.label ?? createdUser.industry}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -182,8 +215,12 @@ export default function CreateBusinessOwnerDialog({
                 <ul className="mt-2 space-y-1 list-disc list-inside">
                   <li>Share the login credentials with the business owner</li>
                   <li>They should visit the sign-in page</li>
-                  <li>On first login, they'll be redirected to complete onboarding</li>
-                  <li>They'll select their industry and configure settings</li>
+                  <li>On first login, they&apos;ll be redirected to complete onboarding</li>
+                  {createdUser.industry ? (
+                    <li>AI employees are being provisioned in the background</li>
+                  ) : (
+                    <li>They&apos;ll select their industry and configure settings</li>
+                  )}
                 </ul>
               </AlertDescription>
             </Alert>
@@ -280,6 +317,33 @@ export default function CreateBusinessOwnerDialog({
                 placeholder="e.g., Pharmacy, Restaurant, Healthcare"
                 className="bg-gray-800 border-gray-700 text-white"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="industry" className="text-white">
+                Industry (Optional)
+              </Label>
+              <Select
+                value={formData.industry || 'none'}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, industry: v === 'none' ? '' : v })
+                }
+              >
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Select industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Select during onboarding —</SelectItem>
+                  {INDUSTRY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                If set, AI employees will be provisioned immediately.
+              </p>
             </div>
 
             <Alert className="bg-blue-500/10 border-blue-500/50">

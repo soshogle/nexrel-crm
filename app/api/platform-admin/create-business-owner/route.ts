@@ -4,13 +4,18 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { apiErrors } from '@/lib/api-error';
+import { provisionAIEmployeesForUser } from '@/lib/ai-employee-auto-provision';
+import { Industry } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+const VALID_INDUSTRIES = Object.values(Industry);
+
 /**
  * POST /api/platform-admin/create-business-owner
  * Creates a new business owner account that will go through onboarding
+ * If industry is provided, AI employees are provisioned immediately.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -22,12 +27,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, password, name, phone, businessCategory } = body;
+    const { email, password, name, phone, businessCategory, industry } = body;
 
     // Validate required fields
     if (!email || !password || !name) {
       return apiErrors.badRequest('Missing required fields: email, password, name');
     }
+
+    // Validate industry if provided
+    const industryValue =
+      industry && VALID_INDUSTRIES.includes(industry) ? industry : null;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -51,7 +60,7 @@ export async function POST(request: NextRequest) {
         businessCategory: businessCategory || null,
         role: 'BUSINESS_OWNER',
         onboardingCompleted: false, // This triggers the onboarding wizard
-        industry: null, // User will select during onboarding
+        industry: industryValue || null,
       },
     });
 
@@ -59,7 +68,13 @@ export async function POST(request: NextRequest) {
       id: newUser.id,
       email: newUser.email,
       name: newUser.name,
+      industry: industryValue ?? '(will select during onboarding)',
     });
+
+    // If industry was set, provision AI employees immediately (fire-and-forget)
+    if (industryValue) {
+      provisionAIEmployeesForUser(newUser.id);
+    }
 
     return NextResponse.json({
       success: true,
@@ -68,8 +83,11 @@ export async function POST(request: NextRequest) {
         email: newUser.email,
         name: newUser.name,
         role: newUser.role,
+        industry: newUser.industry,
       },
-      message: 'Business owner account created successfully. They will go through onboarding on first login.',
+      message: industryValue
+        ? 'Business owner account created. AI employees are being provisioned. They will go through onboarding on first login.'
+        : 'Business owner account created successfully. They will go through onboarding on first login.',
     });
   } catch (error: any) {
     console.error('Error creating business owner:', error);

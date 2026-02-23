@@ -108,12 +108,12 @@ export async function attachToolsToElevenLabsAgent(
   const current = await response.json();
   const agentPrompt = current.conversation_config?.agent?.prompt?.prompt || '';
   const newPrompt = agentPrompt.includes('Task Tools') ? agentPrompt : agentPrompt + TASK_TOOLS_PROMPT;
-  // English agents require turbo or flash v2 LLM - set explicitly to avoid "English Agents must use turbo or flash v2" error
+  // Match CRM Voice Assistant - do NOT set llm; ElevenLabs default works for English
   const agentConfig = {
     ...current.conversation_config?.agent,
     prompt: { prompt: newPrompt },
-    llm: 'gpt-4o-mini',
   };
+  delete (agentConfig as Record<string, unknown>).llm; // Remove if present to avoid "English Agents must use turbo or flash v2"
   const updatePayload = {
     name: current.name,
     conversation_config: {

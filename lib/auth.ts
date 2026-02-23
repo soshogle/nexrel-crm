@@ -323,6 +323,7 @@ export const authOptions: NextAuthOptions = {
           isImpersonating: token.isImpersonating as boolean | undefined,
           superAdminId: token.superAdminId as string | undefined,
           superAdminName: token.superAdminName as string | undefined,
+          originalUserIsSuperAdmin: token.originalUserIsSuperAdmin as boolean | undefined,
         }
       }
     },

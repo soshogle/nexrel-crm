@@ -24,6 +24,10 @@ function getIndustryApiKey(): string | null {
   return process.env.ELEVENLABS_API_KEY || process.env.ELEVENLABS_RE_API_KEY || null;
 }
 
+/**
+ * Create ElevenLabs agent - same structure as CRM Voice Assistant (no llm field).
+ * CRM works because it omits llm; ElevenLabs uses a valid default for English.
+ */
 async function createElevenLabsAgent(
   apiKey: string,
   config: { name: string; systemPrompt: string; firstMessage: string; voiceId?: string }
@@ -31,45 +35,55 @@ async function createElevenLabsAgent(
   const { getConfidentialityGuard } = await import('@/lib/ai-confidentiality-guard');
   const { EASTERN_TIME_SYSTEM_INSTRUCTION } = await import('@/lib/voice-time-context');
   const fullPrompt = config.systemPrompt + EASTERN_TIME_SYSTEM_INSTRUCTION + getConfidentialityGuard();
+  const payload = {
+    name: config.name,
+    conversation_config: {
+      agent: {
+        prompt: { prompt: fullPrompt },
+        first_message: config.firstMessage,
+        language: 'en',
+        // No llm - match CRM Voice Assistant; ElevenLabs default satisfies "turbo or flash v2"
+      },
+      asr: { quality: 'high', provider: 'elevenlabs' },
+      tts: {
+        voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
+        model_id: 'eleven_flash_v2', // Required for English agents; flash v2 satisfies API
+      },
+      turn: { mode: 'turn', turn_timeout_seconds: 30 },
+      conversation: { max_duration_seconds: 1800, turn_timeout_seconds: 30 },
+    },
+    platform_settings: {
+      auth: { enable_auth: false },
+      allowed_overrides: { agent: ['prompt', 'language'] },
+    },
+  };
   const response = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
     method: 'POST',
     headers: {
       'xi-api-key': apiKey,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      conversation_config: {
-        agent: {
-          prompt: { prompt: fullPrompt },
-          first_message: config.firstMessage,
-          language: 'en',
-          llm: 'gpt-4o-mini', // English agents require turbo/flash v2
-        },
-        asr: { quality: 'high', provider: 'elevenlabs' },
-        tts: {
-          voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
-          model_id: 'eleven_turbo_v2_5',
-        },
-        turn: { mode: 'turn' },
-      },
-      name: config.name,
-      platform_settings: {
-        auth: { enable_auth: false },
-        allowed_overrides: { agent: ['prompt', 'language'] },
-      },
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`ElevenLabs create failed: ${err}`);
+    const errText = await response.text();
+    let parsed: Record<string, unknown> = {};
+    try {
+      parsed = JSON.parse(errText) as Record<string, unknown>;
+    } catch {
+      /* ignore */
+    }
+    const detail = parsed.detail ?? parsed.message ?? parsed.error ?? errText;
+    const detailStr = typeof detail === 'string' ? detail : JSON.stringify(detail);
+    throw new Error(`ElevenLabs create failed (${response.status}): ${detailStr}`);
   }
 
   const data = await response.json();
   return data.agent_id;
 }
 
-async function provisionREAgents(userId: string): Promise<{ success: number; failed: number }> {
+async function provisionREAgents(userId: string): Promise<{ success: number; failed: number; firstError?: string }> {
   const apiKey = getREApiKey();
   if (!apiKey) {
     console.warn('[AutoProvision] RE API key not configured, skipping RE agents');
@@ -91,6 +105,7 @@ async function provisionREAgents(userId: string): Promise<{ success: number; fai
 
   let success = 0;
   let failed = 0;
+  let firstError: string | undefined;
 
   for (const employeeType of typesToCreate) {
     try {
@@ -126,14 +141,16 @@ async function provisionREAgents(userId: string): Promise<{ success: number; fai
       );
       success++;
       console.log(`[AutoProvision] RE ${employeeType} provisioned`);
-    } catch (err) {
+    } catch (err: unknown) {
       failed++;
-      console.error(`[AutoProvision] RE ${employeeType} failed:`, err);
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!firstError) firstError = msg;
+      console.error(`[AutoProvision] RE ${employeeType} failed:`, msg);
     }
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 1500)); // Longer delay to avoid ElevenLabs rate limits
   }
 
-  return { success, failed };
+  return { success, failed, firstError };
 }
 
 async function provisionIndustryAgents(
@@ -269,11 +286,12 @@ async function provisionProfessionalAgents(userId: string): Promise<{ success: n
       );
       success++;
       console.log(`[AutoProvision] Professional ${employeeType} provisioned`);
-    } catch (err) {
+    } catch (err: unknown) {
       failed++;
-      console.error(`[AutoProvision] Professional ${employeeType} failed:`, err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[AutoProvision] Professional ${employeeType} failed:`, msg);
     }
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 1500)); // Longer delay to avoid rate limits
   }
 
   return { success, failed };
@@ -317,50 +335,61 @@ async function fixExistingAgents(userId: string): Promise<void> {
 }
 
 /**
+ * Provision all AI employees for a user. Async version for scripts.
+ * Safe to call multiple times; skips already-provisioned agents.
+ * Also fixes existing agents (LLM + tools) when run.
+ */
+export async function provisionAIEmployeesForUserAsync(userId: string): Promise<void> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { industry: true, email: true },
+  });
+  if (!user) {
+    throw new Error(`User ${userId} not found`);
+  }
+
+  // Fix existing agents (LLM + tools) - runs every time, safe to call repeatedly
+  await fixExistingAgents(userId);
+
+  // Professional agents: available to ALL users (even without industry - e.g. super-admin-created accounts)
+  const { success: profSuccess, failed: profFailed } = await provisionProfessionalAgents(userId);
+  if (profSuccess > 0 || profFailed > 0) {
+    console.log(`[AutoProvision] ${user.email} Professional: ${profSuccess} provisioned, ${profFailed} failed`);
+  }
+
+  const industry = user.industry as Industry | null;
+  if (!industry) {
+    console.log(`[AutoProvision] ${user.email} has no industry - Professional agents done. Set industry for RE/Industry agents.`);
+    return;
+  }
+
+  if (industry === 'REAL_ESTATE') {
+    const { success, failed, firstError } = await provisionREAgents(userId);
+    if (success > 0 || failed > 0) {
+      console.log(`[AutoProvision] ${user.email} RE: ${success} provisioned, ${failed} failed`);
+      if (failed > 0 && firstError) {
+        console.error(`[AutoProvision] First RE error: ${firstError}`);
+      }
+    }
+  } else {
+    const module = getIndustryAIEmployeeModule(industry);
+    if (module) {
+      const { success, failed } = await provisionIndustryAgents(userId, industry);
+      if (success > 0 || failed > 0) {
+        console.log(`[AutoProvision] ${user.email} ${industry}: ${success} provisioned, ${failed} failed`);
+      }
+    }
+  }
+}
+
+/**
  * Provision all AI employees for a user based on their industry.
  * Fire-and-forget: call and return immediately; provisioning runs in background.
  * Safe to call multiple times; skips already-provisioned agents.
  * Also fixes existing agents (LLM + tools) when run.
  */
 export function provisionAIEmployeesForUser(userId: string): void {
-  (async () => {
-    try {
-      const user = await db.user.findUnique({
-        where: { id: userId },
-        select: { industry: true },
-      });
-
-      if (!user?.industry) {
-        return;
-      }
-
-      const industry = user.industry as Industry;
-
-      // Fix existing agents (LLM + tools) - runs every time, safe to call repeatedly
-      await fixExistingAgents(userId);
-
-      // Professional agents: available to ALL users, provisioned on industry set
-      const { success: profSuccess, failed: profFailed } = await provisionProfessionalAgents(userId);
-      if (profSuccess > 0 || profFailed > 0) {
-        console.log(`[AutoProvision] Professional: ${profSuccess} provisioned, ${profFailed} failed`);
-      }
-
-      if (industry === 'REAL_ESTATE') {
-        const { success, failed } = await provisionREAgents(userId);
-        if (success > 0 || failed > 0) {
-          console.log(`[AutoProvision] RE: ${success} provisioned, ${failed} failed`);
-        }
-      } else {
-        const module = getIndustryAIEmployeeModule(industry);
-        if (module) {
-          const { success, failed } = await provisionIndustryAgents(userId, industry);
-          if (success > 0 || failed > 0) {
-            console.log(`[AutoProvision] ${industry}: ${success} provisioned, ${failed} failed`);
-          }
-        }
-      }
-    } catch (err) {
-      console.error('[AutoProvision] Error:', err);
-    }
-  })();
+  provisionAIEmployeesForUserAsync(userId).catch((err) => {
+    console.error('[AutoProvision] Error:', err);
+  });
 }

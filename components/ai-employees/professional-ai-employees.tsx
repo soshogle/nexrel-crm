@@ -13,7 +13,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Progress } from '@/components/ui/progress';
 import {
   Bot,
   Play,
@@ -76,11 +75,9 @@ const PROFESSIONAL_EMPLOYEES = PROFESSIONAL_EMPLOYEE_TYPES.map((type) => {
   };
 });
 
-export function ProfessionalAIEmployees({ isAdmin = true }: { isAdmin?: boolean } = { isAdmin: true }) {
+export function ProfessionalAIEmployees() {
   const [provisionedAgents, setProvisionedAgents] = useState<ProvisionedAgent[]>([]);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
-  const [isProvisioning, setIsProvisioning] = useState(false);
-  const [provisioningProgress, setProvisioningProgress] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState<(typeof PROFESSIONAL_EMPLOYEES)[0] | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
@@ -104,31 +101,6 @@ export function ProfessionalAIEmployees({ isAdmin = true }: { isAdmin?: boolean 
       console.error('Failed to fetch provisioned agents:', error);
     } finally {
       setIsLoadingAgents(false);
-    }
-  };
-
-  const handleProvisionAll = async () => {
-    setIsProvisioning(true);
-    setProvisioningProgress(0);
-    try {
-      toast.loading('Creating Professional AI agents...', { id: 'provision' });
-      const response = await fetch('/api/professional-ai-employees/provision', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ forceRefresh: false }),
-      });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        toast.success(`Provisioned ${data.results?.filter((r: { success: boolean }) => r.success).length || 0} Professional AI employees!`, { id: 'provision' });
-        setProvisionedAgents(data.agents || []);
-      } else {
-        toast.error(data.error || 'Failed to provision some agents', { id: 'provision' });
-      }
-    } catch (error) {
-      toast.error('Failed to provision agents', { id: 'provision' });
-    } finally {
-      setIsProvisioning(false);
-      setProvisioningProgress(100);
     }
   };
 
@@ -218,35 +190,16 @@ export function ProfessionalAIEmployees({ isAdmin = true }: { isAdmin?: boolean 
             <Mic className="w-3 h-3 mr-1" />
             {provisionedAgents.length} / 12 Voice Agents
           </Badge>
-          {isAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleProvisionAll}
-              disabled={isProvisioning}
-              className="border-slate-600 text-slate-300 hover:bg-slate-800"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isProvisioning ? 'animate-spin' : ''}`} />
-              {provisionedAgents.length < 12 ? 'Provision All' : 'Refresh'}
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={fetchProvisionedAgents}
+            className="text-slate-400 hover:text-slate-300"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
         </div>
       </div>
-
-      {isProvisioning && (
-        <Card className="bg-purple-500/10 border-purple-500/30">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
-              <span className="text-purple-300 font-medium">Creating Professional AI Agents...</span>
-            </div>
-            <p className="text-sm text-slate-400 mb-3">
-              Each agent has deep domain expertise. Region configurable (e.g. Quebec for Accountant).
-            </p>
-            <Progress value={provisioningProgress} className="h-2" />
-          </CardContent>
-        </Card>
-      )}
 
       <div className="flex gap-2 flex-wrap">
         {CATEGORIES.map((cat) => (

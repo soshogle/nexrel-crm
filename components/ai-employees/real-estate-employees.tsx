@@ -264,17 +264,14 @@ interface EmployeeStatus {
   successRate: number;
 }
 
-export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean } = { isAdmin: true }) {
+export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedEmployee, setSelectedEmployee] = useState<typeof RE_AI_EMPLOYEES[0] | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [runningEmployee, setRunningEmployee] = useState<string | null>(null);
   const [employeeStatuses, setEmployeeStatuses] = useState<Record<string, EmployeeStatus>>({});
   
-  // Provisioning state
   const [provisionedAgents, setProvisionedAgents] = useState<ProvisionedAgent[]>([]);
-  const [isProvisioning, setIsProvisioning] = useState(false);
-  const [provisioningProgress, setProvisioningProgress] = useState(0);
   const [isLoadingAgents, setIsLoadingAgents] = useState(true);
   const [testingAgentId, setTestingAgentId] = useState<string | null>(null);
   const [autoRunSettings, setAutoRunSettings] = useState<Record<string, boolean>>({});
@@ -337,36 +334,6 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean } 
       console.error('Failed to fetch provisioned agents:', error);
     } finally {
       setIsLoadingAgents(false);
-    }
-  };
-
-  const handleProvisionAll = async () => {
-    setIsProvisioning(true);
-    setProvisioningProgress(0);
-    
-    try {
-      toast.loading('Creating Voice AI agents...', { id: 'provision' });
-      
-      const response = await fetch('/api/real-estate/ai-employees/provision', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ forceRefresh: false })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok && data.success) {
-        toast.success(`Successfully provisioned ${data.results?.filter((r: { success: boolean }) => r.success).length || 0} AI employees!`, { id: 'provision' });
-        setProvisionedAgents(data.agents || []);
-      } else {
-        toast.error(data.error || 'Failed to provision some agents', { id: 'provision' });
-      }
-    } catch (error) {
-      console.error('Provisioning error:', error);
-      toast.error('Failed to provision agents', { id: 'provision' });
-    } finally {
-      setIsProvisioning(false);
-      setProvisioningProgress(100);
     }
   };
 
@@ -492,36 +459,16 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean } 
             <Mic className="w-3 h-3 mr-1" />
             {provisionedAgents.length} / 12 Voice Agents
           </Badge>
-          {isAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleProvisionAll}
-              disabled={isProvisioning}
-              className="border-slate-600 text-slate-300 hover:bg-slate-800"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isProvisioning ? 'animate-spin' : ''}`} />
-              {provisionedAgents.length < 12 ? 'Provision All' : 'Refresh'}
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={fetchProvisionedAgents}
+            className="text-slate-400 hover:text-slate-300"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
         </div>
       </div>
-
-      {/* Provisioning Progress */}
-      {isProvisioning && (
-        <Card className="bg-purple-500/10 border-purple-500/30">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
-              <span className="text-purple-300 font-medium">Creating NEXREL Voice AI Agents...</span>
-            </div>
-            <p className="text-sm text-slate-400 mb-3">
-              Each agent is configured with OACIQ compliance, multi-language support, and specialized real estate knowledge.
-            </p>
-            <Progress value={provisioningProgress} className="h-2" />
-          </CardContent>
-        </Card>
-      )}
 
       {/* Category Filter */}
       <div className="flex gap-2 flex-wrap">

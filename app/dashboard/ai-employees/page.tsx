@@ -58,6 +58,13 @@ import { WorkflowResultsDialog } from '@/components/ai-employees/workflow-result
 import { SetupDialog } from '@/components/ai-employees/setup-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
+/** Show Provision All when user is ADMIN/SUPER_ADMIN, or when super admin is impersonating another user */
+function canProvisionAgents(session: { user?: { role?: string; isImpersonating?: boolean; originalUserIsSuperAdmin?: boolean } } | null): boolean {
+  if (!session?.user) return false;
+  const u = session.user as any;
+  return u?.role === 'ADMIN' || u?.role === 'SUPER_ADMIN' || (u?.isImpersonating && u?.originalUserIsSuperAdmin) || false;
+}
+
 const VOICE_LANGUAGES = [
   { value: 'en', label: 'English' },
   { value: 'es', label: 'Spanish' },
@@ -85,7 +92,7 @@ import MondayBoard from '@/components/tasks/monday-board';
 
 function TasksEmbed() {
   const { data: session } = useSession() || {};
-  const isAdmin = (session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN';
+  const isAdmin = canProvisionAgents(session);
   const [tasks, setTasks] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -1215,7 +1222,7 @@ export default function AIEmployeesPage() {
           </Card>
 
           {/* Professional AI Experts - 12 roles, RE-style cards */}
-          <ProfessionalAIEmployees isAdmin={(session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN'} />
+          <ProfessionalAIEmployees />
         </TabsContent>
 
         <SetupDialog
@@ -1246,14 +1253,14 @@ export default function AIEmployeesPage() {
         {/* RE Team Tab - Only for Real Estate users */}
         {isRealEstateUser && (
           <TabsContent value="re-team" className="space-y-4">
-            <RealEstateAIEmployees isAdmin={(session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN'} />
+            <RealEstateAIEmployees isAdmin={canProvisionAgents(session)} />
           </TabsContent>
         )}
 
         {/* Industry Team Tab - Dental, Medical, etc. */}
         {hasIndustryTeam && userIndustry && (
           <TabsContent value="industry-team" className="space-y-4">
-            <IndustryAIEmployees industry={userIndustry} isAdmin={(session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN'} />
+            <IndustryAIEmployees industry={userIndustry} isAdmin={canProvisionAgents(session)} />
           </TabsContent>
         )}
 

@@ -42,21 +42,22 @@ async function createElevenLabsAgent(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      name: config.name,
       conversation_config: {
         agent: {
           prompt: { prompt: fullPrompt },
           first_message: config.firstMessage,
           language: 'en',
-          llm: 'gpt-4o-mini', // English agents require turbo/flash v2 - gpt-4o-mini satisfies
+          // No llm - match CRM Voice Assistant structure
         },
         asr: { quality: 'high', provider: 'elevenlabs' },
         tts: {
           voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
           model_id: 'eleven_turbo_v2_5',
         },
-        turn: { mode: 'turn' },
+        turn: { mode: 'turn', turn_timeout_seconds: 30 },
+        conversation: { max_duration_seconds: 1800, turn_timeout_seconds: 30 },
       },
-      name: config.name,
       platform_settings: {
         auth: { enable_auth: false },
         allowed_overrides: { agent: ['prompt', 'language'] },

@@ -51,7 +51,7 @@ async function createElevenLabsAgent(
         asr: { quality: 'high', provider: 'elevenlabs' },
         tts: {
           voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
-          model_id: 'eleven_turbo_v2_5',
+          model_id: 'eleven_flash_v2', // Required for English agents
         },
         turn: { mode: 'turn' },
       },
