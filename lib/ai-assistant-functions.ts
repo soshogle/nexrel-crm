@@ -1219,7 +1219,7 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
             },
             authToken: {
               type: "string",
-              description: "Twilio Auth Token",
+              description: "Soshogle Call Auth Token",
             },
             phoneNumber: {
               type: "string",
@@ -1387,7 +1387,7 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
       type: "function",
       function: {
         name: "purchase_twilio_number",
-        description: "Start the process to purchase a Twilio phone number. Use when user says 'buy a phone number', 'I need a new number', 'purchase Twilio number'.",
+        description: "Start the process to purchase a Soshogle Call phone number. Use when user says 'buy a phone number', 'I need a new number', 'purchase phone number'.",
         parameters: { type: "object", properties: {} },
       },
     },
@@ -2037,7 +2037,7 @@ export function getAIAssistantFunctions(): FunctionDefinition[] {
       type: "function",
       function: {
         name: "check_integrations",
-        description: "Check status of all integrations (Stripe, Twilio, Gmail, QuickBooks, etc). Use for 'are my integrations working', 'connection status', 'which integrations are active'.",
+        description: "Check status of all integrations (Stripe, Soshogle Call, Gmail, QuickBooks, etc). Use for 'are my integrations working', 'connection status', 'which integrations are active'.",
         parameters: { type: "object", properties: {} },
       },
     },

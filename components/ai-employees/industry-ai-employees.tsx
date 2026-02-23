@@ -532,7 +532,7 @@ export function IndustryAIEmployees({ industry }: { industry: Industry }) {
                           showPurchaseButton={true}
                           refreshTrigger={phoneRefreshTrigger}
                           label="Phone Number"
-                          description="Select from your Twilio account. Assigned to agent in ElevenLabs."
+                          description="Select from your Soshogle Call account. Assigned to agent in Soshogle Voice AI."
                         />
                         {assigningPhone === selectedEmployee.id && (
                           <div className="flex items-center gap-2 mt-2 text-sm text-slate-400">

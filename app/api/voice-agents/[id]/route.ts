@@ -445,7 +445,7 @@ export async function DELETE(
     console.log(`✅ Successfully deleted voice agent ${params.id} from CRM`);
     return NextResponse.json({ 
       success: true,
-      message: 'Voice agent deleted successfully from both CRM and ElevenLabs'
+      message: 'Voice agent deleted successfully from both CRM and Soshogle Voice AI'
     });
   } catch (error: any) {
     console.error('Error deleting voice agent:', error);

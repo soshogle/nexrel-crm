@@ -53,7 +53,7 @@ export default function TermsOfServicePage() {
                 <li>Calendar and appointment scheduling</li>
                 <li>Task management and automation</li>
                 <li>Marketing campaigns and analytics</li>
-                <li>Integrations with third-party services (Gmail, Google Calendar, Twilio, ElevenLabs, Stripe)</li>
+                <li>Integrations with third-party services (Gmail, Google Calendar, Soshogle Call, Soshogle Voice AI, Stripe)</li>
               </ul>
             </section>
 
@@ -90,7 +90,7 @@ export default function TermsOfServicePage() {
                 <li>Reverse engineer, decompile, or disassemble the Service</li>
                 <li>Use the Service to compete with us or create a similar product</li>
                 <li>Remove or alter any proprietary notices or labels</li>
-                <li>Violate any third-party terms (e.g., Twilio, ElevenLabs, Google, Stripe)</li>
+                <li>Violate any third-party terms (e.g., Soshogle Call, Soshogle Voice AI, Google, Stripe)</li>
               </ul>
             </section>
 
@@ -139,7 +139,7 @@ export default function TermsOfServicePage() {
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
                 <li><strong>Twilio:</strong> Phone and SMS services</li>
-                <li><strong>ElevenLabs:</strong> Voice AI and conversational agents</li>
+                <li><strong>Soshogle Voice AI:</strong> Voice AI and conversational agents</li>
                 <li><strong>Google:</strong> Gmail and Google Calendar integration</li>
                 <li><strong>Stripe:</strong> Payment processing</li>
                 <li><strong>AWS:</strong> Cloud storage and infrastructure</li>

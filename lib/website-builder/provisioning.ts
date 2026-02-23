@@ -485,7 +485,7 @@ export class ResourceProvisioningService {
         await elevenLabsProvisioning.deleteAgent(opts.elevenLabsAgentId, opts.userId);
       } catch (e: any) {
         console.error('[Cleanup] ElevenLabs delete failed:', e.message);
-        errors.push(`ElevenLabs: ${e.message}`);
+        errors.push(`Voice AI: ${e.message}`);
       }
     }
 

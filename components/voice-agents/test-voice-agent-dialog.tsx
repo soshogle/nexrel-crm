@@ -160,7 +160,7 @@ export function TestVoiceAgentDialog({
       }
 
       // Check if this is an "agent not found in ElevenLabs" issue
-      if (testResult?.message?.includes('not found in Soshogle AI') || testResult?.message?.includes('not found in ElevenLabs')) {
+      if (testResult?.message?.includes('not found in Soshogle AI') || testResult?.message?.includes('not found in Soshogle Voice AI')) {
         toast.info('Recreating voice agent...', {
           description: 'This will recreate the agent in Soshogle AI',
         });
@@ -378,7 +378,7 @@ export function TestVoiceAgentDialog({
       let needsConfiguration = false;
       
       // Check for specific error patterns
-      if (errorMessage.includes('Not Found') || errorMessage.includes('not properly configured') || errorMessage.includes('not found in') || errorMessage.includes('ElevenLabs')) {
+      if (errorMessage.includes('Not Found') || errorMessage.includes('not properly configured') || errorMessage.includes('not found in') || errorMessage.includes('Soshogle Voice AI')) {
         errorMessage = 'Voice agent not found in Soshogle AI. The agent may have been deleted or not properly configured.';
         needsConfiguration = true;
         canAutoFix = true; // Changed to true - we can auto-fix this by recreating the agent

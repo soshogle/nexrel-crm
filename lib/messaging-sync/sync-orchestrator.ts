@@ -145,7 +145,7 @@ export class MessageSyncOrchestrator {
     const providerData = connection.providerData as any;
     
     if (!providerData?.accountSid || !providerData?.authToken) {
-      throw new Error('Missing Twilio credentials');
+      throw new Error('Missing Soshogle Call credentials');
     }
 
     const twilioService = new TwilioService(

@@ -169,7 +169,7 @@ export class CommunicationSpecialist {
 
     // Check if Twilio is configured
     if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
-      throw new Error('Twilio is not configured. Cannot send SMS. Please configure TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER.');
+      throw new Error('Soshogle Call is not configured. Cannot send SMS. Please configure call credentials in Settings.');
     }
 
     const message = `Welcome to Nexrel, ${name || 'there'}! 🎉 Your account is ready. ${bookingLink ? 'Book a call: ' + bookingLink : 'Login to get started!'}`;
@@ -206,7 +206,7 @@ export class CommunicationSpecialist {
     }
 
     if (!process.env.TWILIO_ACCOUNT_SID) {
-      throw new Error('Twilio is not configured. Cannot initiate voice call.');
+      throw new Error('Soshogle Call is not configured. Cannot initiate voice call.');
     }
 
     // REAL VOICE CALL - NO SIMULATION

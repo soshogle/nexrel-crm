@@ -223,7 +223,7 @@ export function SetupDialog({ open, onOpenChange, onProvisionRefresh, onSwitchTo
                   )}
                 </select>
                 <p className="text-xs text-muted-foreground">
-                  Required. Select from your Twilio account. The system will assign it to this agent in ElevenLabs.
+                  Required. Select from your Soshogle Call account. The system will assign it to this agent in Soshogle Voice AI.
                 </p>
               </div>
               <div className="space-y-2">

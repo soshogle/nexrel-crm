@@ -3,7 +3,7 @@
  * Every agent that makes or receives phone calls MUST use this.
  * - Fetches from Twilio owned numbers only
  * - Required selection (no manual entry)
- * - Assigns to agent in ElevenLabs when selected
+ * - Assigns to agent in Soshogle Voice AI when selected
  */
 
 'use client';
@@ -41,7 +41,7 @@ export function TwilioPhoneSelector({
   onPurchaseClick,
   showPurchaseButton = true,
   label = 'Phone Number',
-  description = 'Required for calls. Select from your Twilio account. The system assigns it to the agent in ElevenLabs.',
+  description = 'Required for calls. Select from your Soshogle Call account. The system assigns it to the agent in Soshogle Voice AI.',
   className = '',
   refreshTrigger,
 }: TwilioPhoneSelectorProps) {

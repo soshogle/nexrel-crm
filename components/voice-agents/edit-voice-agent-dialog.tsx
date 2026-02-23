@@ -682,7 +682,7 @@ export function EditVoiceAgentDialog({
                 showPurchaseButton={true}
                 refreshTrigger={phoneRefreshTrigger}
                 label="Phone Number"
-                description="Select from your Twilio account. The system assigns it to the agent in ElevenLabs."
+                description="Select from your Soshogle Call account. The system assigns it to the agent in Soshogle Voice AI."
               />
 
               <div>

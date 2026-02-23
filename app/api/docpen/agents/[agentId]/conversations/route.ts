@@ -108,7 +108,7 @@ export async function POST(
 
     const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
     if (!apiKey) {
-      return apiErrors.badRequest('ElevenLabs API key not configured');
+      return apiErrors.badRequest('Soshogle Voice AI API key not configured');
     }
 
     console.log(`📥 [Docpen] Syncing conversations for agent: ${agent.elevenLabsAgentId}`);
@@ -125,7 +125,7 @@ export async function POST(
       const errorText = await response.text();
       console.error('ElevenLabs API error:', errorText);
       return NextResponse.json(
-        { error: 'Failed to fetch from ElevenLabs', details: errorText },
+        { error: 'Failed to fetch from Soshogle Voice AI', details: errorText },
         { status: response.status }
       );
     }

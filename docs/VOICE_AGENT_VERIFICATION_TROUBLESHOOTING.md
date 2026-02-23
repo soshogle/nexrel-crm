@@ -8,9 +8,9 @@ When you see **"Failed to set up agent"** on the AI Employees page after clickin
 
 | Check | How to Verify |
 |-------|---------------|
-| **1. Environment variables** | Ensure `ELEVENLABS_API_KEY` or `ELEVENLABS_RE_API_KEY` is set in your deployment |
+| **1. Environment variables** | Ensure Soshogle Voice AI API key is set in your deployment |
 | **2. User industry** | Real Estate agents (Sarah, Michael, etc.) require `industry: REAL_ESTATE` |
-| **3. ElevenLabs API** | Verify the API key is valid and has conversational AI access |
+| **3. Soshogle Voice AI API** | Verify the API key is valid and has conversational AI access |
 | **4. Browser console** | Open DevTools → Console for detailed error messages |
 
 ---
@@ -19,19 +19,11 @@ When you see **"Failed to set up agent"** on the AI Employees page after clickin
 
 ### 1. "Soshogle AI voice is not configured"
 
-**Cause:** Missing ElevenLabs API key.
+**Cause:** Missing Soshogle Voice AI API key.
 
 **Solution:**
-- Add `ELEVENLABS_API_KEY` to your environment (Vercel, `.env.local`, etc.)
-- For Real Estate agents, you can also use `ELEVENLABS_RE_API_KEY`
+- Add the API key to your environment (Vercel, `.env.local`, etc.)
 - Restart the app after adding the variable
-
-```bash
-# .env.local
-ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
-# Or for Real Estate:
-ELEVENLABS_RE_API_KEY=your_elevenlabs_api_key_here
-```
 
 ---
 
@@ -45,15 +37,15 @@ ELEVENLABS_RE_API_KEY=your_elevenlabs_api_key_here
 
 ---
 
-### 3. "ElevenLabs create failed: ..."
+### 3. "Soshogle Voice AI create failed: ..."
 
-**Cause:** ElevenLabs API rejected the request. Common reasons:
+**Cause:** Soshogle Voice AI API rejected the request. Common reasons:
 - Invalid or expired API key
 - Rate limit exceeded
 - Account doesn’t have conversational AI access
 
 **Solution:**
-- Check your ElevenLabs API key at [ElevenLabs API Keys](https://elevenlabs.io/app/settings/api-keys)
+- Check your Soshogle Voice AI configuration in Settings
 - Confirm your plan includes conversational AI
 - If you see rate limits, wait a few minutes and try again
 
@@ -83,11 +75,7 @@ ELEVENLABS_RE_API_KEY=your_elevenlabs_api_key_here
 
 ### Check environment variables (local)
 
-```bash
-# Ensure these are set
-echo $ELEVENLABS_API_KEY
-echo $ELEVENLABS_RE_API_KEY  # Optional, for RE agents
-```
+Ensure the Soshogle Voice AI API key is set in your environment.
 
 ### Test the provision API directly
 
@@ -101,10 +89,7 @@ curl -X POST https://your-domain.com/api/real-estate/ai-employees/provision \
 
 ### Check server logs
 
-When provisioning fails, the server logs the underlying error. Look for:
-- `ElevenLabs agent creation failed:`
-- `Failed to provision RE_SPEED_TO_LEAD:`
-- `ELEVENLABS_RE_API_KEY environment variable is not set`
+When provisioning fails, the server logs the underlying error. Look for agent creation or provisioning errors.
 
 ---
 
@@ -114,10 +99,10 @@ The UI now shows more specific errors instead of a generic "Failed to set up age
 
 | Error | Meaning |
 |-------|---------|
-| `Soshogle AI voice is not configured` | Missing `ELEVENLABS_API_KEY` or `ELEVENLABS_RE_API_KEY` |
+| `Soshogle AI voice is not configured` | Missing Soshogle Voice AI API key |
 | `This feature is only available for Real Estate users` | Account industry is not Real Estate |
-| `ElevenLabs create failed: 401` | Invalid API key |
-| `ElevenLabs create failed: 429` | Rate limited – wait and retry |
+| `Soshogle Voice AI create failed: 401` | Invalid API key |
+| `Soshogle Voice AI create failed: 429` | Rate limited – wait and retry |
 | `Please sign in` | Session expired |
 
 ---
@@ -125,7 +110,7 @@ The UI now shows more specific errors instead of a generic "Failed to set up age
 ## Related Documentation
 
 - [VOICE_AGENT_SETUP.md](../VOICE_AGENT_SETUP.md) – Full Sarah voice agent setup
-- [TWILIO_WEBHOOKS_VERIFICATION.md](../TWILIO_WEBHOOKS_VERIFICATION.md) – Twilio webhook configuration
+- [TWILIO_WEBHOOKS_VERIFICATION.md](../TWILIO_WEBHOOKS_VERIFICATION.md) – Soshogle Call webhook configuration
 
 ---
 

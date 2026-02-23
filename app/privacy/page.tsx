@@ -61,7 +61,7 @@ export default function PrivacyPolicyPage() {
 
               <h3 className="text-xl font-semibold text-purple-400 mb-3 mt-6">2.3 Third-Party Integrations</h3>
               <p className="text-gray-300 leading-relaxed">
-                When you connect third-party services (Gmail, Google Calendar, Twilio, ElevenLabs), we collect data necessary for these integrations to function, in accordance with their respective privacy policies.
+                When you connect third-party services (Gmail, Google Calendar, Soshogle Call, Soshogle Voice AI), we collect data necessary for these integrations to function, in accordance with their respective privacy policies.
               </p>
             </section>
 
@@ -85,7 +85,7 @@ export default function PrivacyPolicyPage() {
                 Our platform uses artificial intelligence for various features including:
               </p>
               <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
-                <li><strong>Voice AI Agents:</strong> Process call audio and generate transcripts using ElevenLabs</li>
+                <li><strong>Voice AI Agents:</strong> Process call audio and generate transcripts using Soshogle Voice AI</li>
                 <li><strong>Chat Assistant:</strong> Analyze conversations to provide intelligent responses</li>
                 <li><strong>Task Automation:</strong> Suggest tasks, categorize activities, and optimize workflows</li>
                 <li><strong>Campaign Generation:</strong> Create personalized marketing content</li>
@@ -100,7 +100,7 @@ export default function PrivacyPolicyPage() {
               
               <h3 className="text-xl font-semibold text-purple-400 mb-3 mt-6">We may share your information with:</h3>
               <ul className="list-disc list-inside text-gray-300 space-y-2 ml-4">
-                <li><strong>Service Providers:</strong> Twilio (phone/SMS), ElevenLabs (voice AI), Google (email/calendar), Stripe (payments), AWS (cloud storage)</li>
+                <li><strong>Service Providers:</strong> Soshogle Call (phone/SMS), Soshogle Voice AI (voice AI), Google (email/calendar), Stripe (payments), AWS (cloud storage)</li>
                 <li><strong>Business Transfers:</strong> In connection with mergers, acquisitions, or asset sales</li>
                 <li><strong>Legal Requirements:</strong> When required by law, court order, or to protect our rights</li>
                 <li><strong>With Your Consent:</strong> When you explicitly authorize data sharing</li>

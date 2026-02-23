@@ -268,7 +268,7 @@ export default function CreateSmsDripCampaignPage() {
                       placeholder="+1234567890"
                     />
                     <p className="text-xs text-gray-500">
-                      Leave empty to use your default Twilio number
+                      Leave empty to use your default Soshogle Call number
                     </p>
                   </div>
 

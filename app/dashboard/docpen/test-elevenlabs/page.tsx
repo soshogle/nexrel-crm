@@ -67,9 +67,9 @@ export default function TestElevenLabsPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">ElevenLabs API Test</h1>
+          <h1 className="text-3xl font-bold">Voice AI API Test</h1>
           <p className="text-muted-foreground mt-2">
-            Test ElevenLabs API connection and agent creation
+            Test Soshogle Voice AI API connection and agent creation
           </p>
         </div>
         <div className="flex gap-2">
@@ -103,7 +103,7 @@ export default function TestElevenLabsPage() {
           <CardHeader>
             <CardTitle>Direct API Test</CardTitle>
             <CardDescription>
-              Tests ElevenLabs API directly, bypassing app logic
+              Tests Voice AI API directly, bypassing app logic
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -140,14 +140,9 @@ export default function TestElevenLabsPage() {
                         <div className="mt-2 p-2 bg-green-50 rounded">
                           <strong>Agent Created:</strong> {test.agentId}
                           <br />
-                          <a
-                            href={`https://elevenlabs.io/app/agents/${test.agentId}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                          >
-                            View in ElevenLabs Dashboard
-                          </a>
+                          <span className="text-muted-foreground">
+                            Agent ID: {test.agentId}
+                          </span>
                         </div>
                       )}
                       {test.error && (

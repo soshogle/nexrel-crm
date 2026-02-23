@@ -43,7 +43,7 @@ export async function GET(
     // Get user's ElevenLabs API key
     const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
     if (!apiKey) {
-      return apiErrors.badRequest('ElevenLabs API key not configured');
+      return apiErrors.badRequest('Soshogle Voice AI API key not configured');
     }
 
     const elevenLabsService = new ElevenLabsService();

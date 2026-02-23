@@ -125,7 +125,7 @@ class ElevenLabsProvisioningService {
           success: false,
           canUsePhoneNumbers: false,
           tier: 'unknown',
-          error: 'ElevenLabs API key not configured',
+          error: 'Soshogle Voice AI API key not configured',
         };
       }
 
@@ -172,7 +172,7 @@ class ElevenLabsProvisioningService {
           canUsePhoneNumbers: false,
           tier: subscription.tier,
           upgradeRequired: true,
-          error: `Your ElevenLabs plan (${subscription.tier}) does not support phone number imports. Please upgrade to Starter plan ($10/month) or higher to use phone numbers with voice agents.`,
+          error: `Your Soshogle Voice AI plan (${subscription.tier}) does not support phone number imports. Please upgrade to Starter plan ($10/month) or higher to use phone numbers with voice agents.`,
         };
       }
 
@@ -209,7 +209,7 @@ class ElevenLabsProvisioningService {
       const apiKey = await this.getApiKey(options.userId);
       
       if (!apiKey) {
-        throw new Error('ElevenLabs API key not configured');
+        throw new Error('Soshogle Voice AI API key not configured');
       }
 
       console.log('🤖 Creating ElevenLabs agent:', options.name);
@@ -454,7 +454,7 @@ class ElevenLabsProvisioningService {
       const apiKey = await this.getApiKey(options.userId);
       
       if (!apiKey) {
-        throw new Error('ElevenLabs API key not configured');
+        throw new Error('Soshogle Voice AI API key not configured');
       }
 
       console.log('🔧 Updating ElevenLabs agent configuration:', agentId);
@@ -655,7 +655,7 @@ class ElevenLabsProvisioningService {
       const apiKey = await this.getApiKey(userId);
       
       if (!apiKey) {
-        const error = 'ElevenLabs API key not configured';
+        const error = 'Soshogle Voice AI API key not configured';
         console.error('❌', error);
         return { success: false, error };
       }
@@ -667,7 +667,7 @@ class ElevenLabsProvisioningService {
         const { getCredentialsForAccount } = await import('./twilio-credentials');
         const creds = await getCredentialsForAccount(twilioAccountId);
         if (!creds) {
-          const error = `Twilio credentials not found for account ${twilioAccountId}`;
+          const error = `Soshogle Call credentials not found for account ${twilioAccountId}`;
           console.error('❌', error);
           return { success: false, error };
         }
@@ -683,7 +683,7 @@ class ElevenLabsProvisioningService {
             TWILIO_ACCOUNT_SID = primary.accountSid;
             TWILIO_AUTH_TOKEN = primary.authToken;
           } else {
-            const error = 'Twilio credentials not configured. Set TWILIO_PRIMARY_* or TWILIO_ACCOUNT_SID in environment.';
+            const error = 'Soshogle Call credentials not configured. Please configure call credentials in Settings.';
             console.error('❌', error);
             return { success: false, error };
           }
@@ -802,13 +802,13 @@ class ElevenLabsProvisioningService {
         // Check for common errors
         let userFriendlyError = errorText;
         if (errorText.includes('Invalid twilio credentials')) {
-          userFriendlyError = 'Invalid Twilio credentials. Please verify your TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in the environment variables.';
+          userFriendlyError = 'Invalid Soshogle Call credentials. Please verify your call configuration in the environment variables.';
         } else if (errorText.includes('not found')) {
-          userFriendlyError = `Phone number ${formattedPhone} not found in your Twilio account. Please ensure the number is purchased and active.`;
+          userFriendlyError = `Phone number ${formattedPhone} not found in your Soshogle Call account. Please ensure the number is purchased and active.`;
         } else if (errorText.includes('unauthorized') || importStatusCode === 401) {
-          userFriendlyError = 'Unauthorized: Invalid ElevenLabs API key. Please check your ELEVENLABS_API_KEY environment variable.';
+          userFriendlyError = 'Unauthorized: Invalid Soshogle Voice AI API key. Please check your configuration.';
         } else if (errorText.includes('subscription') || importStatusCode === 402) {
-          userFriendlyError = 'Your ElevenLabs subscription plan does not support phone number imports. Please upgrade to Starter plan or higher.';
+          userFriendlyError = 'Your Soshogle Voice AI subscription plan does not support phone number imports. Please upgrade to Starter plan or higher.';
         }
         
         return {
@@ -885,7 +885,7 @@ class ElevenLabsProvisioningService {
       if (!apiKey) {
         return {
           valid: false,
-          error: 'ElevenLabs API key not configured in environment variables',
+          error: 'Soshogle Voice AI API key not configured in environment variables',
         };
       }
 
@@ -902,7 +902,7 @@ class ElevenLabsProvisioningService {
       if (!agentResponse.ok) {
         return {
           valid: false,
-          error: 'Agent not found in ElevenLabs. Please create or reconfigure the agent.',
+          error: 'Agent not found in Soshogle Voice AI. Please create or reconfigure the agent.',
         };
       }
 
@@ -948,7 +948,7 @@ class ElevenLabsProvisioningService {
     try {
       const apiKey = await this.getApiKey(userId);
       if (!apiKey) {
-        throw new Error('ElevenLabs API key not configured');
+        throw new Error('Soshogle Voice AI API key not configured');
       }
 
       console.log('🔄 Updating ElevenLabs agent:', agentId);
@@ -1045,7 +1045,7 @@ class ElevenLabsProvisioningService {
     try {
       const apiKey = await this.getApiKey(userId);
       if (!apiKey) {
-        throw new Error('ElevenLabs API key not configured');
+        throw new Error('Soshogle Voice AI API key not configured');
       }
 
       console.log('🗑️  Deleting ElevenLabs agent:', agentId);
@@ -1085,7 +1085,7 @@ class ElevenLabsProvisioningService {
     try {
       const apiKey = await this.getApiKey(userId);
       if (!apiKey) {
-        throw new Error('ElevenLabs API key not configured');
+        throw new Error('Soshogle Voice AI API key not configured');
       }
 
       const response = await fetch(`${ELEVENLABS_BASE_URL}/voices`, {

@@ -735,7 +735,7 @@ export class WorkflowEngine {
         case 'SMS':
           const providerData = connection.providerData as any;
           if (!providerData?.accountSid || !providerData?.authToken) {
-            throw new Error('Missing Twilio credentials');
+            throw new Error('Missing Soshogle Call credentials');
           }
           if (!connection.channelIdentifier) {
             throw new Error('Missing channel identifier for SMS');

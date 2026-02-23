@@ -113,7 +113,7 @@ export async function POST(
     });
 
     if (!user?.smsProviderConfigured || !user?.smsProviderConfig) {
-      return apiErrors.badRequest('SMS provider not configured. Please configure Twilio in Settings.');
+      return apiErrors.badRequest('SMS provider not configured. Please configure Soshogle Call in Settings.');
     }
 
     // Parse Twilio config to set environment variables temporarily

@@ -43,11 +43,11 @@ export async function POST(request: NextRequest) {
       )
 
       if (!response.ok) {
-        return apiErrors.badRequest('Invalid Twilio credentials')
+        return apiErrors.badRequest('Invalid Soshogle Call credentials')
       }
     } catch (error) {
       console.error('Twilio validation error:', error)
-      return apiErrors.badRequest('Failed to validate Twilio credentials')
+      return apiErrors.badRequest('Failed to validate Soshogle Call credentials')
     }
 
     // Check if connection already exists
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         channelType: 'SMS',
         channelIdentifier: phoneNumber,
-        displayName: `Twilio ${phoneNumber}`,
+        displayName: `Soshogle Call ${phoneNumber}`,
         status: 'CONNECTED',
         providerType: 'twilio',
         providerData: {
@@ -96,6 +96,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, connection })
   } catch (error) {
     console.error('Failed to connect Twilio:', error)
-    return apiErrors.internal('Failed to connect Twilio')
+    return apiErrors.internal('Failed to connect Soshogle Call')
   }
 }

@@ -319,7 +319,7 @@ export default function BillingPage() {
               <div className="pt-2 border-t border-gray-800">
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                   <AlertCircle className="h-3 w-3" />
-                  <span>Based on ElevenLabs subscription</span>
+                  <span>Based on Soshogle Voice AI subscription</span>
                 </div>
               </div>
             </CardContent>
@@ -526,7 +526,7 @@ export default function BillingPage() {
               • <strong>Phone Calls & SMS:</strong> Actual costs from Twilio billing API
             </p>
             <p>
-              • <strong>AI Voice Agent:</strong> Based on your ElevenLabs subscription tier
+              • <strong>AI Voice Agent:</strong> Based on your Soshogle Voice AI subscription tier
             </p>
             <p>
               • <strong>AI Chat Assistant:</strong> Estimated LLM token usage for chat messages, call transcriptions, and AI task automation ($0.01/1K tokens)

@@ -172,7 +172,7 @@ ${
                 success: true,
                 agent: updatedAgent,
                 warning:
-                  'Knowledge base updated in database but could not sync to ElevenLabs (API key not configured)',
+                  'Knowledge base updated in database but could not sync to Soshogle Voice AI (API key not configured)',
               },
               { status: 200 }
             );
@@ -196,7 +196,7 @@ ${
                 success: true,
                 agent: updatedAgent,
                 warning:
-                  'Knowledge base updated in database but failed to fetch ElevenLabs agent: ' +
+                  'Knowledge base updated in database but failed to fetch voice agent: ' +
                   error,
               },
               { status: 200 }
@@ -251,7 +251,7 @@ ${
                 success: true,
                 agent: updatedAgent,
                 warning:
-                  'Knowledge base updated in database but failed to sync to ElevenLabs. Error: ' +
+                  'Knowledge base updated in database but failed to sync to Soshogle Voice AI. Error: ' +
                   error,
               },
               { status: 200 }
@@ -266,7 +266,7 @@ ${
             success: true,
             agent: updatedAgent,
             elevenLabsAgent: updatedElevenLabsAgent,
-            message: 'Onboarding documents synced successfully to both database and ElevenLabs',
+            message: 'Onboarding documents synced successfully to both database and Soshogle Voice AI',
             details: {
               documentsCount: progress.uploadedDocuments.length,
               promptLength: multilingualPrompt.length,
@@ -279,7 +279,7 @@ ${
               success: true,
               agent: updatedAgent,
               warning:
-                'Knowledge base updated in database but failed to sync to ElevenLabs: ' +
+                'Knowledge base updated in database but failed to sync to Soshogle Voice AI: ' +
                 error.message,
             },
             { status: 200 }

@@ -80,7 +80,7 @@ export async function PATCH(
       }
     } else {
       console.warn('⚠️ Voice agent has no ElevenLabs ID - skipping ElevenLabs import');
-      elevenLabsError = 'No ElevenLabs agent ID configured. Please configure the agent first.';
+      elevenLabsError = 'No Soshogle Voice AI agent ID configured. Please configure the agent first.';
     }
 
     // Step 2: Update the voice agent in our database
@@ -103,8 +103,8 @@ export async function PATCH(
       elevenLabsRegistered,
       elevenLabsError,
       message: elevenLabsRegistered 
-        ? 'Phone number imported into ElevenLabs successfully! ElevenLabs will handle all calls automatically.'
-        : 'Phone number updated in database, but ElevenLabs import failed. Agent may not receive calls until configured.',
+        ? 'Phone number imported into Soshogle Voice AI successfully! Calls will be handled automatically.'
+        : 'Phone number updated in database, but Soshogle Voice AI import failed. Agent may not receive calls until configured.',
     });
 
   } catch (error: any) {

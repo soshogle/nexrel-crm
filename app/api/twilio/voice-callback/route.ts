@@ -189,6 +189,6 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({ 
     status: 'ok',
-    message: 'Twilio voice callback endpoint is running with ElevenLabs WebSocket integration'
+    message: 'Soshogle Call voice callback endpoint is running with Soshogle Voice AI WebSocket integration'
   });
 }

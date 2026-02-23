@@ -20,7 +20,7 @@ export async function sendSMS(to: string, message: string) {
   const config = getTwilioConfig()
 
   if (!config.account_sid || !config.auth_token || !config.phone_number) {
-    throw new Error('Twilio credentials not configured. Please configure Twilio in Settings.')
+    throw new Error('Soshogle Call credentials not configured. Please configure Soshogle Call in Settings.')
   }
 
   // Format phone number (remove any non-digit characters except +)
@@ -61,7 +61,7 @@ export async function sendSMS(to: string, message: string) {
     }
   } catch (error: any) {
     console.error('Twilio SMS error:', error)
-    throw new Error(error.message || 'Failed to send SMS via Twilio')
+    throw new Error(error.message || 'Failed to send SMS via Soshogle Call')
   }
 }
 
@@ -77,7 +77,7 @@ export async function initiateOutboundCall(params: {
   const config = getTwilioConfig()
 
   if (!config.account_sid || !config.auth_token) {
-    throw new Error('Twilio credentials not configured')
+    throw new Error('Soshogle Call credentials not configured')
   }
 
   const { to, from, elevenLabsAgentId } = params
@@ -116,7 +116,7 @@ export async function initiateOutboundCall(params: {
     if (!response.ok) {
       const error = await response.json()
       console.error('Twilio API error:', error)
-      throw new Error(error.message || 'Failed to initiate call via Twilio')
+      throw new Error(error.message || 'Failed to initiate call via Soshogle Call')
     }
 
     const data = await response.json()
@@ -130,7 +130,7 @@ export async function initiateOutboundCall(params: {
     }
   } catch (error: any) {
     console.error('Twilio call error:', error)
-    throw new Error(error.message || 'Failed to initiate call via Twilio')
+    throw new Error(error.message || 'Failed to initiate call via Soshogle Call')
   }
 }
 
