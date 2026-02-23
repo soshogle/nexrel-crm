@@ -297,6 +297,7 @@ model User {
   industryAIEmployeeAgents    IndustryAIEmployeeAgent[]    @relation("IndustryAIEmployeeAgentUser")
   professionalAIEmployeeAgents ProfessionalAIEmployeeAgent[] @relation("ProfessionalAIEmployeeAgentUser")
   aiEmployeeAutoRuns          AIEmployeeAutoRun[]          @relation("AIEmployeeAutoRunUser")
+  aiEmployeeDailySchedules    AIEmployeeDailySchedule[]    @relation("AIEmployeeDailyScheduleUser")
   // Real Estate Workflow Relations
   reWorkflowTemplates         REWorkflowTemplate[]         @relation("UserREWorkflowTemplates")
   reWorkflowInstances         REWorkflowInstance[]         @relation("UserREWorkflowInstances")
@@ -7692,6 +7693,29 @@ model AIEmployeeAutoRun {
   @@unique([userId, employeeType, industry])
   @@index([userId])
   @@index([employeeType])
+}
+
+// AI Employee daily schedule - run at specific time (e.g. 9am) like a real employee
+model AIEmployeeDailySchedule {
+  id             String    @id @default(cuid())
+  userId         String
+  employeeType   String    // e.g. APPOINTMENT_SCHEDULER, RE_SPEED_TO_LEAD
+  source         String    // "industry" | "re" | "professional"
+  industry       Industry? // for industry employees
+  runAtTime      String    // "09:00" (HH:mm) in user's timezone
+  runAtTimezone  String    @default("America/New_York")
+  enabled        Boolean   @default(true)
+  taskKeys       Json?     // optional: which task keys to run
+  lastRunAt      DateTime? // prevent duplicate runs in same window
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User @relation("AIEmployeeDailyScheduleUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, industry, employeeType])
+  @@index([userId])
+  @@index([employeeType])
+  @@index([enabled])
 }
 
 // Industry AI Employee execution history (Dental, Medical, etc.)

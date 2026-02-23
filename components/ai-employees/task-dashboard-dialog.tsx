@@ -11,7 +11,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Play, Loader2, History, Settings, CheckCircle2, XCircle } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Play, Loader2, History, Settings, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
 import { getREEmployeeConfig } from '@/lib/real-estate/ai-employees/configs';
@@ -79,6 +87,19 @@ interface HistoryItem {
   details?: unknown;
 }
 
+interface DailySchedule {
+  id: string;
+  runAtTime: string;
+  runAtTimezone: string;
+  enabled: boolean;
+}
+
+const DEFAULT_SCHEDULE: Omit<DailySchedule, 'id'> = {
+  runAtTime: '09:00',
+  runAtTimezone: 'America/New_York',
+  enabled: false,
+};
+
 interface TaskDashboardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -100,9 +121,14 @@ export function TaskDashboardDialog({
 }: TaskDashboardDialogProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [schedule, setSchedule] = useState<DailySchedule | null>(null);
+  const [scheduleDirty, setScheduleDirty] = useState(false);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
+
+  const canRun = source === 'industry' || source === 're';
 
   const fetchConfig = async () => {
     if (!agentId) return;
@@ -137,10 +163,35 @@ export function TaskDashboardDialog({
     }
   };
 
+  const fetchSchedule = async () => {
+    if (!canRun) return;
+    try {
+      const params = new URLSearchParams({ source, employeeType });
+      if (source === 'industry' && industry) params.set('industry', industry);
+      if (source === 're') params.set('industry', 'REAL_ESTATE');
+      const res = await fetch(`/api/ai-employees/daily-schedules?${params}`);
+      const data = await res.json();
+      if (res.ok && data.schedules?.length) {
+        const s = data.schedules[0];
+        setSchedule({
+          id: s.id,
+          runAtTime: s.runAtTime?.slice(0, 5) || '09:00',
+          runAtTimezone: s.runAtTimezone || 'America/New_York',
+          enabled: s.enabled ?? true,
+        });
+      } else {
+        setSchedule({ id: '', ...DEFAULT_SCHEDULE });
+      }
+    } catch {
+      setSchedule({ id: '', ...DEFAULT_SCHEDULE });
+    }
+  };
+
   useEffect(() => {
     if (open && agentId) {
       fetchConfig();
       fetchHistory();
+      if (canRun) fetchSchedule();
     }
   }, [open, agentId]);
 
@@ -202,7 +253,53 @@ export function TaskDashboardDialog({
     }
   };
 
-  const canRun = source === 'industry' || source === 're';
+  const handleSaveSchedule = async () => {
+    if (!canRun) return;
+    setScheduleSaving(true);
+    try {
+      const body: Record<string, unknown> = {
+        employeeType,
+        source,
+        runAtTime: scheduleForm.runAtTime || '09:00',
+        runAtTimezone: scheduleForm.runAtTimezone || 'America/New_York',
+        enabled: scheduleForm.enabled,
+      };
+      if (source === 'industry' && industry) body.industry = industry;
+
+      const res = await fetch('/api/ai-employees/daily-schedules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok && data.schedule) {
+        setSchedule({
+          id: data.schedule.id,
+          runAtTime: data.schedule.runAtTime?.slice(0, 5) || '09:00',
+          runAtTimezone: data.schedule.runAtTimezone || 'America/New_York',
+          enabled: data.schedule.enabled ?? true,
+        });
+        setScheduleDirty(false);
+        toast.success('Daily schedule saved');
+      } else if (!res.ok) {
+        toast.error(data.error || 'Failed to save schedule');
+      }
+    } catch {
+      toast.error('Failed to save schedule');
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
+
+  const updateSchedule = (updates: Partial<DailySchedule>) => {
+    setSchedule((prev) => {
+      const base = prev ?? { id: '', ...DEFAULT_SCHEDULE };
+      return { ...base, ...updates };
+    });
+    setScheduleDirty(true);
+  };
+
+  const scheduleForm = schedule ?? { id: '', ...DEFAULT_SCHEDULE };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -269,6 +366,68 @@ export function TaskDashboardDialog({
                 )}
                 Run tasks now
               </Button>
+            </div>
+          )}
+
+          {/* Daily schedule */}
+          {canRun && (
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-200 dark:bg-white">
+              <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
+                <Clock className="w-4 h-4" />
+                Run daily at
+              </h4>
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="runAtTime" className="text-slate-700">Time</Label>
+                    <input
+                      id="runAtTime"
+                      type="time"
+                      value={scheduleForm.runAtTime}
+                      onChange={(e) => updateSchedule({ runAtTime: e.target.value })}
+                      className="flex h-9 rounded-md border border-slate-300 bg-white px-3 py-1 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                    />
+                  </div>
+                  <div className="space-y-1.5 min-w-[180px]">
+                    <Label htmlFor="runAtTimezone" className="text-slate-700">Timezone</Label>
+                    <Select
+                      value={scheduleForm.runAtTimezone}
+                      onValueChange={(v) => updateSchedule({ runAtTimezone: v })}
+                    >
+                      <SelectTrigger id="runAtTimezone">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="America/New_York">Eastern (ET)</SelectItem>
+                        <SelectItem value="America/Chicago">Central (CT)</SelectItem>
+                        <SelectItem value="America/Denver">Mountain (MT)</SelectItem>
+                        <SelectItem value="America/Los_Angeles">Pacific (PT)</SelectItem>
+                        <SelectItem value="America/Toronto">Toronto (ET)</SelectItem>
+                        <SelectItem value="Europe/London">London (GMT)</SelectItem>
+                        <SelectItem value="Europe/Paris">Paris (CET)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="scheduleEnabled" className="text-slate-700">Enable daily run</Label>
+                  <Switch
+                    id="scheduleEnabled"
+                    checked={scheduleForm.enabled}
+                    onCheckedChange={(v) => updateSchedule({ enabled: v })}
+                  />
+                </div>
+                {scheduleDirty && (
+                  <Button
+                    size="sm"
+                    onClick={handleSaveSchedule}
+                    disabled={scheduleSaving}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    {scheduleSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save schedule'}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
