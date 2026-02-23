@@ -93,10 +93,11 @@ export function PipelineBoard() {
     try {
       const response = await fetch('/api/pipelines');
       if (response.ok) {
-        const data = await response.json();
-        setPipelines(data);
-        if (data.length > 0 && !selectedPipeline) {
-          const defaultPipeline = data.find((p: Pipeline) => p.name === 'Default') || data[0];
+        const json = await response.json();
+        const arr = Array.isArray(json) ? json : (json.data ?? json.pipelines ?? []);
+        setPipelines(arr);
+        if (arr.length > 0 && !selectedPipeline) {
+          const defaultPipeline = arr.find((p: Pipeline) => p.name === 'Default') || arr[0];
           setSelectedPipeline(defaultPipeline.id);
         }
       }

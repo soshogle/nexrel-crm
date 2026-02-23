@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     }));
 
     const total = await getCrmDb(ctx).website.count({ where: { userId: ctx.userId } });
-    return paginatedResponse(websitesWithError, total, pagination);
+    return paginatedResponse(websitesWithError, total, pagination, 'websites', { canCreateNew });
   } catch (error: any) {
     console.error('Error fetching websites:', error);
     return apiErrors.internal('Failed to fetch websites');

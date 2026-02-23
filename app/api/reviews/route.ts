@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       prisma.review.count({ where }),
     ]);
 
-    return paginatedResponse(reviews, total, pagination);
+    return paginatedResponse(reviews, total, pagination, 'reviews');
   } catch (error) {
     console.error('Error fetching reviews:', error);
     return apiErrors.internal('Failed to fetch reviews');

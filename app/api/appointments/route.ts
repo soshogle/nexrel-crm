@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
     console.log(`📅 Returning ${allAppointments.length} total appointments (${transformedAppointments.length} appointments + ${transformedReservations.length} voice reservations)`)
 
     const total = await getCrmDb(ctx).bookingAppointment.count({ where })
-    return paginatedResponse(allAppointments, total, pagination)
+    return paginatedResponse(allAppointments, total, pagination, 'appointments')
   } catch (error) {
     console.error('Error fetching appointments:', error)
     return apiErrors.internal('Failed to fetch appointments')

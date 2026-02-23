@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     }));
 
     const total = await prisma.pipeline.count({ where: { userId: user.id } });
-    return paginatedResponse(pipelinesWithParsedTags, total, pagination);
+    return paginatedResponse(pipelinesWithParsedTags, total, pagination, 'pipelines');
   } catch (error) {
     console.error('Error fetching pipelines:', error);
     return apiErrors.internal('Failed to fetch pipelines');

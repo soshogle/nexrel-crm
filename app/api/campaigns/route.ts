@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    return paginatedResponse(campaigns, total, pagination);
+    return paginatedResponse(campaigns, total, pagination, 'campaigns');
   } catch (error: any) {
     console.error('Error fetching campaigns:', error);
     return apiErrors.internal(error.message || 'Failed to fetch campaigns');

@@ -74,8 +74,9 @@ export function CreateSmsCampaignDialog({
     try {
       const response = await fetch('/api/leads');
       if (response.ok) {
-        const data = await response.json();
-        setLeads(data.filter((lead: any) => lead.phone));
+        const json = await response.json();
+        const arr = Array.isArray(json) ? json : (json.data ?? json.leads ?? []);
+        setLeads(arr.filter((lead: any) => lead.phone));
       }
     } catch (error) {
       console.error('Error fetching leads:', error);
@@ -86,8 +87,9 @@ export function CreateSmsCampaignDialog({
     try {
       const response = await fetch('/api/deals');
       if (response.ok) {
-        const data = await response.json();
-        setDeals(data.filter((deal: any) => deal.lead?.phone));
+        const json = await response.json();
+        const arr = Array.isArray(json) ? json : (json.data ?? json.deals ?? []);
+        setDeals(arr.filter((deal: any) => deal.lead?.phone));
       }
     } catch (error) {
       console.error('Error fetching deals:', error);

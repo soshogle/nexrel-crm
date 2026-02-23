@@ -232,7 +232,7 @@ export async function GET(request: NextRequest) {
     console.log('Returning', parsedContacts.length, 'contacts after filtering');
 
     const total = await leadService.count(ctx, where);
-    return paginatedResponse(parsedContacts, total, pagination);
+    return paginatedResponse(parsedContacts, total, pagination, 'contacts');
   } catch (error: any) {
     console.error('Error fetching contacts:', error);
     console.error('Error message:', error?.message);

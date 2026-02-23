@@ -32,9 +32,13 @@ export function parsePagination(req: NextRequest): PaginationParams {
 export function paginatedResponse<T>(
   data: T[],
   total: number,
-  params: PaginationParams
+  params: PaginationParams,
+  /** Legacy key for backward compatibility (e.g. 'appointments', 'leads') */
+  legacyKey?: string,
+  /** Extra fields to include in response (e.g. { canCreateNew: true }) */
+  extra?: Record<string, unknown>
 ) {
-  return NextResponse.json({
+  const body: Record<string, unknown> = {
     data,
     pagination: {
       page: params.page,
@@ -42,7 +46,10 @@ export function paginatedResponse<T>(
       total,
       totalPages: Math.ceil(total / params.pageSize),
     },
-  })
+  }
+  if (legacyKey) body[legacyKey] = data
+  if (extra) Object.assign(body, extra)
+  return NextResponse.json(body)
 }
 
 export function errorResponse(message: string, status: number) {

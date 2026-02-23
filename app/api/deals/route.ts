@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       dealService.count(ctx),
     ]);
 
-    return paginatedResponse(deals, total, pagination);
+    return paginatedResponse(deals, total, pagination, 'deals');
   } catch (error) {
     console.error('Error fetching deals:', error);
     return apiErrors.internal('Failed to fetch deals');

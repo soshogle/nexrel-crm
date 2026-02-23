@@ -68,9 +68,12 @@ export function CrmVisualizationPanel({ crmStatistics, onClose }: CrmVisualizati
           )}
 
           {/* Dynamic Charts */}
-          {crmStatistics.dynamicCharts && crmStatistics.dynamicCharts.length > 0 && (
+          {Array.isArray(crmStatistics.dynamicCharts) && crmStatistics.dynamicCharts.length > 0 && (
             <div className="md:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {crmStatistics.dynamicCharts.map((chart: any, idx: number) => (
+              {crmStatistics.dynamicCharts.map((chart: any, idx: number) => {
+                const chartData = Array.isArray(chart?.data) ? chart.data : []
+                if (chartData.length === 0) return null
+                return (
                 <Card key={idx} className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/95 to-purple-50/30 backdrop-blur-sm">
                   <CardHeader>
                     <CardTitle className="text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{chart.title}</CardTitle>
@@ -79,8 +82,8 @@ export function CrmVisualizationPanel({ crmStatistics, onClose }: CrmVisualizati
                     <ResponsiveContainer width="100%" height={300}>
                       {chart.chartType === 'pie' ? (
                         <PieChart>
-                          <Pie data={chart.data} cx="50%" cy="50%" labelLine={false} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`} outerRadius={100} dataKey="value" animationDuration={1000}>
-                            {chart.data.map((_: any, i: number) => {
+                          <Pie data={chartData} cx="50%" cy="50%" labelLine={false} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`} outerRadius={100} dataKey="value" animationDuration={1000}>
+                            {chartData.map((_: any, i: number) => {
                               const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
                               return <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="#fff" strokeWidth={2} />;
                             })}
@@ -89,7 +92,7 @@ export function CrmVisualizationPanel({ crmStatistics, onClose }: CrmVisualizati
                           <Legend />
                         </PieChart>
                       ) : chart.chartType === 'bar' ? (
-                        <BarChart data={chart.data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
                           <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
                           <YAxis stroke="#6b7280" fontSize={12} />
@@ -97,7 +100,7 @@ export function CrmVisualizationPanel({ crmStatistics, onClose }: CrmVisualizati
                           <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} animationDuration={1000} />
                         </BarChart>
                       ) : (
-                        <LineChart data={chart.data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
                           <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
                           <YAxis stroke="#6b7280" fontSize={12} tickFormatter={(v) => chart.dimension?.includes('revenue') ? `$${v}` : String(v)} />
@@ -108,7 +111,7 @@ export function CrmVisualizationPanel({ crmStatistics, onClose }: CrmVisualizati
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              ))}
+              )})}
             </div>
           )}
 

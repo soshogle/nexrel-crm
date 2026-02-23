@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
-    return paginatedResponse(leads, total, pagination)
+    return paginatedResponse(leads, total, pagination, 'leads')
   } catch (error) {
     console.error('Get leads error:', error)
     return apiErrors.internal('Failed to fetch leads')
