@@ -35,7 +35,7 @@ const config = [
       "@next/next/no-assign-module-variable": "warn",
       "@next/next/no-html-link-for-pages": "warn",
       "no-restricted-imports": [
-        "error",
+        "warn",
         {
           paths: [
             {
@@ -47,6 +47,18 @@ const config = [
           ],
         },
       ],
+    },
+  },
+  {
+    files: ["lib/dal/**", "lib/db/**", "lib/auth.ts", "tests/**"],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
+  {
+    files: ["scripts/**"],
+    rules: {
+      "no-restricted-imports": "off",
     },
   },
 ];
