@@ -48,7 +48,7 @@ async function createElevenLabsAgent(
           voice_id: config.voiceId || 'EXAVITQu4vr4xnSDxMaL',
           model_id: 'eleven_turbo_v2_5',
         },
-        turn: { mode: 'turn_based' },
+        turn: { mode: 'turn' },
       },
       name: config.name,
       platform_settings: {

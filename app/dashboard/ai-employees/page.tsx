@@ -1198,13 +1198,18 @@ export default function AIEmployeesPage() {
                     Professional AI Setup
                   </CardTitle>
                   <CardDescription>
-                    Select a professional AI employee, assign a name and phone (if needed), then use in a workflow, campaign, or one-off call
+                    Select a professional AI employee, assign a name and phone (if needed), then use in a workflow, campaign, or one-off call. Test voice agents in the browser.
                   </CardDescription>
                 </div>
-                <Button onClick={() => setShowSetupDialog(true)} className="gap-2">
-                  <Settings className="h-4 w-4" />
-                  Setup
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" asChild>
+                    <Link href="/dashboard/voice-agents">My Voice Agents</Link>
+                  </Button>
+                  <Button onClick={() => setShowSetupDialog(true)} className="gap-2">
+                    <Settings className="h-4 w-4" />
+                    Setup
+                  </Button>
+                </div>
               </div>
             </CardHeader>
           </Card>
@@ -1241,14 +1246,14 @@ export default function AIEmployeesPage() {
         {/* RE Team Tab - Only for Real Estate users */}
         {isRealEstateUser && (
           <TabsContent value="re-team" className="space-y-4">
-            <RealEstateAIEmployees />
+            <RealEstateAIEmployees isAdmin={(session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN'} />
           </TabsContent>
         )}
 
         {/* Industry Team Tab - Dental, Medical, etc. */}
         {hasIndustryTeam && userIndustry && (
           <TabsContent value="industry-team" className="space-y-4">
-            <IndustryAIEmployees industry={userIndustry} />
+            <IndustryAIEmployees industry={userIndustry} isAdmin={(session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN'} />
           </TabsContent>
         )}
 

@@ -64,7 +64,7 @@ async function createElevenLabsAgent(
           model_id: 'eleven_turbo_v2_5',
         },
         turn: {
-          mode: 'turn_based',
+          mode: 'turn',
         },
       },
       name: config.name,

@@ -141,7 +141,7 @@ const INDUSTRY_COMPLIANCE: Record<string, { title: string; text: string }> = {
   },
 };
 
-export function IndustryAIEmployees({ industry }: { industry: Industry }) {
+export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: Industry; isAdmin?: boolean }) {
   const module = getIndustryAIEmployeeModule(industry);
   if (!module) return null;
 
@@ -505,6 +505,10 @@ export function IndustryAIEmployees({ industry }: { industry: Industry }) {
                 </div>
                 {selectedEmployee.voiceEnabled && (
                   <div className={`p-4 rounded-lg border ${isAgentProvisioned(selectedEmployee.id) ? 'bg-green-500/10 border-green-500/30' : 'bg-slate-800/50 border-slate-600'}`}>
+                    <h4 className="text-sm font-medium text-slate-200 mb-2 flex items-center gap-2">
+                      <Mic className="w-4 h-4" />
+                      Setup — Voice Agent
+                    </h4>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         {isAgentProvisioned(selectedEmployee.id) ? (
@@ -519,15 +523,45 @@ export function IndustryAIEmployees({ industry }: { industry: Industry }) {
                     </div>
                     <p className="text-sm text-slate-400 mb-3">
                       {isAgentProvisioned(selectedEmployee.id)
-                        ? `Voice AI agent configured for ${industryLabel.toLowerCase()} workflows.`
-                        : 'Click Test Agent to set up automatically on first use.'}
+                        ? `Voice AI agent configured for ${industryLabel.toLowerCase()} workflows. Test in browser or assign a phone for calls.`
+                        : 'Click Test Voice Agent to set up automatically on first use.'}
                     </p>
-                    {isAgentProvisioned(selectedEmployee.id) && (
+                    {isAgentProvisioned(selectedEmployee.id) && !getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber && (
+                      <div className="mt-3 pt-3 border-t border-slate-600">
+                        {isAdmin ? (
+                          <>
+                            <p className="text-xs text-amber-400 mb-2">This agent can make phone calls. Assign a number from your Soshogle Call account:</p>
+                            <TwilioPhoneSelector
+                              value={getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber || ''}
+                              onChange={(v) => handleAssignPhone(selectedEmployee.id, v)}
+                              required={false}
+                              onPurchaseClick={() => setShowPurchaseDialog(true)}
+                              showPurchaseButton={true}
+                              refreshTrigger={phoneRefreshTrigger}
+                              label="Phone Number (for calls)"
+                              description="Select from your Soshogle Call account. Required for inbound/outbound calls."
+                            />
+                            {assigningPhone === selectedEmployee.id && (
+                              <div className="flex items-center gap-2 mt-2 text-sm text-slate-400">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Assigning...
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-sm text-amber-400 flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                            Admin rights required to assign a phone number to this agent. Please ask your administrator.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {isAgentProvisioned(selectedEmployee.id) && getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber && (
                       <div className="mt-3 pt-3 border-t border-slate-600">
                         <TwilioPhoneSelector
                           value={getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber || ''}
                           onChange={(v) => handleAssignPhone(selectedEmployee.id, v)}
-                          required={true}
+                          required={false}
                           onPurchaseClick={() => setShowPurchaseDialog(true)}
                           showPurchaseButton={true}
                           refreshTrigger={phoneRefreshTrigger}
@@ -542,7 +576,7 @@ export function IndustryAIEmployees({ industry }: { industry: Industry }) {
                         )}
                       </div>
                     )}
-                    {!isAgentProvisioned(selectedEmployee.id) && (
+                    <div className="mt-3">
                       <Button
                         size="sm"
                         variant="outline"
@@ -550,10 +584,11 @@ export function IndustryAIEmployees({ industry }: { industry: Industry }) {
                         onClick={(e) => { e.stopPropagation(); handleTestAgent(selectedEmployee.id); }}
                         disabled={testingAgentId === selectedEmployee.id}
                       >
-                        {testingAgentId === selectedEmployee.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Settings className="w-3 h-3 mr-1" />}
-                        Test Agent
+                        {testingAgentId === selectedEmployee.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Mic className="w-3 h-3 mr-1" />}
+                        Test Voice Agent
                       </Button>
-                    )}
+                      <p className="text-xs text-slate-500 mt-1">Opens browser-based voice test (ElevenLabs preview style)</p>
+                    </div>
                   </div>
                 )}
                 <div className="p-4 bg-slate-900 rounded-lg border border-slate-700">
