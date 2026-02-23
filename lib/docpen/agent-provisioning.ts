@@ -160,6 +160,101 @@ class DocpenAgentProvisioning {
   }
 
   /**
+   * Clone existing agent from ElevenLabs and create new one with llm fix.
+   * Preserves exact prompt, first_message, TTS, tools, etc. - carbon copy with only llm corrected.
+   */
+  async createAgentFromExisting(
+    config: DocpenAgentConfig,
+    sourceElevenLabsAgentId: string
+  ): Promise<DocpenAgentResult> {
+    const apiKey = await this.getApiKey(config.userId);
+    if (!apiKey) {
+      return { success: false, error: 'ElevenLabs API key not configured' };
+    }
+
+    try {
+      const getResponse = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/${sourceElevenLabsAgentId}`, {
+        headers: { 'xi-api-key': apiKey },
+      });
+      if (!getResponse.ok) {
+        const errText = await getResponse.text();
+        throw new Error(`Failed to fetch source agent: ${getResponse.status} ${errText}`);
+      }
+      const sourceAgent = await getResponse.json();
+
+      const convConfig = sourceAgent.conversation_config || {};
+      const agentConfig = convConfig.agent || {};
+      const promptConfig = agentConfig.prompt || {};
+
+      // Carbon copy: use exact prompt from existing agent, but fix llm for English agent requirement
+      const { llm: _invalidLlm, ...promptWithoutLlm } = promptConfig;
+      const fixedPrompt = { ...promptWithoutLlm, llm: 'gpt-4-turbo' };
+
+      const medicalFunctions = this.buildMedicalFunctions();
+      const expectedServerUrl = this.getFunctionServerUrl();
+
+      const clonePayload = {
+        name: sourceAgent.name || `Docpen ${config.profession} Assistant`,
+        conversation_config: {
+          agent: {
+            prompt: fixedPrompt,
+            first_message: agentConfig.first_message || '',
+            language: agentConfig.language || 'en',
+          },
+          tts: convConfig.tts || {},
+          conversation: convConfig.conversation || {},
+          asr: convConfig.asr || {},
+        },
+        platform_settings: sourceAgent.platform_settings || { widget_enabled: true, allowed_overrides: { agent: ['prompt', 'language'] } },
+        tools: medicalFunctions.map((func) => ({
+          type: 'function',
+          function: { ...func, server_url: expectedServerUrl },
+        })),
+      };
+
+      console.log('📤 [Docpen] Cloning agent with exact prompt, llm fix, and function server_url');
+      const createResponse = await fetch(`${ELEVENLABS_BASE_URL}/convai/agents/create`, {
+        method: 'POST',
+        headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify(clonePayload),
+      });
+
+      const responseText = await createResponse.text();
+      if (!createResponse.ok) {
+        throw new Error(`ElevenLabs create failed (${createResponse.status}): ${responseText}`);
+      }
+      const result = JSON.parse(responseText);
+      const newAgentId = result.agent_id;
+      if (!newAgentId) throw new Error('No agent_id in response');
+
+      const voiceId = convConfig.tts?.voice_id || MEDICAL_VOICE_IDS[config.voiceGender || 'neutral'];
+      const systemPrompt = typeof promptConfig.prompt === 'string' ? promptConfig.prompt : '';
+
+      await db.docpenVoiceAgent.updateMany({
+        where: { elevenLabsAgentId: sourceElevenLabsAgentId },
+        data: { isActive: false },
+      });
+      await db.docpenVoiceAgent.create({
+        data: {
+          userId: config.userId,
+          profession: config.profession,
+          customProfession: config.profession === 'CUSTOM' ? config.customProfession : null,
+          elevenLabsAgentId: newAgentId,
+          voiceId,
+          systemPrompt,
+          isActive: true,
+        },
+      });
+
+      console.log(`✅ [Docpen] Cloned agent ${sourceElevenLabsAgentId} → ${newAgentId} (exact replica, llm fixed)`);
+      return { success: true, agentId: newAgentId };
+    } catch (error: any) {
+      console.error('❌ [Docpen] Clone failed:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Create a new Docpen voice agent
    */
   async createAgent(config: DocpenAgentConfig): Promise<DocpenAgentResult> {

@@ -93,9 +93,7 @@ export async function POST(req: NextRequest) {
     
     let result;
     if (forceCreateParam) {
-      // Force create a new agent by calling createAgent directly
-      console.log('🔄 [Docpen Voice Agent API] FORCE CREATING new agent (skipping getOrCreateAgent)...');
-      result = await docpenAgentProvisioning.createAgent({
+      const config = {
         userId: session.user.id,
         profession,
         customProfession,
@@ -103,7 +101,22 @@ export async function POST(req: NextRequest) {
         clinicName,
         voiceGender,
         sessionContext,
+      };
+      const existingAgent = await prisma.docpenVoiceAgent.findFirst({
+        where: {
+          userId: session.user.id,
+          profession,
+          customProfession: profession === 'CUSTOM' ? customProfession : null,
+          isActive: true,
+        },
       });
+      if (existingAgent) {
+        console.log('🔄 [Docpen Voice Agent API] Force recreate: cloning from existing agent', existingAgent.elevenLabsAgentId);
+        result = await docpenAgentProvisioning.createAgentFromExisting(config, existingAgent.elevenLabsAgentId);
+      } else {
+        console.log('🔄 [Docpen Voice Agent API] Force create: no existing agent, creating from template');
+        result = await docpenAgentProvisioning.createAgent(config);
+      }
     } else {
       result = await docpenAgentProvisioning.getOrCreateAgent({
         userId: session.user.id,
