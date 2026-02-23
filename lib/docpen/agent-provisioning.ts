@@ -214,6 +214,7 @@ class DocpenAgentProvisioning {
         agent: {
           prompt: {
             prompt: systemPrompt,
+            llm: 'gpt-4-turbo', // English agents must use turbo or flash v2; gemini-2.5-flash fails
           },
           first_message: `Hello${config.practitionerName ? ` ${config.practitionerName}` : ''}${userIndustry ? ` from the ${userIndustry.toLowerCase().replace(/_/g, ' ')} industry` : ''}. I'm your Docpen assistant ready to help with ${this.getProfessionDisplayName(config.profession, config.customProfession)} consultations. Just say "Docpen" followed by your question anytime.`,
           language: 'en', // API only accepts single codes. Multilingual via prompt.
@@ -434,6 +435,11 @@ class DocpenAgentProvisioning {
       }
       
       // Update with latest function configurations while preserving all existing settings
+      // CRITICAL: Remove llm from prompt - English agents must use turbo or flash v2.
+      // gemini-2.5-flash fails; omitting llm lets ElevenLabs use a valid default.
+      const agentPrompt = currentAgent.conversation_config?.agent?.prompt || {};
+      const { llm: _removed, ...promptWithoutLlm } = agentPrompt;
+
       const updatePayload = {
         name: currentAgent.name,
         conversation_config: {
@@ -441,7 +447,7 @@ class DocpenAgentProvisioning {
           // Preserve agent config (prompt, first_message, language)
           agent: {
             ...currentAgent.conversation_config?.agent,
-            prompt: currentAgent.conversation_config?.agent?.prompt,
+            prompt: promptWithoutLlm,
             first_message: currentAgent.conversation_config?.agent?.first_message,
             language: currentAgent.conversation_config?.agent?.language || 'en',
           },
@@ -677,6 +683,7 @@ Use these for any time-sensitive responses.`;
     const names: Record<string, string> = {
       GENERAL_PRACTICE: 'general practice',
       DENTIST: 'dental',
+      ORTHODONTIC: 'orthodontic',
       OPTOMETRIST: 'optometry',
       DERMATOLOGIST: 'dermatology',
       CARDIOLOGIST: 'cardiology',
