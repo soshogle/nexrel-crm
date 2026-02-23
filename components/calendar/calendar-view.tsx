@@ -107,7 +107,7 @@ function DroppableDay({ date, children, onDateClick, isCurrentMonth, isTodayDate
       ref={setNodeRef}
       className={`
         aspect-square rounded-lg p-2 cursor-pointer transition-all relative
-        ${isCurrentMonth ? 'bg-black/40 border border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/10' : 'bg-black/20 border border-purple-500/10'}
+        ${isCurrentMonth ? 'gradient-primary border border-purple-500/30 hover:border-white/40 hover:opacity-90' : 'bg-black/20 border border-purple-500/10'}
         ${isOver ? 'ring-2 ring-purple-500 scale-105 shadow-lg shadow-purple-500/30' : ''}
       `}
       onClick={() => onDateClick(date)}
@@ -336,7 +336,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
                   isTodayDate={isTodayDate}
                 >
                   <div className="flex flex-col h-full">
-                    <div className={`text-sm font-medium mb-1 ${isTodayDate ? 'gradient-text font-bold' : isCurrentMonth ? 'text-white' : 'text-purple-300/40'}`}>
+                    <div className={`text-sm font-medium mb-1 ${isTodayDate ? 'text-white font-bold underline' : isCurrentMonth ? 'text-white' : 'text-purple-300/40'}`}>
                       {format(date, 'd')}
                     </div>
                     <div className="flex-1 space-y-1 overflow-hidden">
@@ -350,7 +350,7 @@ export function CalendarView({ appointments, onDateClick, onAppointmentUpdated }
                         />
                       ))}
                       {dayAppointments.length > 3 && (
-                        <div className={`text-xs px-2 ${isCurrentMonth ? 'text-purple-300/60' : 'text-purple-300/30'}`}>
+                        <div className={`text-xs px-2 ${isCurrentMonth ? 'text-white/70' : 'text-purple-300/30'}`}>
                           +{dayAppointments.length - 3} more
                         </div>
                       )}
