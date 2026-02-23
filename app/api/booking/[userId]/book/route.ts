@@ -25,6 +25,7 @@ export async function POST(
       meetingType,
       notes,
       timezone,
+      industryFields,
     } = body;
 
     // Validation
@@ -116,6 +117,20 @@ export async function POST(
       },
     });
 
+    // Combine user notes with industry-specific fields for storage
+    let combinedNotes = notes || '';
+    if (industryFields && typeof industryFields === 'object') {
+      const fieldEntries = Object.entries(industryFields)
+        .filter(([, v]) => v && v !== 'none')
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('\n');
+      if (fieldEntries) {
+        combinedNotes = combinedNotes
+          ? `${combinedNotes}\n\n--- Industry Details ---\n${fieldEntries}`
+          : fieldEntries;
+      }
+    }
+
     // Create appointment with calendar connection if available
     const appointment = await prisma.bookingAppointment.create({
       data: {
@@ -126,7 +141,7 @@ export async function POST(
         appointmentDate: appointmentDateTime,
         duration: slotDuration,
         status,
-        notes: notes || null,
+        notes: combinedNotes || null,
         customerTimezone: timezone || 'UTC',
         meetingLocation: meetingType || 'PHONE',
         calendarConnectionId: calendarConnection?.id || null,

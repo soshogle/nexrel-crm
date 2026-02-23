@@ -4851,6 +4851,7 @@ enum Industry {
   HOSPITAL
   TECHNOLOGY
   ORTHODONTIST
+  RETAIL
 }
 
 enum LeadStatus {
@@ -8516,6 +8517,9 @@ model WorkflowTask {
   isAbTestVariant Boolean @default(false) // True if this task is an A/B test variant
   abTestGroup     String? // 'A' or 'B' - which test group this variant belongs to
   variantOf       String? // ID of the original task this variant is based on
+
+  // Phase 4: What If branching
+  isWhatIfBranch Boolean @default(false) // Auto-created by "What If" branch from parent task
 
   // Relations
   template   WorkflowTemplate @relation("WorkflowTemplateTasks", fields: [templateId], references: [id], onDelete: Cascade)

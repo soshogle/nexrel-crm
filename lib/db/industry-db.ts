@@ -21,7 +21,8 @@ export type IndustryDbKey =
   | 'REAL_ESTATE'
   | 'HOSPITAL'
   | 'TECHNOLOGY'
-  | 'ORTHODONTIST';
+  | 'ORTHODONTIST'
+  | 'RETAIL';
 
 const INDUSTRY_ENV_MAP: Record<IndustryDbKey, string> = {
   ACCOUNTING: 'DATABASE_URL_ACCOUNTING',
@@ -38,6 +39,7 @@ const INDUSTRY_ENV_MAP: Record<IndustryDbKey, string> = {
   HOSPITAL: 'DATABASE_URL_HOSPITAL',
   TECHNOLOGY: 'DATABASE_URL_TECHNOLOGY',
   ORTHODONTIST: 'DATABASE_URL_ORTHODONTIST',
+  RETAIL: 'DATABASE_URL_RETAIL',
 };
 
 const industryClients = new Map<string, PrismaClient>();

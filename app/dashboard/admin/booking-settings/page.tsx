@@ -117,7 +117,7 @@ export default function BookingSettingsPage() {
 
   const copyBookingLink = () => {
     if (!session?.user?.id) return;
-    const link = `${window.location.origin}/book/${session.user.id}`;
+    const link = `${window.location.origin}/booking/${session.user.id}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     toast.success('Booking link copied to clipboard!');
@@ -158,7 +158,7 @@ export default function BookingSettingsPage() {
   }
 
   const bookingLink = session?.user?.id
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/book/${session.user.id}`
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/booking/${session.user.id}`
     : '';
 
   return (

@@ -2,6 +2,7 @@
 'use client';
 
 import { format } from 'date-fns';
+import { useSession } from 'next-auth/react';
 import { Calendar, MapPin, Video, Phone, User, Clock, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { toast } from 'sonner';
 import { useState } from 'react';
 import { AppointmentDetailDialog } from './appointment-detail-dialog';
 import { MakeCallDialog } from '@/components/voice-agents/make-call-dialog';
+import { getIndustryBookingConfig } from '@/lib/industry-booking-config';
 import type { Appointment } from '@/types/appointment';
 
 interface AppointmentsListProps {
@@ -19,6 +21,10 @@ interface AppointmentsListProps {
 }
 
 export function AppointmentsList({ appointments, onAppointmentUpdated, onAppointmentDeleted }: AppointmentsListProps) {
+  const { data: session } = useSession() || {};
+  const industry = (session?.user as any)?.industry || null;
+  const config = getIndustryBookingConfig(industry);
+
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [callDialogOpen, setCallDialogOpen] = useState(false);
@@ -90,7 +96,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
       <Card className="glass-effect border-purple-500/20">
         <div className="text-center py-12 text-purple-300/50">
           <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50 text-purple-400" />
-          <p>No appointments scheduled</p>
+          <p>No {config.bookingPluralNoun.toLowerCase()} scheduled</p>
         </div>
       </Card>
     );
@@ -231,7 +237,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
         onOpenChange={setCallDialogOpen}
         defaultName={appointmentForCall?.lead?.contactPerson || appointmentForCall?.lead?.businessName || ''}
         defaultPhone={appointmentForCall?.lead?.phone || ''}
-        defaultPurpose={`Appointment reminder: ${appointmentForCall?.title || ''}`}
+        defaultPurpose={`${config.bookingNoun} reminder: ${appointmentForCall?.title || ''}`}
         leadId={appointmentForCall?.lead?.id}
       />
     </div>

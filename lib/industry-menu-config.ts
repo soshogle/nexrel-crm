@@ -23,7 +23,8 @@ export type Industry =
   | 'REAL_ESTATE'
   | 'HOSPITAL'
   | 'TECHNOLOGY'
-  | 'ORTHODONTIST';
+  | 'ORTHODONTIST'
+  | 'RETAIL';
 
 export type MenuItemId =
   | 'dashboard'
@@ -280,6 +281,16 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
     'payments',
     'widgets',
   ],
+  RETAIL: [
+    ...CORE_MENU_ITEMS,
+    'general-inventory',
+    'ecommerce',
+    'payments',
+    'pos',
+    'delivery',
+    'widgets',
+    'referrals',
+  ],
 };
 
 /**
@@ -334,6 +345,7 @@ export function getIndustryDisplayName(industry: Industry): string {
     ACCOUNTING: 'Accounting',
     LAW: 'Law',
     ORTHODONTIST: 'Orthodontist',
+    RETAIL: 'Retail',
   };
 
   return displayNames[industry];

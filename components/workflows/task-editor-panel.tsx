@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, Trash2, Save, Shield, Clock, GitBranch, BarChart3, ChevronDown, ChevronUp, Beaker, MessageSquare, AlertTriangle, Phone, Bell } from 'lucide-react';
+import { X, Trash2, Save, Shield, Clock, GitBranch, BarChart3, ChevronDown, ChevronUp, Beaker, MessageSquare, AlertTriangle, Phone, Bell, Diamond, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS, PROFESSIONAL_EMPLOYEE_TYPES } from '@/lib/professional-ai-employees/config';
 import { Card } from '@/components/ui/card';
@@ -47,6 +47,7 @@ interface TaskEditorPanelProps {
   onClose: () => void;
   onSave: (task: WorkflowTask) => void;
   onDelete: (taskId: string) => void;
+  onCreateWhatIfTask?: (task: WorkflowTask) => void;
 }
 
 const DELAY_UNITS = ['MINUTES', 'HOURS', 'DAYS'];
@@ -122,6 +123,7 @@ export function TaskEditorPanel({
   onClose,
   onSave,
   onDelete,
+  onCreateWhatIfTask,
 }: TaskEditorPanelProps) {
   const [editedTask, setEditedTask] = useState<WorkflowTask | null>(task);
   const [showBranching, setShowBranching] = useState(false);
@@ -135,6 +137,14 @@ export function TaskEditorPanel({
   const lastSavedRef = useRef<string>('');
   const smsTextareaRef = useRef<HTMLTextAreaElement>(null);
   const emailBodyRef = useRef<HTMLTextAreaElement>(null);
+
+  // What If branch state
+  const [showWhatIfForm, setShowWhatIfForm] = useState(false);
+  const [whatIfField, setWhatIfField] = useState('status');
+  const [whatIfOperator, setWhatIfOperator] = useState('equals');
+  const [whatIfValue, setWhatIfValue] = useState('');
+  const [whatIfCustomField, setWhatIfCustomField] = useState('');
+  const [whatIfTaskName, setWhatIfTaskName] = useState('');
 
   const industryConfig = getIndustryConfig(industry);
 
@@ -1510,6 +1520,200 @@ export function TaskEditorPanel({
                 </div>
               )}
             </div>
+          )}
+        </Card>
+
+        {/* What If Branches (Outgoing decision paths from this task) */}
+        <Card className="p-4 border-amber-200 bg-amber-50/50">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Diamond className="w-4 h-4 text-amber-600" />
+              <Label className="text-sm font-semibold">What If Branches</Label>
+            </div>
+            <span className="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">
+              {workflowTasks.filter(t => t.parentTaskId === editedTask.id).length} branches
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">
+            Create alternative paths based on this task&apos;s outcome. Each &quot;What If&quot; auto-creates a new task on the canvas.
+          </p>
+
+          {/* Existing What If branches */}
+          {workflowTasks
+            .filter(t => t.parentTaskId === editedTask.id)
+            .map((child) => {
+              const bc = child.branchCondition;
+              const condLabel = bc
+                ? (() => {
+                    const f = bc.field === 'custom' ? (bc.customFieldName || 'custom') : bc.field;
+                    return (bc.operator === 'is_empty' || bc.operator === 'is_not_empty')
+                      ? `${f} ${bc.operator.replace(/_/g, ' ')}`
+                      : `${f} ${bc.operator.replace(/_/g, ' ')} "${bc.value}"`;
+                  })()
+                : 'No condition set';
+              return (
+                <div
+                  key={child.id}
+                  className="flex items-center gap-2 p-2 mb-2 rounded-lg border border-amber-200 bg-white"
+                >
+                  <div className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-gray-800 truncate">{child.name}</div>
+                    <div className="text-[10px] text-amber-700 truncate">If: {condLabel}</div>
+                  </div>
+                  <button
+                    type="button"
+                    className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors shrink-0"
+                    onClick={() => onDelete(child.id)}
+                    title="Remove branch"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })}
+
+          {/* Add What If form */}
+          {showWhatIfForm ? (
+            <div className="space-y-2 p-3 rounded-lg border border-amber-300 bg-amber-50">
+              <Label className="text-xs font-semibold text-amber-800">New What If Condition</Label>
+
+              <div>
+                <Label className="text-[10px] text-gray-600">Field</Label>
+                <Select value={whatIfField} onValueChange={(v) => { setWhatIfField(v); if (v !== 'custom') setWhatIfCustomField(''); }}>
+                  <SelectTrigger className="mt-0.5 h-8 text-xs border-amber-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    {BRANCH_CONDITION_FIELDS.map((f) => (
+                      <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {whatIfField === 'custom' && (
+                <div>
+                  <Label className="text-[10px] text-gray-600">Custom Field Name</Label>
+                  <Input
+                    value={whatIfCustomField}
+                    onChange={(e) => setWhatIfCustomField(e.target.value)}
+                    className="mt-0.5 h-8 text-xs border-amber-200"
+                    placeholder="e.g., deal_size"
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label className="text-[10px] text-gray-600">Operator</Label>
+                <Select value={whatIfOperator} onValueChange={setWhatIfOperator}>
+                  <SelectTrigger className="mt-0.5 h-8 text-xs border-amber-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    {BRANCH_OPERATORS.map((op) => (
+                      <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {whatIfOperator !== 'is_empty' && whatIfOperator !== 'is_not_empty' && (
+                <div>
+                  <Label className="text-[10px] text-gray-600">Value</Label>
+                  <Input
+                    value={whatIfValue}
+                    onChange={(e) => setWhatIfValue(e.target.value)}
+                    className="mt-0.5 h-8 text-xs border-amber-200"
+                    placeholder="e.g., no_response"
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label className="text-[10px] text-gray-600">Task Name (auto-generated if blank)</Label>
+                <Input
+                  value={whatIfTaskName}
+                  onChange={(e) => setWhatIfTaskName(e.target.value)}
+                  className="mt-0.5 h-8 text-xs border-amber-200"
+                  placeholder={`What If: ${whatIfField === 'custom' ? (whatIfCustomField || 'field') : whatIfField} ${whatIfOperator.replace(/_/g, ' ')}${whatIfValue ? ` ${whatIfValue}` : ''}`}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-7 text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+                  onClick={() => {
+                    setShowWhatIfForm(false);
+                    setWhatIfField('status');
+                    setWhatIfOperator('equals');
+                    setWhatIfValue('');
+                    setWhatIfCustomField('');
+                    setWhatIfTaskName('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 h-7 text-xs bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                  disabled={
+                    !onCreateWhatIfTask ||
+                    (whatIfOperator !== 'is_empty' && whatIfOperator !== 'is_not_empty' && !whatIfValue.trim()) ||
+                    (whatIfField === 'custom' && !whatIfCustomField.trim())
+                  }
+                  onClick={() => {
+                    if (!onCreateWhatIfTask) return;
+                    const fieldLabel = whatIfField === 'custom' ? (whatIfCustomField || 'custom') : whatIfField;
+                    const autoName = whatIfTaskName.trim() ||
+                      `What If: ${fieldLabel} ${whatIfOperator.replace(/_/g, ' ')}${whatIfValue ? ` ${whatIfValue}` : ''}`;
+
+                    const newTask: WorkflowTask = {
+                      id: `task-whatif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                      name: autoName,
+                      description: `Auto-created What If branch from "${editedTask.name}"`,
+                      taskType: editedTask.taskType,
+                      assignedAgentId: null,
+                      assignedAgentName: null,
+                      agentColor: '#f59e0b',
+                      displayOrder: workflowTasks.length + 1,
+                      isHITL: false,
+                      delayMinutes: 0,
+                      parentTaskId: editedTask.id,
+                      isWhatIfBranch: true,
+                      branchCondition: {
+                        field: whatIfField,
+                        operator: whatIfOperator,
+                        value: whatIfValue,
+                        ...(whatIfField === 'custom' ? { customFieldName: whatIfCustomField } : {}),
+                      },
+                    };
+
+                    onCreateWhatIfTask(newTask);
+                    setShowWhatIfForm(false);
+                    setWhatIfField('status');
+                    setWhatIfOperator('equals');
+                    setWhatIfValue('');
+                    setWhatIfCustomField('');
+                    setWhatIfTaskName('');
+                  }}
+                >
+                  Create Branch
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full h-8 text-xs border-amber-300 text-amber-700 hover:bg-amber-100 border-dashed"
+              onClick={() => setShowWhatIfForm(true)}
+            >
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
+              Add What If Branch
+            </Button>
           )}
         </Card>
         

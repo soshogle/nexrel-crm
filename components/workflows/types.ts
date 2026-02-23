@@ -46,6 +46,7 @@ export interface WorkflowTask {
   isAbTestVariant?: boolean; // True if this task is an A/B test variant
   abTestGroup?: string | null; // 'A' or 'B' - which test group this variant belongs to
   variantOf?: string | null; // ID of the original task this variant is based on
+  isWhatIfBranch?: boolean; // Auto-created by "What If" branch from parent task
 }
 
 export interface WorkflowTemplate {

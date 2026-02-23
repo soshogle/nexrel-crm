@@ -129,8 +129,8 @@ export default function ContactsPage() {
     if (!session?.user?.id) return;
     
     const bookingUrl = mounted && typeof window !== 'undefined' 
-      ? `${window.location.origin}/book/${session.user.id}`
-      : `/book/${session.user.id}`;
+      ? `${window.location.origin}/booking/${session.user.id}`
+      : `/booking/${session.user.id}`;
     
     navigator.clipboard.writeText(bookingUrl);
     setBookingLinkCopied(true);

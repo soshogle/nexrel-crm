@@ -205,6 +205,64 @@ export const CONSTRUCTION_CONFIG: IndustryConfig = {
 };
 
 // ==========================================
+// RETAIL INDUSTRY CONFIG
+// ==========================================
+
+export const RETAIL_CONFIG: IndustryConfig = {
+  industry: 'RETAIL',
+  taskTypes: [
+    { value: 'LEAD_RESEARCH', label: 'Lead Research', icon: '🔍', color: '#3B82F6', description: 'Research lead information' },
+    { value: 'CUSTOMER_RESEARCH', label: 'Customer Research', icon: '👤', color: '#10B981', description: 'Research customer preferences and purchase history' },
+    { value: 'ORDER_CONFIRMATION', label: 'Order Confirmation', icon: '📦', color: '#8B5CF6', description: 'Confirm customer order' },
+    { value: 'SHIPPING_NOTIFICATION', label: 'Shipping Notification', icon: '🚚', color: '#F59E0B', description: 'Notify customer of shipment' },
+    { value: 'INVENTORY_ALERT', label: 'Inventory Alert', icon: '📊', color: '#EF4444', description: 'Alert on low stock or restock' },
+    { value: 'RETURN_PROCESSING', label: 'Return Processing', icon: '🔄', color: '#06B6D4', description: 'Process product return or exchange' },
+    { value: 'LOYALTY_POINTS_UPDATE', label: 'Loyalty Points', icon: '⭐', color: '#EC4899', description: 'Update loyalty points' },
+    { value: 'FEEDBACK_REQUEST', label: 'Feedback Request', icon: '💬', color: '#14B8A6', description: 'Request customer feedback' },
+    { value: 'PROMOTION_NOTIFICATION', label: 'Promotion Notification', icon: '🎁', color: '#6366F1', description: 'Send promotional offers' },
+    { value: 'ABANDONED_CART_FOLLOWUP', label: 'Abandoned Cart Follow-up', icon: '🛒', color: '#84CC16', description: 'Follow up on abandoned carts' },
+    { value: 'CUSTOM', label: 'Custom Task', icon: '⚙️', color: '#6B7280', description: 'Custom workflow task' },
+  ],
+  aiAgents: [
+    { id: 'order_coordinator', name: 'Sarah', role: 'Order Coordinator', color: '#FF6B6B', description: 'Manages order processing and confirmations' },
+    { id: 'inventory_manager', name: 'Michael', role: 'Inventory Manager', color: '#4ECDC4', description: 'Tracks inventory and restock alerts' },
+    { id: 'loyalty_manager', name: 'Jessica', role: 'Loyalty Manager', color: '#45B7D1', description: 'Manages loyalty and rewards program' },
+    { id: 'customer_service', name: 'Alex', role: 'Customer Service Specialist', color: '#96CEB4', description: 'Handles customer inquiries and returns' },
+    { id: 'marketing_coordinator', name: 'Emma', role: 'Marketing Coordinator', color: '#FFEAA7', description: 'Manages promotions and campaigns' },
+    { id: 'personal_shopper', name: 'David', role: 'Personal Shopper', color: '#DDA0DD', description: 'Provides personalized shopping assistance' },
+  ],
+  templates: [
+    {
+      id: 'new-customer-welcome',
+      name: 'New Customer Welcome',
+      description: 'Welcome new retail customers',
+      workflowType: 'NEW_CUSTOMER_WELCOME',
+      tasks: [
+        { name: 'Research Customer', taskType: 'CUSTOMER_RESEARCH', description: 'Research preferences', delayValue: 0, delayUnit: 'MINUTES', isHITL: false, displayOrder: 1 },
+        { name: 'Send Welcome Email', taskType: 'CUSTOM', description: 'Welcome message with first-time discount', delayValue: 1, delayUnit: 'HOURS', isHITL: false, displayOrder: 2 },
+        { name: 'Enroll in Loyalty', taskType: 'LOYALTY_POINTS_UPDATE', description: 'Enroll in rewards program', delayValue: 2, delayUnit: 'HOURS', isHITL: false, displayOrder: 3 },
+      ],
+    },
+    {
+      id: 'abandoned-cart-recovery',
+      name: 'Abandoned Cart Recovery',
+      description: 'Recover abandoned shopping carts',
+      workflowType: 'ABANDONED_CART_RECOVERY',
+      tasks: [
+        { name: 'Send Cart Reminder', taskType: 'ABANDONED_CART_FOLLOWUP', description: 'Remind about items in cart', delayValue: 2, delayUnit: 'HOURS', isHITL: false, displayOrder: 1 },
+        { name: 'Offer Discount', taskType: 'PROMOTION_NOTIFICATION', description: 'Send discount offer', delayValue: 1, delayUnit: 'DAYS', isHITL: false, displayOrder: 2 },
+        { name: 'Final Follow-up', taskType: 'FEEDBACK_REQUEST', description: 'Ask if they need help', delayValue: 3, delayUnit: 'DAYS', isHITL: false, displayOrder: 3 },
+      ],
+    },
+  ],
+  fieldLabels: {
+    contact: 'Customer',
+    deal: 'Order',
+  },
+  integrations: ['POS Systems', 'Inventory Management', 'Shipping APIs', 'Loyalty Platforms'],
+};
+
+// ==========================================
 // INDUSTRY CONFIG MAP
 // ==========================================
 
@@ -223,6 +281,7 @@ export const INDUSTRY_CONFIGS: Record<Industry, IndustryConfig> = {
   HOSPITAL: MEDICAL_CONFIG, // Similar to Medical
   TECHNOLOGY: RESTAURANT_CONFIG, // Similar structure
   ORTHODONTIST: MEDICAL_CONFIG, // Similar to Dental/Medical
+  RETAIL: RETAIL_CONFIG,
 };
 
 /**

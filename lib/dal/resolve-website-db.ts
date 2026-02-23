@@ -31,6 +31,7 @@ const INDUSTRY_KEYS: IndustryDbKey[] = [
   'HEALTH_CLINIC',
   'HOSPITAL',
   'ORTHODONTIST',
+  'RETAIL',
 ];
 
 export interface ResolvedWebsiteDb {

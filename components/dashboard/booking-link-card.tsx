@@ -6,29 +6,32 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Copy, Check, ExternalLink, Calendar, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getIndustryBookingConfig } from '@/lib/industry-booking-config';
 
 interface BookingLinkCardProps {
   userId: string;
   businessName?: string | null;
+  industry?: string | null;
 }
 
-export function BookingLinkCard({ userId, businessName }: BookingLinkCardProps) {
+export function BookingLinkCard({ userId, businessName, industry }: BookingLinkCardProps) {
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const config = getIndustryBookingConfig(industry);
   
-  // Get the current domain - only on client side
   const bookingUrl = mounted && typeof window !== 'undefined' 
-    ? `${window.location.origin}/book/${userId}`
-    : `/book/${userId}`;
+    ? `${window.location.origin}/booking/${userId}`
+    : `/booking/${userId}`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(bookingUrl);
     setCopied(true);
-    toast.success('Booking link copied to clipboard!');
+    toast.success(`${config.bookingNoun} link copied to clipboard!`);
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -45,15 +48,14 @@ export function BookingLinkCard({ userId, businessName }: BookingLinkCardProps) 
               <Calendar className="h-5 w-5 text-purple-500" />
             </div>
             <div>
-              <CardTitle className="text-lg">Share Your Booking Link</CardTitle>
-              <CardDescription>Let clients book appointments directly</CardDescription>
+              <CardTitle className="text-lg">Share Your {config.bookingNoun} Link</CardTitle>
+              <CardDescription>Let clients book {config.bookingPluralNoun.toLowerCase()} directly</CardDescription>
             </div>
           </div>
           <Link2 className="h-5 w-5 text-muted-foreground" />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Booking URL Display */}
         <div className="flex gap-2">
           <div className="flex-1">
             <Input 
@@ -84,13 +86,12 @@ export function BookingLinkCard({ userId, businessName }: BookingLinkCardProps) 
           </Button>
         </div>
 
-        {/* Quick Info */}
         <div className="flex items-center justify-between pt-2 border-t border-border/50">
           <div className="text-sm text-muted-foreground">
             {businessName ? (
-              <span>Booking page for <span className="font-semibold text-foreground">{businessName}</span></span>
+              <span>{config.bookingNoun} page for <span className="font-semibold text-foreground">{businessName}</span></span>
             ) : (
-              <span>Your personal booking page</span>
+              <span>Your {config.bookingNoun.toLowerCase()} page</span>
             )}
           </div>
         </div>

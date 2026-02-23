@@ -21,6 +21,7 @@ import { HealthClinicWorkflowsTab } from '@/components/health-clinic/workflows/h
 import { HospitalWorkflowsTab } from '@/components/hospital/workflows/hospital-workflows-tab';
 import { TechnologyWorkflowsTab } from '@/components/technology/workflows/technology-workflows-tab';
 import { SportsClubWorkflowsTab } from '@/components/sports-club/workflows/sports-club-workflows-tab';
+import { RetailWorkflowsTab } from '@/components/retail/workflows/retail-workflows-tab';
 import { IndustryWorkflowsTab } from '@/components/workflows/industry-workflows-tab';
 
 /** Workflow tab component - either no props or industry prop for fallback */
@@ -41,6 +42,7 @@ export const WORKFLOW_TAB_REGISTRY: Partial<Record<Industry, WorkflowTabComponen
   HOSPITAL: HospitalWorkflowsTab,
   TECHNOLOGY: TechnologyWorkflowsTab,
   SPORTS_CLUB: SportsClubWorkflowsTab,
+  RETAIL: RetailWorkflowsTab,
 };
 
 /**

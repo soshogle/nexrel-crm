@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,8 +10,12 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { CalendarDays, Sparkles } from 'lucide-react'
+import { getIndustryBookingConfig } from '@/lib/industry-booking-config'
+import type { BookingField } from '@/lib/industry-booking-config'
 
 interface CreateAppointmentDialogProps {
   open: boolean
@@ -28,10 +33,16 @@ interface Lead {
 }
 
 export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate }: CreateAppointmentDialogProps) {
+  const { data: session } = useSession() || {}
+  const industry = (session?.user as any)?.industry || null
+  const config = getIndustryBookingConfig(industry)
+
   const [loading, setLoading] = useState(false)
   const [leads, setLeads] = useState<Lead[]>([])
   const [contacts, setContacts] = useState<Lead[]>([])
   const [contactType, setContactType] = useState<'lead' | 'contact'>('lead')
+  const [industryFields, setIndustryFields] = useState<Record<string, string>>({})
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -51,6 +62,7 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
     if (open) {
       fetchLeads()
       fetchContacts()
+      setIndustryFields({})
       if (initialDate) {
         const date = format(initialDate, 'yyyy-MM-dd')
         setFormData(prev => ({
@@ -67,14 +79,10 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
       const response = await fetch('/api/leads')
       if (response.ok) {
         const data = await response.json()
-        // API returns array directly, not wrapped in an object
-        const leadsArray = Array.isArray(data) ? data : (data.leads || [])
-        console.log('✅ Fetched leads:', leadsArray.length)
-        setLeads(leadsArray)
+        setLeads(Array.isArray(data) ? data : (data.leads || []))
       }
     } catch (error) {
-      console.error('❌ Error fetching leads:', error)
-      toast.error('Failed to load leads')
+      console.error('Error fetching leads:', error)
     }
   }
 
@@ -83,38 +91,32 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
       const response = await fetch('/api/contacts')
       if (response.ok) {
         const data = await response.json()
-        // API returns array directly, not wrapped in an object
-        const contactsArray = Array.isArray(data) ? data : (data.contacts || [])
-        console.log('✅ Fetched contacts:', contactsArray.length)
-        setContacts(contactsArray)
+        setContacts(Array.isArray(data) ? data : (data.contacts || []))
       }
     } catch (error) {
-      console.error('❌ Error fetching contacts:', error)
-      toast.error('Failed to load contacts')
+      console.error('Error fetching contacts:', error)
     }
+  }
+
+  const handleIndustryFieldChange = (fieldId: string, value: string) => {
+    setIndustryFields(prev => ({ ...prev, [fieldId]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validation: Check if lead or contact is selected
+
     const selectedId = contactType === 'lead' ? formData.leadId : formData.contactId
-    console.log('🔍 Validating selection:', { contactType, leadId: formData.leadId, contactId: formData.contactId, selectedId })
-    
     if (!selectedId || selectedId === '' || selectedId === 'none') {
-      toast.error(`Please select a ${contactType === 'lead' ? 'lead' : 'contact'} for this appointment`)
+      toast.error(`Please select a ${contactType} for this ${config.bookingNoun.toLowerCase()}`)
       return
     }
 
-    // Validation: Check if start time is in the past
     const startDate = new Date(formData.startTime)
-    const now = new Date()
-    if (startDate < now) {
-      toast.error('Cannot create an appointment in the past')
+    if (startDate < new Date()) {
+      toast.error(`Cannot create a ${config.bookingNoun.toLowerCase()} in the past`)
       return
     }
 
-    // Validation: Check if end time is after start time
     const endDate = new Date(formData.endTime)
     if (endDate <= startDate) {
       toast.error('End time must be after start time')
@@ -124,7 +126,6 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
     setLoading(true)
 
     try {
-      // Prepare data based on contact type - only send the relevant ID
       const appointmentData: any = {
         title: formData.title,
         description: formData.description,
@@ -135,15 +136,24 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
         requiresPayment: formData.requiresPayment,
         notes: formData.notes,
       }
-      
-      // Only include the selected ID type
+
       if (contactType === 'lead' && formData.leadId && formData.leadId !== 'none') {
         appointmentData.leadId = formData.leadId
       } else if (contactType === 'contact' && formData.contactId && formData.contactId !== 'none') {
         appointmentData.contactId = formData.contactId
       }
-      
-      console.log('📤 Sending appointment data:', appointmentData)
+
+      if (Object.keys(industryFields).length > 0) {
+        const fieldEntries = Object.entries(industryFields)
+          .filter(([, v]) => v && v !== 'none')
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('\n')
+        if (fieldEntries) {
+          appointmentData.notes = appointmentData.notes
+            ? `${appointmentData.notes}\n\n--- ${config.bookingNoun} Details ---\n${fieldEntries}`
+            : fieldEntries
+        }
+      }
 
       const response = await fetch('/api/appointments', {
         method: 'POST',
@@ -152,18 +162,17 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
       })
 
       if (response.ok) {
-        toast.success('Appointment created successfully')
+        toast.success(`${config.bookingNoun} created successfully`)
         onSuccess()
         onClose()
         resetForm()
       } else {
         const error = await response.json()
-        console.error('❌ API Error:', error)
-        toast.error(error.error || 'Failed to create appointment')
+        toast.error(error.error || `Failed to create ${config.bookingNoun.toLowerCase()}`)
       }
     } catch (error) {
-      console.error('❌ Error creating appointment:', error)
-      toast.error('Failed to create appointment')
+      console.error('Error creating appointment:', error)
+      toast.error(`Failed to create ${config.bookingNoun.toLowerCase()}`)
     } finally {
       setLoading(false)
     }
@@ -185,244 +194,283 @@ export function CreateAppointmentDialog({ open, onClose, onSuccess, initialDate 
       notes: '',
     })
     setContactType('lead')
+    setIndustryFields({})
   }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-900 border-purple-500/20">
         <DialogHeader>
-          <DialogTitle>Create New Appointment</DialogTitle>
+          <DialogTitle className="flex items-center gap-3 text-white">
+            <div className="h-9 w-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <CalendarDays className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <span>Create New {config.bookingNoun}</span>
+              {industry && (
+                <Badge variant="secondary" className="ml-2 text-[10px] bg-purple-500/10 text-purple-300 border-purple-500/20">
+                  {industry.replace(/_/g, ' ')}
+                </Badge>
+              )}
+            </div>
+          </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5 mt-2">
           <div className="grid grid-cols-2 gap-4">
+            {/* Title */}
             <div className="col-span-2">
-              <Label htmlFor="title">Title *</Label>
+              <Label className="text-purple-200 text-sm">Title *</Label>
               <Input
-                id="title"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Appointment title"
+                placeholder={`${config.bookingNoun} title`}
                 required
+                className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white placeholder:text-gray-500 focus:border-purple-500/50 focus:ring-purple-500/20"
               />
             </div>
 
+            {/* Description */}
             <div className="col-span-2">
-              <Label htmlFor="description">Description</Label>
+              <Label className="text-purple-200 text-sm">Description</Label>
               <Textarea
-                id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Appointment description"
-                rows={3}
+                placeholder={`${config.bookingNoun} description`}
+                rows={2}
+                className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white placeholder:text-gray-500 focus:border-purple-500/50 focus:ring-purple-500/20"
               />
             </div>
 
+            {/* Start / End Time */}
             <div>
-              <Label htmlFor="startTime">Start Time *</Label>
+              <Label className="text-purple-200 text-sm">Start Time *</Label>
               <Input
-                id="startTime"
                 type="datetime-local"
                 value={formData.startTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
                 min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
                 required
+                className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white focus:border-purple-500/50 focus:ring-purple-500/20"
               />
             </div>
-
             <div>
-              <Label htmlFor="endTime">End Time *</Label>
+              <Label className="text-purple-200 text-sm">End Time *</Label>
               <Input
-                id="endTime"
                 type="datetime-local"
                 value={formData.endTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
                 min={formData.startTime || format(new Date(), "yyyy-MM-dd'T'HH:mm")}
                 required
+                className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white focus:border-purple-500/50 focus:ring-purple-500/20"
               />
             </div>
 
+            {/* Meeting Type */}
             <div>
-              <Label htmlFor="meetingType">Meeting Type</Label>
-              <Select
-                value={formData.meetingType}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, meetingType: value }))}
-              >
-                <SelectTrigger>
+              <Label className="text-purple-200 text-sm">Meeting Type</Label>
+              <Select value={formData.meetingType} onValueChange={(value) => setFormData(prev => ({ ...prev, meetingType: value }))}>
+                <SelectTrigger className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="IN_PERSON">In Person</SelectItem>
-                  <SelectItem value="VIDEO_CALL">Video Call</SelectItem>
-                  <SelectItem value="PHONE_CALL">Phone Call</SelectItem>
+                <SelectContent className="bg-gray-900 border-gray-700">
+                  <SelectItem value="IN_PERSON" className="text-gray-200 focus:bg-purple-500/20 focus:text-white">In Person</SelectItem>
+                  <SelectItem value="VIDEO_CALL" className="text-gray-200 focus:bg-purple-500/20 focus:text-white">Video Call</SelectItem>
+                  <SelectItem value="PHONE_CALL" className="text-gray-200 focus:bg-purple-500/20 focus:text-white">Phone Call</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
+            {/* Location */}
             <div>
-              <Label htmlFor="location">Location</Label>
+              <Label className="text-purple-200 text-sm">Location</Label>
               <Input
-                id="location"
                 value={formData.location}
                 onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                 placeholder="Meeting location or link"
+                className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white placeholder:text-gray-500 focus:border-purple-500/50 focus:ring-purple-500/20"
               />
             </div>
 
+            {/* Contact Type Selector */}
             <div className="col-span-2">
-              <Label className="text-white">
-                Select Type <span className="text-red-500">*</span>
-              </Label>
-              <div className="flex gap-4 mb-3 mt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setContactType('lead')
-                    setFormData(prev => ({ ...prev, contactId: '', leadId: '' }))
-                  }}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-all ${
+              <Label className="text-purple-200 text-sm">Select Type <span className="text-red-400">*</span></Label>
+              <div className="flex gap-3 mt-2">
+                <button type="button" onClick={() => { setContactType('lead'); setFormData(prev => ({ ...prev, contactId: '', leadId: '' })) }}
+                  className={`flex-1 py-2.5 px-4 rounded-lg border-2 text-sm font-medium transition-all ${
                     contactType === 'lead'
-                      ? 'border-purple-500 bg-purple-500/10 text-white'
-                      : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
-                  }`}
-                >
+                      ? 'border-purple-500 bg-purple-500/10 text-white shadow-lg shadow-purple-500/10'
+                      : 'border-gray-700 bg-gray-800/50 text-gray-400 hover:border-gray-600'
+                  }`}>
                   Lead
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setContactType('contact')
-                    setFormData(prev => ({ ...prev, leadId: '', contactId: '' }))
-                  }}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-all ${
+                <button type="button" onClick={() => { setContactType('contact'); setFormData(prev => ({ ...prev, leadId: '', contactId: '' })) }}
+                  className={`flex-1 py-2.5 px-4 rounded-lg border-2 text-sm font-medium transition-all ${
                     contactType === 'contact'
-                      ? 'border-purple-500 bg-purple-500/10 text-white'
-                      : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
-                  }`}
-                >
+                      ? 'border-purple-500 bg-purple-500/10 text-white shadow-lg shadow-purple-500/10'
+                      : 'border-gray-700 bg-gray-800/50 text-gray-400 hover:border-gray-600'
+                  }`}>
                   Contact
                 </button>
               </div>
+            </div>
 
+            {/* Lead/Contact Select */}
+            <div className="col-span-2">
               {contactType === 'lead' ? (
                 <>
-                  <Label htmlFor="leadId" className="text-white">
-                    Select Lead <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    value={formData.leadId || "none"}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, leadId: value === "none" ? "" : value }))}
-                    required
-                  >
-                    <SelectTrigger className={!formData.leadId ? "border-red-500/50" : ""}>
+                  <Label className="text-purple-200 text-sm">Select Lead <span className="text-red-400">*</span></Label>
+                  <Select value={formData.leadId || "none"} onValueChange={(value) => setFormData(prev => ({ ...prev, leadId: value === "none" ? "" : value }))} required>
+                    <SelectTrigger className={`mt-1.5 bg-gray-800/50 border-gray-700/50 text-white ${!formData.leadId ? 'border-red-500/30' : ''}`}>
                       <SelectValue placeholder="Select a lead" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" disabled>
-                        {leads.length === 0 ? "No leads available" : "Select a lead"}
-                      </SelectItem>
+                    <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectItem value="none" disabled className="text-gray-500">{leads.length === 0 ? 'No leads available' : 'Select a lead'}</SelectItem>
                       {leads.map(lead => (
-                        <SelectItem key={lead.id} value={lead.id}>
+                        <SelectItem key={lead.id} value={lead.id} className="text-gray-200 focus:bg-purple-500/20 focus:text-white">
                           {lead.businessName || lead.contactPerson} - {lead.email}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {leads.length === 0 && (
-                    <p className="text-sm text-yellow-500 mt-1">
-                      ⚠️ No leads found. Please create a lead first.
-                    </p>
-                  )}
+                  {leads.length === 0 && <p className="text-xs text-yellow-400/80 mt-1.5">No leads found. Please create a lead first.</p>}
                 </>
               ) : (
                 <>
-                  <Label htmlFor="contactId" className="text-white">
-                    Select Contact <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    value={formData.contactId || "none"}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, contactId: value === "none" ? "" : value }))}
-                    required
-                  >
-                    <SelectTrigger className={!formData.contactId ? "border-red-500/50" : ""}>
+                  <Label className="text-purple-200 text-sm">Select Contact <span className="text-red-400">*</span></Label>
+                  <Select value={formData.contactId || "none"} onValueChange={(value) => setFormData(prev => ({ ...prev, contactId: value === "none" ? "" : value }))} required>
+                    <SelectTrigger className={`mt-1.5 bg-gray-800/50 border-gray-700/50 text-white ${!formData.contactId ? 'border-red-500/30' : ''}`}>
                       <SelectValue placeholder="Select a contact" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" disabled>
-                        {contacts.length === 0 ? "No contacts available" : "Select a contact"}
-                      </SelectItem>
+                    <SelectContent className="bg-gray-900 border-gray-700">
+                      <SelectItem value="none" disabled className="text-gray-500">{contacts.length === 0 ? 'No contacts available' : 'Select a contact'}</SelectItem>
                       {contacts.map(contact => (
-                        <SelectItem key={contact.id} value={contact.id}>
+                        <SelectItem key={contact.id} value={contact.id} className="text-gray-200 focus:bg-purple-500/20 focus:text-white">
                           {contact.businessName || contact.contactPerson} - {contact.email}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {contacts.length === 0 && (
-                    <p className="text-sm text-yellow-500 mt-1">
-                      ⚠️ No contacts found. Please create a contact first.
-                    </p>
-                  )}
+                  {contacts.length === 0 && <p className="text-xs text-yellow-400/80 mt-1.5">No contacts found. Please create a contact first.</p>}
                 </>
               )}
             </div>
 
+            {/* Industry-specific fields */}
+            {config.extraFields.length > 0 && (
+              <div className="col-span-2 space-y-4 rounded-xl bg-purple-500/5 border border-purple-500/15 p-4">
+                <h4 className="text-sm font-semibold text-purple-300 flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {config.bookingNoun} Details
+                </h4>
+                {config.extraFields.map((field) => (
+                  <IndustryFieldInDialog
+                    key={field.id}
+                    field={field}
+                    value={industryFields[field.id] || ''}
+                    onChange={(val) => handleIndustryFieldChange(field.id, val)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Reminder */}
             <div>
-              <Label htmlFor="reminderMinutes">Reminder (minutes before)</Label>
+              <Label className="text-purple-200 text-sm">Reminder (minutes before)</Label>
               <Input
-                id="reminderMinutes"
                 type="number"
                 value={formData.reminderMinutes}
                 onChange={(e) => setFormData(prev => ({ ...prev, reminderMinutes: e.target.value }))}
                 min="0"
+                className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white focus:border-purple-500/50 focus:ring-purple-500/20"
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Payment Toggle */}
+            <div className="flex items-center gap-3 pt-6">
               <Switch
                 id="requiresPayment"
                 checked={formData.requiresPayment}
                 onCheckedChange={(checked) => setFormData(prev => ({ ...prev, requiresPayment: checked }))}
               />
-              <Label htmlFor="requiresPayment" className="cursor-pointer">Requires Payment</Label>
+              <Label htmlFor="requiresPayment" className="cursor-pointer text-purple-200 text-sm">Requires Payment</Label>
             </div>
 
             {formData.requiresPayment && (
               <div className="col-span-2">
-                <Label htmlFor="paymentAmount">Payment Amount ($)</Label>
+                <Label className="text-purple-200 text-sm">Payment Amount ($)</Label>
                 <Input
-                  id="paymentAmount"
                   type="number"
                   step="0.01"
                   value={formData.paymentAmount}
                   onChange={(e) => setFormData(prev => ({ ...prev, paymentAmount: e.target.value }))}
                   placeholder="0.00"
+                  className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white placeholder:text-gray-500 focus:border-purple-500/50 focus:ring-purple-500/20"
                 />
               </div>
             )}
 
+            {/* Notes */}
             <div className="col-span-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label className="text-purple-200 text-sm">Notes</Label>
               <Textarea
-                id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Additional notes"
-                rows={3}
+                rows={2}
+                className="mt-1.5 bg-gray-800/50 border-gray-700/50 text-white placeholder:text-gray-500 focus:border-purple-500/50 focus:ring-purple-500/20"
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} className="border-gray-700 text-gray-300 hover:bg-gray-800">
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Appointment'}
+            <Button type="submit" disabled={loading} className="gradient-primary hover:opacity-90 text-white shadow-lg shadow-purple-500/30">
+              {loading ? 'Creating...' : `Create ${config.bookingNoun}`}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
   )
+}
+
+function IndustryFieldInDialog({ field, value, onChange }: { field: BookingField; value: string; onChange: (val: string) => void }) {
+  const labelSuffix = field.required ? ' *' : ''
+  const inputClass = 'mt-1 bg-gray-800/50 border-gray-700/50 text-white placeholder:text-gray-500 focus:border-purple-500/50 focus:ring-purple-500/20'
+
+  switch (field.type) {
+    case 'select':
+      return (
+        <div>
+          <Label className="text-purple-200/80 text-xs">{field.label}{labelSuffix}</Label>
+          <Select value={value} onValueChange={onChange}>
+            <SelectTrigger className={`${inputClass} mt-1`}>
+              <SelectValue placeholder={field.placeholder || `Select ${field.label.toLowerCase()}`} />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-900 border-gray-700">
+              {field.options?.map(opt => (
+                <SelectItem key={opt.value} value={opt.value} className="text-gray-200 focus:bg-purple-500/20 focus:text-white">{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )
+    case 'textarea':
+      return (
+        <div>
+          <Label className="text-purple-200/80 text-xs">{field.label}{labelSuffix}</Label>
+          <Textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} rows={2} className={inputClass} />
+        </div>
+      )
+    default:
+      return (
+        <div>
+          <Label className="text-purple-200/80 text-xs">{field.label}{labelSuffix}</Label>
+          <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className={inputClass} />
+        </div>
+      )
+  }
 }

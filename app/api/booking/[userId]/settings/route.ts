@@ -11,24 +11,33 @@ export async function GET(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const settings = await prisma.bookingSettings.findUnique({
-      where: { userId: params.userId },
-      select: {
-        businessName: true,
-        businessDescription: true,
-        slotDuration: true,
-        advanceBookingDays: true,
-        allowedMeetingTypes: true,
-        customMessage: true,
-        brandColor: true,
-      },
-    });
+    const [settings, user] = await Promise.all([
+      prisma.bookingSettings.findUnique({
+        where: { userId: params.userId },
+        select: {
+          businessName: true,
+          businessDescription: true,
+          slotDuration: true,
+          advanceBookingDays: true,
+          allowedMeetingTypes: true,
+          customMessage: true,
+          brandColor: true,
+        },
+      }),
+      prisma.user.findUnique({
+        where: { id: params.userId },
+        select: { industry: true },
+      }),
+    ]);
 
     if (!settings) {
       return apiErrors.notFound('Booking settings not found');
     }
 
-    return NextResponse.json({ settings });
+    return NextResponse.json({
+      settings,
+      industry: user?.industry || null,
+    });
   } catch (error: any) {
     console.error('Error fetching public booking settings:', error);
     return apiErrors.internal(error.message || 'Failed to fetch booking settings');

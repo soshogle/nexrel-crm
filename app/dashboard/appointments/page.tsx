@@ -1,30 +1,32 @@
 /**
- * Appointments Page - Monday.com style with tabs
+ * Appointments Page - Monday.com style with industry-aware terminology
  */
 
 'use client';
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Calendar, List, LayoutGrid, BarChart3, Plus, Loader2 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar, List, BarChart3, Plus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import MondayAppointments from '@/components/appointments/monday-appointments';
+import { getIndustryBookingConfig } from '@/lib/industry-booking-config';
 
 export default function AppointmentsPage() {
   const { data: session } = useSession() || {};
   const isAdmin = (session?.user as any)?.role === 'ADMIN' || (session?.user as any)?.role === 'SUPER_ADMIN';
+  const industry = (session?.user as any)?.industry || null;
+  const config = getIndustryBookingConfig(industry);
+
   const [view, setView] = useState<'board' | 'list' | 'calendar' | 'analytics'>('board');
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchAppointments();
-  }, []);
+  useEffect(() => { fetchAppointments(); }, []);
 
   const fetchAppointments = async () => {
     try {
@@ -37,50 +39,53 @@ export default function AppointmentsPage() {
     finally { setLoading(false); }
   };
 
-  // Analytics data
-  const stats = {
-    total: appointments.length,
-    scheduled: appointments.filter(a => a.status === 'SCHEDULED').length,
-    confirmed: appointments.filter(a => a.status === 'CONFIRMED').length,
-    completed: appointments.filter(a => a.status === 'COMPLETED').length,
-    cancelled: appointments.filter(a => ['CANCELLED', 'NO_SHOW'].includes(a.status)).length,
-    thisWeek: appointments.filter(a => {
-      const d = new Date(a.startTime);
-      const now = new Date();
-      const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-      return d >= weekStart;
-    }).length,
-  };
+  const stats = useMemo(() => {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+
+    return {
+      total: appointments.length,
+      scheduled: appointments.filter(a => a.status === 'SCHEDULED').length,
+      confirmed: appointments.filter(a => a.status === 'CONFIRMED').length,
+      completed: appointments.filter(a => a.status === 'COMPLETED').length,
+      cancelled: appointments.filter(a => ['CANCELLED', 'NO_SHOW'].includes(a.status)).length,
+      thisWeek: appointments.filter(a => {
+        try { return new Date(a.startTime) >= weekStart; } catch { return false; }
+      }).length,
+    };
+  }, [appointments]);
 
   return (
     <div className="min-h-screen bg-black">
       <div className="container mx-auto py-6 space-y-6">
-        {/* Soshogle Style Header */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold gradient-text flex items-center gap-3">
               <div className="h-12 w-12 rounded-xl gradient-primary flex items-center justify-center shadow-lg shadow-purple-500/20">
                 <Calendar className="h-6 w-6 text-white" />
               </div>
-              Appointments
+              {config.bookingPluralNoun}
             </h1>
-            <p className="text-purple-300/70 mt-2 text-sm">Manage your schedule and appointments</p>
+            <p className="text-purple-300/70 mt-2 text-sm">Manage your schedule and {config.bookingPluralNoun.toLowerCase()}</p>
           </div>
           {isAdmin && (
             <Button className="gradient-primary hover:opacity-90 text-white shadow-lg shadow-purple-500/30">
               <Plus className="h-4 w-4 mr-2" />
-              New Appointment
+              New {config.bookingNoun}
             </Button>
           )}
         </div>
 
-        {/* Soshogle Style Tabs */}
+        {/* Main Card */}
         <Card className="glass-effect border-purple-500/20 shadow-xl">
           <CardHeader className="border-b border-purple-500/20 pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-white text-xl">All Appointments</CardTitle>
-                <CardDescription className="text-purple-300/60">{appointments.length} appointments</CardDescription>
+                <CardTitle className="text-white text-xl">All {config.bookingPluralNoun}</CardTitle>
+                <CardDescription className="text-purple-300/60">{appointments.length} {config.bookingPluralNoun.toLowerCase()}</CardDescription>
               </div>
               <Tabs value={view} onValueChange={(v: any) => setView(v)}>
                 <TabsList className="bg-black/40 border border-purple-500/20">
@@ -110,7 +115,7 @@ export default function AppointmentsPage() {
             ) : view === 'list' ? (
               <div className="space-y-2">
                 {!Array.isArray(appointments) || appointments.length === 0 ? (
-                  <div className="text-center py-12 text-purple-300/50">No appointments</div>
+                  <div className="text-center py-12 text-purple-300/50">No {config.bookingPluralNoun.toLowerCase()}</div>
                 ) : (
                   appointments.map(apt => (
                     <div key={apt.id} className="flex items-center justify-between p-4 glass-effect rounded-lg border-purple-500/20 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 transition-all">
@@ -132,14 +137,16 @@ export default function AppointmentsPage() {
               </div>
             ) : view === 'calendar' ? (
               <div className="text-center py-12">
-                <Calendar className="h-16 w-16 mx-auto text-purple-400 mb-4" />
-                <p className="text-purple-300/60">Calendar view</p>
-                <Button variant="outline" className="mt-4 border-purple-500/40 text-purple-300 hover:border-purple-500 hover:text-purple-400 hover:bg-purple-500/10" asChild>
+                <div className="mx-auto h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center shadow-lg shadow-purple-500/20 mb-4">
+                  <Calendar className="h-8 w-8 text-white" />
+                </div>
+                <p className="text-purple-300/60 mb-4">View the full {config.bookingNoun.toLowerCase()} calendar</p>
+                <Button variant="outline" className="border-purple-500/40 text-purple-300 hover:border-purple-500 hover:text-purple-400 hover:bg-purple-500/10" asChild>
                   <Link href="/dashboard/calendar">Open Full Calendar</Link>
                 </Button>
               </div>
             ) : (
-              /* Analytics View */
+              /* Analytics */
               <div className="space-y-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="gradient-primary rounded-xl p-5 shadow-lg shadow-purple-500/20">
@@ -150,9 +157,9 @@ export default function AppointmentsPage() {
                     <div className="text-3xl font-bold text-white">{stats.confirmed}</div>
                     <div className="text-green-100 text-sm">Confirmed</div>
                   </div>
-                  <div className="gradient-primary rounded-xl p-5 shadow-lg shadow-purple-500/20">
+                  <div className="bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl p-5 shadow-lg shadow-blue-500/20">
                     <div className="text-3xl font-bold text-white">{stats.completed}</div>
-                    <div className="text-purple-100 text-sm">Completed</div>
+                    <div className="text-blue-100 text-sm">Completed</div>
                   </div>
                   <div className="bg-gradient-to-br from-red-500 to-rose-500 rounded-xl p-5 shadow-lg shadow-red-500/20">
                     <div className="text-3xl font-bold text-white">{stats.cancelled}</div>
@@ -168,8 +175,8 @@ export default function AppointmentsPage() {
                         {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
                       </div>
                       <div className="flex-1 h-4 bg-black/40 rounded-full overflow-hidden border border-purple-500/20">
-                        <div 
-                          className="h-full gradient-primary rounded-full"
+                        <div
+                          className="h-full gradient-primary rounded-full transition-all duration-700"
                           style={{ width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%` }}
                         />
                       </div>
@@ -178,7 +185,7 @@ export default function AppointmentsPage() {
                   <div className="glass-effect rounded-xl p-6 border-purple-500/20">
                     <h3 className="text-lg font-semibold text-white mb-4">This Week</h3>
                     <div className="text-4xl font-bold gradient-text">{stats.thisWeek}</div>
-                    <div className="text-purple-300/60 text-sm">appointments scheduled</div>
+                    <div className="text-purple-300/60 text-sm">{config.bookingPluralNoun.toLowerCase()} scheduled</div>
                   </div>
                 </div>
               </div>

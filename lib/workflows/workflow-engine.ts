@@ -220,47 +220,55 @@ async function processNextTask(instanceId: string, db: ReturnType<typeof getCrmD
 
   if (!instance) return;
 
-  // Find next pending task
   const completedTaskIds = new Set(
     instance.executions
       .filter(e => e.status === TaskExecutionStatus.COMPLETED)
       .map(e => e.taskId)
   );
+  const processedTaskIds = new Set(
+    instance.executions
+      .filter(e => e.status !== TaskExecutionStatus.PENDING)
+      .map(e => e.taskId)
+  );
 
-  const nextTask = instance.template.tasks.find(
-    task => !completedTaskIds.has(task.id) && 
+  // Find ALL eligible next tasks (supports fan-out for What If branches)
+  const eligibleTasks = instance.template.tasks.filter(
+    task => !processedTaskIds.has(task.id) &&
     (!task.parentTaskId || completedTaskIds.has(task.parentTaskId))
   );
 
-  if (!nextTask) {
-    // All tasks completed
-    await db.workflowInstance.update({
-      where: { id: instanceId },
-      data: {
-        status: WorkflowInstanceStatus.COMPLETED,
-        completedAt: new Date(),
-      },
-    });
+  if (eligibleTasks.length === 0) {
+    const allDone = instance.template.tasks.every(t => processedTaskIds.has(t.id));
+    if (allDone) {
+      await db.workflowInstance.update({
+        where: { id: instanceId },
+        data: {
+          status: WorkflowInstanceStatus.COMPLETED,
+          completedAt: new Date(),
+        },
+      });
+    }
     return;
   }
 
-  // Find or create execution for next task
-  let nextExecution = instance.executions.find(e => e.taskId === nextTask.id);
+  // Process all eligible tasks (fan-out for What If branches)
+  for (const nextTask of eligibleTasks) {
+    let nextExecution = instance.executions.find(e => e.taskId === nextTask.id);
 
-  if (!nextExecution) {
-    nextExecution = await db.taskExecution.create({
-      data: {
-        instanceId,
-        taskId: nextTask.id,
-        status: TaskExecutionStatus.PENDING,
-        scheduledFor: calculateScheduledTime(nextTask.delayValue, nextTask.delayUnit),
-      },
-    });
-  }
+    if (!nextExecution) {
+      nextExecution = await db.taskExecution.create({
+        data: {
+          instanceId,
+          taskId: nextTask.id,
+          status: TaskExecutionStatus.PENDING,
+          scheduledFor: calculateScheduledTime(nextTask.delayValue, nextTask.delayUnit),
+        },
+      });
+    }
 
-  // Process if scheduled time has passed
-  if (!nextExecution.scheduledFor || nextExecution.scheduledFor <= new Date()) {
-    await processTaskExecution(nextExecution.id);
+    if (!nextExecution.scheduledFor || nextExecution.scheduledFor <= new Date()) {
+      await processTaskExecution(nextExecution.id);
+    }
   }
 }
 

@@ -352,17 +352,24 @@ export function WorkflowCanvas({
     }
     
     // Draw branch connections (from parent to child tasks)
+    const decisionParents = new Set<string>();
     sortedTasks.forEach((task) => {
       if (task.parentTaskId) {
         const parentTask = tasks.find(t => t.id === task.parentTaskId);
         if (!parentTask) return;
-        
+        decisionParents.add(parentTask.id);
+
         const parentPos = getActualPosition(parentTask);
         const childPos = getActualPosition(task);
         
         const isHovered = hoveredTaskId === parentTask.id || hoveredTaskId === task.id;
+        const isWhatIf = task.isWhatIfBranch;
         
-        // Branch lines use curved path with green color
+        // What If branches: amber/orange; regular branches: green
+        const strokeColor = isWhatIf
+          ? (isHovered ? 'rgba(245, 158, 11, 0.8)' : 'rgba(245, 158, 11, 0.5)')
+          : (isHovered ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.4)');
+
         const midX = (parentPos.x + childPos.x) / 2;
         const midY = (parentPos.y + childPos.y) / 2;
         const ctrlX = midX;
@@ -372,9 +379,9 @@ export function WorkflowCanvas({
           <motion.path
             key={`branch-${parentTask.id}-${task.id}`}
             d={`M ${parentPos.x} ${parentPos.y} Q ${ctrlX} ${ctrlY} ${childPos.x} ${childPos.y}`}
-            stroke={isHovered ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.4)'}
+            stroke={strokeColor}
             strokeWidth={isHovered ? '2.5' : '2'}
-            strokeDasharray="4 4"
+            strokeDasharray={isWhatIf ? '6 3' : '4 4'}
             fill="none"
             className="transition-all duration-300"
             initial={{ pathLength: 0, opacity: 0 }}
@@ -382,7 +389,66 @@ export function WorkflowCanvas({
             transition={{ duration: 0.6, delay: 0.2 }}
           />
         );
+
+        // Condition label on the branch line
+        if (task.branchCondition) {
+          const bc = task.branchCondition;
+          const labelField = bc.field === 'custom' ? (bc.customFieldName || 'custom') : bc.field;
+          const labelText = (bc.operator === 'is_empty' || bc.operator === 'is_not_empty')
+            ? `${labelField} ${bc.operator.replace('_', ' ')}`
+            : `${labelField} ${bc.operator.replace('_', ' ')} ${bc.value}`;
+          const truncLabel = labelText.length > 24 ? labelText.slice(0, 22) + '...' : labelText;
+          const labelX = ctrlX;
+          const labelY = ctrlY - 4;
+
+          lines.push(
+            <g key={`branch-label-${parentTask.id}-${task.id}`}>
+              <rect
+                x={labelX - truncLabel.length * 3.2}
+                y={labelY - 10}
+                width={truncLabel.length * 6.4}
+                height={16}
+                rx={4}
+                fill={isWhatIf ? 'rgba(254, 243, 199, 0.95)' : 'rgba(220, 252, 231, 0.95)'}
+                stroke={isWhatIf ? 'rgba(245, 158, 11, 0.4)' : 'rgba(34, 197, 94, 0.3)'}
+                strokeWidth="1"
+              />
+              <text
+                x={labelX}
+                y={labelY + 1}
+                textAnchor="middle"
+                fontSize="9"
+                fontWeight="600"
+                fill={isWhatIf ? '#92400e' : '#166534'}
+                className="select-none pointer-events-none"
+              >
+                {truncLabel}
+              </text>
+            </g>
+          );
+        }
       }
+    });
+
+    // Decision diamond at parent nodes that have What If branches
+    decisionParents.forEach((parentId) => {
+      const parentTask = tasks.find(t => t.id === parentId);
+      if (!parentTask) return;
+      const pos = getActualPosition(parentTask);
+      const dy = 48;
+      const size = 10;
+      lines.push(
+        <motion.polygon
+          key={`decision-diamond-${parentId}`}
+          points={`${pos.x},${pos.y + dy - size} ${pos.x + size},${pos.y + dy} ${pos.x},${pos.y + dy + size} ${pos.x - size},${pos.y + dy}`}
+          fill="rgba(245, 158, 11, 0.9)"
+          stroke="white"
+          strokeWidth="2"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+        />
+      );
     });
     
     return lines;
@@ -425,6 +491,8 @@ export function WorkflowCanvas({
           const icon = getTaskTypeIcon(industry, task.taskType);
           const color = getTaskTypeColor(industry, task.taskType);
           
+          const whatIfBranchCount = tasks.filter(t => t.parentTaskId === task.id).length;
+
           return (
             <TaskNode
               key={task.id}
@@ -434,6 +502,7 @@ export function WorkflowCanvas({
               isSelected={selectedTaskId === task.id}
               isDragging={isDragging}
               position={position}
+              whatIfBranchCount={whatIfBranchCount}
               onSelect={() => onSelectTask(task.id)}
               onDragStart={(e) => handleDragStart(task.id, e)}
               onHover={() => setHoveredTaskId(task.id)}

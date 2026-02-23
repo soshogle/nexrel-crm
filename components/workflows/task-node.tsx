@@ -8,7 +8,7 @@
 import React from 'react';
 import { WorkflowTask } from './types';
 import { cn } from '@/lib/utils';
-import { GripVertical, Shield, Clock, GitBranch } from 'lucide-react';
+import { GripVertical, Shield, Clock, GitBranch, Diamond } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface TaskNodeProps {
@@ -18,6 +18,7 @@ interface TaskNodeProps {
   isSelected: boolean;
   isDragging: boolean;
   position: { x: number; y: number };
+  whatIfBranchCount?: number;
   onSelect: () => void;
   onDragStart: (e: React.MouseEvent) => void;
   onHover?: () => void;
@@ -31,12 +32,14 @@ export function TaskNode({
   isSelected,
   isDragging,
   position,
+  whatIfBranchCount = 0,
   onSelect,
   onDragStart,
   onHover,
   onHoverEnd,
 }: TaskNodeProps) {
   const hasBranching = task.parentTaskId !== null && task.parentTaskId !== undefined;
+  const isDecisionPoint = whatIfBranchCount > 0;
   
   return (
     <motion.div
@@ -122,7 +125,7 @@ export function TaskNode({
           </motion.div>
         )}
         
-        {/* Branching Indicator */}
+        {/* Branching Indicator (this task is a child of another) */}
         {hasBranching && (
           <motion.div 
             className="absolute -top-1 -left-1 bg-gradient-to-br from-green-500 to-green-600 rounded-full p-1.5 shadow-lg border-2 border-white"
@@ -131,6 +134,20 @@ export function TaskNode({
             transition={{ delay: 0.4 }}
           >
             <GitBranch className="w-3.5 h-3.5 text-white" />
+          </motion.div>
+        )}
+
+        {/* Decision Point Indicator (this task has What If branches) */}
+        {isDecisionPoint && (
+          <motion.div 
+            className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-md p-1 shadow-lg border-2 border-white flex items-center gap-0.5"
+            style={{ transform: 'translateX(-50%) rotate(0deg)' }}
+            initial={{ scale: 0, y: 5 }}
+            animate={{ scale: 1, y: 0 }}
+            transition={{ delay: 0.5, type: 'spring', stiffness: 400 }}
+          >
+            <Diamond className="w-3 h-3 text-white" />
+            <span className="text-[9px] font-bold text-white leading-none">{whatIfBranchCount}</span>
           </motion.div>
         )}
       </motion.div>
@@ -150,6 +167,18 @@ export function TaskNode({
         <div className="line-clamp-2">{task.name}</div>
       </motion.div>
       
+      {/* What If Branch Badge */}
+      {task.isWhatIfBranch && (
+        <motion.div
+          className="mt-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 border border-amber-300 text-amber-700"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.15 }}
+        >
+          What If
+        </motion.div>
+      )}
+
       {/* Agent Name */}
       {task.assignedAgentName && (
         <motion.div

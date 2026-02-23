@@ -136,6 +136,7 @@ export const WorkflowBuilder = forwardRef<WorkflowBuilderHandle, WorkflowBuilder
         variantOf: task.variantOf ?? null,
         parentTaskId: task.parentTaskId ?? null,
         branchCondition: task.branchCondition ?? null,
+        isWhatIfBranch: task.isWhatIfBranch || false,
         actionConfig: task.actionConfig || { actions: [] },
       };
     }),
@@ -432,6 +433,14 @@ export const WorkflowBuilder = forwardRef<WorkflowBuilderHandle, WorkflowBuilder
     setShowNewTaskDialog(false);
     setSelectedTaskId(newTask.id);
     toast.success('Task added');
+  };
+
+  const handleCreateWhatIfTask = (newTask: WorkflowTask) => {
+    if (!workflow) return;
+    setHasUnsavedChanges(true);
+    const currentTasks = workflow.tasks || [];
+    setWorkflow({ ...workflow, tasks: [...currentTasks, newTask] });
+    toast.success(`What If branch created: ${newTask.name}`);
   };
   
   // Revert - show confirmation, then clear to empty canvas (stay on screen)
@@ -807,6 +816,7 @@ export const WorkflowBuilder = forwardRef<WorkflowBuilderHandle, WorkflowBuilder
             onClose={() => setSelectedTaskId(null)}
             onSave={handleUpdateTask}
             onDelete={handleDeleteTask}
+            onCreateWhatIfTask={handleCreateWhatIfTask}
           />
         )}
       </div>
