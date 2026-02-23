@@ -1,7 +1,6 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
 import { elevenLabsService } from '@/lib/elevenlabs';
+import { resolveVoiceAgentByPhone } from '@/lib/dal';
 import { enhancedCallHandler } from '@/lib/integrations/enhanced-call-handler';
 
 export const dynamic = 'force-dynamic';
@@ -25,13 +24,9 @@ export async function POST(request: NextRequest) {
 
     console.log('  📋 Call Details:', { callSid, from, to, callStatus });
 
-    // Find the voice agent
-    const voiceAgent = await prisma.voiceAgent.findFirst({
-      where: { twilioPhoneNumber: to },
-      include: { user: true },
-    });
-
-    if (!voiceAgent) {
+    // Find the voice agent (searches default + industry DBs)
+    const resolved = await resolveVoiceAgentByPhone(to);
+    if (!resolved) {
       console.error('❌ No voice agent found for number:', to);
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -41,6 +36,7 @@ export async function POST(request: NextRequest) {
       return new NextResponse(twiml, { headers: { 'Content-Type': 'text/xml' } });
     }
 
+    const { voiceAgent, db } = resolved;
     if (!voiceAgent.elevenLabsAgentId) {
       console.error('❌ No ElevenLabs agent ID configured for voice agent:', voiceAgent.name);
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -54,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Enhanced call handling with screen pop
     let callLog;
     if (voiceAgent.type === 'INBOUND') {
-      // Match patient and create enhanced call log
+      // Match patient and create enhanced call log (db = same DB as VoiceAgent)
       const result = await enhancedCallHandler.handleIncomingCall(
         {
           callSid,
@@ -64,7 +60,8 @@ export async function POST(request: NextRequest) {
           status: 'ringing',
           timestamp: new Date(),
         },
-        voiceAgent.userId, // Pass userId for workflow triggering
+        voiceAgent.userId,
+        db,
         undefined // clinicId would come from voiceAgent if available
       );
       callLog = result.callLog;
@@ -86,8 +83,8 @@ export async function POST(request: NextRequest) {
         console.log('✅ Screen pop sent for patient:', result.patientMatch.patientName);
       }
     } else {
-      // Outbound call - simpler logging
-      callLog = await prisma.callLog.create({
+      // Outbound call - simpler logging (db = same DB as VoiceAgent)
+      callLog = await db.callLog.create({
         data: {
           voiceAgentId: voiceAgent.id,
           userId: voiceAgent.userId,

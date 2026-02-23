@@ -25,4 +25,9 @@ export { reviewService } from './review-service';
 export { channelConnectionService } from './channel-connection-service';
 export { smsCampaignService } from './sms-campaign-service';
 export { paymentService } from './payment-service';
+export {
+  resolveVoiceAgentByPhone,
+  resolveCallLogBySid,
+  resolveCallLogByConversationId,
+} from './resolve-voice-agent-db';
 export type { DalContext, Industry } from './types';

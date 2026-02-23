@@ -208,10 +208,10 @@ export function NewLeadForm() {
                     <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="website"
-                      type="url"
+                      type="text"
                       value={formData.website}
                       onChange={(e) => handleInputChange('website', e.target.value)}
-                      placeholder="Enter website URL"
+                      placeholder="domain.com, www.domain.com, or https://..."
                       className="pl-10"
                     />
                   </div>

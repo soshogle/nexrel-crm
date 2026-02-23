@@ -5,6 +5,30 @@
 
 import { z } from 'zod';
 
+// ─── Website URL (flexible: domain.com, www.domain.com, https://domain.com) ───
+
+const WEBSITE_REGEX = /^(https?:\/\/)?(www\.)?[\w.-]+\.[a-zA-Z]{2,}([\/\w.-]*)?$/i;
+
+function isValidWebsite(val: string): boolean {
+  if (!val || !val.trim()) return true;
+  return WEBSITE_REGEX.test(val.trim());
+}
+
+/** Normalize website for storage: add https:// when missing */
+export function normalizeWebsite(val: string): string {
+  const s = (val || '').trim();
+  if (!s) return '';
+  if (/^https?:\/\//i.test(s)) return s;
+  return `https://${s}`;
+}
+
+export const websiteSchema = z
+  .string()
+  .optional()
+  .default('')
+  .refine(isValidWebsite, { message: 'Please enter a valid website (e.g. domain.com, www.domain.com, or https://domain.com)' })
+  .transform(normalizeWebsite);
+
 // ─── Leads ───────────────────────────────────────────────────────────────────
 
 const LEAD_STATUSES = ['NEW', 'CONTACTED', 'RESPONDED', 'QUALIFIED', 'CONVERTED', 'LOST'] as const;
@@ -15,7 +39,7 @@ export const LeadCreateBodySchema = z
     contactPerson: z.string().optional().default(''),
     email: z.union([z.string().email(), z.literal('')]).optional().default(''),
     phone: z.string().max(50).optional().default(''),
-    website: z.union([z.string().url(), z.literal('')]).optional().default(''),
+    website: websiteSchema,
     address: z.string().max(500).optional().default(''),
     city: z.string().max(100).optional().default(''),
     state: z.string().max(100).optional().default(''),

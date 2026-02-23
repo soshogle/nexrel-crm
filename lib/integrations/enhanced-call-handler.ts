@@ -4,8 +4,7 @@
  * Features: Screen pops, patient matching, call routing, workflow automation
  */
 
-import { createDalContext } from '@/lib/context/industry-context';
-import { getCrmDb, leadService } from '@/lib/dal';
+import type { PrismaClient } from '@prisma/client';
 import { elevenLabsService } from '@/lib/elevenlabs';
 import {
   triggerIncomingCallWorkflow,
@@ -36,15 +35,14 @@ export class EnhancedCallHandler {
   /**
    * Match incoming call to patient record
    * This is the "screen pop" functionality
+   * @param crmDb - CRM db for this user (industry-aware) for lead lookup
    */
-  async matchPatientToCall(phoneNumber: string): Promise<PatientMatch | null> {
+  async matchPatientToCall(phoneNumber: string, crmDb: PrismaClient): Promise<PatientMatch | null> {
     try {
       // Normalize phone number (remove formatting)
       const normalized = phoneNumber.replace(/\D/g, '');
-      
-      const db = getCrmDb(createDalContext(''));
       // Try exact match first (no userId - matching by phone across users for screen pop)
-      let lead = await db.lead.findFirst({
+      let lead = await crmDb.lead.findFirst({
         where: {
           phone: {
             contains: normalized.slice(-10), // Last 10 digits
@@ -68,7 +66,7 @@ export class EnhancedCallHandler {
         ];
 
         for (const variant of variations) {
-          lead = await db.lead.findFirst({
+          lead = await crmDb.lead.findFirst({
             where: {
               OR: [
                 { phone: { contains: variant } },
@@ -91,7 +89,7 @@ export class EnhancedCallHandler {
       }
 
       // Get recent appointments
-      const appointments = await db.bookingAppointment.findMany({
+      const appointments = await crmDb.bookingAppointment.findMany({
         where: {
           leadId: lead.id,
         },
@@ -129,14 +127,14 @@ export class EnhancedCallHandler {
 
   /**
    * Handle incoming call with screen pop
+   * @param crmDb - CRM db for this user (industry-aware) - same DB as VoiceAgent for CallLog FK
    */
-  async handleIncomingCall(callEvent: CallEvent, userId: string, clinicId?: string) {
+  async handleIncomingCall(callEvent: CallEvent, userId: string, crmDb: PrismaClient, clinicId?: string) {
     // Match patient
-    const patientMatch = await this.matchPatientToCall(callEvent.fromNumber);
+    const patientMatch = await this.matchPatientToCall(callEvent.fromNumber, crmDb);
 
-    const db = getCrmDb(createDalContext(userId));
-    // Create call log with patient match
-    const callLog = await db.callLog.create({
+    // Create call log with patient match (crmDb = same DB as VoiceAgent)
+    const callLog = await crmDb.callLog.create({
       data: {
         userId,
         twilioCallSid: callEvent.callSid,

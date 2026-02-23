@@ -5,6 +5,7 @@ import { processReferralTriggers } from '@/lib/referral-triggers';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 import { apiErrors } from '@/lib/api-error';
 import { syncLeadCreatedToPipeline } from '@/lib/lead-pipeline-sync';
+import { websiteSchema } from '@/lib/api-validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -62,12 +63,14 @@ export async function POST(request: NextRequest) {
       if (found) referrerLead = { id: found.id };
     }
 
+    const websiteVal = website ? (() => { const r = websiteSchema.safeParse(website); return r.success ? (r.data || null) : null; })() : null;
+
     const lead = await leadService.create(ctx, {
       businessName: businessName || contactPerson || 'Unknown Business',
       contactPerson: contactPerson || null,
       email: email || null,
       phone: phone || null,
-      website: website || null,
+      website: websiteVal || null,
       address: address || null,
       city: city || null,
       source: referrerLead ? 'referral' : 'Embedded Widget',

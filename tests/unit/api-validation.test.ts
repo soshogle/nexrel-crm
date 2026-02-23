@@ -162,6 +162,20 @@ describe('api-validation', () => {
       });
       expect(result.success).toBe(false);
     });
+
+    it('accepts flexible website formats (domain.com, www.domain.com, https://...)', () => {
+      for (const website of ['domain.com', 'www.soshogle.com', 'https://www.example.com', 'http://example.com', '']) {
+        const result = LeadCreateBodySchema.safeParse({
+          businessName: 'Acme',
+          contactPerson: 'John',
+          website,
+        });
+        expect(result.success).toBe(true);
+        if (result.success && website) {
+          expect(result.data.website).toMatch(/^https?:\/\//);
+        }
+      }
+    });
   });
 
   describe('LeadsGetQuerySchema', () => {

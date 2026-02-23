@@ -1,9 +1,14 @@
+import type { PrismaClient } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { emailService } from '@/lib/email-service';
 import { createDalContext } from '@/lib/context/industry-context';
-import { leadService } from '@/lib/dal/lead-service';
-import { noteService } from '@/lib/dal/note-service';
+import {
+  resolveVoiceAgentByPhone,
+  resolveCallLogBySid,
+  leadService,
+  noteService,
+} from '@/lib/dal';
 import {
   triggerCallCompletedWorkflow,
   triggerMissedCallWorkflow,
@@ -39,23 +44,20 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Missing CallSid');
     }
 
-    // Find the call log by Twilio SID
-    let callLog = await prisma.callLog.findFirst({
-      where: { twilioCallSid: callSid },
-    });
+    // Find the call log by Twilio SID (searches default + industry DBs)
+    let resolved = await resolveCallLogBySid(callSid);
+    let callLog = resolved?.callLog ?? null;
+    let db = resolved?.db ?? null;
 
     // If no call log exists, create it (for Native ElevenLabs Integration)
     if (!callLog) {
       console.log('🆕 [Twilio Call Status] Creating new call log for Native Integration');
       console.log('   Status:', callStatus);
-      
-      // Find the voice agent for this phone number
-      const voiceAgent = await prisma.voiceAgent.findFirst({
-        where: { twilioPhoneNumber: to },
-      });
 
-      if (voiceAgent) {
-        callLog = await prisma.callLog.create({
+      const voiceResolved = await resolveVoiceAgentByPhone(to);
+      if (voiceResolved) {
+        const { voiceAgent, db: voiceDb } = voiceResolved;
+        callLog = await voiceDb.callLog.create({
           data: {
             voiceAgentId: voiceAgent.id,
             userId: voiceAgent.userId,
@@ -66,6 +68,7 @@ export async function POST(request: NextRequest) {
             status: 'INITIATED',
           },
         });
+        db = voiceDb;
         console.log('✅ [Twilio Call Status] Call log created:', callLog.id);
       } else {
         console.warn('⚠️  [Twilio Call Status] No voice agent found for number:', to);
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!callLog) {
+    if (!callLog || !db) {
       console.warn('⚠️  [Twilio Call Status] Call log not found for SID:', callSid);
       return NextResponse.json({ message: 'Call log not found' }, { status: 404 });
     }
@@ -107,7 +110,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update call log
-    const updatedCallLog = await prisma.callLog.update({
+    const updatedCallLog = await db.callLog.update({
       where: { id: callLog.id },
       data: {
         status,
@@ -143,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     // Update related outbound call
     if (callLog.id) {
-      await prisma.outboundCall.updateMany({
+      await db.outboundCall.updateMany({
         where: { callLogId: callLog.id },
         data: {
           status: outboundStatus,
@@ -165,7 +168,7 @@ export async function POST(request: NextRequest) {
       
       // Fire-and-forget: schedule the ElevenLabs fetch as a background task
       // Don't await this - respond to Twilio immediately to avoid timeout
-      scheduleElevenLabsFetch(callLog.id, callDuration || '0', from || '', to || '');
+      scheduleElevenLabsFetch(db, callLog.id, callDuration || '0', from || '', to || '');
     }
 
     console.log('✅ [Twilio Call Status] Webhook processed:', callLog.id);
@@ -182,9 +185,10 @@ export async function POST(request: NextRequest) {
  * Runs independently from the webhook response to avoid timeout issues
  */
 async function scheduleElevenLabsFetch(
-  callLogId: string, 
-  callDuration: string, 
-  from: string, 
+  db: PrismaClient,
+  callLogId: string,
+  callDuration: string,
+  from: string,
   to: string
 ) {
   // Initial delay to allow ElevenLabs to process the call
@@ -204,7 +208,7 @@ async function scheduleElevenLabsFetch(
     console.log(`🔄 [ElevenLabs Fetch] Attempt ${attempt}/${MAX_ATTEMPTS} for call ${callLogId}`);
     
     try {
-      success = await fetchAndProcessElevenLabsData(callLogId, callDuration, from, to);
+      success = await fetchAndProcessElevenLabsData(db, callLogId, callDuration, from, to);
       
       if (!success && attempt < MAX_ATTEMPTS) {
         const delay = RETRY_DELAYS_MS[attempt - 1];
@@ -230,6 +234,7 @@ async function scheduleElevenLabsFetch(
  * Returns true if successful, false if no match found
  */
 async function fetchAndProcessElevenLabsData(
+  db: PrismaClient,
   callLogId: string,
   callDuration: string,
   from: string,
@@ -237,7 +242,7 @@ async function fetchAndProcessElevenLabsData(
 ): Promise<boolean> {
   try {
     // Get the call log to verify it hasn't been processed yet
-    const callLog = await prisma.callLog.findUnique({
+    const callLog = await db.callLog.findUnique({
       where: { id: callLogId },
       select: { 
         id: true, 
@@ -369,7 +374,7 @@ async function fetchAndProcessElevenLabsData(
     }
 
     // Update call log with ElevenLabs data
-    await prisma.callLog.update({
+    await db.callLog.update({
       where: { id: callLog.id },
       data: {
         elevenLabsConversationId: conversationId,
@@ -389,6 +394,7 @@ async function fetchAndProcessElevenLabsData(
     // Send email notification to business owner
     try {
       await sendEmailNotification(
+        db,
         callLog.id,
         callLog.voiceAgentId || '',
         from,
@@ -413,6 +419,7 @@ async function fetchAndProcessElevenLabsData(
  * Send email notification to business owner about the call
  */
 async function sendEmailNotification(
+  db: PrismaClient,
   callLogId: string,
   voiceAgentId: string,
   from: string,
@@ -422,11 +429,11 @@ async function sendEmailNotification(
   conversationDetails: any
 ) {
   console.log('📧 [Email Notification] Preparing email notification...');
-  
-  // Get voice agent and user details
-  const voiceAgent = await prisma.voiceAgent.findUnique({
+
+  // Get voice agent and user details (same db as CallLog)
+  const voiceAgent = await db.voiceAgent.findUnique({
     where: { id: voiceAgentId },
-    include: { user: { select: { email: true, name: true } } }
+    include: { user: { select: { email: true, name: true, industry: true } } }
   });
 
   if (!voiceAgent) {
@@ -453,7 +460,7 @@ async function sendEmailNotification(
   }
 
   // Get call log for createdAt
-  const callLog = await prisma.callLog.findUnique({
+  const callLog = await db.callLog.findUnique({
     where: { id: callLogId },
     select: { createdAt: true }
   });
@@ -483,7 +490,7 @@ async function sendEmailNotification(
   // Try to find caller in Leads database by phone number
   let callerName = from || 'Unknown';
   let callerEmail: string | undefined;
-  const ctx = createDalContext(voiceAgent.userId);
+  const ctx = createDalContext(voiceAgent.userId, voiceAgent.user?.industry ?? undefined);
 
   try {
     // Clean phone number for matching (remove +, spaces, dashes)
@@ -588,7 +595,7 @@ async function sendEmailNotification(
 
   if (emailSent) {
     // Mark email as sent in the database
-    await prisma.callLog.update({
+    await db.callLog.update({
       where: { id: callLogId },
       data: { emailSent: true, emailSentAt: new Date() }
     });

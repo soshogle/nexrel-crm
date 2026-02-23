@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
@@ -26,10 +28,13 @@ export async function GET(request: NextRequest) {
       return apiErrors.notFound('User not found');
     }
 
+    const ctx = getDalContextFromSession(session);
+    const db = ctx ? getCrmDb(ctx) : prisma;
+
     const pagination = parsePagination(request);
 
     // Get or create default pipeline
-    let pipelines = await prisma.pipeline.findMany({
+    let pipelines = await db.pipeline.findMany({
       where: { userId: user.id },
       include: {
         stages: {
@@ -66,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     // Create default pipeline if none exists
     if (pipelines.length === 0) {
-      const defaultPipeline = await prisma.pipeline.create({
+      const defaultPipeline = await db.pipeline.create({
         data: {
           name: 'Default Pipeline',
           description: 'Your default sales pipeline',
@@ -113,7 +118,7 @@ export async function GET(request: NextRequest) {
       })),
     }));
 
-    const total = await prisma.pipeline.count({ where: { userId: user.id } });
+    const total = await db.pipeline.count({ where: { userId: user.id } });
     return paginatedResponse(pipelinesWithParsedTags, total, pagination, 'pipelines');
   } catch (error) {
     console.error('Error fetching pipelines:', error);
@@ -139,7 +144,10 @@ export async function POST(request: NextRequest) {
 
     const { name, description, color, stages } = await request.json();
 
-    const pipeline = await prisma.pipeline.create({
+    const ctx = getDalContextFromSession(session);
+    const db = ctx ? getCrmDb(ctx) : prisma;
+
+    const pipeline = await db.pipeline.create({
       data: {
         name,
         description,

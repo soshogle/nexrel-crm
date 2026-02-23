@@ -3,13 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// GET /api/calls - List call logs
+// GET /api/calls - List call logs (uses industry DB when user has industry routing)
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,6 +27,9 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return apiErrors.notFound('User not found');
     }
+
+    const ctx = getDalContextFromSession(session);
+    const db = ctx ? getCrmDb(ctx) : prisma;
 
     const { searchParams } = new URL(request.url);
     const voiceAgentId = searchParams.get('voiceAgentId');
@@ -44,11 +49,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (countOnly) {
-      const count = await prisma.callLog.count({ where: whereClause });
+      const count = await db.callLog.count({ where: whereClause });
       return NextResponse.json({ count });
     }
 
-    const calls = await prisma.callLog.findMany({
+    const calls = await db.callLog.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
       take: pagination.take,
@@ -70,7 +75,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const total = await prisma.callLog.count({ where: whereClause });
+    const total = await db.callLog.count({ where: whereClause });
     return paginatedResponse(calls || [], total, pagination, 'calls');
   } catch (error: any) {
     console.error('Error fetching calls:', error);

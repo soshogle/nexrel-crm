@@ -14,7 +14,7 @@ export interface RateLimitConfig {
 
 export const RATE_LIMITS = {
   api: { maxRequests: 100, windowMs: 60_000 } as RateLimitConfig,
-  auth: { maxRequests: 10, windowMs: 60_000 } as RateLimitConfig,
+  auth: { maxRequests: 30, windowMs: 60_000 } as RateLimitConfig,
   webhook: { maxRequests: 200, windowMs: 60_000 } as RateLimitConfig,
   public: { maxRequests: 30, windowMs: 60_000 } as RateLimitConfig,
 } as const

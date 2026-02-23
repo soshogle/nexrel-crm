@@ -1,8 +1,6 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { resolveVoiceAgentByPhone, resolveCallLogBySid } from '@/lib/dal';
 import { voiceConversationEngine } from '@/lib/voice-conversation';
-import { elevenLabsService } from '@/lib/elevenlabs';
 
 /**
  * Twilio Voice Webhook Handler
@@ -25,15 +23,9 @@ export async function POST(request: NextRequest) {
 
     console.log('Twilio webhook called:', { callSid, from, to, callStatus, speechResult });
 
-    // Find the voice agent associated with this phone number
-    const voiceAgent = await prisma.voiceAgent.findFirst({
-      where: {
-        twilioPhoneNumber: to,
-        status: 'ACTIVE',
-      },
-    });
-
-    if (!voiceAgent) {
+    // Find the voice agent (searches default + industry DBs)
+    const voiceResolved = await resolveVoiceAgentByPhone(to);
+    if (!voiceResolved) {
       // No active agent found for this number
       return new NextResponse(
         `<?xml version="1.0" encoding="UTF-8"?>
@@ -47,14 +39,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if call log exists
-    let callLog = await prisma.callLog.findFirst({
-      where: { twilioCallSid: callSid },
-    });
+    const { voiceAgent, db } = voiceResolved;
+    if (voiceAgent.status !== 'ACTIVE') {
+      return new NextResponse(
+        `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say>We're sorry, this service is currently unavailable. Please try again later.</Say>
+  <Hangup/>
+</Response>`,
+        { headers: { 'Content-Type': 'text/xml' } }
+      );
+    }
+
+    // Check if call log exists (searches default + industry DBs)
+    let logResolved = await resolveCallLogBySid(callSid);
+    let callLog = logResolved?.callLog ?? null;
 
     // Create call log if this is a new call
     if (!callLog) {
-      callLog = await prisma.callLog.create({
+      callLog = await db.callLog.create({
         data: {
           userId: voiceAgent.userId,
           voiceAgentId: voiceAgent.id,
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
       );
 
       // Update call log with conversation
-      await prisma.callLog.update({
+      await db.callLog.update({
         where: { id: callLog.id },
         data: {
           conversationData: JSON.stringify({
@@ -131,7 +134,7 @@ export async function POST(request: NextRequest) {
           // Create appointment in database
           const appointmentDate = new Date(data.appointmentDate || Date.now());
           
-          await prisma.bookingAppointment.create({
+          await db.bookingAppointment.create({
             data: {
               userId: voiceAgent.userId,
               callLogId: callLog.id,
@@ -146,7 +149,7 @@ export async function POST(request: NextRequest) {
           });
 
           // Update call outcome
-          await prisma.callLog.update({
+          await db.callLog.update({
             where: { id: callLog.id },
             data: {
               outcome: 'APPOINTMENT_BOOKED',
@@ -175,7 +178,7 @@ export async function POST(request: NextRequest) {
 
       // Handle transfer to human
       if (result.shouldTransfer && voiceAgent.transferPhone) {
-        await prisma.callLog.update({
+        await db.callLog.update({
           where: { id: callLog.id },
           data: {
             outcome: 'TRANSFERRED_TO_HUMAN',
@@ -197,7 +200,7 @@ export async function POST(request: NextRequest) {
 
       // Handle call end
       if (result.shouldEnd) {
-        await prisma.callLog.update({
+        await db.callLog.update({
           where: { id: callLog.id },
           data: {
             outcome: 'INFORMATION_PROVIDED',
@@ -274,21 +277,21 @@ export async function GET(request: NextRequest) {
 
   if (callSid && callStatus) {
     try {
-      const updateData: any = {};
-      
-      if (callStatus === 'completed') {
-        updateData.status = 'COMPLETED';
-        if (callDuration) {
-          updateData.duration = parseInt(callDuration);
+      const logResolved = await resolveCallLogBySid(callSid);
+      if (logResolved) {
+        const { callLog, db } = logResolved;
+        const updateData: Record<string, unknown> = {};
+        if (callStatus === 'completed') {
+          updateData.status = 'COMPLETED';
+          if (callDuration) updateData.duration = parseInt(callDuration);
+        } else if (callStatus === 'failed' || callStatus === 'busy' || callStatus === 'no-answer') {
+          updateData.status = callStatus.toUpperCase().replace('-', '_');
         }
-      } else if (callStatus === 'failed' || callStatus === 'busy' || callStatus === 'no-answer') {
-        updateData.status = callStatus.toUpperCase().replace('-', '_');
+        await db.callLog.update({
+          where: { id: callLog.id },
+          data: updateData,
+        });
       }
-
-      await prisma.callLog.updateMany({
-        where: { twilioCallSid: callSid },
-        data: updateData,
-      });
     } catch (error) {
       console.error('Error updating call status:', error);
     }

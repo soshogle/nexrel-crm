@@ -1,7 +1,10 @@
+import type { PrismaClient } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
-import { getCrmDb } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
-import { prisma } from '@/lib/db';
+import {
+  resolveVoiceAgentByPhone,
+  resolveCallLogBySid,
+  resolveCallLogByConversationId,
+} from '@/lib/dal';
 import crypto from 'crypto';
 import { apiErrors } from '@/lib/api-error';
 
@@ -152,29 +155,21 @@ export async function POST(request: NextRequest) {
 
     const conversationId = data.conversation_id;
 
-    // Find the call log by ElevenLabs conversation ID or Twilio metadata
-    let callLog = await (prisma as any).callLog.findFirst({
-      where: { elevenLabsConversationId: conversationId },
-      include: {
-        voiceAgent: true,
-      },
-    });
+    // Find the call log by ElevenLabs conversation ID or Twilio metadata (searches all DBs)
+    let logResolved = await resolveCallLogByConversationId(conversationId);
+    let callLog = logResolved?.callLog ?? null;
+    let db: PrismaClient = logResolved?.db ?? null;
 
     // If not found, try to find by Twilio Call SID from metadata
     if (!callLog && data.metadata?.type === 'twilio') {
       const twilioCallSid = data.metadata?.body?.CallSid;
       if (twilioCallSid) {
         console.log('🔍 [ElevenLabs Webhook] Trying to find by Twilio SID:', twilioCallSid);
-        callLog = await (prisma as any).callLog.findFirst({
-          where: { twilioCallSid },
-          include: {
-            voiceAgent: true,
-          },
-        });
-
-        // Update with ElevenLabs conversation ID if found
-        if (callLog) {
-          await (prisma as any).callLog.update({
+        const sidResolved = await resolveCallLogBySid(twilioCallSid);
+        if (sidResolved) {
+          callLog = sidResolved.callLog;
+          db = sidResolved.db;
+          await db.callLog.update({
             where: { id: callLog.id },
             data: { elevenLabsConversationId: conversationId },
           });
@@ -186,30 +181,25 @@ export async function POST(request: NextRequest) {
     // If call log still not found, CREATE IT (for Native ElevenLabs Integration)
     if (!callLog) {
       console.log('🆕 [ElevenLabs Webhook] Creating new call log for Native Integration');
-      
-      // Extract phone numbers from metadata
+
       const fromNumber = data.metadata?.body?.From || data.metadata?.from || 'Unknown';
       const toNumber = data.metadata?.body?.To || data.metadata?.to || 'Unknown';
       const twilioCallSid = data.metadata?.body?.CallSid;
 
-      // Find voice agent by phone number
-      const voiceAgent = await (prisma as any).voiceAgent.findFirst({
-        where: { twilioPhoneNumber: toNumber },
-      });
-
-      if (!voiceAgent) {
+      const voiceResolved = await resolveVoiceAgentByPhone(toNumber);
+      if (!voiceResolved) {
         console.error('❌ [ElevenLabs Webhook] No voice agent found for number:', toNumber);
         return apiErrors.notFound('Voice agent not found');
       }
 
-      // Create new call log
-      callLog = await (prisma as any).callLog.create({
+      const { voiceAgent, db: voiceDb } = voiceResolved;
+      callLog = await voiceDb.callLog.create({
         data: {
           voiceAgentId: voiceAgent.id,
           userId: voiceAgent.userId,
           elevenLabsConversationId: conversationId,
           twilioCallSid: twilioCallSid || conversationId,
-          direction: 'INBOUND', // Assume inbound for Native Integration
+          direction: 'INBOUND',
           fromNumber,
           toNumber,
           status: 'IN_PROGRESS',
@@ -218,8 +208,13 @@ export async function POST(request: NextRequest) {
           voiceAgent: true,
         },
       });
-
+      db = voiceDb;
       console.log('✅ [ElevenLabs Webhook] Created new call log:', callLog.id);
+    }
+
+    if (!db) {
+      console.error('❌ [ElevenLabs Webhook] No db found for call log');
+      return apiErrors.internal();
     }
 
     console.log('✅ [ElevenLabs Webhook] Found call log:', callLog.id);
@@ -264,9 +259,7 @@ export async function POST(request: NextRequest) {
         user_id: data.user_id,
       });
 
-      // Update call log
-      const ctx = createDalContext(callLog.userId);
-      const db = getCrmDb(ctx);
+      // Update call log (db = same DB as VoiceAgent)
       const updatedCallLog = await db.callLog.update({
         where: { id: callLog.id },
         data: {
@@ -287,7 +280,7 @@ export async function POST(request: NextRequest) {
         try {
           // Import and run auto-analysis asynchronously (don't wait for it)
           const { autoAnalyzeCall } = await import('@/lib/auto-analyze-calls');
-          autoAnalyzeCall(callLog.id).catch(error => {
+          autoAnalyzeCall(callLog.id, db).catch(error => {
             console.error('❌ [ElevenLabs Webhook] Auto-analysis failed:', error);
           });
           console.log('✅ [ElevenLabs Webhook] Auto-analysis triggered');
@@ -297,7 +290,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Create conversation in messaging system
-      await createConversationFromCall(ctx, callLog.id, {
+      await createConversationFromCall(db, callLog.id, {
         fromNumber: callLog.fromNumber,
         toNumber: callLog.toNumber,
         userId: callLog.userId,
@@ -311,13 +304,11 @@ export async function POST(request: NextRequest) {
     if (webhookType === 'post_call_audio') {
       // Handle audio-only webhook
       const audioData = data.full_audio; // base64 encoded
-      
+
       // For now, we'll use the proxy URL instead of storing base64
-      // In a production system, you might want to upload this to S3
       const recordingUrl = `/api/calls/audio/${conversationId}`;
 
-      const ctx = createDalContext(callLog.userId);
-      await getCrmDb(ctx).callLog.update({
+      await db.callLog.update({
         where: { id: callLog.id },
         data: {
           recordingUrl: recordingUrl,
@@ -329,8 +320,7 @@ export async function POST(request: NextRequest) {
 
     if (webhookType === 'call_initiation_failure') {
       // Handle failed call
-      const ctx = createDalContext(callLog.userId);
-      await getCrmDb(ctx).callLog.update({
+      await db.callLog.update({
         where: { id: callLog.id },
         data: {
           status: 'FAILED',
@@ -355,7 +345,7 @@ export async function POST(request: NextRequest) {
  * Create a conversation in the messaging system from a completed call
  */
 async function createConversationFromCall(
-  ctx: any,
+  db: PrismaClient,
   callLogId: string,
   params: {
     fromNumber: string;
@@ -371,9 +361,6 @@ async function createConversationFromCall(
     const { fromNumber, toNumber, userId, duration, transcript, recordingUrl, voiceAgentName } = params;
 
     // Determine contact identifier (the other party)
-    // If it's an inbound call, fromNumber is the contact
-    // If it's an outbound call, toNumber is the contact
-    const db = getCrmDb(ctx);
     const callLog = await db.callLog.findUnique({
       where: { id: callLogId },
       select: { direction: true, voiceAgent: { select: { twilioPhoneNumber: true } } },

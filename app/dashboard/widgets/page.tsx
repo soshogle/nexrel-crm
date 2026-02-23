@@ -150,7 +150,7 @@ export default function WidgetsPage() {
         \${config.fields.includes('website') ? \`
           <div>
             <label style="display: block; font-size: 14px; font-weight: 500; margin-bottom: 4px; color: \${config.textColor};">Website</label>
-            <input type="url" name="website" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;" />
+            <input type="text" name="website" placeholder="domain.com or www.domain.com" style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;" />
           </div>
         \` : ''}
         \${config.fields.includes('address') ? \`

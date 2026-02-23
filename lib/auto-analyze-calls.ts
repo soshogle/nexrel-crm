@@ -3,19 +3,21 @@
  * Automatically triggers conversation analysis for completed calls
  */
 
+import type { PrismaClient } from '@prisma/client';
 import { prisma, Prisma } from './db';
 import { createDalContext } from '@/lib/context/industry-context';
-import { getCrmDb, leadService } from '@/lib/dal';
+import { leadService } from '@/lib/dal';
 import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadStatus } from './conversation-intelligence';
 import { syncLeadStatusToPipeline } from '@/lib/lead-pipeline-sync';
 
-export async function autoAnalyzeCall(callLogId: string) {
+export async function autoAnalyzeCall(callLogId: string, db?: PrismaClient) {
   try {
+    const client = db ?? prisma;
     // Fetch the call log with lead data
-    const callLog = await prisma.callLog.findUnique({
+    const callLog = await client.callLog.findUnique({
       where: { id: callLogId },
       include: {
-        lead: true,
+        lead: { include: { user: { select: { industry: true } } } },
       },
     });
 
@@ -44,7 +46,7 @@ export async function autoAnalyzeCall(callLogId: string) {
     const leadContext = callLog.lead ? {
       status: callLog.lead.status,
       currentScore: callLog.lead.leadScore || 0,
-      previousInteractions: await prisma.callLog.count({
+      previousInteractions: await client.callLog.count({
         where: {
           leadId: callLog.leadId || undefined,
           id: { not: callLogId },
@@ -59,7 +61,7 @@ export async function autoAnalyzeCall(callLogId: string) {
     const scoreAdjustment = calculateLeadScoreAdjustment(analysis, duration);
 
     // Update the call log with analysis
-    await prisma.callLog.update({
+    await client.callLog.update({
       where: { id: callLogId },
       data: {
         conversationAnalysis: analysis as any,
@@ -74,7 +76,8 @@ export async function autoAnalyzeCall(callLogId: string) {
       const newScore = Math.max(0, Math.min(100, currentLeadScore + scoreAdjustment));
       const newStatus = determineNextLeadStatus(callLog.lead.status, analysis.callOutcome.outcome) as any;
 
-      const ctx = createDalContext(callLog.lead.userId);
+      const leadUser = (callLog.lead as { userId: string; user?: { industry?: string } }).user;
+      const ctx = createDalContext(callLog.lead.userId, leadUser?.industry);
       await leadService.update(ctx, callLog.leadId, {
         leadScore: newScore,
         status: newStatus,
