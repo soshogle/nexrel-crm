@@ -67,7 +67,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> =
   'SCHEDULED': { bg: 'bg-blue-500/20', text: 'text-blue-400', dot: 'bg-blue-500' },
   'CONFIRMED': { bg: 'bg-green-500/20', text: 'text-green-400', dot: 'bg-green-500' },
   'IN_PROGRESS': { bg: 'bg-purple-500/20', text: 'text-purple-400', dot: 'bg-purple-500' },
-  'COMPLETED': { bg: 'bg-gray-500/20', text: 'text-gray-400', dot: 'bg-gray-500' },
+  'COMPLETED': { bg: 'gradient-primary', text: 'text-white', dot: 'bg-purple-500' },
   'CANCELLED': { bg: 'bg-red-500/20', text: 'text-red-400', dot: 'bg-red-500' },
   'NO_SHOW': { bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-500' },
 };
@@ -265,9 +265,9 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
           <div className="text-2xl font-bold text-green-400">{appointments.filter(a => a.status === 'CONFIRMED').length}</div>
           <div className="text-xs text-green-300/70">Confirmed</div>
         </div>
-        <div className="bg-gray-500/20 rounded-lg p-4 border border-gray-500/30">
-          <div className="text-2xl font-bold text-gray-400">{appointments.filter(a => a.status === 'COMPLETED').length}</div>
-          <div className="text-xs text-gray-300/70">Completed</div>
+        <div className="gradient-primary rounded-lg p-4 border border-purple-500/30">
+          <div className="text-2xl font-bold text-white">{appointments.filter(a => a.status === 'COMPLETED').length}</div>
+          <div className="text-xs text-white/70">Completed</div>
         </div>
         <div className="bg-red-500/20 rounded-lg p-4 border border-red-500/30">
           <div className="text-2xl font-bold text-red-400">{appointments.filter(a => ['CANCELLED', 'NO_SHOW'].includes(a.status)).length}</div>

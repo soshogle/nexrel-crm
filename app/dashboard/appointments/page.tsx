@@ -126,7 +126,7 @@ export default function AppointmentsPage() {
                       <div className={`px-3 py-1 rounded-full text-xs font-medium ${
                         apt.status === 'CONFIRMED' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
                         apt.status === 'SCHEDULED' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                        apt.status === 'COMPLETED' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
+                        apt.status === 'COMPLETED' ? 'gradient-primary text-white border border-purple-500/30' :
                         'bg-red-500/20 text-red-400 border border-red-500/30'
                       }`}>
                         {apt.status}
