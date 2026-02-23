@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/rate-limit';
 
 // Extract subdomain from hostname
 function getSubdomain(hostname: string): string | null {
@@ -30,31 +31,12 @@ function getSubdomain(hostname: string): string | null {
   return subdomain;
 }
 
-export async function middleware(request: NextRequest) {
-  const hostname = request.headers.get('host') || '';
-  const subdomain = getSubdomain(hostname);
-  
-  const response = NextResponse.next();
-  
-  // Add subdomain to request headers if present
-  if (subdomain) {
-    response.headers.set('x-tenant-subdomain', subdomain);
-    // Also add to cookies for easy client-side access
-    response.cookies.set('tenant-subdomain', subdomain, {
-      httpOnly: false,
-      sameSite: 'lax',
-      path: '/',
-    });
-  }
+function applyHeaders(request: NextRequest, response: NextResponse): NextResponse {
+  const isAuthRoute = request.nextUrl.pathname.startsWith('/api/auth')
+    || request.nextUrl.pathname.includes('oauth')
+    || request.nextUrl.pathname.includes('callback')
 
-  // Check if this is an OAuth callback or auth-related route
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/api/auth') || 
-                      request.nextUrl.pathname.includes('oauth') ||
-                      request.nextUrl.pathname.includes('callback');
-
-  // Security Headers
-  const securityHeaders = {
-    // Content Security Policy (CSP)
+  const securityHeaders: Record<string, string> = {
     'Content-Security-Policy': [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://accounts.google.com https://apis.google.com https://maps.googleapis.com https://static.cloudflareinsights.com",
@@ -70,58 +52,102 @@ export async function middleware(request: NextRequest) {
       "frame-ancestors 'self'",
       "upgrade-insecure-requests"
     ].join('; '),
-
-    // Strict Transport Security (HSTS)
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-
-    // Prevent clickjacking
     'X-Frame-Options': 'SAMEORIGIN',
-
-    // Prevent MIME type sniffing
     'X-Content-Type-Options': 'nosniff',
-
-    // XSS Protection
     'X-XSS-Protection': '1; mode=block',
-
-    // Referrer Policy
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-
-    // Permissions Policy (allow microphone for voice AI agent testing)
     'Permissions-Policy': 'camera=(self), microphone=(self), geolocation=(self), payment=(self)',
-  };
-
-  // For OAuth routes, use a more permissive COOP policy to allow popup communication
-  if (isAuthRoute) {
-    response.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  } else {
-    // For other routes, use the default same-origin policy
-    response.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   }
 
-  // Apply security headers
-  Object.entries(securityHeaders).forEach(([key, value]) => {
-    response.headers.set(key, value);
-  });
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups')
 
-  // Add CORS headers for API routes
+  for (const [key, value] of Object.entries(securityHeaders)) {
+    response.headers.set(key, value)
+  }
+
   if (request.nextUrl.pathname.startsWith('/api/')) {
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    // Allow cross-origin for signed-url (website voice agents e.g. Theodora)
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     if (request.nextUrl.pathname === '/api/elevenlabs/signed-url') {
-      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Origin', '*')
     }
   }
 
-  // Handle preflight requests
   if (request.method === 'OPTIONS') {
-    return new NextResponse(null, {
-      status: 200,
-      headers: response.headers,
+    return new NextResponse(null, { status: 200, headers: response.headers })
+  }
+
+  return response
+}
+
+export async function middleware(request: NextRequest) {
+  const hostname = request.headers.get('host') || '';
+  const subdomain = getSubdomain(hostname);
+  
+  // Rate limiting for API routes
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || '127.0.0.1'
+
+    const isAuthPath = request.nextUrl.pathname.startsWith('/api/auth')
+    const isWebhookPath = request.nextUrl.pathname.startsWith('/api/webhooks')
+      || request.nextUrl.pathname.includes('webhook')
+    const isPublicPath = request.nextUrl.pathname.startsWith('/api/widget')
+      || request.nextUrl.pathname.startsWith('/api/appointments/public')
+      || request.nextUrl.pathname.startsWith('/api/booking/')
+
+    const config = isAuthPath ? RATE_LIMITS.auth
+      : isWebhookPath ? RATE_LIMITS.webhook
+      : isPublicPath ? RATE_LIMITS.public
+      : RATE_LIMITS.api
+
+    const rlKey = getRateLimitKey(ip, isAuthPath ? '/api/auth' : request.nextUrl.pathname)
+    const { allowed, remaining, resetMs } = await checkRateLimit(rlKey, config)
+
+    if (!allowed) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Too many requests' }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': String(Math.ceil(resetMs / 1000)),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      )
+    }
+
+    const response = NextResponse.next()
+    response.headers.set('X-RateLimit-Remaining', String(remaining))
+
+    if (subdomain) {
+      response.headers.set('x-tenant-subdomain', subdomain)
+      response.cookies.set('tenant-subdomain', subdomain, {
+        httpOnly: false,
+        sameSite: 'lax',
+        path: '/',
+      })
+    }
+
+    return applyHeaders(request, response)
+  }
+
+  const response = NextResponse.next();
+  
+  // Add subdomain to request headers if present
+  if (subdomain) {
+    response.headers.set('x-tenant-subdomain', subdomain);
+    response.cookies.set('tenant-subdomain', subdomain, {
+      httpOnly: false,
+      sameSite: 'lax',
+      path: '/',
     });
   }
 
-  return response;
+  return applyHeaders(request, response);
 }
 
 // Configure which routes to run middleware on

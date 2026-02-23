@@ -1,57 +1,105 @@
 /**
- * Simple in-memory rate limiter for API routes.
- * For production at scale, use Redis (e.g. @upstash/ratelimit).
+ * Distributed rate limiter powered by Upstash Redis.
+ * Works across all Vercel replicas — counters are shared globally.
+ * Falls back to in-memory if Upstash env vars are missing (dev convenience).
  */
 
-const store = new Map<string, { count: number; resetAt: number }>();
+import { Ratelimit } from '@upstash/ratelimit'
+import { getRedis } from '@/lib/redis'
 
-const CLEANUP_INTERVAL = 60_000; // 1 min
-let lastCleanup = Date.now();
-
-function cleanup() {
-  const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL) return;
-  lastCleanup = now;
-  for (const [key, val] of store.entries()) {
-    if (val.resetAt < now) store.delete(key);
-  }
+export interface RateLimitConfig {
+  maxRequests: number
+  windowMs: number
 }
 
-export interface RateLimitResult {
-  success: boolean;
-  remaining: number;
-  resetAt: number;
+export const RATE_LIMITS = {
+  api: { maxRequests: 100, windowMs: 60_000 } as RateLimitConfig,
+  auth: { maxRequests: 10, windowMs: 60_000 } as RateLimitConfig,
+  webhook: { maxRequests: 200, windowMs: 60_000 } as RateLimitConfig,
+  public: { maxRequests: 30, windowMs: 60_000 } as RateLimitConfig,
+} as const
+
+const redis = getRedis()
+
+function createLimiter(config: RateLimitConfig): Ratelimit | null {
+  if (!redis) return null
+  return new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(config.maxRequests, `${config.windowMs} ms`),
+    prefix: 'rl',
+    analytics: true,
+  })
 }
 
-/**
- * Check rate limit. Returns { success, remaining, resetAt }.
- * Key format: "userId" or "ip:1.2.3.4" for anonymous.
- */
-export function checkRateLimit(
+const limiters = {
+  api: createLimiter(RATE_LIMITS.api),
+  auth: createLimiter(RATE_LIMITS.auth),
+  webhook: createLimiter(RATE_LIMITS.webhook),
+  public: createLimiter(RATE_LIMITS.public),
+}
+
+// ── In-memory fallback (dev only, when Upstash env vars missing) ──
+
+interface MemEntry { tokens: number; lastRefill: number }
+const memStore = new Map<string, MemEntry>()
+let lastCleanup = Date.now()
+
+function memCheck(
   key: string,
-  limit: number,
-  windowMs: number = 60_000
-): RateLimitResult {
-  cleanup();
-  const now = Date.now();
-  const bucket = store.get(key);
-
-  if (!bucket) {
-    store.set(key, { count: 1, resetAt: now + windowMs });
-    return { success: true, remaining: limit - 1, resetAt: now + windowMs };
+  config: RateLimitConfig
+): { allowed: boolean; remaining: number; resetMs: number } {
+  const now = Date.now()
+  if (now - lastCleanup > 60_000) {
+    lastCleanup = now
+    const expiry = now - 120_000
+    for (const [k, v] of memStore) { if (v.lastRefill < expiry) memStore.delete(k) }
   }
 
-  if (now >= bucket.resetAt) {
-    bucket.count = 1;
-    bucket.resetAt = now + windowMs;
-    return { success: true, remaining: limit - 1, resetAt: bucket.resetAt };
+  let entry = memStore.get(key)
+  if (!entry) {
+    entry = { tokens: config.maxRequests - 1, lastRefill: now }
+    memStore.set(key, entry)
+    return { allowed: true, remaining: entry.tokens, resetMs: config.windowMs }
   }
 
-  bucket.count += 1;
-  const success = bucket.count <= limit;
-  return {
-    success,
-    remaining: Math.max(0, limit - bucket.count),
-    resetAt: bucket.resetAt,
-  };
+  const elapsed = now - entry.lastRefill
+  const refill = Math.floor((elapsed / config.windowMs) * config.maxRequests)
+  if (refill > 0) {
+    entry.tokens = Math.min(config.maxRequests, entry.tokens + refill)
+    entry.lastRefill = now
+  }
+
+  if (entry.tokens > 0) {
+    entry.tokens--
+    return { allowed: true, remaining: entry.tokens, resetMs: config.windowMs - elapsed }
+  }
+  return { allowed: false, remaining: 0, resetMs: config.windowMs - elapsed }
+}
+
+// ── Public API (same interface as before — middleware unchanged) ──
+
+export async function checkRateLimit(
+  key: string,
+  config: RateLimitConfig
+): Promise<{ allowed: boolean; remaining: number; resetMs: number }> {
+  const limiter =
+    config === RATE_LIMITS.auth ? limiters.auth
+    : config === RATE_LIMITS.webhook ? limiters.webhook
+    : config === RATE_LIMITS.public ? limiters.public
+    : limiters.api
+
+  if (limiter) {
+    const result = await limiter.limit(key)
+    return {
+      allowed: result.success,
+      remaining: result.remaining,
+      resetMs: Math.max(0, result.reset - Date.now()),
+    }
+  }
+
+  return memCheck(key, config)
+}
+
+export function getRateLimitKey(ip: string, path: string): string {
+  return `${ip}:${path}`
 }
