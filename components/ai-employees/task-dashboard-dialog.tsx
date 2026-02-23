@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Play, Loader2, History, Settings, CheckCircle2, XCircle, Clock, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { Play, Loader2, History, Settings, CheckCircle2, XCircle, Clock, FileText, ChevronDown, ChevronUp, Plus, Mic } from 'lucide-react';
 import { toast } from 'sonner';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
 import { getREEmployeeConfig } from '@/lib/real-estate/ai-employees/configs';
@@ -127,7 +127,7 @@ export function TaskDashboardDialog({
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
-  const [templateOpen, setTemplateOpen] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(true); // expanded by default so users find it
   const [template, setTemplate] = useState<{ smsTemplate?: string; emailSubject?: string; emailBody?: string } | null>(null);
   const [templateSaving, setTemplateSaving] = useState(false);
   const [templateDirty, setTemplateDirty] = useState(false);
@@ -396,7 +396,7 @@ export function TaskDashboardDialog({
             Manage Tasks — {agentName}
           </DialogTitle>
           <DialogDescription className="text-slate-600 dark:text-slate-600">
-            Configure what runs, view history, and trigger runs manually.
+            Toggle duties, edit message templates (SMS/email), schedule runs, and view history.
           </DialogDescription>
         </DialogHeader>
 
@@ -437,87 +437,115 @@ export function TaskDashboardDialog({
             )}
           </div>
 
-          {/* Edit message templates */}
-          {supportsTemplates && (
-            <div className="rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-200 dark:bg-white">
-              <button
-                type="button"
-                onClick={() => setTemplateOpen(!templateOpen)}
-                className="flex w-full items-center justify-between p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-50/50"
-              >
-                <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
-                  <FileText className="w-4 h-4 text-purple-600" />
-                  Edit message templates
-                </h4>
-                {templateOpen ? (
-                  <ChevronUp className="w-4 h-4 text-slate-500" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-slate-500" />
-                )}
-              </button>
-              {templateOpen && (
-                <div className="space-y-4 border-t border-slate-200 p-4 dark:border-slate-200">
-                  {isSmsEmployee && (
-                    <div className="space-y-1.5">
-                      <Label className="text-slate-700">SMS message</Label>
-                      <textarea
-                        value={template?.smsTemplate ?? ''}
-                        onChange={(e) => {
-                          setTemplate((p) => ({ ...p, smsTemplate: e.target.value }));
-                          setTemplateDirty(true);
-                        }}
-                        placeholder="Hi {firstName}! ..."
-                        rows={3}
-                        className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                      />
-                      <p className="text-xs text-slate-500">Placeholders: {'{firstName}'}, {'{contactPerson}'}, {'{businessName}'}</p>
-                    </div>
-                  )}
-                  {isEmailEmployee && (
-                    <>
+          {/* Edit message templates — always visible so users know where to customize SMS/email */}
+          <div className="rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-200 dark:bg-white">
+            <button
+              type="button"
+              onClick={() => setTemplateOpen(!templateOpen)}
+              className="flex w-full items-center justify-between p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-50/50"
+            >
+              <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
+                <FileText className="w-4 h-4 text-purple-600" />
+                Message templates (SMS / email)
+              </h4>
+              {templateOpen ? (
+                <ChevronUp className="w-4 h-4 text-slate-500" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-slate-500" />
+              )}
+            </button>
+            {templateOpen && (
+              <div className="space-y-4 border-t border-slate-200 p-4 dark:border-slate-200">
+                {supportsTemplates ? (
+                  <>
+                    {isSmsEmployee && (
                       <div className="space-y-1.5">
-                        <Label className="text-slate-700">Email subject</Label>
-                        <input
-                          type="text"
-                          value={template?.emailSubject ?? ''}
-                          onChange={(e) => {
-                            setTemplate((p) => ({ ...p, emailSubject: e.target.value }));
-                            setTemplateDirty(true);
-                          }}
-                          placeholder="Friendly reminder: Invoice pending"
-                          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-slate-700">Email body</Label>
+                        <Label className="text-slate-700">SMS message</Label>
                         <textarea
-                          value={template?.emailBody ?? ''}
+                          value={template?.smsTemplate ?? ''}
                           onChange={(e) => {
-                            setTemplate((p) => ({ ...p, emailBody: e.target.value }));
+                            setTemplate((p) => ({ ...p, smsTemplate: e.target.value }));
                             setTemplateDirty(true);
                           }}
-                          placeholder="Hi {firstName}, ..."
-                          rows={4}
+                          placeholder="Hi {firstName}! ..."
+                          rows={3}
                           className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                         />
                         <p className="text-xs text-slate-500">Placeholders: {'{firstName}'}, {'{contactPerson}'}, {'{businessName}'}</p>
                       </div>
-                    </>
-                  )}
-                  {templateDirty && (
-                    <Button
-                      size="sm"
-                      onClick={handleSaveTemplate}
-                      disabled={templateSaving}
-                      className="bg-purple-600 hover:bg-purple-700"
-                    >
-                      {templateSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save templates'}
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+                    )}
+                    {isEmailEmployee && (
+                      <>
+                        <div className="space-y-1.5">
+                          <Label className="text-slate-700">Email subject</Label>
+                          <input
+                            type="text"
+                            value={template?.emailSubject ?? ''}
+                            onChange={(e) => {
+                              setTemplate((p) => ({ ...p, emailSubject: e.target.value }));
+                              setTemplateDirty(true);
+                            }}
+                            placeholder="Friendly reminder: Invoice pending"
+                            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-slate-700">Email body</Label>
+                          <textarea
+                            value={template?.emailBody ?? ''}
+                            onChange={(e) => {
+                              setTemplate((p) => ({ ...p, emailBody: e.target.value }));
+                              setTemplateDirty(true);
+                            }}
+                            placeholder="Hi {firstName}, ..."
+                            rows={4}
+                            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                          />
+                          <p className="text-xs text-slate-500">Placeholders: {'{firstName}'}, {'{contactPerson}'}, {'{businessName}'}</p>
+                        </div>
+                      </>
+                    )}
+                    {templateDirty && (
+                      <Button
+                        size="sm"
+                        onClick={handleSaveTemplate}
+                        disabled={templateSaving}
+                        className="bg-purple-600 hover:bg-purple-700"
+                      >
+                        {templateSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save templates'}
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-500 dark:text-slate-500">
+                    This employee doesn&apos;t send customizable SMS or email. Templates are available for: Speed to Lead, Appointment Coordinator, Patient Coordinator, Treatment Coordinator, and Billing Specialist.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Voice prompts — coming in Phase 4 */}
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-200 dark:bg-white">
+            <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
+              <Mic className="w-4 h-4 text-purple-600" />
+              Voice prompts
+            </h4>
+            <p className="text-sm text-slate-500 dark:text-slate-500">
+              Customize what this AI says on phone calls. Coming soon.
+            </p>
+          </div>
+
+          {/* Add custom task — coming in Phase 3 */}
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-200 dark:bg-white">
+            <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
+              <Plus className="w-4 h-4 text-purple-600" />
+              Add custom task
+            </h4>
+            <p className="text-sm text-slate-500 dark:text-slate-500">
+              Add your own automated jobs (e.g. &quot;Send insurance claims daily at 5pm&quot;). Coming soon.
+            </p>
+          </div>
 
           {/* Run button */}
           {canRun && (
