@@ -8,7 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCrmDb, leadService, dealService, campaignService, workflowTemplateService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, getDalContextFromSession } from '@/lib/context/industry-context';
+import type { Industry } from '@/lib/dal';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { parseChartIntent, getDynamicChartData } from '@/lib/crm-chart-intent';
@@ -52,49 +53,55 @@ export async function POST(req: NextRequest) {
 
     console.log(`🧰 [CRM Voice Functions] Received call: ${function_name}`, parameters);
 
-    // Get user from session or user_id
+    // Get user from session or user_id, and resolve industry for DB routing
     let userId = user_id;
+    let industry: Industry | null = null;
+    const session = await getServerSession(authOptions);
     if (!userId) {
-      const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
         return apiErrors.unauthorized('Unauthorized - user_id required or valid session');
       }
       userId = session.user.id;
+    }
+    industry = (session?.user as any)?.industry as Industry ?? null;
+    if (!industry) {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { industry: true } });
+      industry = (user?.industry as Industry) ?? null;
     }
 
     let result: any;
 
     switch (function_name) {
       case 'get_statistics':
-        result = await getStatistics(userId, parameters || {});
+        result = await getStatistics(userId, parameters || {}, industry);
         break;
 
       case 'create_lead':
-        result = await createLead(userId, parameters);
+        result = await createLead(userId, parameters, industry);
         break;
 
       case 'create_deal':
-        result = await createDeal(userId, parameters);
+        result = await createDeal(userId, parameters, industry);
         break;
 
       case 'list_leads':
-        result = await listLeads(userId, parameters);
+        result = await listLeads(userId, parameters, industry);
         break;
 
       case 'list_deals':
-        result = await listDeals(userId, parameters);
+        result = await listDeals(userId, parameters, industry);
         break;
 
       case 'search_contacts':
-        result = await searchContacts(userId, parameters);
+        result = await searchContacts(userId, parameters, industry);
         break;
 
       case 'get_recent_activity':
-        result = await getRecentActivity(userId, parameters);
+        result = await getRecentActivity(userId, parameters, industry);
         break;
 
       case 'predict_scenario':
-        result = await predictScenario(userId, parameters || {});
+        result = await predictScenario(userId, parameters || {}, industry);
         break;
 
       case 'make_outbound_call':
@@ -110,7 +117,7 @@ export async function POST(req: NextRequest) {
         break;
 
       case 'draft_sms':
-        result = await handleDraftSMS(userId, parameters || {});
+        result = await handleDraftSMS(userId, parameters || {}, industry);
         break;
 
       case 'send_sms':
@@ -118,11 +125,11 @@ export async function POST(req: NextRequest) {
         break;
 
       case 'schedule_sms':
-        result = await handleScheduleSMS(userId, parameters || {});
+        result = await handleScheduleSMS(userId, parameters || {}, industry);
         break;
 
       case 'draft_email':
-        result = await handleDraftEmail(userId, parameters || {});
+        result = await handleDraftEmail(userId, parameters || {}, industry);
         break;
 
       case 'send_email':
@@ -130,7 +137,7 @@ export async function POST(req: NextRequest) {
         break;
 
       case 'schedule_email':
-        result = await handleScheduleEmail(userId, parameters || {});
+        result = await handleScheduleEmail(userId, parameters || {}, industry);
         break;
 
       case 'sms_leads':
@@ -142,7 +149,7 @@ export async function POST(req: NextRequest) {
         break;
 
       case 'add_workflow_task':
-        result = await handleAddWorkflowTask(userId, parameters || {});
+        result = await handleAddWorkflowTask(userId, parameters || {}, industry);
         break;
 
       case 'create_task':
@@ -226,7 +233,7 @@ export async function POST(req: NextRequest) {
 /**
  * Get CRM statistics with time-based queries and comparison support
  */
-async function getStatistics(userId: string, params: any = {}) {
+async function getStatistics(userId: string, params: any = {}, industry: Industry | null = null) {
   try {
     const { period = 'all_time', compareWith, chartIntent } = params;
     
@@ -262,7 +269,7 @@ async function getStatistics(userId: string, params: any = {}) {
       compareWhereClause.createdAt = { gte: compareStartDate, lte: compareEndDate };
     }
 
-    const ctx = createDalContext(userId);
+    const ctx = createDalContext(userId, industry);
     const db = getCrmDb(ctx);
 
     const [leads, deals, contacts, campaigns] = await Promise.all([
@@ -407,7 +414,7 @@ async function getStatistics(userId: string, params: any = {}) {
             value,
           }));
         } else {
-          data = await getDynamicChartData(userId, intent.dimension);
+          data = await getDynamicChartData(userId, intent.dimension, industry);
         }
         if (data.length > 0) {
           const titles: Record<string, string> = {
@@ -432,7 +439,7 @@ async function getStatistics(userId: string, params: any = {}) {
     if (chartIntent) {
       const scenarioIntent = parseScenarioIntent(chartIntent);
       if (scenarioIntent) {
-        scenarioResult = await calculateScenario(userId, scenarioIntent.type, scenarioIntent.params);
+        scenarioResult = await calculateScenario(userId, scenarioIntent.type, scenarioIntent.params, industry);
       }
     }
 
@@ -474,7 +481,7 @@ async function getStatistics(userId: string, params: any = {}) {
 /**
  * Create a new lead
  */
-async function createLead(userId: string, params: any) {
+async function createLead(userId: string, params: any, industry: Industry | null = null) {
   try {
     const { name, email, phone, company, status = 'NEW' } = params;
 
@@ -482,7 +489,7 @@ async function createLead(userId: string, params: any) {
       return { error: 'Name is required' };
     }
 
-    const ctx = createDalContext(userId);
+    const ctx = createDalContext(userId, industry);
     const lead = await leadService.create(ctx, {
       contactPerson: name,
       businessName: company || name,
@@ -514,7 +521,7 @@ async function createLead(userId: string, params: any) {
 /**
  * Create a new deal
  */
-async function createDeal(userId: string, params: any) {
+async function createDeal(userId: string, params: any, industry: Industry | null = null) {
   try {
     const { title, value, leadId } = params;
 
@@ -522,7 +529,7 @@ async function createDeal(userId: string, params: any) {
       return { error: 'Title is required' };
     }
 
-    const ctx = createDalContext(userId);
+    const ctx = createDalContext(userId, industry);
     const deal = await dealService.create(ctx, {
       title,
       value: value ? parseFloat(value) : null,
@@ -550,7 +557,7 @@ async function createDeal(userId: string, params: any) {
  * List leads
  * When user has active workflow draft, do NOT navigate - they're building a workflow and "contacts" means a step.
  */
-async function listLeads(userId: string, params: any) {
+async function listLeads(userId: string, params: any, industry: Industry | null = null) {
   try {
     const user: any = await prisma.user.findUnique({
       where: { id: userId },
@@ -576,7 +583,7 @@ async function listLeads(userId: string, params: any) {
     if (status) where.status = status;
     if (startOfToday) where.createdAt = { gte: startOfToday };
 
-    const ctx = createDalContext(userId);
+    const ctx = createDalContext(userId, industry);
     const leads = await leadService.findMany(ctx, {
       where,
       take: limit,
@@ -609,7 +616,7 @@ async function listLeads(userId: string, params: any) {
  * List deals
  * When user has active workflow draft, do NOT navigate - they're building a workflow and "pipeline" means a step.
  */
-async function listDeals(userId: string, params: any) {
+async function listDeals(userId: string, params: any, industry: Industry | null = null) {
   try {
     const user: any = await prisma.user.findUnique({
       where: { id: userId },
@@ -625,7 +632,7 @@ async function listDeals(userId: string, params: any) {
 
     const { limit = 10 } = params;
 
-    const ctx = createDalContext(userId);
+    const ctx = createDalContext(userId, industry);
     const db = getCrmDb(ctx);
     const deals = await db.deal.findMany({
       where: { userId },
@@ -656,7 +663,7 @@ async function listDeals(userId: string, params: any) {
  * Search contacts
  * When user has active workflow draft, do NOT navigate - they're building a workflow.
  */
-async function searchContacts(userId: string, params: any) {
+async function searchContacts(userId: string, params: any, industry: Industry | null = null) {
   try {
     const user: any = await prisma.user.findUnique({
       where: { id: userId },
@@ -676,7 +683,7 @@ async function searchContacts(userId: string, params: any) {
       return { error: 'Search query is required' };
     }
 
-    const ctx = createDalContext(userId);
+    const ctx = createDalContext(userId, industry);
     const leads = await leadService.findMany(ctx, {
       where: {
         OR: [
@@ -712,11 +719,11 @@ async function searchContacts(userId: string, params: any) {
 /**
  * Get recent activity
  */
-async function getRecentActivity(userId: string, params: any) {
+async function getRecentActivity(userId: string, params: any, industry: Industry | null = null) {
   try {
     const { limit = 10 } = params;
 
-    const ctx = createDalContext(userId);
+    const ctx = createDalContext(userId, industry);
     const db = getCrmDb(ctx);
     const [recentLeads, recentDeals] = await Promise.all([
       leadService.findMany(ctx, {
@@ -760,7 +767,7 @@ async function getRecentActivity(userId: string, params: any) {
 /**
  * Predict "what if" scenario - standalone for direct predict_scenario calls
  */
-async function predictScenario(userId: string, params: any) {
+async function predictScenario(userId: string, params: any, industry: Industry | null = null) {
   try {
     const { scenarioIntent } = params;
     const text = scenarioIntent || params.text || '';
@@ -771,7 +778,7 @@ async function predictScenario(userId: string, params: any) {
         error: 'Could not parse scenario. Try: "What if I convert 10 more leads?" or "What if I get 50 more leads?"',
       };
     }
-    const scenarioResult = await calculateScenario(userId, intent.type, intent.params);
+    const scenarioResult = await calculateScenario(userId, intent.type, intent.params, industry);
     if (!scenarioResult) {
       return { success: false, error: 'Could not calculate scenario.' };
     }
@@ -868,10 +875,10 @@ async function handleListVoiceAgents(userId: string) {
   };
 }
 
-async function handleDraftSMS(userId: string, params: any) {
+async function handleDraftSMS(userId: string, params: any, industry: Industry | null = null) {
   const { contactName, message, phoneNumber } = params;
   if (!contactName || !message) return { error: 'contactName and message are required' };
-  const ctx = createDalContext(userId);
+  const ctx = createDalContext(userId, industry);
   const leads = await leadService.findMany(ctx, {
     where: {
       OR: [
@@ -905,12 +912,12 @@ async function handleSendSMS(userId: string, params: any) {
   return { success: true, message: result.message, navigateTo: '/dashboard/messages' };
 }
 
-async function handleScheduleSMS(userId: string, params: any) {
+async function handleScheduleSMS(userId: string, params: any, industry: Industry | null = null) {
   const { contactName, message, scheduledFor } = params;
   if (!contactName || !message || !scheduledFor) {
     return { error: 'contactName, message, and scheduledFor are required' };
   }
-  const ctx = createDalContext(userId);
+  const ctx = createDalContext(userId, industry);
   const leads = await leadService.findMany(ctx, {
     where: {
       OR: [
@@ -942,10 +949,10 @@ async function handleScheduleSMS(userId: string, params: any) {
   };
 }
 
-async function handleDraftEmail(userId: string, params: any) {
+async function handleDraftEmail(userId: string, params: any, industry: Industry | null = null) {
   const { contactName, subject, body, email } = params;
   if (!contactName || !subject || !body) return { error: 'contactName, subject, and body are required' };
-  const ctx = createDalContext(userId);
+  const ctx = createDalContext(userId, industry);
   const leads = await leadService.findMany(ctx, {
     where: {
       OR: [
@@ -980,12 +987,12 @@ async function handleSendEmail(userId: string, params: any) {
   return { success: true, message: result.message, navigateTo: '/dashboard/messages' };
 }
 
-async function handleScheduleEmail(userId: string, params: any) {
+async function handleScheduleEmail(userId: string, params: any, industry: Industry | null = null) {
   const { contactName, subject, body, scheduledFor } = params;
   if (!contactName || !subject || !body || !scheduledFor) {
     return { error: 'contactName, subject, body, and scheduledFor are required' };
   }
-  const ctx = createDalContext(userId);
+  const ctx = createDalContext(userId, industry);
   const leads = await leadService.findMany(ctx, {
     where: {
       OR: [
@@ -1045,7 +1052,7 @@ async function handleEmailLeads(userId: string, params: any) {
   return { success: true, message: result.message, sent: result.sent, failed: result.failed, navigateTo: '/dashboard/messages' };
 }
 
-async function handleAddWorkflowTask(userId: string, params: any) {
+async function handleAddWorkflowTask(userId: string, params: any, industry: Industry | null = null) {
   const { workflowId: paramWorkflowId, name, taskType = 'CUSTOM', description = '' } = params;
   let workflowId = paramWorkflowId;
   if (!workflowId) {
@@ -1058,7 +1065,7 @@ async function handleAddWorkflowTask(userId: string, params: any) {
   if (!workflowId || !name) {
     return { error: 'No active workflow. Say "create workflow" first to start a new one, or provide workflowId.' };
   }
-  const ctx = createDalContext(userId);
+  const ctx = createDalContext(userId, industry);
   const db = getCrmDb(ctx);
   const existing = await workflowTemplateService.findUnique(ctx, workflowId);
   if (!existing) return { error: 'Workflow not found' };

@@ -13,8 +13,9 @@ import { businessDataPipeline } from '@/lib/business-ai/data-pipeline';
 import { businessAnalyticsEngine } from '@/lib/business-ai/analytics-engine';
 import { addExplanations } from '@/lib/business-ai/prediction-explainer';
 import { getCrmDb, leadService, campaignService } from '@/lib/dal';
-import { createDalContext } from '@/lib/context/industry-context';
+import { createDalContext, getDalContextFromSession } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
+import type { Industry } from '@/lib/dal';
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = session.user.id;
+    const industry = ((session.user as any)?.industry as Industry) ?? null;
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || 'month';
 
@@ -32,16 +34,11 @@ export async function GET(request: NextRequest) {
     let insights: any[] = [];
 
     try {
-      const ctx = createDalContext(userId);
-      const db = getCrmDb(ctx);
-      const user = await db.user.findUnique({
-        where: { id: userId },
-        select: { industry: true },
-      });
+      const ctx = createDalContext(userId, industry);
 
       const businessData = await businessDataPipeline.getBusinessSnapshot(
         userId,
-        user?.industry || undefined,
+        industry || undefined,
         period as any
       );
 
@@ -53,14 +50,14 @@ export async function GET(request: NextRequest) {
       // If pipeline returned zeros but we have CRM data (leads/deals), use fallback for meaningful scores
       const hasCrmData = businessData.leads.total > 0 || businessData.deals.total > 0;
       if (healthScore.overall === 0 && hasCrmData) {
-        const fallback = await getCrmFallbackHealth(userId);
+        const fallback = await getCrmFallbackHealth(userId, industry);
         healthScore = fallback.healthScore;
         predictions = fallback.predictions;
         insights = fallback.insights;
       }
     } catch (pipelineError: any) {
       console.warn('Business pipeline failed, using CRM fallback:', pipelineError?.message);
-      const fallback = await getCrmFallbackHealth(userId);
+      const fallback = await getCrmFallbackHealth(userId, industry);
       healthScore = fallback.healthScore;
       predictions = fallback.predictions;
       insights = fallback.insights;
@@ -91,8 +88,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function getCrmFallbackHealth(userId: string) {
-  const ctx = createDalContext(userId);
+async function getCrmFallbackHealth(userId: string, industry: Industry | null = null) {
+  const ctx = createDalContext(userId, industry);
   const db = getCrmDb(ctx);
   const [leads, deals, campaigns] = await Promise.all([
     leadService.count(ctx),

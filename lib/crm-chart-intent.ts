@@ -5,6 +5,7 @@
 
 import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
+import type { Industry } from '@/lib/dal';
 
 export function parseChartIntent(text: string): { chartType: 'pie' | 'bar' | 'line'; dimension: string } | null {
   if (!text || typeof text !== 'string') return null;
@@ -38,8 +39,8 @@ export function parseChartIntent(text: string): { chartType: 'pie' | 'bar' | 'li
   return null;
 }
 
-export async function getDynamicChartData(userId: string, dimension: string): Promise<{ name: string; value: number }[]> {
-  const ctx = createDalContext(userId);
+export async function getDynamicChartData(userId: string, dimension: string, industry?: Industry | null): Promise<{ name: string; value: number }[]> {
+  const ctx = createDalContext(userId, industry);
   const db = getCrmDb(ctx);
   switch (dimension) {
     case 'leads_by_status': {

@@ -5,6 +5,7 @@
 
 import { createDalContext } from '@/lib/context/industry-context';
 import { leadService, getCrmDb } from '@/lib/dal';
+import type { Industry } from '@/lib/dal';
 
 export interface ScenarioResult {
   scenario: string;
@@ -80,9 +81,10 @@ export function parseScenarioIntent(text: string): { type: string; params: Recor
 export async function calculateScenario(
   userId: string,
   scenarioType: string,
-  params: Record<string, number>
+  params: Record<string, number>,
+  industry?: Industry | null
 ): Promise<ScenarioResult | null> {
-  const ctx = createDalContext(userId);
+  const ctx = createDalContext(userId, industry);
   const db = getCrmDb(ctx);
   const [leads, deals, openDeals] = await Promise.all([
     leadService.count(ctx),
