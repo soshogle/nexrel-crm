@@ -53,12 +53,12 @@ export function DealCard({ deal, onClick }: DealCardProps) {
       className="p-4 cursor-pointer hover:shadow-md transition-shadow bg-card"
     >
       {/* Deal Title */}
-      <h4 className="font-medium mb-2 line-clamp-1">{deal.title}</h4>
+      <h4 className="font-medium mb-2 line-clamp-1">{deal.title || 'Untitled Deal'}</h4>
 
       {/* Value */}
       <div className="flex items-center gap-1 text-lg font-bold text-primary mb-3">
         <DollarSign className="h-4 w-4" />
-        {deal.value.toLocaleString()} {deal.currency}
+        {(deal.value ?? 0).toLocaleString()} {deal.currency ?? 'USD'}
       </div>
 
       {/* Lead Info */}

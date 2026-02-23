@@ -57,7 +57,7 @@ export function CreateDealDialog({ open, onClose, onSuccess, pipelineId }: Creat
       const response = await fetch('/api/leads');
       if (response.ok) {
         const data = await response.json();
-        setLeads(data);
+        setLeads(data.leads ?? data.data ?? []);
       }
     } catch (error) {
       console.error('Failed to load leads:', error);

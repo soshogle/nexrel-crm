@@ -93,14 +93,14 @@ export default function CalendarPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold gradient-text">{config.bookingPluralNoun}</h1>
-            <p className="text-purple-200 mt-0.5 text-sm">Manage your {config.bookingPluralNoun.toLowerCase()} and schedule</p>
+            <p className="text-purple-300 mt-0.5 text-sm">Manage your {config.bookingPluralNoun.toLowerCase()} and schedule</p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
             onClick={fetchAppointments}
-            className="border-purple-500/30 text-white hover:bg-purple-500/10 hover:border-purple-500/40"
+            className="border-purple-500/30 text-purple-200 hover:bg-purple-500/10 hover:border-purple-500/40 hover:text-white"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
@@ -128,7 +128,7 @@ export default function CalendarPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold gradient-text">{stats.today}</div>
-            <p className="text-xs text-purple-200 mt-1">{config.bookingPluralNoun.toLowerCase()} today</p>
+            <p className="text-xs text-purple-300 mt-1">{config.bookingPluralNoun.toLowerCase()} today</p>
           </CardContent>
         </Card>
 
@@ -143,7 +143,7 @@ export default function CalendarPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-400">{stats.upcoming}</div>
-            <p className="text-xs text-purple-200 mt-1">scheduled ahead</p>
+            <p className="text-xs text-purple-300 mt-1">scheduled ahead</p>
           </CardContent>
         </Card>
 
@@ -158,7 +158,7 @@ export default function CalendarPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-pink-400">{stats.total}</div>
-            <p className="text-xs text-purple-200 mt-1">all {config.bookingPluralNoun.toLowerCase()}</p>
+            <p className="text-xs text-purple-300 mt-1">all {config.bookingPluralNoun.toLowerCase()}</p>
           </CardContent>
         </Card>
       </div>

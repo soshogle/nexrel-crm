@@ -69,7 +69,7 @@ export default function AppointmentsPage() {
               </div>
               {config.bookingPluralNoun}
             </h1>
-            <p className="text-purple-300/70 mt-2 text-sm">Manage your schedule and {config.bookingPluralNoun.toLowerCase()}</p>
+            <p className="text-purple-300 mt-2 text-sm">Manage your schedule and {config.bookingPluralNoun.toLowerCase()}</p>
           </div>
           {isAdmin && (
             <Button className="gradient-primary hover:opacity-90 text-white shadow-lg shadow-purple-500/30">
@@ -85,20 +85,20 @@ export default function AppointmentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-white text-xl">All {config.bookingPluralNoun}</CardTitle>
-                <CardDescription className="text-purple-300/60">{appointments.length} {config.bookingPluralNoun.toLowerCase()}</CardDescription>
+                <CardDescription className="text-purple-300">{appointments.length} {config.bookingPluralNoun.toLowerCase()}</CardDescription>
               </div>
               <Tabs value={view} onValueChange={(v: any) => setView(v)}>
                 <TabsList className="bg-black/40 border border-purple-500/20">
-                  <TabsTrigger value="board" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300/70 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
+                  <TabsTrigger value="board" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
                     📋 Board
                   </TabsTrigger>
-                  <TabsTrigger value="list" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300/70 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
+                  <TabsTrigger value="list" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
                     <List className="h-4 w-4 mr-1" /> List
                   </TabsTrigger>
-                  <TabsTrigger value="calendar" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300/70 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
+                  <TabsTrigger value="calendar" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
                     <Calendar className="h-4 w-4 mr-1" /> Calendar
                   </TabsTrigger>
-                  <TabsTrigger value="analytics" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300/70 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
+                  <TabsTrigger value="analytics" className="data-[state=active]:gradient-primary data-[state=active]:text-white text-purple-300 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30">
                     <BarChart3 className="h-4 w-4 mr-1" /> Analytics
                   </TabsTrigger>
                 </TabsList>
@@ -115,7 +115,7 @@ export default function AppointmentsPage() {
             ) : view === 'list' ? (
               <div className="space-y-2">
                 {!Array.isArray(appointments) || appointments.length === 0 ? (
-                  <div className="text-center py-12 text-purple-300/50">No {config.bookingPluralNoun.toLowerCase()}</div>
+                  <div className="text-center py-12 text-purple-300">No {config.bookingPluralNoun.toLowerCase()}</div>
                 ) : (
                   appointments.map(apt => (
                     <div key={apt.id} className="flex items-center justify-between p-4 glass-effect rounded-lg border-purple-500/20 hover:border-purple-500/40 hover:shadow-lg hover:shadow-purple-500/10 transition-all">
@@ -140,7 +140,7 @@ export default function AppointmentsPage() {
                 <div className="mx-auto h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center shadow-lg shadow-purple-500/20 mb-4">
                   <Calendar className="h-8 w-8 text-white" />
                 </div>
-                <p className="text-purple-300/60 mb-4">View the full {config.bookingNoun.toLowerCase()} calendar</p>
+                <p className="text-purple-300 mb-4">View the full {config.bookingNoun.toLowerCase()} calendar</p>
                 <Button variant="outline" className="border-purple-500/40 text-purple-300 hover:border-purple-500 hover:text-purple-400 hover:bg-purple-500/10" asChild>
                   <Link href="/dashboard/calendar">Open Full Calendar</Link>
                 </Button>
@@ -185,7 +185,7 @@ export default function AppointmentsPage() {
                   <div className="glass-effect rounded-xl p-6 border-purple-500/20">
                     <h3 className="text-lg font-semibold text-white mb-4">This Week</h3>
                     <div className="text-4xl font-bold gradient-text">{stats.thisWeek}</div>
-                    <div className="text-purple-300/60 text-sm">{config.bookingPluralNoun.toLowerCase()} scheduled</div>
+                    <div className="text-purple-300 text-sm">{config.bookingPluralNoun.toLowerCase()} scheduled</div>
                   </div>
                 </div>
               </div>

@@ -94,7 +94,7 @@ export function AppointmentsList({ appointments, onAppointmentUpdated, onAppoint
   if (sortedAppointments.length === 0) {
     return (
       <Card className="glass-effect border-purple-500/20">
-        <div className="text-center py-12 text-purple-300/50">
+        <div className="text-center py-12 text-purple-300">
           <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50 text-purple-400" />
           <p>No {config.bookingPluralNoun.toLowerCase()} scheduled</p>
         </div>

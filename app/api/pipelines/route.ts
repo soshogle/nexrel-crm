@@ -30,12 +30,14 @@ export async function GET(request: NextRequest) {
 
     const ctx = getDalContextFromSession(session);
     const db = ctx ? getCrmDb(ctx) : prisma;
+    // Use ctx.userId when available so pipeline/deal queries match (deal creation uses ctx.userId)
+    const userId = ctx?.userId ?? user.id;
 
     const pagination = parsePagination(request);
 
     // Get or create default pipeline
     let pipelines = await db.pipeline.findMany({
-      where: { userId: user.id },
+      where: { userId },
       include: {
         stages: {
           orderBy: { displayOrder: 'asc' },
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
         data: {
           name: 'Default Pipeline',
           description: 'Your default sales pipeline',
-          userId: user.id,
+          userId,
           isDefault: true,
           stages: {
             create: [
@@ -106,19 +108,27 @@ export async function GET(request: NextRequest) {
       pipelines = [defaultPipeline];
     }
 
-    // Parse tags from JSON strings
+    // Parse tags from JSON strings (safely - empty string or invalid JSON would crash)
     const pipelinesWithParsedTags = pipelines.map(pipeline => ({
       ...pipeline,
       stages: pipeline.stages.map(stage => ({
         ...stage,
-        deals: stage.deals.map(deal => ({
-          ...deal,
-          tags: deal.tags ? JSON.parse(deal.tags) : [],
-        })),
+        deals: stage.deals.map(deal => {
+          let tags: string[] = [];
+          if (deal.tags && typeof deal.tags === 'string' && deal.tags.trim()) {
+            try {
+              const parsed = JSON.parse(deal.tags);
+              tags = Array.isArray(parsed) ? parsed : [];
+            } catch {
+              tags = [];
+            }
+          }
+          return { ...deal, tags };
+        }),
       })),
     }));
 
-    const total = await db.pipeline.count({ where: { userId: user.id } });
+    const total = await db.pipeline.count({ where: { userId } });
     return paginatedResponse(pipelinesWithParsedTags, total, pagination, 'pipelines');
   } catch (error) {
     console.error('Error fetching pipelines:', error);

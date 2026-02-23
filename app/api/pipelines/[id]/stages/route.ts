@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { apiErrors } from '@/lib/api-error';
 
 // GET /api/pipelines/[id]/stages - Get all stages for a pipeline
@@ -20,7 +22,10 @@ export async function GET(
       return apiErrors.unauthorized();
     }
 
-    const stages = await prisma.pipelineStage.findMany({
+    const ctx = getDalContextFromSession(session);
+    const db = ctx ? getCrmDb(ctx) : prisma;
+
+    const stages = await db.pipelineStage.findMany({
       where: { pipelineId: params.id },
       orderBy: { displayOrder: 'asc' },
     });

@@ -233,7 +233,7 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
                 className={`px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
                   viewMode === mode 
                     ? 'gradient-primary text-white shadow-lg shadow-purple-500/30' 
-                    : 'bg-transparent hover:bg-purple-500/10 text-purple-300/70'
+                    : 'bg-transparent hover:bg-purple-500/10 text-purple-300'
                 }`}
               >
                 {mode}
@@ -242,7 +242,7 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={fetchAppointments} className="border-purple-500/20 text-purple-300 hover:border-purple-500 hover:bg-purple-500/10">
+          <Button variant="outline" size="sm" onClick={fetchAppointments} className="border-purple-500/20 text-purple-200 hover:border-purple-500 hover:bg-purple-500/10 hover:text-white">
             <RefreshCw className="h-4 w-4 mr-1" />
             Refresh
           </Button>
@@ -288,7 +288,7 @@ export default function MondayAppointments({ isAdmin = false }: MondayAppointmen
 
         {/* Grouped by Date */}
         {Object.keys(groupedByDate).length === 0 ? (
-          <div className="px-4 py-12 text-center text-purple-300/50">
+          <div className="px-4 py-12 text-center text-purple-300">
             <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30 text-purple-400" />
             <p>No appointments found</p>
           </div>
