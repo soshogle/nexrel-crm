@@ -7,11 +7,14 @@
 import { getCrmDb } from './db';
 import type { DalContext } from './types';
 import type { Lead, Prisma } from '@prisma/client';
+import { cached, invalidate, TTL } from '@/lib/cache';
 
 const defaultInclude = {
   notes: { select: { id: true, createdAt: true } },
   messages: { select: { id: true, createdAt: true } },
 } as const;
+
+const cacheKey = (userId: string, leadId: string) => `lead:${userId}:${leadId}`
 
 export const leadService = {
   async findMany(
@@ -51,10 +54,12 @@ export const leadService = {
   },
 
   async findUnique(ctx: DalContext, leadId: string, include?: Prisma.LeadInclude) {
-    return getCrmDb(ctx).lead.findFirst({
-      where: { id: leadId, userId: ctx.userId },
-      include: include ?? defaultInclude,
-    });
+    return cached(cacheKey(ctx.userId, leadId), TTL.SHORT, () =>
+      getCrmDb(ctx).lead.findFirst({
+        where: { id: leadId, userId: ctx.userId },
+        include: include ?? defaultInclude,
+      })
+    );
   },
 
   async create(ctx: DalContext, data: Omit<Prisma.LeadCreateInput, 'user'>) {
@@ -65,17 +70,21 @@ export const leadService = {
   },
 
   async update(ctx: DalContext, leadId: string, data: Prisma.LeadUpdateInput, include?: Prisma.LeadInclude) {
-    return getCrmDb(ctx).lead.update({
+    const result = await getCrmDb(ctx).lead.update({
       where: { id: leadId, userId: ctx.userId },
       data,
       include: include ?? defaultInclude,
     });
+    await invalidate(cacheKey(ctx.userId, leadId));
+    return result;
   },
 
   async delete(ctx: DalContext, leadId: string) {
-    return getCrmDb(ctx).lead.delete({
+    const result = await getCrmDb(ctx).lead.delete({
       where: { id: leadId, userId: ctx.userId },
     });
+    await invalidate(cacheKey(ctx.userId, leadId));
+    return result;
   },
 
   async deleteMany(ctx: DalContext, where?: Prisma.LeadWhereInput) {

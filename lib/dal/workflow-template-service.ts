@@ -7,6 +7,9 @@
 import { getCrmDb } from './db';
 import type { DalContext } from './types';
 import type { Prisma } from '@prisma/client';
+import { cached, invalidatePattern, TTL } from '@/lib/cache';
+
+const cacheKey = (userId: string, suffix = 'list') => `wfTemplate:${userId}:${suffix}`
 
 export const workflowTemplateService = {
   async findMany(
@@ -19,24 +22,29 @@ export const workflowTemplateService = {
       skip?: number;
     }
   ) {
-    const where: Prisma.WorkflowTemplateWhereInput = { userId: ctx.userId };
-    if (options?.industry) where.industry = options.industry as any;
-    if (options?.type) where.type = options.type as any;
-    if (options?.isActive !== undefined) where.isActive = options.isActive;
-    return getCrmDb(ctx).workflowTemplate.findMany({
-      where,
-      include: { tasks: { orderBy: { displayOrder: 'asc' } } },
-      orderBy: { createdAt: 'desc' },
-      take: options?.take,
-      skip: options?.skip,
+    const suffix = `list:${options?.industry || 'all'}:${options?.type || 'all'}`
+    return cached(cacheKey(ctx.userId, suffix), TTL.VERY_LONG, () => {
+      const where: Prisma.WorkflowTemplateWhereInput = { userId: ctx.userId };
+      if (options?.industry) where.industry = options.industry as any;
+      if (options?.type) where.type = options.type as any;
+      if (options?.isActive !== undefined) where.isActive = options.isActive;
+      return getCrmDb(ctx).workflowTemplate.findMany({
+        where,
+        include: { tasks: { orderBy: { displayOrder: 'asc' } } },
+        orderBy: { createdAt: 'desc' },
+        take: options?.take,
+        skip: options?.skip,
+      });
     });
   },
 
   async findUnique(ctx: DalContext, templateId: string) {
-    return getCrmDb(ctx).workflowTemplate.findFirst({
-      where: { id: templateId, userId: ctx.userId },
-      include: { tasks: { orderBy: { displayOrder: 'asc' } } },
-    });
+    return cached(cacheKey(ctx.userId, templateId), TTL.VERY_LONG, () =>
+      getCrmDb(ctx).workflowTemplate.findFirst({
+        where: { id: templateId, userId: ctx.userId },
+        include: { tasks: { orderBy: { displayOrder: 'asc' } } },
+      })
+    );
   },
 
   async findFirst(ctx: DalContext, where?: Prisma.WorkflowTemplateWhereInput) {
@@ -47,22 +55,28 @@ export const workflowTemplateService = {
   },
 
   async create(ctx: DalContext, data: Omit<Prisma.WorkflowTemplateCreateInput, 'user'>) {
-    return getCrmDb(ctx).workflowTemplate.create({
+    const result = await getCrmDb(ctx).workflowTemplate.create({
       data: { ...data, user: { connect: { id: ctx.userId } } },
     });
+    await invalidatePattern(`wfTemplate:${ctx.userId}:*`);
+    return result;
   },
 
   async update(ctx: DalContext, templateId: string, data: Prisma.WorkflowTemplateUpdateInput) {
-    return getCrmDb(ctx).workflowTemplate.update({
+    const result = await getCrmDb(ctx).workflowTemplate.update({
       where: { id: templateId, userId: ctx.userId },
       data,
     });
+    await invalidatePattern(`wfTemplate:${ctx.userId}:*`);
+    return result;
   },
 
   async delete(ctx: DalContext, templateId: string) {
-    return getCrmDb(ctx).workflowTemplate.delete({
+    const result = await getCrmDb(ctx).workflowTemplate.delete({
       where: { id: templateId, userId: ctx.userId },
     });
+    await invalidatePattern(`wfTemplate:${ctx.userId}:*`);
+    return result;
   },
 
   async count(ctx: DalContext, where?: Prisma.WorkflowTemplateWhereInput) {
