@@ -7,8 +7,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
-import { websiteService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { websiteService } from '@/lib/dal';
+import { resolveWebsiteDb } from '@/lib/dal/resolve-website-db';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -33,20 +34,26 @@ export async function GET(
       return apiErrors.unauthorized();
     }
 
-    const ctx = session?.user?.id ? getDalContextFromSession(session) : null;
-    const website = ctx
-      ? await websiteService.findUnique(ctx, websiteId)
-      : await getCrmDb(createDalContext('bootstrap', null)).website.findUnique({
-          where: { id: websiteId },
-          select: {
-            id: true,
-            userId: true,
-            elevenLabsAgentId: true,
-            voiceAIEnabled: true,
-            enableTavusAvatar: true,
-            voiceAIConfig: true,
-          },
-        });
+    let website;
+    if (session?.user?.id) {
+      const ctx = getDalContextFromSession(session);
+      website = ctx ? await websiteService.findUnique(ctx, websiteId) : null;
+    } else {
+      const resolved = await resolveWebsiteDb(websiteId);
+      website = resolved
+        ? await resolved.db.website.findUnique({
+            where: { id: websiteId },
+            select: {
+              id: true,
+              userId: true,
+              elevenLabsAgentId: true,
+              voiceAIEnabled: true,
+              enableTavusAvatar: true,
+              voiceAIConfig: true,
+            },
+          })
+        : null;
+    }
 
     if (!website) {
       return apiErrors.notFound('Website not found');

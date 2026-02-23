@@ -5,9 +5,9 @@
  * Auth: x-website-secret header.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { getCrmDb } from "@/lib/dal/db";
 import { createDalContext } from "@/lib/context/industry-context";
 import { leadService } from "@/lib/dal/lead-service";
+import { resolveWebsiteDb } from "@/lib/dal/resolve-website-db";
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,10 @@ export async function POST(
       return apiErrors.unauthorized();
     }
 
-    const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
+    const resolved = await resolveWebsiteDb(websiteId);
+    if (!resolved) return apiErrors.notFound("Website not found");
+
+    const website = await resolved.db.website.findFirst({
       where: { id: websiteId },
       select: { userId: true },
     });
@@ -41,7 +44,7 @@ export async function POST(
       return apiErrors.badRequest("Name and email are required");
     }
 
-    const ctx = createDalContext(website.userId);
+    const ctx = createDalContext(website.userId, resolved.industry);
     await leadService.create(ctx, {
       businessName: name.trim(),
       contactPerson: name.trim(),

@@ -11,11 +11,10 @@
  * Full comparables only after booking a meeting.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getCrmDb } from "@/lib/dal/db";
 import { createDalContext } from "@/lib/context/industry-context";
 import { leadService } from "@/lib/dal/lead-service";
 import { noteService } from "@/lib/dal/note-service";
+import { resolveWebsiteDb } from "@/lib/dal/resolve-website-db";
 import { runPropertyEvaluation } from "@/lib/real-estate/property-evaluation";
 import type { ComparableProperty } from "@/lib/real-estate/property-evaluation";
 import { Resend } from "resend";
@@ -65,7 +64,10 @@ export async function POST(
       return apiErrors.unauthorized();
     }
 
-    const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
+    const resolved = await resolveWebsiteDb(websiteId);
+    if (!resolved) return apiErrors.notFound("Website not found");
+
+    const website = await resolved.db.website.findFirst({
       where: { id: websiteId },
       select: {
         id: true,
@@ -110,8 +112,7 @@ export async function POST(
 
     const blurredComparables = blurComparables(evaluation.comparables);
 
-    // Create lead in CRM
-    const user = await prisma.user.findUnique({
+    const user = await resolved.db.user.findUnique({
       where: { id: website.userId },
       select: { id: true, email: true },
     });
@@ -121,7 +122,7 @@ export async function POST(
       (agencyConfig.email as string)?.trim() || (user?.email as string)?.trim() || null;
 
     if (user) {
-      const ctx = createDalContext(user.id);
+      const ctx = createDalContext(user.id, resolved.industry);
       const lead = await leadService.create(ctx, {
         businessName: contact.name || "Property Evaluation Visitor",
         contactPerson: contact.name || null,

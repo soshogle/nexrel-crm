@@ -7,8 +7,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
-import { websiteService, getCrmDb } from '@/lib/dal';
+import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { getCrmDb } from '@/lib/dal';
+import { resolveWebsiteDb } from '@/lib/dal/resolve-website-db';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -74,7 +75,14 @@ export async function GET(
     }
 
     const ctx = session?.user?.id ? getDalContextFromSession(session) : null;
-    const db = ctx ? getCrmDb(ctx) : getCrmDb(createDalContext('bootstrap', null));
+    let db;
+    if (ctx) {
+      db = getCrmDb(ctx);
+    } else {
+      const resolved = await resolveWebsiteDb(websiteId);
+      if (!resolved) return apiErrors.notFound('Website not found');
+      db = resolved.db;
+    }
     const website = await db.website.findFirst({
       where: ctx ? { id: websiteId, userId: ctx.userId } : { id: websiteId },
       include: {
