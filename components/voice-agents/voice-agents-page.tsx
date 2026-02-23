@@ -117,8 +117,12 @@ export function VoiceAgentsPage() {
       const json = await response.json();
       const validAgents = (Array.isArray(json) ? json : (json.data ?? json.voiceAgents ?? [])).filter((a: any) => a && a.id);
       setAgents(validAgents);
-      if (validAgents.length > 0 && !selectedAgent) {
-        setSelectedAgent(validAgents[0]);
+      const urlAgentId = searchParams?.get('agentId');
+      const agentToSelect = urlAgentId
+        ? (validAgents.find((a: any) => a.id === urlAgentId) ?? validAgents[0])
+        : validAgents[0];
+      if (validAgents.length > 0 && agentToSelect && !selectedAgent) {
+        setSelectedAgent(agentToSelect);
       }
     } catch (error) {
       console.error('Error fetching agents:', error);

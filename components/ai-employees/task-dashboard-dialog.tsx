@@ -609,7 +609,7 @@ export function TaskDashboardDialog({
               Customize what this AI says on phone calls. Voice prompts are set when the agent is provisioned.
             </p>
             <a
-              href="/dashboard/voice-agents"
+              href={`/dashboard/voice-agents${agentId ? `?agentId=${agentId}` : ''}`}
               className="text-sm text-purple-600 hover:text-purple-700 hover:underline"
             >
               Configure in Voice Agents →

@@ -16,22 +16,27 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id && !session?.user?.email) {
       return apiErrors.unauthorized();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
+    // Use session.user.id first (matches industry/professional/RE provision APIs).
+    // Fall back to email lookup for legacy compatibility.
+    let user = session.user.id
+      ? await prisma.user.findUnique({ where: { id: session.user.id } })
+      : null;
+    if (!user && session.user.email) {
+      user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    }
+    const userId = user?.id ?? session.user.id;
+    if (!userId) {
       return apiErrors.notFound('User not found');
     }
 
     const pagination = parsePagination(request);
 
     const agents = await (prisma as any).voiceAgent.findMany({
-      where: { userId: user.id },
+      where: { userId },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -49,7 +54,7 @@ export async function GET(request: NextRequest) {
     // Include Industry AI Employee agents (Dental, Medical, etc.) for preview
     const industryAgents = await (prisma as any).industryAIEmployeeAgent.findMany({
       where: {
-        userId: user.id,
+        userId,
         elevenLabsAgentId: { not: null },
         status: 'active',
       },
@@ -67,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     // Include RE AI Employee agents (Sarah, Michael, etc.) for preview
     const reAgents = await (prisma as any).rEAIEmployeeAgent.findMany({
-      where: { userId: user.id, elevenLabsAgentId: { not: null } },
+      where: { userId, elevenLabsAgentId: { not: null } },
     });
     const reAgentsForPreview = reAgents.map((a: any) => ({
       id: a.id,
@@ -81,7 +86,7 @@ export async function GET(request: NextRequest) {
 
     // Include Professional AI Employee agents (Accountant, Developer, etc.) for preview
     const profAgents = await (prisma as any).professionalAIEmployeeAgent.findMany({
-      where: { userId: user.id, elevenLabsAgentId: { not: null } },
+      where: { userId, elevenLabsAgentId: { not: null } },
     });
     const profAgentsForPreview = profAgents.map((a: any) => ({
       id: a.id,
@@ -97,7 +102,7 @@ export async function GET(request: NextRequest) {
     const aiEmployeeCounts = await (prisma as any).userAIEmployee.groupBy({
       by: ['voiceAgentId'],
       where: {
-        userId: user.id,
+        userId,
         voiceAgentId: { not: null },
       },
       _count: { voiceAgentId: true },
@@ -167,7 +172,7 @@ export async function GET(request: NextRequest) {
 
     // Include CRM Voice Assistant (website/conversational AI) when user has one
     const crmAssistantForPreview: any[] = [];
-    if ((user as any).crmVoiceAgentId) {
+    if (user && (user as any).crmVoiceAgentId) {
       crmAssistantForPreview.push({
         id: `crm-assistant-${user.id}`,
         name: `${user.name || 'Your Business'} CRM Assistant`,
