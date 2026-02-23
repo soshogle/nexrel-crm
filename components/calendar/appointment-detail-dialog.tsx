@@ -203,7 +203,7 @@ export function AppointmentDetailDialog({ open, onClose, appointment, onUpdate }
                     <div className="font-medium mb-2">Payment Required</div>
                     <div className="text-sm">
                       <div><strong>Amount:</strong> ${appointment.paymentAmount?.toFixed(2)}</div>
-                      {appointment.payments && appointment.payments.length > 0 && (
+                      {Array.isArray(appointment?.payments) && appointment.payments.length > 0 && (
                         <div className="mt-2">
                           <strong>Payment Status:</strong>
                           <div className="flex flex-wrap gap-2 mt-1">

@@ -267,7 +267,7 @@ export default function SubAccountDetailsPage() {
             <CardDescription>Latest leads created by this sub-account</CardDescription>
           </CardHeader>
           <CardContent>
-            {details.recentActivity.leads.length === 0 ? (
+            {!Array.isArray(details?.recentActivity?.leads) || details.recentActivity.leads.length === 0 ? (
               <p className="text-sm text-muted-foreground">No recent leads</p>
             ) : (
               <div className="space-y-3">
@@ -293,7 +293,7 @@ export default function SubAccountDetailsPage() {
             <CardDescription>Latest deals created by this sub-account</CardDescription>
           </CardHeader>
           <CardContent>
-            {details.recentActivity.deals.length === 0 ? (
+            {!Array.isArray(details?.recentActivity?.deals) || details.recentActivity.deals.length === 0 ? (
               <p className="text-sm text-muted-foreground">No recent deals</p>
             ) : (
               <div className="space-y-3">

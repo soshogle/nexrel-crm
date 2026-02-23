@@ -41,14 +41,14 @@ export default async function DashboardPage() {
     ])
 
     // Serialize dates for client component
-    const recentLeads = recentLeadsRaw.map(lead => ({
+    const recentLeads = (Array.isArray(recentLeadsRaw) ? recentLeadsRaw : []).map(lead => ({
       ...lead,
       createdAt: lead.createdAt.toISOString(),
     }))
 
     // Calculate stats
     const totalLeads = leads.length
-    const statusCounts = leads.reduce((acc, lead) => {
+    const statusCounts = (Array.isArray(leads) ? leads : []).reduce((acc, lead) => {
       acc[lead.status] = (acc[lead.status] || 0) + 1
       return acc
     }, {} as Record<string, number>)

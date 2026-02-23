@@ -243,7 +243,7 @@ export function CrmVisualizationPanel({ crmStatistics, onClose }: CrmVisualizati
           </div>
 
           {/* Recent Leads */}
-          {crmStatistics.recentLeads && crmStatistics.recentLeads.length > 0 && (
+          {Array.isArray(crmStatistics?.recentLeads) && crmStatistics.recentLeads.length > 0 && (
             <Card className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-blue-50/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

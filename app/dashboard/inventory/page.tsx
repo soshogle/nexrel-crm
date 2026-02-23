@@ -320,7 +320,7 @@ export default function InventoryPage() {
         </TabsContent>
 
         <TabsContent value="suppliers" className="space-y-4 mt-6">
-          {suppliers.length === 0 ? (
+          {!Array.isArray(suppliers) || suppliers.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <Truck className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
@@ -370,7 +370,7 @@ export default function InventoryPage() {
         </TabsContent>
 
         <TabsContent value="alerts" className="space-y-4 mt-6">
-          {alerts.length === 0 ? (
+          {!Array.isArray(alerts) || alerts.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />

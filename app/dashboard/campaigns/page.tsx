@@ -130,9 +130,9 @@ export default function CampaignsPage() {
   };
 
   const allCampaigns: CampaignItem[] = [
-    ...voiceCampaigns.map((d) => ({ type: 'voice' as const, data: d })),
+    ...(Array.isArray(voiceCampaigns) ? voiceCampaigns : []).map((d) => ({ type: 'voice' as const, data: d })),
     ...emailCampaigns.map((d) => ({ type: 'email-drip' as const, data: d })),
-    ...smsCampaigns.map((d) => ({ type: 'sms-drip' as const, data: d })),
+    ...(Array.isArray(smsCampaigns) ? smsCampaigns : []).map((d) => ({ type: 'sms-drip' as const, data: d })),
   ].sort(
     (a, b) =>
       new Date((b.data as any).createdAt || 0).getTime() -

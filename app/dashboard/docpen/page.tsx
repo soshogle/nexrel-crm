@@ -414,7 +414,7 @@ export default function DocpenPage() {
               )}
 
               {/* Transcription Display */}
-              {activeSession.transcriptions && activeSession.transcriptions.length > 0 && (
+              {Array.isArray(activeSession?.transcriptions) && activeSession.transcriptions.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">

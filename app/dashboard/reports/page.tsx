@@ -178,7 +178,7 @@ export default function ReportsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {chart.data && chart.data.length > 0 ? (
+                  {Array.isArray(chart?.data) && chart.data.length > 0 ? (
                     <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         {chart.data.length <= 6 ? (
@@ -228,7 +228,7 @@ export default function ReportsPage() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {chart.data?.map((item: any, j: number) => (
+                      {Array.isArray(chart?.data) && chart.data.map((item: any, j: number) => (
                         <div key={j} className="flex justify-between items-center py-2 px-3 bg-white/50 rounded-lg">
                           <span className="text-gray-700">{item.name}</span>
                           <span className="font-semibold text-purple-600">
@@ -325,7 +325,7 @@ export default function ReportsPage() {
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {reports.map((report) => (
+                  {Array.isArray(reports) && reports.map((report) => (
                     <button
                       key={report.id}
                       onClick={() => setSelectedReport(report)}

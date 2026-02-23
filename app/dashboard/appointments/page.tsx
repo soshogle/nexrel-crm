@@ -109,7 +109,7 @@ export default function AppointmentsPage() {
               <MondayAppointments isAdmin={isAdmin} />
             ) : view === 'list' ? (
               <div className="space-y-2">
-                {appointments.length === 0 ? (
+                {!Array.isArray(appointments) || appointments.length === 0 ? (
                   <div className="text-center py-12 text-purple-300/50">No appointments</div>
                 ) : (
                   appointments.map(apt => (

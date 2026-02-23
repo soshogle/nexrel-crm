@@ -185,7 +185,7 @@ export default function WebsitesPage() {
         </Link>
       </div>
 
-      {websites.length === 0 ? (
+      {!Array.isArray(websites) || websites.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Globe className="h-12 w-12 text-muted-foreground mb-4" />

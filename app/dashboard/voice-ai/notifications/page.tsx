@@ -270,7 +270,7 @@ export default function NotificationsPage() {
                 </Badge>
               </div>
 
-              {lastResults.errors.length > 0 && (
+              {Array.isArray(lastResults?.errors) && lastResults.errors.length > 0 && (
                 <div className="mt-4">
                   <h4 className="text-sm font-semibold mb-2 text-red-600">Errors:</h4>
                   <div className="space-y-1 text-xs text-muted-foreground">

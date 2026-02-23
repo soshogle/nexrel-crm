@@ -300,7 +300,7 @@ export default function AnalyticsDashboard() {
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100">
-                    {priorityContacts.slice(0, 5).map((contact, index) => (
+                    {Array.isArray(priorityContacts) && priorityContacts.slice(0, 5).map((contact, index) => (
                       <motion.div
                         key={contact.id}
                         initial={{ opacity: 0, y: 10 }}
@@ -348,7 +348,7 @@ export default function AnalyticsDashboard() {
                             </div>
                             {/* Signal badges */}
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {contact.signals.map((signal, i) => (
+                              {Array.isArray(contact.signals) && contact.signals.map((signal, i) => (
                                 <Badge key={i} variant="outline" className="text-xs bg-white">
                                   {signal}
                                 </Badge>
@@ -425,14 +425,14 @@ export default function AnalyticsDashboard() {
                       <div className="flex items-center justify-center h-full">
                         <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-amber-500"></div>
                       </div>
-                    ) : atRiskItems.filter(i => i.type === 'listing').length === 0 ? (
+                    ) : !Array.isArray(atRiskItems) || atRiskItems.filter(i => i.type === 'listing').length === 0 ? (
                       <div className="text-center py-8">
                         <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
                         <p className="text-gray-500 text-sm">No listings at risk</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {atRiskItems.filter(i => i.type === 'listing').map((item) => (
+                        {Array.isArray(atRiskItems) && atRiskItems.filter(i => i.type === 'listing').map((item) => (
                           <div key={item.id} className="p-3 rounded-lg border border-gray-100 hover:border-amber-200 hover:bg-amber-50/50 transition-colors">
                             <div className="flex items-start justify-between">
                               <div>
@@ -471,14 +471,14 @@ export default function AnalyticsDashboard() {
                       <div className="flex items-center justify-center h-full">
                         <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-red-500"></div>
                       </div>
-                    ) : atRiskItems.filter(i => i.type === 'buyer' || i.type === 'deal').length === 0 ? (
+                    ) : !Array.isArray(atRiskItems) || atRiskItems.filter(i => i.type === 'buyer' || i.type === 'deal').length === 0 ? (
                       <div className="text-center py-8">
                         <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
                         <p className="text-gray-500 text-sm">All buyers engaged, all deals on track</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {atRiskItems.filter(i => i.type === 'buyer' || i.type === 'deal').map((item) => (
+                        {Array.isArray(atRiskItems) && atRiskItems.filter(i => i.type === 'buyer' || i.type === 'deal').map((item) => (
                           <div key={item.id} className="p-3 rounded-lg border border-gray-100 hover:border-red-200 hover:bg-red-50/50 transition-colors">
                             <div className="flex items-start justify-between">
                               <div>
@@ -539,7 +539,7 @@ export default function AnalyticsDashboard() {
                     <p className="text-gray-400 text-sm">Add deals to pipeline to see predictions</p>
                   </div>
                 ) : (
-                  closingPredictions.map((prediction) => (
+                  Array.isArray(closingPredictions) && closingPredictions.map((prediction) => (
                     <div key={prediction.period} className="bg-white/5 rounded-xl p-4">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-gray-300 font-medium">Next {prediction.period} Days</span>
@@ -563,7 +563,7 @@ export default function AnalyticsDashboard() {
                         <div className="mt-3 pt-3 border-t border-white/10">
                           <p className="text-xs text-gray-400 mb-2">Top contributors:</p>
                           <div className="space-y-1">
-                            {prediction.contacts.slice(0, 3).map((c, i) => (
+                            {Array.isArray(prediction?.contacts) && prediction.contacts.slice(0, 3).map((c, i) => (
                               <div key={i} className="flex items-center justify-between text-xs">
                                 <span className="text-gray-300">{c.name}</span>
                                 <Badge className="bg-violet-500/20 text-violet-300 border-0">
@@ -605,7 +605,7 @@ export default function AnalyticsDashboard() {
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-100">
-                      {referralOpportunities.map((referral) => (
+                      {Array.isArray(referralOpportunities) && referralOpportunities.map((referral) => (
                         <div key={referral.id} className="p-4 hover:bg-emerald-50/50 transition-colors">
                           <div className="flex items-start gap-3">
                             <Avatar className="w-10 h-10">

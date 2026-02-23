@@ -270,7 +270,7 @@ export default function CMAToolsPage() {
               />
               {showAddressPredictions && addressPredictions.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-md shadow-lg max-h-60 overflow-auto">
-                  {addressPredictions.map((prediction) => (
+                  {Array.isArray(addressPredictions) && addressPredictions.map((prediction) => (
                     <button
                       key={prediction.place_id}
                       type="button"
@@ -359,7 +359,7 @@ export default function CMAToolsPage() {
             ) : (
               <ScrollArea className="h-[400px]">
                 <div className="space-y-3">
-                  {reports.map((report) => (
+                  {Array.isArray(reports) && reports.map((report) => (
                     <div
                       key={report.id}
                       className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
@@ -459,7 +459,7 @@ export default function CMAToolsPage() {
                 <div className="p-4 bg-green-500/5 rounded-lg border border-green-500/10">
                   <h4 className="font-semibold mb-2 text-green-500">Key Strengths</h4>
                   <ul className="space-y-1">
-                    {generatedResult.keyStrengths.map((s, i) => (
+                    {Array.isArray(generatedResult.keyStrengths) && generatedResult.keyStrengths.map((s, i) => (
                       <li key={i} className="text-sm text-muted-foreground">• {s}</li>
                     ))}
                   </ul>
@@ -467,7 +467,7 @@ export default function CMAToolsPage() {
                 <div className="p-4 bg-orange-500/5 rounded-lg border border-orange-500/10">
                   <h4 className="font-semibold mb-2 text-orange-500">Potential Concerns</h4>
                   <ul className="space-y-1">
-                    {generatedResult.potentialConcerns.map((c, i) => (
+                    {Array.isArray(generatedResult.potentialConcerns) && generatedResult.potentialConcerns.map((c, i) => (
                       <li key={i} className="text-sm text-muted-foreground">• {c}</li>
                     ))}
                   </ul>
@@ -476,7 +476,7 @@ export default function CMAToolsPage() {
               <div className="p-4 bg-muted/50 rounded-lg">
                 <h4 className="font-semibold mb-2">Recommended Actions</h4>
                 <ul className="space-y-1">
-                  {generatedResult.recommendedActions.map((a, i) => (
+                  {Array.isArray(generatedResult.recommendedActions) && generatedResult.recommendedActions.map((a, i) => (
                     <li key={i} className="text-sm text-muted-foreground">• {a}</li>
                   ))}
                 </ul>
@@ -504,7 +504,7 @@ export default function CMAToolsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {generatedResult.comparables.map((comp: any, i: number) => (
+                      {Array.isArray(generatedResult.comparables) && generatedResult.comparables.map((comp: any, i: number) => (
                         <tr key={i} className="border-b border-border/50">
                           <td className="py-2 px-3">{comp.address}</td>
                           <td className="py-2 px-3 text-right font-mono">{fmt(comp.price)}</td>
@@ -591,7 +591,7 @@ export default function CMAToolsPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {(selectedReport.comparables as any[]).map((c: any, i: number) => (
+                          {Array.isArray(selectedReport.comparables) && (selectedReport.comparables as any[]).map((c: any, i: number) => (
                             <tr key={i} className="border-b border-border/50 text-xs">
                               <td className="py-1.5 px-2">{c.address}</td>
                               <td className="py-1.5 px-2 text-right font-mono">{fmt(c.price)}</td>

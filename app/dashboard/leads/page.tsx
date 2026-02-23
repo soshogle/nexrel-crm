@@ -79,7 +79,7 @@ export default async function LeadsPage() {
     let notesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
     let messagesMap = new Map<string, Array<{ id: string; createdAt: Date }>>();
 
-    if (leadsData.length > 0) {
+    if (Array.isArray(leadsData) && leadsData.length > 0) {
       const leadIds = leadsData.map(l => l.id);
       const [notes, messages] = await Promise.all([
         noteService.findMany(ctx, { leadId: { in: leadIds } }, {
@@ -103,7 +103,7 @@ export default async function LeadsPage() {
     }
 
     // Attach notes and messages to leads - always ensure these properties exist
-    const leads = leadsData.map(lead => ({
+    const leads = (Array.isArray(leadsData) ? leadsData : []).map(lead => ({
       ...lead,
       notes: (notesMap.get(lead.id) || []) as Array<{ id: string; createdAt: Date }>,
       messages: (messagesMap.get(lead.id) || []) as Array<{ id: string; createdAt: Date }>,

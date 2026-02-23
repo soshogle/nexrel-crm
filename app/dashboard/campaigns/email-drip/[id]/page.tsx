@@ -326,7 +326,7 @@ export default function CampaignDetailsPage() {
 
         <TabsContent value="sequences" className="mt-6">
           <div className="space-y-4">
-            {campaign.sequences?.length === 0 ? (
+            {!Array.isArray(campaign?.sequences) || campaign.sequences.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -334,7 +334,7 @@ export default function CampaignDetailsPage() {
                 </CardContent>
               </Card>
             ) : (
-              campaign.sequences?.map((sequence: any) => (
+              campaign.sequences.map((sequence: any) => (
                 <Card key={sequence.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
@@ -414,7 +414,7 @@ export default function CampaignDetailsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {campaign.enrollments?.length === 0 ? (
+              {!Array.isArray(campaign?.enrollments) || campaign.enrollments.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500 mb-4">No leads enrolled yet</p>
@@ -425,7 +425,7 @@ export default function CampaignDetailsPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {campaign.enrollments?.slice(0, 10).map((enrollment: any) => (
+                  {campaign.enrollments.slice(0, 10).map((enrollment: any) => (
                     <div
                       key={enrollment.id}
                       className="flex justify-between items-center p-3 border rounded-lg"

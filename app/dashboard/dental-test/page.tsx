@@ -298,7 +298,7 @@ export default function DentalTestPage() {
 
   const selectedPatient = leads.find(l => l.id === selectedLeadId);
 
-  const displayProcedures = procedures.length > 0
+  const displayProcedures = Array.isArray(procedures) && procedures.length > 0
     ? procedures.slice(0, 4).map((proc: any) => ({
         time: new Date(proc.datePerformed || proc.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         patient: leads.find(l => l.id === proc.leadId)?.contactPerson || leads.find(l => l.id === proc.leadId)?.businessName || 'Unknown',
@@ -313,7 +313,7 @@ export default function DentalTestPage() {
         { time: '11:30 AM', patient: 'Shem Jones', procedure: 'Check-in', status: 'Check-in', color: 'bg-blue-50 text-blue-600' },
       ];
 
-  const displayTreatmentPlans = treatmentPlans.length > 0
+  const displayTreatmentPlans = Array.isArray(treatmentPlans) && treatmentPlans.length > 0
     ? treatmentPlans.slice(0, 3).map((plan: any) => ({
         code: plan.cdtCode || 'N/A',
         name: plan.procedureName || plan.description || 'Treatment',
@@ -328,7 +328,7 @@ export default function DentalTestPage() {
         { code: 'D2740', name: 'Crown - Porcelain/Ceramic', cost: 1200, timeline: 'Weeks 3-8', icon: Stethoscope, costColor: 'bg-purple-600 text-white' },
       ];
 
-  const displayFormResponses = formResponses.length > 0
+  const displayFormResponses = Array.isArray(formResponses) && formResponses.length > 0
     ? formResponses.slice(0, 3).map((resp: any) => ({
         date: new Date(resp.submittedAt || resp.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
         patient: leads.find(l => l.id === resp.leadId)?.contactPerson || leads.find(l => l.id === resp.leadId)?.businessName || 'Unknown',
@@ -342,7 +342,7 @@ export default function DentalTestPage() {
         { date: '06/19/2022', patient: 'Michael Brown', form: 'New Patient Registration', submission: '06/19/2022', time: 'Forms Submitted' },
       ];
 
-  const displayClaims = ramqClaims.length > 0
+  const displayClaims = Array.isArray(ramqClaims) && ramqClaims.length > 0
     ? ramqClaims.slice(0, 2).map((claim: any) => ({
         id: claim.claimNumber || claim.id || 'N/A',
         provider: claim.providerName || claim.insuranceProvider || 'Insurance',
@@ -354,7 +354,7 @@ export default function DentalTestPage() {
         { id: 'M78910', provider: 'Delta Dental', amount: 1300, status: 'Pending' },
       ];
 
-  const displayMultiChairAppointments = appointments.length > 0
+  const displayMultiChairAppointments = Array.isArray(appointments) && appointments.length > 0
     ? appointments.slice(0, 4).map((apt: any, idx: number) => {
         const patient = leads.find(l => l.id === apt.leadId);
         const chairTypes = ['Ortho', 'Hygiene', 'Ortho', 'Restorative'];
@@ -383,7 +383,7 @@ export default function DentalTestPage() {
           <Select value={selectedLeadId || ''} onValueChange={(value) => setSelectedLeadId(value)}>
             <SelectTrigger className="w-64 h-9 border border-gray-300 text-sm"><SelectValue placeholder="Select a patient..." /></SelectTrigger>
             <SelectContent>
-              {leads.map((lead) => (
+              {Array.isArray(leads) && leads.map((lead) => (
                 <SelectItem key={lead.id} value={lead.id}>{lead.contactPerson || lead.businessName || lead.email || lead.id}</SelectItem>
               ))}
             </SelectContent>

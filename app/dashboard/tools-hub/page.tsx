@@ -232,7 +232,7 @@ export default function ToolsHubPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {toolInstances.slice(0, 5).map((tool) => (
+                  {Array.isArray(toolInstances) && toolInstances.slice(0, 5).map((tool) => (
                     <div key={tool.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-blue-100 rounded-lg">
@@ -267,7 +267,7 @@ export default function ToolsHubPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {patterns.slice(0, 3).map((pattern, index) => (
+                  {Array.isArray(patterns) && patterns.slice(0, 3).map((pattern, index) => (
                     <div key={index} className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                       <p className="font-medium text-sm">{pattern.patternName}</p>
                       <p className="text-xs text-gray-600 mt-1">
@@ -308,7 +308,7 @@ export default function ToolsHubPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {toolDefinitions
+                {Array.isArray(toolDefinitions) && toolDefinitions
                   .filter((def) => def.name.toLowerCase().includes(searchTerm.toLowerCase()))
                   .map((def) => (
                     <Card key={def.id} className="hover:shadow-lg transition-shadow">
@@ -362,7 +362,7 @@ export default function ToolsHubPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {toolInstances.map((tool) => (
+                {Array.isArray(toolInstances) && toolInstances.map((tool) => (
                   <div key={tool.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-blue-100 rounded-lg">
@@ -412,7 +412,7 @@ export default function ToolsHubPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {workflows.map((workflow) => (
+                {Array.isArray(workflows) && workflows.map((workflow) => (
                   <div key={workflow.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-purple-100 rounded-lg">
@@ -454,7 +454,7 @@ export default function ToolsHubPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {healthMetrics.slice(0, 5).map((metric) => (
+                  {Array.isArray(healthMetrics) && healthMetrics.slice(0, 5).map((metric) => (
                     <div key={metric.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {metric.healthScore >= 80 ? (
@@ -483,7 +483,7 @@ export default function ToolsHubPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {relationships.slice(0, 5).map((rel, index) => (
+                  {Array.isArray(relationships) && relationships.slice(0, 5).map((rel, index) => (
                     <div key={index} className="p-2 bg-blue-50 rounded">
                       <p className="text-sm font-medium">{rel.relationshipType}</p>
                       <p className="text-xs text-gray-600">Strength: {rel.strength.toFixed(1)}/10</p>

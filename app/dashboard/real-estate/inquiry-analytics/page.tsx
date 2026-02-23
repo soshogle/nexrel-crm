@@ -161,7 +161,7 @@ export default function InquiryAnalyticsPage() {
               <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie data={data.sources} dataKey="count" nameKey="source" cx="50%" cy="50%" outerRadius={90} label={({ source, percent }) => `${source} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                    {data.sources.map((_, i) => (
+                    {Array.isArray(data.sources) && data.sources.map((_, i) => (
                       <Cell key={i} fill={SOURCE_COLORS[i % SOURCE_COLORS.length]} />
                     ))}
                   </Pie>
@@ -190,7 +190,7 @@ export default function InquiryAnalyticsPage() {
                   <YAxis type="category" dataKey="status" width={100} className="text-xs" />
                   <Tooltip />
                   <Bar dataKey="count" name="Leads">
-                    {data.statuses.map((s, i) => (
+                    {Array.isArray(data.statuses) && data.statuses.map((s, i) => (
                       <Cell key={i} fill={STATUS_COLORS[s.status] || '#6b7280'} />
                     ))}
                   </Bar>
@@ -212,7 +212,7 @@ export default function InquiryAnalyticsPage() {
               <p className="text-sm text-muted-foreground text-center py-10">No website leads tracked yet</p>
             ) : (
               <div className="space-y-3">
-                {data.websiteLeads.map(w => (
+                {Array.isArray(data.websiteLeads) && data.websiteLeads.map(w => (
                   <div key={w.websiteId} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                     <div>
                       <p className="font-medium text-sm">{w.name}</p>
@@ -252,7 +252,7 @@ export default function InquiryAnalyticsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.propertyInquiries.map(p => (
+                  {Array.isArray(data.propertyInquiries) && data.propertyInquiries.map(p => (
                     <tr key={p.propertyId} className="border-b last:border-0">
                       <td className="py-2.5">{p.address}</td>
                       <td className="py-2.5">
@@ -280,7 +280,7 @@ export default function InquiryAnalyticsPage() {
             <p className="text-sm text-muted-foreground text-center py-10">No recent leads</p>
           ) : (
             <div className="space-y-2">
-              {data.recentLeads.map(lead => (
+              {Array.isArray(data.recentLeads) && data.recentLeads.map(lead => (
                 <div key={lead.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{lead.contactPerson || lead.businessName}</p>

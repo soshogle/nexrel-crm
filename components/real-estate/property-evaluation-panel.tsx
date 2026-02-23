@@ -325,7 +325,7 @@ function EvaluationResultDisplay({
       )}
 
       {/* Comparables */}
-      {result.comparables.length > 0 && (
+      {Array.isArray(result?.comparables) && result.comparables.length > 0 && (
         <div>
           <button
             onClick={() => setShowComparables(!showComparables)}

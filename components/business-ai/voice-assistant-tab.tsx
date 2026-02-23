@@ -92,6 +92,7 @@ function MiniBreakdownBar({ label, value, color }: { label: string; value: numbe
 }
 
 function PredictionsChart({ predictions }: { predictions: any[] }) {
+  if (!Array.isArray(predictions) || predictions.length === 0) return null;
   const chartData = predictions.map((p) => ({
     name: p.metric
       .replace(/([A-Z])/g, ' $1')
@@ -224,7 +225,7 @@ export function VoiceAssistantTab({ healthScore, predictions, insights }: VoiceA
               </div>
             </div>
 
-            {healthScore.alerts && healthScore.alerts.length > 0 && (
+            {Array.isArray(healthScore?.alerts) && healthScore.alerts.length > 0 && (
               <div className="mt-6 space-y-2">
                 <h4 className="text-sm font-semibold">Alerts</h4>
                 {healthScore.alerts.slice(0, 3).map((alert: any, index: number) => (
@@ -256,7 +257,7 @@ export function VoiceAssistantTab({ healthScore, predictions, insights }: VoiceA
             <CardDescription>Statistical forecasts from your CRM data (regression, conversion rates)</CardDescription>
           </CardHeader>
           <CardContent>
-            {predictions.length > 0 ? (
+            {Array.isArray(predictions) && predictions.length > 0 ? (
               <div className="space-y-6">
                 <PredictionsChart predictions={predictions} />
 
@@ -305,7 +306,7 @@ export function VoiceAssistantTab({ healthScore, predictions, insights }: VoiceA
             <CardDescription>Actionable intelligence for your business</CardDescription>
           </CardHeader>
           <CardContent>
-            {insights.length > 0 ? (
+            {Array.isArray(insights) && insights.length > 0 ? (
               <div className="space-y-4">
                 {insights.map((insight, index) => (
                   <div key={index} className="border rounded-lg p-4 bg-white/50 backdrop-blur-sm">
@@ -317,7 +318,7 @@ export function VoiceAssistantTab({ healthScore, predictions, insights }: VoiceA
                       <div className="flex-1">
                         <h4 className="font-semibold text-sm">{insight.title}</h4>
                         <p className="text-xs text-gray-600 mt-1">{insight.description}</p>
-                        {insight.actionItems && insight.actionItems.length > 0 && (
+                        {Array.isArray(insight?.actionItems) && insight.actionItems.length > 0 && (
                           <ul className="mt-2 space-y-1">
                             {insight.actionItems.slice(0, 2).map((item: string, i: number) => (
                               <li key={i} className="text-xs text-gray-500 flex items-center gap-1">

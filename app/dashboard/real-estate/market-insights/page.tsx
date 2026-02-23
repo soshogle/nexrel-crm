@@ -232,26 +232,26 @@ export default function MarketInsightsPage() {
   const hasData = liveStats && ((liveStats.activeListings || 0) + (liveStats.closedSales || 0) > 0);
 
   // Chart data from monthly trends (live calculated)
-  const priceChartData = monthlyTrends.map((t) => ({
+  const priceChartData = Array.isArray(monthlyTrends) ? monthlyTrends.map((t) => ({
     period: t.month,
     median: t.medianPrice,
     avg: t.avgPrice,
-  }));
+  })) : [];
 
-  const inventoryChartData = monthlyTrends.map((t) => ({
+  const inventoryChartData = Array.isArray(monthlyTrends) ? monthlyTrends.map((t) => ({
     period: t.month,
     newListings: t.newListings,
     closedSales: t.closedSales,
-  }));
+  })) : [];
 
-  const domChartData = monthlyTrends.map((t) => ({
+  const domChartData = Array.isArray(monthlyTrends) ? monthlyTrends.map((t) => ({
     period: t.month,
     dom: t.medianDom,
-  }));
+  })) : [];
 
-  const pieData = liveStats?.statusBreakdown?.filter((s) => s.count > 0).map((s) => ({
+  const pieData = Array.isArray(liveStats?.statusBreakdown) ? liveStats!.statusBreakdown.filter((s) => s.count > 0).map((s) => ({
     name: s.status.replace(/_/g, ' '), value: s.count,
-  })) || [];
+  })) : [];
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -299,7 +299,7 @@ export default function MarketInsightsPage() {
                 {filteredLocations.length > 0 && (
                   <div className="px-3 py-1.5 text-xs text-muted-foreground font-medium bg-muted/30">Your Listing Locations</div>
                 )}
-                {filteredLocations.map((loc) => (
+                {Array.isArray(filteredLocations) && filteredLocations.map((loc) => (
                   <button key={loc} onClick={() => selectLocation(loc)} className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2">
                     <MapPin className="w-3 h-3 text-purple-500" /> {loc}
                   </button>
@@ -308,7 +308,7 @@ export default function MarketInsightsPage() {
                 {placeSuggestions.length > 0 && (
                   <>
                     <div className="px-3 py-1.5 text-xs text-muted-foreground font-medium bg-muted/30 border-t">Google Places</div>
-                    {placeSuggestions.map((p: any) => (
+                    {Array.isArray(placeSuggestions) && placeSuggestions.map((p: any) => (
                       <button key={p.place_id} onClick={() => selectLocation(p.description, true)} className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2">
                         <Search className="w-3 h-3 text-blue-500" /> {p.description}
                       </button>
@@ -517,7 +517,7 @@ export default function MarketInsightsPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={liveStats!.typeBreakdown.map((t) => ({ ...t, type: t.type.replace(/_/g, ' ') }))} layout="vertical">
+                  <BarChart data={Array.isArray(liveStats?.typeBreakdown) ? liveStats!.typeBreakdown.map((t) => ({ ...t, type: t.type.replace(/_/g, ' ') })) : []} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis type="number" className="text-xs" />
                     <YAxis dataKey="type" type="category" className="text-xs" width={120} />
@@ -566,7 +566,7 @@ export default function MarketInsightsPage() {
             </div>
           ) : (
             <div className="space-y-3 max-h-[320px] overflow-y-auto">
-              {marketReports.map((report) => (
+              {Array.isArray(marketReports) && marketReports.map((report) => (
                 <div key={report.id} className="flex items-center justify-between p-4 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium truncate">{report.title}</p>

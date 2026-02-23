@@ -94,7 +94,7 @@ export default function VoiceAIDiagnosticsPage() {
       {diagnostics?.summary && (
         <>
           {/* Issues Detected */}
-          {diagnostics.summary.issuesDetected.length > 0 && (
+          {Array.isArray(diagnostics?.summary?.issuesDetected) && diagnostics.summary.issuesDetected.length > 0 && (
             <Card className="border-yellow-500/50 bg-yellow-500/5">
               <CardHeader>
                 <CardTitle className="flex items-center text-yellow-500">
@@ -116,7 +116,7 @@ export default function VoiceAIDiagnosticsPage() {
             </Card>
           )}
 
-          {diagnostics.summary.issuesDetected.length === 0 && (
+          {(!Array.isArray(diagnostics?.summary?.issuesDetected) || diagnostics.summary.issuesDetected.length === 0) && (
             <Card className="border-green-500/50 bg-green-500/5">
               <CardHeader>
                 <CardTitle className="flex items-center text-green-500">
@@ -193,7 +193,7 @@ export default function VoiceAIDiagnosticsPage() {
                 <CardDescription>Your configured voice AI agents</CardDescription>
               </CardHeader>
               <CardContent>
-                {diagnostics.diagnostics.voiceAgents.length === 0 ? (
+                {!Array.isArray(diagnostics?.diagnostics?.voiceAgents) || diagnostics.diagnostics.voiceAgents.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No voice agents configured</p>
                 ) : (
                   <div className="space-y-4">
@@ -271,7 +271,7 @@ export default function VoiceAIDiagnosticsPage() {
                 <CardDescription>Last 10 calls</CardDescription>
               </CardHeader>
               <CardContent>
-                {diagnostics.diagnostics.callLogs.length === 0 ? (
+                {!Array.isArray(diagnostics?.diagnostics?.callLogs) || diagnostics.diagnostics.callLogs.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No call logs yet</p>
                 ) : (
                   <div className="space-y-3">
@@ -319,7 +319,7 @@ export default function VoiceAIDiagnosticsPage() {
                 <CardDescription>Connected email accounts</CardDescription>
               </CardHeader>
               <CardContent>
-                {diagnostics.diagnostics.emailConnections.length === 0 ? (
+                {!Array.isArray(diagnostics?.diagnostics?.emailConnections) || diagnostics.diagnostics.emailConnections.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No email connections</p>
                 ) : (
                   <div className="space-y-3">

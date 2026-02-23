@@ -117,7 +117,7 @@ export function AnalyticalDashboardTab({ comprehensiveData, detailedInsights, en
       )}
 
       {/* Detailed Insights */}
-      {detailedInsights.length > 0 && (
+      {Array.isArray(detailedInsights) && detailedInsights.length > 0 && (
         <Card className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-purple-50/30 backdrop-blur-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl" />
           <CardHeader className="relative z-10">
@@ -161,7 +161,7 @@ export function AnalyticalDashboardTab({ comprehensiveData, detailedInsights, en
                                 </div>
                               </div>
                             )}
-                            {insight.suggestedActions && insight.suggestedActions.length > 0 && (
+                            {Array.isArray(insight?.suggestedActions) && insight.suggestedActions.length > 0 && (
                               <div><p className="text-sm font-medium text-gray-700 mb-2">Suggested Actions:</p>
                                 <ul className="space-y-1">{insight.suggestedActions.map((action, idx) => (
                                   <li key={idx} className="text-sm text-gray-600 flex items-center gap-2"><ChevronRight className="h-3 w-3 text-purple-600" />{action}</li>
@@ -216,7 +216,7 @@ export function AnalyticalDashboardTab({ comprehensiveData, detailedInsights, en
       )}
 
       {/* Workflow Recommendations */}
-      {workflowRecommendations.length > 0 && (
+      {Array.isArray(workflowRecommendations) && workflowRecommendations.length > 0 && (
         <Card className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/90 to-blue-50/30 backdrop-blur-sm relative overflow-hidden">
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl" />
           <CardHeader className="relative z-10">
@@ -240,7 +240,7 @@ export function AnalyticalDashboardTab({ comprehensiveData, detailedInsights, en
                           <p className="text-xs text-gray-500"><span className="font-medium">Trigger:</span> {workflow.trigger}</p>
                           <p className="text-xs text-gray-500"><span className="font-medium">Expected Impact:</span> {workflow.expectedImpact}</p>
                         </div>
-                        {workflow.actions.length > 0 && (
+                        {Array.isArray(workflow?.actions) && workflow.actions.length > 0 && (
                           <div className="mt-2">
                             <p className="text-xs font-medium text-gray-700 mb-1">Actions:</p>
                             <div className="flex flex-wrap gap-1">{workflow.actions.map((action, idx) => <Badge key={idx} variant="outline" className="text-xs">{action}</Badge>)}</div>

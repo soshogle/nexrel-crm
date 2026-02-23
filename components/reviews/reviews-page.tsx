@@ -367,7 +367,7 @@ export function ReviewsPage() {
     }
   };
 
-  const filteredReviews = reviews.filter((r) => {
+  const filteredReviews = (Array.isArray(reviews) ? reviews : []).filter((r) => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const matches =
@@ -557,7 +557,7 @@ export function ReviewsPage() {
 
                         {review.themes && (review.themes as string[]).length > 0 && (
                           <div className="flex gap-1 flex-wrap mb-2">
-                            {(review.themes as string[]).map((t, i) => (
+                            {(Array.isArray(review?.themes) ? review.themes : []).map((t, i) => (
                               <Badge key={i} variant="secondary" className="text-xs">{t}</Badge>
                             ))}
                           </div>
@@ -839,7 +839,7 @@ export function ReviewsPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {insights.topStrengths.length === 0 ? (
+                    {!Array.isArray(insights?.topStrengths) || insights.topStrengths.length === 0 ? (
                       <p className="text-sm text-muted-foreground">Not enough data yet.</p>
                     ) : (
                       <ul className="space-y-1">
@@ -861,7 +861,7 @@ export function ReviewsPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {insights.topWeaknesses.length === 0 ? (
+                    {!Array.isArray(insights?.topWeaknesses) || insights.topWeaknesses.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No concerns identified. Great job!</p>
                     ) : (
                       <ul className="space-y-1">
@@ -878,7 +878,7 @@ export function ReviewsPage() {
               </div>
 
               {/* Common Themes */}
-              {insights.commonThemes.length > 0 && (
+              {Array.isArray(insights?.commonThemes) && insights.commonThemes.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-sm">What Customers Are Saying</CardTitle>
@@ -1053,7 +1053,7 @@ export function ReviewsPage() {
                     <CardContent>
                       <ScrollArea className="max-h-[500px]">
                         <div className="space-y-3">
-                          {insights.webMentions.recentMentions.map((m, i) => (
+                          {Array.isArray(insights?.webMentions?.recentMentions) && insights.webMentions.recentMentions.map((m, i) => (
                             <div key={i} className="border rounded-lg p-3 space-y-2">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <Badge variant="outline" className={SOURCE_COLORS[m.source] || 'bg-purple-50 border-purple-200 text-purple-700'}>
@@ -1070,9 +1070,9 @@ export function ReviewsPage() {
                                 <h4 className="font-medium text-sm">{m.title}</h4>
                               )}
                               <p className="text-sm text-foreground/80">{m.snippet}</p>
-                              {m.themes.length > 0 && (
+                              {Array.isArray(m?.themes) && m.themes.length > 0 && (
                                 <div className="flex gap-1 flex-wrap">
-                                  {m.themes.slice(0, 5).map((t, ti) => (
+                                  {(Array.isArray(m?.themes) ? m.themes : []).slice(0, 5).map((t, ti) => (
                                     <Badge key={ti} variant="secondary" className="text-xs">{t}</Badge>
                                   ))}
                                 </div>
@@ -1097,7 +1097,7 @@ export function ReviewsPage() {
               )}
 
               {/* AI Recommendations */}
-              {insights.recommendations.length > 0 && (
+              {Array.isArray(insights?.recommendations) && insights.recommendations.length > 0 && (
                 <Card className="border-blue-200 bg-blue-50/30">
                   <CardHeader>
                     <CardTitle className="text-sm flex items-center gap-2">
@@ -1148,7 +1148,7 @@ export function ReviewsPage() {
                     <SelectTrigger><SelectValue placeholder="Choose a customer..." /></SelectTrigger>
                     <SelectContent>
                       <ScrollArea className="h-60">
-                        {leads.map((l) => (
+                        {Array.isArray(leads) && leads.map((l) => (
                           <SelectItem key={l.id} value={l.id}>
                             {l.name} {l.email ? `(${l.email})` : ''}
                           </SelectItem>
