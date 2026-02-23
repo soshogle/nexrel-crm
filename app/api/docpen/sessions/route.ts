@@ -93,9 +93,9 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Consultant name is required');
     }
 
-    // Validate profession
+    // Validate profession (must match DocpenProfession enum in Prisma)
     const validProfessions = [
-      'GENERAL_PRACTICE', 'DENTIST', 'OPTOMETRIST', 'DERMATOLOGIST',
+      'GENERAL_PRACTICE', 'DENTIST', 'ORTHODONTIC', 'OPTOMETRIST', 'DERMATOLOGIST',
       'CARDIOLOGIST', 'PSYCHIATRIST', 'PEDIATRICIAN', 'ORTHOPEDIC',
       'PHYSIOTHERAPIST', 'CHIROPRACTOR', 'CUSTOM',
     ];

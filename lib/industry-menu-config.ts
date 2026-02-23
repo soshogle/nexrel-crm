@@ -278,7 +278,15 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
   ],
   ORTHODONTIST: [
     ...CORE_MENU_ITEMS,
+    'docpen', // AI Docpen - Ambient medical scribe for orthodontic practices
+    'dental-management',
+    'dental-clinical',
+    'dental-admin',
+    'general-inventory',
     'payments',
+    'credit-scoring',
+    'data-monetization',
+    'bnpl',
     'widgets',
   ],
   RETAIL: [
