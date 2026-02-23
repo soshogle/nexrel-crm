@@ -13,11 +13,61 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Play, Loader2, History, Settings, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
+import { getREEmployeeConfig } from '@/lib/real-estate/ai-employees/configs';
+import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
+
+function slugify(s: string): string {
+  return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
 
 interface Task {
   taskKey: string;
   enabled: boolean;
   description: string;
+}
+
+/** Fallback tasks when API returns empty - ensures duties are always visible */
+function getFallbackTasks(
+  source: 'industry' | 're' | 'professional',
+  employeeType: string,
+  industry?: string
+): Task[] {
+  if (source === 'professional') {
+    const config = PROFESSIONAL_EMPLOYEE_CONFIGS[employeeType as keyof typeof PROFESSIONAL_EMPLOYEE_CONFIGS];
+    if (config?.capabilities?.length) {
+      return config.capabilities.map((cap) => ({
+        taskKey: slugify(cap),
+        enabled: true,
+        description: cap,
+      }));
+    }
+    return [{ taskKey: 'run', enabled: true, description: config?.fullDescription || 'Conversational assistant' }];
+  }
+  if (source === 're') {
+    const reConfig = getREEmployeeConfig(employeeType as any);
+    if (reConfig?.capabilities?.length) {
+      return reConfig.capabilities.map((cap) => ({
+        taskKey: slugify(cap),
+        enabled: true,
+        description: cap,
+      }));
+    }
+    return [{ taskKey: 'run', enabled: true, description: reConfig?.description || 'Run tasks' }];
+  }
+  if (source === 'industry' && industry) {
+    const module = getIndustryAIEmployeeModule(industry as any);
+    const config = module?.configs?.[employeeType] as { capabilities?: string[]; description?: string } | undefined;
+    if (config?.capabilities?.length) {
+      return config.capabilities.map((cap) => ({
+        taskKey: slugify(cap),
+        enabled: true,
+        description: cap,
+      }));
+    }
+    return [{ taskKey: 'run', enabled: true, description: config?.description || 'Run tasks' }];
+  }
+  return [{ taskKey: 'run', enabled: true, description: 'Run tasks' }];
 }
 
 interface HistoryItem {
@@ -60,9 +110,17 @@ export function TaskDashboardDialog({
     try {
       const res = await fetch(`/api/ai-employees/task-config?agentId=${agentId}`);
       const data = await res.json();
-      if (res.ok && data.tasks) setTasks(data.tasks);
+      if (res.ok && data.tasks?.length) {
+        setTasks(data.tasks);
+      } else {
+        // Fallback: show duties from config so user always sees tasks + toggles
+        const fallback = getFallbackTasks(source, employeeType, industry ?? undefined);
+        setTasks(fallback);
+      }
     } catch {
-      toast.error('Failed to load task config');
+      const fallback = getFallbackTasks(source, employeeType, industry ?? undefined);
+      setTasks(fallback);
+      toast.error('Could not load saved preferences — showing defaults');
     } finally {
       setLoading(false);
     }
@@ -148,13 +206,13 @@ export function TaskDashboardDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-black border-slate-700 max-w-lg">
+      <DialogContent className="max-w-lg bg-slate-50 border-slate-200 text-slate-900 dark:bg-slate-50 dark:border-slate-200 dark:text-slate-900">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
-            <Settings className="w-5 h-5 text-purple-400" />
+          <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-900">
+            <Settings className="w-5 h-5 text-purple-600" />
             Manage Tasks — {agentName}
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-slate-600 dark:text-slate-600">
             Configure what runs, view history, and trigger runs manually.
           </DialogDescription>
         </DialogHeader>
@@ -162,22 +220,28 @@ export function TaskDashboardDialog({
         <div className="space-y-6 mt-4">
           {/* Task toggles */}
           <div>
-            <h4 className="text-sm font-medium text-slate-300 mb-3">Task toggles</h4>
+            <h4 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-800">Duties &amp; tasks</h4>
             {loading ? (
-              <div className="flex items-center gap-2 text-slate-400">
+              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-600">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Loading...
               </div>
+            ) : tasks.length === 0 ? (
+              <p className="text-sm text-slate-600 dark:text-slate-600">
+                No tasks configured for this agent yet.
+              </p>
             ) : (
               <div className="space-y-2">
                 {tasks.map((t) => (
                   <div
                     key={t.taskKey}
-                    className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-700"
+                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-200 dark:bg-white dark:text-slate-900"
                   >
-                    <div>
-                      <p className="text-white font-medium">{t.taskKey}</p>
-                      <p className="text-xs text-slate-400">{t.description}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-slate-900 dark:text-slate-900">{t.description}</p>
+                      {t.taskKey !== t.description && (
+                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-500">{t.taskKey}</p>
+                      )}
                     </div>
                     <Switch
                       checked={t.enabled}
@@ -210,29 +274,29 @@ export function TaskDashboardDialog({
 
           {/* History */}
           <div>
-            <h4 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+            <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
               <History className="w-4 h-4" />
               Task history
             </h4>
-            <div className="max-h-48 overflow-y-auto space-y-2">
+            <div className="max-h-48 space-y-2 overflow-y-auto">
               {history.length === 0 ? (
-                <p className="text-sm text-slate-500">No runs yet.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-500">No runs yet.</p>
               ) : (
                 history.map((h) => (
                   <div
                     key={h.id}
-                    className="p-3 rounded-lg bg-slate-900 border border-slate-700 text-sm"
+                    className="rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-sm dark:border-slate-200 dark:bg-white dark:text-slate-700"
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-slate-400">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-slate-600 dark:text-slate-600">
                         {new Date(h.date).toLocaleString()}
                       </span>
                       <Badge
                         variant="outline"
                         className={
                           h.status === 'SUCCESS'
-                            ? 'bg-green-500/10 border-green-500/30 text-green-400'
-                            : 'bg-red-500/10 border-red-500/30 text-red-400'
+                            ? 'bg-green-500/10 border-green-500/30 text-green-700'
+                            : 'bg-red-500/10 border-red-500/30 text-red-700'
                         }
                       >
                         {h.status === 'SUCCESS' ? (
@@ -244,7 +308,7 @@ export function TaskDashboardDialog({
                       </Badge>
                     </div>
                     {h.summary && (
-                      <p className="text-slate-300">{h.summary}</p>
+                      <p className="text-slate-700">{h.summary}</p>
                     )}
                   </div>
                 ))
