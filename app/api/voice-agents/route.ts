@@ -165,15 +165,31 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Merge all agent types for unified preview dropdown
+    // Include CRM Voice Assistant (website/conversational AI) when user has one
+    const crmAssistantForPreview: any[] = [];
+    if ((user as any).crmVoiceAgentId) {
+      crmAssistantForPreview.push({
+        id: `crm-assistant-${user.id}`,
+        name: `${user.name || 'Your Business'} CRM Assistant`,
+        elevenLabsAgentId: (user as any).crmVoiceAgentId,
+        _count: { callLogs: 0, outboundCalls: 0, campaigns: 0 },
+        elevenLabsCallCount: 0,
+        aiEmployeeCount: 0,
+        source: 'crm-assistant' as const,
+        businessName: user.name || 'Your Business',
+      });
+    }
+
+    // Merge all agent types for unified list
     const allAgents = [
       ...enrichedAgents,
+      ...crmAssistantForPreview,
       ...industryAgentsForPreview.filter((ia: any) => ia.elevenLabsAgentId),
       ...reAgentsForPreview.filter((a: any) => a.elevenLabsAgentId),
       ...profAgentsForPreview.filter((a: any) => a.elevenLabsAgentId),
     ];
 
-    const total = await (prisma as any).voiceAgent.count({ where: { userId: user.id } });
+    const total = allAgents.length;
     return paginatedResponse(allAgents, total, pagination, 'voiceAgents');
   } catch (error: any) {
     console.error('Error fetching voice agents:', error);

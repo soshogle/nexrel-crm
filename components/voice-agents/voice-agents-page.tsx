@@ -428,36 +428,40 @@ export function VoiceAgentsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-white border-purple-200">
-                              <DropdownMenuItem onClick={() => { setEditingAgent(selectedAgent); setShowEditDialog(true); }}>
-                                <Pencil className="w-4 h-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => window.location.href = `/dashboard/voice-agents/preview?agentId=${selectedAgent.id}`}>
                                 <TestTube2 className="w-4 h-4 mr-2" />
                                 Test
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => fetch(`/api/voice-agents/${selectedAgent.id}`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ ...selectedAgent, status: selectedAgent.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' }),
-                              }).then(() => fetchAgents())}>
-                                <Power className="w-4 h-4 mr-2" />
-                                {selectedAgent.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  if (confirm('Delete this agent?')) {
-                                    fetch(`/api/voice-agents/${selectedAgent.id}`, { method: 'DELETE' }).then(() => {
-                                      fetchAgents();
-                                      setSelectedAgent(null);
-                                    });
-                                  }
-                                }}
-                                className="text-red-400"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
+                              {!selectedAgent.source && (
+                                <>
+                                  <DropdownMenuItem onClick={() => { setEditingAgent(selectedAgent); setShowEditDialog(true); }}>
+                                    <Pencil className="w-4 h-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => fetch(`/api/voice-agents/${selectedAgent.id}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ ...selectedAgent, status: selectedAgent.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' }),
+                                  }).then(() => fetchAgents())}>
+                                    <Power className="w-4 h-4 mr-2" />
+                                    {selectedAgent.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      if (confirm('Delete this agent?')) {
+                                        fetch(`/api/voice-agents/${selectedAgent.id}`, { method: 'DELETE' }).then(() => {
+                                          fetchAgents();
+                                          setSelectedAgent(null);
+                                        });
+                                      }
+                                    }}
+                                    className="text-red-400"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

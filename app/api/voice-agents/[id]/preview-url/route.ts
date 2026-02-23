@@ -76,6 +76,20 @@ export async function GET(
       }
     }
 
+    if (!elevenLabsAgentId && params.id.startsWith('crm-assistant-')) {
+      const userId = params.id.replace('crm-assistant-', '');
+      if (userId === session.user.id) {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { crmVoiceAgentId: true, name: true },
+        });
+        if ((user as any)?.crmVoiceAgentId) {
+          elevenLabsAgentId = (user as any).crmVoiceAgentId;
+          agentName = `${(user as any).name || 'Your Business'} CRM Assistant`;
+        }
+      }
+    }
+
     if (!elevenLabsAgentId) {
       return apiErrors.notFound('Voice agent not found');
     }
