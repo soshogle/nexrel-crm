@@ -11,6 +11,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { REAIEmployeeType } from '@prisma/client';
 import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
+import { attachToolsToElevenLabsAgent } from '@/lib/ai-employee-tools';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -120,7 +121,7 @@ async function provisionEmployee(
     });
 
     // Store in database
-    await prisma.rEAIEmployeeAgent.upsert({
+    const record = await prisma.rEAIEmployeeAgent.upsert({
       where: {
         userId_employeeType: {
           userId,
@@ -141,6 +142,8 @@ async function provisionEmployee(
         updatedAt: new Date(),
       },
     });
+
+    await attachToolsToElevenLabsAgent(apiKey, agentId, record.id);
 
     return { success: true, agentId };
   } catch (error) {

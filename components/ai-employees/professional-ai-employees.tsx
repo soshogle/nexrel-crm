@@ -22,6 +22,7 @@ import {
   AlertCircle,
   RefreshCw,
   Mic,
+  Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -29,6 +30,7 @@ import {
   PROFESSIONAL_EMPLOYEE_TYPES,
   type ProfessionalAIEmployeeType,
 } from '@/lib/professional-ai-employees/config';
+import { TaskDashboardDialog } from '@/components/ai-employees/task-dashboard-dialog';
 
 interface ProvisionedAgent {
   id: string;
@@ -84,6 +86,7 @@ export function ProfessionalAIEmployees() {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [runningEmployee, setRunningEmployee] = useState<string | null>(null);
   const [testingAgentId, setTestingAgentId] = useState<string | null>(null);
+  const [showTaskDashboard, setShowTaskDashboard] = useState(false);
 
   useEffect(() => {
     fetchProvisionedAgents();
@@ -351,24 +354,43 @@ export function ProfessionalAIEmployees() {
                     ))}
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
+                    className="bg-green-600 hover:bg-green-700"
                     onClick={() => handleTestAgent(selectedEmployee.id)}
                     disabled={testingAgentId === selectedEmployee.id}
                   >
                     {testingAgentId === selectedEmployee.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4 mr-2" />}
-                    Test Voice Agent
+                    Talk to {selectedEmployee.name}
                   </Button>
-                  <Button variant="outline" onClick={() => handleRunEmployee(selectedEmployee.id)}>
-                    <Play className="w-4 h-4 mr-2" />
-                    Run Now
-                  </Button>
+                  {isAgentProvisioned(selectedEmployee.id) && (
+                    <Button
+                      variant="outline"
+                      className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                      onClick={() => setShowTaskDashboard(true)}
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Manage Tasks
+                    </Button>
+                  )}
+                  <p className="text-xs text-slate-500 w-full">Talk opens voice conversation. Manage Tasks: toggles, history.</p>
                 </div>
               </div>
             </>
           )}
         </DialogContent>
       </Dialog>
+
+      {selectedEmployee && getProvisionedAgent(selectedEmployee.id)?.id && (
+        <TaskDashboardDialog
+          open={showTaskDashboard}
+          onOpenChange={setShowTaskDashboard}
+          agentId={getProvisionedAgent(selectedEmployee.id)!.id}
+          agentName={selectedEmployee.name}
+          employeeType={selectedEmployee.id}
+          source="professional"
+        />
+      )}
     </div>
   );
 }

@@ -325,13 +325,13 @@ export async function POST(request: NextRequest) {
         return apiErrors.badRequest('Unknown employee type');
     }
 
-    // Log the execution
+    // Log the execution (store full result for task history)
     await prisma.rEAIEmployeeExecution.create({
       data: {
         userId: session.user.id,
         employeeType: employeeType as any,
         status: result.success ? 'SUCCESS' : 'FAILED',
-        result: result.details || {},
+        result: { ...result, details: result.details || {} } as any,
         completedAt: new Date()
       }
     });

@@ -292,6 +292,8 @@ model User {
   reExpiredAssignedListings   REExpiredListing[]           @relation("REExpiredAssignedUser")
   reAIEmployeeExecutions      REAIEmployeeExecution[]      @relation("REAIEmployeeExecutionUser")
   reAIEmployeeAgents          REAIEmployeeAgent[]          @relation("REAIEmployeeAgentUser")
+  industryAIEmployeeExecutions IndustryAIEmployeeExecution[] @relation("IndustryAIEmployeeExecutionUser")
+  aiEmployeeTaskConfigs       AIEmployeeTaskConfig[]       @relation("AIEmployeeTaskConfigUser")
   industryAIEmployeeAgents    IndustryAIEmployeeAgent[]    @relation("IndustryAIEmployeeAgentUser")
   professionalAIEmployeeAgents ProfessionalAIEmployeeAgent[] @relation("ProfessionalAIEmployeeAgentUser")
   aiEmployeeAutoRuns          AIEmployeeAutoRun[]          @relation("AIEmployeeAutoRunUser")
@@ -7688,6 +7690,43 @@ model AIEmployeeAutoRun {
   user User @relation("AIEmployeeAutoRunUser", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, employeeType, industry])
+  @@index([userId])
+  @@index([employeeType])
+}
+
+// Industry AI Employee execution history (Dental, Medical, etc.)
+model IndustryAIEmployeeExecution {
+  id           String   @id @default(cuid())
+  userId       String
+  industry     Industry
+  employeeType String
+  status       String   @default("completed")
+  result       Json?    // { tasksCompleted, summary, details }
+  createdAt    DateTime @default(now())
+
+  user User @relation("IndustryAIEmployeeExecutionUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([industry])
+  @@index([employeeType])
+  @@index([createdAt])
+}
+
+// AI Employee task toggles - which tasks are enabled per employee
+model AIEmployeeTaskConfig {
+  id           String    @id @default(cuid())
+  userId       String
+  source       String    // "industry" | "re" | "professional"
+  industry     Industry? // for industry employees
+  employeeType String
+  taskKey      String    @default("run")
+  enabled      Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User @relation("AIEmployeeTaskConfigUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, industry, employeeType, taskKey])
   @@index([userId])
   @@index([employeeType])
 }

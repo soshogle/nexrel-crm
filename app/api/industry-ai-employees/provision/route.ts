@@ -10,6 +10,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Industry } from '@prisma/client';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
+import { attachToolsToElevenLabsAgent } from '@/lib/ai-employee-tools';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -123,7 +124,7 @@ async function provisionEmployee(
       voiceId: promptConfig.voiceId,
     });
 
-    await prisma.industryAIEmployeeAgent.upsert({
+    const record = await prisma.industryAIEmployeeAgent.upsert({
       where: {
         userId_industry_employeeType: {
           userId,
@@ -146,6 +147,8 @@ async function provisionEmployee(
         updatedAt: new Date(),
       },
     });
+
+    await attachToolsToElevenLabsAgent(apiKey, agentId, record.id);
 
     return { success: true, agentId };
   } catch (error) {

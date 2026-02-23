@@ -48,6 +48,7 @@ import { toast } from 'sonner';
 import { Industry } from '@prisma/client';
 import { TwilioPhoneSelector } from '@/components/shared/twilio-phone-selector';
 import PurchasePhoneNumberDialog from '@/components/voice-agents/purchase-phone-number-dialog';
+import { TaskDashboardDialog } from '@/components/ai-employees/task-dashboard-dialog';
 import type { IndustryEmployeeConfig } from '@/lib/industry-ai-employees/types';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
 
@@ -172,6 +173,7 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [phoneRefreshTrigger, setPhoneRefreshTrigger] = useState(0);
   const [assigningPhone, setAssigningPhone] = useState<string | null>(null);
+  const [showTaskDashboard, setShowTaskDashboard] = useState(false);
 
   useEffect(() => {
     fetchProvisionedAgents();
@@ -576,18 +578,28 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
                         )}
                       </div>
                     )}
-                    <div className="mt-3">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                        className="bg-green-600 hover:bg-green-700"
                         onClick={(e) => { e.stopPropagation(); handleTestAgent(selectedEmployee.id); }}
                         disabled={testingAgentId === selectedEmployee.id}
                       >
                         {testingAgentId === selectedEmployee.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Mic className="w-3 h-3 mr-1" />}
-                        Test Voice Agent
+                        Talk to {selectedEmployee.name}
                       </Button>
-                      <p className="text-xs text-slate-500 mt-1">Opens browser-based voice test (ElevenLabs preview style)</p>
+                      {isAgentProvisioned(selectedEmployee.id) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                          onClick={(e) => { e.stopPropagation(); setShowTaskDashboard(true); }}
+                        >
+                          <Settings className="w-3 h-3 mr-1" />
+                          Manage Tasks
+                        </Button>
+                      )}
+                      <p className="text-xs text-slate-500 w-full">Talk opens voice conversation. Manage Tasks: toggles, history, run.</p>
                     </div>
                   </div>
                 )}
@@ -601,8 +613,13 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
               </div>
               <DialogFooter className="mt-6">
                 <Button variant="outline" onClick={() => setShowDetailDialog(false)} className="border-slate-700 text-white hover:bg-slate-800">Close</Button>
-                <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => { handleRunEmployee(selectedEmployee.id); setShowDetailDialog(false); }}>
-                  <Play className="w-4 h-4 mr-2" />Run Now
+                {isAgentProvisioned(selectedEmployee.id) && (
+                  <Button variant="outline" className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10" onClick={() => setShowTaskDashboard(true)}>
+                    <Settings className="w-4 h-4 mr-2" />Manage Tasks
+                  </Button>
+                )}
+                <Button className="bg-green-600 hover:bg-green-700" onClick={() => { handleTestAgent(selectedEmployee.id); setShowDetailDialog(false); }}>
+                  <Mic className="w-4 h-4 mr-2" />Talk to {selectedEmployee.name}
                 </Button>
               </DialogFooter>
             </>
@@ -621,6 +638,18 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
           }
         }}
       />
+
+      {selectedEmployee && getProvisionedAgent(selectedEmployee.id)?.id && (
+        <TaskDashboardDialog
+          open={showTaskDashboard}
+          onOpenChange={setShowTaskDashboard}
+          agentId={getProvisionedAgent(selectedEmployee.id)!.id}
+          agentName={selectedEmployee.name}
+          employeeType={selectedEmployee.id}
+          source="industry"
+          industry={industry}
+        />
+      )}
     </div>
   );
 }

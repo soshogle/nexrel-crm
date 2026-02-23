@@ -11,6 +11,7 @@ import { prisma } from '@/lib/db';
 import { ProfessionalAIEmployeeType } from '@prisma/client';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
 import { PROFESSIONAL_EMPLOYEE_PROMPTS } from '@/lib/professional-ai-employees/prompts';
+import { attachToolsToElevenLabsAgent } from '@/lib/ai-employee-tools';
 import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
@@ -163,7 +164,7 @@ export async function POST(request: NextRequest) {
           voiceId: promptConfig.voiceId,
         });
 
-        await prisma.professionalAIEmployeeAgent.upsert({
+        const record = await prisma.professionalAIEmployeeAgent.upsert({
           where: {
             userId_employeeType: { userId: session.user.id, employeeType },
           },
@@ -181,6 +182,8 @@ export async function POST(request: NextRequest) {
             updatedAt: new Date(),
           },
         });
+
+        await attachToolsToElevenLabsAgent(apiKey, agentId, record.id);
 
         results.push({ type: employeeType, success: true, agentId });
       } catch (err) {
