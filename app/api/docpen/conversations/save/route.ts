@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -36,10 +37,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!agentId) {
-      return NextResponse.json(
-        { error: 'Agent ID is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Agent ID is required');
     }
 
     // Verify agent belongs to user
@@ -51,10 +49,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!agent) {
-      return NextResponse.json(
-        { error: 'Agent not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Agent not found');
     }
 
     // Use provided ElevenLabs conversation ID or generate a local one
@@ -126,9 +121,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('[Docpen Conversation Save] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to save conversation' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to save conversation');
   }
 }

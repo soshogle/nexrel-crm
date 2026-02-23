@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createMangoVoiceService } from '@/lib/integrations/mango-voice';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,17 +17,14 @@ export async function POST(request: NextRequest) {
     const mangoVoice = createMangoVoiceService();
 
     if (!mangoVoice) {
-      return NextResponse.json(
-        { error: 'Mango Voice integration not configured' },
-        { status: 500 }
-      );
+      return apiErrors.internal('Mango Voice integration not configured');
     }
 
     // Handle webhook event
     const event = await mangoVoice.handleWebhook(payload);
 
     if (!event) {
-      return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
+      return apiErrors.badRequest('Invalid webhook payload');
     }
 
     // Match phone number to patient/lead
@@ -36,9 +34,9 @@ export async function POST(request: NextRequest) {
 
     // Create call log entry
     if (event.eventType === 'call_ended') {
-      await prisma.callLog.create({
+      await (prisma as any).callLog.create({
         data: {
-          userId: patientId ? undefined : undefined, // Would need to get from patient
+          userId: patientId ? undefined : undefined,
           leadId: patientId || undefined,
           direction: event.direction.toUpperCase() as 'INBOUND' | 'OUTBOUND',
           status: 'COMPLETED',
@@ -58,9 +56,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, event });
   } catch (error: any) {
     console.error('Error handling Mango Voice webhook:', error);
-    return NextResponse.json(
-      { error: 'Failed to process webhook', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to process webhook');
   }
 }

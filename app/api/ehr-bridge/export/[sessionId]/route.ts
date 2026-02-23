@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { formatNoteForEHR } from '@/lib/docpen/ehr-export';
 import { logDocpenAudit, DOCPEN_AUDIT_EVENTS } from '@/lib/docpen/audit-log';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -40,12 +41,12 @@ export async function GET(
   try {
     const auth = await verifyToken(request);
     if (!auth) {
-      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+      return apiErrors.unauthorized('Invalid or expired token');
     }
 
     const { sessionId } = await params;
 
-    const session = await prisma.docpenSession.findFirst({
+    const session: any = await (prisma as any).docpenSession.findFirst({
       where: { id: sessionId, userId: auth.userId },
       include: {
         soapNotes: { where: { isCurrentVersion: true } },
@@ -54,12 +55,12 @@ export async function GET(
     });
 
     if (!session) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      return apiErrors.notFound('Session not found');
     }
 
     const soapNote = session.soapNotes[0];
     if (!soapNote) {
-      return NextResponse.json({ error: 'No SOAP note found' }, { status: 400 });
+      return apiErrors.badRequest('No SOAP note found');
     }
 
     const context = {
@@ -91,9 +92,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('[EHR Bridge] Export failed:', error);
-    return NextResponse.json(
-      { error: 'Export failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Export failed');
   }
 }

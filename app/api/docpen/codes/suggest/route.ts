@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { chatCompletion } from '@/lib/openai-client';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,14 +16,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { noteText, profession = 'GENERAL_PRACTICE' } = body;
 
     if (!noteText || typeof noteText !== 'string') {
-      return NextResponse.json({ error: 'noteText required' }, { status: 400 });
+      return apiErrors.badRequest('noteText required');
     }
 
     const isDental = ['DENTIST', 'ORTHODONTIC'].includes(profession);
@@ -41,7 +42,7 @@ ${noteText.substring(0, 4000)}
 
 Return ONLY valid JSON array, no other text. Example: [{"code":"K02.51","description":"Dental caries on smooth surface"}]`;
 
-    const result = await chatCompletion({
+    const result: any = await chatCompletion({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -67,9 +68,6 @@ Return ONLY valid JSON array, no other text. Example: [{"code":"K02.51","descrip
     });
   } catch (error: any) {
     console.error('[Docpen Code Suggest]', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to suggest codes' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to suggest codes');
   }
 }

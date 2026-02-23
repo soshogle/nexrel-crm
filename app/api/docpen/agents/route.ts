@@ -12,6 +12,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 import { docpenAgentProvisioning } from '@/lib/docpen/agent-provisioning';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const agents = await prisma.docpenVoiceAgent.findMany({
@@ -123,10 +124,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ [Docpen Agents] Error fetching agents:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch agents' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch agents');
   }
 }
 
@@ -135,14 +133,14 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { agentId, language, voiceId, voiceName, voiceGender, stability, similarityBoost, isActive } = body;
 
     if (!agentId) {
-      return NextResponse.json({ error: 'Agent ID required' }, { status: 400 });
+      return apiErrors.badRequest('Agent ID required');
     }
 
     // Verify ownership
@@ -154,7 +152,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     if (!agent) {
-      return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+      return apiErrors.notFound('Agent not found');
     }
 
     // Build update data
@@ -230,10 +228,7 @@ export async function PATCH(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ [Docpen Agents] Error updating agent:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update agent' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update agent');
   }
 }
 
@@ -242,14 +237,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const agentId = searchParams.get('agentId');
 
     if (!agentId) {
-      return NextResponse.json({ error: 'Agent ID required' }, { status: 400 });
+      return apiErrors.badRequest('Agent ID required');
     }
 
     // Verify ownership
@@ -261,7 +256,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!agent) {
-      return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+      return apiErrors.notFound('Agent not found');
     }
 
     // Delete from ElevenLabs
@@ -289,9 +284,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('❌ [Docpen Agents] Error deleting agent:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete agent' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete agent');
   }
 }

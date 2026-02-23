@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { syncGeneralInventoryToProduct } from '@/lib/general-inventory/product-sync';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,14 +13,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { items, mode = 'create' } = body; // mode: 'create' or 'update'
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'No items provided' }, { status: 400 });
+      return apiErrors.badRequest('No items provided');
     }
 
     const results = {
@@ -226,9 +227,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error importing items:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to import items' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to import items');
   }
 }

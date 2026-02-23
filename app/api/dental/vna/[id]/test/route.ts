@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { VnaManager } from '@/lib/dental/vna-integration';
 import crypto from 'crypto';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -33,7 +34,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const vna = await (prisma as any).vnaConfiguration.findUnique({
@@ -41,7 +42,7 @@ export async function POST(
     });
 
     if (!vna || vna.userId !== session.user.id) {
-      return NextResponse.json({ error: 'VNA not found' }, { status: 404 });
+      return apiErrors.notFound('VNA not found');
     }
 
     // Decrypt credentials
@@ -82,9 +83,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Error testing VNA:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to test VNA connection' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to test VNA connection');
   }
 }

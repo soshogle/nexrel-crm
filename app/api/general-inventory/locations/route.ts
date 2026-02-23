@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const locations = await prisma.generalInventoryLocation.findMany({
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, locations });
   } catch (error: any) {
     console.error('Error fetching locations:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }
 
@@ -37,14 +38,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { name, address, type, isDefault } = body;
 
     if (!name) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+      return apiErrors.badRequest('Name is required');
     }
 
     // If setting as default, unset other defaults
@@ -68,6 +69,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, location });
   } catch (error: any) {
     console.error('Error creating location:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }

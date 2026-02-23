@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * ADJUST INVENTORY STOCK
@@ -19,7 +20,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -27,10 +28,7 @@ export async function POST(
 
     // Validate required fields
     if (!type || !quantity || !reason) {
-      return NextResponse.json(
-        { error: 'Type, quantity, and reason are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Type, quantity, and reason are required');
     }
 
     // Get current item
@@ -42,7 +40,7 @@ export async function POST(
     });
 
     if (!item) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      return apiErrors.notFound('Item not found');
     }
 
     const currentStock = Number(item.currentStock);
@@ -58,10 +56,7 @@ export async function POST(
 
     // Prevent negative stock
     if (newStock < 0) {
-      return NextResponse.json(
-        { error: 'Cannot reduce stock below zero' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot reduce stock below zero');
     }
 
     // Update item stock
@@ -122,9 +117,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('❌ Stock adjustment error:', error);
-    return NextResponse.json(
-      { error: 'Failed to adjust stock' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to adjust stock');
   }
 }

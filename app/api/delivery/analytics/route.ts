@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDeliveryAnalytics } from '@/lib/delivery-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -21,15 +22,12 @@ export async function GET(request: NextRequest) {
     const result = await getDeliveryAnalytics(session.user.id, period);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return apiErrors.internal(result.error);
     }
 
     return NextResponse.json(result.analytics);
   } catch (error: any) {
     console.error('Error in GET /api/delivery/analytics:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

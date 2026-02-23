@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,7 +16,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -30,7 +31,7 @@ export async function PUT(
     });
 
     if (!existingLocation) {
-      return NextResponse.json({ error: 'Location not found' }, { status: 404 });
+      return apiErrors.notFound('Location not found');
     }
 
     // If setting as default, unset other defaults
@@ -58,7 +59,7 @@ export async function PUT(
     return NextResponse.json({ success: true, location });
   } catch (error: any) {
     console.error('Error updating location:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }
 
@@ -70,7 +71,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify ownership
@@ -87,15 +88,12 @@ export async function DELETE(
     });
 
     if (!existingLocation) {
-      return NextResponse.json({ error: 'Location not found' }, { status: 404 });
+      return apiErrors.notFound('Location not found');
     }
 
     // Check if location has items
     if (existingLocation._count.items > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete location with items. Please remove or reassign items first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete location with items. Please remove or reassign items first.');
     }
 
     await prisma.generalInventoryLocation.delete({
@@ -105,6 +103,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting location:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }

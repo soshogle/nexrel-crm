@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import OpenAI from 'openai';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -52,14 +53,14 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await verifyToken(request);
     if (!auth) {
-      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+      return apiErrors.unauthorized('Invalid or expired token');
     }
 
     const body = await request.json().catch(() => ({}));
     const { imageBase64, ehrType = 'generic', captureDate } = body;
 
     if (!imageBase64 || typeof imageBase64 !== 'string') {
-      return NextResponse.json({ error: 'Missing imageBase64' }, { status: 400 });
+      return apiErrors.badRequest('Missing imageBase64');
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -132,9 +133,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('[EHR Bridge] Analyze screenshot failed:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Analyze failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Analyze failed');
   }
 }

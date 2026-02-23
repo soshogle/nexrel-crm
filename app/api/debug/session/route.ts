@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -10,7 +11,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     
     if (!session) {
-      return NextResponse.json({ error: 'No session' }, { status: 401 });
+      return apiErrors.unauthorized('No session');
     }
 
     return NextResponse.json({
@@ -24,6 +25,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Session debug error:', error);
-    return NextResponse.json({ error: 'Failed to get session' }, { status: 500 });
+    return apiErrors.internal('Failed to get session');
   }
 }

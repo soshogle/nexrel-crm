@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * PUBLIC TRACKING ENDPOINT
@@ -19,10 +20,7 @@ export async function GET(
     const { trackingCode } = params;
 
     if (!trackingCode) {
-      return NextResponse.json(
-        { error: 'Tracking code is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Tracking code is required');
     }
 
     // Find delivery with driver and latest location
@@ -54,10 +52,7 @@ export async function GET(
     });
 
     if (!delivery) {
-      return NextResponse.json(
-        { error: 'Delivery not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Delivery not found');
     }
 
     // Calculate ETA if driver is on the way
@@ -140,10 +135,7 @@ export async function GET(
     return NextResponse.json(trackingInfo);
   } catch (error) {
     console.error('❌ Delivery tracking error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch tracking information' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch tracking information');
   }
 }
 

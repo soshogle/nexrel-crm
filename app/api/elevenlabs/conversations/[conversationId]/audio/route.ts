@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,14 +18,14 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { conversationId } = params;
     const apiKey = process.env.ELEVENLABS_API_KEY;
 
     if (!apiKey) {
-      return NextResponse.json({ error: 'ElevenLabs API key not configured' }, { status: 500 });
+      return apiErrors.internal('ElevenLabs API key not configured');
     }
 
     console.log(`🎵 [Audio Proxy] Fetching audio for conversation: ${conversationId}`);
@@ -61,9 +62,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('❌ [Audio Proxy] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch audio' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch audio');
   }
 }

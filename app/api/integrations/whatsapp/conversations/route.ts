@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getWhatsAppConversations } from '@/lib/integrations/whatsapp-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,10 +14,7 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const searchParams = req.nextUrl.searchParams;
@@ -28,10 +26,7 @@ export async function GET(req: NextRequest) {
     );
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(result.error!);
     }
 
     return NextResponse.json({
@@ -41,9 +36,6 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('Get WhatsApp conversations error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch conversations' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch conversations');
   }
 }

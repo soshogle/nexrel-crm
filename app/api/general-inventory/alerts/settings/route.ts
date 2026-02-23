@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     let settings = await prisma.lowStockAlertSettings.findUnique({
@@ -41,10 +42,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ settings });
   } catch (error: any) {
     console.error('Error fetching alert settings:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch settings');
   }
 }
 
@@ -53,7 +51,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -102,9 +100,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, settings });
   } catch (error: any) {
     console.error('Error updating alert settings:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update settings');
   }
 }

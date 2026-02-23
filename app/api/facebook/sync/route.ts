@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { facebookMessengerService } from '@/lib/facebook-messenger-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     console.log(`🔄 Starting Messenger sync for user: ${session.user.id}`);
@@ -21,10 +22,7 @@ export async function POST(request: NextRequest) {
     const result = await facebookMessengerService.syncConversations(session.user.id);
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || 'Sync failed' },
-        { status: 500 }
-      );
+      return apiErrors.internal(result.error || 'Sync failed');
     }
 
     return NextResponse.json({
@@ -34,9 +32,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Error syncing Messenger:', error);
-    return NextResponse.json(
-      { error: error.message || 'Sync failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Sync failed');
   }
 }

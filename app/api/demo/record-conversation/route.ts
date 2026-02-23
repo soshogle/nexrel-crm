@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
     const { leadId, transcript, duration, recordingUrl, messages } = await request.json();
 
     if (!leadId) {
-      return NextResponse.json({ error: "Missing leadId" }, { status: 400 });
+      return apiErrors.badRequest("Missing leadId");
     }
 
     const leadOwnerId = process.env.DEMO_LEAD_OWNER_ID;
@@ -41,6 +42,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error recording conversation:", error);
-    return NextResponse.json({ error: "Failed to record conversation" }, { status: 500 });
+    return apiErrors.internal("Failed to record conversation");
   }
 }

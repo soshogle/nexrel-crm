@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return apiErrors.unauthorized('Not authenticated');
     }
 
     // Get all sessions for this user
@@ -86,9 +87,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error checking impersonation status:', error);
-    return NextResponse.json(
-      { error: 'Failed to check impersonation status', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to check impersonation status', error.message);
   }
 }

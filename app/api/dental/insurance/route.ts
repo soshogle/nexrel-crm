@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { insuranceManager } from '@/lib/dental/insurance-integration';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
 
-    const claims = await prisma.dentalInsuranceClaim.findMany({
+    const claims = await (prisma as any).dentalInsuranceClaim.findMany({
       where,
       include: {
         lead: {
@@ -55,10 +56,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ claims });
   } catch (error: any) {
     console.error('Error fetching insurance claims:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch insurance claims', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch insurance claims');
   }
 }
 
@@ -67,7 +65,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -93,10 +91,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!leadId || !providerName || !procedures || procedures.length === 0) {
-      return NextResponse.json(
-        { error: 'Missing required fields: leadId, providerName, procedures' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: leadId, providerName, procedures');
     }
 
     // Generate claim number
@@ -137,13 +132,13 @@ export async function POST(request: NextRequest) {
     let claim;
     if (id) {
       // Update existing claim
-      claim = await prisma.dentalInsuranceClaim.update({
+      claim = await (prisma as any).dentalInsuranceClaim.update({
         where: { id },
         data,
       });
     } else {
       // Create new claim
-      claim = await prisma.dentalInsuranceClaim.create({
+      claim = await (prisma as any).dentalInsuranceClaim.create({
         data,
       });
     }
@@ -165,7 +160,8 @@ export async function POST(request: NextRequest) {
             procedureName: procedures[0]?.description || '',
             amount: submittedAmount,
           },
-          provider
+          provider,
+          session.user.id
         );
       } catch (integrationError) {
         console.error('Insurance integration error:', integrationError);
@@ -179,9 +175,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating/updating insurance claim:', error);
-    return NextResponse.json(
-      { error: 'Failed to create/update insurance claim', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create/update insurance claim');
   }
 }

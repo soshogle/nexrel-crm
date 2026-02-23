@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,7 +16,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const item = await prisma.generalInventoryItem.findFirst({
@@ -35,13 +36,13 @@ export async function GET(
     });
 
     if (!item) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      return apiErrors.notFound('Item not found');
     }
 
     return NextResponse.json({ success: true, item });
   } catch (error: any) {
     console.error('Error fetching item:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }
 
@@ -53,7 +54,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -83,7 +84,7 @@ export async function PUT(
     });
 
     if (!existingItem) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      return apiErrors.notFound('Item not found');
     }
 
     const item = await prisma.generalInventoryItem.update({
@@ -114,7 +115,7 @@ export async function PUT(
     return NextResponse.json({ success: true, item });
   } catch (error: any) {
     console.error('Error updating item:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }
 
@@ -126,7 +127,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify ownership
@@ -138,7 +139,7 @@ export async function DELETE(
     });
 
     if (!existingItem) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      return apiErrors.notFound('Item not found');
     }
 
     // Soft delete by setting isActive to false
@@ -150,6 +151,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting item:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }

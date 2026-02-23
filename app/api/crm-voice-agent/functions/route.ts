@@ -15,6 +15,7 @@ import { parseChartIntent, getDynamicChartData } from '@/lib/crm-chart-intent';
 import { parseScenarioIntent, calculateScenario } from '@/lib/crm-scenario-predictor';
 import { makeOutboundCall, makeBulkOutboundCalls } from '@/lib/outbound-call-service';
 import { sendSMS, sendEmail, sendSMSToLeads, sendEmailToLeads } from '@/lib/messaging-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -56,10 +57,7 @@ export async function POST(req: NextRequest) {
     if (!userId) {
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
-        return NextResponse.json(
-          { error: 'Unauthorized - user_id required or valid session' },
-          { status: 401 }
-        );
+        return apiErrors.unauthorized('Unauthorized - user_id required or valid session');
       }
       userId = session.user.id;
     }
@@ -221,10 +219,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('[CRM Voice Functions] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Function execution failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Function execution failed');
   }
 }
 
@@ -541,7 +536,7 @@ async function createDeal(userId: string, params: any) {
         id: deal.id,
         title: deal.title,
         value: deal.value,
-        status: deal.status,
+        status: (deal as any).status,
       },
       message: `Created deal "${title}"${value ? ` worth $${value.toLocaleString()}` : ''}`,
     };
@@ -557,10 +552,10 @@ async function createDeal(userId: string, params: any) {
  */
 async function listLeads(userId: string, params: any) {
   try {
-    const user = await prisma.user.findUnique({
+    const user: any = await prisma.user.findUnique({
       where: { id: userId },
       select: { activeWorkflowDraftId: true },
-    });
+    } as any);
     if (user?.activeWorkflowDraftId) {
       return {
         success: true,
@@ -616,10 +611,10 @@ async function listLeads(userId: string, params: any) {
  */
 async function listDeals(userId: string, params: any) {
   try {
-    const user = await prisma.user.findUnique({
+    const user: any = await prisma.user.findUnique({
       where: { id: userId },
       select: { activeWorkflowDraftId: true },
-    });
+    } as any);
     if (user?.activeWorkflowDraftId) {
       return {
         success: true,
@@ -642,7 +637,7 @@ async function listDeals(userId: string, params: any) {
         value: true,
         status: true,
       },
-    });
+    } as any);
 
     return {
       success: true,
@@ -663,10 +658,10 @@ async function listDeals(userId: string, params: any) {
  */
 async function searchContacts(userId: string, params: any) {
   try {
-    const user = await prisma.user.findUnique({
+    const user: any = await prisma.user.findUnique({
       where: { id: userId },
       select: { activeWorkflowDraftId: true },
-    });
+    } as any);
     if (user?.activeWorkflowDraftId) {
       return {
         success: true,
@@ -745,7 +740,7 @@ async function getRecentActivity(userId: string, params: any) {
           status: true,
           createdAt: true,
         },
-      }),
+      } as any),
     ]);
 
     return {
@@ -929,7 +924,7 @@ async function handleScheduleSMS(userId: string, params: any) {
   if (!lead?.phone) return { error: `Contact "${contactName}" not found or has no phone number.` };
   const scheduledDate = new Date(scheduledFor);
   if (scheduledDate <= new Date()) return { error: 'Scheduled time must be in the future.' };
-  await getCrmDb(ctx).scheduledSms.create({
+  await (getCrmDb(ctx) as any).scheduledSms.create({
     data: {
       userId,
       leadId: lead.id,
@@ -1004,7 +999,7 @@ async function handleScheduleEmail(userId: string, params: any) {
   if (!lead?.email) return { error: `Contact "${contactName}" not found or has no email.` };
   const scheduledDate = new Date(scheduledFor);
   if (scheduledDate <= new Date()) return { error: 'Scheduled time must be in the future.' };
-  await getCrmDb(ctx).scheduledEmail.create({
+  await (getCrmDb(ctx) as any).scheduledEmail.create({
     data: {
       userId,
       leadId: lead.id,
@@ -1054,10 +1049,10 @@ async function handleAddWorkflowTask(userId: string, params: any) {
   const { workflowId: paramWorkflowId, name, taskType = 'CUSTOM', description = '' } = params;
   let workflowId = paramWorkflowId;
   if (!workflowId) {
-    const user = await prisma.user.findUnique({
+    const user: any = await prisma.user.findUnique({
       where: { id: userId },
       select: { activeWorkflowDraftId: true },
-    });
+    } as any);
     workflowId = user?.activeWorkflowDraftId || undefined;
   }
   if (!workflowId || !name) {

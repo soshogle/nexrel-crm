@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { apiErrors } from '@/lib/api-error';
 
 // Helper function to sync with inventory
 
@@ -63,7 +64,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const product = await prisma.product.findFirst({
@@ -77,16 +78,13 @@ export async function GET(
     })
 
     if (!product) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+      return apiErrors.notFound('Product not found')
     }
 
     return NextResponse.json(product)
   } catch (error) {
     console.error('Error fetching product:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch product' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch product')
   }
 }
 
@@ -98,7 +96,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const body = await req.json()
@@ -112,7 +110,7 @@ export async function PATCH(
     })
 
     if (!existingProduct) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+      return apiErrors.notFound('Product not found')
     }
 
     // If SKU is being updated, check if it's already in use
@@ -122,10 +120,7 @@ export async function PATCH(
       })
 
       if (skuExists) {
-        return NextResponse.json(
-          { error: 'A product with this SKU already exists' },
-          { status: 400 }
-        )
+        return apiErrors.badRequest('A product with this SKU already exists')
       }
     }
 
@@ -173,10 +168,7 @@ export async function PATCH(
     return NextResponse.json(product)
   } catch (error) {
     console.error('Error updating product:', error)
-    return NextResponse.json(
-      { error: 'Failed to update product' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to update product')
   }
 }
 
@@ -188,7 +180,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     // Check if product exists and belongs to user
@@ -200,7 +192,7 @@ export async function DELETE(
     })
 
     if (!existingProduct) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+      return apiErrors.notFound('Product not found')
     }
 
     await prisma.product.delete({
@@ -210,9 +202,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting product:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete product' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to delete product')
   }
 }

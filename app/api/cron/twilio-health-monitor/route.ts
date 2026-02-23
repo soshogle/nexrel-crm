@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { twilioHealthMonitor } from '@/lib/twilio-failover/health-monitor';
 import { twilioFailoverService } from '@/lib/twilio-failover/failover-service';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // Verify cron secret (set in Vercel environment variables)
 const CRON_SECRET = process.env.CRON_SECRET;
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
     // Verify cron secret
     const authHeader = request.headers.get('authorization');
     if (authHeader !== `Bearer ${CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     console.log('🔍 [Cron] Starting Twilio health monitoring...');
@@ -89,10 +90,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ [Cron] Health monitoring error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Health monitoring failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Health monitoring failed');
   }
 }
 

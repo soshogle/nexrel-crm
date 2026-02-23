@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const suppliers = await prisma.generalInventorySupplier.findMany({
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, suppliers });
   } catch (error: any) {
     console.error('Error fetching suppliers:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }
 
@@ -37,14 +38,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { name, contactName, email, phone, address, website, notes } = body;
 
     if (!name) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+      return apiErrors.badRequest('Name is required');
     }
 
     const supplier = await prisma.generalInventorySupplier.create({
@@ -63,6 +64,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, supplier });
   } catch (error: any) {
     console.error('Error creating supplier:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }

@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 // Helper function to sync with inventory
 
@@ -89,34 +91,33 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const { searchParams } = new URL(req.url)
     const categoryId = searchParams.get('categoryId')
     const active = searchParams.get('active')
+    const pagination = parsePagination(req)
+
+    const where: any = { userId: session.user.id, ...(categoryId && { categoryId }), ...(active && { active: active === 'true' }) }
 
     const products = await prisma.product.findMany({
-      where: {
-        userId: session.user.id,
-        ...(categoryId && { categoryId }),
-        ...(active && { active: active === 'true' }),
-      },
+      where,
       include: {
         category: true,
       },
+      take: pagination.take,
+      skip: pagination.skip,
       orderBy: {
         createdAt: 'desc',
       },
     })
 
-    return NextResponse.json(products)
+    const total = await prisma.product.count({ where })
+    return paginatedResponse(products, total, pagination)
   } catch (error) {
     console.error('Error fetching products:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch products' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch products')
   }
 }
 
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const body = await req.json()
@@ -150,10 +151,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name || !price || !sku) {
-      return NextResponse.json(
-        { error: 'Name, price, and SKU are required' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Name, price, and SKU are required')
     }
 
     // Check if SKU already exists
@@ -162,10 +160,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (existingProduct) {
-      return NextResponse.json(
-        { error: 'A product with this SKU already exists' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('A product with this SKU already exists')
     }
 
     const product = await prisma.product.create({
@@ -206,9 +201,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(product, { status: 201 })
   } catch (error) {
     console.error('Error creating product:', error)
-    return NextResponse.json(
-      { error: 'Failed to create product' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to create product')
   }
 }

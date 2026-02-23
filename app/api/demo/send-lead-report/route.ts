@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { emailService } from "@/lib/email-service";
 import { prisma } from "@/lib/db";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
     const { leadId, email, fullName } = await request.json();
 
     if (!leadId || !email) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return apiErrors.badRequest("Missing required fields");
     }
 
     let transcript = "";
@@ -47,6 +48,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error sending lead report:", error);
-    return NextResponse.json({ error: "Failed to send report" }, { status: 500 });
+    return apiErrors.internal("Failed to send report");
   }
 }

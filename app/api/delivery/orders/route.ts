@@ -8,6 +8,7 @@ import {
   CreateDeliveryOrderInput,
 } from '@/lib/delivery-service';
 import { DeliveryStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -38,16 +39,13 @@ export async function GET(request: NextRequest) {
     });
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return apiErrors.internal(result.error);
     }
 
     return NextResponse.json(result.orders);
   } catch (error: any) {
     console.error('Error in GET /api/delivery/orders:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }
 
@@ -55,7 +53,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -69,7 +67,7 @@ export async function POST(request: NextRequest) {
       !body.customerPhone ||
       !body.deliveryFee
     ) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return apiErrors.badRequest('Missing required fields');
     }
 
     const input: CreateDeliveryOrderInput = {
@@ -95,15 +93,12 @@ export async function POST(request: NextRequest) {
     const result = await createDeliveryOrder(input);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return apiErrors.internal(result.error);
     }
 
     return NextResponse.json(result.order, { status: 201 });
   } catch (error: any) {
     console.error('Error in POST /api/delivery/orders:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,11 +22,11 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized(await t('api.unauthorized'));
 
     // Find the claim in all leads' insuranceInfo
     const leads = await leadService.findMany(ctx, {
@@ -49,17 +50,13 @@ export async function POST(
           const claim = insuranceInfo.ramqClaims[claimIndex];
           
           if (claim.status !== 'DRAFT') {
-            return NextResponse.json(
-              { error: await t('api.claimAlreadySubmitted') },
-              { status: 400 }
-            );
+            return apiErrors.badRequest(await t('api.claimAlreadySubmitted'));
           }
 
           // Update claim status
           insuranceInfo.ramqClaims[claimIndex] = {
             ...claim,
-            status: 'SUBMITTED',
-            submissionDate: new Date().toISOString(),
+            submittedAt: new Date().toISOString(),
             claimNumber: `RAMQ-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
           };
 
@@ -73,10 +70,7 @@ export async function POST(
     }
 
     if (!claimFound) {
-      return NextResponse.json(
-        { error: await t('api.notFound') },
-        { status: 404 }
-      );
+      return apiErrors.notFound(await t('api.notFound'));
     }
 
     // TODO: Integrate with Facturation.net API if available
@@ -97,9 +91,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error submitting RAMQ claim:', error);
-    return NextResponse.json(
-      { error: await t('api.submitClaimFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.submitClaimFailed'));
   }
 }

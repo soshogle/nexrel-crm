@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -23,7 +24,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { agentId, conversationId } = params;
@@ -37,7 +38,7 @@ export async function GET(
     });
 
     if (!agent) {
-      return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+      return apiErrors.notFound('Agent not found');
     }
 
     // Get conversation from database
@@ -49,7 +50,7 @@ export async function GET(
     });
 
     if (!conversation) {
-      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+      return apiErrors.notFound('Conversation not found');
     }
 
     // If we don't have full details, fetch from ElevenLabs
@@ -131,9 +132,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('❌ [Docpen Conversation] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch conversation' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch conversation');
   }
 }

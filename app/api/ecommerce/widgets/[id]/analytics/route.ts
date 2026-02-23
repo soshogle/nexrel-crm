@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { widgetService } from '@/lib/ecommerce/widget-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const analytics = await widgetService.getWidgetAnalytics(
@@ -31,9 +32,6 @@ export async function GET(
     return NextResponse.json({ analytics });
   } catch (error: any) {
     console.error('Error fetching widget analytics:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch analytics', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch analytics', error.message);
   }
 }

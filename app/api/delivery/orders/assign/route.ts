@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { assignDriverToOrder, getDeliveryOrderById } from '@/lib/delivery-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -12,40 +13,34 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
 
     if (!body.orderId || !body.driverId) {
-      return NextResponse.json(
-        { error: 'Missing orderId or driverId' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing orderId or driverId');
     }
 
     // Verify user owns this order
     const orderResult = await getDeliveryOrderById(body.orderId);
     if (!orderResult.success || !orderResult.order) {
-      return NextResponse.json({ error: orderResult.error || 'Order not found' }, { status: 404 });
+      return apiErrors.notFound(orderResult.error || 'Order not found');
     }
 
     if (orderResult.order.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     const result = await assignDriverToOrder(body.orderId, body.driverId);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return apiErrors.internal(result.error);
     }
 
     return NextResponse.json(result.order);
   } catch (error: any) {
     console.error('Error in POST /api/delivery/orders/assign:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

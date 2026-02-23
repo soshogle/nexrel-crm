@@ -13,6 +13,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { generateSignatureHash, sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
 import { logDocpenAudit, DOCPEN_AUDIT_EVENTS } from '@/lib/docpen/audit-log';
+import { apiErrors } from '@/lib/api-error';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await params;
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!docpenSession) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      return apiErrors.notFound('Session not found');
     }
 
     // Log audit entry
@@ -70,10 +71,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ session: docpenSession });
   } catch (error) {
     console.error('[Docpen Session GET] Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch session' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch session');
   }
 }
 
@@ -81,7 +79,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await params;
@@ -99,7 +97,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!existingSession) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      return apiErrors.notFound('Session not found');
     }
 
     let updateData: Record<string, any> = {};
@@ -107,17 +105,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Handle sign action
     if (action === 'sign') {
       if (!signedBy || !attestation) {
-        return NextResponse.json(
-          { error: 'signedBy and attestation are required for signing' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('signedBy and attestation are required for signing');
       }
 
       if (existingSession.status === 'SIGNED') {
-        return NextResponse.json(
-          { error: 'Session is already signed' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Session is already signed');
       }
 
       // Generate signature hash
@@ -145,15 +137,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     else if (status) {
       const validStatuses = ['RECORDING', 'PROCESSING', 'REVIEW_PENDING', 'ARCHIVED', 'CANCELLED'];
       if (!validStatuses.includes(status)) {
-        return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+        return apiErrors.badRequest('Invalid status');
       }
 
       // Can't change status if already signed (except to archive)
       if (existingSession.status === 'SIGNED' && status !== 'ARCHIVED') {
-        return NextResponse.json(
-          { error: 'Cannot change status of a signed session' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Cannot change status of a signed session');
       }
 
       updateData.status = status;
@@ -169,7 +158,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: 'No valid updates provided' }, { status: 400 });
+      return apiErrors.badRequest('No valid updates provided');
     }
 
     const updatedSession = await prisma.docpenSession.update({
@@ -197,10 +186,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ session: updatedSession });
   } catch (error) {
     console.error('[Docpen Session PATCH] Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update session' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update session');
   }
 }
 
@@ -208,7 +194,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await params;
@@ -219,15 +205,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!existingSession) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      return apiErrors.notFound('Session not found');
     }
 
     // Don't allow deleting signed sessions - archive instead
     if (existingSession.status === 'SIGNED') {
-      return NextResponse.json(
-        { error: 'Cannot delete signed sessions. Archive instead.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete signed sessions. Archive instead.');
     }
 
     // Cancel the session instead of hard delete for audit trail
@@ -244,9 +227,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[Docpen Session DELETE] Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to cancel session' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to cancel session');
   }
 }

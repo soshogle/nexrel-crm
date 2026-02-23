@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const { searchParams } = new URL(request.url);
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     const clinicId = searchParams.get('clinicId');
 
     if (!leadId) {
-      return NextResponse.json({ error: await t('api.leadIdRequired') }, { status: 400 });
+      return apiErrors.badRequest(await t('api.leadIdRequired'));
     }
 
     // Build where clause with clinic filtering
@@ -49,10 +50,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching periodontal charts:', error);
-    return NextResponse.json(
-      { error: await t('api.fetchPeriodontalFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.fetchPeriodontalFailed'));
   }
 }
 
@@ -61,17 +59,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const body = await request.json();
     const { leadId, measurements, notes, chartDate, clinicId } = body;
 
     if (!leadId || !measurements) {
-      return NextResponse.json(
-        { error: await t('api.measurementsRequired') },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(await t('api.measurementsRequired'));
     }
 
     const createData: any = {
@@ -96,9 +91,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating periodontal chart:', error);
-    return NextResponse.json(
-      { error: await t('api.createPeriodontalFailed'), details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.createPeriodontalFailed'), error.message);
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { dataMonetizationService } from '@/lib/payments/data-monetization-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/data-monetization/consent
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const consent = await dataMonetizationService.getConsent(session.user.id);
@@ -27,10 +28,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching consent:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch consent' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch consent');
   }
 }
 
@@ -42,7 +40,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -59,18 +57,12 @@ export async function POST(req: NextRequest) {
     // Validate sharing level
     const validSharingLevels = ['NONE', 'ANONYMOUS_ONLY', 'AGGREGATED', 'FULL_ANONYMOUS'];
     if (!validSharingLevels.includes(sharingLevel)) {
-      return NextResponse.json(
-        { error: 'Invalid sharing level' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid sharing level');
     }
 
     // Validate revenue share percentage
     if (revenueShareEnabled && (revenueSharePercentage < 0 || revenueSharePercentage > 100)) {
-      return NextResponse.json(
-        { error: 'Revenue share percentage must be between 0 and 100' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Revenue share percentage must be between 0 and 100');
     }
 
     const consent = await dataMonetizationService.grantConsent({
@@ -90,10 +82,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error granting consent:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to grant consent' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to grant consent');
   }
 }
 
@@ -105,7 +94,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const consent = await dataMonetizationService.revokeConsent(session.user.id);
@@ -116,9 +105,6 @@ export async function DELETE(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error revoking consent:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to revoke consent' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to revoke consent');
   }
 }

@@ -14,6 +14,7 @@ import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
 import { sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
 import { logDocpenAudit, DOCPEN_AUDIT_EVENTS } from '@/lib/docpen/audit-log';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -67,10 +68,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ sessions });
   } catch (error) {
     console.error('[Docpen Sessions GET] Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch sessions' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch sessions');
   }
 }
 
@@ -78,7 +76,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -92,10 +90,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!consultantName || !consultantName.trim()) {
-      return NextResponse.json(
-        { error: 'Consultant name is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Consultant name is required');
     }
 
     // Validate profession
@@ -106,24 +101,18 @@ export async function POST(request: NextRequest) {
     ];
 
     if (!validProfessions.includes(profession)) {
-      return NextResponse.json(
-        { error: 'Invalid profession type' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid profession type');
     }
 
     // Verify lead belongs to user if provided
     if (leadId) {
       const ctx = getDalContextFromSession(session);
       if (!ctx) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return apiErrors.unauthorized();
       }
       const lead = await leadService.findUnique(ctx, leadId);
       if (!lead) {
-        return NextResponse.json(
-          { error: 'Client record not found' },
-          { status: 404 }
-        );
+        return apiErrors.notFound('Client record not found');
       }
     }
 
@@ -159,9 +148,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ session: docpenSession }, { status: 201 });
   } catch (error) {
     console.error('[Docpen Sessions POST] Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create session' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create session');
   }
 }

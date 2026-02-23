@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getDeliveryOrderByTracking } from '@/lib/delivery-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -12,16 +13,13 @@ export async function GET(request: NextRequest) {
     const trackingCode = searchParams.get('code');
 
     if (!trackingCode) {
-      return NextResponse.json(
-        { error: 'Missing tracking code' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing tracking code');
     }
 
     const result = await getDeliveryOrderByTracking(trackingCode);
 
     if (!result.success || !result.order) {
-      return NextResponse.json({ error: result.error || 'Delivery not found' }, { status: 404 });
+      return apiErrors.notFound(result.error || 'Delivery not found');
     }
 
     // Return public-safe information only
@@ -52,9 +50,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(publicInfo);
   } catch (error: any) {
     console.error('Error in GET /api/delivery/orders/track:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { chromium } from 'playwright';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -222,14 +223,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { invoiceId } = body;
 
     if (!invoiceId) {
-      return NextResponse.json({ error: 'Missing invoiceId' }, { status: 400 });
+      return apiErrors.badRequest('Missing invoiceId');
     }
 
     // Fetch invoice
@@ -238,12 +239,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!invoice) {
-      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+      return apiErrors.notFound('Invoice not found');
     }
 
     // Verify ownership
     if (invoice.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     // Get practice info
@@ -303,9 +304,6 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('Error generating invoice PDF:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate PDF', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate PDF', error.message);
   }
 }

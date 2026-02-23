@@ -9,13 +9,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { generateBlogPost } from "@/lib/blog-generator";
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     console.log("📝 [Cron] Starting Soshogle AI blog generation (2 posts)...");
@@ -40,10 +41,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error("❌ [Cron] Blog generator error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Blog generation failed" },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : "Blog generation failed");
   }
 }
 

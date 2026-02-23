@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET STOCK ALERTS
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -61,10 +62,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(alerts);
   } catch (error) {
     console.error('❌ Alerts fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch alerts' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch alerts');
   }
 }
 
@@ -75,17 +73,14 @@ export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
     const { alertIds } = body;
 
     if (!alertIds || !Array.isArray(alertIds)) {
-      return NextResponse.json(
-        { error: 'Alert IDs are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Alert IDs are required');
     }
 
     await prisma.stockAlert.updateMany({
@@ -102,9 +97,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('❌ Alert resolution error:', error);
-    return NextResponse.json(
-      { error: 'Failed to resolve alerts' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to resolve alerts');
   }
 }

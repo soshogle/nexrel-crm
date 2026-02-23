@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -50,14 +51,14 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await verifyToken(request);
     if (!auth) {
-      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+      return apiErrors.unauthorized('Invalid or expired token');
     }
 
     const body = await request.json().catch(() => ({}));
     const { source = 'dom', ehrType, pageType, dataType, data, url } = body;
 
     if (!data || typeof data !== 'object') {
-      return NextResponse.json({ error: 'Missing or invalid data' }, { status: 400 });
+      return apiErrors.badRequest('Missing or invalid data');
     }
 
     let result: { created?: boolean; leadId?: string; matched?: string; error?: string } = {};
@@ -68,10 +69,7 @@ export async function POST(request: NextRequest) {
       const patientName = (data.patientName || '').trim() || undefined;
 
       if (!email && !phone && !patientName) {
-        return NextResponse.json(
-          { error: 'Need at least email, phone, or patient name to sync' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Need at least email, phone, or patient name to sync');
       }
 
       let existing: { id: string; businessName: string } | null = null;
@@ -80,15 +78,15 @@ export async function POST(request: NextRequest) {
       const db = getCrmDb(ctx);
 
       if (email) {
-        existing = (await leadService.findMany(ctx, { where: { email }, take: 1 }))[0] as { id: string; businessName: string } | null;
+        existing = ((await leadService.findMany(ctx, { where: { email }, take: 1 } as any))[0] as any) || null;
       }
       if (!existing && phone) {
-        const leads = await leadService.findMany(ctx, { select: { id: true, businessName: true, phone: true } });
+        const leads: any[] = await leadService.findMany(ctx, { select: { id: true, businessName: true, phone: true } } as any);
         const phoneDigits = normalizePhone(phone);
-        existing = leads.find((l) => l.phone && normalizePhone(l.phone) === phoneDigits) || null;
+        existing = leads.find((l: any) => l.phone && normalizePhone(l.phone) === phoneDigits) || null;
       }
       if (!existing && patientName) {
-        existing = (await leadService.findMany(ctx, { where: { contactPerson: { equals: patientName, mode: 'insensitive' } }, take: 1 }))[0] as { id: string; businessName: string } | null;
+        existing = ((await leadService.findMany(ctx, { where: { contactPerson: { equals: patientName, mode: 'insensitive' } }, take: 1 } as any))[0] as any) || null;
       }
 
       const updateData: Record<string, unknown> = {};
@@ -132,12 +130,9 @@ export async function POST(request: NextRequest) {
         matched: 'calendar',
         appointmentsCount: data.appointments.length,
         message: `Extracted ${data.appointments.length} appointments (calendar sync coming soon)`,
-      };
+      } as any;
     } else {
-      return NextResponse.json(
-        { error: 'Unsupported data type' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Unsupported data type');
     }
 
     return NextResponse.json({
@@ -146,10 +141,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('[EHR Bridge] Pull failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to sync data' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to sync data');
   }
 }
 

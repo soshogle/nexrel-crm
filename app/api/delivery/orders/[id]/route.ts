@@ -8,6 +8,7 @@ import {
   UpdateDeliveryOrderInput,
 } from '@/lib/delivery-service';
 import { DeliveryStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -20,27 +21,24 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const result = await getDeliveryOrderById(params.id);
 
     if (!result.success || !result.order) {
-      return NextResponse.json({ error: result.error || 'Order not found' }, { status: 404 });
+      return apiErrors.notFound(result.error || 'Order not found');
     }
 
     // Verify user owns this order
     if (result.order.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     return NextResponse.json(result.order);
   } catch (error: any) {
     console.error('Error in GET /api/delivery/orders/[id]:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }
 
@@ -51,17 +49,17 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // First check if order exists and user owns it
     const orderResult = await getDeliveryOrderById(params.id);
     if (!orderResult.success || !orderResult.order) {
-      return NextResponse.json({ error: orderResult.error || 'Order not found' }, { status: 404 });
+      return apiErrors.notFound(orderResult.error || 'Order not found');
     }
 
     if (orderResult.order.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     const body = await request.json();
@@ -95,15 +93,12 @@ export async function PATCH(
     const result = await updateDeliveryOrder(params.id, input);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return apiErrors.internal(result.error);
     }
 
     return NextResponse.json(result.order);
   } catch (error: any) {
     console.error('Error in PATCH /api/delivery/orders/[id]:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

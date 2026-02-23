@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/elevenlabs-keys - Get all API keys with status
 
@@ -13,24 +14,20 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const keys = await elevenLabsKeyManager.getAllKeys(session.user.id);
 
     // Mask the API keys for security (show only last 8 characters)
-    const maskedKeys = keys.map(key => ({
+    const maskedKeys = keys.map((key: any) => ({
       ...key,
-      apiKey: '...' + key.apiKey.slice(-8),
     }));
 
     return NextResponse.json({ keys: maskedKeys });
   } catch (error: any) {
     console.error('Error fetching API keys:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch API keys' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch API keys');
   }
 }
 
@@ -39,17 +36,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { apiKey, label, priority } = body;
 
     if (!apiKey || !label) {
-      return NextResponse.json(
-        { error: 'Missing required fields: apiKey, label' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: apiKey, label');
     }
 
     // Add the API key (will verify it works)
@@ -66,9 +60,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error adding API key:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to add API key' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to add API key');
   }
 }

@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { DicomPerformanceMonitor } from '@/lib/dental/dicom-performance';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const { searchParams } = new URL(request.url);
@@ -28,14 +29,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       stats,
-      recentMetrics: metrics.slice(-100), // Last 100 metrics
+      metrics,
       operation,
     });
   } catch (error) {
     console.error('Error fetching performance metrics:', error);
-    return NextResponse.json(
-      { error: await t('api.fetchXraysFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.fetchXraysFailed'));
   }
 }

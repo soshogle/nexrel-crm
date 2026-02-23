@@ -10,6 +10,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { docpenAgentProvisioning } from '@/lib/docpen/agent-provisioning';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const agents = await prisma.docpenVoiceAgent.findMany({
@@ -33,10 +34,7 @@ export async function GET() {
     return NextResponse.json({ agents });
   } catch (error: any) {
     console.error('[Docpen Voice Agent] Error listing agents:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to list agents' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to list agents');
   }
 }
 
@@ -54,7 +52,7 @@ export async function POST(req: NextRequest) {
     console.log('🔐 [Docpen Voice Agent API] Session check:', session ? `User: ${session.user?.email}` : 'No session');
     if (!session?.user?.id) {
       console.error('❌ [Docpen Voice Agent API] Unauthorized - no session');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     console.log('📥 [Docpen Voice Agent API] Parsing request body...');
@@ -86,10 +84,7 @@ export async function POST(req: NextRequest) {
 
     if (!profession) {
       console.error('❌ [Docpen Voice Agent API] Missing profession');
-      return NextResponse.json(
-        { error: 'Profession is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Profession is required');
     }
 
     // Create or get existing agent
@@ -129,18 +124,12 @@ export async function POST(req: NextRequest) {
 
     if (!result.success) {
       console.error('❌ [Docpen Voice Agent API] Agent creation failed:', result.error);
-      return NextResponse.json(
-        { error: result.error || 'Failed to create agent' },
-        { status: 500 }
-      );
+      return apiErrors.internal(result.error || 'Failed to create agent');
     }
 
     if (!result.agentId) {
       console.error('❌ [Docpen Voice Agent API] No agentId returned despite success');
-      return NextResponse.json(
-        { error: 'Agent created but no agent ID returned' },
-        { status: 500 }
-      );
+      return apiErrors.internal('Agent created but no agent ID returned');
     }
 
     console.log('✅ [Docpen Voice Agent API] Successfully returning agentId:', result.agentId);
@@ -151,9 +140,6 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('❌ [Docpen Voice Agent API] Error creating agent:', error);
     console.error('   Error stack:', error.stack);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create agent' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create agent');
   }
 }

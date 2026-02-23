@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { createPlatformClient } from '@/lib/ecommerce-platforms';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get user's e-commerce sync settings
@@ -37,10 +38,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ settings: response });
   } catch (error: any) {
     console.error('Error fetching sync settings:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch sync settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch sync settings');
   }
 }
 
@@ -49,7 +47,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -67,25 +65,16 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!platform || !['shopify', 'woocommerce'].includes(platform)) {
-      return NextResponse.json(
-        { error: 'Valid platform is required (shopify or woocommerce)' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Valid platform is required (shopify or woocommerce)');
     }
 
     // Validate credentials based on platform
     if (platform === 'shopify' && (!shopifyDomain || !shopifyAccessToken)) {
-      return NextResponse.json(
-        { error: 'Shopify domain and access token are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Shopify domain and access token are required');
     }
 
     if (platform === 'woocommerce' && (!woocommerceUrl || !woocommerceConsumerKey || !woocommerceConsumerSecret)) {
-      return NextResponse.json(
-        { error: 'WooCommerce URL, consumer key, and consumer secret are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('WooCommerce URL, consumer key, and consumer secret are required');
     }
 
     // Test the credentials before saving
@@ -145,9 +134,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, settings: { id: settings.id } });
   } catch (error: any) {
     console.error('Error saving sync settings:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to save sync settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to save sync settings');
   }
 }

@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,19 +17,19 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const leadId = request.nextUrl.searchParams.get('leadId');
     if (!leadId) {
-      return NextResponse.json({ error: 'leadId required' }, { status: 400 });
+      return apiErrors.badRequest('leadId required');
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
     const lead = await leadService.findUnique(ctx, leadId);
     if (!lead) {
-      return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+      return apiErrors.notFound('Lead not found');
     }
 
     const [priorSessions, xrays, procedures, appointments] = await Promise.all([
@@ -128,9 +129,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('[Docpen Pre-chart]', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to load pre-chart' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to load pre-chart');
   }
 }

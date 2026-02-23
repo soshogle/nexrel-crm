@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createDeliveryRating } from '@/lib/delivery-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -12,25 +13,19 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
 
     // Validate required fields
     if (!body.deliveryOrderId || !body.driverId || !body.rating) {
-      return NextResponse.json(
-        { error: 'Missing required fields: deliveryOrderId, driverId, rating' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: deliveryOrderId, driverId, rating');
     }
 
     // Validate rating range
     if (body.rating < 1 || body.rating > 5) {
-      return NextResponse.json(
-        { error: 'Rating must be between 1 and 5' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Rating must be between 1 and 5');
     }
 
     const input = {
@@ -47,15 +42,12 @@ export async function POST(request: NextRequest) {
     const result = await createDeliveryRating(input);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return apiErrors.internal(result.error);
     }
 
     return NextResponse.json(result.rating, { status: 201 });
   } catch (error: any) {
     console.error('Error in POST /api/delivery/ratings:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

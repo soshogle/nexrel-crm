@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SUPPORTED_LAB_SYSTEMS } from '@/lib/integrations/lab-order-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/integrations/lab-orders/systems
@@ -17,9 +18,6 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({ systems });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: 'Failed to fetch lab systems', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch lab systems', error.message);
   }
 }

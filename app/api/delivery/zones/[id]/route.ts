@@ -6,6 +6,7 @@ import {
   updateDeliveryZone,
   CreateDeliveryZoneInput,
 } from '@/lib/delivery-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -35,15 +36,12 @@ export async function PATCH(
     const result = await updateDeliveryZone(params.id, input);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return apiErrors.internal(result.error);
     }
 
     return NextResponse.json(result.zone);
   } catch (error: any) {
     console.error('Error in PATCH /api/delivery/zones/[id]:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

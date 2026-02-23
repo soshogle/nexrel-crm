@@ -8,13 +8,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { crmVoiceAgentService } from '@/lib/crm-voice-agent';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       console.error('❌ CRM Voice Agent API: Unauthorized - no session');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     console.log('🔄 CRM Voice Agent API: Getting/creating agent for user:', session.user.id);
@@ -53,7 +54,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -67,9 +68,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error updating CRM voice agent:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update CRM voice agent' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update CRM voice agent');
   }
 }

@@ -5,6 +5,8 @@ import { dealService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,42 +15,46 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
-    const deals = await dealService.findMany(ctx, {
-      include: {
-        lead: {
-          select: {
-            id: true,
-            businessName: true,
-            contactPerson: true,
-            email: true,
-            phone: true,
-          },
-        },
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true,
-          },
-        },
-        stage: true,
-        pipeline: true,
-      } as any,
-    });
+    const pagination = parsePagination(request);
 
-    return NextResponse.json(deals);
+    const [deals, total] = await Promise.all([
+      dealService.findMany(ctx, {
+        take: pagination.take,
+        skip: pagination.skip,
+        include: {
+          lead: {
+            select: {
+              id: true,
+              businessName: true,
+              contactPerson: true,
+              email: true,
+              phone: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            },
+          },
+          stage: true,
+          pipeline: true,
+        } as any,
+      }),
+      dealService.count(ctx),
+    ]);
+
+    return paginatedResponse(deals, total, pagination);
   } catch (error) {
     console.error('Error fetching deals:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch deals' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch deals');
   }
 }
 
@@ -57,11 +63,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const {
       title,
@@ -126,9 +132,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(deal);
   } catch (error) {
     console.error('Error creating deal:', error);
-    return NextResponse.json(
-      { error: 'Failed to create deal' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create deal');
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
+import { apiErrors } from '@/lib/api-error';
 
 // DELETE /api/elevenlabs-keys/[id] - Remove an API key
 
@@ -16,7 +17,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     await elevenLabsKeyManager.removeApiKey(session.user.id, params.id);
@@ -27,10 +28,7 @@ export async function DELETE(
     });
   } catch (error: any) {
     console.error('Error removing API key:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to remove API key' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to remove API key');
   }
 }
 
@@ -42,7 +40,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -62,9 +60,6 @@ export async function PATCH(
     });
   } catch (error: any) {
     console.error('Error updating API key:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update API key' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update API key');
   }
 }

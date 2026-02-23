@@ -11,6 +11,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { transcribeAudio, processWhisperOutput } from '@/lib/docpen/transcription-service';
 import { sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const formData = await request.formData();
@@ -29,11 +30,11 @@ export async function POST(request: NextRequest) {
     const practitionerName = formData.get('practitionerName') as string | null;
 
     if (!audioFile) {
-      return NextResponse.json({ error: 'Audio file is required' }, { status: 400 });
+      return apiErrors.badRequest('Audio file is required');
     }
 
     if (!sessionId) {
-      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
+      return apiErrors.badRequest('Session ID is required');
     }
 
     // Verify session belongs to user
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!docpenSession) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      return apiErrors.notFound('Session not found');
     }
 
     // Update session status to processing

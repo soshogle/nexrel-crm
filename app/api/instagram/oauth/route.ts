@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Instagram uses Facebook's OAuth (Instagram Business accounts are linked to Facebook Pages)
@@ -21,10 +22,7 @@ export async function GET(request: NextRequest) {
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/instagram/oauth/callback`;
 
     if (!facebookAppId) {
-      return NextResponse.json(
-        { error: 'Facebook OAuth not configured. Please set FACEBOOK_APP_ID in environment variables.' },
-        { status: 500 }
-      );
+      return apiErrors.internal('Facebook OAuth not configured. Please set FACEBOOK_APP_ID in environment variables.');
     }
 
     // Use Facebook OAuth with Instagram scopes
@@ -38,9 +36,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ authUrl: authUrl.toString() });
   } catch (error: any) {
     console.error('❌ Instagram OAuth init error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to initiate Instagram OAuth' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to initiate Instagram OAuth');
   }
 }

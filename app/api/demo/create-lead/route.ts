@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { leadService } from "@/lib/dal";
 import { createDalContext } from "@/lib/context/industry-context";
 import { emailService } from "@/lib/email-service";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,11 +14,11 @@ export async function POST(request: Request) {
     const { fullName, email, phone, companyName, position, industry, websiteUrl } = await request.json();
 
     if (!fullName || !email) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return apiErrors.badRequest("Missing required fields");
     }
 
     if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+      return apiErrors.badRequest("Invalid email format");
     }
 
     const leadOwnerId = process.env.DEMO_LEAD_OWNER_ID || "";
@@ -64,6 +65,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, leadId });
   } catch (error) {
     console.error("Error creating demo lead:", error);
-    return NextResponse.json({ error: "Failed to save lead" }, { status: 500 });
+    return apiErrors.internal("Failed to save lead");
   }
 }

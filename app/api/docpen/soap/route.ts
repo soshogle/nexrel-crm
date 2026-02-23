@@ -13,6 +13,7 @@ import { generateSOAPNote, regenerateSection } from '@/lib/docpen/soap-generator
 import { sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
 import { findMatchingXrays } from '@/lib/docpen/soap-xray-linker';
 import { logDocpenAudit, DOCPEN_AUDIT_EVENTS } from '@/lib/docpen/audit-log';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get user's language preference
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     const { sessionId, regenerate = false, section, feedback } = body;
 
     if (!sessionId) {
-      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
+      return apiErrors.badRequest('Session ID is required');
     }
 
     // Verify session belongs to user and get full data
@@ -64,24 +65,18 @@ export async function POST(request: NextRequest) {
     });
 
     if (!docpenSession) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      return apiErrors.notFound('Session not found');
     }
 
     if (docpenSession.transcriptions.length === 0) {
-      return NextResponse.json(
-        { error: 'No transcriptions found. Please transcribe audio first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('No transcriptions found. Please transcribe audio first.');
     }
 
     // Handle section regeneration
     if (section && ['subjective', 'objective', 'assessment', 'plan'].includes(section)) {
       const existingNote = docpenSession.soapNotes[0];
       if (!existingNote) {
-        return NextResponse.json(
-          { error: 'No existing SOAP note to regenerate section from' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('No existing SOAP note to regenerate section from');
       }
 
       const transcription = docpenSession.transcriptions
@@ -237,9 +232,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ soapNote: savedNote });
   } catch (error) {
     console.error('[Docpen SOAP] Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate SOAP note' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate SOAP note');
   }
 }

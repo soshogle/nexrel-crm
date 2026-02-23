@@ -22,6 +22,7 @@ import { VnaManager } from '@/lib/dental/vna-integration';
 import { triggerXrayUploadedWorkflow } from '@/lib/dental/workflow-triggers';
 import crypto from 'crypto';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const { searchParams } = new URL(request.url);
@@ -39,14 +40,11 @@ export async function GET(request: NextRequest) {
     const clinicId = searchParams.get('clinicId');
 
     if (!leadId) {
-      return NextResponse.json(
-        { error: await t('api.leadIdRequired') },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(await t('api.leadIdRequired'));
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized(await t('api.unauthorized'));
 
     // Build where clause with clinic filtering
     const where: any = {
@@ -68,10 +66,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(xrays);
   } catch (error) {
     console.error('Error fetching X-rays:', error);
-    return NextResponse.json(
-      { error: await t('api.fetchXraysFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.fetchXraysFailed'));
   }
 }
 
@@ -80,7 +75,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const formData = await request.formData();
@@ -94,27 +89,21 @@ export async function POST(request: NextRequest) {
     const clinicId = formData.get('clinicId') as string | null;
 
     if (!file || !leadId || !xrayType || !dateTaken) {
-      return NextResponse.json(
-        { error: await t('api.missingRequiredFields') },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(await t('api.missingRequiredFields'));
     }
 
     // Verify user owns the userId
     if (userId !== session.user.id) {
-      return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
+      return apiErrors.forbidden(await t('api.forbidden'));
     }
 
     // Verify lead belongs to user
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized(await t('api.unauthorized'));
     const lead = await leadService.findUnique(ctx, leadId);
 
     if (!lead) {
-      return NextResponse.json(
-        { error: await t('api.leadNotFound') },
-        { status: 404 }
-      );
+      return apiErrors.notFound(await t('api.leadNotFound'));
     }
 
     // Parse teeth included
@@ -151,10 +140,7 @@ export async function POST(request: NextRequest) {
         const validationError = DicomValidator.getValidationError(validation);
         if (validationError) {
           DicomErrorHandler.logError(validationError, { leadId, userId, xrayType });
-          return NextResponse.json(
-            { error: DicomErrorHandler.getUserFriendlyMessage(validationError) },
-            { status: 400 }
-          );
+          return apiErrors.badRequest(DicomErrorHandler.getUserFriendlyMessage(validationError));
         }
       }
 
@@ -177,10 +163,7 @@ export async function POST(request: NextRequest) {
       } catch (storageError) {
         const error = DicomErrorHandler.handleStorageError(storageError as Error);
         DicomErrorHandler.logError(error, { leadId, userId, fileSize: buffer.length });
-        return NextResponse.json(
-          { error: DicomErrorHandler.getUserFriendlyMessage(error) },
-          { status: 500 }
-        );
+        return apiErrors.internal(DicomErrorHandler.getUserFriendlyMessage(error));
       }
 
       // Process DICOM and generate multi-resolution compressed images
@@ -309,10 +292,7 @@ export async function POST(request: NextRequest) {
         
         // If not recoverable, return error
         if (!error.recoverable) {
-          return NextResponse.json(
-            { error: DicomErrorHandler.getUserFriendlyMessage(error) },
-            { status: 400 }
-          );
+          return apiErrors.badRequest(DicomErrorHandler.getUserFriendlyMessage(error));
         }
         
         // If recoverable, continue but warn user
@@ -401,9 +381,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(xray, { status: 201 });
   } catch (error) {
     console.error('Error uploading X-ray:', error);
-    return NextResponse.json(
-      { error: await t('api.uploadXrayFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.uploadXrayFailed'));
   }
 }

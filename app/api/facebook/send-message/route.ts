@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { getCrmDb, conversationService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { facebookMessengerService } from '@/lib/facebook-messenger-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,45 +16,33 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { conversationId, message } = body;
 
     if (!conversationId || !message) {
-      return NextResponse.json(
-        { error: 'Missing conversationId or message' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing conversationId or message');
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Get conversation details
     const conversation = await conversationService.findUnique(ctx, conversationId);
 
     if (!conversation || conversation.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Conversation not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Conversation not found');
     }
 
     const { channelConnection } = conversation;
     if (!channelConnection) {
-      return NextResponse.json(
-        { error: 'Channel connection not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Channel connection not found');
     }
 
     if (channelConnection.channelType !== 'FACEBOOK_MESSENGER') {
-      return NextResponse.json(
-        { error: 'This conversation is not a Messenger conversation' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('This conversation is not a Messenger conversation');
     }
 
     const pageId = channelConnection.channelIdentifier;
@@ -61,10 +50,7 @@ export async function POST(request: NextRequest) {
     const recipientId = conversation.contactIdentifier;
 
     if (!pageId || !accessToken || !recipientId) {
-      return NextResponse.json(
-        { error: 'Missing required connection data' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required connection data');
     }
 
     // Send message via Facebook Messenger
@@ -76,10 +62,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || 'Failed to send message' },
-        { status: 500 }
-      );
+      return apiErrors.internal(result.error || 'Failed to send message');
     }
 
     // Save outbound message to database
@@ -100,9 +83,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Error sending Messenger message:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to send message' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to send message');
   }
 }

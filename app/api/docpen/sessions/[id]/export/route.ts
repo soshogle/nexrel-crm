@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { formatNoteForEHR, buildWebhookPayload } from '@/lib/docpen/ehr-export';
 import { logDocpenAudit, DOCPEN_AUDIT_EVENTS } from '@/lib/docpen/audit-log';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,13 +21,13 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json().catch(() => ({}));
     const { format = 'text', webhookUrl, logExport, method } = body;
 
-    const docpenSession = await prisma.docpenSession.findFirst({
+    const docpenSession: any = await (prisma as any).docpenSession.findFirst({
       where: { id: params.id, userId: session.user.id },
       include: {
         soapNotes: { where: { isCurrentVersion: true } },
@@ -35,7 +36,7 @@ export async function POST(
     });
 
     if (!docpenSession) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      return apiErrors.notFound('Session not found');
     }
 
     const soapNote = docpenSession.soapNotes[0];
@@ -47,7 +48,7 @@ export async function POST(
     }
 
     if (!soapNote) {
-      return NextResponse.json({ error: 'No SOAP note to export' }, { status: 400 });
+      return apiErrors.badRequest('No SOAP note to export');
     }
 
     const context = {
@@ -98,9 +99,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('[Docpen Export]', error);
-    return NextResponse.json(
-      { error: error.message || 'Export failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Export failed');
   }
 }

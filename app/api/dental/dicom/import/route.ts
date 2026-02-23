@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { DicomServerService } from '@/lib/dental/dicom-server';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,17 +18,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const body = await request.json();
     const { studyInstanceUid, leadId } = body;
 
     if (!studyInstanceUid || !leadId) {
-      return NextResponse.json(
-        { error: await t('api.missingRequiredFields') },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(await t('api.missingRequiredFields'));
     }
 
     // Import study
@@ -43,9 +41,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error importing study:', error);
-    return NextResponse.json(
-      { error: await t('api.uploadXrayFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.uploadXrayFailed'));
   }
 }

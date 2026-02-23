@@ -8,6 +8,7 @@ import {
   UpdateDriverInput,
 } from '@/lib/delivery-service';
 import { DriverStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -20,22 +21,19 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const result = await getDriverById(params.id);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 404 });
+      return apiErrors.notFound(result.error);
     }
 
     return NextResponse.json(result.driver);
   } catch (error: any) {
     console.error('Error in GET /api/delivery/drivers/[id]:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }
 
@@ -46,7 +44,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -66,15 +64,12 @@ export async function PATCH(
     const result = await updateDriver(params.id, input);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return apiErrors.internal(result.error);
     }
 
     return NextResponse.json(result.driver);
   } catch (error: any) {
     console.error('Error in PATCH /api/delivery/drivers/[id]:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

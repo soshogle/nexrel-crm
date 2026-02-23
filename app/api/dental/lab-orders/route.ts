@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -77,10 +78,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ orders });
   } catch (error: any) {
     console.error('Error fetching lab orders:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch lab orders', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch lab orders', error.message);
   }
 }
 
@@ -89,7 +87,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -118,10 +116,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!leadId || !labName || !orderType) {
-      return NextResponse.json(
-        { error: 'Missing required fields: leadId, labName, orderType' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: leadId, labName, orderType');
     }
 
     const orderNumber = id
@@ -140,10 +135,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!userClinic) {
-      return NextResponse.json(
-        { error: 'No clinic found. Please create a clinic first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('No clinic found. Please create a clinic first.');
     }
 
     const data: any = {
@@ -207,10 +199,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating/updating lab order:', error);
-    return NextResponse.json(
-      { error: 'Failed to create/update lab order', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create/update lab order', error.message);
   }
 }
 
@@ -219,17 +208,14 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { id, status, trackingNumber, shippingMethod } = body;
 
     if (!id || !status) {
-      return NextResponse.json(
-        { error: 'Missing required fields: id, status' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: id, status');
     }
 
     const updateData: any = {
@@ -274,9 +260,6 @@ export async function PATCH(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error updating lab order status:', error);
-    return NextResponse.json(
-      { error: 'Failed to update lab order status', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update lab order status', error.message);
   }
 }

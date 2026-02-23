@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET SUPPLIER BY ID
@@ -18,7 +19,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const supplier = await prisma.supplier.findFirst({
@@ -45,16 +46,13 @@ export async function GET(
     });
 
     if (!supplier) {
-      return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
+      return apiErrors.notFound('Supplier not found');
     }
 
     return NextResponse.json(supplier);
   } catch (error) {
     console.error('❌ Supplier fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch supplier' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch supplier');
   }
 }
 
@@ -68,7 +66,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -82,7 +80,7 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
+      return apiErrors.notFound('Supplier not found');
     }
 
     const updatedSupplier = await prisma.supplier.update({
@@ -95,10 +93,7 @@ export async function PATCH(
     return NextResponse.json(updatedSupplier);
   } catch (error) {
     console.error('❌ Supplier update error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update supplier' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update supplier');
   }
 }
 
@@ -112,7 +107,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify supplier exists
@@ -138,15 +133,12 @@ export async function DELETE(
     });
 
     if (!supplier) {
-      return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
+      return apiErrors.notFound('Supplier not found');
     }
 
     // Check if supplier has active purchase orders
     if (supplier._count.purchaseOrders > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete supplier with active purchase orders' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete supplier with active purchase orders');
     }
 
     // Soft delete by marking as inactive
@@ -160,9 +152,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('❌ Supplier delete error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete supplier' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete supplier');
   }
 }

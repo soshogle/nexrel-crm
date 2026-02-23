@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * SIMULATE DRIVER LOCATION
@@ -17,16 +18,13 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { deliveryOrderId, progress } = await req.json();
 
     if (!deliveryOrderId) {
-      return NextResponse.json(
-        { error: 'Delivery order ID is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Delivery order ID is required');
     }
 
     // Get delivery order with coordinates
@@ -38,17 +36,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!delivery) {
-      return NextResponse.json(
-        { error: 'Delivery order not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Delivery order not found');
     }
 
     if (!delivery.driverId || !delivery.pickupLat || !delivery.pickupLng || !delivery.deliveryLat || !delivery.deliveryLng) {
-      return NextResponse.json(
-        { error: 'Delivery order must have driver and coordinates assigned' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Delivery order must have driver and coordinates assigned');
     }
 
     // Calculate simulated location based on progress (0-1)
@@ -112,10 +104,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('❌ Simulate location error:', error);
-    return NextResponse.json(
-      { error: 'Failed to simulate location' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to simulate location');
   }
 }
 

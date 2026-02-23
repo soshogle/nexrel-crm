@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createDalContext } from "@/lib/context/industry-context";
 import { getCrmDb } from "@/lib/dal";
 import { monitorListings } from "@/lib/listing-enrichment/monitor";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   const db = getCrmDb(createDalContext("cron"));

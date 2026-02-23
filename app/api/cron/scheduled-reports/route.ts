@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCrmDb, leadService, campaignService } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
 import { emailService } from '@/lib/email-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -15,12 +16,12 @@ export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   const db = getCrmDb(createDalContext('bootstrap'));
   const users = await db.user.findMany({
-    where: { accountStatus: 'APPROVED' },
+    where: { accountStatus: 'APPROVED' as any },
     select: { id: true, email: true, name: true, onboardingProgress: true },
   });
 
@@ -41,11 +42,11 @@ export async function GET(req: NextRequest) {
       ] = await Promise.all([
         leadService.count(createDalContext(user.id)),
         leadService.count(createDalContext(user.id), { createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) } }),
-        db.deal.count({ where: { userId: user.id, status: { in: ['IN_PROGRESS', 'NEGOTIATION'] } } }),
+        db.deal.count({ where: { userId: user.id, status: { in: ['IN_PROGRESS', 'NEGOTIATION'] } } as any }),
         db.deal.aggregate({
           where: { userId: user.id, status: { in: ['IN_PROGRESS', 'NEGOTIATION'] } },
           _sum: { value: true },
-        }),
+        } as any),
         db.callLog.count({
           where: {
             userId: user.id,
@@ -62,7 +63,7 @@ export async function GET(req: NextRequest) {
         }),
       ]);
 
-      const pipelineValue = totalDealValue._sum.value || 0;
+      const pipelineValue = totalDealValue._sum?.value || 0;
       const formattedValue = pipelineValue >= 1000
         ? `$${(pipelineValue / 1000).toFixed(0)}K`
         : `$${pipelineValue.toFixed(0)}`;

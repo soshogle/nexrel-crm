@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { docpenAgentProvisioning } from '@/lib/docpen/agent-provisioning';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -17,17 +18,14 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
     const { agentId, sessionContext } = body;
 
     if (!agentId) {
-      return NextResponse.json(
-        { error: 'Agent ID is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Agent ID is required');
     }
 
     // Build dynamic variables for context
@@ -55,9 +53,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('[Docpen Voice Agent] Error getting WebSocket URL:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to get WebSocket URL' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to get WebSocket URL');
   }
 }

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,21 +17,18 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { agentId } = await request.json();
     if (!agentId) {
-      return NextResponse.json({ error: 'Missing agentId' }, { status: 400 });
+      return apiErrors.badRequest('Missing agentId');
     }
 
     // Get user's ElevenLabs API key
     const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'ElevenLabs API key not configured' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('ElevenLabs API key not configured');
     }
 
     const baseUrl = 'https://api.elevenlabs.io/v1/convai/conversation/token';
@@ -70,9 +68,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ token: body.token });
   } catch (error: any) {
     console.error('❌ [Docpen] Error getting conversation token:', error);
-    return NextResponse.json(
-      { error: 'Failed to get token' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to get token');
   }
 }

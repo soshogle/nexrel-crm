@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { syncGeneralInventoryToProduct } from '@/lib/general-inventory/product-sync';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -39,6 +41,8 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    const pagination = parsePagination(request);
+
     const items = await prisma.generalInventoryItem.findMany({
       where,
       include: {
@@ -46,6 +50,8 @@ export async function GET(request: NextRequest) {
         supplier: true,
         location: true,
       },
+      take: pagination.take,
+      skip: pagination.skip,
       orderBy: { name: 'asc' },
     });
 
@@ -55,10 +61,11 @@ export async function GET(request: NextRequest) {
       filteredItems = items.filter(item => item.quantity <= item.reorderLevel);
     }
 
-    return NextResponse.json({ success: true, items: filteredItems });
+    const total = await prisma.generalInventoryItem.count({ where });
+    return paginatedResponse(filteredItems, total, pagination);
   } catch (error: any) {
     console.error('Error fetching inventory items:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }
 
@@ -67,7 +74,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -91,10 +98,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!sku || !name) {
-      return NextResponse.json(
-        { error: 'SKU and name are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('SKU and name are required');
     }
 
     // Check for duplicate SKU
@@ -106,10 +110,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingItem) {
-      return NextResponse.json(
-        { error: 'An item with this SKU already exists' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('An item with this SKU already exists');
     }
 
     const item = await prisma.generalInventoryItem.create({
@@ -169,6 +170,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, item });
   } catch (error: any) {
     console.error('Error creating inventory item:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }

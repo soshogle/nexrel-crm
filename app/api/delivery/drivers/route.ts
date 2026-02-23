@@ -8,6 +8,7 @@ import {
   CreateDriverInput,
 } from '@/lib/delivery-service';
 import { DriverStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -32,16 +33,13 @@ export async function GET(request: NextRequest) {
     });
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return apiErrors.internal(result.error);
     }
 
     return NextResponse.json(result.drivers);
   } catch (error: any) {
     console.error('Error in GET /api/delivery/drivers:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }
 
@@ -49,17 +47,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
 
     // Validate required fields
     if (!body.name || !body.phone) {
-      return NextResponse.json(
-        { error: 'Missing required fields: name and phone' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: name and phone');
     }
 
     const input: CreateDriverInput = {
@@ -76,15 +71,12 @@ export async function POST(request: NextRequest) {
     const result = await createDriver(input);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+      return apiErrors.badRequest(result.error);
     }
 
     return NextResponse.json(result.driver, { status: 201 });
   } catch (error: any) {
     console.error('Error in POST /api/delivery/drivers:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

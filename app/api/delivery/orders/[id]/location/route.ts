@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * UPDATE DRIVER LOCATION
@@ -19,7 +20,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = params;
@@ -28,10 +29,7 @@ export async function POST(
 
     // Validate coordinates
     if (!lat || !lng) {
-      return NextResponse.json(
-        { error: 'Latitude and longitude are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Latitude and longitude are required');
     }
 
     // Verify delivery exists and belongs to user
@@ -46,17 +44,11 @@ export async function POST(
     });
 
     if (!delivery) {
-      return NextResponse.json(
-        { error: 'Delivery order not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Delivery order not found');
     }
 
     if (!delivery.driverId) {
-      return NextResponse.json(
-        { error: 'No driver assigned to this delivery' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('No driver assigned to this delivery');
     }
 
     // Record location
@@ -107,10 +99,7 @@ export async function POST(
     });
   } catch (error) {
     console.error('❌ Location update error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update location' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update location');
   }
 }
 
@@ -125,7 +114,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = params;
@@ -139,10 +128,7 @@ export async function GET(
     });
 
     if (!delivery) {
-      return NextResponse.json(
-        { error: 'Delivery order not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Delivery order not found');
     }
 
     // Get location history (last 50 points)
@@ -163,10 +149,7 @@ export async function GET(
     return NextResponse.json({ locations: formattedLocations });
   } catch (error) {
     console.error('❌ Location history error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch location history' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch location history');
   }
 }
 

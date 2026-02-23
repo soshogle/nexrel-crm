@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const body = await request.json();
@@ -34,19 +35,16 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!userId || !signatureData || !signerName || !signatureDate) {
-      return NextResponse.json(
-        { error: await t('api.missingRequiredFields') },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(await t('api.missingRequiredFields'));
     }
 
     // Verify user owns the userId
     if (userId !== session.user.id) {
-      return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
+      return apiErrors.forbidden(await t('api.forbidden'));
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized(await t('api.unauthorized'));
 
     // Store signature in DentalFormResponse if documentId is a form response
     // Otherwise, store in document metadata or create a signature record
@@ -142,15 +140,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(
-      { error: await t('api.notFound') },
-      { status: 404 }
-    );
+    return apiErrors.notFound(await t('api.notFound'));
   } catch (error) {
     console.error('Error saving signature:', error);
-    return NextResponse.json(
-      { error: await t('api.saveSignatureFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.saveSignatureFailed'));
   }
 }

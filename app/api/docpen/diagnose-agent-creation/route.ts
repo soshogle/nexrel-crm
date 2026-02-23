@@ -14,6 +14,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 import { docpenAgentProvisioning } from '@/lib/docpen/agent-provisioning';
+import { apiErrors } from '@/lib/api-error';
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const userId = session.user.id;

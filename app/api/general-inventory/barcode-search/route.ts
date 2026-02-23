@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,14 +13,14 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
 
     if (!query || query.trim().length === 0) {
-      return NextResponse.json({ error: 'Search query is required' }, { status: 400 });
+      return apiErrors.badRequest('Search query is required');
     }
 
     // Search by barcode or SKU (exact match or starts with)
@@ -50,9 +51,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error searching by barcode:', error);
-    return NextResponse.json(
-      { error: error.message || 'Search failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Search failed');
   }
 }

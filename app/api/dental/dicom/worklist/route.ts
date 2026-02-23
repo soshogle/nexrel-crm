@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { DicomWorklistService } from '@/lib/dental/dicom-worklist';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const { searchParams } = new URL(request.url);
@@ -39,9 +40,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching worklist:', error);
-    return NextResponse.json(
-      { error: await t('api.fetchXraysFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.fetchXraysFailed'));
   }
 }

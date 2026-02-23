@@ -4,6 +4,7 @@ import { workflowEngine } from '@/lib/workflow-engine';
 import { createDalContext } from '@/lib/context/industry-context';
 import { conversationService } from '@/lib/dal/conversation-service';
 import { leadService } from '@/lib/dal/lead-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -89,10 +90,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error: any) {
     console.error('❌ Instagram webhook processing error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Webhook processing failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Webhook processing failed');
   }
 }
 
@@ -111,13 +109,13 @@ async function handleMessagingEvent(event: any) {
     }
 
     // Find the channel connection by recipient ID (the Instagram account receiving the message)
-    const connection = await prisma.channelConnection.findFirst({
+    const connection: any = await prisma.channelConnection.findFirst({
       where: {
         channelType: 'INSTAGRAM',
         channelIdentifier: recipientId,
         status: 'CONNECTED',
       },
-    });
+    } as any);
 
     if (!connection) {
       console.log('❌ No Instagram connection found for recipient:', recipientId);
@@ -141,7 +139,7 @@ async function handleMessagingEvent(event: any) {
     }
 
     const ctx = createDalContext(connection.userId);
-    let conversation = await conversationService.findFirst(ctx, {
+    let conversation: any = await conversationService.findFirst(ctx, {
       channelConnectionId: connection.id,
       contactIdentifier: senderId,
     });
@@ -153,7 +151,7 @@ async function handleMessagingEvent(event: any) {
         contactName: senderName,
         status: 'ACTIVE',
         lastMessageAt: new Date(),
-      });
+      } as any);
       console.log('✨ Created new Instagram conversation:', conversation.id);
     } else {
       await conversationService.update(ctx, conversation.id, {
@@ -182,7 +180,7 @@ async function handleMessagingEvent(event: any) {
       lastMessagePreview: messageContent.substring(0, 100),
       unreadCount: { increment: 1 },
       status: 'UNREAD',
-    });
+    } as any);
 
     // Trigger workflows for MESSAGE_RECEIVED (with channel type filtering)
     workflowEngine.triggerWorkflow('MESSAGE_RECEIVED', {

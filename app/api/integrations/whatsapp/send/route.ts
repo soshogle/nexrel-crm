@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { sendWhatsAppMessage } from '@/lib/integrations/whatsapp-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,20 +14,14 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
     const { to, message, mediaUrl } = body;
 
     if (!to || !message) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     const result = await sendWhatsAppMessage(
@@ -37,10 +32,7 @@ export async function POST(req: NextRequest) {
     );
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(result.error!);
     }
 
     return NextResponse.json({
@@ -50,9 +42,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('Send WhatsApp message error:', error);
-    return NextResponse.json(
-      { error: 'Failed to send message' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to send message');
   }
 }

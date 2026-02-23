@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/credit-scoring/score - Get user's credit score
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     let creditScore = await prisma.creditScore.findUnique({
@@ -49,10 +50,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(creditScore)
   } catch (error) {
     console.error('Error fetching credit score:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch credit score' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch credit score')
   }
 }
 
@@ -61,7 +59,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     // Call Python AI Trust Score service on port 8000
@@ -131,9 +129,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(creditScore)
   } catch (error) {
     console.error('Error updating credit score:', error)
-    return NextResponse.json(
-      { error: 'Failed to update credit score' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to update credit score')
   }
 }

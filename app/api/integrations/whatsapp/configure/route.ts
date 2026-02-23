@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,20 +14,14 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
     const { accountSid, authToken, phoneNumber } = body;
 
     if (!accountSid || !authToken || !phoneNumber) {
-      return NextResponse.json(
-        { error: 'All fields are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('All fields are required');
     }
 
     // Save WhatsApp configuration
@@ -49,10 +44,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('WhatsApp configuration error:', error);
-    return NextResponse.json(
-      { error: 'Failed to configure WhatsApp' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to configure WhatsApp');
   }
 }
 
@@ -61,10 +53,7 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -78,9 +67,6 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('Get WhatsApp status error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get configuration status' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to get configuration status');
   }
 }

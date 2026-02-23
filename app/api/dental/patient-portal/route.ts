@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
 import crypto from 'crypto';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     const token = searchParams.get('token');
 
     if (!token) {
-      return NextResponse.json({ error: 'Token required' }, { status: 400 });
+      return apiErrors.badRequest('Token required');
     }
 
     // TODO: Validate token from database and extract leadId/userId
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
       select: { id: true, userId: true },
     });
     if (!firstLead) {
-      return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+      return apiErrors.notFound('Patient not found');
     }
     const ctx = createDalContext(firstLead.userId);
 
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
     const lead = await leadService.findUnique(ctx, firstLead.id);
 
     if (!lead) {
-      return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+      return apiErrors.notFound('Patient not found');
     }
 
     // Fetch treatment plans
@@ -144,9 +145,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching patient portal data:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch portal data', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch portal data', error.message);
   }
 }

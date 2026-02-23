@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/ecommerce/categories - List all categories
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const categories = await prisma.productCategory.findMany({
@@ -34,10 +35,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(categories)
   } catch (error) {
     console.error('Error fetching categories:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch categories' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch categories')
   }
 }
 
@@ -46,7 +44,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const body = await req.json()
@@ -54,10 +52,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name || !slug) {
-      return NextResponse.json(
-        { error: 'Name and slug are required' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Name and slug are required')
     }
 
     // Check if slug already exists
@@ -66,10 +61,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (existingCategory) {
-      return NextResponse.json(
-        { error: 'A category with this slug already exists' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('A category with this slug already exists')
     }
 
     const category = await prisma.productCategory.create({
@@ -89,9 +81,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(category, { status: 201 })
   } catch (error) {
     console.error('Error creating category:', error)
-    return NextResponse.json(
-      { error: 'Failed to create category' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to create category')
   }
 }

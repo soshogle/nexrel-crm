@@ -11,6 +11,7 @@ import { runCentralCentrisSync, type BrokerOverride } from "@/lib/centris-sync";
 import { runRealtorSync } from "@/lib/realtor-sync";
 import { getCrmDb } from "@/lib/dal";
 import { createDalContext } from "@/lib/context/industry-context";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   let databaseUrls: string[] = [];
@@ -42,14 +43,14 @@ export async function GET(req: NextRequest) {
   const ctx = createDalContext('bootstrap');
   const db = getCrmDb(ctx);
   if (databaseUrls.length === 0) {
-    const websites = await db.website.findMany({
+    const websites: any[] = await db.website.findMany({
       where: {
         templateType: "SERVICE",
         status: "READY",
         neonDatabaseUrl: { not: null },
       },
       select: { neonDatabaseUrl: true, agencyConfig: true },
-    });
+    } as any);
     databaseUrls = websites
       .map((w) => w.neonDatabaseUrl)
       .filter((u): u is string => !!u && u.startsWith("postgresql://"));
@@ -79,15 +80,15 @@ export async function GET(req: NextRequest) {
 
   // Realtor.ca sync for brokers with realtorBrokerUrl
   const realtorOverrides: { databaseUrl: string; realtorBrokerUrl: string }[] = [];
-  const websitesRealtor = await db.website.findMany({
+  const websitesRealtor: any[] = await db.website.findMany({
     where: {
       templateType: "SERVICE",
       status: "READY",
       neonDatabaseUrl: { not: null },
     },
     select: { neonDatabaseUrl: true, agencyConfig: true },
-  });
-  for (const w of websites) {
+  } as any);
+  for (const w of websitesRealtor) {
     const url = w.neonDatabaseUrl;
     if (!url?.startsWith("postgresql://")) continue;
     const ac = w.agencyConfig as Record<string, unknown> | null;

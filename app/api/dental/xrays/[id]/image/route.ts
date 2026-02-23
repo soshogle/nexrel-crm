@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,7 +22,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     // Find X-ray
@@ -33,10 +34,7 @@ export async function GET(
     });
 
     if (!xray) {
-      return NextResponse.json(
-        { error: await t('api.xrayNotFound') },
-        { status: 404 }
-      );
+      return apiErrors.notFound(await t('api.xrayNotFound'));
     }
 
     // If imageUrl is already available, redirect to it
@@ -55,15 +53,9 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(
-      { error: await t('api.noImageAvailable') },
-      { status: 404 }
-    );
+    return apiErrors.notFound(await t('api.noImageAvailable'));
   } catch (error) {
     console.error('Error fetching X-ray image:', error);
-    return NextResponse.json(
-      { error: await t('api.failedToFetchImage') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.failedToFetchImage'));
   }
 }

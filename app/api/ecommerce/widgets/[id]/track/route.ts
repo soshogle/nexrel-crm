@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { widgetService } from '@/lib/ecommerce/widget-service';
+import { apiErrors } from '@/lib/api-error';
 
 // This endpoint doesn't require authentication as it's called from external websites
 
@@ -21,10 +22,7 @@ export async function POST(
     const { action, embedId, revenue, trackingData } = body;
 
     if (!action) {
-      return NextResponse.json(
-        { error: 'Action is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Action is required');
     }
 
     let result;
@@ -32,10 +30,7 @@ export async function POST(
     switch (action) {
       case 'impression':
         if (!trackingData) {
-          return NextResponse.json(
-            { error: 'Tracking data is required for impressions' },
-            { status: 400 }
-          );
+          return apiErrors.badRequest('Tracking data is required for impressions');
         }
         result = await widgetService.trackEmbed({
           widgetConfigId: params.id,
@@ -64,18 +59,12 @@ export async function POST(
         break;
 
       default:
-        return NextResponse.json(
-          { error: 'Invalid action' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Invalid action');
     }
 
     return NextResponse.json({ success: true, result });
   } catch (error: any) {
     console.error('Error tracking widget action:', error);
-    return NextResponse.json(
-      { error: 'Failed to track action', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to track action', error.message);
   }
 }

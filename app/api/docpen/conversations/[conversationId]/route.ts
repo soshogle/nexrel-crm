@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { ElevenLabsService } from '@/lib/elevenlabs';
 import { prisma } from '@/lib/db';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,7 +20,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { conversationId } = params;
@@ -36,16 +37,13 @@ export async function GET(
     });
 
     if (docpenAgents.length === 0) {
-      return NextResponse.json({ error: 'No Docpen agents found' }, { status: 404 });
+      return apiErrors.notFound('No Docpen agents found');
     }
 
     // Get user's ElevenLabs API key
     const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'ElevenLabs API key not configured' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('ElevenLabs API key not configured');
     }
 
     const elevenLabsService = new ElevenLabsService();
@@ -56,10 +54,7 @@ export async function GET(
     // Verify the conversation belongs to one of the user's agents
     const userAgentIds = new Set(docpenAgents.map(agent => agent.elevenLabsAgentId));
     if (!userAgentIds.has(conversation.agent_id)) {
-      return NextResponse.json(
-        { error: 'Conversation not found or access denied' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Conversation not found or access denied');
     }
 
     // Get agent info
@@ -84,10 +79,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('❌ [Docpen Conversation Details] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch conversation details' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch conversation details');
   }
 }
 
@@ -103,7 +95,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Check if user is SUPER_ADMIN
@@ -132,10 +124,7 @@ export async function DELETE(
     }
 
     if (!isSuperAdmin) {
-      return NextResponse.json(
-        { error: 'Forbidden: Only super admins can delete conversations' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Forbidden: Only super admins can delete conversations');
     }
 
     const { conversationId } = params;
@@ -154,9 +143,6 @@ export async function DELETE(
     });
   } catch (error: any) {
     console.error('❌ [Delete Docpen Conversation] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete conversation' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete conversation');
   }
 }

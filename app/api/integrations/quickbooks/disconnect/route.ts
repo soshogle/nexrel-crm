@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/integrations/quickbooks/disconnect
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Clear QuickBooks config
@@ -26,9 +27,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('QuickBooks disconnect error:', error);
-    return NextResponse.json(
-      { error: 'Failed to disconnect QuickBooks', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to disconnect QuickBooks', error.message);
   }
 }

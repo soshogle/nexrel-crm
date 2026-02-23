@@ -10,6 +10,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -42,7 +43,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { agentId } = params;
@@ -56,7 +57,7 @@ export async function GET(
     });
 
     if (!agent) {
-      return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+      return apiErrors.notFound('Agent not found');
     }
 
     // Get conversations from local database
@@ -76,10 +77,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('❌ [Docpen Conversations] Error fetching:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch conversations' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch conversations');
   }
 }
 
@@ -91,7 +89,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { agentId } = params;
@@ -105,15 +103,12 @@ export async function POST(
     });
 
     if (!agent) {
-      return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+      return apiErrors.notFound('Agent not found');
     }
 
     const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'ElevenLabs API key not configured' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('ElevenLabs API key not configured');
     }
 
     console.log(`📥 [Docpen] Syncing conversations for agent: ${agent.elevenLabsAgentId}`);
@@ -218,9 +213,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('❌ [Docpen Conversations] Error syncing:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to sync conversations' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to sync conversations');
   }
 }

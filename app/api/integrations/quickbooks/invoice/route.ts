@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createQuickBooksInvoice } from '@/lib/integrations/quickbooks-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,10 +14,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -30,10 +28,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!customerName || !customerEmail || !lineItems || lineItems.length === 0) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     const result = await createQuickBooksInvoice(session.user.id, {
@@ -46,10 +41,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(result.error!);
     }
 
     return NextResponse.json({
@@ -60,9 +52,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('Create invoice error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create invoice' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create invoice');
   }
 }

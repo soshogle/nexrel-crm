@@ -8,6 +8,7 @@ import { workflowEngine } from '@/lib/workflow-engine';
 import { detectDealStageWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/deals/[id] - Get single deal
 
@@ -21,11 +22,11 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const deal = await dealService.findUnique(ctx, params.id, {
       lead: true,
@@ -38,16 +39,13 @@ export async function GET(
     } as any);
 
     if (!deal) {
-      return NextResponse.json({ error: 'Deal not found' }, { status: 404 });
+      return apiErrors.notFound('Deal not found');
     }
 
     return NextResponse.json(deal);
   } catch (error) {
     console.error('Error fetching deal:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch deal' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch deal');
   }
 }
 
@@ -59,25 +57,25 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const data = await request.json();
-    const existingDeal = await dealService.findUnique(ctx, params.id, { stage: true });
+    const existingDeal: any = await dealService.findUnique(ctx, params.id, { stage: true } as any);
 
     if (!existingDeal) {
-      return NextResponse.json({ error: 'Deal not found' }, { status: 404 });
+      return apiErrors.notFound('Deal not found');
     }
 
     // Check if stage changed
@@ -96,7 +94,7 @@ export async function PATCH(
     }
 
     // Update deal
-    const updatedDeal = await dealService.update(ctx, params.id, {
+    const updatedDeal: any = await dealService.update(ctx, params.id, {
       ...data,
       probability: data.stageId ? newProbability : existingDeal.probability,
       expectedCloseDate: data.expectedCloseDate ? new Date(data.expectedCloseDate) : existingDeal.expectedCloseDate,
@@ -179,10 +177,7 @@ export async function PATCH(
     return NextResponse.json(updatedDeal);
   } catch (error) {
     console.error('Error updating deal:', error);
-    return NextResponse.json(
-      { error: 'Failed to update deal' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update deal');
   }
 }
 
@@ -194,20 +189,17 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     await dealService.delete(ctx, params.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting deal:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete deal' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete deal');
   }
 }

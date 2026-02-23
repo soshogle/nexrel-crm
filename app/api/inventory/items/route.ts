@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 /**
  * GET INVENTORY ITEMS
@@ -16,7 +18,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -25,6 +27,7 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search');
     const isActive = searchParams.get('isActive');
 
+    const pagination = parsePagination(req);
     const where: any = { userId: session.user.id };
 
     if (category) {
@@ -69,6 +72,8 @@ export async function GET(req: NextRequest) {
       orderBy: {
         name: 'asc',
       },
+      take: pagination.take,
+      skip: pagination.skip,
     });
 
     // Calculate stock status for each item
@@ -93,13 +98,11 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json(itemsWithStatus);
+    const total = await prisma.inventoryItem.count({ where });
+    return paginatedResponse(itemsWithStatus, total, pagination);
   } catch (error) {
     console.error('❌ Inventory items fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch inventory items' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch inventory items');
   }
 }
 
@@ -110,7 +113,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -136,10 +139,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name || !sku || !category || !unit) {
-      return NextResponse.json(
-        { error: 'Name, SKU, category, and unit are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Name, SKU, category, and unit are required');
     }
 
     // Check if SKU already exists
@@ -148,10 +148,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingSku) {
-      return NextResponse.json(
-        { error: 'SKU already exists' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('SKU already exists');
     }
 
     // Create inventory item
@@ -202,9 +199,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(item, { status: 201 });
   } catch (error) {
     console.error('❌ Inventory item creation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create inventory item' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create inventory item');
   }
 }

@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
   try {
     const auth = await verifyToken(request);
     if (!auth) {
-      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+      return apiErrors.unauthorized('Invalid or expired token');
     }
 
     const { searchParams } = new URL(request.url);
@@ -90,9 +91,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ actions });
   } catch (error) {
     console.error('[EHR Bridge] Desktop actions failed:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed');
   }
 }

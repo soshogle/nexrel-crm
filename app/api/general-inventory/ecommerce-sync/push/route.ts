@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { createPlatformClient } from '@/lib/ecommerce-platforms';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,17 +14,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { itemId, action } = body;
 
     if (!itemId || !action) {
-      return NextResponse.json(
-        { error: 'Item ID and action are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Item ID and action are required');
     }
 
     // Get item details
@@ -37,7 +35,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!item) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      return apiErrors.notFound('Item not found');
     }
 
     // Get sync settings
@@ -46,10 +44,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!settings || !settings.autoSync) {
-      return NextResponse.json(
-        { error: 'E-commerce sync is not enabled' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('E-commerce sync is not enabled');
     }
 
     // Create platform client
@@ -67,20 +62,14 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'update_inventory':
         if (!settings.syncInventory) {
-          return NextResponse.json(
-            { error: 'Inventory sync is not enabled' },
-            { status: 400 }
-          );
+          return apiErrors.badRequest('Inventory sync is not enabled');
         }
         result = await client.updateInventory(item.sku, item.quantity);
         break;
 
       case 'update_product':
         if (!settings.syncProducts) {
-          return NextResponse.json(
-            { error: 'Product sync is not enabled' },
-            { status: 400 }
-          );
+          return apiErrors.badRequest('Product sync is not enabled');
         }
         result = await client.updateProduct(item.sku, {
           name: item.name,
@@ -94,10 +83,7 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        return NextResponse.json(
-          { error: 'Invalid action' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Invalid action');
     }
 
     // Update last sync time
@@ -115,9 +101,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error pushing to e-commerce platform:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to push changes' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to push changes');
   }
 }

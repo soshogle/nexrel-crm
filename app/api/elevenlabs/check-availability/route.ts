@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAvailability } from '@/lib/elevenlabs-booking-functions';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -50,19 +51,13 @@ export async function GET(request: NextRequest) {
   const time = searchParams.get('time') || undefined;
 
   if (!userId || !date) {
-    return NextResponse.json(
-      { error: 'Missing userId or date parameter' },
-      { status: 400 }
-    );
+    return apiErrors.badRequest('Missing userId or date parameter');
   }
 
   try {
     const result = await checkAvailability({ userId, date, time });
     return NextResponse.json(result);
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message);
   }
 }

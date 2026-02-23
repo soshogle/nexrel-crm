@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { reviewFeedbackService, FeedbackResponse } from '@/lib/review-feedback-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,17 +14,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { feedbackId, sentiment, rating, feedbackText } = body;
 
     if (!feedbackId || !sentiment) {
-      return NextResponse.json(
-        { error: 'feedbackId and sentiment are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('feedbackId and sentiment are required');
     }
 
     const feedbackResponse: FeedbackResponse = {
@@ -40,9 +38,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error processing feedback:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to process feedback' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to process feedback');
   }
 }

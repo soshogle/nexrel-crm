@@ -13,6 +13,7 @@ import { AccessAuditService } from '@/lib/storage/access-audit-service';
 import { generateEncryptionKey } from '@/lib/docpen/security';
 import { DocumentType, DocumentAccessLevel, ConsentType } from '@prisma/client';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const formData = await request.formData();
@@ -41,11 +42,11 @@ export async function POST(request: NextRequest) {
     const accessLevel = (formData.get('accessLevel') as DocumentAccessLevel) || 'RESTRICTED';
 
     if (!file) {
-      return NextResponse.json({ error: await t('api.missingRequiredFields') }, { status: 400 });
+      return apiErrors.badRequest(await t('api.missingRequiredFields'));
     }
 
     if (!leadId) {
-      return NextResponse.json({ error: await t('api.leadIdRequired') }, { status: 400 });
+      return apiErrors.badRequest(await t('api.leadIdRequired'));
     }
 
     // Check consent (Law 25 requirement)
@@ -58,10 +59,7 @@ export async function POST(request: NextRequest) {
       );
 
       if (!hasConsent) {
-        return NextResponse.json(
-          { error: await t('api.missingRequiredFields') },
-          { status: 403 }
-        );
+        return apiErrors.forbidden(await t('api.missingRequiredFields'));
       }
     }
 
@@ -138,10 +136,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error uploading document:', error);
-    return NextResponse.json(
-      { error: await t('api.uploadDocumentFailed'), details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.uploadDocumentFailed'), error.message);
   }
 }
 
@@ -150,7 +145,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const { searchParams } = new URL(request.url);
@@ -158,7 +153,7 @@ export async function GET(request: NextRequest) {
     const clinicId = searchParams.get('clinicId');
 
     if (!leadId) {
-      return NextResponse.json({ error: await t('api.leadIdRequired') }, { status: 400 });
+      return apiErrors.badRequest(await t('api.leadIdRequired'));
     }
 
     const where: any = {
@@ -194,9 +189,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching documents:', error);
-    return NextResponse.json(
-      { error: await t('api.fetchDocumentsFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.fetchDocumentsFailed'));
   }
 }

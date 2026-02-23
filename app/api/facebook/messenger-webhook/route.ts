@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { createDalContext } from '@/lib/context/industry-context';
 import { conversationService } from '@/lib/dal/conversation-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(challenge, { status: 200 });
   } else {
     console.error('❌ Facebook webhook verification failed');
-    return NextResponse.json({ error: 'Verification failed' }, { status: 403 });
+    return apiErrors.forbidden('Verification failed');
   }
 }
 
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error: any) {
     console.error('❌ Error processing Messenger webhook:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }
 
@@ -72,14 +73,14 @@ async function processMessagingEvent(event: any, pageId: string) {
     console.log(`📧 Processing message from ${senderId} to page ${pageId}`);
 
     // Find the channel connection for this page
-    const channelConnection = await prisma.channelConnection.findFirst({
+    const channelConnection: any = await prisma.channelConnection.findFirst({
       where: {
         providerType: 'FACEBOOK',
         channelType: 'FACEBOOK_MESSENGER',
         channelIdentifier: pageId,
         status: 'CONNECTED',
       },
-    });
+    } as any);
 
     if (!channelConnection) {
       console.error(`❌ No active Messenger connection found for page ${pageId}`);
@@ -93,7 +94,7 @@ async function processMessagingEvent(event: any, pageId: string) {
     const senderName = senderProfile?.name || `Messenger User ${senderId}`;
 
     const ctx = createDalContext(channelConnection.userId);
-    let conversation = await conversationService.findFirst(ctx, {
+    let conversation: any = await conversationService.findFirst(ctx, {
       channelConnectionId: channelConnection.id,
       contactIdentifier: senderId,
     });
@@ -106,7 +107,7 @@ async function processMessagingEvent(event: any, pageId: string) {
         contactIdentifier: senderId,
         externalConversationId: senderId,
         status: 'ACTIVE',
-      });
+      } as any);
     }
 
     // Save the message
@@ -133,7 +134,7 @@ async function processMessagingEvent(event: any, pageId: string) {
       lastMessagePreview: messageText.substring(0, 100),
       unreadCount: { increment: 1 },
       status: 'UNREAD',
-    });
+    } as any);
 
     // Trigger workflows for MESSAGE_RECEIVED (with channel type filtering)
     workflowEngine.triggerWorkflow('MESSAGE_RECEIVED', {

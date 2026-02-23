@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ElevenLabsService } from '@/lib/elevenlabs';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -136,9 +137,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ [ElevenLabs Conversations] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch conversations' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch conversations');
   }
 }

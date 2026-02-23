@@ -10,6 +10,7 @@ import { prisma } from '@/lib/db';
 import OpenAI from 'openai';
 import { createDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -301,9 +302,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('[Docpen Functions] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Function execution failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Function execution failed');
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,6 @@ export async function GET() {
       } : null
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to get session' }, { status: 500 });
+    return apiErrors.internal('Failed to get session');
   }
 }

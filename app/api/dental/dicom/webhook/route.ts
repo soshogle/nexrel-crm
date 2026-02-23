@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DicomServerService } from '@/lib/dental/dicom-server';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     const webhookSecret = process.env.DICOM_WEBHOOK_SECRET;
     
     if (webhookSecret && authHeader !== `Bearer ${webhookSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -28,10 +29,7 @@ export async function POST(request: NextRequest) {
     if (event === 'NewInstance' && resourceId) {
       // New DICOM instance received
       if (!userId) {
-        return NextResponse.json(
-          { error: await t('api.missingRequiredFields') },
-          { status: 400 }
-        );
+        return apiErrors.badRequest(await t('api.missingRequiredFields'));
       }
 
       // Process the new instance
@@ -49,9 +47,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error handling DICOM webhook:', error);
-    return NextResponse.json(
-      { error: await t('api.uploadXrayFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.uploadXrayFailed'));
   }
 }

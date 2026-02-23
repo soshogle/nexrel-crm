@@ -7,6 +7,7 @@ import {
   getDeliveryZones,
   CreateDeliveryZoneInput,
 } from '@/lib/delivery-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -16,22 +17,19 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const result = await getDeliveryZones(session.user.id);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return apiErrors.internal(result.error);
     }
 
     return NextResponse.json(result.zones);
   } catch (error: any) {
     console.error('Error in GET /api/delivery/zones:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }
 
@@ -39,7 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -52,7 +50,7 @@ export async function POST(request: NextRequest) {
       body.minimumOrder === undefined ||
       !body.estimatedTimeMin
     ) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return apiErrors.badRequest('Missing required fields');
     }
 
     const input: CreateDeliveryZoneInput = {
@@ -68,15 +66,12 @@ export async function POST(request: NextRequest) {
     const result = await createDeliveryZone(input);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return apiErrors.internal(result.error);
     }
 
     return NextResponse.json(result.zone, { status: 201 });
   } catch (error: any) {
     console.error('Error in POST /api/delivery/zones:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

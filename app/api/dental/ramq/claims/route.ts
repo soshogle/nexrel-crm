@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const { searchParams } = new URL(request.url);
@@ -27,11 +28,11 @@ export async function GET(request: NextRequest) {
 
     // Verify user owns the requested userId
     if (userId !== session.user.id) {
-      return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
+      return apiErrors.forbidden(await t('api.forbidden'));
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized(await t('api.unauthorized'));
 
     // For now, store RAMQ claims in Lead.insuranceInfo JSON field
     // In production, you'd want a dedicated RAMQClaim model
@@ -68,10 +69,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(claims);
   } catch (error) {
     console.error('Error fetching RAMQ claims:', error);
-    return NextResponse.json(
-      { error: await t('api.fetchClaimsFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.fetchClaimsFailed'));
   }
 }
 
@@ -80,7 +78,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const body = await request.json();
@@ -97,15 +95,12 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!userId || !patientName || !patientRAMQNumber || !procedureCode || !serviceDate || !amount) {
-      return NextResponse.json(
-        { error: await t('api.missingRequiredFields') },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(await t('api.missingRequiredFields'));
     }
 
     // Verify user owns the userId
     if (userId !== session.user.id) {
-      return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
+      return apiErrors.forbidden(await t('api.forbidden'));
     }
 
     // Create claim object
@@ -129,14 +124,11 @@ export async function POST(request: NextRequest) {
     // Store in Lead.insuranceInfo JSON field
     if (leadId) {
       const ctx = getDalContextFromSession(session);
-      if (!ctx) return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      if (!ctx) return apiErrors.unauthorized(await t('api.unauthorized'));
       const lead = await leadService.findUnique(ctx, leadId);
 
       if (!lead) {
-        return NextResponse.json(
-          { error: await t('api.leadNotFound') },
-          { status: 404 }
-        );
+        return apiErrors.notFound(await t('api.leadNotFound'));
       }
 
       const insuranceInfo = (lead.insuranceInfo as any) || {};
@@ -150,18 +142,12 @@ export async function POST(request: NextRequest) {
     } else {
       // If no leadId, create a new lead or store in user metadata
       // For now, we'll require a leadId
-      return NextResponse.json(
-        { error: await t('api.leadIdRequired') },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(await t('api.leadIdRequired'));
     }
 
     return NextResponse.json(claim, { status: 201 });
   } catch (error) {
     console.error('Error creating RAMQ claim:', error);
-    return NextResponse.json(
-      { error: await t('api.createClaimFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.createClaimFailed'));
   }
 }

@@ -12,6 +12,7 @@ import { DicomParser } from '@/lib/dental/dicom-parser';
 import { DicomToImageConverter } from '@/lib/dental/dicom-to-image';
 import OpenAI from 'openai';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -40,7 +41,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     // Get user's language preference
@@ -69,10 +70,7 @@ export async function POST(
     });
 
     if (!xray) {
-      return NextResponse.json(
-        { error: await t('api.notFound') },
-        { status: 404 }
-      );
+      return apiErrors.notFound(await t('api.notFound'));
     }
 
     // Get image URL for analysis
@@ -127,18 +125,12 @@ export async function POST(
         isBase64 = true;
       } catch (dicomError) {
         console.error('Error converting DICOM for analysis:', dicomError);
-        return NextResponse.json(
-          { error: await t('api.dicomConversionFailed') + ': ' + (dicomError as Error).message },
-          { status: 400 }
-        );
+        return apiErrors.badRequest(await t('api.dicomConversionFailed') + ': ' + (dicomError as Error).message);
       }
     }
 
     if (!imageUrl) {
-      return NextResponse.json(
-        { error: await t('api.missingRequiredFields') },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(await t('api.missingRequiredFields'));
     }
 
     // Fetch image for GPT-4 Vision (if not already base64)
@@ -234,10 +226,7 @@ Provide a comprehensive analysis including findings, recommendations, and confid
     });
   } catch (error: any) {
     console.error('Error analyzing X-ray:', error);
-    return NextResponse.json(
-      { error: await t('api.analyzeXrayFailed') + ': ' + (error.message || 'Unknown error') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.analyzeXrayFailed') + ': ' + (error.message || 'Unknown error'));
   }
 }
 

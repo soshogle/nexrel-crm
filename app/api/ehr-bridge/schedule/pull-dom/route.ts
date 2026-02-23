@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await verifyToken(request);
     if (!auth) {
-      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+      return apiErrors.unauthorized('Invalid or expired token');
     }
 
     const body = await request.json().catch(() => ({}));
@@ -64,9 +65,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('[EHR Bridge] Schedule pull-dom failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to sync schedule' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to sync schedule');
   }
 }

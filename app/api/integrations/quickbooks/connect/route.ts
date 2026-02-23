@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/integrations/quickbooks/connect
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const clientId = process.env.QUICKBOOKS_CLIENT_ID;
@@ -21,10 +22,7 @@ export async function GET(request: NextRequest) {
       `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/integrations/quickbooks/callback`;
 
     if (!clientId || !clientSecret) {
-      return NextResponse.json(
-        { error: 'QuickBooks credentials not configured. Please set QUICKBOOKS_CLIENT_ID and QUICKBOOKS_CLIENT_SECRET in environment variables.' },
-        { status: 500 }
-      );
+      return apiErrors.internal('QuickBooks credentials not configured. Please set QUICKBOOKS_CLIENT_ID and QUICKBOOKS_CLIENT_SECRET in environment variables.');
     }
 
     // Generate state token for CSRF protection
@@ -48,9 +46,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('QuickBooks OAuth initiation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to initiate QuickBooks connection', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to initiate QuickBooks connection', error.message);
   }
 }

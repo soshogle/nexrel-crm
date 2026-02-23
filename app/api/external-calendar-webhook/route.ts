@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     const apiKey = authHeader?.replace('Bearer ', '');
 
     if (!apiKey) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Find calendar connection with matching API key
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!connection) {
-      return NextResponse.json({ error: 'Invalid API key' }, { status: 401 });
+      return apiErrors.unauthorized('Invalid API key');
     }
 
     const body = await request.json();
@@ -52,10 +53,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error processing webhook:', error);
-    return NextResponse.json(
-      { error: 'Failed to process webhook' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to process webhook');
   }
 }
 

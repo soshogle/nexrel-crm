@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { DicomServerService } from '@/lib/dental/dicom-server';
 import { prisma } from '@/lib/db';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,17 +19,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const body = await request.json();
     const { serverId, patientId, patientName, studyDate, modality } = body;
 
     if (!serverId) {
-      return NextResponse.json(
-        { error: await t('api.missingRequiredFields') },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(await t('api.missingRequiredFields'));
     }
 
     // Get server configuration
@@ -59,9 +57,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error querying DICOM systems:', error);
-    return NextResponse.json(
-      { error: await t('api.fetchXraysFailed') },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.fetchXraysFailed'));
   }
 }

@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const { searchParams } = new URL(request.url);
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('Error fetching forms:', error);
-    return NextResponse.json({ error: await t('api.fetchFormsFailed') }, { status: 500 });
+    return apiErrors.internal(await t('api.fetchFormsFailed'));
   }
 }
 
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const body = await request.json();
@@ -103,19 +104,13 @@ export async function POST(request: NextRequest) {
 
     // If still no clinicId, return error
     if (!finalClinicId) {
-      return NextResponse.json(
-        { error: 'Clinic ID is required. Please create or select a clinic first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Clinic ID is required. Please create or select a clinic first.');
     }
 
     if (isTemplate || type === 'template') {
       // Create form template
       if (!formName || !formSchema) {
-        return NextResponse.json(
-          { error: await t('api.formNameSchemaRequired') },
-          { status: 400 }
-        );
+        return apiErrors.badRequest(await t('api.formNameSchemaRequired'));
       }
 
       const form = await prisma.dentalForm.create({
@@ -132,10 +127,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Submit form response
       if (!formId || !leadId || !formData) {
-        return NextResponse.json(
-          { error: await t('api.formIdLeadIdDataRequired') },
-          { status: 400 }
-        );
+        return apiErrors.badRequest(await t('api.formIdLeadIdDataRequired'));
       }
 
       // Get clinicId from the form if not provided
@@ -168,9 +160,6 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('Error saving form:', error);
-    return NextResponse.json(
-      { error: await t('api.saveFormFailed'), details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.saveFormFailed'), error.message);
   }
 }

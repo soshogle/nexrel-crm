@@ -11,6 +11,7 @@ import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
 import { AccessAuditService } from '@/lib/storage/access-audit-service';
 import { decryptData } from '@/lib/docpen/security';
 import { t } from '@/lib/i18n-server';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,7 +27,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const document = await prisma.patientDocument.findUnique({
@@ -34,7 +35,7 @@ export async function GET(
     });
 
     if (!document) {
-      return NextResponse.json({ error: await t('api.notFound') }, { status: 404 });
+      return apiErrors.notFound(await t('api.notFound'));
     }
 
     // Check access permissions
@@ -47,12 +48,12 @@ export async function GET(
         'Unauthorized access attempt',
         request
       );
-      return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
+      return apiErrors.forbidden(await t('api.forbidden'));
     }
 
     // Check if document is deleted
     if (document.deletedAt) {
-      return NextResponse.json({ error: await t('api.notFound') }, { status: 404 });
+      return apiErrors.notFound(await t('api.notFound'));
     }
 
     // Get encryption key (in production, retrieve from secure key management)
@@ -93,10 +94,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error downloading document:', error);
-    return NextResponse.json(
-      { error: await t('api.downloadDocumentFailed'), details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.downloadDocumentFailed'), error.message);
   }
 }
 
@@ -108,7 +106,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: await t('api.unauthorized') }, { status: 401 });
+      return apiErrors.unauthorized(await t('api.unauthorized'));
     }
 
     const document = await prisma.patientDocument.findUnique({
@@ -116,20 +114,17 @@ export async function DELETE(
     });
 
     if (!document) {
-      return NextResponse.json({ error: await t('api.notFound') }, { status: 404 });
+      return apiErrors.notFound(await t('api.notFound'));
     }
 
     // Check permissions
     if (document.userId !== session.user.id) {
-      return NextResponse.json({ error: await t('api.forbidden') }, { status: 403 });
+      return apiErrors.forbidden(await t('api.forbidden'));
     }
 
     // Check if deletion is blocked (legal hold)
     if (document.deletionBlocked) {
-      return NextResponse.json(
-        { error: await t('api.forbidden') },
-        { status: 403 }
-      );
+      return apiErrors.forbidden(await t('api.forbidden'));
     }
 
     // Check retention policy
@@ -174,9 +169,6 @@ export async function DELETE(
     });
   } catch (error: any) {
     console.error('Error deleting document:', error);
-    return NextResponse.json(
-      { error: await t('api.deleteDocumentFailed'), details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal(await t('api.deleteDocumentFailed'), error.message);
   }
 }

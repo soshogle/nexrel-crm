@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { elevenLabsService } from '@/lib/elevenlabs';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/elevenlabs/voices
@@ -17,10 +18,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const voices = await elevenLabsService.getVoices();
@@ -28,9 +26,6 @@ export async function GET() {
     return NextResponse.json(voices);
   } catch (error: any) {
     console.error('Error fetching voices:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch voices' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch voices');
   }
 }

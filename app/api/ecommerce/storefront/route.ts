@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/ecommerce/storefront - Get user's storefront
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const storefront = await prisma.storefront.findUnique({
@@ -23,16 +24,13 @@ export async function GET(req: NextRequest) {
     })
 
     if (!storefront) {
-      return NextResponse.json({ error: 'Storefront not found' }, { status: 404 })
+      return apiErrors.notFound('Storefront not found')
     }
 
     return NextResponse.json(storefront)
   } catch (error) {
     console.error('Error fetching storefront:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch storefront' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch storefront')
   }
 }
 
@@ -41,7 +39,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     // Check if storefront already exists
@@ -50,20 +48,14 @@ export async function POST(req: NextRequest) {
     })
 
     if (existingStorefront) {
-      return NextResponse.json(
-        { error: 'Storefront already exists' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Storefront already exists')
     }
 
     const body = await req.json()
     const { storeName, domain, subdomain, description, primaryColor, secondaryColor } = body
 
     if (!storeName) {
-      return NextResponse.json(
-        { error: 'Store name is required' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Store name is required')
     }
 
     const storefront = await prisma.storefront.create({
@@ -81,10 +73,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(storefront, { status: 201 })
   } catch (error) {
     console.error('Error creating storefront:', error)
-    return NextResponse.json(
-      { error: 'Failed to create storefront' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to create storefront')
   }
 }
 
@@ -93,7 +82,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const body = await req.json()
@@ -135,9 +124,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json(storefront)
   } catch (error) {
     console.error('Error updating storefront:', error)
-    return NextResponse.json(
-      { error: 'Failed to update storefront' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to update storefront')
   }
 }

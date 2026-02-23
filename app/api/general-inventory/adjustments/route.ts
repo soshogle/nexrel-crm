@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { syncGeneralInventoryToProduct } from '@/lib/general-inventory/product-sync';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -31,10 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!itemId || !type || quantity === undefined) {
-      return NextResponse.json(
-        { error: 'Item ID, type, and quantity are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Item ID, type, and quantity are required');
     }
 
     // Get current item
@@ -46,7 +44,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!item) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      return apiErrors.notFound('Item not found');
     }
 
     const quantityBefore = item.quantity;
@@ -54,10 +52,7 @@ export async function POST(request: NextRequest) {
 
     // Check for negative stock
     if (quantityAfter < 0) {
-      return NextResponse.json(
-        { error: 'Insufficient stock for this adjustment' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Insufficient stock for this adjustment');
     }
 
     // Create adjustment and update item in a transaction
@@ -138,7 +133,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, adjustment, item: updatedItem });
   } catch (error: any) {
     console.error('Error creating adjustment:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }
 
@@ -147,7 +142,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -176,6 +171,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, adjustments });
   } catch (error: any) {
     console.error('Error fetching adjustments:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrors.internal(error.message);
   }
 }

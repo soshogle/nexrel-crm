@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { VnaManager } from '@/lib/dental/vna-integration';
 import { encryptJSON, decryptJSON } from '@/lib/encryption';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const vnas = await (prisma as any).vnaConfiguration.findMany({
@@ -40,10 +41,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, vnas: safeVnas });
   } catch (error: any) {
     console.error('Error fetching VNAs:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch VNA configurations' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch VNA configurations');
   }
 }
 
@@ -52,7 +50,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -74,10 +72,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!name || !type) {
-      return NextResponse.json(
-        { error: 'Name and type are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Name and type are required');
     }
 
     let encryptedCredentials = null;
@@ -156,10 +151,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating VNA:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create VNA configuration' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create VNA configuration');
   }
 }
 
@@ -168,14 +160,14 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { id, ...updateData } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'VNA ID required' }, { status: 400 });
+      return apiErrors.badRequest('VNA ID required');
     }
 
     // Verify ownership
@@ -184,7 +176,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!existing || existing.userId !== session.user.id) {
-      return NextResponse.json({ error: 'VNA not found' }, { status: 404 });
+      return apiErrors.notFound('VNA not found');
     }
 
     let encryptedCredentials = existing.credentials;
@@ -223,10 +215,7 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error updating VNA:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update VNA configuration' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update VNA configuration');
   }
 }
 
@@ -235,14 +224,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'VNA ID required' }, { status: 400 });
+      return apiErrors.badRequest('VNA ID required');
     }
 
     // Verify ownership
@@ -251,7 +240,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!existing || existing.userId !== session.user.id) {
-      return NextResponse.json({ error: 'VNA not found' }, { status: 404 });
+      return apiErrors.notFound('VNA not found');
     }
 
     await (prisma as any).vnaConfiguration.delete({
@@ -261,9 +250,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting VNA:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete VNA configuration' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete VNA configuration');
   }
 }

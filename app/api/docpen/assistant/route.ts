@@ -11,6 +11,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { processAssistantQuery, containsWakeWord, extractQueryAfterWakeWord } from '@/lib/docpen/assistant-service';
 import { sanitizeForLogging, createAuditLogEntry } from '@/lib/docpen/security';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!queryText) {
-      return NextResponse.json({ error: 'Query text is required' }, { status: 400 });
+      return apiErrors.badRequest('Query text is required');
     }
 
     // Extract actual query if wake word is present
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Validate query type
     const validQueryTypes = ['patient_history', 'drug_interaction', 'medical_lookup', 'feedback'];
     if (!validQueryTypes.includes(queryType)) {
-      return NextResponse.json({ error: 'Invalid query type' }, { status: 400 });
+      return apiErrors.badRequest('Invalid query type');
     }
 
     // Get session context if provided
@@ -126,9 +127,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('[Docpen Assistant] Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to process query' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to process query');
   }
 }

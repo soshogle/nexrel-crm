@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/credit-scoring/applications - List credit applications
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const applications = await prisma.creditApplication.findMany({
@@ -31,10 +32,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(applications)
   } catch (error) {
     console.error('Error fetching credit applications:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch applications' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch applications')
   }
 }
 
@@ -43,7 +41,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const body = await req.json()
@@ -59,10 +57,7 @@ export async function POST(req: NextRequest) {
     } = body
 
     if (!applicationType || !requestedAmount) {
-      return NextResponse.json(
-        { error: 'Application type and requested amount are required' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Application type and requested amount are required')
     }
 
     // Get current credit score
@@ -107,9 +102,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(application, { status: 201 })
   } catch (error) {
     console.error('Error creating credit application:', error)
-    return NextResponse.json(
-      { error: 'Failed to create application' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to create application')
   }
 }

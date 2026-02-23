@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { syncGeneralInventoryToProduct } from '@/lib/general-inventory/product-sync';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     // Validate API key (simple key validation - in production use proper auth)
     if (!api_key) {
-      return NextResponse.json({ error: 'Missing API key' }, { status: 401 });
+      return apiErrors.unauthorized('Missing API key');
     }
 
     // Find user by API key (you should store this in User model or create EcommerceIntegration model)
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'Invalid API key' }, { status: 401 });
+      return apiErrors.unauthorized('Invalid API key');
     }
 
     // Find the inventory item by SKU
@@ -132,10 +133,7 @@ export async function POST(request: NextRequest) {
             updated_fields: Object.keys(updateData),
           });
         } else {
-          return NextResponse.json(
-            { error: 'No product data provided for update' },
-            { status: 400 }
-          );
+          return apiErrors.badRequest('No product data provided for update');
         }
 
       default:
@@ -146,10 +144,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('❌ E-commerce webhook error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Webhook processing failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Webhook processing failed');
   }
 }
 

@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -77,10 +78,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ [Docpen KB] Error fetching files:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch files' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch files');
   }
 }
 
@@ -89,14 +87,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const fileId = searchParams.get('fileId');
 
     if (!fileId) {
-      return NextResponse.json({ error: 'File ID required' }, { status: 400 });
+      return apiErrors.badRequest('File ID required');
     }
 
     // Verify ownership
@@ -108,7 +106,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!file) {
-      return NextResponse.json({ error: 'File not found' }, { status: 404 });
+      return apiErrors.notFound('File not found');
     }
 
     // Delete file (cascade will remove agent links)
@@ -119,9 +117,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('❌ [Docpen KB] Error deleting file:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete file' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete file');
   }
 }

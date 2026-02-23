@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { insuranceManager } from '@/lib/dental/insurance-integration';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,17 +17,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { leadId, providerName, insuranceType, policyNumber } = body;
 
     if (!leadId || !providerName || !insuranceType) {
-      return NextResponse.json(
-        { error: 'Missing required fields: leadId, providerName, insuranceType' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: leadId, providerName, insuranceType');
     }
 
     const provider = {
@@ -35,7 +33,7 @@ export async function POST(request: NextRequest) {
       type: (insuranceType === 'RAMQ' ? 'RAMQ' : 'PRIVATE') as 'RAMQ' | 'PRIVATE',
     };
 
-    const eligibility = await insuranceManager.checkEligibility(leadId, provider);
+    const eligibility = await insuranceManager.checkEligibility(leadId, provider, session.user.id);
 
     return NextResponse.json({
       success: true,
@@ -43,9 +41,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error checking eligibility:', error);
-    return NextResponse.json(
-      { error: 'Failed to check eligibility', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to check eligibility');
   }
 }

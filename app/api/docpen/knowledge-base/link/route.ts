@@ -11,6 +11,7 @@ import { prisma } from '@/lib/db';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 import { VOICE_AGENT_PROMPTS } from '@/lib/docpen/voice-prompts';
 import type { DocpenProfessionType } from '@/lib/docpen/prompts';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -22,17 +23,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { agentId, fileId, action } = body; // action: 'link' or 'unlink'
 
     if (!agentId || !fileId || !action) {
-      return NextResponse.json(
-        { error: 'agentId, fileId, and action required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('agentId, fileId, and action required');
     }
 
     // Verify agent ownership
@@ -44,7 +42,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!agent) {
-      return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+      return apiErrors.notFound('Agent not found');
     }
 
     // Verify file ownership
@@ -56,7 +54,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!file) {
-      return NextResponse.json({ error: 'File not found' }, { status: 404 });
+      return apiErrors.notFound('File not found');
     }
 
     if (action === 'link') {
@@ -114,13 +112,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    return apiErrors.badRequest('Invalid action');
   } catch (error: any) {
     console.error('❌ [Docpen KB] Error linking/unlinking:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to link/unlink file' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to link/unlink file');
   }
 }
 

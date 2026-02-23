@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET INVENTORY ITEM BY ID
@@ -18,7 +19,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const item = await prisma.inventoryItem.findFirst({
@@ -52,16 +53,13 @@ export async function GET(
     });
 
     if (!item) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      return apiErrors.notFound('Item not found');
     }
 
     return NextResponse.json(item);
   } catch (error) {
     console.error('❌ Inventory item fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch inventory item' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch inventory item');
   }
 }
 
@@ -75,7 +73,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -105,7 +103,7 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      return apiErrors.notFound('Item not found');
     }
 
     // Build update data
@@ -140,10 +138,7 @@ export async function PATCH(
     return NextResponse.json(updatedItem);
   } catch (error) {
     console.error('❌ Inventory item update error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update inventory item' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update inventory item');
   }
 }
 
@@ -157,7 +152,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify item exists
@@ -176,15 +171,12 @@ export async function DELETE(
     });
 
     if (!item) {
-      return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      return apiErrors.notFound('Item not found');
     }
 
     // Check if item is used in recipes
     if (item._count.recipeIngredients > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete item that is used in recipes' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete item that is used in recipes');
     }
 
     // Soft delete by marking as inactive
@@ -198,9 +190,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('❌ Inventory item delete error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete inventory item' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete inventory item');
   }
 }

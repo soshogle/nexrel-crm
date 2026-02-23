@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET SUPPLIERS
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -44,10 +45,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(suppliers);
   } catch (error) {
     console.error('❌ Suppliers fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch suppliers' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch suppliers');
   }
 }
 
@@ -58,7 +56,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -76,10 +74,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name) {
-      return NextResponse.json(
-        { error: 'Supplier name is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Supplier name is required');
     }
 
     const supplier = await prisma.supplier.create({
@@ -102,9 +97,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(supplier, { status: 201 });
   } catch (error) {
     console.error('❌ Supplier creation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create supplier' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create supplier');
   }
 }
