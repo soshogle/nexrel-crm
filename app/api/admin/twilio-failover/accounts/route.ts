@@ -11,13 +11,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { encrypt, decrypt } from '@/lib/encryption';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const accounts = await prisma.twilioAccount.findMany({
@@ -44,10 +45,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Get accounts error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to get accounts' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to get accounts');
   }
 }
 
@@ -56,24 +54,18 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { name, accountSid, authToken, isPrimary, envKey } = await request.json();
 
     if (!name || !accountSid) {
-      return NextResponse.json(
-        { error: 'name and accountSid required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('name and accountSid required');
     }
 
     // Either authToken (DB-stored) or envKey (env-based) required
     if (!authToken && !envKey) {
-      return NextResponse.json(
-        { error: 'authToken or envKey required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('authToken or envKey required');
     }
 
     const encryptedToken = authToken ? encrypt(authToken) : null;
@@ -104,9 +96,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Create account error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create account' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create account');
   }
 }

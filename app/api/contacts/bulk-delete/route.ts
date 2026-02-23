@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,17 +13,14 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { contactIds } = body;
 
     if (!Array.isArray(contactIds) || contactIds.length === 0) {
-      return NextResponse.json(
-        { error: 'Invalid contact IDs' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid contact IDs');
     }
 
     // Verify all contacts belong to the user
@@ -32,10 +30,7 @@ export async function POST(request: Request) {
     });
 
     if (contacts.length !== contactIds.length) {
-      return NextResponse.json(
-        { error: 'Some contacts not found or unauthorized' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Some contacts not found or unauthorized');
     }
 
     await getCrmDb(ctx).lead.deleteMany({
@@ -51,9 +46,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error bulk deleting contacts:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete contacts' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete contacts');
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/households/[id] - Get specific household
 
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await params;
@@ -38,15 +39,12 @@ export async function GET(
     });
 
     if (!household) {
-      return NextResponse.json({ error: 'Household not found' }, { status: 404 });
+      return apiErrors.notFound('Household not found');
     }
 
     return NextResponse.json({ household });
   } catch (error) {
     console.error('Error fetching household:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch household' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch household');
   }
 }

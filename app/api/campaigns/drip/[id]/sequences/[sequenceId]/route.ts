@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 type RouteContext = {
   params: Promise<{ id: string; sequenceId: string }>;
@@ -19,7 +20,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id, sequenceId } = await context.params;
@@ -31,18 +32,12 @@ export async function PUT(
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Don't allow updating sequences in active campaigns
     if (campaign.status === 'ACTIVE') {
-      return NextResponse.json(
-        { error: 'Cannot update sequences in active campaign. Pause it first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot update sequences in active campaign. Pause it first.');
     }
 
     // Verify sequence belongs to campaign
@@ -51,10 +46,7 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Sequence not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Sequence not found');
     }
 
     const {
@@ -97,10 +89,7 @@ export async function PUT(
     return NextResponse.json(sequence);
   } catch (error: unknown) {
     console.error('Error updating sequence:', error);
-    return NextResponse.json(
-      { error: 'Failed to update sequence' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update sequence');
   }
 }
 
@@ -112,7 +101,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id, sequenceId } = await context.params;
@@ -123,18 +112,12 @@ export async function DELETE(
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Don't allow deleting sequences from active campaigns
     if (campaign.status === 'ACTIVE') {
-      return NextResponse.json(
-        { error: 'Cannot delete sequences from active campaign. Pause it first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete sequences from active campaign. Pause it first.');
     }
 
     // Verify sequence belongs to campaign
@@ -143,10 +126,7 @@ export async function DELETE(
     });
 
     if (!sequence) {
-      return NextResponse.json(
-        { error: 'Sequence not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Sequence not found');
     }
 
     await prisma.emailDripSequence.delete({
@@ -156,9 +136,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error('Error deleting sequence:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete sequence' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete sequence');
   }
 }

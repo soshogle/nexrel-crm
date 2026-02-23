@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/members/[id] - Get specific member
 
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await params;
@@ -48,16 +49,13 @@ export async function GET(
     });
 
     if (!member) {
-      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+      return apiErrors.notFound('Member not found');
     }
 
     return NextResponse.json({ member });
   } catch (error) {
     console.error('Error fetching member:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch member' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch member');
   }
 }
 
@@ -69,7 +67,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await params;
@@ -120,9 +118,6 @@ export async function PUT(
     return NextResponse.json({ member });
   } catch (error) {
     console.error('Error updating member:', error);
-    return NextResponse.json(
-      { error: 'Failed to update member' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update member');
   }
 }

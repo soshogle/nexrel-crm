@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const connections = await prisma.calendarConnection.findMany({
@@ -52,10 +53,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ connections });
   } catch (error) {
     console.error('Error fetching calendar connections:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch calendar connections' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch calendar connections');
   }
 }
 
@@ -64,7 +62,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -72,7 +70,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
@@ -90,10 +88,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!provider) {
-      return NextResponse.json(
-        { error: 'Provider is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Provider is required');
     }
 
     // Create or update connection
@@ -135,9 +130,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ connection });
   } catch (error) {
     console.error('Error creating calendar connection:', error);
-    return NextResponse.json(
-      { error: 'Failed to create calendar connection' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create calendar connection');
   }
 }

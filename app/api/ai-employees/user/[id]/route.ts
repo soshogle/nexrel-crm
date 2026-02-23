@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export async function PATCH(
   request: NextRequest,
@@ -16,7 +17,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const id = params.id;
@@ -28,7 +29,7 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+      return apiErrors.notFound('Employee not found');
     }
 
     const updateData: Record<string, unknown> = {};
@@ -56,10 +57,7 @@ export async function PATCH(
     });
   } catch (error: any) {
     console.error('[API] PATCH /api/ai-employees/user/[id]:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update AI Team employee' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update AI Team employee');
   }
 }
 
@@ -70,7 +68,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const id = params.id;
@@ -80,7 +78,7 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+      return apiErrors.notFound('Employee not found');
     }
 
     await prisma.userAIEmployee.delete({
@@ -90,9 +88,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('[API] DELETE /api/ai-employees/user/[id]:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete AI Team employee' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete AI Team employee');
   }
 }

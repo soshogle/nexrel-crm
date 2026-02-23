@@ -18,7 +18,7 @@ export async function createTask(userId: string, params: any) {
     dealId: dealId || null,
     priority: (priority as any) || "MEDIUM",
     status: "TODO",
-  });
+  } as any);
 
   await db.taskActivity.create({
     data: {
@@ -52,7 +52,7 @@ export async function listTasks(userId: string, params: any) {
     where.status = { notIn: ["COMPLETED", "CANCELLED"] };
   }
 
-  const tasks = await db.task.findMany({
+  const tasks: any[] = await db.task.findMany({
     where,
     take: Math.min(limit, 50),
     orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
@@ -60,7 +60,7 @@ export async function listTasks(userId: string, params: any) {
       lead: { select: { businessName: true, contactPerson: true } },
       deal: { select: { title: true } },
     },
-  });
+  } as any);
 
   return {
     message: `Found ${tasks.length} task(s)`,
@@ -248,7 +248,7 @@ export async function createBulkTasks(userId: string, params: any) {
       dueDate,
       status: "TODO",
       priority: "MEDIUM",
-    });
+    } as any);
     created.push({ id: task.id, title, lead: lead.contactPerson || lead.businessName });
   }
 

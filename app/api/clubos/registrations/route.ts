@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { clubOSCommunicationService } from '@/lib/clubos-communication-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * ClubOS Registration API
@@ -128,10 +129,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -139,10 +137,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!householdId || !memberId || !programId) {
-      return NextResponse.json(
-        { error: 'Missing required fields: householdId, memberId, programId' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: householdId, memberId, programId');
     }
 
     // Verify member exists and get their info
@@ -158,10 +153,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!member || !member.dateOfBirth) {
-      return NextResponse.json(
-        { error: 'Member not found or missing date of birth' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Member not found or missing date of birth');
     }
 
     // Calculate age at August 1 cutoff
@@ -293,10 +285,7 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error('Registration creation error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return apiErrors.internal(message);
   }
 }
 
@@ -308,10 +297,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -398,9 +384,6 @@ export async function GET(req: NextRequest) {
   } catch (error: unknown) {
     console.error('Registrations fetch error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return apiErrors.internal(message);
   }
 }

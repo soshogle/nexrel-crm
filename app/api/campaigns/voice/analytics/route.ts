@@ -4,28 +4,29 @@ import { authOptions } from '@/lib/auth';
 import { campaignService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { voiceCampaignScheduler } from '@/lib/voice-campaign-scheduler';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const campaignId = searchParams.get('campaignId');
 
     if (!campaignId) {
-      return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 });
+      return apiErrors.badRequest('Campaign ID is required');
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const campaign = await campaignService.findUnique(ctx, campaignId);
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     const analytics = await voiceCampaignScheduler.getCampaignAnalytics(campaignId);
@@ -38,10 +39,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching campaign analytics:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch analytics' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch analytics');
   }
 }
 

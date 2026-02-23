@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { grantPermission, getUserPermissions } from '@/lib/permissions';
 import { PageResource } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify target user is a team member
@@ -35,10 +36,7 @@ export async function GET(
     });
 
     if (!teamMember) {
-      return NextResponse.json(
-        { error: 'Team member not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Team member not found');
     }
 
     const permissions = await getUserPermissions(params.userId);
@@ -49,10 +47,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching permissions:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch permissions' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch permissions');
   }
 }
 
@@ -64,17 +59,14 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { resource, canRead, canWrite, canDelete } = body;
 
     if (!resource) {
-      return NextResponse.json(
-        { error: 'Missing required field: resource' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required field: resource');
     }
 
     // Verify target user is a team member
@@ -86,10 +78,7 @@ export async function PATCH(
     });
 
     if (!teamMember) {
-      return NextResponse.json(
-        { error: 'Team member not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Team member not found');
     }
 
     // Grant/update permission
@@ -109,9 +98,6 @@ export async function PATCH(
     });
   } catch (error: any) {
     console.error('Error updating permission:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update permission' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update permission');
   }
 }

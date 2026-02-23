@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { campaignService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,46 +14,52 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const type = searchParams.get('type');
+    const pagination = parsePagination(request);
 
-    const campaigns = await campaignService.findMany(ctx, {
-      status: status || undefined,
-      type: type || undefined,
-      include: {
-        messages: {
-          select: {
-            id: true,
-            status: true,
-            sentAt: true,
-            deliveredAt: true,
-            openedAt: true,
-            clickedAt: true,
+    const [campaigns, total] = await Promise.all([
+      campaignService.findMany(ctx, {
+        status: status || undefined,
+        type: type || undefined,
+        take: pagination.take,
+        skip: pagination.skip,
+        include: {
+          messages: {
+            select: {
+              id: true,
+              status: true,
+              sentAt: true,
+              deliveredAt: true,
+              openedAt: true,
+              clickedAt: true,
+            },
+          },
+          _count: {
+            select: {
+              messages: true,
+              campaignLeads: true,
+            },
           },
         },
-        _count: {
-          select: {
-            messages: true,
-            campaignLeads: true,
-          },
-        },
-      },
-    });
+      }),
+      campaignService.count(ctx, {
+        ...(status ? { status: status as any } : {}),
+        ...(type ? { type: type as any } : {}),
+      }),
+    ]);
 
-    return NextResponse.json({ campaigns });
+    return paginatedResponse(campaigns, total, pagination);
   } catch (error: any) {
     console.error('Error fetching campaigns:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch campaigns' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch campaigns');
   }
 }
 
@@ -60,11 +68,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const {
@@ -93,44 +101,29 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!name) {
-      return NextResponse.json(
-        { error: 'Campaign name is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign name is required');
     }
 
     if (!type || !['EMAIL', 'SMS', 'VOICE_CALL', 'MULTI_CHANNEL', 'CUSTOM'].includes(type)) {
-      return NextResponse.json(
-        { error: 'Valid campaign type is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Valid campaign type is required');
     }
 
     // Type-specific validation
     if (type === 'EMAIL' || type === 'MULTI_CHANNEL') {
       if (!emailSubject || !emailBody) {
-        return NextResponse.json(
-          { error: 'Email campaigns require subject and body' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Email campaigns require subject and body');
       }
     }
 
     if (type === 'SMS' || type === 'MULTI_CHANNEL') {
       if (!smsTemplate) {
-        return NextResponse.json(
-          { error: 'SMS campaigns require a message template' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('SMS campaigns require a message template');
       }
     }
 
     if (type === 'VOICE_CALL' || type === 'MULTI_CHANNEL') {
       if (!voiceAgentId) {
-        return NextResponse.json(
-          { error: 'Voice campaigns require a voice agent' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Voice campaigns require a voice agent');
       }
     }
 
@@ -170,9 +163,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ campaign }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating campaign:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create campaign');
   }
 }

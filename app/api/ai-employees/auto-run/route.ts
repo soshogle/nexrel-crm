@@ -18,6 +18,7 @@ import {
   createDefaultIndustryContactWorkflow,
   hasIndustryContactWorkflow,
 } from '@/lib/industry-workflows/default-contact-workflow';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -27,13 +28,13 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const industry = searchParams.get('industry') as Industry | null;
 
-    const settings = await prisma.aIEmployeeAutoRun.findMany({
+    const settings = await (prisma as any).aIEmployeeAutoRun.findMany({
       where: {
         userId: session.user.id,
         ...(industry ? { industry } : {}),
@@ -50,10 +51,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ settings: map, raw: settings });
   } catch (error) {
     console.error('Error fetching AI employee auto-run settings:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch settings');
   }
 }
 
@@ -62,7 +60,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -73,16 +71,13 @@ export async function PATCH(request: NextRequest) {
     };
 
     if (!employeeType || typeof autoRunEnabled !== 'boolean') {
-      return NextResponse.json(
-        { error: 'employeeType and autoRunEnabled (boolean) required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('employeeType and autoRunEnabled (boolean) required');
     }
 
     // RE employee types (RE_*) use industry REAL_ESTATE; others use provided industry
     const resolvedIndustry = industry ?? (employeeType.startsWith('RE_') ? 'REAL_ESTATE' : null);
 
-    const record = await prisma.aIEmployeeAutoRun.upsert({
+    const record = await (prisma as any).aIEmployeeAutoRun.upsert({
       where: {
         userId_employeeType_industry: {
           userId: session.user.id,
@@ -112,12 +107,12 @@ export async function PATCH(request: NextRequest) {
       if (!hasWorkflow) {
         const workflow = await createDefaultSpeedToLeadWorkflow(session.user.id);
         createdWorkflowId = workflow.id;
-        await prisma.aIEmployeeAutoRun.update({
+        await (prisma as any).aIEmployeeAutoRun.update({
           where: { id: record.id },
           data: { workflowId: workflow.id },
         });
       } else {
-        const existing = await prisma.rEWorkflowTask.findFirst({
+        const existing = await (prisma as any).rEWorkflowTask.findFirst({
           where: {
             template: { userId: session.user.id },
             assignedAgentType: 'RE_SPEED_TO_LEAD',
@@ -125,7 +120,7 @@ export async function PATCH(request: NextRequest) {
           select: { templateId: true },
         });
         if (existing) {
-          await prisma.aIEmployeeAutoRun.update({
+          await (prisma as any).aIEmployeeAutoRun.update({
             where: { id: record.id },
             data: { workflowId: existing.templateId },
           });
@@ -151,12 +146,12 @@ export async function PATCH(request: NextRequest) {
           employeeType
         );
         createdWorkflowId = workflow.id;
-        await prisma.aIEmployeeAutoRun.update({
+        await (prisma as any).aIEmployeeAutoRun.update({
           where: { id: record.id },
           data: { workflowId: workflow.id },
         });
       } else {
-        const existing = await prisma.workflowTask.findFirst({
+        const existing = await (prisma as any).workflowTask.findFirst({
           where: {
             template: {
               userId: session.user.id,
@@ -168,7 +163,7 @@ export async function PATCH(request: NextRequest) {
           select: { templateId: true },
         });
         if (existing) {
-          await prisma.aIEmployeeAutoRun.update({
+          await (prisma as any).aIEmployeeAutoRun.update({
             where: { id: record.id },
             data: { workflowId: existing.templateId },
           });
@@ -183,9 +178,6 @@ export async function PATCH(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error updating AI employee auto-run:', error);
-    return NextResponse.json(
-      { error: 'Failed to update setting' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update setting');
   }
 }

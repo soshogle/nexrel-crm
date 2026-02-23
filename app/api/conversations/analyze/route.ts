@@ -6,6 +6,7 @@ import { getCrmDb } from '@/lib/dal/db';
 import { createDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
 import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadStatus } from '@/lib/conversation-intelligence';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/conversations/analyze
@@ -20,19 +21,13 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const { callLogId } = await req.json();
 
     if (!callLogId) {
-      return NextResponse.json(
-        { error: 'Call log ID is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Call log ID is required');
     }
 
     // Fetch the call log with lead data
@@ -44,18 +39,12 @@ export async function POST(req: NextRequest) {
     });
 
     if (!callLog) {
-      return NextResponse.json(
-        { error: 'Call log not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Call log not found');
     }
 
     // Verify user has access to this call log
     if (callLog.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden();
     }
 
     // Check if already analyzed
@@ -128,9 +117,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error analyzing conversation:', error);
-    return NextResponse.json(
-      { error: 'Failed to analyze conversation' },
-      { status: 500 }
-      );
+    return apiErrors.internal('Failed to analyze conversation');
   }
 }

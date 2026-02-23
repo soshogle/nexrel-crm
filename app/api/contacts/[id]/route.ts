@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,7 +16,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const contact = await leadService.findUnique(ctx, params.id, {
@@ -26,22 +27,19 @@ export async function GET(
           callLogs: true,
         },
       },
-    });
+    } as any);
 
     if (!contact) {
-      return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
+      return apiErrors.notFound('Contact not found');
     }
 
     return NextResponse.json({
       ...contact,
-      tags: Array.isArray(contact.tags) ? contact.tags : [],
+      tags: Array.isArray((contact as any).tags) ? (contact as any).tags : [],
     });
   } catch (error) {
     console.error('Error fetching contact:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch contact' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch contact');
   }
 }
 
@@ -53,7 +51,7 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -61,7 +59,7 @@ export async function PATCH(
 
     const contact = await leadService.findUnique(ctx, params.id);
     if (!contact) {
-      return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
+      return apiErrors.notFound('Contact not found');
     }
 
     const updatedContact = await leadService.update(ctx, params.id, {
@@ -77,10 +75,7 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('Error updating contact:', error);
-    return NextResponse.json(
-      { error: 'Failed to update contact' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update contact');
   }
 }
 
@@ -92,12 +87,12 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const contact = await leadService.findUnique(ctx, params.id);
     if (!contact) {
-      return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
+      return apiErrors.notFound('Contact not found');
     }
 
     await leadService.delete(ctx, params.id);
@@ -105,9 +100,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting contact:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete contact' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete contact');
   }
 }

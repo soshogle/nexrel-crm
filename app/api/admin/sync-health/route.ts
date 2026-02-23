@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
       select: { id: true },
     });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const connections = await prisma.channelConnection.findMany({
@@ -58,9 +59,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Sync health error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch sync health' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch sync health');
   }
 }

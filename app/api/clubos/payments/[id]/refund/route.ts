@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { clubOSPaymentService } from '@/lib/clubos-payment-service';
+import { apiErrors } from '@/lib/api-error';
 
 // POST /api/clubos/payments/[id]/refund - Process refund
 
@@ -17,7 +18,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -30,12 +31,12 @@ export async function POST(
     });
 
     if (!payment) {
-      return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
+      return apiErrors.notFound('Payment not found');
     }
 
     // Verify access - only the business owner can process refunds
     if (payment.household.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     // Process refund
@@ -52,9 +53,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Error processing refund:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to process refund' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to process refund');
   }
 }

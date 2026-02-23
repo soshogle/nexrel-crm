@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { aiCampaignGenerator } from '@/lib/ai-campaign-generator';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -20,10 +21,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!campaignType || !campaignGoal) {
-      return NextResponse.json(
-        { error: 'Campaign type and goal are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign type and goal are required');
     }
 
     // Get AI send time recommendation
@@ -36,9 +34,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ recommendation });
   } catch (error) {
     console.error('Error getting send time recommendation:', error);
-    return NextResponse.json(
-      { error: 'Failed to get send time recommendation' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to get send time recommendation');
   }
 }

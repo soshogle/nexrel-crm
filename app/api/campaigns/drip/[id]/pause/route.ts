@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -19,7 +20,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await context.params;
@@ -30,17 +31,11 @@ export async function POST(
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Campaign not found');
     }
 
     if (campaign.status !== 'ACTIVE') {
-      return NextResponse.json(
-        { error: 'Only active campaigns can be paused' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Only active campaigns can be paused');
     }
 
     // Pause campaign
@@ -68,9 +63,6 @@ export async function POST(
     });
   } catch (error: unknown) {
     console.error('Error pausing campaign:', error);
-    return NextResponse.json(
-      { error: 'Failed to pause campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to pause campaign');
   }
 }

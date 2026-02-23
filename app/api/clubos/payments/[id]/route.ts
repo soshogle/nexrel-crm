@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/payments/[id] - Get payment details
 
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const payment = await prisma.clubOSPayment.findUnique({
@@ -34,20 +35,17 @@ export async function GET(
     });
 
     if (!payment) {
-      return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
+      return apiErrors.notFound('Payment not found');
     }
 
     // Verify access
     if (payment.household.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     return NextResponse.json({ payment });
   } catch (error: any) {
     console.error('Error fetching payment:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch payment' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch payment');
   }
 }

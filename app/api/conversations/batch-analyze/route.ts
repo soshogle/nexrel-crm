@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { batchAnalyzeUnanalyzedCalls } from '@/lib/auto-analyze-calls';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/conversations/batch-analyze
@@ -16,10 +17,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const { limit = 10 } = await req.json().catch(() => ({}));
@@ -36,9 +34,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error in batch analysis:', error);
-    return NextResponse.json(
-      { error: 'Failed to batch analyze calls' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to batch analyze calls');
   }
 }

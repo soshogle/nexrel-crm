@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/parent/family - Get family members
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get household for the user
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!household) {
-      return NextResponse.json({ error: 'Household not found' }, { status: 404 });
+      return apiErrors.notFound('Household not found');
     }
 
     // Get all members with their registrations
@@ -54,10 +55,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ members });
   } catch (error: any) {
     console.error('Error fetching family members:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch family members' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch family members');
   }
 }
 
@@ -66,17 +64,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { firstName, lastName, dateOfBirth, gender } = body;
 
     if (!firstName || !lastName || !dateOfBirth || !gender) {
-      return NextResponse.json(
-        { error: 'Missing required fields: firstName, lastName, dateOfBirth, gender' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: firstName, lastName, dateOfBirth, gender');
     }
 
     // Get household for the user
@@ -85,7 +80,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!household) {
-      return NextResponse.json({ error: 'Household not found' }, { status: 404 });
+      return apiErrors.notFound('Household not found');
     }
 
     // Create member
@@ -120,9 +115,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ member });
   } catch (error: any) {
     console.error('Error creating family member:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create family member' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create family member');
   }
 }

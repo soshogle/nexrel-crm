@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { clubOSPaymentService } from '@/lib/clubos-payment-service';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/payments/statistics - Get payment statistics for admin
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -32,9 +33,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(stats);
   } catch (error: any) {
     console.error('Error fetching payment statistics:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch statistics' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch statistics');
   }
 }

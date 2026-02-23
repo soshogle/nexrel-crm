@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { leadService, dealService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { aiCampaignGenerator } from '@/lib/ai-campaign-generator';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -21,14 +22,11 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!campaignGoal) {
-      return NextResponse.json(
-        { error: 'Campaign goal is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign goal is required');
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Fetch user's leads or deals
     let availableData: any[] = [];
@@ -72,9 +70,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ segments });
   } catch (error) {
     console.error('Error generating recipient segments:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate recipient segments' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate recipient segments');
   }
 }

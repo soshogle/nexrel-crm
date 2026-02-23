@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getCrmDb } from '@/lib/dal/db';
 import { createDalContext } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -14,12 +15,12 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Check if user is an agency admin
     if (session.user.role !== 'AGENCY_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+      return apiErrors.forbidden('Forbidden: Admin access required');
     }
 
     // Get all sub-accounts under this agency
@@ -113,9 +114,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ subAccounts: subAccountsWithMetrics });
   } catch (error) {
     console.error('Error fetching sub-accounts:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch sub-accounts' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch sub-accounts');
   }
 }

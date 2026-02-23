@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,22 +16,19 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { tags } = body;
 
     if (!Array.isArray(tags)) {
-      return NextResponse.json(
-        { error: 'Invalid tags format' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid tags format');
     }
 
     const contact = await leadService.findUnique(ctx, params.id);
     if (!contact) {
-      return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
+      return apiErrors.notFound('Contact not found');
     }
 
     const updatedContact = await leadService.update(ctx, params.id, {
@@ -43,9 +41,6 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('Error updating contact tags:', error);
-    return NextResponse.json(
-      { error: 'Failed to update tags' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update tags');
   }
 }

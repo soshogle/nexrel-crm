@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -19,7 +20,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await context.params;
@@ -60,19 +61,13 @@ export async function GET(
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Campaign not found');
     }
 
     return NextResponse.json(campaign);
   } catch (error: unknown) {
     console.error('Error fetching campaign:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch campaign');
   }
 }
 
@@ -84,7 +79,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await context.params;
@@ -96,18 +91,12 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Don't allow updating active campaigns
     if (existing.status === 'ACTIVE' && body.status !== 'PAUSED') {
-      return NextResponse.json(
-        { error: 'Cannot update active campaign. Pause it first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot update active campaign. Pause it first.');
     }
 
     const {
@@ -152,10 +141,7 @@ export async function PUT(
     return NextResponse.json(campaign);
   } catch (error: unknown) {
     console.error('Error updating campaign:', error);
-    return NextResponse.json(
-      { error: 'Failed to update campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update campaign');
   }
 }
 
@@ -167,7 +153,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await context.params;
@@ -178,18 +164,12 @@ export async function DELETE(
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Don't allow deleting active campaigns
     if (campaign.status === 'ACTIVE') {
-      return NextResponse.json(
-        { error: 'Cannot delete active campaign. Pause or complete it first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete active campaign. Pause or complete it first.');
     }
 
     await prisma.emailDripCampaign.delete({
@@ -199,9 +179,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error('Error deleting campaign:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete campaign');
   }
 }

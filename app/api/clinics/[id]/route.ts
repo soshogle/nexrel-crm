@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { verifyClinicPermission } from '@/lib/dental/clinic-permissions';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,7 +21,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await params;
@@ -37,7 +38,7 @@ export async function GET(
     });
 
     if (!userClinic) {
-      return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
+      return apiErrors.notFound('Clinic not found');
     }
 
     return NextResponse.json({
@@ -50,10 +51,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching clinic:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch clinic', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch clinic', error.message);
   }
 }
 
@@ -65,7 +63,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await params;
@@ -79,10 +77,7 @@ export async function PATCH(
     );
 
     if (!canEdit) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin or Owner access required' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Unauthorized - Admin or Owner access required');
     }
 
     const clinic = await prisma.clinic.update({
@@ -93,9 +88,6 @@ export async function PATCH(
     return NextResponse.json({ success: true, clinic });
   } catch (error: any) {
     console.error('Error updating clinic:', error);
-    return NextResponse.json(
-      { error: 'Failed to update clinic', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update clinic', error.message);
   }
 }

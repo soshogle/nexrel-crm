@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { aiSuggestionEngine } from '@/lib/ai-suggestion-engine';
 import { EntityType } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/ai/suggestions
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -53,18 +54,12 @@ export async function GET(req: NextRequest) {
         );
         break;
       default:
-        return NextResponse.json(
-          { error: 'Unsupported entity type' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Unsupported entity type');
     }
 
     return NextResponse.json({ suggestions });
   } catch (error) {
     console.error('Error generating AI suggestions:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate suggestions' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate suggestions');
   }
 }

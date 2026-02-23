@@ -9,13 +9,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -55,9 +56,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Get events error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to get events' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to get events');
   }
 }

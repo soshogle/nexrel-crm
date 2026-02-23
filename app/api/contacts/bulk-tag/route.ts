@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,24 +13,18 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { contactIds, tags, action = 'add' } = body;
 
     if (!Array.isArray(contactIds) || contactIds.length === 0) {
-      return NextResponse.json(
-        { error: 'Invalid contact IDs' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid contact IDs');
     }
 
     if (!Array.isArray(tags) || tags.length === 0) {
-      return NextResponse.json(
-        { error: 'Invalid tags' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid tags');
     }
 
     // Verify all contacts belong to the user
@@ -39,10 +34,7 @@ export async function POST(request: Request) {
     });
 
     if (contacts.length !== contactIds.length) {
-      return NextResponse.json(
-        { error: 'Some contacts not found or unauthorized' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Some contacts not found or unauthorized');
     }
 
     // Update tags for each contact
@@ -76,9 +68,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error bulk tagging contacts:', error);
-    return NextResponse.json(
-      { error: 'Failed to update tags' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update tags');
   }
 }

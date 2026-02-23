@@ -10,21 +10,19 @@ import { businessDataPipeline } from '@/lib/business-ai/data-pipeline';
 import { businessAnalyticsEngine } from '@/lib/business-ai/analytics-engine';
 import { businessNLUService } from '@/lib/business-ai/nlu-service';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { query, period = 'month' } = await request.json();
 
     if (!query || typeof query !== 'string') {
-      return NextResponse.json(
-        { error: 'Query is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Query is required');
     }
 
     // Get user's industry
@@ -82,10 +80,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Business AI query error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to process query' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to process query');
   }
 }
 

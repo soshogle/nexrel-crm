@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth'
 import { leadService, getCrmDb } from '@/lib/dal'
 import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { emitCRMEvent } from '@/lib/crm-event-emitter'
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 // GET /api/appointments - List all appointments for the user
 
@@ -15,16 +17,17 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
+    const pagination = parsePagination(request)
 
     const where: any = {
       userId: ctx.userId,
@@ -77,6 +80,8 @@ export async function GET(request: NextRequest) {
       orderBy: {
         appointmentDate: 'asc',
       },
+      take: pagination.take,
+      skip: pagination.skip,
     })
 
     // Also fetch voice AI reservations and include them in the calendar
@@ -193,13 +198,11 @@ export async function GET(request: NextRequest) {
 
     console.log(`📅 Returning ${allAppointments.length} total appointments (${transformedAppointments.length} appointments + ${transformedReservations.length} voice reservations)`)
 
-    return NextResponse.json(allAppointments)
+    const total = await getCrmDb(ctx).bookingAppointment.count({ where })
+    return paginatedResponse(allAppointments, total, pagination)
   } catch (error) {
     console.error('Error fetching appointments:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch appointments' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch appointments')
   }
 }
 
@@ -208,11 +211,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
 
     const body = await request.json()
     const {
@@ -232,17 +235,11 @@ export async function POST(request: NextRequest) {
     // Validate required fields - must have either lead or contact
     if (!leadId && !contactId) {
       console.error('❌ Validation failed: No lead or contact ID provided', { leadId, contactId })
-      return NextResponse.json(
-        { error: 'A customer/lead or contact must be selected for this appointment' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('A customer/lead or contact must be selected for this appointment')
     }
 
     if (!startTime || !endTime) {
-      return NextResponse.json(
-        { error: 'Start time and end time are required' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Start time and end time are required')
     }
 
     // Validate times
@@ -251,26 +248,17 @@ export async function POST(request: NextRequest) {
     
     // Check for valid dates
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid date/time values provided' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Invalid date/time values provided')
     }
 
     // Check if start time is in the past
     const now = new Date()
     if (start < now) {
-      return NextResponse.json(
-        { error: 'Cannot create an appointment in the past' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Cannot create an appointment in the past')
     }
 
     if (end <= start) {
-      return NextResponse.json(
-        { error: 'End time must be after start time' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('End time must be after start time')
     }
 
     const duration = Math.round((end.getTime() - start.getTime()) / (1000 * 60))
@@ -290,10 +278,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (conflictingAppointment) {
-      return NextResponse.json(
-        { error: 'Time slot conflicts with an existing appointment' },
-        { status: 409 }
-      )
+      return apiErrors.conflict('Time slot conflicts with an existing appointment')
     }
 
     // Get customer name from lead or contact
@@ -361,9 +346,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(appointment, { status: 201 })
   } catch (error) {
     console.error('Error creating appointment:', error)
-    return NextResponse.json(
-      { error: 'Failed to create appointment' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to create appointment')
   }
 }

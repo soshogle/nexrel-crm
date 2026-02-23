@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { addDays } from 'date-fns';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/parent/dashboard - Get parent dashboard data
 
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get household for the user
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
       });
 
       if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        return apiErrors.notFound('User not found');
       }
 
       // ONLY create household for actual parents, not business owners
@@ -71,10 +72,7 @@ export async function GET(request: NextRequest) {
         );
       } else {
         // Business owners should not access the parent dashboard
-        return NextResponse.json(
-          { error: 'This dashboard is for parents only. Business owners should use the main dashboard.' },
-          { status: 403 }
-        );
+        return apiErrors.forbidden('This dashboard is for parents only. Business owners should use the main dashboard.');
       }
     }
 
@@ -151,9 +149,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching parent dashboard:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch dashboard data' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch dashboard data');
   }
 }

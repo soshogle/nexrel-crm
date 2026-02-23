@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { leadService, getCrmDb } from '@/lib/dal'
 import { createDalContext } from '@/lib/context/industry-context'
+import { apiErrors } from '@/lib/api-error';
 
 // POST /api/appointments/public/book - Public booking endpoint for widget
 
@@ -24,10 +25,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!userId || !customerName || !customerEmail || !startTime || !endTime) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Missing required fields')
     }
 
     // Verify user exists (User model stays on prisma - meta DB)
@@ -37,20 +35,14 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid user ID' },
-        { status: 404 }
-      )
+      return apiErrors.notFound('Invalid user ID')
     }
 
     // Validate times
     const start = new Date(startTime)
     const end = new Date(endTime)
     if (end <= start) {
-      return NextResponse.json(
-        { error: 'End time must be after start time' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('End time must be after start time')
     }
 
     const duration = Math.round((end.getTime() - start.getTime()) / (1000 * 60))
@@ -72,10 +64,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (conflictingAppointment) {
-      return NextResponse.json(
-        { error: 'Time slot is no longer available' },
-        { status: 409 }
-      )
+      return apiErrors.conflict('Time slot is no longer available')
     }
 
     // Create or find lead
@@ -127,10 +116,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
   } catch (error) {
     console.error('Error creating public appointment:', error)
-    return NextResponse.json(
-      { error: 'Failed to book appointment' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to book appointment')
   }
 }
 

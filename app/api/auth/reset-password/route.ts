@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import bcrypt from 'bcryptjs'
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const { token, password } = await request.json()
     if (!token || !password) {
-      return NextResponse.json({ error: 'Token and password are required' }, { status: 400 })
+      return apiErrors.badRequest('Token and password are required')
     }
 
     const user = await prisma.user.findFirst({
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'Invalid or expired reset link.' }, { status: 400 })
+      return apiErrors.badRequest('Invalid or expired reset link.')
     }
 
     const hashedPassword = await bcrypt.hash(password, 12)
@@ -34,9 +35,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Reset password error:', error)
-    return NextResponse.json(
-      { error: 'Something went wrong. Please try again.' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Something went wrong. Please try again.')
   }
 }

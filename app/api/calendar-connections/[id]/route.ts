@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -28,7 +29,7 @@ export async function GET(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const connection = await prisma.calendarConnection.findFirst({
@@ -53,16 +54,13 @@ export async function GET(
     });
 
     if (!connection) {
-      return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
+      return apiErrors.notFound('Connection not found');
     }
 
     return NextResponse.json({ connection });
   } catch (error) {
     console.error('Error fetching calendar connection:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch calendar connection' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch calendar connection');
   }
 }
 
@@ -74,7 +72,7 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -82,7 +80,7 @@ export async function PATCH(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
@@ -103,7 +101,7 @@ export async function PATCH(
     });
 
     if (!connection) {
-      return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
+      return apiErrors.notFound('Connection not found');
     }
 
     const updated = await prisma.calendarConnection.update({
@@ -121,10 +119,7 @@ export async function PATCH(
     return NextResponse.json({ connection: updated });
   } catch (error) {
     console.error('Error updating calendar connection:', error);
-    return NextResponse.json(
-      { error: 'Failed to update calendar connection' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update calendar connection');
   }
 }
 
@@ -136,7 +131,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -144,7 +139,7 @@ export async function DELETE(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const connection = await prisma.calendarConnection.findFirst({
@@ -155,7 +150,7 @@ export async function DELETE(
     });
 
     if (!connection) {
-      return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
+      return apiErrors.notFound('Connection not found');
     }
 
     await prisma.calendarConnection.delete({
@@ -165,9 +160,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting calendar connection:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete calendar connection' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete calendar connection');
   }
 }

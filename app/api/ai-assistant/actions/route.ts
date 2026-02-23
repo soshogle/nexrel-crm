@@ -10,6 +10,7 @@ import * as setupIntegrations from "./handlers/setup-integrations";
 import * as website from "./handlers/website";
 import * as tasksWorkflows from "./handlers/tasks-workflows";
 import * as analyticsReports from "./handlers/analytics-reports";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -84,7 +85,6 @@ const AVAILABLE_ACTIONS = {
   UPDATE_INVOICE_STATUS: "update_invoice_status",
   SEND_INVOICE: "send_invoice",
   GET_DAILY_BRIEFING: "get_daily_briefing",
-  UPDATE_DEAL: "update_deal",
   GET_FOLLOW_UP_SUGGESTIONS: "get_follow_up_suggestions",
   GET_MEETING_PREP: "get_meeting_prep",
   CREATE_BULK_TASKS: "create_bulk_tasks",
@@ -328,7 +328,7 @@ export async function POST(req: NextRequest) {
     const { action, parameters, userId: bodyUserId } = await req.json();
 
     if (!action) {
-      return NextResponse.json({ error: "Action is required" }, { status: 400 });
+      return apiErrors.badRequest("Action is required");
     }
 
     // Support server-side calls (e.g. from voice agent) with userId in body - skip session check
@@ -337,20 +337,20 @@ export async function POST(req: NextRequest) {
       user = await prisma.user.findUnique({
         where: { id: bodyUserId },
         select: { id: true, language: true },
-      });
+      } as any);
       if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
+        return apiErrors.notFound("User not found");
       }
     } else {
       if (!session?.user?.email) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return apiErrors.unauthorized();
       }
       user = await prisma.user.findUnique({
         where: { email: session.user.email },
         select: { id: true, language: true },
-      });
+      } as any);
       if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
+        return apiErrors.notFound("User not found");
       }
     }
 

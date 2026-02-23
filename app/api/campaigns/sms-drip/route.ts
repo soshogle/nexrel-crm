@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const campaigns = await prisma.smsCampaign.findMany({
@@ -40,10 +41,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ campaigns });
   } catch (error) {
     console.error('Error fetching SMS drip campaigns:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch SMS drip campaigns' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch SMS drip campaigns');
   }
 }
 
@@ -51,7 +49,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -59,7 +57,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
@@ -87,9 +85,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ campaign });
   } catch (error) {
     console.error('Error creating SMS drip campaign:', error);
-    return NextResponse.json(
-      { error: 'Failed to create SMS drip campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create SMS drip campaign');
   }
 }

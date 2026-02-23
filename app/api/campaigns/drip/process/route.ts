@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { processDripEmails } from '@/lib/email-drip-processor';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/campaigns/drip/process - Process scheduled drip emails
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
       // If CRON_SECRET is set, require it. Otherwise allow any authenticated user to trigger manually.
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return apiErrors.unauthorized();
       }
     }
 
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     console.log('[Drip API] Manual trigger by user:', session.user.id);

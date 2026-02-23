@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET auto-reply settings
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     let settings = await prisma.autoReplySettings.findUnique({
@@ -53,10 +54,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ settings });
   } catch (error) {
     console.error('Failed to fetch auto-reply settings:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch auto-reply settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch auto-reply settings');
   }
 }
 
@@ -65,7 +63,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -73,7 +71,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
@@ -112,9 +110,6 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ settings });
   } catch (error) {
     console.error('Failed to update auto-reply settings:', error);
-    return NextResponse.json(
-      { error: 'Failed to update auto-reply settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update auto-reply settings');
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,7 @@ export async function POST(
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -21,7 +22,7 @@ export async function POST(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const { id } = await params;
@@ -46,7 +47,7 @@ export async function POST(
     });
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     const sequence = await prisma.smsSequence.create({
@@ -66,9 +67,6 @@ export async function POST(
     return NextResponse.json({ sequence });
   } catch (error) {
     console.error('Error creating sequence:', error);
-    return NextResponse.json(
-      { error: 'Failed to create sequence' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create sequence');
   }
 }

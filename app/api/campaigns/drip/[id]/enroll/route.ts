@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -20,21 +21,18 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const { id } = await context.params;
     const body = await req.json();
     const { leadIds } = body;
 
     if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
-      return NextResponse.json(
-        { error: 'Lead IDs are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Lead IDs are required');
     }
 
     const db = getCrmDb(ctx);
@@ -50,24 +48,15 @@ export async function POST(
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Campaign not found');
     }
 
     if (campaign.status !== 'ACTIVE') {
-      return NextResponse.json(
-        { error: 'Campaign must be active to enroll leads' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign must be active to enroll leads');
     }
 
     if (campaign.sequences.length === 0) {
-      return NextResponse.json(
-        { error: 'Campaign has no sequences' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign has no sequences');
     }
 
     // Verify leads belong to user and have email
@@ -79,10 +68,7 @@ export async function POST(
     });
 
     if (leads.length === 0) {
-      return NextResponse.json(
-        { error: 'No valid leads found with email addresses' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('No valid leads found with email addresses');
     }
 
     // Check for already enrolled leads
@@ -98,10 +84,7 @@ export async function POST(
     const leadsToEnroll = leads.filter(l => !enrolledLeadIds.has(l.id));
 
     if (leadsToEnroll.length === 0) {
-      return NextResponse.json(
-        { error: 'All leads are already enrolled in this campaign' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('All leads are already enrolled in this campaign');
     }
 
     // Assign A/B test groups if enabled
@@ -150,9 +133,6 @@ export async function POST(
     });
   } catch (error: unknown) {
     console.error('Error enrolling leads:', error);
-    return NextResponse.json(
-      { error: 'Failed to enroll leads' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to enroll leads');
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * Club Code API
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     // If no club code, generate one
@@ -67,10 +68,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching club code:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch club code' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch club code');
   }
 }
 
@@ -79,7 +77,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -88,7 +86,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     // Generate new unique club code
@@ -105,10 +103,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error generating club code:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate club code' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to generate club code');
   }
 }
 

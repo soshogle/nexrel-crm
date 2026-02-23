@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // PUT /api/clubos/parent/family/[id] - Update family member
 
@@ -16,7 +17,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -28,7 +29,7 @@ export async function PUT(
     });
 
     if (!household) {
-      return NextResponse.json({ error: 'Household not found' }, { status: 404 });
+      return apiErrors.notFound('Household not found');
     }
 
     // Verify member belongs to household
@@ -37,7 +38,7 @@ export async function PUT(
     });
 
     if (!member || member.householdId !== household.id) {
-      return NextResponse.json({ error: 'Member not found or unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Member not found or unauthorized');
     }
 
     // Update member
@@ -70,10 +71,7 @@ export async function PUT(
     return NextResponse.json({ member: updatedMember });
   } catch (error: any) {
     console.error('Error updating family member:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update family member' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update family member');
   }
 }
 
@@ -85,7 +83,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get household for the user
@@ -94,7 +92,7 @@ export async function DELETE(
     });
 
     if (!household) {
-      return NextResponse.json({ error: 'Household not found' }, { status: 404 });
+      return apiErrors.notFound('Household not found');
     }
 
     // Verify member belongs to household
@@ -106,7 +104,7 @@ export async function DELETE(
     });
 
     if (!member || member.householdId !== household.id) {
-      return NextResponse.json({ error: 'Member not found or unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Member not found or unauthorized');
     }
 
     // Check if member has active registrations
@@ -115,10 +113,7 @@ export async function DELETE(
     );
 
     if (hasActiveRegistrations) {
-      return NextResponse.json(
-        { error: 'Cannot delete member with active registrations' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete member with active registrations');
     }
 
     // Delete member
@@ -129,9 +124,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting family member:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete family member' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete family member');
   }
 }

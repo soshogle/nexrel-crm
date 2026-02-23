@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getCrmDb, leadService, dealService, campaignService, conversationService } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -17,12 +18,12 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Check if user is an agency admin
     if (session.user.role !== 'AGENCY_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+      return apiErrors.forbidden('Forbidden: Admin access required');
     }
 
     const subAccountId = params.id;
@@ -50,7 +51,7 @@ export async function GET(
     });
 
     if (!subAccount) {
-      return NextResponse.json({ error: 'Sub-account not found' }, { status: 404 });
+      return apiErrors.notFound('Sub-account not found');
     }
 
     const ctx = createDalContext(subAccountId);
@@ -135,9 +136,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching sub-account details:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch sub-account details' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch sub-account details');
   }
 }

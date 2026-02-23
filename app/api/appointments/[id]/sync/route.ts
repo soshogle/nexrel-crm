@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { CalendarService } from '@/lib/calendar';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,7 @@ export async function POST(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -30,7 +31,7 @@ export async function POST(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const appointment = await prisma.bookingAppointment.findFirst({
@@ -41,7 +42,7 @@ export async function POST(
     });
 
     if (!appointment) {
-      return NextResponse.json({ error: 'Appointment not found' }, { status: 404 });
+      return apiErrors.notFound('Appointment not found');
     }
 
     const result = await CalendarService.syncAppointmentToCalendar(appointment.id);
@@ -49,9 +50,6 @@ export async function POST(
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error syncing appointment:', error);
-    return NextResponse.json(
-      { error: 'Failed to sync appointment' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to sync appointment');
   }
 }

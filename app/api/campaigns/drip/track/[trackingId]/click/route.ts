@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
+import { apiErrors } from '@/lib/api-error';
 
 type RouteContext = {
   params: Promise<{ trackingId: string }>;
@@ -21,10 +22,7 @@ export async function GET(
     const url = searchParams.get('url');
 
     if (!url) {
-      return NextResponse.json(
-        { error: 'URL parameter is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('URL parameter is required');
     }
 
     // Find message
@@ -106,9 +104,6 @@ export async function GET(
       return NextResponse.redirect(url);
     }
     
-    return NextResponse.json(
-      { error: 'Failed to track click' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to track click');
   }
 }

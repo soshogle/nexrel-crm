@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { aiCampaignService } from '@/lib/ai-campaign-service';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -20,17 +21,11 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!campaignType || !['EMAIL', 'SMS', 'VOICE_CALL', 'MULTI_CHANNEL'].includes(campaignType)) {
-      return NextResponse.json(
-        { error: 'Valid campaign type is required (EMAIL, SMS, VOICE_CALL, or MULTI_CHANNEL)' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Valid campaign type is required (EMAIL, SMS, VOICE_CALL, or MULTI_CHANNEL)');
     }
 
     if (!goal) {
-      return NextResponse.json(
-        { error: 'Campaign goal is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign goal is required');
     }
 
     // Get user's business context and language preference
@@ -114,9 +109,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error generating AI content:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate content' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to generate content');
   }
 }

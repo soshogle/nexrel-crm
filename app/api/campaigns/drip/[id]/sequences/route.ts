@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -19,7 +20,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await context.params;
@@ -30,10 +31,7 @@ export async function GET(
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Campaign not found');
     }
 
     const sequences = await prisma.emailDripSequence.findMany({
@@ -49,10 +47,7 @@ export async function GET(
     return NextResponse.json(sequences);
   } catch (error: unknown) {
     console.error('Error fetching sequences:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch sequences' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch sequences');
   }
 }
 
@@ -64,7 +59,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await context.params;
@@ -76,18 +71,12 @@ export async function POST(
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Don't allow adding sequences to active campaigns
     if (campaign.status === 'ACTIVE') {
-      return NextResponse.json(
-        { error: 'Cannot add sequences to active campaign. Pause it first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot add sequences to active campaign. Pause it first.');
     }
 
     const {
@@ -109,10 +98,7 @@ export async function POST(
 
     // Validate required fields
     if (!name || !subject || !htmlContent) {
-      return NextResponse.json(
-        { error: 'Name, subject, and content are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Name, subject, and content are required');
     }
 
     // Determine sequence order if not provided
@@ -148,9 +134,6 @@ export async function POST(
     return NextResponse.json(sequence, { status: 201 });
   } catch (error: unknown) {
     console.error('Error creating sequence:', error);
-    return NextResponse.json(
-      { error: 'Failed to create sequence' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create sequence');
   }
 }

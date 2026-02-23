@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { createDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
+import { apiErrors } from '@/lib/api-error';
 
 // AI Employee type definitions
 type REAIEmployeeType = 
@@ -270,14 +271,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { employeeType } = body as { employeeType: REAIEmployeeType };
 
     if (!employeeType) {
-      return NextResponse.json({ error: 'Employee type required' }, { status: 400 });
+      return apiErrors.badRequest('Employee type required');
     }
 
     let result: ExecutionResult;
@@ -321,7 +322,7 @@ export async function POST(request: NextRequest) {
         };
         break;
       default:
-        return NextResponse.json({ error: 'Unknown employee type' }, { status: 400 });
+        return apiErrors.badRequest('Unknown employee type');
     }
 
     // Log the execution
@@ -338,7 +339,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('AI Employee execution error:', error);
-    return NextResponse.json({ error: 'Execution failed' }, { status: 500 });
+    return apiErrors.internal('Execution failed');
   }
 }
 
@@ -347,7 +348,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -366,6 +367,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ executions });
   } catch (error) {
     console.error('AI Employee history error:', error);
-    return NextResponse.json({ error: 'Failed to fetch history' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch history');
   }
 }

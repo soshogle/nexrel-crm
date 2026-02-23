@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
 import { AIJobStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 // GET - List all jobs for user
 
@@ -18,10 +19,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -42,9 +40,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Jobs list API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch jobs' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch jobs');
   }
 }

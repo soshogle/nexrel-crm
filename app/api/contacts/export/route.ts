@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,11 +12,11 @@ export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const contacts = await leadService.findMany(ctx, {
       select: {
@@ -105,9 +106,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Error exporting contacts:', error);
-    return NextResponse.json(
-      { error: 'Failed to export contacts' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to export contacts');
   }
 }

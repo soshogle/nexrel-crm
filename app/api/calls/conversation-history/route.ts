@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb, conversationService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * Get call history for a specific phone number or conversation
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -23,20 +24,20 @@ export async function GET(request: NextRequest) {
     const conversationId = searchParams.get('conversationId');
 
     if (!phoneNumber && !conversationId) {
-      return NextResponse.json({ error: 'Phone number or conversation ID required' }, { status: 400 });
+      return apiErrors.badRequest('Phone number or conversation ID required');
     }
 
     let calls: any[] = [];
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     if (conversationId) {
       // Get conversation to find contact identifier
       const conversation = await conversationService.findUnique(ctx, conversationId);
 
       if (!conversation) {
-        return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+        return apiErrors.notFound('Conversation not found');
       }
 
       // Find calls for this contact
@@ -85,9 +86,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ calls });
   } catch (error: any) {
     console.error('Error fetching call history:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch call history' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch call history');
   }
 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { campaignService, getCrmDb } from '@/lib/dal'
 import { getDalContextFromSession } from '@/lib/context/industry-context'
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs';
@@ -15,27 +16,24 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
 
     const body = await request.json()
     const { leadIds } = body
 
     if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
-      return NextResponse.json(
-        { error: 'leadIds array is required' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('leadIds array is required')
     }
 
     // Verify campaign ownership
     const campaign = await campaignService.findUnique(ctx, params.id)
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
+      return apiErrors.notFound('Campaign not found')
     }
 
     // Add leads to campaign
@@ -51,10 +49,7 @@ export async function POST(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error adding leads to campaign:', error)
-    return NextResponse.json(
-      { error: 'Failed to add leads to campaign' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to add leads to campaign')
   }
 }
 
@@ -66,27 +61,24 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
 
     const { searchParams } = new URL(request.url)
     const leadId = searchParams.get('leadId')
 
     if (!leadId) {
-      return NextResponse.json(
-        { error: 'leadId query parameter is required' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('leadId query parameter is required')
     }
 
     // Verify campaign ownership
     const campaign = await campaignService.findUnique(ctx, params.id)
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
+      return apiErrors.notFound('Campaign not found')
     }
 
     // Remove lead from campaign
@@ -100,9 +92,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error removing lead from campaign:', error)
-    return NextResponse.json(
-      { error: 'Failed to remove lead from campaign' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to remove lead from campaign')
   }
 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { campaignService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,11 +16,11 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const campaign = await campaignService.findUnique(ctx, params.id, {
       messages: {
@@ -35,16 +36,13 @@ export async function GET(
     });
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     return NextResponse.json({ campaign });
   } catch (error: any) {
     console.error('Error fetching campaign:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch campaign');
   }
 }
 
@@ -56,24 +54,21 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const campaign = await campaignService.findUnique(ctx, params.id);
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Can't edit running campaigns
     if (campaign.status === 'RUNNING') {
-      return NextResponse.json(
-        { error: 'Cannot edit a running campaign. Pause it first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot edit a running campaign. Pause it first.');
     }
 
     const body = await request.json();
@@ -116,10 +111,7 @@ export async function PUT(
     return NextResponse.json({ campaign: updatedCampaign });
   } catch (error: any) {
     console.error('Error updating campaign:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update campaign');
   }
 }
 
@@ -131,24 +123,21 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const campaign = await campaignService.findUnique(ctx, params.id);
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Can't delete running campaigns
     if (campaign.status === 'RUNNING') {
-      return NextResponse.json(
-        { error: 'Cannot delete a running campaign. Pause it first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete a running campaign. Pause it first.');
     }
 
     await campaignService.delete(ctx, params.id);
@@ -156,9 +145,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting campaign:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete campaign');
   }
 }

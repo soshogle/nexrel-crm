@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * Parent Approval Action API
@@ -19,17 +20,14 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { action, notes } = body; // action: "approve", "reject", "suspend", "activate"
 
     if (!action) {
-      return NextResponse.json(
-        { error: 'Action is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Action is required');
     }
 
     // Get household and verify ownership
@@ -47,12 +45,12 @@ export async function PUT(
     });
 
     if (!household) {
-      return NextResponse.json({ error: 'Household not found' }, { status: 404 });
+      return apiErrors.notFound('Household not found');
     }
 
     // Verify this household belongs to the logged-in club owner
     if (household.clubOwnerId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     // Determine new status based on action
@@ -78,10 +76,7 @@ export async function PUT(
         }
         break;
       default:
-        return NextResponse.json(
-          { error: 'Invalid action. Use: approve, reject, suspend, or activate' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Invalid action. Use: approve, reject, suspend, or activate');
     }
 
     // Update household status
@@ -110,9 +105,6 @@ export async function PUT(
     });
   } catch (error: any) {
     console.error('Error updating parent approval:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update parent approval' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update parent approval');
   }
 }

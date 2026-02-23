@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { createAdminSession, hasValidAdminSession, invalidateAdminSession } from '@/lib/permissions';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,17 +15,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { password } = body;
 
     if (!password) {
-      return NextResponse.json(
-        { error: 'Password required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Password required');
     }
 
     // Get user from database
@@ -34,19 +32,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user || !user.password) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized('Invalid credentials');
     }
 
     // Verify password
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
-      return NextResponse.json(
-        { error: 'Invalid password' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized('Invalid password');
     }
 
     // Create admin session
@@ -62,10 +54,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating admin session:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create admin session' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create admin session');
   }
 }
 
@@ -74,7 +63,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const isValid = await hasValidAdminSession(session.user.id);
@@ -84,10 +73,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error checking admin session:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to check admin session' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to check admin session');
   }
 }
 
@@ -96,17 +82,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const sessionToken = searchParams.get('sessionToken');
 
     if (!sessionToken) {
-      return NextResponse.json(
-        { error: 'Session token required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Session token required');
     }
 
     await invalidateAdminSession(sessionToken);
@@ -116,9 +99,6 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error invalidating admin session:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to invalidate admin session' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to invalidate admin session');
   }
 }

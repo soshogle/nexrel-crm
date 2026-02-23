@@ -7,21 +7,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { businessAIVoiceService } from '@/lib/business-ai/elevenlabs-voice';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { text } = await request.json();
 
     if (!text || typeof text !== 'string') {
-      return NextResponse.json(
-        { error: 'Text is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Text is required');
     }
 
     // Convert to speech using ElevenLabs
@@ -41,9 +39,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Business AI voice API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate speech' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to generate speech');
   }
 }

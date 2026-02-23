@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -28,10 +29,7 @@ export async function GET(request: NextRequest) {
         `${process.env.NEXTAUTH_URL}/api/calendar/google-oauth/callback`;
       
       if (!clientId) {
-        return NextResponse.json(
-          { error: 'Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.' },
-          { status: 500 }
-        );
+        return apiErrors.internal('Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
       }
 
       const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -46,12 +44,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ url: oauthUrl, redirectUri });
     }
 
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    return apiErrors.badRequest('Invalid request');
   } catch (error: any) {
     console.error('Error in Google OAuth flow:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to initialize OAuth' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to initialize OAuth');
   }
 }

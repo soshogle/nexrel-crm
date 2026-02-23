@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/teams/[id] - Get specific team
 
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const team = await prisma.clubOSTeam.findUnique({
@@ -36,21 +37,18 @@ export async function GET(
     });
 
     if (!team) {
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+      return apiErrors.notFound('Team not found');
     }
 
     // Verify ownership via division -> program
     if (team.division.program.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     return NextResponse.json({ team });
   } catch (error: any) {
     console.error('Error fetching team:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch team' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch team');
   }
 }
 
@@ -62,7 +60,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -79,11 +77,11 @@ export async function PUT(
     });
 
     if (!existingTeam) {
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+      return apiErrors.notFound('Team not found');
     }
 
     if (existingTeam.division.program.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     const team = await prisma.clubOSTeam.update({
@@ -112,10 +110,7 @@ export async function PUT(
     return NextResponse.json({ team });
   } catch (error: any) {
     console.error('Error updating team:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update team' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update team');
   }
 }
 
@@ -127,7 +122,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get team and verify ownership
@@ -141,11 +136,11 @@ export async function DELETE(
     });
 
     if (!team) {
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+      return apiErrors.notFound('Team not found');
     }
 
     if (team.division.program.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     await prisma.clubOSTeam.delete({
@@ -155,9 +150,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting team:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete team' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete team');
   }
 }

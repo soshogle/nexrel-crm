@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,10 +43,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error("[Blog API] List error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch blog posts" },
-      { status: 500 }
-    );
+    return apiErrors.internal("Failed to fetch blog posts");
   }
 }
 
@@ -53,21 +51,21 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { title, slug, excerpt, content, category, industry, problemImage, solutionImage, readTime } = body;
 
     if (!title || !content || !category || !industry) {
-      return NextResponse.json({ error: "title, content, category, and industry are required" }, { status: 400 });
+      return apiErrors.badRequest("title, content, category, and industry are required");
     }
 
     const finalSlug = slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
     const existing = await prisma.blogPost.findUnique({ where: { slug: finalSlug } });
     if (existing) {
-      return NextResponse.json({ error: "A post with this slug already exists" }, { status: 409 });
+      return apiErrors.conflict("A post with this slug already exists");
     }
 
     const wordCount = content.split(/\s+/).length;
@@ -91,7 +89,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, post });
   } catch (error: unknown) {
     console.error("[Blog API] Create error:", error);
-    return NextResponse.json({ error: "Failed to create blog post" }, { status: 500 });
+    return apiErrors.internal("Failed to create blog post");
   }
 }
 
@@ -99,25 +97,25 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { id, title, slug, excerpt, content, category, industry, problemImage, solutionImage, readTime } = body;
 
     if (!id) {
-      return NextResponse.json({ error: "id is required" }, { status: 400 });
+      return apiErrors.badRequest("id is required");
     }
 
     const existing = await prisma.blogPost.findUnique({ where: { id } });
     if (!existing) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return apiErrors.notFound("Post not found");
     }
 
     if (slug && slug !== existing.slug) {
       const slugTaken = await prisma.blogPost.findUnique({ where: { slug } });
       if (slugTaken) {
-        return NextResponse.json({ error: "Slug already taken" }, { status: 409 });
+        return apiErrors.conflict("Slug already taken");
       }
     }
 
@@ -143,7 +141,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, post });
   } catch (error: unknown) {
     console.error("[Blog API] Update error:", error);
-    return NextResponse.json({ error: "Failed to update blog post" }, { status: 500 });
+    return apiErrors.internal("Failed to update blog post");
   }
 }
 
@@ -151,20 +149,20 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ error: "id is required" }, { status: 400 });
+      return apiErrors.badRequest("id is required");
     }
 
     await prisma.blogPost.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error("[Blog API] Delete error:", error);
-    return NextResponse.json({ error: "Failed to delete blog post" }, { status: 500 });
+    return apiErrors.internal("Failed to delete blog post");
   }
 }

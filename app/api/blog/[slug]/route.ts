@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -18,15 +19,12 @@ export async function GET(
     });
 
     if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+      return apiErrors.notFound("Post not found");
     }
 
     return NextResponse.json(post);
   } catch (error: unknown) {
     console.error("[Blog API] Single post error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch blog post" },
-      { status: 500 }
-    );
+    return apiErrors.internal("Failed to fetch blog post");
   }
 }

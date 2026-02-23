@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/schedules/[id] - Get single schedule
 
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const schedule = await prisma.clubOSSchedule.findUnique({
@@ -69,23 +70,17 @@ export async function GET(
     });
 
     if (!schedule) {
-      return NextResponse.json(
-        { error: 'Schedule not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Schedule not found');
     }
 
     if (schedule.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     return NextResponse.json(schedule);
   } catch (error) {
     console.error('Error fetching schedule:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch schedule' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch schedule');
   }
 }
 
@@ -97,7 +92,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -122,14 +117,11 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Schedule not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Schedule not found');
     }
 
     if (existing.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     const schedule = await prisma.clubOSSchedule.update({
@@ -172,10 +164,7 @@ export async function PUT(
     return NextResponse.json(schedule);
   } catch (error) {
     console.error('Error updating schedule:', error);
-    return NextResponse.json(
-      { error: 'Failed to update schedule' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update schedule');
   }
 }
 
@@ -187,7 +176,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const existing = await prisma.clubOSSchedule.findUnique({
@@ -195,14 +184,11 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Schedule not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Schedule not found');
     }
 
     if (existing.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     // Soft delete by setting status to CANCELLED
@@ -214,9 +200,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Schedule cancelled successfully' });
   } catch (error) {
     console.error('Error deleting schedule:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete schedule' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete schedule');
   }
 }

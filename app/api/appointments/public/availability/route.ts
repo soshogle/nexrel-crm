@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/appointments/public/availability - Get available time slots
 
@@ -14,10 +15,7 @@ export async function GET(request: NextRequest) {
     const duration = parseInt(searchParams.get('duration') || '30') // minutes
 
     if (!userId || !date) {
-      return NextResponse.json(
-        { error: 'userId and date are required' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('userId and date are required')
     }
 
     // Verify user exists
@@ -26,10 +24,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid user ID' },
-        { status: 404 }
-      )
+      return apiErrors.notFound('Invalid user ID')
     }
 
     const targetDate = new Date(date)
@@ -100,10 +95,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching availability:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch availability' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch availability')
   }
 }
 

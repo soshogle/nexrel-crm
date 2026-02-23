@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,27 +13,18 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: 'Name, email, and password are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Name, email, and password are required');
     }
 
     // Validate email format
     const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid email format');
     }
 
     // Validate password length
     if (password.length < 8) {
-      return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Password must be at least 8 characters long');
     }
 
     // Check if user already exists
@@ -41,10 +33,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'An account with this email already exists' },
-        { status: 409 }
-      );
+      return apiErrors.conflict('An account with this email already exists');
     }
 
     // Hash password
@@ -92,9 +81,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error('❌ Signup error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create account' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create account');
   }
 }

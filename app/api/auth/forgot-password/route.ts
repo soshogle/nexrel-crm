@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import crypto from 'crypto'
 import { EmailService } from '@/lib/email-service'
+import { apiErrors } from '@/lib/api-error';
 
 const emailService = new EmailService()
 
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json()
     if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+      return apiErrors.badRequest('Email is required')
     }
 
     const normalizedEmail = email.trim().toLowerCase()
@@ -63,9 +64,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Forgot password error:', error)
-    return NextResponse.json(
-      { error: 'Something went wrong. Please try again.' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Something went wrong. Please try again.')
   }
 }

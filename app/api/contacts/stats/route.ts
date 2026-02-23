@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
 
     if (!ctx) {
       console.log('ERROR: No user ID in session for stats - returning 401');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const now = new Date();
@@ -66,9 +67,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Error fetching contact stats:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch stats' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch stats');
   }
 }

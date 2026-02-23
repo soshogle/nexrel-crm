@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,11 +14,11 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const {
@@ -39,10 +41,7 @@ export async function POST(request: Request) {
     console.log('Creating contact/lead with data:', { name, email, phone, company, notes });
 
     if (!name || (!email && !phone)) {
-      return NextResponse.json(
-        { error: 'Name and at least one of email or phone are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Name and at least one of email or phone are required');
     }
 
     const contact = await leadService.create(ctx, {
@@ -78,14 +77,11 @@ export async function POST(request: Request) {
     console.error('Error creating contact:', error);
     console.error('Error details:', error.message);
     console.error('Error stack:', error.stack);
-    return NextResponse.json(
-      { error: 'Failed to create contact', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create contact', error.message);
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -98,7 +94,7 @@ export async function GET(request: Request) {
     
     if (!session?.user?.id) {
       console.log('ERROR: No user ID in session - returning 401');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -110,8 +106,9 @@ export async function GET(request: Request) {
     console.log('Querying contacts for userId:', session.user.id);
     
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
+    const pagination = parsePagination(request);
     const db = getCrmDb(ctx);
     const where: any = { userId: ctx.userId };
 
@@ -149,6 +146,8 @@ export async function GET(request: Request) {
           createdAt: true,
         } as any,
         orderBy: { createdAt: 'desc' },
+        take: pagination.take,
+        skip: pagination.skip,
       });
 
       if (contacts.length > 0) {
@@ -232,7 +231,8 @@ export async function GET(request: Request) {
 
     console.log('Returning', parsedContacts.length, 'contacts after filtering');
 
-    return NextResponse.json(parsedContacts);
+    const total = await leadService.count(ctx, where);
+    return paginatedResponse(parsedContacts, total, pagination);
   } catch (error: any) {
     console.error('Error fetching contacts:', error);
     console.error('Error message:', error?.message);

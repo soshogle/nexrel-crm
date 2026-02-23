@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,7 +15,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -21,12 +23,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const { searchParams } = new URL(request.url);
     const voiceAgentId = searchParams.get('voiceAgentId');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const pagination = parsePagination(request);
     const countOnly = searchParams.get('countOnly') === 'true';
     const fromDate = searchParams.get('from');
     const toDate = searchParams.get('to');
@@ -49,7 +51,8 @@ export async function GET(request: NextRequest) {
     const calls = await prisma.callLog.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
-      take: limit,
+      take: pagination.take,
+      skip: pagination.skip,
       include: {
         voiceAgent: {
           select: {
@@ -67,7 +70,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(calls || []);
+    const total = await prisma.callLog.count({ where: whereClause });
+    return paginatedResponse(calls || [], total, pagination);
   } catch (error: any) {
     console.error('Error fetching calls:', error);
     console.error('Error details:', {

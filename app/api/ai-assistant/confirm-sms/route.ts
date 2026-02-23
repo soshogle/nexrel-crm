@@ -10,6 +10,7 @@ import { sendSMS } from "@/lib/messaging-service";
 import { prisma } from "@/lib/db";
 import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { leadService } from "@/lib/dal/lead-service";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,26 +19,20 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
     const { action, draft, scheduledFor } = body;
 
     if (!action || !draft) {
-      return NextResponse.json(
-        { error: "action and draft are required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("action and draft are required");
     }
 
     const { contactName, to, message, leadId } = draft;
 
     if (!contactName || !message) {
-      return NextResponse.json(
-        { error: "draft must include contactName and message" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("draft must include contactName and message");
     }
 
     if (action === "send") {
@@ -50,10 +45,7 @@ export async function POST(req: NextRequest) {
       });
 
       if (!result.success) {
-        return NextResponse.json(
-          { error: result.error || "Failed to send SMS" },
-          { status: 400 }
-        );
+        return apiErrors.badRequest(result.error || "Failed to send SMS");
       }
 
       return NextResponse.json({
@@ -64,23 +56,17 @@ export async function POST(req: NextRequest) {
 
     if (action === "schedule") {
       if (!scheduledFor) {
-        return NextResponse.json(
-          { error: "scheduledFor is required when action is schedule" },
-          { status: 400 }
-        );
+        return apiErrors.badRequest("scheduledFor is required when action is schedule");
       }
 
       const scheduledDate = new Date(scheduledFor);
       if (scheduledDate <= new Date()) {
-        return NextResponse.json(
-          { error: "Scheduled time must be in the future" },
-          { status: 400 }
-        );
+        return apiErrors.badRequest("Scheduled time must be in the future");
       }
 
       const ctx = getDalContextFromSession(session);
       if (!ctx) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return apiErrors.unauthorized();
       }
       const lead = leadId
         ? await leadService.findUnique(ctx, leadId)
@@ -120,15 +106,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json(
-      { error: "action must be 'send' or 'schedule'" },
-      { status: 400 }
-    );
+    return apiErrors.badRequest("action must be 'send' or 'schedule'");
   } catch (error: any) {
     console.error("[confirm-sms] Error:", error);
-    return NextResponse.json(
-      { error: error?.message || "Failed to process request" },
-      { status: 500 }
-    );
+    return apiErrors.internal(error?.message || "Failed to process request");
   }
 }

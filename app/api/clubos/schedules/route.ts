@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/schedules - List all schedules with filters
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -79,10 +80,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(filteredSchedules);
   } catch (error) {
     console.error('Error fetching schedules:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch schedules' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch schedules');
   }
 }
 
@@ -91,7 +89,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -110,10 +108,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!eventType || !title || !startTime || !endTime) {
-      return NextResponse.json(
-        { error: 'Missing required fields: eventType, title, startTime, endTime' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: eventType, title, startTime, endTime');
     }
 
     // Check for venue conflicts
@@ -241,9 +236,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(schedule, { status: 201 });
   } catch (error) {
     console.error('Error creating schedule:', error);
-    return NextResponse.json(
-      { error: 'Failed to create schedule' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create schedule');
   }
 }

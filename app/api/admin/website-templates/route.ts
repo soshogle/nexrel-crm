@@ -8,12 +8,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { websiteTemplateImporter } from '@/lib/website-builder/template-importer';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -45,10 +46,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching templates:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch templates' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch templates');
   }
 }
 
@@ -56,7 +54,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -74,15 +72,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(
-      { error: 'Invalid action' },
-      { status: 400 }
-    );
+    return apiErrors.badRequest('Invalid action');
   } catch (error: any) {
     console.error('Error updating template:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update template' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update template');
   }
 }

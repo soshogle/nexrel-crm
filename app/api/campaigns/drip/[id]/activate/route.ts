@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -19,7 +20,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await context.params;
@@ -33,25 +34,16 @@ export async function POST(
     });
 
     if (!campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Campaign not found');
     }
 
     if (campaign.status === 'ACTIVE') {
-      return NextResponse.json(
-        { error: 'Campaign is already active' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign is already active');
     }
 
     // Validate campaign has sequences
     if (campaign.sequences.length === 0) {
-      return NextResponse.json(
-        { error: 'Campaign must have at least one sequence to activate' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign must have at least one sequence to activate');
     }
 
     // Validate all sequences have required fields
@@ -60,10 +52,7 @@ export async function POST(
     );
 
     if (invalidSequences.length > 0) {
-      return NextResponse.json(
-        { error: 'All sequences must have subject and content' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('All sequences must have subject and content');
     }
 
     // Activate campaign
@@ -79,9 +68,6 @@ export async function POST(
     });
   } catch (error: unknown) {
     console.error('Error activating campaign:', error);
-    return NextResponse.json(
-      { error: 'Failed to activate campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to activate campaign');
   }
 }

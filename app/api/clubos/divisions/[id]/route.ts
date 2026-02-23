@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 //GET /api/clubos/divisions/[id] - Get specific division
 
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const division = await prisma.clubOSDivision.findUnique({
@@ -33,21 +34,18 @@ export async function GET(
     });
 
     if (!division) {
-      return NextResponse.json({ error: 'Division not found' }, { status: 404 });
+      return apiErrors.notFound('Division not found');
     }
 
     // Verify ownership via program
     if (division.program.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     return NextResponse.json({ division });
   } catch (error: any) {
     console.error('Error fetching division:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch division' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch division');
   }
 }
 
@@ -59,7 +57,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -72,11 +70,11 @@ export async function PUT(
     });
 
     if (!existingDivision) {
-      return NextResponse.json({ error: 'Division not found' }, { status: 404 });
+      return apiErrors.notFound('Division not found');
     }
 
     if (existingDivision.program.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     const division = await prisma.clubOSDivision.update({
@@ -102,10 +100,7 @@ export async function PUT(
     return NextResponse.json({ division });
   } catch (error: any) {
     console.error('Error updating division:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update division' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update division');
   }
 }
 
@@ -117,7 +112,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get division and verify ownership
@@ -127,11 +122,11 @@ export async function DELETE(
     });
 
     if (!division) {
-      return NextResponse.json({ error: 'Division not found' }, { status: 404 });
+      return apiErrors.notFound('Division not found');
     }
 
     if (division.program.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     await prisma.clubOSDivision.delete({
@@ -141,9 +136,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting division:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete division' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete division');
   }
 }

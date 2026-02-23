@@ -14,12 +14,13 @@ import { businessAnalyticsEngine } from '@/lib/business-ai/analytics-engine';
 import { addExplanations } from '@/lib/business-ai/prediction-explainer';
 import { getCrmDb, leadService, campaignService } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const userId = session.user.id;

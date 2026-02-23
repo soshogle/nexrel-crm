@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/auth';
 import { leadResearcher } from '@/lib/ai-employees/lead-researcher';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -21,10 +22,7 @@ export async function POST(request: NextRequest) {
 
     if (!session?.user?.id) {
       console.log('[Lead Research API] Unauthorized - no session');
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -32,14 +30,11 @@ export async function POST(request: NextRequest) {
     const { leadId, businessName, website, industry } = body;
 
     if (!leadId && !businessName) {
-      return NextResponse.json(
-        { error: 'Either leadId or businessName is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Either leadId or businessName is required');
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // If leadId is provided, fetch lead data
     let leadData;
@@ -47,17 +42,11 @@ export async function POST(request: NextRequest) {
       leadData = await leadService.findUnique(ctx, leadId);
 
       if (!leadData) {
-        return NextResponse.json(
-          { error: 'Lead not found' },
-          { status: 404 }
-        );
+        return apiErrors.notFound('Lead not found');
       }
 
       if (leadData.userId !== session.user.id) {
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 403 }
-        );
+        return apiErrors.forbidden('Unauthorized');
       }
     }
 
@@ -78,9 +67,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Lead research API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to start lead research' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to start lead research');
   }
 }

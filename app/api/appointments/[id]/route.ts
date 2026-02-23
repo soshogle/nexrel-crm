@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db'
 import { reviewFeedbackService } from '@/lib/review-feedback-service'
 import { processServiceCompletedTriggers } from '@/lib/service-completed-triggers'
 import { emitCRMEvent } from '@/lib/crm-event-emitter'
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/appointments/[id] - Get appointment details
 
@@ -18,7 +19,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const appointment = await prisma.bookingAppointment.findUnique({
@@ -33,10 +34,7 @@ export async function GET(
     })
 
     if (!appointment) {
-      return NextResponse.json(
-        { error: 'Appointment not found' },
-        { status: 404 }
-      )
+      return apiErrors.notFound('Appointment not found')
     }
 
     // Transform appointment to include startTime and endTime for calendar compatibility
@@ -45,8 +43,6 @@ export async function GET(
     
     const transformedAppointment = {
       ...appointment,
-      title: appointment.customerName || 'Untitled',
-      description: appointment.notes,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
       location: appointment.meetingLocation,
@@ -56,10 +52,7 @@ export async function GET(
     return NextResponse.json(transformedAppointment)
   } catch (error) {
     console.error('Error fetching appointment:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch appointment' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch appointment')
   }
 }
 
@@ -71,7 +64,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const body = await request.json()
@@ -92,10 +85,7 @@ export async function PATCH(
     })
 
     if (!existingAppointment) {
-      return NextResponse.json(
-        { error: 'Appointment not found' },
-        { status: 404 }
-      )
+      return apiErrors.notFound('Appointment not found')
     }
 
     // Build update data
@@ -186,10 +176,7 @@ export async function PATCH(
     return NextResponse.json(transformedAppointment)
   } catch (error) {
     console.error('Error updating appointment:', error)
-    return NextResponse.json(
-      { error: 'Failed to update appointment' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to update appointment')
   }
 }
 
@@ -201,7 +188,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     // Verify ownership
@@ -213,10 +200,7 @@ export async function DELETE(
     })
 
     if (!existingAppointment) {
-      return NextResponse.json(
-        { error: 'Appointment not found' },
-        { status: 404 }
-      )
+      return apiErrors.notFound('Appointment not found')
     }
 
     // Soft delete by updating status to CANCELLED
@@ -234,9 +218,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Appointment cancelled successfully', appointment })
   } catch (error) {
     console.error('Error cancelling appointment:', error)
-    return NextResponse.json(
-      { error: 'Failed to cancel appointment' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to cancel appointment')
   }
 }

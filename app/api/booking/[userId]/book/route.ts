@@ -4,6 +4,7 @@ import { addMinutes, parse, isAfter, isBefore, format } from 'date-fns';
 import { emailService } from '@/lib/email-service';
 import { CalendarService } from '@/lib/calendar/calendar-service';
 import { getEmailTemplates, replaceEmailPlaceholders, formatDateForLocale } from '@/lib/email-templates';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -28,19 +29,13 @@ export async function POST(
 
     // Validation
     if (!customerName || !customerEmail || !date || !time) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(customerEmail)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid email format');
     }
 
     // Get user's booking settings
@@ -49,10 +44,7 @@ export async function POST(
     });
 
     if (!settings) {
-      return NextResponse.json(
-        { error: 'Booking settings not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Booking settings not found');
     }
 
     // Parse appointment date/time
@@ -96,10 +88,7 @@ export async function POST(
     });
 
     if (hasConflict) {
-      return NextResponse.json(
-        { error: 'This time slot is no longer available' },
-        { status: 409 }
-      );
+      return apiErrors.conflict('This time slot is no longer available');
     }
 
     // Determine initial status based on settings
@@ -335,9 +324,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Error creating booking:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create booking' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create booking');
   }
 }

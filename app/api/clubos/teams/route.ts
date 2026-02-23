@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/teams - List all teams
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -54,10 +55,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ teams: filteredTeams });
   } catch (error) {
     console.error('Error fetching teams:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch teams' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch teams');
   }
 }
 
@@ -66,17 +64,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { divisionId, name, ageGroup, coachName, coachEmail, coachPhone, maxPlayers } = body;
 
     if (!divisionId || !name) {
-      return NextResponse.json(
-        { error: 'Missing required fields: divisionId, name' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: divisionId, name');
     }
 
     const team = await prisma.clubOSTeam.create({
@@ -98,9 +93,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(team, { status: 201 });
   } catch (error) {
     console.error('Error creating team:', error);
-    return NextResponse.json(
-      { error: 'Failed to create team' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create team');
   }
 }

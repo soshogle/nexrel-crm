@@ -9,12 +9,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { ensureUserHasVoiceAgent } from '@/lib/ensure-voice-agent';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const employees = await prisma.userAIEmployee.findMany({
@@ -36,10 +37,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('[API] GET /api/ai-employees/user:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch AI Team' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch AI Team');
   }
 }
 
@@ -47,17 +45,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     let { profession, customName, voiceAgentId, voiceConfig } = body;
 
     if (!profession || !customName) {
-      return NextResponse.json(
-        { error: 'profession and customName are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('profession and customName are required');
     }
 
     // If no voice agent assigned, ensure user has one and auto-assign
@@ -98,9 +93,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('[API] POST /api/ai-employees/user:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create AI Team employee' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create AI Team employee');
   }
 }

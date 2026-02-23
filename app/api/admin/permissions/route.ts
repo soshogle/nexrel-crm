@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getUserPermissions, applyRolePreset, ROLE_PRESETS } from '@/lib/permissions';
 import { PageResource } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get all team members for this user
@@ -50,10 +51,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching permissions:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch permissions' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch permissions');
   }
 }
 
@@ -62,17 +60,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { targetUserId, rolePreset } = body;
 
     if (!targetUserId || !rolePreset) {
-      return NextResponse.json(
-        { error: 'Missing required fields: targetUserId, rolePreset' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: targetUserId, rolePreset');
     }
 
     // Verify target user is a team member
@@ -84,10 +79,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!teamMember) {
-      return NextResponse.json(
-        { error: 'Team member not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Team member not found');
     }
 
     // Apply role preset
@@ -102,9 +94,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error applying role preset:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to apply role preset' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to apply role preset');
   }
 }

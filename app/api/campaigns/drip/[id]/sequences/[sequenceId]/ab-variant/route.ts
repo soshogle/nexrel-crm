@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,7 @@ export async function POST(
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -21,7 +22,7 @@ export async function POST(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const { id, sequenceId } = await params;
@@ -37,7 +38,7 @@ export async function POST(
     });
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Get the original sequence
@@ -46,7 +47,7 @@ export async function POST(
     });
 
     if (!originalSequence || originalSequence.campaignId !== id) {
-      return NextResponse.json({ error: 'Sequence not found' }, { status: 404 });
+      return apiErrors.notFound('Sequence not found');
     }
 
     // Update original sequence to be variant A
@@ -106,10 +107,7 @@ export async function POST(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error creating A/B test variant:', error);
-    return NextResponse.json(
-      { error: 'Failed to create A/B test variant' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create A/B test variant');
   }
 }
 
@@ -120,7 +118,7 @@ export async function GET(
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -128,7 +126,7 @@ export async function GET(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const { id, sequenceId } = await params;
@@ -142,7 +140,7 @@ export async function GET(
     });
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Get variant A (original)
@@ -151,7 +149,7 @@ export async function GET(
     });
 
     if (!variantA) {
-      return NextResponse.json({ error: 'Sequence not found' }, { status: 404 });
+      return apiErrors.notFound('Sequence not found');
     }
 
     // Get variant B
@@ -170,9 +168,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching A/B test variants:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch A/B test variants' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch A/B test variants');
   }
 }

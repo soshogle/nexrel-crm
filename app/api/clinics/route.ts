@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -46,10 +47,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ clinics });
   } catch (error: any) {
     console.error('Error fetching clinics:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch clinics', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch clinics', error.message);
   }
 }
 
@@ -58,7 +56,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -80,10 +78,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!name) {
-      return NextResponse.json(
-        { error: 'Clinic name is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Clinic name is required');
     }
 
     // Create clinic
@@ -128,9 +123,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating clinic:', error);
-    return NextResponse.json(
-      { error: 'Failed to create clinic', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create clinic', error.message);
   }
 }

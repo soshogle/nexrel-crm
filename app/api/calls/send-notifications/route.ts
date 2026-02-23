@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { emailService } from '@/lib/email-service';
 import { createDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -43,12 +44,12 @@ export async function POST(request: NextRequest) {
       });
 
       if (!callLog) {
-        return NextResponse.json({ error: 'Call log not found' }, { status: 404 });
+        return apiErrors.notFound('Call log not found');
       }
 
       // Verify ownership
       if (callLog.userId !== session.user.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        return apiErrors.forbidden('Unauthorized');
       }
 
       callLogs = [callLog];
@@ -195,10 +196,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ [Send Notifications] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }
 
@@ -209,7 +207,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Count calls pending email notification
@@ -248,9 +246,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ [Get Notifications Status] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

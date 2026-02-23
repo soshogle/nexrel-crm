@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { aiOrchestrator } from '@/lib/ai-employee-orchestrator';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -19,26 +20,17 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const job = await aiOrchestrator.getJobStatus(params.jobId);
 
     if (!job) {
-      return NextResponse.json(
-        { error: 'Job not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Job not found');
     }
 
     if (job.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Unauthorized');
     }
 
     return NextResponse.json({
@@ -48,9 +40,6 @@ export async function GET(
 
   } catch (error: any) {
     console.error('Job status API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch job status' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch job status');
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -24,18 +25,12 @@ export async function GET(
     });
 
     if (!settings) {
-      return NextResponse.json(
-        { error: 'Booking settings not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Booking settings not found');
     }
 
     return NextResponse.json({ settings });
   } catch (error: any) {
     console.error('Error fetching public booking settings:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch booking settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch booking settings');
   }
 }

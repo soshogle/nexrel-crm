@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService, dealService, messageService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,12 +16,12 @@ export async function GET(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const contact = await leadService.findUnique(ctx, params.id);
     if (!contact) {
-      return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
+      return apiErrors.notFound('Contact not found');
     }
 
     // Fetch recent activities (callLog not in DAL - use getCrmDb)
@@ -59,9 +60,6 @@ export async function GET(
     return NextResponse.json(activities.slice(0, 20));
   } catch (error) {
     console.error('Error fetching contact activities:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch activities' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch activities');
   }
 }

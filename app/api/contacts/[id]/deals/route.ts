@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService, dealService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,12 +16,12 @@ export async function GET(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const contact = await leadService.findUnique(ctx, params.id);
     if (!contact) {
-      return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
+      return apiErrors.notFound('Contact not found');
     }
 
     const deals = await dealService.findMany(ctx, { leadId: params.id });
@@ -28,9 +29,6 @@ export async function GET(
     return NextResponse.json(deals);
   } catch (error) {
     console.error('Error fetching contact deals:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch deals' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch deals');
   }
 }

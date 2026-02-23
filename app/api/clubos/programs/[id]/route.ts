@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/programs/[id]
 
@@ -15,7 +16,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await params;
@@ -47,16 +48,13 @@ export async function GET(
     });
 
     if (!program) {
-      return NextResponse.json({ error: 'Program not found' }, { status: 404 });
+      return apiErrors.notFound('Program not found');
     }
 
     return NextResponse.json({ program });
   } catch (error) {
     console.error('Error fetching program:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch program' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch program');
   }
 }
 
@@ -68,7 +66,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await params;
@@ -92,9 +90,6 @@ export async function PUT(
     return NextResponse.json({ program });
   } catch (error) {
     console.error('Error updating program:', error);
-    return NextResponse.json(
-      { error: 'Failed to update program' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update program');
   }
 }

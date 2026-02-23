@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,7 @@ export async function POST(
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -21,7 +22,7 @@ export async function POST(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const { id } = await params;
@@ -39,9 +40,6 @@ export async function POST(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error pausing campaign:', error);
-    return NextResponse.json(
-      { error: 'Failed to pause campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to pause campaign');
   }
 }

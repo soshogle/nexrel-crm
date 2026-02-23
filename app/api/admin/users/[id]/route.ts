@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -21,10 +22,7 @@ export async function GET(
     // Check admin authentication
     const session = await getServerSession(authOptions);
     if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Unauthorized - Admin access required');
     }
 
     const user = await prisma.user.findUnique({
@@ -46,19 +44,13 @@ export async function GET(
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('User not found');
     }
 
     return NextResponse.json({ user });
   } catch (error: any) {
     console.error('❌ Error fetching user:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch user', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch user', error.message);
   }
 }
 
@@ -70,10 +62,7 @@ export async function PATCH(
     // Check admin authentication
     const session = await getServerSession(authOptions);
     if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Unauthorized - Admin access required');
     }
 
     const body = await req.json();
@@ -83,10 +72,7 @@ export async function PATCH(
     if (language) {
       const supportedLanguages = ['en', 'fr', 'es', 'zh'];
       if (!supportedLanguages.includes(language)) {
-        return NextResponse.json(
-          { error: 'Unsupported language. Supported: en, fr, es, zh' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Unsupported language. Supported: en, fr, es, zh');
       }
     }
 
@@ -127,9 +113,6 @@ export async function PATCH(
     return NextResponse.json({ user, message: 'User updated successfully' });
   } catch (error: any) {
     console.error('❌ Error updating user:', error);
-    return NextResponse.json(
-      { error: 'Failed to update user', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update user', error.message);
   }
 }

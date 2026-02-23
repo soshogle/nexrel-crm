@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/members - Get all members for user's household
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const household = await prisma.clubOSHousehold.findUnique({
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!household) {
-      return NextResponse.json({ error: 'Household not found' }, { status: 404 });
+      return apiErrors.notFound('Household not found');
     }
 
     const members = await prisma.clubOSMember.findMany({
@@ -52,10 +53,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ members });
   } catch (error) {
     console.error('Error fetching members:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch members' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch members');
   }
 }
 
@@ -64,7 +62,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -72,7 +70,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const household = await prisma.clubOSHousehold.findUnique({
@@ -80,7 +78,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!household) {
-      return NextResponse.json({ error: 'Household not found. Create a household first.' }, { status: 404 });
+      return apiErrors.notFound('Household not found. Create a household first.');
     }
 
     const body = await request.json();
@@ -120,9 +118,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ member }, { status: 201 });
   } catch (error) {
     console.error('Error creating member:', error);
-    return NextResponse.json(
-      { error: 'Failed to create member' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create member');
   }
 }

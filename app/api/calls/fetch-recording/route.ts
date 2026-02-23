@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsService } from '@/lib/elevenlabs';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,13 +17,13 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { callLogId } = await request.json();
 
     if (!callLogId) {
-      return NextResponse.json({ error: 'Missing callLogId' }, { status: 400 });
+      return apiErrors.badRequest('Missing callLogId');
     }
 
     // Find the call log
@@ -31,20 +32,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (!callLog) {
-      return NextResponse.json({ error: 'Call log not found' }, { status: 404 });
+      return apiErrors.notFound('Call log not found');
     }
 
     // Verify ownership
     if (callLog.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     // Check if we have an ElevenLabs conversation ID
     if (!callLog.elevenLabsConversationId) {
-      return NextResponse.json(
-        { error: 'No ElevenLabs conversation ID found for this call' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('No ElevenLabs conversation ID found for this call');
     }
 
     console.log('🎙️ [Fetch Recording] Fetching data for call:', callLogId);
@@ -91,10 +89,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ [Fetch Recording] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch recording' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch recording');
   }
 }
 
@@ -106,7 +101,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Find all completed calls without recordings
@@ -185,9 +180,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ [Backfill Recordings] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to backfill recordings' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to backfill recordings');
   }
 }

@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { summarizeCallAndAddNote } from '@/lib/call-summary-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(
   req: NextRequest,
@@ -15,7 +16,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -23,7 +24,7 @@ export async function POST(
       select: { id: true },
     });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const result = await summarizeCallAndAddNote(params.id, user.id);
@@ -34,9 +35,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Call summarize error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to summarize call' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to summarize call');
   }
 }

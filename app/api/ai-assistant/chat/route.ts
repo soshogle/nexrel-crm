@@ -10,6 +10,7 @@ import {
   getNavigationUrlForAction,
 } from "@/lib/ai-assistant-functions";
 import { aiBrainService } from "@/lib/ai-brain-service";
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -61,11 +62,11 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return apiErrors.notFound("User not found");
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
     const db = getCrmDb(ctx);
 
     // Get user's language preference (default to 'en' if not set)
@@ -173,7 +174,7 @@ export async function POST(req: NextRequest) {
     const context = requestBody?.context || {};
 
     if (!message || !message.trim()) {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+      return apiErrors.badRequest("Message is required");
     }
 
     // Build comprehensive context about the CRM and user's data with error handling
@@ -924,10 +925,7 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       console.error("OPENAI_API_KEY not configured");
-      return NextResponse.json(
-        { error: "AI service not configured. Please contact support." },
-        { status: 500 }
-      );
+      return apiErrors.internal("AI service not configured. Please contact support.");
     }
 
     console.log("Calling OpenAI API with", conversationMessages.length, "messages and", functions.length, "functions");
@@ -958,19 +956,13 @@ Remember: You're not just a chatbot - you're an AI assistant with REAL powers to
       if (!aiResponse.ok) {
         const errorText = await aiResponse.text();
         console.error("AI service error:", aiResponse.status, errorText);
-        return NextResponse.json(
-          { error: "Failed to get AI response. Please try again." },
-          { status: 500 }
-        );
+        return apiErrors.internal("Failed to get AI response. Please try again.");
       }
 
       aiData = await aiResponse.json();
     } catch (jsonError: any) {
       console.error("Error parsing AI response JSON:", jsonError);
-      return NextResponse.json(
-        { error: "Invalid response from AI service. Please try again." },
-        { status: 500 }
-      );
+      return apiErrors.internal("Invalid response from AI service. Please try again.");
     }
 
     const assistantMessage = aiData.choices?.[0]?.message;

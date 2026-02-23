@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/campaigns/drip - List all drip campaigns
 
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const campaigns = await prisma.emailDripCampaign.findMany({
@@ -45,10 +46,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(campaigns);
   } catch (error: unknown) {
     console.error('Error fetching drip campaigns:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch campaigns' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch campaigns');
   }
 }
 
@@ -57,7 +55,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -76,10 +74,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name) {
-      return NextResponse.json(
-        { error: 'Campaign name is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign name is required');
     }
 
     // Create campaign
@@ -109,9 +104,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(campaign, { status: 201 });
   } catch (error: unknown) {
     console.error('Error creating drip campaign:', error);
-    return NextResponse.json(
-      { error: 'Failed to create campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create campaign');
   }
 }

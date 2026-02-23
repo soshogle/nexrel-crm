@@ -11,6 +11,7 @@ import { getAuditLogs } from '@/lib/security/audit-logger';
 import { RateLimiters, getClientIdentifier, createRateLimitResponse } from '@/lib/security/rate-limiter';
 import { sanitizePagination, sanitizeSearchQuery } from '@/lib/security/input-sanitizer';
 import { AuditAction, AuditSeverity } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Parse query parameters
@@ -70,9 +71,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching audit logs:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch audit logs' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch audit logs');
   }
 }

@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { workflowEngine } from '@/lib/ai-employees/workflow-engine';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -16,20 +17,14 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { triggerType, data, workflowConfig } = body;
 
     if (!triggerType) {
-      return NextResponse.json(
-        { error: 'triggerType is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('triggerType is required');
     }
 
     // Execute workflow
@@ -63,9 +58,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Workflow API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to execute workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to execute workflow');
   }
 }

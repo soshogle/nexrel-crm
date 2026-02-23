@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { addDays, format, parse, isAfter, isBefore, addMinutes } from 'date-fns';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,10 +16,7 @@ export async function GET(
     const dateParam = searchParams.get('date');
 
     if (!dateParam) {
-      return NextResponse.json(
-        { error: 'Date parameter is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Date parameter is required');
     }
 
     // Get user's booking settings
@@ -27,10 +25,7 @@ export async function GET(
     });
 
     if (!settings) {
-      return NextResponse.json(
-        { error: 'Booking settings not found for this user' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Booking settings not found for this user');
     }
 
     const requestedDate = new Date(dateParam);
@@ -128,9 +123,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching availability:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch availability' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch availability');
   }
 }

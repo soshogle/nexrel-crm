@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/communications/settings/[id] - Get specific notification setting
 
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const setting = await prisma.clubOSNotificationSetting.findUnique({
@@ -24,21 +25,18 @@ export async function GET(
     });
 
     if (!setting) {
-      return NextResponse.json({ error: 'Setting not found' }, { status: 404 });
+      return apiErrors.notFound('Setting not found');
     }
 
     // Verify ownership
     if (setting.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     return NextResponse.json({ setting });
   } catch (error: any) {
     console.error('Error fetching notification setting:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch setting' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch setting');
   }
 }
 
@@ -50,7 +48,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -71,11 +69,11 @@ export async function PUT(
     });
 
     if (!existingSetting) {
-      return NextResponse.json({ error: 'Setting not found' }, { status: 404 });
+      return apiErrors.notFound('Setting not found');
     }
 
     if (existingSetting.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     // Update setting
@@ -96,9 +94,6 @@ export async function PUT(
     return NextResponse.json({ setting });
   } catch (error: any) {
     console.error('Error updating notification setting:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update setting' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update setting');
   }
 }

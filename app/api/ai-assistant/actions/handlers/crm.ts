@@ -87,7 +87,7 @@ export async function getLeadDetails(userId: string, params: any) {
 
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
-  let lead;
+  let lead: any;
 
   if (leadId) {
     lead = await db.lead.findFirst({
@@ -97,7 +97,7 @@ export async function getLeadDetails(userId: string, params: any) {
         deals: { include: { stage: true } },
         tasks: { where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, take: 10 },
       },
-    });
+    } as any);
   } else if (searchName) {
     lead = await db.lead.findFirst({
       where: {
@@ -112,7 +112,7 @@ export async function getLeadDetails(userId: string, params: any) {
         deals: { include: { stage: true } },
         tasks: { where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, take: 10 },
       },
-    });
+    } as any);
   }
 
   if (!lead) {
@@ -240,7 +240,7 @@ export async function createDeal(userId: string, params: any) {
     value: value || 0,
     leadId: leadId || undefined,
     probability: firstStage.probability,
-  });
+  } as any);
 
   return {
     message: `Deal "${title}" created successfully!`,
@@ -267,16 +267,16 @@ export async function updateDeal(userId: string, params: any) {
     throw new Error("Deal not found");
   }
 
-  const deal = await dealService.update(ctx, dealId, updates, {
+  const deal: any = await dealService.update(ctx, dealId, updates, {
     stage: { select: { name: true } },
-  });
+  } as any);
 
   return {
     message: `Deal "${deal.title}" updated successfully!`,
     deal: {
       id: deal.id,
       title: deal.title,
-      stage: deal.stage.name,
+      stage: deal.stage?.name,
       value: deal.value,
     },
   };
@@ -286,18 +286,18 @@ export async function getDealDetails(userId: string, params: any) {
   const { dealId, dealTitle } = params;
 
   const ctx = createDalContext(userId);
-  let deal;
+  let deal: any;
   if (dealId) {
     deal = await dealService.findUnique(ctx, dealId, {
       lead: { select: { id: true, businessName: true, contactPerson: true, email: true, phone: true } },
       stage: true,
-    });
+    } as any);
   } else if (dealTitle) {
-    const deals = await dealService.findMany(ctx, {
+    const deals: any = await dealService.findMany(ctx, {
       where: { title: { contains: dealTitle, mode: "insensitive" } },
       take: 1,
       include: { lead: { select: { id: true, businessName: true, contactPerson: true, email: true, phone: true } }, stage: true },
-    });
+    } as any);
     deal = deals[0];
   }
 
@@ -395,13 +395,13 @@ export async function listDeals(userId: string, params: any) {
   const { stage, limit = 10 } = params;
 
   const ctx = createDalContext(userId);
-  const deals = await dealService.findMany(ctx, {
+  const deals: any = await dealService.findMany(ctx, {
     take: Math.min(limit, 50),
     include: {
       lead: true,
       stage: true,
     },
-  });
+  } as any);
 
   return {
     count: deals.length,
@@ -422,7 +422,7 @@ export async function createCampaign(userId: string, params: any) {
     type: type || "SMS",
     status: status || "DRAFT",
     smsTemplate: "Default SMS template - please update",
-  });
+  } as any);
 
   return {
     message: `Campaign "${name}" created successfully!`,
@@ -541,15 +541,15 @@ export async function updateDealStage(userId: string, params: any) {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
 
-  let deal;
+  let deal: any;
   if (dealId) {
-    deal = await dealService.findUnique(ctx, dealId, { stage: true, pipeline: true });
+    deal = await dealService.findUnique(ctx, dealId, { stage: true, pipeline: true } as any);
   } else if (dealTitle) {
-    const deals = await dealService.findMany(ctx, {
+    const deals: any = await dealService.findMany(ctx, {
       where: { title: { contains: dealTitle, mode: "insensitive" } },
       take: 1,
       include: { stage: true, pipeline: true },
-    });
+    } as any);
     deal = deals[0];
   }
 
@@ -574,10 +574,10 @@ export async function updateDealStage(userId: string, params: any) {
     );
   }
 
-  const updatedDeal = await dealService.update(ctx, deal.id, {
+  const updatedDeal: any = await dealService.update(ctx, deal.id, {
     stageId: stage.id,
     probability: stage.probability,
-  }, { lead: true, stage: true });
+  } as any, { lead: true, stage: true } as any);
 
   await db.dealActivity.create({
     data: {
@@ -589,7 +589,7 @@ export async function updateDealStage(userId: string, params: any) {
   });
 
   try {
-    const { default: workflowEngine } = await import("@/lib/workflow-engine");
+    const { default: workflowEngine } = await import("@/lib/workflow-engine") as any;
     workflowEngine.triggerWorkflow(
       "DEAL_STAGE_CHANGED",
       {
@@ -677,7 +677,7 @@ export async function assignDealToLead(userId: string, params: any) {
   }
   if (!lead) throw new Error(contactName ? `Contact "${contactName}" not found` : "Lead ID or contact name is required");
 
-  await dealService.update(ctx, deal.id, { leadId: lead.id });
+  await dealService.update(ctx, deal.id, { leadId: lead.id } as any);
 
   return {
     message: `✓ Deal "${deal.title}" linked to ${lead.contactPerson || lead.businessName}`,
@@ -795,21 +795,21 @@ export async function listNotes(userId: string, params: any) {
   const db = getCrmDb(ctx);
 
   if (dealId || dealTitle) {
-    let deal;
+    let deal: any;
     if (dealId) {
       deal = await db.deal.findFirst({
         where: { id: dealId, userId: ctx.userId },
         include: { activities: { where: { type: "NOTE" }, orderBy: { createdAt: "desc" }, take: Math.min(limit, 50) } },
-      });
+      } as any);
     } else {
       deal = await db.deal.findFirst({
         where: { userId: ctx.userId, title: { contains: dealTitle, mode: "insensitive" } },
         include: { activities: { where: { type: "NOTE" }, orderBy: { createdAt: "desc" }, take: Math.min(limit, 50) } },
-      });
+      } as any);
     }
     if (!deal) throw new Error(`Deal "${dealTitle || dealId}" not found`);
 
-    const notes = deal.activities.map((a) => ({ content: a.description, createdAt: a.createdAt, type: "deal" }));
+    const notes = deal.activities.map((a: any) => ({ content: a.description, createdAt: a.createdAt, type: "deal" }));
     return {
       message: `Found ${notes.length} note(s) for deal "${deal.title}"`,
       notes,
@@ -817,12 +817,12 @@ export async function listNotes(userId: string, params: any) {
     };
   }
 
-  let lead;
+  let lead: any;
   if (leadId) {
     lead = await db.lead.findFirst({
       where: { id: leadId, userId: ctx.userId },
       include: { notes: { orderBy: { createdAt: "desc" }, take: Math.min(limit, 50) } },
-    });
+    } as any);
   } else if (contactName) {
     lead = await db.lead.findFirst({
       where: {
@@ -833,11 +833,11 @@ export async function listNotes(userId: string, params: any) {
         ],
       },
       include: { notes: { orderBy: { createdAt: "desc" }, take: Math.min(limit, 50) } },
-    });
+    } as any);
   }
   if (!lead) throw new Error(contactName ? `Contact "${contactName}" not found` : "Lead ID or contact name is required");
 
-  const notes = lead.notes.map((n) => ({ content: n.content, createdAt: n.createdAt, type: "contact" }));
+  const notes = lead.notes.map((n: any) => ({ content: n.content, createdAt: n.createdAt, type: "contact" }));
   return {
     message: `Found ${notes.length} note(s) for ${lead.contactPerson || lead.businessName}`,
     notes,
@@ -961,10 +961,11 @@ export async function bulkAddTag(userId: string, params: any) {
     else if (period === "last_month") where.createdAt = { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
   }
 
+  const ctx = createDalContext(userId);
   const leads = await leadService.findMany(ctx, {
     where: Object.keys(where).length > 0 ? where : undefined,
     take: Math.min(limit, 500),
-  });
+  } as any);
 
   let count = 0;
   for (const lead of leads) {
@@ -995,18 +996,18 @@ export async function exportPipelineCsv(userId: string, params: any) {
     });
     const headers = ["ID", "Contact", "Company", "Email", "Phone", "Status", "Created"];
     const rows = leads.map((l) => [l.id, l.contactPerson || "", l.businessName || "", l.email || "", l.phone || "", l.status || "", l.createdAt?.toISOString() || ""]);
-    const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const csv = [headers.join(","), ...rows.map((r: any) => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
     return { message: `✓ Exported ${leads.length} leads.`, csv, filename: `leads-${Date.now()}.csv`, type: "leads", count: leads.length };
   }
 
   if (type === "deals" || type === "pipeline") {
-    const deals = await dealService.findMany(ctx, {
+    const deals: any = await dealService.findMany(ctx, {
       take: Math.min(limit, 5000),
       include: { lead: true, stage: true },
-    });
+    } as any);
     const headers = ["ID", "Title", "Value", "Stage", "Lead", "Status", "Created"];
-    const rows = deals.map((d) => [d.id, d.title, d.value || 0, d.stage?.name || "", d.lead?.contactPerson || d.lead?.businessName || "", d.status || "", d.createdAt?.toISOString() || ""]);
-    const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const rows = deals.map((d: any) => [d.id, d.title, d.value || 0, d.stage?.name || "", d.lead?.contactPerson || d.lead?.businessName || "", d.status || "", d.createdAt?.toISOString() || ""]);
+    const csv = [headers.join(","), ...rows.map((r: any) => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
     return { message: `✓ Exported ${deals.length} deals.`, csv, filename: `pipeline-${Date.now()}.csv`, type: "deals", count: deals.length };
   }
 
@@ -1019,7 +1020,7 @@ export async function getDealRiskAlerts(userId: string, params: any) {
 
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
-  const deals = await db.deal.findMany({
+  const deals: any[] = await db.deal.findMany({
     where: {
       userId: ctx.userId,
       status: "OPEN",
@@ -1031,7 +1032,7 @@ export async function getDealRiskAlerts(userId: string, params: any) {
       activities: { take: 1, orderBy: { createdAt: "desc" } },
     },
     take: Math.min(limit * 3, 100),
-  });
+  } as any);
 
   const atRisk = deals
     .filter((d) => {
@@ -1060,11 +1061,11 @@ export async function doEverythingForContact(userId: string, params: any) {
 
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
-  const leads = await leadService.findMany(ctx, {
+  const leads: any = await leadService.findMany(ctx, {
     where: { contactPerson: { contains: contactName, mode: "insensitive" } },
     take: 1,
     include: { deals: { take: 1 }, tasks: { where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }, take: 1 } },
-  });
+  } as any);
   const lead = leads[0];
   if (!lead) throw new Error(`Contact "${contactName}" not found`);
   const actionsToRun = actions || ["add_note", "create_deal", "schedule_follow_up", "draft_email"];
@@ -1083,7 +1084,7 @@ export async function doEverythingForContact(userId: string, params: any) {
         lead: { connect: { id: lead.id } },
         title: `${lead.contactPerson || lead.businessName} - New`,
         probability: firstStage.probability,
-      });
+      } as any);
       results.push("Created deal");
     }
   }
@@ -1094,7 +1095,7 @@ export async function doEverythingForContact(userId: string, params: any) {
       leadId: lead.id,
       title: `Follow up with ${lead.contactPerson || "contact"}`,
       dueDate,
-    });
+    } as any);
     results.push("Scheduled follow-up");
   }
   return {

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/venues - List all venues
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const venues = await prisma.clubOSVenue.findMany({
@@ -32,10 +33,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(venues);
   } catch (error) {
     console.error('Error fetching venues:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch venues' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch venues');
   }
 }
 
@@ -44,7 +42,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -52,17 +50,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
     const { name, address, city, state, zipCode, venueType, capacity, hasLighting, hasParking, hasRestrooms, notes } = body;
 
     if (!name) {
-      return NextResponse.json(
-        { error: 'Venue name is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Venue name is required');
     }
 
     const venue = await prisma.clubOSVenue.create({
@@ -85,9 +80,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(venue, { status: 201 });
   } catch (error) {
     console.error('Error creating venue:', error);
-    return NextResponse.json(
-      { error: 'Failed to create venue' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create venue');
   }
 }

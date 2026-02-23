@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { stripeSubscriptionService } from '@/lib/payments/stripe-subscription-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -22,10 +23,7 @@ export async function POST(
     // Check admin authentication
     const session = await getServerSession(authOptions);
     if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Unauthorized - Admin access required');
     }
 
     const body = await req.json();
@@ -38,10 +36,7 @@ export async function POST(
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('User not found');
     }
 
     let subscription;
@@ -99,9 +94,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('❌ Error updating subscription:', error);
-    return NextResponse.json(
-      { error: 'Failed to update subscription', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update subscription', error.message);
   }
 }

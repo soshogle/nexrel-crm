@@ -47,7 +47,7 @@ export async function getStatistics(userId: string, params: any = {}) {
     ]);
 
     // Get all deals with dates for time-series analysis
-    const allDeals = await db.deal.findMany({
+    const allDeals: any[] = await db.deal.findMany({
       where: whereClause,
       select: { 
         value: true,
@@ -55,7 +55,7 @@ export async function getStatistics(userId: string, params: any = {}) {
         createdAt: true,
         expectedCloseDate: true,
       },
-    });
+    } as any);
     
     const openDeals = allDeals.filter(deal => deal.actualCloseDate === null);
     const totalRevenue = openDeals.reduce((sum, deal) => sum + (deal.value || 0), 0);
@@ -87,14 +87,14 @@ export async function getStatistics(userId: string, params: any = {}) {
     // Get comparison data if requested
     let comparisonData: any = null;
     if (compareStartDate && compareEndDate) {
-      const compareDeals = await db.deal.findMany({
+      const compareDeals: any[] = await db.deal.findMany({
         where: compareWhereClause,
         select: { 
           value: true,
           actualCloseDate: true,
           createdAt: true,
         },
-      });
+      } as any);
       
       const compareMonthlyRevenue: Record<string, number> = {};
       for (let i = 6; i >= 0; i--) {
@@ -218,14 +218,14 @@ export async function fetchComprehensiveStats(userId: string, whereClause: any) 
       db.emailCampaign.findMany({
         where: { userId: ctx.userId },
         include: { recipients: { select: { status: true, openedAt: true, clickedAt: true } } },
-      }),
+      } as any),
       // Campaign performance (SMS)
       db.smsCampaign.findMany({
         where: { userId: ctx.userId },
         include: { recipients: { select: { status: true, repliedAt: true } } },
-      }),
+      } as any),
       // Email drip campaigns
-      db.emailDripCampaign.findMany({
+      (db as any).emailDripCampaign.findMany({
         where: { userId: ctx.userId },
         select: {
           status: true, totalEnrolled: true, totalCompleted: true,
@@ -238,13 +238,13 @@ export async function fetchComprehensiveStats(userId: string, whereClause: any) 
         select: { status: true, duration: true, direction: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 500,
-      }),
+      } as any),
       // Workflows
       db.workflow.findMany({
         where: { userId: ctx.userId },
         select: { status: true },
       }),
-      db.workflowEnrollment.findMany({
+      (db as any).workflowEnrollment.findMany({
         where: { workflow: { userId: ctx.userId } },
         select: { status: true },
       }),
@@ -252,17 +252,17 @@ export async function fetchComprehensiveStats(userId: string, whereClause: any) 
       db.deal.findMany({
         where: { userId: ctx.userId },
         include: { stage: { select: { name: true, probability: true } } },
-      }),
+      } as any),
       // Lead scoring
       db.lead.findMany({
         where: { userId: ctx.userId, leadScore: { not: null } },
         select: { leadScore: true, status: true },
-      }),
+      } as any),
       // Outbound calls
       db.outboundCall.findMany({
         where: { userId: ctx.userId },
         select: { status: true, completedAt: true },
-      }),
+      } as any),
     ]);
 
     const get = <T>(r: PromiseSettledResult<T>, fallback: T): T =>
@@ -388,12 +388,13 @@ export async function createReport(userId: string, params: any) {
   }
 
   const stats = statsResult.statistics;
+  if (!stats) throw new Error("No statistics available for report");
 
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
 
   // Fetch voice agent usage stats for business owner
-  const voiceAgents = await db.voiceAgent.findMany({
+  const voiceAgents: any[] = await db.voiceAgent.findMany({
     where: { userId: ctx.userId },
     select: {
       id: true,
@@ -403,12 +404,12 @@ export async function createReport(userId: string, params: any) {
         select: { callLogs: true, campaigns: true },
       },
     },
-  });
-  const aiEmployeeCounts = await db.userAIEmployee.groupBy({
+  } as any);
+  const aiEmployeeCounts: any[] = await db.userAIEmployee.groupBy({
     by: ['voiceAgentId'],
     where: { userId: ctx.userId, voiceAgentId: { not: null } },
     _count: { voiceAgentId: true },
-  });
+  } as any);
   const aiCountByAgent = Object.fromEntries(
     aiEmployeeCounts.map((r) => [r.voiceAgentId!, r._count.voiceAgentId])
   );
@@ -450,7 +451,7 @@ export async function createReport(userId: string, params: any) {
     }];
   }
 
-  const report = await db.aiGeneratedReport.create({
+  const report = await (db as any).aiGeneratedReport.create({
     data: {
       userId: ctx.userId,
       title: reportTitle,
@@ -497,7 +498,7 @@ export async function getRecentActivity(userId: string, params: any) {
       include: {
         stage: true,
       },
-    }),
+    } as any),
     db.campaign.findMany({
       where: { userId: ctx.userId },
       take: limit,
@@ -561,7 +562,7 @@ export async function getFollowUpPriority(userId: string, params: any) {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
 
-  const leads = await db.lead.findMany({
+  const leads: any[] = await db.lead.findMany({
     where: { userId: ctx.userId },
     include: {
       deals: { include: { stage: true }, take: 1, orderBy: { updatedAt: "desc" } },
@@ -569,13 +570,13 @@ export async function getFollowUpPriority(userId: string, params: any) {
       notes: { take: 1, orderBy: { createdAt: "desc" } },
     },
     take: Math.min(limit * 2, 100),
-  });
+  } as any);
 
-  const scored = leads.map((l) => {
+  const scored = leads.map((l: any) => {
     const lastNote = l.notes[0];
     const lastContact = lastNote?.createdAt;
     const openDeal = l.deals[0];
-    const urgentTask = l.tasks.find((t) => t.dueDate && new Date(t.dueDate) <= new Date(Date.now() + 24 * 60 * 60 * 1000));
+    const urgentTask = l.tasks.find((t: any) => t.dueDate && new Date(t.dueDate) <= new Date(Date.now() + 24 * 60 * 60 * 1000));
     let score = 0;
     if (urgentTask) score += 100;
     if (openDeal?.stage?.name?.toLowerCase()?.includes("proposal")) score += 50;
@@ -609,7 +610,7 @@ export async function getFollowUpSuggestions(userId: string, params: any) {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - daysAgo);
 
-  const leadsWithNotes = await db.lead.findMany({
+  const leadsWithNotes: any[] = await db.lead.findMany({
     where: { userId: ctx.userId },
     include: {
       notes: {
@@ -617,9 +618,9 @@ export async function getFollowUpSuggestions(userId: string, params: any) {
         take: 1,
       },
     },
-  });
+  } as any);
 
-  const noRecentContact = leadsWithNotes.filter((lead) => {
+  const noRecentContact = leadsWithNotes.filter((lead: any) => {
     const lastNote = lead.notes[0];
     if (!lastNote) return true;
     return new Date(lastNote.createdAt) < cutoff;
@@ -649,7 +650,7 @@ export async function getMeetingPrep(userId: string, params: any) {
 
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
-  const lead = await db.lead.findFirst({
+  const lead: any = await db.lead.findFirst({
     where: {
       userId: ctx.userId,
       OR: [
@@ -669,7 +670,7 @@ export async function getMeetingPrep(userId: string, params: any) {
         take: 5,
       },
     },
-  });
+  } as any);
 
   if (!lead) {
     throw new Error(`Contact "${contactName}" not found`);
@@ -684,9 +685,9 @@ export async function getMeetingPrep(userId: string, params: any) {
       email: lead.email,
       phone: lead.phone,
     },
-    recentNotes: lead.notes.map((n) => ({ content: n.content, date: n.createdAt })),
-    deals: lead.deals.map((d) => ({ title: d.title, value: d.value, stage: d.stage?.name })),
-    openTasks: lead.tasks.map((t) => ({ title: t.title, dueDate: t.dueDate })),
+    recentNotes: lead.notes.map((n: any) => ({ content: n.content, date: n.createdAt })),
+    deals: lead.deals.map((d: any) => ({ title: d.title, value: d.value, stage: d.stage?.name })),
+    openTasks: lead.tasks.map((t: any) => ({ title: t.title, dueDate: t.dueDate })),
     lastContact: lastNote?.createdAt,
   };
 
@@ -739,7 +740,7 @@ export async function getDailyBriefing(userId: string) {
       take: 5,
       orderBy: { value: "desc" },
       include: { stage: true, lead: true },
-    }),
+    } as any),
     db.lead.findMany({
       where: {
         userId: ctx.userId,
@@ -850,8 +851,8 @@ export async function getPaymentAnalytics(userId: string, params: any) {
   const [payments, invoices, cashTxns, fraudAlerts] = await Promise.all([
     db.payment.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { amount: true, status: true, paymentMethod: true, createdAt: true } }),
     db.invoice.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { totalAmount: true, status: true } }),
-    db.cashTransaction.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { amount: true, type: true } }).catch(() => []),
-    db.fraudAlert.count({ where: { userId: ctx.userId, status: 'OPEN' } }).catch(() => 0),
+    (db as any).cashTransaction.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { amount: true, type: true } }).catch(() => []),
+    (db as any).fraudAlert.count({ where: { userId: ctx.userId, status: 'OPEN' } }).catch(() => 0),
   ]);
 
   const succeeded = payments.filter((p: any) => p.status === 'SUCCEEDED');
@@ -900,7 +901,7 @@ export async function listFraudAlerts(userId: string, params: any) {
   const db = getCrmDb(ctx);
   const where: any = { userId: ctx.userId };
   if (statusFilter) where.status = statusFilter;
-  const alerts = await db.fraudAlert.findMany({ where, orderBy: { createdAt: 'desc' }, take: 20 }).catch(() => []);
+  const alerts = await (db as any).fraudAlert.findMany({ where, orderBy: { createdAt: 'desc' }, take: 20 }).catch(() => []);
   return { success: true, statistics: { totalAlerts: alerts.length, alerts: alerts.map((a: any) => ({ id: a.id, type: a.type, severity: a.severity, status: a.status, amount: a.amount, date: a.createdAt })) }, message: `${alerts.length} fraud alert(s) found${statusFilter ? ` with status ${statusFilter}` : ''}.` };
 }
 
@@ -922,7 +923,7 @@ export async function checkCashFlow(userId: string, params: any) {
 export async function checkStockLevels(userId: string, params: any) {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
-  const items = await db.inventoryItem.findMany({ where: { userId: ctx.userId }, select: { id: true, name: true, quantity: true, minQuantity: true, price: true, status: true } }).catch(() => []);
+  const items = await (db as any).inventoryItem.findMany({ where: { userId: ctx.userId }, select: { id: true, name: true, quantity: true, minQuantity: true, price: true, status: true } }).catch(() => []);
   let filtered = items;
   if (params?.filter === 'low_stock') filtered = items.filter((i: any) => i.quantity <= (i.minQuantity || 5) && i.quantity > 0);
   else if (params?.filter === 'out_of_stock') filtered = items.filter((i: any) => i.quantity === 0);
@@ -936,7 +937,7 @@ export async function getBestSellers(userId: string, params: any) {
   const since = new Date(Date.now() - days * 86400000);
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
-  const orders = await db.orderItem.findMany({ where: { order: { userId: ctx.userId, createdAt: { gte: since } } }, include: { product: { select: { name: true, price: true } } } }).catch(() => []);
+  const orders = await (db as any).orderItem.findMany({ where: { order: { userId: ctx.userId, createdAt: { gte: since } } }, include: { product: { select: { name: true, price: true } } } }).catch(() => []);
   const productMap: Record<string, { name: string; revenue: number; qty: number }> = {};
   orders.forEach((oi: any) => { const n = oi.product?.name || 'Unknown'; if (!productMap[n]) productMap[n] = { name: n, revenue: 0, qty: 0 }; productMap[n].revenue += (oi.price || 0) * (oi.quantity || 1); productMap[n].qty += oi.quantity || 1; });
   const sorted = Object.values(productMap).sort((a, b) => params?.sortBy === 'quantity' ? b.qty - a.qty : b.revenue - a.revenue);
@@ -948,8 +949,8 @@ export async function trackOrder(userId: string, params: any) {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
   let order: any = null;
-  if (params?.orderId) order = await db.order.findFirst({ where: { userId: ctx.userId, id: params.orderId }, include: { items: { include: { product: { select: { name: true } } } } } }).catch(() => null);
-  if (!order && params?.customerName) order = await db.order.findFirst({ where: { userId: ctx.userId, customerName: { contains: params.customerName, mode: 'insensitive' } }, include: { items: { include: { product: { select: { name: true } } } } }, orderBy: { createdAt: 'desc' } }).catch(() => null);
+  if (params?.orderId) order = await (db as any).order.findFirst({ where: { userId: ctx.userId, id: params.orderId }, include: { items: { include: { product: { select: { name: true } } } } } }).catch(() => null);
+  if (!order && params?.customerName) order = await (db as any).order.findFirst({ where: { userId: ctx.userId, customerName: { contains: params.customerName, mode: 'insensitive' } }, include: { items: { include: { product: { select: { name: true } } } } }, orderBy: { createdAt: 'desc' } }).catch(() => null);
   if (!order) return { success: false, message: 'Order not found.' };
   return { success: true, statistics: { order: { id: order.id, status: order.status, total: order.total, items: order.items?.map((i: any) => ({ product: i.product?.name, qty: i.quantity, price: i.price })), createdAt: order.createdAt } }, message: `Order ${order.id}: Status ${order.status}, Total $${(order.total || 0).toLocaleString()}, ${order.items?.length || 0} items. Created ${new Date(order.createdAt).toLocaleDateString()}.` };
 }
@@ -958,8 +959,8 @@ export async function getLowStockAlerts(userId: string) {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
   const [items, alerts] = await Promise.all([
-    db.inventoryItem.findMany({ where: { userId: ctx.userId }, select: { name: true, quantity: true, minQuantity: true } }).catch(() => []),
-    db.inventoryAlert.findMany({ where: { userId: ctx.userId, status: 'ACTIVE' }, select: { type: true, createdAt: true }, take: 20 }).catch(() => []),
+    (db as any).inventoryItem.findMany({ where: { userId: ctx.userId }, select: { name: true, quantity: true, minQuantity: true } }).catch(() => []),
+    (db as any).inventoryAlert.findMany({ where: { userId: ctx.userId, status: 'ACTIVE' }, select: { type: true, createdAt: true }, take: 20 }).catch(() => []),
   ]);
   const lowStock = items.filter((i: any) => i.quantity <= (i.minQuantity || 5));
   return { success: true, statistics: { lowStockItems: lowStock.map((i: any) => ({ name: i.name, quantity: i.quantity, minQuantity: i.minQuantity })), activeAlerts: alerts.length }, message: `${lowStock.length} items need restocking: ${lowStock.slice(0, 5).map((i: any) => `${i.name} (${i.quantity}/${i.minQuantity})`).join(', ')}${lowStock.length > 5 ? ` and ${lowStock.length - 5} more` : ''}.` };
@@ -981,8 +982,8 @@ export async function getVoiceAIAnalytics(userId: string, params: any) {
   const db = getCrmDb(ctx);
   const since = new Date(Date.now() - days * 86400000);
   const [agents, usage, calls] = await Promise.all([
-    db.voiceAgent.findMany({ where: { userId: ctx.userId }, select: { name: true, status: true, totalCalls: true } }),
-    db.voiceUsage.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { minutes: true, cost: true } }).catch(() => []),
+    db.voiceAgent.findMany({ where: { userId: ctx.userId }, select: { name: true, status: true, totalCalls: true } } as any),
+    (db as any).voiceUsage.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { minutes: true, cost: true } }).catch(() => []),
     db.callLog.findMany({ where: { userId: ctx.userId, createdAt: { gte: since } }, select: { status: true, duration: true } }),
   ]);
   const totalMin = usage.reduce((s: number, u: any) => s + (u.minutes || 0), 0);
@@ -999,8 +1000,8 @@ export async function getConversationAnalytics(userId: string, params: any) {
   const db = getCrmDb(ctx);
   const since = new Date(Date.now() - days * 86400000);
   const [conversations, messages] = await Promise.all([
-    db.conversation.findMany({ where: { userId: ctx.userId }, select: { id: true, channel: true, status: true, lastMessageAt: true } }),
-    db.conversationMessage.findMany({ where: { conversation: { userId: ctx.userId }, sentAt: { gte: since } }, select: { direction: true, channel: true, sentAt: true } }),
+    db.conversation.findMany({ where: { userId: ctx.userId }, select: { id: true, channel: true, status: true, lastMessageAt: true } } as any),
+    db.conversationMessage.findMany({ where: { conversation: { userId: ctx.userId }, sentAt: { gte: since } }, select: { direction: true, channel: true, sentAt: true } } as any),
   ]);
   const channelCounts: Record<string, number> = {};
   messages.forEach((m: any) => { const c = m.channel || 'unknown'; channelCounts[c] = (channelCounts[c] || 0) + 1; });
@@ -1012,7 +1013,7 @@ export async function getConversationAnalytics(userId: string, params: any) {
 export async function getDeliveryAnalytics(userId: string) {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
-  const orders = await db.deliveryOrder?.findMany?.({ where: { userId: ctx.userId }, select: { status: true, createdAt: true } })?.catch(() => []) || [];
+  const orders = await (db as any).deliveryOrder?.findMany?.({ where: { userId: ctx.userId }, select: { status: true, createdAt: true } })?.catch(() => []) || [];
   const delivered = orders.filter((o: any) => o.status === 'DELIVERED').length;
   const pending = orders.filter((o: any) => o.status === 'PENDING' || o.status === 'IN_TRANSIT').length;
   return { success: true, statistics: { totalOrders: orders.length, delivered, pending, deliveryRate: orders.length > 0 ? Math.round((delivered / orders.length) * 100) : 0 }, message: `${orders.length} delivery orders: ${delivered} delivered, ${pending} pending. Completion rate: ${orders.length > 0 ? Math.round((delivered / orders.length) * 100) : 0}%.` };
@@ -1023,7 +1024,7 @@ export async function manageReservations(userId: string, params: any) {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
   if (action === 'stats' || action === 'peak_hours') {
-    const reservations = await db.reservation.findMany({ where: { userId: ctx.userId }, select: { status: true, partySize: true, date: true } }).catch(() => []);
+    const reservations = await (db as any).reservation.findMany({ where: { userId: ctx.userId }, select: { status: true, partySize: true, date: true } }).catch(() => []);
     const noShows = reservations.filter((r: any) => r.status === 'NO_SHOW').length;
     const hourBuckets: Record<number, number> = {};
     reservations.forEach((r: any) => { const h = new Date(r.date).getHours(); hourBuckets[h] = (hourBuckets[h] || 0) + 1; });
@@ -1033,14 +1034,14 @@ export async function manageReservations(userId: string, params: any) {
   const where: any = { userId: ctx.userId };
   if (action === 'upcoming') where.date = { gte: new Date() };
   if (params?.date) { const d = new Date(params.date); where.date = { gte: d, lt: new Date(d.getTime() + 86400000) }; }
-  const reservations = await db.reservation.findMany({ where, orderBy: { date: 'desc' }, take: 20, select: { id: true, status: true, partySize: true, date: true, guestName: true } }).catch(() => []);
+  const reservations = await (db as any).reservation.findMany({ where, orderBy: { date: 'desc' }, take: 20, select: { id: true, status: true, partySize: true, date: true, guestName: true } }).catch(() => []);
   return { success: true, statistics: { reservations: reservations.map((r: any) => ({ guest: r.guestName, party: r.partySize, date: r.date, status: r.status })) }, message: `${reservations.length} reservation(s) found.${reservations.slice(0, 5).map((r: any) => ` ${r.guestName || 'Guest'} (${r.partySize}) - ${new Date(r.date).toLocaleString()}`).join(';')}` };
 }
 
 export async function manageTables(userId: string, params: any) {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
-  const tables = await db.restaurantTable.findMany({ where: { userId: ctx.userId }, select: { id: true, name: true, capacity: true, status: true } }).catch(() => []);
+  const tables = await (db as any).restaurantTable.findMany({ where: { userId: ctx.userId }, select: { id: true, name: true, capacity: true, status: true } }).catch(() => []);
   const available = tables.filter((t: any) => t.status === 'AVAILABLE');
   const occupied = tables.filter((t: any) => t.status === 'OCCUPIED');
   return { success: true, statistics: { total: tables.length, available: available.length, occupied: occupied.length, totalCapacity: tables.reduce((s: number, t: any) => s + (t.capacity || 0), 0), tables: tables.map((t: any) => ({ name: t.name, capacity: t.capacity, status: t.status })) }, message: `${tables.length} tables: ${available.length} available, ${occupied.length} occupied. Total capacity: ${tables.reduce((s: number, t: any) => s + (t.capacity || 0), 0)} seats.` };
@@ -1052,19 +1053,19 @@ export async function getTeamPerformance(userId: string, params: any) {
   const db = getCrmDb(ctx);
   const since = new Date(Date.now() - days * 86400000);
   const [members, tasks, deals] = await Promise.all([
-    db.teamMember.findMany({ where: { userId: ctx.userId }, select: { id: true, role: true, status: true, user: { select: { name: true, email: true } } } }).catch(() => []),
+    (db as any).teamMember.findMany({ where: { userId: ctx.userId }, select: { id: true, role: true, status: true, user: { select: { name: true, email: true } } } }).catch(() => []),
     db.task.findMany({ where: { userId: ctx.userId, completedAt: { gte: since } }, select: { assignedToId: true } }),
     db.deal.findMany({ where: { userId: ctx.userId, actualCloseDate: { gte: since } }, select: { assignedToId: true, value: true } }),
   ]);
   const perf = members.map((m: any) => ({ name: m.user?.name || m.user?.email || 'Unknown', role: m.role, tasksCompleted: tasks.filter((t: any) => t.assignedToId === m.id).length, dealsClosed: deals.filter((d: any) => d.assignedToId === m.id).length, revenue: deals.filter((d: any) => d.assignedToId === m.id).reduce((s: number, d: any) => s + (d.value || 0), 0) }));
-  return { success: true, triggerVisualization: true, statistics: { teamSize: members.length, performance: perf }, message: `Team of ${members.length} (last ${days}d): ${perf.map((p) => `${p.name}: ${p.tasksCompleted} tasks, ${p.dealsClosed} deals, $${p.revenue.toLocaleString()}`).join('; ')}`, dynamicCharts: [{ chartType: 'bar', dimension: 'team_tasks', title: 'Tasks Completed by Team', data: perf.map((p) => ({ name: p.name, value: p.tasksCompleted })) }] };
+  return { success: true, triggerVisualization: true, statistics: { teamSize: members.length, performance: perf }, message: `Team of ${members.length} (last ${days}d): ${perf.map((p: any) => `${p.name}: ${p.tasksCompleted} tasks, ${p.dealsClosed} deals, $${p.revenue.toLocaleString()}`).join('; ')}`, dynamicCharts: [{ chartType: 'bar', dimension: 'team_tasks', title: 'Tasks Completed by Team', data: perf.map((p: any) => ({ name: p.name, value: p.tasksCompleted })) }] };
 }
 
 export async function getAuditLog(userId: string, params: any) {
   const limit = params?.limit || 20;
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
-  const logs = await db.auditLog.findMany({ where: { userId: ctx.userId }, orderBy: { createdAt: 'desc' }, take: limit, select: { action: true, details: true, createdAt: true } }).catch(() => []);
+  const logs = await db.auditLog.findMany({ where: { userId: ctx.userId }, orderBy: { createdAt: 'desc' }, take: limit, select: { action: true, details: true, createdAt: true } } as any).catch(() => []);
   return { success: true, statistics: { entries: logs.map((l: any) => ({ action: l.action, details: l.details, time: l.createdAt })) }, message: `${logs.length} recent activities: ${logs.slice(0, 5).map((l: any) => `${l.action} (${new Date(l.createdAt).toLocaleString()})`).join('; ')}` };
 }
 
@@ -1072,9 +1073,9 @@ export async function checkIntegrations(userId: string) {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
   const [channels, calendars, paymentProviders] = await Promise.all([
-    db.channelConnection.findMany({ where: { userId: ctx.userId }, select: { channel: true, status: true, lastSyncAt: true } }),
-    db.calendarConnection.findMany({ where: { userId: ctx.userId }, select: { provider: true, status: true, lastSyncAt: true } }),
-    db.paymentProviderSettings.findMany({ where: { userId: ctx.userId }, select: { provider: true, isActive: true } }).catch(() => []),
+    db.channelConnection.findMany({ where: { userId: ctx.userId }, select: { channel: true, status: true, lastSyncAt: true } } as any),
+    (db as any).calendarConnection.findMany({ where: { userId: ctx.userId }, select: { provider: true, status: true, lastSyncAt: true } }),
+    (db as any).paymentProviderSettings.findMany({ where: { userId: ctx.userId }, select: { provider: true, isActive: true } }).catch(() => []),
   ]);
   const all = [...channels.map((c: any) => ({ name: c.channel, type: 'channel', status: c.status, lastSync: c.lastSyncAt })), ...calendars.map((c: any) => ({ name: c.provider, type: 'calendar', status: c.status, lastSync: c.lastSyncAt })), ...paymentProviders.map((p: any) => ({ name: p.provider, type: 'payment', status: p.isActive ? 'ACTIVE' : 'INACTIVE' }))];
   const active = all.filter((i) => i.status === 'ACTIVE' || i.status === 'CONNECTED');
@@ -1085,7 +1086,7 @@ export async function manageReviews(userId: string, params: any) {
   const action = params?.action || 'stats';
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
-  const reviews = await db.review.findMany({ where: { campaign: { userId: ctx.userId } }, orderBy: { createdAt: 'desc' }, take: params?.limit || 50, select: { rating: true, comment: true, customerName: true, platform: true, createdAt: true } }).catch(() => []);
+  const reviews = await (db as any).review.findMany({ where: { campaign: { userId: ctx.userId } }, orderBy: { createdAt: 'desc' }, take: params?.limit || 50, select: { rating: true, comment: true, customerName: true, platform: true, createdAt: true } }).catch(() => []);
   const avg = reviews.length > 0 ? (reviews.reduce((s: number, r: any) => s + (r.rating || 0), 0) / reviews.length).toFixed(1) : '0';
   const dist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   reviews.forEach((r: any) => { if (r.rating >= 1 && r.rating <= 5) dist[Math.round(r.rating)]++; });
@@ -1096,7 +1097,7 @@ export async function manageReviews(userId: string, params: any) {
 export async function getReferralStats(userId: string) {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
-  const referrals = await db.referral.findMany({ where: { referrerId: userId }, select: { status: true, rewardAmount: true, createdAt: true } }).catch(() => []);
+  const referrals = await (db as any).referral.findMany({ where: { referrerId: userId }, select: { status: true, rewardAmount: true, createdAt: true } }).catch(() => []);
   const converted = referrals.filter((r: any) => r.status === 'CONVERTED' || r.status === 'REWARDED').length;
   const totalRewards = referrals.reduce((s: number, r: any) => s + (r.rewardAmount || 0), 0);
   return { success: true, statistics: { total: referrals.length, converted, conversionRate: referrals.length > 0 ? Math.round((converted / referrals.length) * 100) : 0, totalRewards }, message: `Referral program: ${referrals.length} total, ${converted} converted (${referrals.length > 0 ? Math.round((converted / referrals.length) * 100) : 0}%). Total rewards: $${totalRewards.toLocaleString()}.` };
@@ -1110,27 +1111,27 @@ export async function getIndustryAnalytics(userId: string, params: any) {
 
   if (industry === 'REAL_ESTATE') {
     const [props, fsbo, cma, presentations] = await Promise.all([
-      db.rEProperty.count({ where: { userId: ctx.userId } }).catch(() => 0),
-      db.rEFSBOListing.count({ where: { userId: ctx.userId } }).catch(() => 0),
-      db.rECMAReport.count({ where: { userId: ctx.userId } }).catch(() => 0),
-      db.rEListingPresentation.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      (db as any).rEProperty.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      (db as any).rEFSBOListing.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      (db as any).rECMAReport.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      (db as any).rEListingPresentation.count({ where: { userId: ctx.userId } }).catch(() => 0),
     ]);
     return { success: true, statistics: { industry, properties: props, fsboLeads: fsbo, cmaReports: cma, presentations }, message: `Real Estate: ${props} properties, ${fsbo} FSBO leads, ${cma} CMA reports, ${presentations} listing presentations.` };
   }
 
-  if (industry === 'RESTAURANT' || industry === 'FOOD_SERVICE') {
+  if (industry === 'RESTAURANT' || (industry as string) === 'FOOD_SERVICE') {
     const [reservations, tables] = await Promise.all([
-      db.reservation.count({ where: { userId: ctx.userId } }).catch(() => 0),
-      db.restaurantTable.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      (db as any).reservation.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      (db as any).restaurantTable.count({ where: { userId: ctx.userId } }).catch(() => 0),
     ]);
     return { success: true, statistics: { industry, reservations, tables }, message: `Restaurant: ${reservations} reservations, ${tables} tables.` };
   }
 
-  if (industry === 'SPORTS_CLUB' || industry === 'YOUTH_SPORTS') {
+  if (industry === 'SPORTS_CLUB' || (industry as string) === 'YOUTH_SPORTS') {
     const [regs, programs, teams] = await Promise.all([
-      db.clubOSRegistration.count({ where: { program: { userId: ctx.userId } } }).catch(() => 0),
-      db.clubOSProgram.count({ where: { userId: ctx.userId } }).catch(() => 0),
-      db.clubOSTeam.count({ where: { division: { userId: ctx.userId } } }).catch(() => 0),
+      (db as any).clubOSRegistration.count({ where: { program: { userId: ctx.userId } } }).catch(() => 0),
+      (db as any).clubOSProgram.count({ where: { userId: ctx.userId } }).catch(() => 0),
+      (db as any).clubOSTeam.count({ where: { division: { userId: ctx.userId } } }).catch(() => 0),
     ]);
     return { success: true, statistics: { industry, registrations: regs, programs, teams }, message: `ClubOS: ${regs} registrations, ${programs} programs, ${teams} teams.` };
   }
@@ -1152,13 +1153,13 @@ export async function getBusinessScore(userId: string) {
     db.deal.findMany({ where: { userId: ctx.userId }, select: { value: true, actualCloseDate: true, stageId: true } }),
     db.task.findMany({ where: { userId: ctx.userId }, select: { status: true } }),
     db.payment.findMany({ where: { userId: ctx.userId, status: 'SUCCEEDED' }, select: { amount: true } }),
-    db.review.findMany({ where: { campaign: { userId: ctx.userId } }, select: { rating: true } }).catch(() => []),
+    (db as any).review.findMany({ where: { campaign: { userId: ctx.userId } }, select: { rating: true } }).catch(() => []),
   ]);
 
   const revenue = payments.reduce((s, p) => s + (p.amount || 0), 0);
   const closedDeals = deals.filter((d) => d.actualCloseDate).length;
   const completedTasks = tasks.filter((t: any) => t.status === 'COMPLETED').length;
-  const avgRating = reviews.length > 0 ? reviews.reduce((s, r: any) => s + (r.rating || 0), 0) / reviews.length : 0;
+  const avgRating = reviews.length > 0 ? reviews.reduce((s: any, r: any) => s + (r.rating || 0), 0) / reviews.length : 0;
 
   const scores = {
     leadHealth: Math.min(leads > 0 ? Math.round((leads / 50) * 100) : 0, 100),
@@ -1183,10 +1184,10 @@ export async function getCostOptimization(userId: string) {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
   const [voiceUsage, smsCampaigns, payments, subscription] = await Promise.all([
-    db.voiceUsage.findMany({ where: { userId: ctx.userId }, select: { minutes: true, cost: true, agentType: true }, orderBy: { createdAt: 'desc' }, take: 100 }).catch(() => []),
+    (db as any).voiceUsage.findMany({ where: { userId: ctx.userId }, select: { minutes: true, cost: true, agentType: true }, orderBy: { createdAt: 'desc' }, take: 100 }).catch(() => []),
     db.smsCampaign.findMany({ where: { userId: ctx.userId }, select: { totalSent: true, totalReplied: true } }).catch(() => []),
     db.payment.findMany({ where: { userId: ctx.userId, status: 'SUCCEEDED' }, select: { amount: true }, orderBy: { createdAt: 'desc' }, take: 100 }),
-    db.userSubscription.findFirst({ where: { userId: ctx.userId }, select: { plan: true, amount: true } }).catch(() => null),
+    (db as any).userSubscription.findFirst({ where: { userId: ctx.userId }, select: { plan: true, amount: true } }).catch(() => null),
   ]);
 
   const suggestions: string[] = [];

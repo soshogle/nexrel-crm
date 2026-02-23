@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * Parent Signup API
@@ -31,10 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!email || !password || !name || !clubCode) {
-      return NextResponse.json(
-        { error: 'Missing required fields: email, password, name, clubCode' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: email, password, name, clubCode');
     }
 
     // Check if email already exists
@@ -43,10 +41,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'Email already registered. Please sign in instead.' },
-        { status: 409 }
-      );
+      return apiErrors.conflict('Email already registered. Please sign in instead.');
     }
 
     // Find the club owner by club code or subdomain
@@ -61,10 +56,7 @@ export async function POST(request: NextRequest) {
       });
       
       if (!clubOwner) {
-        return NextResponse.json(
-          { error: 'Invalid subdomain. Club not found.' },
-          { status: 404 }
-        );
+        return apiErrors.notFound('Invalid subdomain. Club not found.');
       }
     } else {
       // Traditional club code lookup
@@ -74,10 +66,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!clubOwner) {
-        return NextResponse.json(
-          { error: 'Invalid club code. Please check with your club administrator.' },
-          { status: 404 }
-        );
+        return apiErrors.notFound('Invalid club code. Please check with your club administrator.');
       }
     }
 
@@ -136,9 +125,6 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error: any) {
     console.error('Parent signup error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create parent account' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create parent account');
   }
 }

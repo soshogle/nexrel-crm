@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { clubOSPaymentService } from '@/lib/clubos-payment-service';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/clubos/payments - Get payment history
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!household) {
-      return NextResponse.json({ error: 'Household not found' }, { status: 404 });
+      return apiErrors.notFound('Household not found');
     }
 
     let payments;
@@ -43,10 +44,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ payments });
   } catch (error: any) {
     console.error('Error fetching payments:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch payments' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch payments');
   }
 }
 
@@ -55,17 +53,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { registrationId, amount, description, metadata } = body;
 
     if (!registrationId || !amount) {
-      return NextResponse.json(
-        { error: 'Missing required fields: registrationId, amount' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: registrationId, amount');
     }
 
     // Get household for the user
@@ -75,7 +70,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!household) {
-      return NextResponse.json({ error: 'Household not found' }, { status: 404 });
+      return apiErrors.notFound('Household not found');
     }
 
     // Verify registration belongs to this household
@@ -84,7 +79,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!registration || registration.householdId !== household.id) {
-      return NextResponse.json({ error: 'Registration not found or unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Registration not found or unauthorized');
     }
 
     // Create payment intent
@@ -102,9 +97,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating payment intent:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create payment intent' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create payment intent');
   }
 }

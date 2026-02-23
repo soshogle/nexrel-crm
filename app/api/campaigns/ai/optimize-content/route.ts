@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { aiCampaignGenerator } from '@/lib/ai-campaign-generator';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -20,17 +21,11 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!content || !contentType) {
-      return NextResponse.json(
-        { error: 'Content and content type are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Content and content type are required');
     }
 
     if (!['email', 'sms'].includes(contentType)) {
-      return NextResponse.json(
-        { error: 'Content type must be "email" or "sms"' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Content type must be "email" or "sms"');
     }
 
     // Optimize content using AI
@@ -43,9 +38,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ result });
   } catch (error) {
     console.error('Error optimizing content:', error);
-    return NextResponse.json(
-      { error: 'Failed to optimize content' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to optimize content');
   }
 }

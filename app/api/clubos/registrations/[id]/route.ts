@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * ClubOS Registration Detail API
@@ -24,10 +25,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const registration = await prisma.clubOSRegistration.findUnique({
@@ -42,10 +40,7 @@ export async function GET(
     });
 
     if (!registration) {
-      return NextResponse.json(
-        { error: 'Registration not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Registration not found');
     }
 
     return NextResponse.json({
@@ -55,10 +50,7 @@ export async function GET(
   } catch (error: unknown) {
     console.error('Registration fetch error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return apiErrors.internal(message);
   }
 }
 
@@ -73,10 +65,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -110,10 +99,7 @@ export async function PUT(
     });
 
     if (!currentRegistration) {
-      return NextResponse.json(
-        { error: 'Registration not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Registration not found');
     }
 
     // Handle status transitions
@@ -216,10 +202,7 @@ export async function PUT(
   } catch (error: unknown) {
     console.error('Registration update error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return apiErrors.internal(message);
   }
 }
 
@@ -234,10 +217,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     // Get registration to check if we need to decrement count
@@ -246,10 +226,7 @@ export async function DELETE(
     });
 
     if (!registration) {
-      return NextResponse.json(
-        { error: 'Registration not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Registration not found');
     }
 
     // Delete registration (cascades to waitlist)
@@ -274,9 +251,6 @@ export async function DELETE(
   } catch (error: unknown) {
     console.error('Registration deletion error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return apiErrors.internal(message);
   }
 }

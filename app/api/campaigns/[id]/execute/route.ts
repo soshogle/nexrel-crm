@@ -5,6 +5,7 @@ import { campaignService, getCrmDb, leadService } from '@/lib/dal';
 import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
 import { emailService } from '@/lib/email-service';
 import { sendSMS } from '@/lib/twilio';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,40 +18,31 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const campaign = await campaignService.findUnique(ctx, params.id);
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     if (campaign.status === 'RUNNING') {
-      return NextResponse.json(
-        { error: 'Campaign is already running' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign is already running');
     }
 
     if (campaign.status === 'COMPLETED') {
-      return NextResponse.json(
-        { error: 'Campaign is already completed' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign is already completed');
     }
 
     // Get recipients based on targetAudience
     const recipients = await getRecipients(ctx, campaign.targetAudience as any);
 
     if (recipients.length === 0) {
-      return NextResponse.json(
-        { error: 'No recipients found matching the target audience' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('No recipients found matching the target audience');
     }
 
     // Create campaign messages for each recipient
@@ -93,10 +85,7 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Error executing campaign:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to execute campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to execute campaign');
   }
 }
 
@@ -108,11 +97,11 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
@@ -120,15 +109,12 @@ export async function PATCH(
     const campaign = await campaignService.findUnique(ctx, params.id);
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     if (action === 'pause') {
       if (campaign.status !== 'RUNNING') {
-        return NextResponse.json(
-          { error: 'Can only pause running campaigns' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Can only pause running campaigns');
       }
 
       await campaignService.update(ctx, params.id, { status: 'PAUSED' });
@@ -138,10 +124,7 @@ export async function PATCH(
 
     if (action === 'resume') {
       if (campaign.status !== 'PAUSED') {
-        return NextResponse.json(
-          { error: 'Can only resume paused campaigns' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Can only resume paused campaigns');
       }
 
       await campaignService.update(ctx, params.id, { status: 'RUNNING' });
@@ -154,13 +137,10 @@ export async function PATCH(
       return NextResponse.json({ success: true, message: 'Campaign resumed' });
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    return apiErrors.badRequest('Invalid action');
   } catch (error: any) {
     console.error('Error updating campaign status:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update campaign');
   }
 }
 
@@ -180,7 +160,7 @@ async function getRecipients(
     where.tags = { hasSome: targetAudience.tags };
   }
 
-  const leads = await leadService.findMany(ctx, {
+  const leads = await leadService.findMany(ctx as any, {
     where,
     select: {
       id: true,
@@ -213,10 +193,10 @@ async function processCampaignMessages(
 ) {
   console.log(`🚀 Starting campaign message processing for campaign: ${campaignId}`);
 
-  const db = getCrmDb(ctx);
+  const db = getCrmDb(ctx as any);
 
   // Get campaign details
-  const campaign = await campaignService.findUnique(ctx, campaignId);
+  const campaign = await campaignService.findUnique(ctx as any, campaignId);
 
   if (!campaign) {
     console.error('Campaign not found');
@@ -379,7 +359,7 @@ async function processCampaignMessages(
   if (remainingMessages > 0) {
     // Continue processing
     console.log(`${remainingMessages} messages remaining, continuing...`);
-    setTimeout(() => processCampaignMessages(campaignId, userId), 2000);
+    setTimeout(() => processCampaignMessages(campaignId, ctx), 2000);
   } else {
     // Mark campaign as completed
     console.log(`✅ Campaign ${campaignId} completed`);
