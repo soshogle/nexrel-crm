@@ -40,6 +40,7 @@ import { format } from 'date-fns'
 import { NotesSection } from '@/components/notes/notes-section'
 import { MessagesSection } from '@/components/messages/messages-section'
 import { MakeCallDialog } from '@/components/voice-agents/make-call-dialog'
+import { SendEmailDialog } from '@/components/leads/send-email-dialog'
 import { RelationshipGraphView } from '@/app/components/relationship-graph-view'
 import { AIInsightsPanel } from '@/app/components/ai-insights-panel'
 import { LeadImagingSection } from './lead-imaging-section'
@@ -99,6 +100,7 @@ export function LeadDetail({ lead }: LeadDetailProps) {
   const [currentStatus, setCurrentStatus] = useState(lead.status)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [showCallDialog, setShowCallDialog] = useState(false)
+  const [showEmailDialog, setShowEmailDialog] = useState(false)
   const [summarizingId, setSummarizingId] = useState<string | null>(null)
 
   const getStatusColor = (status: string) => {
@@ -487,11 +489,13 @@ export function LeadDetail({ lead }: LeadDetailProps) {
                 </Button>
                 
                 {lead.email && (
-                  <Button asChild variant="outline" className="w-full justify-start">
-                    <a href={`mailto:${lead.email}`}>
-                      <Mail className="h-4 w-4 mr-2" />
-                      Send Email
-                    </a>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setShowEmailDialog(true)}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Send Email
                   </Button>
                 )}
                 
@@ -585,6 +589,17 @@ export function LeadDetail({ lead }: LeadDetailProps) {
         defaultPurpose={`Follow up with ${lead.businessName}`}
         leadId={lead.id}
       />
+
+      {/* Send Email Choice Dialog */}
+      {lead.email && (
+        <SendEmailDialog
+          open={showEmailDialog}
+          onOpenChange={setShowEmailDialog}
+          email={lead.email}
+          leadId={lead.id}
+          leadName={lead.contactPerson || lead.businessName}
+        />
+      )}
     </div>
   )
 }

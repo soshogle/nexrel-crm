@@ -22,8 +22,8 @@ export async function POST(request: NextRequest) {
       return apiErrors.badRequest('Location and category are required')
     }
 
-    // Get user's Google Places API key
-    const apiKey = await prisma.apiKey.findFirst({
+    // Try user's stored key first, fall back to global env key
+    const userApiKey = await prisma.apiKey.findFirst({
       where: {
         userId: session.user.id,
         service: 'google_places',
@@ -31,13 +31,15 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    if (!apiKey) {
+    const resolvedKey = userApiKey?.keyValue || process.env.GOOGLE_MAPS_API_KEY
+
+    if (!resolvedKey) {
       return apiErrors.badRequest('Google Places API key not configured')
     }
 
     // Search for places using Google Places API
     const query = `${category} in ${location}`
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${apiKey.keyValue}`
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${resolvedKey}`
 
     const response = await fetch(searchUrl)
     const data = await response.json()
@@ -55,7 +57,7 @@ export async function POST(request: NextRequest) {
     
     for (const place of (data.results || []).slice(0, 10)) { // Limit to 10 results
       try {
-        const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=place_id,name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,business_status,types&key=${apiKey.keyValue}`
+        const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=place_id,name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,business_status,types&key=${resolvedKey}`
         
         const detailsResponse = await fetch(detailsUrl)
         const detailsData = await detailsResponse.json()

@@ -51,6 +51,7 @@ import {
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { MakeCallDialog } from '@/components/voice-agents/make-call-dialog'
+import { SendEmailDialog } from '@/components/leads/send-email-dialog'
 import LinkedInScraperDialog from '@/components/linkedin-scraper/linkedin-scraper-dialog'
 import SocialMediaScraperDialog from '@/components/leads/social-media-scraper-dialog'
 import { LeadResearchCard } from '@/components/leads/lead-research-card'
@@ -87,11 +88,18 @@ export function LeadsList({ leads }: LeadsListProps) {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [linkedInDialogOpen, setLinkedInDialogOpen] = useState(false)
   const [socialMediaDialogOpen, setSocialMediaDialogOpen] = useState(false)
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
+  const [emailDialogLead, setEmailDialogLead] = useState<Lead | null>(null)
   const [enrichingLeads, setEnrichingLeads] = useState<Set<string>>(new Set())
 
   const handleMakeCall = (lead: Lead) => {
     setSelectedLead(lead)
     setCallDialogOpen(true)
+  }
+
+  const handleSendEmail = (lead: Lead) => {
+    setEmailDialogLead(lead)
+    setEmailDialogOpen(true)
   }
 
   const handleLinkedInScraperSuccess = () => {
@@ -325,6 +333,17 @@ export function LeadsList({ leads }: LeadsListProps) {
                         )}
                         Enrich
                       </Button>
+                      {lead.email && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => { e.preventDefault(); handleSendEmail(lead); }}
+                          className="flex-1"
+                        >
+                          <Mail className="h-4 w-4 mr-1" />
+                          Email
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -398,6 +417,16 @@ export function LeadsList({ leads }: LeadsListProps) {
                                 <Wand2 className="h-4 w-4" />
                               )}
                             </Button>
+                            {lead.email && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSendEmail(lead)}
+                                title="Send email"
+                              >
+                                <Mail className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -642,6 +671,17 @@ export function LeadsList({ leads }: LeadsListProps) {
         onOpenChange={setSocialMediaDialogOpen}
         onSuccess={handleSocialMediaScraperSuccess}
       />
+
+      {/* Send Email Choice Dialog */}
+      {emailDialogLead?.email && (
+        <SendEmailDialog
+          open={emailDialogOpen}
+          onOpenChange={setEmailDialogOpen}
+          email={emailDialogLead.email}
+          leadId={emailDialogLead.id}
+          leadName={emailDialogLead.contactPerson || emailDialogLead.businessName}
+        />
+      )}
     </div>
   )
 }

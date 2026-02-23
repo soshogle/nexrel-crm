@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { PlaceAutocomplete } from '@/components/ui/place-autocomplete'
 import { 
   Loader2, 
   AlertCircle, 
@@ -17,7 +18,6 @@ import {
   Star,
   Phone,
   Globe,
-  Mail,
   Plus,
   Settings,
   ExternalLink,
@@ -217,17 +217,12 @@ export function GooglePlacesSearch() {
               <form onSubmit={handleSearch} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="location">Location</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="location"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="e.g., New York, NY"
-                      className="pl-10"
-                      required
-                    />
-                  </div>
+                  <PlaceAutocomplete
+                    value={location}
+                    onChange={(val) => setLocation(val)}
+                    placeholder="e.g., New York, NY"
+                    types="(cities)"
+                  />
                 </div>
 
                 <div className="space-y-2">

@@ -16,6 +16,11 @@ export async function GET(request: NextRequest) {
       return apiErrors.unauthorized()
     }
 
+    // Check global env key first
+    if (process.env.GOOGLE_MAPS_API_KEY) {
+      return NextResponse.json({ hasKey: true })
+    }
+
     const apiKey = await prisma.apiKey.findFirst({
       where: {
         userId: session.user.id,
