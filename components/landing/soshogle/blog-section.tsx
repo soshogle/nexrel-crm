@@ -66,7 +66,7 @@ export function BlogSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/blog?limit=6")
+    fetch("/api/blog?scope=platform&limit=6")
       .then((r) => r.json())
       .then((data) => setPosts(data.posts || []))
       .catch(() => setPosts([]))

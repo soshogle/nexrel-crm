@@ -40,16 +40,42 @@ export const authOptions: NextAuthOptions = {
             throw new Error(`Database connection failed: ${dbError.message}`)
           }
           
-          const user = await authDb.user.findUnique({
-            where: {
-              email: normalizedEmail
-            },
-            include: {
-              agency: true
+          // Use select to avoid schema mismatch (e.g. meta DB missing deletedAt column)
+          let user: { id: string; email: string; password: string; name: string | null; role: string; agencyId: string | null; agency: { name: string | null } | null; deletedAt?: Date | null } | null
+          try {
+            user = await authDb.user.findUnique({
+              where: { email: normalizedEmail },
+              select: {
+                id: true,
+                email: true,
+                password: true,
+                name: true,
+                role: true,
+                agencyId: true,
+                deletedAt: true,
+                agency: { select: { name: true } },
+              },
+            })
+          } catch (colErr: any) {
+            if (colErr?.message?.includes('deletedAt')) {
+              user = await authDb.user.findUnique({
+                where: { email: normalizedEmail },
+                select: {
+                  id: true,
+                  email: true,
+                  password: true,
+                  name: true,
+                  role: true,
+                  agencyId: true,
+                  agency: { select: { name: true } },
+                },
+              }) as typeof user
+            } else {
+              throw colErr
             }
-          })
+          }
 
-          if (!user || !user.password) {
+          if (!user || !user.password || user.deletedAt) {
             return null
           }
 
@@ -103,14 +129,18 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async signIn({ user, account }) {
-      // For OAuth providers (Google, etc.), check if this is a new user and set to PENDING_APPROVAL
+      // For OAuth providers (Google, etc.)
       if (account?.provider === 'google' && user.email) {
         try {
-          // Check if user exists in database
           const existingUser = await authDb.user.findUnique({
             where: { email: user.email },
-            select: { id: true, accountStatus: true, createdAt: true }
+            select: { id: true, accountStatus: true, createdAt: true, deletedAt: true }
           });
+
+          // Block sign-in for soft-deleted users
+          if (existingUser?.deletedAt) {
+            return false
+          }
           
           // If user was just created (within last 5 seconds) and has default ACTIVE status, update to PENDING_APPROVAL
           if (existingUser) {

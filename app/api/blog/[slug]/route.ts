@@ -14,8 +14,9 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    const post = await prisma.blogPost.findUnique({
-      where: { slug },
+    // Public endpoint: only return platform/landing page posts (userId null)
+    const post = await prisma.blogPost.findFirst({
+      where: { slug, userId: null },
     });
 
     if (!post) {

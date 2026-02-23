@@ -65,7 +65,7 @@ export default function BlogManagementPage() {
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: String(pageSize), offset: String(page * pageSize) });
+      const params = new URLSearchParams({ scope: 'my', limit: String(pageSize), offset: String(page * pageSize) });
       if (filterIndustry !== 'all') params.set('industry', filterIndustry);
       if (filterCategory !== 'all') params.set('category', filterCategory);
       const res = await fetch(`/api/blog?${params}`);

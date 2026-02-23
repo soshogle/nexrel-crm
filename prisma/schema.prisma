@@ -315,6 +315,8 @@ model User {
   voiceAIBillingRecords       VoiceAIBillingRecord[]       @relation("VoiceAIBillingRecordUser")
   // Website Builder Relations
   websites                    Website[]
+  // Blog posts (user-created; null userId = platform/landing page)
+  blogPosts                   BlogPost[]                   @relation("UserBlogPosts")
 
   @@index([industry])
 }
@@ -10135,6 +10137,7 @@ model WebsiteRouting {
 
 model BlogPost {
   id            String   @id @default(cuid())
+  userId        String?  // null = platform/landing page post; non-null = user's post
   slug          String   @unique
   title         String
   excerpt       String // Short summary for cards / social
@@ -10148,7 +10151,10 @@ model BlogPost {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  user User? @relation("UserBlogPosts", fields: [userId], references: [id], onDelete: SetNull)
+
   @@index([publishedAt])
   @@index([industry])
   @@index([category])
+  @@index([userId])
 }

@@ -21,10 +21,22 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
     const industry = searchParams.get("industry");
     const category = searchParams.get("category");
+    const scope = searchParams.get("scope"); // "platform" = landing page only; "my" = user's posts only
+
+    const session = await getServerSession(authOptions);
 
     const where: Record<string, unknown> = {};
     if (industry) where.industry = industry;
     if (category) where.category = category;
+
+    // scope=platform: landing page posts only (userId null) - used by landing page, /blog
+    // scope=my: user's posts only - used by dashboard (requires auth)
+    // default: platform (safe for public pages)
+    if (scope === "my" && session?.user?.id) {
+      where.userId = session.user.id;
+    } else {
+      where.userId = null; // platform/landing page posts
+    }
 
     const [posts, total] = await Promise.all([
       prisma.blogPost.findMany({
@@ -73,6 +85,7 @@ export async function POST(request: NextRequest) {
 
     const post = await prisma.blogPost.create({
       data: {
+        userId: session.user.id,
         title,
         slug: finalSlug,
         excerpt: excerpt || content.substring(0, 160).replace(/[#*_\[\]]/g, '') + '...',
@@ -110,6 +123,9 @@ export async function PUT(request: NextRequest) {
     const existing = await prisma.blogPost.findUnique({ where: { id } });
     if (!existing) {
       return apiErrors.notFound("Post not found");
+    }
+    if (existing.userId !== session.user.id) {
+      return apiErrors.forbidden("You can only edit your own posts");
     }
 
     if (slug && slug !== existing.slug) {
@@ -157,6 +173,14 @@ export async function DELETE(request: NextRequest) {
 
     if (!id) {
       return apiErrors.badRequest("id is required");
+    }
+
+    const existing = await prisma.blogPost.findUnique({ where: { id } });
+    if (!existing) {
+      return apiErrors.notFound("Post not found");
+    }
+    if (existing.userId !== session.user.id) {
+      return apiErrors.forbidden("You can only delete your own posts");
     }
 
     await prisma.blogPost.delete({ where: { id } });

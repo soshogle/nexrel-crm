@@ -267,6 +267,7 @@ Return JSON:
 
     const post = await db.blogPost.create({
       data: {
+        userId: null, // Platform/landing page post - not associated with any user
         slug: finalSlug,
         title: parsed.title,
         excerpt: parsed.excerpt,

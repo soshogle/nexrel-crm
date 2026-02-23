@@ -35,7 +35,7 @@ export default function BlogPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/blog?limit=24")
+    fetch("/api/blog?scope=platform&limit=24")
       .then((r) => r.json())
       .then((data) => setPosts(data.posts || []))
       .catch(() => setPosts([]))
