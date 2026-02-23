@@ -83,8 +83,7 @@ export default function VoiceAgentPreviewPage() {
       if (!response.ok) throw new Error('Failed to fetch agents');
       
       const data = await response.json();
-      // API returns array directly, not { agents: [...] }
-      const agentsList = Array.isArray(data) ? data : [];
+      const agentsList = Array.isArray(data) ? data : (data.data ?? data.voiceAgents ?? []);
       
       // Filter to only agents with ElevenLabs agent IDs (required for preview)
       const validAgents = agentsList.filter(agent => agent?.elevenLabsAgentId);

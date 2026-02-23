@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     });
 
     const total = await getCrmDb(ctx).task.count({ where: { userId: ctx.userId } });
-    return paginatedResponse(tasks, total, pagination);
+    return paginatedResponse(tasks, total, pagination, 'tasks');
   } catch (error: unknown) {
     console.error('Error fetching tasks:', error);
     return apiErrors.internal('Failed to fetch tasks');

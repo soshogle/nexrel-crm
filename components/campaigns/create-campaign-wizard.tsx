@@ -77,7 +77,7 @@ export default function CreateCampaignWizard({
         const response = await fetch('/api/voice-agents');
         if (response.ok) {
           const data = await response.json();
-          setVoiceAgents(data.agents || []);
+          setVoiceAgents(data.data ?? data.voiceAgents ?? data.agents ?? []);
         }
       } catch (error) {
         console.error('Error fetching voice agents:', error);

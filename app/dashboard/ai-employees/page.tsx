@@ -857,7 +857,7 @@ export default function AIEmployeesPage() {
       const res = await fetch('/api/voice-agents');
       if (res.ok) {
         const data = await res.json();
-        const agents = Array.isArray(data) ? data : (data.agents || []);
+        const agents = Array.isArray(data) ? data : (data.data ?? data.voiceAgents ?? data.agents ?? []);
         setVoiceAgents(agents.filter((a: any) => a.status === 'ACTIVE'));
       }
     } catch (e) { console.error('Failed to fetch voice agents', e); }

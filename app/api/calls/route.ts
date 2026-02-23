@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     });
 
     const total = await prisma.callLog.count({ where: whereClause });
-    return paginatedResponse(calls || [], total, pagination);
+    return paginatedResponse(calls || [], total, pagination, 'calls');
   } catch (error: any) {
     console.error('Error fetching calls:', error);
     console.error('Error details:', {

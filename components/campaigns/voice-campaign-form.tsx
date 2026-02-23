@@ -43,7 +43,7 @@ export function VoiceCampaignForm() {
   useEffect(() => {
     fetch('/api/voice-agents')
       .then((r) => (r.ok ? r.json() : { voiceAgents: [] }))
-      .then((d) => setVoiceAgents(d.voiceAgents || []))
+      .then((d) => setVoiceAgents(d.data ?? d.voiceAgents ?? []))
       .catch(() => setVoiceAgents([]));
   }, []);
 

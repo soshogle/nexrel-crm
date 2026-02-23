@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     });
 
     const total = await prisma.sMSTemplate.count({ where });
-    return paginatedResponse(templates, total, pagination);
+    return paginatedResponse(templates, total, pagination, 'templates');
   } catch (error: any) {
     console.error('Error fetching SMS templates:', error);
     return apiErrors.internal(error.message || 'Failed to fetch templates');

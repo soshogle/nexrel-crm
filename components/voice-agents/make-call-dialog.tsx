@@ -74,9 +74,9 @@ export function MakeCallDialog({
     try {
       const response = await fetch('/api/voice-agents');
       if (response.ok) {
-        const data = await response.json();
-        // Filter for outbound or both type agents
-        const outboundAgents = data.filter((a: any) => a.type === 'OUTBOUND' || a.type === 'BOTH');
+        const json = await response.json();
+        const arr = Array.isArray(json) ? json : (json.data ?? json.voiceAgents ?? []);
+        const outboundAgents = arr.filter((a: any) => a.type === 'OUTBOUND' || a.type === 'BOTH');
         setAgents(outboundAgents);
         
         // Auto-select first agent if only one available

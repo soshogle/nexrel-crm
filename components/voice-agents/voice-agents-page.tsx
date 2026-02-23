@@ -92,7 +92,7 @@ export function VoiceAgentsPage() {
         fetch(`/api/calls?voiceAgentId=${selectedAgent.id}&countOnly=true&from=${from}&to=${to}`).then((r) => r.json()),
       ])
         .then(([calls, countData]) => {
-          setRecentCalls(Array.isArray(calls) ? calls : []);
+          setRecentCalls(Array.isArray(calls) ? calls : (calls?.data ?? calls?.calls ?? []));
           setCallCountInPeriod(countData?.count ?? 0);
         })
         .catch(() => {
@@ -114,8 +114,8 @@ export function VoiceAgentsPage() {
   const fetchAgents = async () => {
     try {
       const response = await fetch('/api/voice-agents');
-      const data = await response.json();
-      const validAgents = (Array.isArray(data) ? data : []).filter((a: any) => a && a.id);
+      const json = await response.json();
+      const validAgents = (Array.isArray(json) ? json : (json.data ?? json.voiceAgents ?? [])).filter((a: any) => a && a.id);
       setAgents(validAgents);
       if (validAgents.length > 0 && !selectedAgent) {
         setSelectedAgent(validAgents[0]);

@@ -28,7 +28,7 @@ export function VoiceAgentSelect({ value, onChange, placeholder = 'Select a voic
   useEffect(() => {
     fetch('/api/voice-agents')
       .then((r) => (r.ok ? r.json() : { voiceAgents: [] }))
-      .then((d) => setVoiceAgents(d.voiceAgents || []))
+      .then((d) => setVoiceAgents(d.data ?? d.voiceAgents ?? []))
       .catch(() => setVoiceAgents([]));
   }, []);
 

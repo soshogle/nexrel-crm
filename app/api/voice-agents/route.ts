@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
     ];
 
     const total = await (prisma as any).voiceAgent.count({ where: { userId: user.id } });
-    return paginatedResponse(allAgents, total, pagination);
+    return paginatedResponse(allAgents, total, pagination, 'voiceAgents');
   } catch (error: any) {
     console.error('Error fetching voice agents:', error);
     console.error('Error details:', {

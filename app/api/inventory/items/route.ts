@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
     });
 
     const total = await prisma.inventoryItem.count({ where });
-    return paginatedResponse(itemsWithStatus, total, pagination);
+    return paginatedResponse(itemsWithStatus, total, pagination, 'items');
   } catch (error) {
     console.error('❌ Inventory items fetch error:', error);
     return apiErrors.internal('Failed to fetch inventory items');

@@ -53,10 +53,9 @@ export function RadialBrainVisualization({
   }, [data]);
 
   // Combine all data points and distribute them evenly in a perfect circle
-  const allDataPoints = [
-    ...data.leftHemisphere.dataPoints,
-    ...data.rightHemisphere.dataPoints,
-  ];
+  const leftPoints = Array.isArray(data?.leftHemisphere?.dataPoints) ? data.leftHemisphere.dataPoints : [];
+  const rightPoints = Array.isArray(data?.rightHemisphere?.dataPoints) ? data.rightHemisphere.dataPoints : [];
+  const allDataPoints = [...leftPoints, ...rightPoints];
 
   // Distribute evenly around the circle (360 degrees)
   const totalPoints = allDataPoints.length;
@@ -241,9 +240,9 @@ export function RadialBrainVisualization({
           </defs>
 
           {/* Static connection lines - professional appearance */}
-          {data.connections.slice(0, 30).map((conn, idx) => {
-            const fromPoint = positionedPoints.find((p) => p.id === conn.from);
-            const toPoint = positionedPoints.find((p) => p.id === conn.to);
+          {(Array.isArray(data?.connections) ? data.connections : []).slice(0, 30).map((conn: any, idx: number) => {
+            const fromPoint = Array.isArray(positionedPoints) ? positionedPoints.find((p) => p.id === conn.from) : null;
+            const toPoint = Array.isArray(positionedPoints) ? positionedPoints.find((p) => p.id === conn.to) : null;
             if (!fromPoint || !toPoint) return null;
             
             return (

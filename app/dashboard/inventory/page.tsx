@@ -87,7 +87,7 @@ export default function InventoryPage() {
       const itemsRes = await fetch('/api/inventory/items');
       if (itemsRes.ok) {
         const data = await itemsRes.json();
-        setItems(data);
+        setItems(Array.isArray(data) ? data : (data.data ?? data.items ?? []));
       }
 
       // Load suppliers

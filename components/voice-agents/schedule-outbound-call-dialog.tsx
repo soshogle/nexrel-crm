@@ -86,14 +86,15 @@ export function ScheduleOutboundCallDialog({
       ]);
 
       if (agentsRes.ok) {
-        const agentsData = await agentsRes.json();
-        // Filter for outbound or both type agents
-        setAgents(agentsData.filter((a: any) => a.type === 'OUTBOUND' || a.type === 'BOTH'));
+        const agentsJson = await agentsRes.json();
+        const agentsArr = Array.isArray(agentsJson) ? agentsJson : (agentsJson.data ?? agentsJson.voiceAgents ?? []);
+        setAgents(agentsArr.filter((a: any) => a.type === 'OUTBOUND' || a.type === 'BOTH'));
       }
 
       if (leadsRes.ok) {
-        const leadsData = await leadsRes.json();
-        setLeads(leadsData.filter((l: any) => l.phone)); // Only leads with phone numbers
+        const leadsJson = await leadsRes.json();
+        const leadsArr = Array.isArray(leadsJson) ? leadsJson : (leadsJson.data ?? leadsJson.leads ?? []);
+        setLeads(leadsArr.filter((l: any) => l.phone));
       }
     } catch (err) {
       console.error('Failed to fetch data:', err);

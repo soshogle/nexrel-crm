@@ -137,7 +137,7 @@ export function CrmVisualizationPanel({ crmStatistics, onClose }: CrmVisualizati
 
           {/* Enhanced Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {crmStatistics.monthlyRevenue && (
+            {crmStatistics.monthlyRevenue && typeof crmStatistics.monthlyRevenue === 'object' && !Array.isArray(crmStatistics.monthlyRevenue) && (
               <Card className="border-2 border-purple-200/50 shadow-xl bg-gradient-to-br from-white/95 to-purple-50/30 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-lg bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
@@ -147,7 +147,7 @@ export function CrmVisualizationPanel({ crmStatistics, onClose }: CrmVisualizati
                 <CardContent>
                   <ResponsiveContainer width="100%" height={320}>
                     <AreaChart
-                      data={Object.entries(crmStatistics.monthlyRevenue).map(([month, revenue]) => ({
+                      data={Object.entries(crmStatistics.monthlyRevenue as Record<string, number>).map(([month, revenue]) => ({
                         month: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short' }),
                         current: revenue as number,
                         ...(crmStatistics.comparisonData?.monthlyRevenue && { previous: crmStatistics.comparisonData.monthlyRevenue[month] || 0 }),

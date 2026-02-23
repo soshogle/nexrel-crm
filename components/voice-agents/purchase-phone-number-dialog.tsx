@@ -75,8 +75,9 @@ export default function PurchasePhoneNumberDialog({
       const response = await fetch('/api/voice-agents');
       const data = await response.json();
       
-      if (response.ok && Array.isArray(data)) {
-        setVoiceAgents(data);
+      if (response.ok) {
+        const arr = Array.isArray(data) ? data : (data.data ?? data.voiceAgents ?? []);
+        setVoiceAgents(arr);
       }
     } catch (error) {
       console.error('Failed to fetch voice agents:', error);

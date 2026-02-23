@@ -170,15 +170,15 @@ function BusinessAIPageContent() {
     setIsRefreshing(true);
     try {
       const [brainRes, insightsRes, predictionsRes, workflowRes] = await Promise.allSettled([
-        fetch('/api/business-ai/comprehensive'),
+        fetch('/api/ai-brain/comprehensive'),
         fetch('/api/business-ai/insights'),
         fetch('/api/business-ai/predictions'),
         fetch('/api/business-ai/workflow-recommendations'),
       ]);
 
       if (brainRes.status === 'fulfilled' && brainRes.value.ok) {
-        const data = await brainRes.value.json();
-        setComprehensiveData(data);
+        const json = await brainRes.value.json();
+        setComprehensiveData(json.data ?? json);
       }
       if (insightsRes.status === 'fulfilled' && insightsRes.value.ok) {
         const data = await insightsRes.value.json();

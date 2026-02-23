@@ -62,7 +62,10 @@ export default function TeamPage() {
       ]);
 
       if (membersRes.ok) setMembers(await membersRes.json());
-      if (tasksRes.ok) setTasks(await tasksRes.json());
+      if (tasksRes.ok) {
+        const json = await tasksRes.json();
+        setTasks(Array.isArray(json) ? json : (json.data ?? json.tasks ?? []));
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load team data');

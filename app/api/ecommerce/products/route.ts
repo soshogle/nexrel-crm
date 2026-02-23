@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
     })
 
     const total = await prisma.product.count({ where })
-    return paginatedResponse(products, total, pagination)
+    return paginatedResponse(products, total, pagination, 'products')
   } catch (error) {
     console.error('Error fetching products:', error)
     return apiErrors.internal('Failed to fetch products')

@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     }));
 
     const total = await db.smsCampaign.count({ where });
-    return paginatedResponse(campaignsWithMetrics, total, pagination);
+    return paginatedResponse(campaignsWithMetrics, total, pagination, 'campaigns');
   } catch (error: any) {
     console.error('Error fetching SMS campaigns:', error);
     return apiErrors.internal(error.message || 'Failed to fetch SMS campaigns');

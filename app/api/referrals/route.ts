@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     })
 
     const total = await db.referral.count({ where: { userId: ctx.userId } })
-    return paginatedResponse(referrals, total, pagination)
+    return paginatedResponse(referrals, total, pagination, 'referrals')
   } catch (error) {
     console.error('Error fetching referrals:', error)
     return apiErrors.internal('Failed to fetch referrals')
