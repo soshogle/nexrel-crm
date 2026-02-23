@@ -1,6 +1,7 @@
 /**
  * Shared logic for running Industry AI Employee tasks
  * Used by: /api/industry-ai-employees/run and /api/ai-employees/functions
+ * Phase 2: Uses custom templates when provided
  */
 
 import { createDalContext } from '@/lib/context/industry-context';
@@ -14,6 +15,7 @@ import {
   sendEmailToLead,
   sendEmailToAddress,
 } from '@/lib/ai-employees/outreach-helper';
+import { getTaskTemplate } from '@/lib/ai-employees/template-helper';
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -25,9 +27,20 @@ export interface ExecutionResult {
   details?: Record<string, unknown>;
 }
 
+const DEFAULT_APPOINTMENT_MSG =
+  'Hi {firstName}! This is a reminder about your appointment tomorrow. Please reply to confirm or reschedule.';
+const DEFAULT_PATIENT_MSG =
+  'Hi {firstName}! Thank you for choosing us. We wanted to check in — how was your experience? Reply anytime if you have questions.';
+const DEFAULT_TREATMENT_MSG =
+  'Hi {firstName}! We wanted to follow up on your treatment plan. Do you have any questions or would you like to schedule? Reply anytime.';
+const DEFAULT_BILLING_SUBJECT = 'Friendly reminder: Invoice pending';
+const DEFAULT_BILLING_BODY =
+  'Hi {firstName},\n\nThis is a friendly reminder that you have an outstanding invoice. Please let us know if you have any questions or need to arrange payment.\n\nThank you!';
+
 async function executeAppointmentScheduler(
   userId: string,
-  _industry: Industry
+  industry: Industry,
+  template?: { smsTemplate?: string | null } | null
 ): Promise<ExecutionResult> {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
@@ -46,8 +59,7 @@ async function executeAppointmentScheduler(
   } as any);
 
   let sent = 0;
-  const msg =
-    'Hi {firstName}! This is a reminder about your appointment tomorrow. Please reply to confirm or reschedule.';
+  const msg = template?.smsTemplate || DEFAULT_APPOINTMENT_MSG;
   for (const apt of appointments) {
     if (apt.customerPhone) {
       const name = apt.customerName?.split(' ')[0] || 'there';
@@ -75,7 +87,8 @@ async function executeAppointmentScheduler(
 
 async function executePatientCoordinator(
   userId: string,
-  _industry: Industry
+  _industry: Industry,
+  template?: { smsTemplate?: string | null } | null
 ): Promise<ExecutionResult> {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -86,8 +99,7 @@ async function executePatientCoordinator(
   });
 
   let sent = 0;
-  const msg =
-    'Hi {firstName}! Thank you for choosing us. We wanted to check in — how was your experience? Reply anytime if you have questions.';
+  const msg = template?.smsTemplate || DEFAULT_PATIENT_MSG;
   for (const lead of newPatients) {
     if (lead.phone) {
       const res = await sendSMSToLead(userId, lead.id, msg);
@@ -107,7 +119,8 @@ async function executePatientCoordinator(
 
 async function executeTreatmentCoordinator(
   userId: string,
-  _industry: Industry
+  _industry: Industry,
+  template?: { smsTemplate?: string | null } | null
 ): Promise<ExecutionResult> {
   const ctx = createDalContext(userId);
   const thirtyDaysAgo = new Date();
@@ -118,8 +131,7 @@ async function executeTreatmentCoordinator(
   } as any);
 
   let sent = 0;
-  const msg =
-    'Hi {firstName}! We wanted to follow up on your treatment plan. Do you have any questions or would you like to schedule? Reply anytime.';
+  const msg = template?.smsTemplate || DEFAULT_TREATMENT_MSG;
   for (const deal of deals) {
     const leadId = (deal as any).leadId;
     if (leadId) {
@@ -140,7 +152,8 @@ async function executeTreatmentCoordinator(
 
 async function executeBillingSpecialist(
   userId: string,
-  _industry: Industry
+  _industry: Industry,
+  template?: { emailSubject?: string | null; emailBody?: string | null } | null
 ): Promise<ExecutionResult> {
   const ctx = createDalContext(userId);
   const db = getCrmDb(ctx);
@@ -152,9 +165,8 @@ async function executeBillingSpecialist(
     .catch(() => []);
 
   let sent = 0;
-  const subject = 'Friendly reminder: Invoice pending';
-  const body =
-    'Hi {firstName},\n\nThis is a friendly reminder that you have an outstanding invoice. Please let us know if you have any questions or need to arrange payment.\n\nThank you!';
+  const subject = template?.emailSubject || DEFAULT_BILLING_SUBJECT;
+  const body = template?.emailBody || DEFAULT_BILLING_BODY;
   for (const inv of invoices ?? []) {
     const leadId = (inv as any).leadId;
     const customerEmail = (inv as any).customerEmail;
@@ -184,7 +196,7 @@ async function executeBillingSpecialist(
 
 const EXECUTORS: Record<
   string,
-  (userId: string, industry: Industry) => Promise<ExecutionResult>
+  (userId: string, industry: Industry, template?: any) => Promise<ExecutionResult>
 > = {
   APPOINTMENT_SCHEDULER: executeAppointmentScheduler,
   PATIENT_COORDINATOR: executePatientCoordinator,
@@ -217,9 +229,10 @@ export async function executeIndustryEmployee(
     };
   }
 
+  const template = await getTaskTemplate(userId, 'industry', industry, employeeType, employeeType);
   const executor = EXECUTORS[employeeType];
   const result = executor
-    ? await executor(userId, industry)
+    ? await executor(userId, industry, template)
     : {
         success: true,
         employeeType,

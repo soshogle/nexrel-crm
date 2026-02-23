@@ -294,6 +294,7 @@ model User {
   reAIEmployeeAgents          REAIEmployeeAgent[]          @relation("REAIEmployeeAgentUser")
   industryAIEmployeeExecutions IndustryAIEmployeeExecution[] @relation("IndustryAIEmployeeExecutionUser")
   aiEmployeeTaskConfigs       AIEmployeeTaskConfig[]       @relation("AIEmployeeTaskConfigUser")
+  aiEmployeeTaskTemplates     AIEmployeeTaskTemplate[]    @relation("AIEmployeeTaskTemplateUser")
   industryAIEmployeeAgents    IndustryAIEmployeeAgent[]    @relation("IndustryAIEmployeeAgentUser")
   professionalAIEmployeeAgents ProfessionalAIEmployeeAgent[] @relation("ProfessionalAIEmployeeAgentUser")
   aiEmployeeAutoRuns          AIEmployeeAutoRun[]          @relation("AIEmployeeAutoRunUser")
@@ -7753,6 +7754,26 @@ model AIEmployeeTaskConfig {
   @@unique([userId, source, industry, employeeType, taskKey])
   @@index([userId])
   @@index([employeeType])
+}
+
+// AI Employee task templates - custom SMS/email per task (Phase 2)
+model AIEmployeeTaskTemplate {
+  id            String    @id @default(cuid())
+  userId        String
+  source        String    // "industry" | "re" | "professional"
+  industry      Industry? // for industry employees
+  employeeType  String
+  taskKey       String
+  smsTemplate   String?   // Custom SMS message (placeholders: {firstName}, {contactPerson}, {businessName})
+  emailSubject  String?   // Custom email subject
+  emailBody     String?   // Custom email body
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation("AIEmployeeTaskTemplateUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, industry, employeeType, taskKey])
+  @@index([userId])
 }
 
 // Industry AI Employee Voice Agents (Dental, Medical, Restaurant, etc.)

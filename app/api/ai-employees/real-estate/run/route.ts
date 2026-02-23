@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { apiErrors } from '@/lib/api-error';
 import { executeREEmployee } from '@/lib/ai-employees/run-re-employee';
+import { shouldRunEmployee } from '@/lib/ai-employees/task-config-helper';
 import type { REAIEmployeeType } from '@prisma/client';
 
 // Main execution handler
@@ -22,6 +23,19 @@ export async function POST(request: NextRequest) {
 
     if (!employeeType) {
       return apiErrors.badRequest('Employee type required');
+    }
+
+    const okToRun = await shouldRunEmployee(
+      session.user.id,
+      're',
+      null,
+      employeeType
+    );
+    if (!okToRun) {
+      return NextResponse.json(
+        { error: 'All tasks are disabled for this employee. Enable at least one task in Manage Tasks.' },
+        { status: 400 }
+      );
     }
 
     const result = await executeREEmployee(session.user.id, employeeType, {

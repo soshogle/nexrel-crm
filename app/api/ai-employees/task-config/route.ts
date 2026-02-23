@@ -11,6 +11,8 @@ import { prisma } from '@/lib/db';
 import { apiErrors } from '@/lib/api-error';
 import { Industry } from '@prisma/client';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
+import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
+import { getREEmployeeConfig } from '@/lib/real-estate/ai-employees/configs';
 
 type AgentContext = {
   userId: string;
@@ -18,6 +20,10 @@ type AgentContext = {
   industry?: Industry | null;
   employeeType: string;
 };
+
+function slugify(s: string): string {
+  return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
 
 async function resolveAgent(agentId: string): Promise<AgentContext | null> {
   const industryAgent = await (prisma as any).industryAIEmployeeAgent.findUnique({
@@ -63,10 +69,51 @@ function getTaskDescription(ctx: AgentContext, taskKey: string): string {
       const config = module?.configs?.[ctx.employeeType];
       return config?.description || 'Run this employee\'s main task';
     }
-    if (ctx.source === 're') return 'Run this employee\'s main task';
+    if (ctx.source === 're') {
+      const reConfig = getREEmployeeConfig(ctx.employeeType as any);
+      return reConfig?.description || 'Run this employee\'s main task';
+    }
     return 'Run tasks';
   }
   return taskKey;
+}
+
+function getDefaultTasks(ctx: AgentContext): { taskKey: string; enabled: boolean; description: string }[] {
+  if (ctx.source === 'professional') {
+    const config = PROFESSIONAL_EMPLOYEE_CONFIGS[ctx.employeeType as keyof typeof PROFESSIONAL_EMPLOYEE_CONFIGS];
+    if (config?.capabilities?.length) {
+      return config.capabilities.map((cap) => ({
+        taskKey: slugify(cap),
+        enabled: true,
+        description: cap,
+      }));
+    }
+    return [{ taskKey: 'run', enabled: true, description: config?.fullDescription || 'Conversational assistant' }];
+  }
+  if (ctx.source === 'industry' && ctx.industry) {
+    const module = getIndustryAIEmployeeModule(ctx.industry);
+    const config = module?.configs?.[ctx.employeeType] as { capabilities?: string[]; description?: string } | undefined;
+    if (config?.capabilities?.length) {
+      return config.capabilities.map((cap) => ({
+        taskKey: slugify(cap),
+        enabled: true,
+        description: cap,
+      }));
+    }
+    return [{ taskKey: 'run', enabled: true, description: config?.description || 'Run this employee\'s main task' }];
+  }
+  if (ctx.source === 're') {
+    const reConfig = getREEmployeeConfig(ctx.employeeType as any);
+    if (reConfig?.capabilities?.length) {
+      return reConfig.capabilities.map((cap) => ({
+        taskKey: slugify(cap),
+        enabled: true,
+        description: cap,
+      }));
+    }
+    return [{ taskKey: 'run', enabled: true, description: reConfig?.description || 'Run this employee\'s main task' }];
+  }
+  return [{ taskKey: 'run', enabled: true, description: 'Run tasks' }];
 }
 
 export async function GET(request: NextRequest) {
@@ -76,9 +123,26 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const agentId = searchParams.get('agentId');
-    if (!agentId) return apiErrors.badRequest('agentId required');
+    const source = searchParams.get('source') as 'industry' | 're' | 'professional' | null;
+    const employeeType = searchParams.get('employeeType');
+    const industry = searchParams.get('industry') as Industry | null;
 
-    const ctx = await resolveAgent(agentId);
+    let ctx: AgentContext | null = null;
+
+    if (agentId) {
+      ctx = await resolveAgent(agentId);
+    }
+
+    // Fallback: when agentId fails or not provided, use source + employeeType (for RE/Industry)
+    if (!ctx && source && employeeType && (source === 're' || source === 'industry' || source === 'professional')) {
+      ctx = {
+        userId: session.user.id,
+        source,
+        industry: source === 'industry' ? industry ?? null : null,
+        employeeType,
+      };
+    }
+
     if (!ctx || ctx.userId !== session.user.id) return apiErrors.forbidden();
 
     const configs = await (prisma as any).aIEmployeeTaskConfig.findMany({
@@ -90,14 +154,17 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const tasks =
-      configs.length > 0
-        ? configs.map((c: any) => ({
-            taskKey: c.taskKey,
-            enabled: c.enabled,
-            description: getTaskDescription(ctx, c.taskKey),
-          }))
-        : [{ taskKey: 'run', enabled: true, description: getTaskDescription(ctx, 'run') }];
+    const defaultTasks = getDefaultTasks(ctx);
+    const configMap = new Map(configs.map((c: any) => [c.taskKey, c]));
+
+    const tasks = defaultTasks.map((dt) => {
+      const saved = configMap.get(dt.taskKey);
+      return {
+        taskKey: dt.taskKey,
+        enabled: saved ? saved.enabled : dt.enabled,
+        description: dt.description,
+      };
+    });
 
     return NextResponse.json({ success: true, tasks });
   } catch (e: any) {
@@ -112,10 +179,19 @@ export async function PATCH(request: NextRequest) {
     if (!session?.user?.id) return apiErrors.unauthorized();
 
     const body = await request.json().catch(() => ({}));
-    const { agentId, taskKey, enabled } = body;
-    if (!agentId || !taskKey) return apiErrors.badRequest('agentId and taskKey required');
+    const { agentId, taskKey, enabled, source: bodySource, employeeType: bodyEmployeeType, industry: bodyIndustry } = body;
+    if (!taskKey) return apiErrors.badRequest('taskKey required');
 
-    const ctx = await resolveAgent(agentId);
+    let ctx: AgentContext | null = null;
+    if (agentId) ctx = await resolveAgent(agentId);
+    if (!ctx && bodySource && bodyEmployeeType) {
+      ctx = {
+        userId: session.user.id,
+        source: bodySource,
+        industry: bodySource === 'industry' ? bodyIndustry ?? null : null,
+        employeeType: bodyEmployeeType,
+      };
+    }
     if (!ctx || ctx.userId !== session.user.id) return apiErrors.forbidden();
 
     const industryVal = ctx.source === 'industry' ? ctx.industry : null;

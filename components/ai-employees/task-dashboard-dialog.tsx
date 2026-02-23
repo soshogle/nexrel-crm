@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Play, Loader2, History, Settings, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Play, Loader2, History, Settings, CheckCircle2, XCircle, Clock, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
 import { getREEmployeeConfig } from '@/lib/real-estate/ai-employees/configs';
@@ -127,14 +127,29 @@ export function TaskDashboardDialog({
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [template, setTemplate] = useState<{ smsTemplate?: string; emailSubject?: string; emailBody?: string } | null>(null);
+  const [templateSaving, setTemplateSaving] = useState(false);
+  const [templateDirty, setTemplateDirty] = useState(false);
 
   const canRun = source === 'industry' || source === 're' || source === 'professional';
 
+  /** Employees that support custom SMS/email templates */
+  const supportsTemplates =
+    (source === 'industry' && ['APPOINTMENT_SCHEDULER', 'PATIENT_COORDINATOR', 'TREATMENT_COORDINATOR', 'BILLING_SPECIALIST'].includes(employeeType)) ||
+    (source === 're' && employeeType === 'RE_SPEED_TO_LEAD');
+
   const fetchConfig = async () => {
-    if (!agentId) return;
+    if (!agentId && !employeeType) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/ai-employees/task-config?agentId=${agentId}`);
+      const params = new URLSearchParams();
+      if (agentId) params.set('agentId', agentId);
+      params.set('source', source);
+      params.set('employeeType', employeeType);
+      if (source === 'industry' && industry) params.set('industry', industry);
+
+      const res = await fetch(`/api/ai-employees/task-config?${params}`);
       const data = await res.json();
       if (res.ok && data.tasks?.length) {
         setTasks(data.tasks);
@@ -188,13 +203,36 @@ export function TaskDashboardDialog({
     }
   };
 
+  const fetchTemplates = async () => {
+    if (!supportsTemplates) return;
+    try {
+      const params = new URLSearchParams({ source, employeeType, taskKey: employeeType });
+      if (source === 'industry' && industry) params.set('industry', industry);
+      const res = await fetch(`/api/ai-employees/task-templates?${params}`);
+      const data = await res.json();
+      if (res.ok && data.templates?.length) {
+        const t = data.templates[0];
+        setTemplate({
+          smsTemplate: t.smsTemplate ?? '',
+          emailSubject: t.emailSubject ?? '',
+          emailBody: t.emailBody ?? '',
+        });
+      } else {
+        setTemplate({ smsTemplate: '', emailSubject: '', emailBody: '' });
+      }
+    } catch {
+      setTemplate({ smsTemplate: '', emailSubject: '', emailBody: '' });
+    }
+  };
+
   useEffect(() => {
     if (open && agentId) {
       fetchConfig();
       fetchHistory();
       if (canRun) fetchSchedule();
+      if (supportsTemplates) fetchTemplates();
     }
-  }, [open, agentId]);
+  }, [open, agentId, supportsTemplates]);
 
   const handleToggle = async (taskKey: string, enabled: boolean) => {
     setToggling(taskKey);
@@ -202,7 +240,14 @@ export function TaskDashboardDialog({
       const res = await fetch('/api/ai-employees/task-config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId, taskKey, enabled }),
+        body: JSON.stringify({
+          agentId,
+          taskKey,
+          enabled,
+          source,
+          employeeType,
+          industry: source === 'industry' ? industry : undefined,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -305,6 +350,43 @@ export function TaskDashboardDialog({
 
   const scheduleForm = schedule ?? { id: '', ...DEFAULT_SCHEDULE };
 
+  const handleSaveTemplate = async () => {
+    if (!supportsTemplates) return;
+    setTemplateSaving(true);
+    try {
+      const body: Record<string, unknown> = {
+        source,
+        employeeType,
+        taskKey: employeeType,
+        smsTemplate: template?.smsTemplate || null,
+        emailSubject: template?.emailSubject || null,
+        emailBody: template?.emailBody || null,
+      };
+      if (source === 'industry' && industry) body.industry = industry;
+      const res = await fetch('/api/ai-employees/task-templates', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTemplateDirty(false);
+        toast.success('Message templates saved');
+      } else {
+        toast.error(data.error || 'Failed to save templates');
+      }
+    } catch {
+      toast.error('Failed to save templates');
+    } finally {
+      setTemplateSaving(false);
+    }
+  };
+
+  const isSmsEmployee =
+    (source === 'industry' && ['APPOINTMENT_SCHEDULER', 'PATIENT_COORDINATOR', 'TREATMENT_COORDINATOR'].includes(employeeType)) ||
+    (source === 're' && employeeType === 'RE_SPEED_TO_LEAD');
+  const isEmailEmployee = source === 'industry' && employeeType === 'BILLING_SPECIALIST';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg bg-slate-50 border-slate-200 text-slate-900 dark:bg-slate-50 dark:border-slate-200 dark:text-slate-900">
@@ -354,6 +436,88 @@ export function TaskDashboardDialog({
               </div>
             )}
           </div>
+
+          {/* Edit message templates */}
+          {supportsTemplates && (
+            <div className="rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-200 dark:bg-white">
+              <button
+                type="button"
+                onClick={() => setTemplateOpen(!templateOpen)}
+                className="flex w-full items-center justify-between p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-50/50"
+              >
+                <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
+                  <FileText className="w-4 h-4 text-purple-600" />
+                  Edit message templates
+                </h4>
+                {templateOpen ? (
+                  <ChevronUp className="w-4 h-4 text-slate-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-slate-500" />
+                )}
+              </button>
+              {templateOpen && (
+                <div className="space-y-4 border-t border-slate-200 p-4 dark:border-slate-200">
+                  {isSmsEmployee && (
+                    <div className="space-y-1.5">
+                      <Label className="text-slate-700">SMS message</Label>
+                      <textarea
+                        value={template?.smsTemplate ?? ''}
+                        onChange={(e) => {
+                          setTemplate((p) => ({ ...p, smsTemplate: e.target.value }));
+                          setTemplateDirty(true);
+                        }}
+                        placeholder="Hi {firstName}! ..."
+                        rows={3}
+                        className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                      />
+                      <p className="text-xs text-slate-500">Placeholders: {'{firstName}'}, {'{contactPerson}'}, {'{businessName}'}</p>
+                    </div>
+                  )}
+                  {isEmailEmployee && (
+                    <>
+                      <div className="space-y-1.5">
+                        <Label className="text-slate-700">Email subject</Label>
+                        <input
+                          type="text"
+                          value={template?.emailSubject ?? ''}
+                          onChange={(e) => {
+                            setTemplate((p) => ({ ...p, emailSubject: e.target.value }));
+                            setTemplateDirty(true);
+                          }}
+                          placeholder="Friendly reminder: Invoice pending"
+                          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-slate-700">Email body</Label>
+                        <textarea
+                          value={template?.emailBody ?? ''}
+                          onChange={(e) => {
+                            setTemplate((p) => ({ ...p, emailBody: e.target.value }));
+                            setTemplateDirty(true);
+                          }}
+                          placeholder="Hi {firstName}, ..."
+                          rows={4}
+                          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                        />
+                        <p className="text-xs text-slate-500">Placeholders: {'{firstName}'}, {'{contactPerson}'}, {'{businessName}'}</p>
+                      </div>
+                    </>
+                  )}
+                  {templateDirty && (
+                    <Button
+                      size="sm"
+                      onClick={handleSaveTemplate}
+                      disabled={templateSaving}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      {templateSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save templates'}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Run button */}
           {canRun && (

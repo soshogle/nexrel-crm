@@ -12,6 +12,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { apiErrors } from '@/lib/api-error';
 import { executeIndustryEmployee } from '@/lib/ai-employees/run-industry-employee';
+import { shouldRunEmployee } from '@/lib/ai-employees/task-config-helper';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,6 +29,19 @@ export async function POST(request: NextRequest) {
 
     if (!industry || !employeeType) {
       return apiErrors.badRequest('Industry and employeeType required');
+    }
+
+    const okToRun = await shouldRunEmployee(
+      session.user.id,
+      'industry',
+      industry as any,
+      employeeType
+    );
+    if (!okToRun) {
+      return NextResponse.json(
+        { error: 'All tasks are disabled for this employee. Enable at least one task in Manage Tasks.' },
+        { status: 400 }
+      );
     }
 
     const result = await executeIndustryEmployee(

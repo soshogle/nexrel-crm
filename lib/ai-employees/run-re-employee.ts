@@ -1,7 +1,7 @@
 /**
  * Execute RE AI Employee tasks (Speed to Lead, FSBO, etc.)
  * Used by: /api/ai-employees/real-estate/run and cron
- * Phase 2: Actual outreach (SMS, calls)
+ * Phase 2: Actual outreach (SMS, calls) + custom templates
  */
 
 import { prisma } from '@/lib/db';
@@ -9,6 +9,7 @@ import { createDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
 import type { REAIEmployeeType } from '@prisma/client';
 import { sendSMSToLead } from '@/lib/ai-employees/outreach-helper';
+import { getTaskTemplate } from '@/lib/ai-employees/template-helper';
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -20,7 +21,13 @@ export interface REExecutionResult {
   details?: any;
 }
 
-async function executeSpeedToLead(userId: string): Promise<REExecutionResult> {
+const DEFAULT_SPEED_TO_LEAD_MSG =
+  'Hi {firstName}! Thanks for your inquiry. A team member will reach out shortly. In the meantime, feel free to reply with any questions.';
+
+async function executeSpeedToLead(
+  userId: string,
+  template?: { smsTemplate?: string | null } | null
+): Promise<REExecutionResult> {
   const ctx = createDalContext(userId);
   const newLeads = await leadService.findMany(ctx, {
     where: {
@@ -34,8 +41,7 @@ async function executeSpeedToLead(userId: string): Promise<REExecutionResult> {
   });
 
   let sent = 0;
-  const msg =
-    'Hi {firstName}! Thanks for your inquiry. A team member will reach out shortly. In the meantime, feel free to reply with any questions.';
+  const msg = template?.smsTemplate || DEFAULT_SPEED_TO_LEAD_MSG;
   for (const lead of newLeads) {
     if (lead.phone) {
       const res = await sendSMSToLead(userId, lead.id, msg);
@@ -247,11 +253,16 @@ export async function executeREEmployee(
   employeeType: REAIEmployeeType,
   options?: { storeHistory?: boolean }
 ): Promise<REExecutionResult> {
+  const template =
+    employeeType === 'RE_SPEED_TO_LEAD'
+      ? await getTaskTemplate(userId, 're', null, employeeType, employeeType)
+      : null;
+
   let result: REExecutionResult;
 
   switch (employeeType) {
     case 'RE_SPEED_TO_LEAD':
-      result = await executeSpeedToLead(userId);
+      result = await executeSpeedToLead(userId, template);
       break;
     case 'RE_FSBO_OUTREACH':
       result = await executeFSBOOutreach(userId);

@@ -9,6 +9,7 @@ import { prisma } from '@/lib/db';
 import { executeIndustryEmployee } from '@/lib/ai-employees/run-industry-employee';
 import { Industry } from '@prisma/client';
 import { apiErrors } from '@/lib/api-error';
+import { shouldRunEmployee } from '@/lib/ai-employees/task-config-helper';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -77,6 +78,15 @@ export async function GET(request: NextRequest) {
 
   for (const schedule of schedules) {
     if (!isDueNow(schedule)) continue;
+
+    // Phase 1: Respect task toggles - skip if owner disabled all tasks
+    const okToRun = await shouldRunEmployee(
+      schedule.userId,
+      schedule.source,
+      schedule.industry,
+      schedule.employeeType
+    );
+    if (!okToRun) continue;
 
     try {
       if (schedule.source === 'industry' && schedule.industry) {
