@@ -185,61 +185,68 @@ export function CrmVisualizationPanel({ crmStatistics, onClose }: CrmVisualizati
               </Card>
             )}
 
-            <Card className="border-2 border-pink-200/50 shadow-xl bg-gradient-to-br from-white/95 to-pink-50/30 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-lg bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">CRM Metrics Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={320}>
-                  <PieChart margin={{ top: 24, right: 24, left: 24, bottom: 72 }}>
-                    <Pie
-                      data={[
-                        { name: 'Leads', value: crmStatistics.totalLeads },
-                        { name: 'Deals', value: crmStatistics.totalDeals },
-                        { name: 'Open Deals', value: crmStatistics.openDeals },
-                        { name: 'Campaigns', value: crmStatistics.totalCampaigns },
-                      ].filter(item => item.value > 0)}
-                      cx="50%"
-                      cy="42%"
-                      innerRadius={52}
-                      outerRadius={90}
-                      paddingAngle={3}
-                      dataKey="value"
-                      animationDuration={800}
-                      animationEasing="ease-out"
-                    >
-                      {[
-                        { name: 'Leads', value: crmStatistics.totalLeads },
-                        { name: 'Deals', value: crmStatistics.totalDeals },
-                        { name: 'Open Deals', value: crmStatistics.openDeals },
-                        { name: 'Campaigns', value: crmStatistics.totalCampaigns },
-                      ].filter(item => item.value > 0).map((_, index) => {
-                        const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b'];
-                        return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="#fff" strokeWidth={2.5} />;
-                      })}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', padding: '12px 16px' }}
-                      formatter={(value: number) => [value.toLocaleString(), 'Count']}
-                    />
-                    <Legend
-                      verticalAlign="bottom"
-                      height={56}
-                      wrapperStyle={{ paddingTop: 20 }}
-                      formatter={(value, entry: any) => {
-                        const total = [crmStatistics.totalLeads, crmStatistics.totalDeals, crmStatistics.openDeals, crmStatistics.totalCampaigns].reduce((a, b) => a + b, 0);
-                        const pct = total > 0 && entry.payload?.value ? ((entry.payload.value / total) * 100).toFixed(0) : '0';
-                        return (
-                          <span className="text-sm font-medium text-gray-700">
-                            {value}: {entry.payload?.value?.toLocaleString() ?? ''} ({pct}%)
-                          </span>
-                        );
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            {(() => {
+              const pieData = [
+                { name: 'Leads', value: crmStatistics.totalLeads || 0 },
+                { name: 'Deals', value: crmStatistics.totalDeals || 0 },
+                { name: 'Open Deals', value: crmStatistics.openDeals || 0 },
+                { name: 'Campaigns', value: crmStatistics.totalCampaigns || 0 },
+              ];
+              const filteredPieData = pieData.filter(item => item.value > 0);
+              const pieTotal = pieData.reduce((a, b) => a + b.value, 0);
+              return (
+                <Card className="border-2 border-pink-200/50 shadow-xl bg-gradient-to-br from-white/95 to-pink-50/30 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">CRM Metrics Distribution</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {filteredPieData.length === 0 ? (
+                      <div className="flex items-center justify-center h-[320px] text-gray-400 text-sm">
+                        No CRM data available yet
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={320}>
+                        <PieChart margin={{ top: 24, right: 24, left: 24, bottom: 72 }}>
+                          <Pie
+                            data={filteredPieData}
+                            cx="50%"
+                            cy="42%"
+                            innerRadius={52}
+                            outerRadius={90}
+                            paddingAngle={3}
+                            dataKey="value"
+                            animationDuration={800}
+                            animationEasing="ease-out"
+                          >
+                            {filteredPieData.map((_, index) => {
+                              const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b'];
+                              return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="#fff" strokeWidth={2.5} />;
+                            })}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', padding: '12px 16px' }}
+                            formatter={(value: number) => [value.toLocaleString(), 'Count']}
+                          />
+                          <Legend
+                            verticalAlign="bottom"
+                            height={56}
+                            wrapperStyle={{ paddingTop: 20 }}
+                            formatter={(value, entry: any) => {
+                              const pct = pieTotal > 0 && entry.payload?.value ? ((entry.payload.value / pieTotal) * 100).toFixed(0) : '0';
+                              return (
+                                <span className="text-sm font-medium text-gray-700">
+                                  {value}: {entry.payload?.value?.toLocaleString() ?? ''} ({pct}%)
+                                </span>
+                              );
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
           </div>
 
           {/* Recent Leads */}

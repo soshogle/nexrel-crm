@@ -130,23 +130,24 @@ function BusinessAIPageContent() {
     if (session) {
       if (mode === 'voice') {
         loadBusinessData();
-        fetch('/api/crm-voice-agent/functions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ function_name: 'get_statistics', parameters: {} }),
-        })
-          .then((r) => r.ok ? r.json() : null)
-          .then((data) => {
-            if (data?.success && data?.statistics) {
-              setCrmStatistics(data.statistics);
-              setShowVisualizations(true);
-            }
-          })
-          .catch(() => {});
         setAgentLoading(false);
       } else {
         loadAnalyticalDashboardData();
       }
+
+      fetch('/api/crm-voice-agent/functions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ function_name: 'get_statistics', parameters: {} }),
+      })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data?.success && data?.statistics) {
+            setCrmStatistics(data.statistics);
+            setShowVisualizations(true);
+          }
+        })
+        .catch(() => {});
     }
   }, [session, mode]);
 
