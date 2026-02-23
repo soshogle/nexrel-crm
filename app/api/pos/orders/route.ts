@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET POS ORDERS
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -61,10 +62,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(orders);
   } catch (error) {
     console.error('❌ POS orders fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch orders' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch orders');
   }
 }
 
@@ -76,7 +74,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -95,10 +93,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!items || items.length === 0) {
-      return NextResponse.json(
-        { error: 'Order must have at least one item' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Order must have at least one item');
     }
 
     // Calculate totals
@@ -161,9 +156,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
     console.error('❌ POS order creation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create order' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create order');
   }
 }

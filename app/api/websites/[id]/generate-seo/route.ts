@@ -11,6 +11,7 @@ import { websiteService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { seoAutomation } from '@/lib/website-builder/seo-automation';
 import { extractPages } from '@/lib/website-builder/extract-pages';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(
   request: NextRequest,
@@ -19,17 +20,17 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await websiteService.findUnique(ctx, params.id);
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const structure = (website.structure || {}) as any;
@@ -88,9 +89,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Generate SEO error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate SEO' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to generate SEO');
   }
 }

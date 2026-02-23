@@ -10,6 +10,7 @@ import { prisma } from '@/lib/db';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
 import { conversationService } from '@/lib/dal/conversation-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
       select: { id: true },
     });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const { searchParams } = new URL(request.url);
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     if (!leadId && conversationId) {
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
       leadId = conv?.leadId ?? null;
     }
 
-    const lead = leadId
+    const lead: any = leadId
       ? await leadService.findUnique(ctx, leadId, {
           deals: { take: 1, include: { stage: true } },
           notes: { take: 3, orderBy: { createdAt: 'desc' } },
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
             take: 1,
             orderBy: { dueDate: 'asc' },
           },
-        })
+        } as any)
       : null;
 
     const baseReplies = [
@@ -101,9 +102,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching smart replies:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch smart replies' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch smart replies');
   }
 }

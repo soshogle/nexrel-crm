@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCrmDb } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,13 +22,13 @@ export async function GET(
   try {
     const websiteId = params.id;
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID required');
     }
 
     const secret = request.headers.get('x-website-secret');
     const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
     if (!expectedSecret || secret !== expectedSecret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const db = getCrmDb(createDalContext('bootstrap'));
@@ -36,7 +37,7 @@ export async function GET(
       select: { id: true },
     });
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const { searchParams } = new URL(request.url);
@@ -60,6 +61,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('[websites blog] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrors.internal();
   }
 }

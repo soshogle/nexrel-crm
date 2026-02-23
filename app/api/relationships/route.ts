@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { relationshipService } from '@/lib/relationship-service';
 import { EntityType, RelationshipType } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/relationships
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -24,10 +25,7 @@ export async function GET(req: NextRequest) {
     const entityId = searchParams.get('entityId');
 
     if (!entityType || !entityId) {
-      return NextResponse.json(
-        { error: 'entityType and entityId are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('entityType and entityId are required');
     }
 
     const relationships = await relationshipService.getEntityRelationships(
@@ -39,10 +37,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(relationships);
   } catch (error) {
     console.error('Error fetching relationships:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch relationships' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch relationships');
   }
 }
 
@@ -54,7 +49,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -69,10 +64,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!sourceType || !sourceId || !targetType || !targetId || !relationshipType) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     const relationship = await relationshipService.createOrUpdateRelationship({
@@ -103,9 +95,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(relationship);
   } catch (error) {
     console.error('Error creating relationship:', error);
-    return NextResponse.json(
-      { error: 'Failed to create relationship' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create relationship');
   }
 }

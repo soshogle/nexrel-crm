@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 // GET /api/pipelines - Get all pipelines with stages and deals
 
@@ -13,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -21,8 +23,10 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
+
+    const pagination = parsePagination(request);
 
     // Get or create default pipeline
     let pipelines = await prisma.pipeline.findMany({
@@ -55,6 +59,8 @@ export async function GET(request: NextRequest) {
           },
         },
       },
+      take: pagination.take,
+      skip: pagination.skip,
       orderBy: { createdAt: 'asc' },
     });
 
@@ -107,13 +113,11 @@ export async function GET(request: NextRequest) {
       })),
     }));
 
-    return NextResponse.json(pipelinesWithParsedTags);
+    const total = await prisma.pipeline.count({ where: { userId: user.id } });
+    return paginatedResponse(pipelinesWithParsedTags, total, pagination);
   } catch (error) {
     console.error('Error fetching pipelines:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch pipelines' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch pipelines');
   }
 }
 
@@ -122,7 +126,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -130,7 +134,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const { name, description, color, stages } = await request.json();
@@ -159,9 +163,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(pipeline);
   } catch (error) {
     console.error('Error creating pipeline:', error);
-    return NextResponse.json(
-      { error: 'Failed to create pipeline' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create pipeline');
   }
 }

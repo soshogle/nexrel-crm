@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getMessagingProvider } from '@/lib/messaging';
+import { apiErrors } from '@/lib/api-error';
 
 // DELETE /api/messaging/channels/[id] - Disconnect a channel
 
@@ -16,7 +17,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
     
     const provider = getMessagingProvider(session.user.id);
@@ -25,10 +26,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error disconnecting channel:', error);
-    return NextResponse.json(
-      { error: 'Failed to disconnect channel' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to disconnect channel');
   }
 }
 
@@ -40,7 +38,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
     
     const provider = getMessagingProvider(session.user.id);
@@ -49,9 +47,6 @@ export async function GET(
     return NextResponse.json(status);
   } catch (error) {
     console.error('Error fetching channel status:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch channel status' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch channel status');
   }
 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,11 +16,11 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
 
@@ -29,7 +30,7 @@ export async function PUT(
     });
 
     if (!existingRule || existingRule.userId !== ctx.userId) {
-      return NextResponse.json({ error: 'Rule not found' }, { status: 404 });
+      return apiErrors.notFound('Rule not found');
     }
 
     const rule = await getCrmDb(ctx).taskAutomation.update({
@@ -44,10 +45,7 @@ export async function PUT(
     return NextResponse.json({ rule });
   } catch (error: any) {
     console.error('Error updating automation rule:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update rule' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update rule');
   }
 }
 
@@ -59,11 +57,11 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Verify ownership
     const existingRule = await getCrmDb(ctx).taskAutomation.findUnique({
@@ -71,7 +69,7 @@ export async function DELETE(
     });
 
     if (!existingRule || existingRule.userId !== ctx.userId) {
-      return NextResponse.json({ error: 'Rule not found' }, { status: 404 });
+      return apiErrors.notFound('Rule not found');
     }
 
     await getCrmDb(ctx).taskAutomation.delete({
@@ -81,9 +79,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting automation rule:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete rule' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete rule');
   }
 }

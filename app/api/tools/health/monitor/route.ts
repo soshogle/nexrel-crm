@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const instances = await prisma.toolInstance.findMany({
@@ -137,10 +138,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error monitoring tool health:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to monitor tool health' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to monitor tool health');
   }
 }
 
@@ -149,7 +147,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const metrics = await prisma.toolHealthMetric.findMany({
@@ -175,9 +173,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, metrics });
   } catch (error: any) {
     console.error('Error fetching health metrics:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch health metrics' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch health metrics');
   }
 }

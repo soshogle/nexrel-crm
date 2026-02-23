@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/user/subdomain - Get current user's subdomain
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     // Generate suggested subdomain if none exists
@@ -49,10 +50,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching subdomain:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch subdomain' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch subdomain');
   }
 }
 
@@ -61,29 +59,20 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { subdomain } = body;
 
     if (!subdomain) {
-      return NextResponse.json(
-        { error: 'Subdomain is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Subdomain is required');
     }
 
     // Validate subdomain format
     const subdomainRegex = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
     if (!subdomainRegex.test(subdomain)) {
-      return NextResponse.json(
-        {
-          error:
-            'Invalid subdomain format. Use only lowercase letters, numbers, and hyphens.',
-        },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid subdomain format. Use only lowercase letters, numbers, and hyphens.',);
     }
 
     // Check for reserved subdomains
@@ -108,10 +97,7 @@ export async function POST(request: NextRequest) {
       'dashboard',
     ];
     if (reserved.includes(subdomain.toLowerCase())) {
-      return NextResponse.json(
-        { error: 'This subdomain is reserved and cannot be used' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('This subdomain is reserved and cannot be used');
     }
 
     // Check if subdomain is already taken
@@ -121,10 +107,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing && existing.id !== session.user.id) {
-      return NextResponse.json(
-        { error: 'This subdomain is already taken' },
-        { status: 409 }
-      );
+      return apiErrors.conflict('This subdomain is already taken');
     }
 
     // Update user's subdomain
@@ -145,10 +128,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error setting subdomain:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to set subdomain' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to set subdomain');
   }
 }
 
@@ -157,7 +137,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     await prisma.user.update({
@@ -171,9 +151,6 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error removing subdomain:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to remove subdomain' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to remove subdomain');
   }
 }

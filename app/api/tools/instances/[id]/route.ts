@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,7 +15,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const instance = await prisma.toolInstance.findUnique({
@@ -29,15 +30,12 @@ export async function GET(
     });
 
     if (!instance) {
-      return NextResponse.json(
-        { error: 'Tool instance not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Tool instance not found');
     }
 
     // Verify ownership
     if (instance.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     // Sanitize credentials
@@ -49,10 +47,7 @@ export async function GET(
     return NextResponse.json({ success: true, instance: sanitized });
   } catch (error: any) {
     console.error('Error fetching tool instance:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch tool instance' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch tool instance');
   }
 }
 
@@ -64,7 +59,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -76,14 +71,11 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Tool instance not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Tool instance not found');
     }
 
     if (existing.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     const updated = await prisma.toolInstance.update({
@@ -108,10 +100,7 @@ export async function PATCH(
     });
   } catch (error: any) {
     console.error('Error updating tool instance:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update tool instance' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update tool instance');
   }
 }
 
@@ -123,7 +112,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify ownership
@@ -132,14 +121,11 @@ export async function DELETE(
     });
 
     if (!instance) {
-      return NextResponse.json(
-        { error: 'Tool instance not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Tool instance not found');
     }
 
     if (instance.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     // Delete all associated actions first
@@ -161,9 +147,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting tool instance:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete tool instance' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete tool instance');
   }
 }

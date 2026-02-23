@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { relationshipService } from '@/lib/relationship-service';
 import { EntityType } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/relationships/connected
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -25,10 +26,7 @@ export async function GET(req: NextRequest) {
     const maxDepth = parseInt(searchParams.get('maxDepth') || '2', 10);
 
     if (!entityType || !entityId) {
-      return NextResponse.json(
-        { error: 'entityType and entityId are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('entityType and entityId are required');
     }
 
     const connections = await relationshipService.findConnectedEntities(
@@ -41,9 +39,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ connections });
   } catch (error) {
     console.error('Error finding connected entities:', error);
-    return NextResponse.json(
-      { error: 'Failed to find connected entities' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to find connected entities');
   }
 }

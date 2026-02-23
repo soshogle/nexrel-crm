@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { randomBytes } from 'crypto';
+import { apiErrors } from '@/lib/api-error';
 
 function generateCode(template?: string | null): string {
   const code = randomBytes(4).toString('hex').toUpperCase();
@@ -22,7 +23,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const product = await prisma.product.findFirst({
@@ -31,7 +32,7 @@ export async function GET(
     });
 
     if (!product) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      return apiErrors.notFound('Product not found');
     }
 
     const unredeemed = product.accessCodes.filter((c) => !c.redeemedAt);
@@ -47,10 +48,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching access codes:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch codes' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch codes');
   }
 }
 
@@ -61,7 +59,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const product = await prisma.product.findFirst({
@@ -69,7 +67,7 @@ export async function POST(
     });
 
     if (!product) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      return apiErrors.notFound('Product not found');
     }
 
     const body = await req.json().catch(() => ({}));
@@ -96,9 +94,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Error generating access codes:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate codes' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to generate codes');
   }
 }

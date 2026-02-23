@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { websiteAnalyticsIntegrationService } from '@/lib/website-builder/analytics-integration';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -15,7 +16,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const config = await websiteAnalyticsIntegrationService.getAnalyticsConfig(params.id);
@@ -28,10 +29,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching analytics config:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch analytics config' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch analytics config');
   }
 }
 
@@ -42,7 +40,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -50,17 +48,11 @@ export async function PATCH(
 
     // Validate IDs if provided
     if (googleAnalyticsId && !websiteAnalyticsIntegrationService.validateGoogleAnalyticsId(googleAnalyticsId)) {
-      return NextResponse.json(
-        { error: 'Invalid Google Analytics ID format. Use G-XXXXXXXXXX (GA4) or UA-XXXXXXXXX-X (Universal)' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid Google Analytics ID format. Use G-XXXXXXXXXX (GA4) or UA-XXXXXXXXX-X (Universal)');
     }
 
     if (facebookPixelId && !websiteAnalyticsIntegrationService.validateFacebookPixelId(facebookPixelId)) {
-      return NextResponse.json(
-        { error: 'Invalid Facebook Pixel ID format. Must be 15-16 digits' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid Facebook Pixel ID format. Must be 15-16 digits');
     }
 
     const updated = await websiteAnalyticsIntegrationService.updateAnalyticsConfig(params.id, {
@@ -83,9 +75,6 @@ export async function PATCH(
     });
   } catch (error: any) {
     console.error('Error updating analytics config:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update analytics config' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update analytics config');
   }
 }

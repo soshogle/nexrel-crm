@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(
   request: NextRequest,
@@ -16,17 +17,14 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { operation, productIds, data } = body;
 
     if (!operation || !productIds || !Array.isArray(productIds)) {
-      return NextResponse.json(
-        { error: 'operation and productIds array are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('operation and productIds array are required');
     }
 
     const results: any[] = [];
@@ -110,10 +108,7 @@ export async function POST(
         break;
 
       default:
-        return NextResponse.json(
-          { error: 'Invalid operation. Supported: update_visibility, update_stock, remove_products' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Invalid operation. Supported: update_visibility, update_stock, remove_products');
     }
 
     return NextResponse.json({
@@ -127,9 +122,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Error performing bulk operation:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to perform bulk operation' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to perform bulk operation');
   }
 }

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     // Find user by phone number in PurchasedPhoneNumber table
     // This is the reliable, multi-tenant safe way to look up the owner
-    const purchasedNumber = await prisma.purchasedPhoneNumber.findFirst({
+    const purchasedNumber = await (prisma as any).purchasedPhoneNumber.findFirst({
       where: {
         phoneNumber: to,
         status: 'active'
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     console.log('✅ SMS received for user:', user.id, user.email, 'from:', from);
     
     // Find or create channel connection for SMS
-    let channelConnection = await prisma.channelConnection.findFirst({
+    let channelConnection = await (prisma as any).channelConnection.findFirst({
       where: {
         userId: user.id,
         channelType: 'SMS',
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     if (!channelConnection) {
       // Create channel connection for this Twilio number
-      channelConnection = await prisma.channelConnection.create({
+      channelConnection = await (prisma as any).channelConnection.create({
         data: {
           userId: user.id,
           channelType: 'SMS',
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ctx = createDalContext(user.id);
-    let conversation = await conversationService.findFirst(ctx, {
+    let conversation: any = await conversationService.findFirst(ctx, {
       contactIdentifier: from,
       channelConnectionId: channelConnection.id
     });
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         contactName: from,
         lastMessageAt: new Date(),
         status: 'ACTIVE'
-      });
+      } as any);
       console.log('Created new conversation:', conversation.id);
     }
 

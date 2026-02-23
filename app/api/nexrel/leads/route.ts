@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { leadService } from "@/lib/dal";
 import { createDalContext } from "@/lib/context/industry-context";
 import { emailService } from "@/lib/email-service";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -49,6 +50,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error creating ROI lead:", error);
-    return NextResponse.json({ error: "Failed to create lead" }, { status: 500 });
+    return apiErrors.internal("Failed to create lead");
   }
 }

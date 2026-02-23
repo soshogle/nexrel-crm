@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,10 +14,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     // Get query parameters
@@ -143,11 +141,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Error fetching knowledge base files:', error);
-    return NextResponse.json(
-      { 
-        error: error.message || 'Failed to fetch knowledge base files',
-      },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch knowledge base files',);
   }
 }

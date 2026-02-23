@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { AchSettlementService } from '@/lib/payments/ach-settlement-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -22,26 +23,23 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const settlement = await AchSettlementService.getSettlement(params.id);
 
     if (!settlement) {
-      return NextResponse.json({ error: 'Settlement not found' }, { status: 404 });
+      return apiErrors.notFound('Settlement not found');
     }
 
     if (settlement.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     return NextResponse.json(settlement);
   } catch (error) {
     console.error('Error fetching settlement:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch settlement' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch settlement');
   }
 }
 
@@ -52,17 +50,17 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const settlement = await AchSettlementService.getSettlement(params.id);
 
     if (!settlement) {
-      return NextResponse.json({ error: 'Settlement not found' }, { status: 404 });
+      return apiErrors.notFound('Settlement not found');
     }
 
     if (settlement.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     const cancelled = await AchSettlementService.cancelSettlement(params.id);
@@ -70,9 +68,6 @@ export async function DELETE(
     return NextResponse.json(cancelled);
   } catch (error) {
     console.error('Error cancelling settlement:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to cancel settlement' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to cancel settlement');
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET - Get all payment provider settings
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const providers = await prisma.paymentProviderSettings.findMany({
@@ -43,10 +44,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ providers });
   } catch (error) {
     console.error('Error fetching payment providers:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch payment providers' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch payment providers');
   }
 }
 
@@ -55,7 +53,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -63,7 +61,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
@@ -82,10 +80,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!provider) {
-      return NextResponse.json(
-        { error: 'Provider is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Provider is required');
     }
 
     // If setting as default, unset other defaults
@@ -150,9 +145,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error saving payment provider:', error);
-    return NextResponse.json(
-      { error: 'Failed to save payment provider settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to save payment provider settings');
   }
 }

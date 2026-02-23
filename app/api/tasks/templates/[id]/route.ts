@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { taskService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,13 +16,13 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
-    const template = await getCrmDb(ctx).taskTemplate.findFirst({
+    const template = await (getCrmDb(ctx) as any).taskTemplate.findFirst({
       where: {
         id: params.id,
         userId: ctx.userId,
@@ -29,16 +30,13 @@ export async function GET(
     });
 
     if (!template) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return apiErrors.notFound('Template not found');
     }
 
     return NextResponse.json({ template });
   } catch (error: any) {
     console.error('Error fetching template:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch template' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch template');
   }
 }
 
@@ -50,16 +48,16 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
 
     // Verify ownership
-    const existingTemplate = await getCrmDb(ctx).taskTemplate.findFirst({
+    const existingTemplate = await (getCrmDb(ctx) as any).taskTemplate.findFirst({
       where: {
         id: params.id,
         userId: ctx.userId,
@@ -67,10 +65,10 @@ export async function PUT(
     });
 
     if (!existingTemplate) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return apiErrors.notFound('Template not found');
     }
 
-    const template = await getCrmDb(ctx).taskTemplate.update({
+    const template = await (getCrmDb(ctx) as any).taskTemplate.update({
       where: { id: params.id },
       data: {
         ...body,
@@ -81,10 +79,7 @@ export async function PUT(
     return NextResponse.json({ template });
   } catch (error: any) {
     console.error('Error updating template:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update template' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update template');
   }
 }
 
@@ -96,14 +91,14 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Verify ownership
-    const existingTemplate = await getCrmDb(ctx).taskTemplate.findFirst({
+    const existingTemplate = await (getCrmDb(ctx) as any).taskTemplate.findFirst({
       where: {
         id: params.id,
         userId: ctx.userId,
@@ -111,21 +106,18 @@ export async function DELETE(
     });
 
     if (!existingTemplate) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return apiErrors.notFound('Template not found');
     }
 
     // Delete the template
-    await getCrmDb(ctx).taskTemplate.delete({
+    await (getCrmDb(ctx) as any).taskTemplate.delete({
       where: { id: params.id },
     });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting template:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete template' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete template');
   }
 }
 
@@ -137,13 +129,13 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
-    const template = await getCrmDb(ctx).taskTemplate.findFirst({
+    const template = await (getCrmDb(ctx) as any).taskTemplate.findFirst({
       where: {
         id: params.id,
         userId: ctx.userId,
@@ -151,7 +143,7 @@ export async function POST(
     });
 
     if (!template) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return apiErrors.notFound('Template not found');
     }
 
     const body = await request.json();
@@ -173,10 +165,10 @@ export async function POST(
         templateId: template.id,
         templateName: template.name,
       },
-    });
+    } as any);
 
     // Create activity log
-    await getCrmDb(ctx).taskActivity.create({
+    await (getCrmDb(ctx) as any).taskActivity.create({
       data: {
         taskId: task.id,
         userId: ctx.userId,
@@ -192,9 +184,6 @@ export async function POST(
     return NextResponse.json({ task });
   } catch (error: any) {
     console.error('Error creating task from template:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create task from template' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create task from template');
   }
 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import mammoth from 'mammoth';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -53,10 +54,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     console.log('📄 Uploading knowledge base document for user:', session.user.id);
@@ -67,10 +65,7 @@ export async function POST(request: NextRequest) {
     const voiceAgentId = formData.get('voiceAgentId') as string | null;
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('No file provided');
     }
 
     console.log('📁 File details:', {

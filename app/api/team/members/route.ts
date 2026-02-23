@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,11 +12,11 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const members = await getCrmDb(ctx).teamMember.findMany({
       where: { userId: ctx.userId },
@@ -49,10 +50,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(membersWithTaskCounts);
   } catch (error: unknown) {
     console.error('Error fetching team members:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch team members' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch team members');
   }
 }
 
@@ -60,14 +58,14 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
     const { email, name, role, phone, permissions } = body;
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Check if member already exists
     const existing = await getCrmDb(ctx).teamMember.findFirst({
@@ -78,10 +76,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'Team member with this email already exists' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Team member with this email already exists');
     }
 
     const member = await getCrmDb(ctx).teamMember.create({
@@ -101,9 +96,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(member, { status: 201 });
   } catch (error: unknown) {
     console.error('Error creating team member:', error);
-    return NextResponse.json(
-      { error: 'Failed to create team member' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create team member');
   }
 }

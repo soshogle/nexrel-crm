@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -11,22 +12,19 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { transcript, currentStep, context } = await req.json();
 
     if (!transcript) {
-      return NextResponse.json(
-        { error: "Transcript is required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("Transcript is required");
     }
 
     // Use LLM to understand user intent
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
+      return apiErrors.internal('OPENAI_API_KEY not configured');
     }
 
     const response = await fetch(
@@ -94,9 +92,6 @@ Be conversational, helpful, and concise. If the user seems uncertain, offer guid
     return NextResponse.json(parsedIntent);
   } catch (error) {
     console.error("Error processing intent:", error);
-    return NextResponse.json(
-      { error: "Failed to process voice command" },
-      { status: 500 }
-    );
+    return apiErrors.internal("Failed to process voice command");
   }
 }

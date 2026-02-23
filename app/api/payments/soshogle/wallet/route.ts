@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { soshoglePay } from '@/lib/payments';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const customer = await soshoglePay.getCustomer(session.user.id);
@@ -33,10 +34,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, wallet });
   } catch (error: any) {
     console.error('❌ Wallet fetch error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch wallet' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch wallet');
   }
 }
 
@@ -44,15 +42,12 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const customer = await soshoglePay.getCustomer(session.user.id);
     if (!customer) {
-      return NextResponse.json(
-        { error: 'Please set up payments first' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Please set up payments first');
     }
 
     const wallet = await soshoglePay.getOrCreateWallet(customer.id);
@@ -61,10 +56,7 @@ export async function POST(req: NextRequest) {
     const { amount, type, description, metadata } = body;
 
     if (!amount || amount <= 0) {
-      return NextResponse.json(
-        { error: 'Valid amount is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Valid amount is required');
     }
 
     let updatedWallet;
@@ -86,18 +78,12 @@ export async function POST(req: NextRequest) {
         metadata,
       });
     } else {
-      return NextResponse.json(
-        { error: 'Invalid operation type. Must be "credit" or "debit"' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid operation type. Must be "credit" or "debit"');
     }
 
     return NextResponse.json({ success: true, wallet: updatedWallet });
   } catch (error: any) {
     console.error('❌ Wallet operation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to process wallet operation' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to process wallet operation');
   }
 }

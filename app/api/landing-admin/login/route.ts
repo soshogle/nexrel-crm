@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -18,11 +19,11 @@ export async function POST(request: Request) {
     const secret = process.env.LANDING_ADMIN_SECRET;
 
     if (!expectedUser || !expectedPass || !secret) {
-      return NextResponse.json({ error: "Admin credentials not configured" }, { status: 500 });
+      return apiErrors.internal("Admin credentials not configured");
     }
 
     if (username !== expectedUser || password !== expectedPass) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+      return apiErrors.unauthorized("Invalid credentials");
     }
 
     const expiresAt = Date.now() + TOKEN_TTL_MS;
@@ -33,6 +34,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ token, expiresAt });
   } catch (error) {
     console.error("Admin login error:", error);
-    return NextResponse.json({ error: "Login failed" }, { status: 500 });
+    return apiErrors.internal("Login failed");
   }
 }

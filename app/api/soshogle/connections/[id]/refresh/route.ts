@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,7 +15,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify ownership
@@ -23,11 +24,11 @@ export async function POST(
     });
 
     if (!connection) {
-      return NextResponse.json({ error: 'Connection not found' }, { status: 404 });
+      return apiErrors.notFound('Connection not found');
     }
 
     if (connection.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     // Update last synced timestamp
@@ -41,9 +42,6 @@ export async function POST(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error refreshing connection:', error);
-    return NextResponse.json(
-      { error: 'Failed to refresh connection' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to refresh connection');
   }
 }

@@ -18,6 +18,7 @@ import { googleSearchConsole } from '@/lib/website-builder/google-search-console
 import { buildQuestionnaireFromUser } from '@/lib/website-builder/prefill-from-user';
 import { downloadExternalImagesInStructure } from '@/lib/website-builder/download-external-images';
 import { extractPages } from '@/lib/website-builder/extract-pages';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     } else {
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return apiErrors.unauthorized();
       }
       userId = session.user.id;
     }
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Pre-fill questionnaire from user/onboarding when building from template
     if ((type === 'SERVICE_TEMPLATE' || type === 'PRODUCT_TEMPLATE') && prefillFromUser && !questionnaireAnswers?.businessName) {
-      const user = await db.user.findUnique({
+      const user: any = await db.user.findUnique({
         where: { id: userId },
         select: {
           name: true,
@@ -77,40 +78,28 @@ export async function POST(request: NextRequest) {
           businessCategory: true,
           operatingLocation: true,
         },
-      });
+      } as any);
       if (user) {
         questionnaireAnswers = buildQuestionnaireFromUser(user);
       }
     }
 
     if (!name || !type) {
-      return NextResponse.json(
-        { error: 'Name and type are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Name and type are required');
     }
 
     if (type === 'REBUILT' && !sourceUrl) {
-      return NextResponse.json(
-        { error: 'Source URL is required for rebuilt websites' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Source URL is required for rebuilt websites');
     }
 
     if ((type === 'SERVICE_TEMPLATE' || type === 'PRODUCT_TEMPLATE') && !templateType) {
-      return NextResponse.json(
-        { error: 'Template type is required for template-based websites' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Template type is required for template-based websites');
     }
 
     // One website per profile: reject if user already has any website
     const existingCount = await websiteService.count(ctx);
     if (existingCount >= 1) {
-      return NextResponse.json(
-        { error: 'You already have a website. You can modify it from the Websites page.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('You already have a website. You can modify it from the Websites page.');
     }
 
     // Process website build
@@ -125,7 +114,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Create website record
-    const website = await websiteService.create(ctx, {
+    const website: any = await websiteService.create(ctx, {
       name,
         type: type as any,
         sourceUrl: type === 'REBUILT' ? sourceUrl : null,
@@ -137,7 +126,6 @@ export async function POST(request: NextRequest) {
         questionnaireAnswers: questionnaireAnswers || null,
         voiceAIEnabled: enableVoiceAI,
         enableTavusAvatar: enableTavusAvatar ?? true,
-        // Google Search Console credentials (if provided)
         ...(googleSearchConsoleAccessToken && {
           googleSearchConsoleAccessToken,
           googleSearchConsoleRefreshToken: googleSearchConsoleRefreshToken || null,
@@ -145,12 +133,12 @@ export async function POST(request: NextRequest) {
             ? new Date(googleSearchConsoleTokenExpiry)
             : null,
           googleSearchConsoleSiteUrl: googleSearchConsoleSiteUrl || null,
-          googleSearchConsoleVerified: false, // Will be verified during build
+          googleSearchConsoleVerified: false,
         }),
-      });
+      } as any);
 
     // Create build record
-    const build = await db.websiteBuild.create({
+    const build = await (db as any).websiteBuild.create({
       data: {
         websiteId: website.id,
         buildType: 'INITIAL',
@@ -166,7 +154,7 @@ export async function POST(request: NextRequest) {
       const errCtx = createDalContext(userId);
       const errDb = getCrmDb(errCtx);
       await Promise.all([
-        errDb.websiteBuild.update({
+(errDb as any).websiteBuild.update({
           where: { id: build.id },
           data: { status: 'FAILED', error: error?.message || String(error) },
         }),
@@ -187,10 +175,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Website creation error:', error);
     const message = error?.message || error?.cause?.message || 'Failed to create website';
-    return NextResponse.json(
-      { error: String(message) },
-      { status: 500 }
-    );
+    return apiErrors.internal(String(message));
   }
 }
 
@@ -215,7 +200,7 @@ async function processWebsiteBuild(
   const db = getCrmDb(ctx);
   try {
     // Update progress (sync to Website so list page shows progress)
-    await db.websiteBuild.update({
+    await (db as any).websiteBuild.update({
       where: { id: buildId },
       data: { progress: 10 },
     });
@@ -227,10 +212,10 @@ async function processWebsiteBuild(
 
     if (config.type === 'REBUILT') {
       // Scrape existing website
-      await db.websiteBuild.update({
-        where: { id: buildId },
-        data: { progress: 20 },
-      });
+    await (db as any).websiteBuild.update({
+      where: { id: buildId },
+      data: { progress: 20 },
+    });
       await websiteService.update(ctx, websiteId, { buildProgress: 20 });
 
       // Get user ID for image storage
@@ -267,7 +252,7 @@ async function processWebsiteBuild(
       seoData = scrapedData.seo;
     } else {
       // Build from template
-      await db.websiteBuild.update({
+      await (db as any).websiteBuild.update({
         where: { id: buildId },
         data: { progress: 30 },
       });
@@ -296,14 +281,14 @@ async function processWebsiteBuild(
     }
 
     // Update progress
-    await db.websiteBuild.update({
+    await (db as any).websiteBuild.update({
       where: { id: buildId },
       data: { progress: 50 },
     });
     await websiteService.update(ctx, websiteId, { buildProgress: 50 });
 
     // Generate websiteSecret for PRODUCT sites (CRM → /api/nexrel/products auth)
-    const website = await websiteService.findUnique(ctx, websiteId);
+    const website: any = await websiteService.findUnique(ctx, websiteId);
     if (!website) throw new Error('Website not found');
     const templateType = (config.templateType || 'SERVICE') as 'SERVICE' | 'PRODUCT';
     let websiteSecret: string | undefined;
@@ -331,7 +316,7 @@ async function processWebsiteBuild(
     ]);
 
     // Update progress
-    await db.websiteBuild.update({
+    await (db as any).websiteBuild.update({
       where: { id: buildId },
       data: { progress: 70 },
     });
@@ -368,7 +353,7 @@ async function processWebsiteBuild(
     }
 
     // Update progress
-    await db.websiteBuild.update({
+    await (db as any).websiteBuild.update({
       where: { id: buildId },
       data: { progress: 85 },
     });
@@ -404,7 +389,7 @@ async function processWebsiteBuild(
       const buildPages = extractPages(structure);
       const homepage = buildPages.find((p) => p.path === '/' || p.id === 'home');
       if (homepage) {
-        const structuredData = seoAutomation.generatePageStructuredData(homepage, seoConfig);
+        const structuredData = seoAutomation.generatePageStructuredData(homepage as any, seoConfig);
         seoFiles.structuredData = structuredData;
       }
 
@@ -482,8 +467,8 @@ async function processWebsiteBuild(
               await websiteService.update(ctx, websiteId, {
                 googleSearchConsoleAccessToken: accessToken,
                 googleSearchConsoleRefreshToken: refreshToken,
-                googleSearchConsoleTokenExpiry: new Date(Date.now() + 3600000), // 1 hour from now
-              });
+                googleSearchConsoleTokenExpiry: new Date(Date.now() + 3600000),
+              } as any);
             }
           }
         } catch (seoError: any) {
@@ -497,7 +482,7 @@ async function processWebsiteBuild(
     }
 
     // Update progress
-    await db.websiteBuild.update({
+    await (db as any).websiteBuild.update({
       where: { id: buildId },
       data: { progress: 95 },
     });
@@ -546,10 +531,10 @@ async function processWebsiteBuild(
       vercelDeployHookUrl: provisioningResult.vercelDeployHookUrl,
       elevenLabsAgentId: voiceAIConfig?.agentId || null,
       voiceAIConfig: voiceAIConfig || null,
-    });
+    } as any);
 
     // Mark build as completed
-    await db.websiteBuild.update({
+    await (db as any).websiteBuild.update({
       where: { id: buildId },
       data: {
         status: 'COMPLETED',

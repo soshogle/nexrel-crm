@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { getCrmDb, leadService } from '@/lib/dal'
 import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { processReferralTriggers } from '@/lib/referral-triggers'
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs';
@@ -13,11 +15,13 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
+
+    const pagination = parsePagination(request)
 
     const db = getCrmDb(ctx)
     const referrals = await db.referral.findMany({
@@ -40,16 +44,16 @@ export async function GET(request: NextRequest) {
           },
         },
       },
+      take: pagination.take,
+      skip: pagination.skip,
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ referrals })
+    const total = await db.referral.count({ where: { userId: ctx.userId } })
+    return paginatedResponse(referrals, total, pagination)
   } catch (error) {
     console.error('Error fetching referrals:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch referrals' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch referrals')
   }
 }
 
@@ -58,7 +62,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const body = await request.json()
@@ -66,24 +70,18 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!referrerId || !referredName) {
-      return NextResponse.json(
-        { error: 'referrerId and referredName are required' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('referrerId and referredName are required')
     }
 
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
 
     const db = getCrmDb(ctx)
     // Verify referrer exists and belongs to user
     const referrer = await leadService.findUnique(ctx, referrerId)
 
     if (!referrer) {
-      return NextResponse.json(
-        { error: 'Referrer lead not found' },
-        { status: 404 }
-      )
+      return apiErrors.notFound('Referrer lead not found')
     }
 
     // Create referral
@@ -118,9 +116,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ referral }, { status: 201 })
   } catch (error) {
     console.error('Error creating referral:', error)
-    return NextResponse.json(
-      { error: 'Failed to create referral' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to create referral')
   }
 }

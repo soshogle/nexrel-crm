@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getMessagingProvider } from '@/lib/messaging';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/messaging/conversations - Get all conversations
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
     
     const searchParams = request.nextUrl.searchParams;
@@ -31,9 +32,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ conversations });
   } catch (error) {
     console.error('Error fetching conversations:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch conversations' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch conversations');
   }
 }

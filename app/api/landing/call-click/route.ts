@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -25,6 +26,6 @@ export async function POST() {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error logging call click:", error);
-    return NextResponse.json({ error: "Failed to log call" }, { status: 500 });
+    return apiErrors.internal("Failed to log call");
   }
 }

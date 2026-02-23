@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -26,12 +27,12 @@ export async function GET(
     });
 
     if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     // Verify customer email if provided
     if (email && order.customerEmail !== email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get website order link
@@ -66,9 +67,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching order tracking:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch tracking' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch tracking');
   }
 }

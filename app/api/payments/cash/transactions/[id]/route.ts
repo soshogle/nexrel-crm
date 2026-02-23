@@ -8,6 +8,7 @@ import {
 } from '@/lib/payments/cash-service';
 import { CashTransactionType } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * PATCH /api/payments/cash/transactions/[id]
@@ -24,7 +25,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -36,18 +37,12 @@ export async function PATCH(
     });
 
     if (!existingTransaction || existingTransaction.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Transaction not found or unauthorized' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Transaction not found or unauthorized');
     }
 
     // Check if transaction is already reconciled
     if (existingTransaction.isReconciled) {
-      return NextResponse.json(
-        { error: 'Cannot edit a reconciled transaction' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot edit a reconciled transaction');
     }
 
     const updateData: any = {
@@ -72,10 +67,7 @@ export async function PATCH(
     });
   } catch (error: any) {
     console.error('Error updating cash transaction:', error);
-    return NextResponse.json(
-      { error: 'Failed to update cash transaction', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update cash transaction', error.message);
   }
 }
 
@@ -90,7 +82,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify ownership
@@ -99,18 +91,12 @@ export async function DELETE(
     });
 
     if (!existingTransaction || existingTransaction.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Transaction not found or unauthorized' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Transaction not found or unauthorized');
     }
 
     // Check if transaction is already reconciled
     if (existingTransaction.isReconciled) {
-      return NextResponse.json(
-        { error: 'Cannot delete a reconciled transaction' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete a reconciled transaction');
     }
 
     await deleteCashTransaction(params.id, session.user.id);
@@ -121,9 +107,6 @@ export async function DELETE(
     });
   } catch (error: any) {
     console.error('Error deleting cash transaction:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete cash transaction', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete cash transaction', error.message);
   }
 }

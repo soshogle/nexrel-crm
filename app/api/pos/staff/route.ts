@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET STAFF
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -57,10 +58,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(sanitizedStaff);
   } catch (error) {
     console.error('❌ Staff fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch staff' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch staff');
   }
 }
 
@@ -71,7 +69,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -86,18 +84,12 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!employeeId || !pin) {
-      return NextResponse.json(
-        { error: 'Employee ID and PIN are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Employee ID and PIN are required');
     }
 
     // Validate PIN (must be 4 digits)
     if (!/^\d{4}$/.test(pin)) {
-      return NextResponse.json(
-        { error: 'PIN must be 4 digits' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('PIN must be 4 digits');
     }
 
     // Check if employee ID already exists
@@ -106,10 +98,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'Employee ID already exists' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Employee ID already exists');
     }
 
     // Hash PIN
@@ -143,9 +132,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(sanitizedStaff, { status: 201 });
   } catch (error) {
     console.error('❌ Staff creation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create staff' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create staff');
   }
 }

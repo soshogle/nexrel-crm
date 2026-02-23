@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/pipelines/[id]/stages - Get all stages for a pipeline
 
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const stages = await prisma.pipelineStage.findMany({
@@ -27,9 +28,6 @@ export async function GET(
     return NextResponse.json(stages);
   } catch (error) {
     console.error('Error fetching stages:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch stages' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch stages');
   }
 }

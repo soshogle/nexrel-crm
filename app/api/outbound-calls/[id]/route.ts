@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsService } from '@/lib/elevenlabs';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/outbound-calls/[id] - Get specific outbound call
 
@@ -18,7 +19,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -26,7 +27,7 @@ export async function GET(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const outboundCall = await prisma.outboundCall.findFirst({
@@ -42,19 +43,13 @@ export async function GET(
     });
 
     if (!outboundCall) {
-      return NextResponse.json(
-        { error: 'Outbound call not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Outbound call not found');
     }
 
     return NextResponse.json(outboundCall);
   } catch (error: any) {
     console.error('Error fetching outbound call:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch outbound call' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch outbound call');
   }
 }
 
@@ -67,7 +62,7 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -75,7 +70,7 @@ export async function PATCH(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
@@ -88,10 +83,7 @@ export async function PATCH(
     });
 
     if (!outboundCall) {
-      return NextResponse.json(
-        { error: 'Outbound call not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Outbound call not found');
     }
 
     const updated = await prisma.outboundCall.update({
@@ -107,10 +99,7 @@ export async function PATCH(
     return NextResponse.json(updated);
   } catch (error: any) {
     console.error('Error updating outbound call:', error);
-    return NextResponse.json(
-      { error: 'Failed to update outbound call' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update outbound call');
   }
 }
 
@@ -123,7 +112,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -131,7 +120,7 @@ export async function DELETE(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const outboundCall = await prisma.outboundCall.findFirst({
@@ -142,18 +131,12 @@ export async function DELETE(
     });
 
     if (!outboundCall) {
-      return NextResponse.json(
-        { error: 'Outbound call not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Outbound call not found');
     }
 
     // If call is in progress, can't delete
     if (outboundCall.status === 'IN_PROGRESS') {
-      return NextResponse.json(
-        { error: 'Cannot delete call in progress' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete call in progress');
     }
 
     await prisma.outboundCall.delete({
@@ -163,10 +146,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting outbound call:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete outbound call' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete outbound call');
   }
 }
 
@@ -179,7 +159,7 @@ export async function POST(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -187,7 +167,7 @@ export async function POST(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const outboundCall = await prisma.outboundCall.findFirst({
@@ -201,17 +181,11 @@ export async function POST(
     });
 
     if (!outboundCall) {
-      return NextResponse.json(
-        { error: 'Outbound call not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Outbound call not found');
     }
 
     if (!outboundCall.voiceAgent.elevenLabsAgentId) {
-      return NextResponse.json(
-        { error: 'Voice agent not configured properly. Please complete the voice AI setup.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Voice agent not configured properly. Please complete the voice AI setup.');
     }
 
     // Update status to in progress
@@ -269,16 +243,10 @@ export async function POST(
         },
       });
 
-      return NextResponse.json(
-        { error: callError.message || 'Failed to initiate call' },
-        { status: 500 }
-      );
+      return apiErrors.internal(callError.message || 'Failed to initiate call');
     }
   } catch (error: any) {
     console.error('Error initiating outbound call:', error);
-    return NextResponse.json(
-      { error: 'Failed to initiate outbound call' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to initiate outbound call');
   }
 }

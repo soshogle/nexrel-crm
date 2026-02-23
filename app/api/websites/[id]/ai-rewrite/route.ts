@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteService } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(
   request: NextRequest,
@@ -14,25 +15,25 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
     const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const { text, field, sectionType, instruction } = await request.json();
 
     if (!text || typeof text !== 'string') {
-      return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+      return apiErrors.badRequest('Text is required');
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ error: 'OpenAI not configured' }, { status: 500 });
+      return apiErrors.internal('OpenAI not configured');
     }
 
     const { default: OpenAI } = await import('openai');
@@ -59,6 +60,6 @@ Return ONLY the rewritten text, no explanations or quotes.`;
     return NextResponse.json({ original: text, rewritten });
   } catch (error: any) {
     console.error('[AI Rewrite] Error:', error);
-    return NextResponse.json({ error: 'Failed to rewrite text' }, { status: 500 });
+    return apiErrors.internal('Failed to rewrite text');
   }
 }

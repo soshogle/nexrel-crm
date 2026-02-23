@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { websiteStripeConnect } from '@/lib/website-builder/stripe-connect';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(
   request: NextRequest,
@@ -23,17 +24,11 @@ export async function POST(
     } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { error: 'Cart items are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cart items are required');
     }
 
     if (!customerEmail) {
-      return NextResponse.json(
-        { error: 'Customer email is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Customer email is required');
     }
 
     const ctx = createDalContext('bootstrap', null);
@@ -43,10 +38,7 @@ export async function POST(
     });
 
     if (!website || !website.stripeConnectAccountId) {
-      return NextResponse.json(
-        { error: 'Store payment is not configured' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Store payment is not configured');
     }
 
     // Validate items and get prices from DB
@@ -94,10 +86,7 @@ export async function POST(
     }
 
     if (orderItems.length === 0) {
-      return NextResponse.json(
-        { error: 'No valid items in cart' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('No valid items in cart');
     }
 
     const amountDollars = subtotalCents / 100;
@@ -136,9 +125,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Checkout error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Checkout failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Checkout failed');
   }
 }

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getTemplateById } from '@/lib/workflow-templates';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/workflows/schedule
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -35,10 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!scheduledDate || !scheduledTime) {
-      return NextResponse.json(
-        { error: 'Schedule date and time are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Schedule date and time are required');
     }
 
     // If using a template, fetch it
@@ -46,10 +44,7 @@ export async function POST(request: NextRequest) {
     if (templateId) {
       const template = getTemplateById(templateId);
       if (!template) {
-        return NextResponse.json(
-          { error: 'Template not found' },
-          { status: 404 }
-        );
+        return apiErrors.notFound('Template not found');
       }
       workflowData = template;
     } else if (workflowId) {
@@ -59,16 +54,10 @@ export async function POST(request: NextRequest) {
       });
       
       if (!workflowData) {
-        return NextResponse.json(
-          { error: 'Workflow not found' },
-          { status: 404 }
-        );
+        return apiErrors.notFound('Workflow not found');
       }
     } else {
-      return NextResponse.json(
-        { error: 'Either workflowId or templateId is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Either workflowId or templateId is required');
     }
 
     // Combine scheduled date and time
@@ -76,10 +65,7 @@ export async function POST(request: NextRequest) {
     
     // Validate future date
     if (scheduledDateTime <= new Date()) {
-      return NextResponse.json(
-        { error: 'Scheduled time must be in the future' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Scheduled time must be in the future');
     }
 
     // Create or update workflow with schedule
@@ -123,10 +109,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error scheduling workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to schedule workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to schedule workflow');
   }
 }
 
@@ -138,7 +121,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const scheduledWorkflows = await prisma.workflow.findMany({
@@ -172,10 +155,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching scheduled workflows:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch scheduled workflows' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch scheduled workflows');
   }
 }
 
@@ -187,17 +167,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const workflowId = searchParams.get('id');
 
     if (!workflowId) {
-      return NextResponse.json(
-        { error: 'Workflow ID is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Workflow ID is required');
     }
 
     // Update workflow status to cancelled
@@ -222,9 +199,6 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error) {
     console.error('Error cancelling workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to cancel workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to cancel workflow');
   }
 }

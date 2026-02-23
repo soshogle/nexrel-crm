@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { provisionAIEmployeesForUser } from "@/lib/ai-employee-auto-provision";
+import { apiErrors } from '@/lib/api-error';
 
 // GET user profile
 
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -34,16 +35,13 @@ export async function GET(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return apiErrors.notFound("User not found");
     }
 
     return NextResponse.json(user);
   } catch (error: any) {
     console.error("Error fetching user profile:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch user profile", details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal("Failed to fetch user profile", error.message);
   }
 }
 
@@ -52,7 +50,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -71,10 +69,7 @@ export async function PATCH(req: NextRequest) {
     if (timezone !== undefined) updateData.timezone = timezone;
 
     if (Object.keys(updateData).length === 0) {
-      return NextResponse.json(
-        { error: "No fields to update" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("No fields to update");
     }
 
     const user = await prisma.user.update({
@@ -106,9 +101,6 @@ export async function PATCH(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error updating user profile:", error);
-    return NextResponse.json(
-      { error: "Failed to update user profile", details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal("Failed to update user profile", error.message);
   }
 }

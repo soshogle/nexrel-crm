@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { enrichLead, batchEnrichLeads } from '@/lib/lead-generation/data-enrichment';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/lead-generation/enrich
@@ -16,10 +17,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     const body = await request.json();
@@ -55,15 +53,9 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    return NextResponse.json(
-      { error: 'Missing leadId or leadIds parameter' },
-      { status: 400 }
-    );
+    return apiErrors.badRequest('Missing leadId or leadIds parameter');
   } catch (error) {
     console.error('Error enriching lead:', error);
-    return NextResponse.json(
-      { error: 'Failed to enrich lead' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to enrich lead');
   }
 }

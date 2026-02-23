@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TwilioService } from '@/lib/messaging-sync/twilio-service';
 import { prisma } from '@/lib/db';
 import twilio from 'twilio';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -39,10 +40,7 @@ export async function POST(req: NextRequest) {
 
     if (!channelConnection) {
       console.error('No channel connection found for Twilio number:', toNumber);
-      return NextResponse.json(
-        { error: 'Channel connection not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Channel connection not found');
     }
 
     // Get Twilio credentials from provider data
@@ -52,10 +50,7 @@ export async function POST(req: NextRequest) {
 
     if (!accountSid || !authToken) {
       console.error('Missing Twilio credentials in channel connection');
-      return NextResponse.json(
-        { error: 'Invalid channel configuration' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid channel configuration');
     }
 
     // Validate webhook signature for security
@@ -70,10 +65,7 @@ export async function POST(req: NextRequest) {
 
     if (!valid && process.env.NODE_ENV === 'production') {
       console.error('Invalid Twilio webhook signature');
-      return NextResponse.json(
-        { error: 'Invalid signature' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized('Invalid signature');
     }
 
     // Process the incoming message
@@ -96,9 +88,6 @@ export async function POST(req: NextRequest) {
     );
   } catch (error: any) {
     console.error('Error processing Twilio webhook:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Internal server error', error.message);
   }
 }

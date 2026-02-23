@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
     // Store connection in database
-    const existingConn = await prisma.channelConnection.findFirst({
+    const existingConn = await (prisma as any).channelConnection.findFirst({
       where: {
         userId: state,
         channelType: 'INSTAGRAM',
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     });
     
     if (existingConn) {
-      await prisma.channelConnection.update({
+      await (prisma as any).channelConnection.update({
         where: { id: existingConn.id },
         data: {
           accessToken: longLivedToken,
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
         },
       });
     } else {
-      await prisma.channelConnection.create({
+      await (prisma as any).channelConnection.create({
         data: {
           userId: state,
           channelType: 'INSTAGRAM',
@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    console.log(`✅ Instagram connected: @${username} (${user_id})`);
+    console.log(`✅ Instagram connected: @${username} (${state})`);
 
     return NextResponse.redirect(
       `${baseUrl}/dashboard/settings?instagram_success=true&username=${username}`

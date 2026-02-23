@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,14 +18,14 @@ export async function GET(
   try {
     const websiteId = params.id;
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID required');
     }
 
     const secret = request.headers.get('x-website-secret');
     const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
 
     if (!expectedSecret || secret !== expectedSecret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = createDalContext('bootstrap', null);
@@ -34,7 +35,7 @@ export async function GET(
     });
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     // List only — do not expose full content until user unlocks with email/phone
@@ -54,6 +55,6 @@ export async function GET(
     return NextResponse.json({ reports });
   } catch (error: any) {
     console.error('[secret-reports] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrors.internal();
   }
 }

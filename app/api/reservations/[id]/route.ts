@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma as db } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/reservations/[id] - Get reservation details
 
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const reservation = await db.reservation.findUnique({
@@ -45,19 +46,13 @@ export async function GET(
     });
 
     if (!reservation) {
-      return NextResponse.json(
-        { error: 'Reservation not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Reservation not found');
     }
 
     return NextResponse.json({ reservation });
   } catch (error) {
     console.error('Error fetching reservation:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch reservation' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch reservation');
   }
 }
 
@@ -69,7 +64,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -162,10 +157,7 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('Error updating reservation:', error);
-    return NextResponse.json(
-      { error: 'Failed to update reservation' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update reservation');
   }
 }
 
@@ -177,7 +169,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const reservation = await db.reservation.update({
@@ -232,9 +224,6 @@ export async function DELETE(
     });
   } catch (error) {
     console.error('Error cancelling reservation:', error);
-    return NextResponse.json(
-      { error: 'Failed to cancel reservation' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to cancel reservation');
   }
 }

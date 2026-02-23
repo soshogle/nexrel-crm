@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { taskService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { aiTaskService } from '@/lib/ai-task-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,11 +14,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const { eventType, leadId, dealId, contactId, eventData, autoAccept = false } = body;
@@ -58,10 +59,10 @@ export async function POST(request: NextRequest) {
               confidence: suggestion.confidence,
               reasoning: suggestion.reasoning,
             },
-          });
+          } as any);
 
           // Create activity log
-          await getCrmDb(ctx).taskActivity.create({
+          await (getCrmDb(ctx) as any).taskActivity.create({
             data: {
               taskId: task.id,
               userId: ctx.userId,
@@ -90,9 +91,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ suggestions });
   } catch (error: any) {
     console.error('Error auto-creating tasks:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to auto-create tasks' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to auto-create tasks');
   }
 }

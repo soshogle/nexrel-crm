@@ -8,6 +8,7 @@ import {
   getUserScans,
   getUserMentions,
 } from '@/lib/reviews/brand-scraper-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -30,10 +31,10 @@ export async function GET(req: NextRequest) {
 
     if (action === 'status') {
       const id = searchParams.get('id');
-      if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
+      if (!id) return apiErrors.badRequest('id is required');
       const scan = await getScanStatus(id);
       if (!scan || scan.userId !== session.user.id) {
-        return NextResponse.json({ error: 'Scan not found' }, { status: 404 });
+        return apiErrors.notFound('Scan not found');
       }
       return NextResponse.json(scan);
     }
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ scans });
   } catch (error: any) {
     console.error('Brand scan GET error:', error);
-    return NextResponse.json({ error: error.message || 'Failed' }, { status: 500 });
+    return apiErrors.internal(error.message || 'Failed');
   }
 }
 
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json().catch(() => ({}));
@@ -109,6 +110,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ scanId, status: 'RUNNING', businessName });
   } catch (error: any) {
     console.error('Brand scan POST error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to start scan' }, { status: 500 });
+    return apiErrors.internal(error.message || 'Failed to start scan');
   }
 }

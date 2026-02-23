@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
 import { addMinutes, parse, isAfter, isBefore } from 'date-fns';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(
   request: NextRequest,
@@ -28,10 +29,7 @@ export async function POST(
 
     // Validation
     if (!customerName || !customerEmail || !date || !time) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     // Get website and user
@@ -41,23 +39,17 @@ export async function POST(
     });
 
     if (!website) {
-      return NextResponse.json(
-        { error: 'Website not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Website not found');
     }
 
     const ctx = createDalContext(website.userId);
     // Get booking settings
-    const bookingSettings = await getCrmDb(ctx).bookingSettings.findUnique({
+    const bookingSettings = await (getCrmDb(ctx) as any).bookingSettings.findUnique({
       where: { userId: website.userId },
     });
 
     if (!bookingSettings) {
-      return NextResponse.json(
-        { error: 'Booking not available for this website' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Booking not available for this website');
     }
 
     // Parse appointment date/time
@@ -71,7 +63,7 @@ export async function POST(
     const endOfDay = new Date(requestedDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const existingAppointments = await getCrmDb(ctx).bookingAppointment.findMany({
+    const existingAppointments = await (getCrmDb(ctx) as any).bookingAppointment.findMany({
       where: {
         userId: website.userId,
         appointmentDate: {
@@ -90,7 +82,7 @@ export async function POST(
 
     // Check for conflicts
     const slotEnd = addMinutes(appointmentDateTime, slotDuration);
-    const hasConflict = existingAppointments.some((apt) => {
+    const hasConflict = existingAppointments.some((apt: any) => {
       const aptStart = new Date(apt.appointmentDate);
       const aptEnd = addMinutes(aptStart, apt.duration);
       return (
@@ -101,10 +93,7 @@ export async function POST(
     });
 
     if (hasConflict) {
-      return NextResponse.json(
-        { error: 'This time slot is no longer available' },
-        { status: 409 }
-      );
+      return apiErrors.conflict('This time slot is no longer available');
     }
 
     // Create or find lead
@@ -133,7 +122,7 @@ export async function POST(
     const status = bookingSettings.requireApproval ? 'SCHEDULED' : 'CONFIRMED';
 
     // Create appointment
-    const appointment = await getCrmDb(ctx).bookingAppointment.create({
+    const appointment = await (getCrmDb(ctx) as any).bookingAppointment.create({
       data: {
         userId: website.userId,
         leadId: lead.id,
@@ -150,7 +139,7 @@ export async function POST(
     });
 
     // Create website visitor record
-    await getCrmDb(ctx).websiteVisitor.create({
+    await (getCrmDb(ctx) as any).websiteVisitor.create({
       data: {
         websiteId: params.id,
         sessionId: `booking-${Date.now()}`,
@@ -196,10 +185,7 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Booking error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to book appointment' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to book appointment');
   }
 }
 
@@ -212,10 +198,7 @@ export async function GET(
     const date = searchParams.get('date');
 
     if (!date) {
-      return NextResponse.json(
-        { error: 'Date parameter is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Date parameter is required');
     }
 
     // Get website
@@ -225,23 +208,17 @@ export async function GET(
     });
 
     if (!website) {
-      return NextResponse.json(
-        { error: 'Website not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Website not found');
     }
 
     const ctx = createDalContext(website.userId);
     // Get booking settings
-    const bookingSettings = await getCrmDb(ctx).bookingSettings.findUnique({
+    const bookingSettings = await (getCrmDb(ctx) as any).bookingSettings.findUnique({
       where: { userId: website.userId },
     });
 
     if (!bookingSettings) {
-      return NextResponse.json(
-        { error: 'Booking not available' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Booking not available');
     }
 
     // Get available slots
@@ -251,7 +228,7 @@ export async function GET(
     const endOfDay = new Date(requestedDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const existingAppointments = await getCrmDb(ctx).bookingAppointment.findMany({
+    const existingAppointments = await (getCrmDb(ctx) as any).bookingAppointment.findMany({
       where: {
         userId: website.userId,
         appointmentDate: {
@@ -278,7 +255,7 @@ export async function GET(
       friday: { start: '09:00', end: '17:00' },
     };
 
-    const dayOfWeek = requestedDate.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    const dayOfWeek = requestedDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const hours = businessHours[dayOfWeek];
 
     if (!hours || !hours.start || !hours.end) {
@@ -302,7 +279,7 @@ export async function GET(
       const slotEnd = addMinutes(currentTime, slotDuration);
       if (slotEnd <= endTime) {
         // Check if slot conflicts with existing appointments
-        const hasConflict = existingAppointments.some((apt) => {
+        const hasConflict = existingAppointments.some((apt: any) => {
           const aptStart = new Date(apt.appointmentDate);
           const aptEnd = addMinutes(aptStart, apt.duration);
           return (
@@ -325,9 +302,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error getting availability:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to get availability' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to get availability');
   }
 }

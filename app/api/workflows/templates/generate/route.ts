@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,17 +12,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { pattern, name, description } = body;
 
     if (!pattern || !name) {
-      return NextResponse.json(
-        { error: 'Missing required fields: pattern, name' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: pattern, name');
     }
 
     // Analyze tool usage patterns to generate workflow
@@ -165,9 +163,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error generating workflow template:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate workflow template' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to generate workflow template');
   }
 }

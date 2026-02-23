@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -31,10 +32,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ reports });
   } catch (error: any) {
     console.error('Error fetching reports:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch reports' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch reports');
   }
 }
 
@@ -42,17 +40,14 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
     const { title, reportType, content, period } = body;
 
     if (!title || !content) {
-      return NextResponse.json(
-        { error: 'Title and content are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Title and content are required');
     }
 
     const report = await prisma.aiGeneratedReport.create({
@@ -76,9 +71,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating report:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create report' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create report');
   }
 }

@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { dataMonetizationService } from '@/lib/payments/data-monetization-service';
 import { InsightType, InsightPeriod } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -41,10 +42,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ insights });
   } catch (error: any) {
     console.error('Error fetching insights:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch insights', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch insights', error.message);
   }
 }
 
@@ -52,17 +50,14 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
     const { insightType, period, startDate, endDate } = body;
 
     if (!insightType || !period || !startDate || !endDate) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     const insight = await dataMonetizationService.generateInsight({
@@ -76,9 +71,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ insight });
   } catch (error: any) {
     console.error('Error generating insight:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate insight', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate insight', error.message);
   }
 }

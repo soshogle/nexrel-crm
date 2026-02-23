@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { voiceAIPlatform } from '@/lib/voice-ai-platform';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,12 +20,12 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Check for PLATFORM_ADMIN role
     if ((session.user as { role?: string }).role !== 'PLATFORM_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden - Platform Admin only' }, { status: 403 });
+      return apiErrors.forbidden('Forbidden - Platform Admin only');
     }
 
     const config = await voiceAIPlatform.getPlatformConfig();
@@ -47,10 +48,7 @@ export async function GET() {
     });
   } catch (error: unknown) {
     console.error('[PlatformAdmin] Error fetching config:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch configuration' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to fetch configuration');
   }
 }
 
@@ -60,12 +58,12 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Check for PLATFORM_ADMIN role
     if ((session.user as { role?: string }).role !== 'PLATFORM_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden - Platform Admin only' }, { status: 403 });
+      return apiErrors.forbidden('Forbidden - Platform Admin only');
     }
 
     const body = await request.json();
@@ -99,9 +97,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('[PlatformAdmin] Error updating config:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to update configuration' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to update configuration');
   }
 }

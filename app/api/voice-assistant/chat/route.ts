@@ -12,6 +12,7 @@ import {
   mapFunctionToAction,
   getNavigationUrlForAction,
 } from '@/lib/ai-assistant-functions';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,17 +21,17 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { message, conversationHistory = [] } = await req.json();
 
     if (!message) {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+      return apiErrors.badRequest('Message is required');
     }
 
     // Get user data (same as AI assistant chat)
-    const user = await prisma.user.findUnique({
+    const user: any = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: {
         id: true,
@@ -40,10 +41,10 @@ export async function POST(req: NextRequest) {
         businessName: true,
         industry: true,
       },
-    });
+    } as any);
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const userLanguage = user.language || 'en';
@@ -97,13 +98,13 @@ Remember: You're speaking, not typing. Keep it brief!${getConfidentialityGuard()
       functions: getAIAssistantFunctions(),
       function_call: 'auto',
       temperature: 0.7,
-      max_tokens: 150, // Shorter for voice
-    });
+      max_tokens: 150,
+    } as any);
 
     const responseMessage = completion.choices[0]?.message;
 
     if (!responseMessage) {
-      return NextResponse.json({ error: 'No response from AI' }, { status: 500 });
+      return apiErrors.internal('No response from AI');
     }
 
     // Handle function calls
@@ -112,7 +113,7 @@ Remember: You're speaking, not typing. Keep it brief!${getConfidentialityGuard()
       const functionArgs = JSON.parse(responseMessage.function_call.arguments || '{}');
 
       // Execute function (same logic as AI assistant chat)
-      const action = mapFunctionToAction(functionName, functionArgs, user.id);
+      const action = mapFunctionToAction(functionName);
       
       // For now, return a simple response indicating the function was called
       // In production, you'd execute the function and return results
@@ -131,9 +132,6 @@ Remember: You're speaking, not typing. Keep it brief!${getConfidentialityGuard()
     });
   } catch (error: any) {
     console.error('Voice assistant chat error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to process voice message' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to process voice message');
   }
 }

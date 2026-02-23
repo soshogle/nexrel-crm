@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,11 +13,13 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
+
+    const pagination = parsePagination(req);
 
     const tasks = await getCrmDb(ctx).task.findMany({
       where: { userId: ctx.userId },
@@ -32,12 +36,15 @@ export async function GET(req: NextRequest) {
         lead: { select: { id: true, businessName: true } },
       },
       orderBy: { createdAt: 'desc' },
+      take: pagination.take,
+      skip: pagination.skip,
     });
 
-    return NextResponse.json(tasks);
+    const total = await getCrmDb(ctx).task.count({ where: { userId: ctx.userId } });
+    return paginatedResponse(tasks, total, pagination);
   } catch (error: unknown) {
     console.error('Error fetching tasks:', error);
-    return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch tasks');
   }
 }
 
@@ -45,11 +52,11 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await req.json();
     const { title, description, priority, dueDate, assignedToId, dealId, leadId } = body;
@@ -70,6 +77,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(task, { status: 201 });
   } catch (error: unknown) {
     console.error('Error creating task:', error);
-    return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
+    return apiErrors.internal('Failed to create task');
   }
 }

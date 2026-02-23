@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { FacebookService } from '@/lib/messaging-sync/facebook-service';
 import { prisma } from '@/lib/db';
 import crypto from 'crypto';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(challenge, { status: 200 });
   }
 
-  return NextResponse.json({ error: 'Invalid verification token' }, { status: 403 });
+  return apiErrors.forbidden('Invalid verification token');
 }
 
 export async function POST(req: NextRequest) {
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     if (!verifyFacebookSignature(rawBody, signature)) {
       console.error('Facebook webhook signature verification failed');
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
+      return apiErrors.forbidden('Invalid signature');
     }
 
     const webhookData = JSON.parse(rawBody);
@@ -98,9 +99,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'ok' });
   } catch (error: any) {
     console.error('Error processing Facebook webhook:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Internal server error', error.message);
   }
 }

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { aiWorkflowGenerator } from '@/lib/ai-workflow-generator';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -25,17 +26,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
     const { description } = body;
 
     if (!description) {
-      return NextResponse.json(
-        { error: 'Description is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Description is required');
     }
 
     // Get user's context
@@ -67,9 +65,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ workflow });
   } catch (error: any) {
     console.error('Error generating workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate workflow', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate workflow', error.message);
   }
 }

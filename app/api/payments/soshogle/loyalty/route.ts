@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { soshoglePay } from '@/lib/payments';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const customer = await soshoglePay.getCustomer(session.user.id);
@@ -34,10 +35,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, loyaltyPoints });
   } catch (error: any) {
     console.error('❌ Loyalty points fetch error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch loyalty points' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch loyalty points');
   }
 }
 
@@ -45,25 +43,19 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const customer = await soshoglePay.getCustomer(session.user.id);
     if (!customer) {
-      return NextResponse.json(
-        { error: 'Please set up payments first' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Please set up payments first');
     }
 
     const body = await req.json();
     const { action, programId, points } = body;
 
     if (!programId || !points || points <= 0) {
-      return NextResponse.json(
-        { error: 'Valid program ID and points are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Valid program ID and points are required');
     }
 
     let result;
@@ -81,18 +73,12 @@ export async function POST(req: NextRequest) {
         points
       );
     } else {
-      return NextResponse.json(
-        { error: 'Invalid action. Must be "award" or "redeem"' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid action. Must be "award" or "redeem"');
     }
 
     return NextResponse.json({ success: true, loyaltyPoints: result });
   } catch (error: any) {
     console.error('❌ Loyalty points operation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to process loyalty points operation' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to process loyalty points operation');
   }
 }

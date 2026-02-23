@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { taskService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,11 +15,11 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
     const parentTaskId = searchParams.get('parentTaskId');
     const search = searchParams.get('search');
     const overdue = searchParams.get('overdue');
-    const limit = parseInt(searchParams.get('limit') || '100');
+    const pagination = parsePagination(request);
 
     const where: any = {
       OR: [{ userId: ctx.userId }, { assignedToId: ctx.userId }],
@@ -112,16 +114,16 @@ export async function GET(request: NextRequest) {
         { priority: 'desc' },
         { dueDate: 'asc' },
       ],
-      take: limit,
-    });
+      take: pagination.take,
+      skip: pagination.skip,
+    } as any);
 
-    return NextResponse.json({ tasks });
+    const total = await getCrmDb(ctx).task.count({ where } as any);
+
+    return paginatedResponse(tasks, total, pagination);
   } catch (error: any) {
     console.error('Error fetching tasks:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch tasks' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch tasks');
   }
 }
 
@@ -130,7 +132,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -156,23 +158,17 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!title) {
-      return NextResponse.json(
-        { error: 'Title is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Title is required');
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Check if dependency task exists and is not completed
     if (dependsOnId) {
       const dependsTask = await taskService.findUnique(ctx, dependsOnId);
       if (!dependsTask) {
-        return NextResponse.json(
-          { error: 'Dependency task not found' },
-          { status: 404 }
-        );
+        return apiErrors.notFound('Dependency task not found');
       }
     }
 
@@ -195,7 +191,7 @@ export async function POST(request: NextRequest) {
       aiContext,
       autoCreated: autoCreated || false,
       automationRule,
-    });
+    } as any);
 
     const taskWithInclude = await getCrmDb(ctx).task.findUnique({
       where: { id: task.id },
@@ -228,7 +224,7 @@ export async function POST(request: NextRequest) {
     emitCRMEvent('task_created', ctx.userId, { entityId: task.id, entityType: 'Task', data: { title } });
 
     // Create activity log
-    await getCrmDb(ctx).taskActivity.create({
+    await (getCrmDb(ctx) as any).taskActivity.create({
       data: {
         taskId: task.id,
         userId: ctx.userId,
@@ -254,9 +250,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ task: taskWithInclude ?? task }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating task:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create task' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create task');
   }
 }

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { taskService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,11 +17,11 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const task = await getCrmDb(ctx).task.findFirst({
       where: {
@@ -130,20 +131,17 @@ export async function GET(
           take: 50,
         },
       },
-    });
+    } as any);
 
     if (!task) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      return apiErrors.notFound('Task not found');
     }
 
     // Verify ownership or assignment (already enforced by findFirst where)
     return NextResponse.json({ task });
   } catch (error: any) {
     console.error('Error fetching task:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch task' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch task');
   }
 }
 
@@ -155,20 +153,20 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const existingTask = await taskService.findUnique(ctx, params.id);
 
     if (!existingTask) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      return apiErrors.notFound('Task not found');
     }
 
     if (existingTask.userId !== ctx.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     const body = await request.json();
@@ -274,11 +272,11 @@ export async function PUT(
           },
         },
       },
-    });
+    } as any);
 
     // Create activity logs for changes
     for (const change of changes) {
-      await getCrmDb(ctx).taskActivity.create({
+      await (getCrmDb(ctx) as any).taskActivity.create({
         data: {
           taskId: task.id,
           userId: ctx.userId,
@@ -292,10 +290,7 @@ export async function PUT(
     return NextResponse.json({ task });
   } catch (error: any) {
     console.error('Error updating task:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update task' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update task');
   }
 }
 
@@ -307,17 +302,19 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
+
+    const ctx = getDalContextFromSession(session) ?? { userId: session?.user?.id || '', industry: null };
 
     const task = await taskService.findUnique(ctx, params.id);
 
     if (!task) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      return apiErrors.notFound('Task not found');
     }
 
     if (task.userId !== ctx.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     await taskService.delete(ctx, params.id);
@@ -325,9 +322,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting task:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete task' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete task');
   }
 }

@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createDalContext, getDalContextFromSession } from '@/lib/context/industry-context';
 import { getCrmDb, websiteService } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
 
 const EYAL_DARKSWORD_WEBSITE_ID = 'cmlkk9awe0002puiqm64iqw7t';
 const EYAL_PRODUCTS_ENABLED = process.env.EYAL_PRODUCTS_API_ENABLED === 'true';
@@ -30,15 +31,12 @@ async function proxyToOwnerSite(
   });
 
   if (!website) {
-    return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+    return apiErrors.notFound('Website not found');
   }
 
   const baseUrl = website.vercelDeploymentUrl?.replace(/\/$/, '');
   if (!baseUrl) {
-    return NextResponse.json(
-      { error: 'Site not deployed yet. Deploy your site first.' },
-      { status: 400 }
-    );
+    return apiErrors.badRequest('Site not deployed yet. Deploy your site first.');
   }
 
   const authSecret = website.websiteSecret || process.env.WEBSITE_VOICE_CONFIG_SECRET;
@@ -76,26 +74,23 @@ async function handle(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   const { id: websiteId, productId } = params;
   if (!websiteId || !productId) {
-    return NextResponse.json({ error: 'Website ID and product ID required' }, { status: 400 });
+    return apiErrors.badRequest('Website ID and product ID required');
   }
 
   if (websiteId === EYAL_DARKSWORD_WEBSITE_ID && !EYAL_PRODUCTS_ENABLED) {
-    return NextResponse.json(
-      { error: 'This site uses a different setup. Product editing is not available via this API.' },
-      { status: 400 }
-    );
+    return apiErrors.badRequest('This site uses a different setup. Product editing is not available via this API.');
   }
 
   const ctx = getDalContextFromSession(session);
-  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!ctx) return apiErrors.unauthorized();
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) {
-    return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+    return apiErrors.notFound('Website not found');
   }
 
   const path = `/api/nexrel/products/${productId}`;

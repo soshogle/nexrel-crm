@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { conversationService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { aiResponseService } from '@/lib/ai-response-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * Generate suggested reply for human agents
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -25,30 +26,24 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const { conversationId, incomingMessage } = body;
 
     if (!conversationId || !incomingMessage) {
-      return NextResponse.json(
-        { error: 'conversationId and incomingMessage are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('conversationId and incomingMessage are required');
     }
 
     // Get conversation details
     const conversation = await conversationService.findUnique(ctx, conversationId);
 
     if (!conversation) {
-      return NextResponse.json(
-        { error: 'Conversation not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Conversation not found');
     }
 
     const sortedMessages = (conversation.messages || []).sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()).slice(0, 10);
@@ -70,9 +65,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ suggestedReply });
   } catch (error) {
     console.error('Failed to generate suggested reply:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate suggested reply' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate suggested reply');
   }
 }

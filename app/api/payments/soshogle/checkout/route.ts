@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { soshogleCheckout } from '@/lib/payments';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -25,10 +26,7 @@ export async function POST(req: NextRequest) {
       body;
 
     if (!amount || amount <= 0) {
-      return NextResponse.json(
-        { error: 'Valid amount is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Valid amount is required');
     }
 
     const checkout = await soshogleCheckout.createCheckout({
@@ -44,9 +42,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, checkout });
   } catch (error: any) {
     console.error('❌ Checkout creation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create checkout session' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create checkout session');
   }
 }

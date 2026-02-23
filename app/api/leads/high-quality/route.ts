@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     const hasPhone = searchParams.get('hasPhone') === 'true';
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const where: any = {
       leadScore: { gte: minScore },
@@ -69,9 +70,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching high-quality leads:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch high-quality leads' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch high-quality leads');
   }
 }

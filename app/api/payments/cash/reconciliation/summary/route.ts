@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { calculateReconciliationSummary } from '@/lib/payments/cash-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/payments/cash/reconciliation/summary
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -24,10 +25,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!startDate || !endDate) {
-      return NextResponse.json(
-        { error: 'Start date and end date are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Start date and end date are required');
     }
 
     const summary = await calculateReconciliationSummary(
@@ -43,9 +41,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error calculating reconciliation summary:', error);
-    return NextResponse.json(
-      { error: 'Failed to calculate reconciliation summary', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to calculate reconciliation summary', error.message);
   }
 }

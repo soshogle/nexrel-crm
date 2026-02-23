@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,11 +15,11 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await req.json();
     const { email, name, role, phone, status, permissions } = body;
@@ -32,10 +33,7 @@ export async function PUT(
     });
 
     if (!existingMember) {
-      return NextResponse.json(
-        { error: 'Team member not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Team member not found');
     }
 
     const updatedMember = await getCrmDb(ctx).teamMember.update({
@@ -53,10 +51,7 @@ export async function PUT(
     return NextResponse.json(updatedMember);
   } catch (error: unknown) {
     console.error('Error updating team member:', error);
-    return NextResponse.json(
-      { error: 'Failed to update team member' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update team member');
   }
 }
 
@@ -67,11 +62,11 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Verify ownership
     const existingMember = await getCrmDb(ctx).teamMember.findFirst({
@@ -82,10 +77,7 @@ export async function DELETE(
     });
 
     if (!existingMember) {
-      return NextResponse.json(
-        { error: 'Team member not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Team member not found');
     }
 
     // Check if member has assigned tasks or deals (tasks assigned to this team member)
@@ -94,12 +86,7 @@ export async function DELETE(
     });
 
     if (hasAssignments > 0) {
-      return NextResponse.json(
-        {
-          error: 'Cannot delete team member with active task assignments. Please reassign their tasks first.',
-        },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete team member with active task assignments. Please reassign their tasks first.',);
     }
 
     await getCrmDb(ctx).teamMember.delete({
@@ -109,9 +96,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error('Error deleting team member:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete team member' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete team member');
   }
 }

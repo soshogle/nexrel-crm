@@ -11,6 +11,7 @@ import { prisma } from '@/lib/db';
 import { ProfessionalAIEmployeeType } from '@prisma/client';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
 import { PROFESSIONAL_EMPLOYEE_PROMPTS } from '@/lib/professional-ai-employees/prompts';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const agents = await getExistingAgents(session.user.id);
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json().catch(() => undefined);
@@ -124,10 +125,7 @@ export async function POST(request: NextRequest) {
     try {
       apiKey = getApiKey();
     } catch {
-      return NextResponse.json(
-        { error: 'Soshogle AI voice is not configured' },
-        { status: 500 }
-      );
+      return apiErrors.internal('Soshogle AI voice is not configured');
     }
 
     const typesToProvision: ProfessionalAIEmployeeType[] =
@@ -207,9 +205,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error provisioning professional AI employees:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to provision agents' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to provision agents');
   }
 }

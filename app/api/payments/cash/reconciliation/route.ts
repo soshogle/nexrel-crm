@@ -7,6 +7,7 @@ import {
   getCashReconciliations,
   calculateReconciliationSummary,
 } from '@/lib/payments/cash-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/payments/cash/reconciliation
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -44,10 +45,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching cash reconciliations:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch cash reconciliations', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch cash reconciliations', error.message);
   }
 }
 
@@ -59,7 +57,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -67,10 +65,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!startDate || !endDate || actualCash === undefined) {
-      return NextResponse.json(
-        { error: 'Start date, end date, and actual cash are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Start date, end date, and actual cash are required');
     }
 
     // Convert amounts to cents
@@ -96,9 +91,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating cash reconciliation:', error);
-    return NextResponse.json(
-      { error: 'Failed to create cash reconciliation', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create cash reconciliation', error.message);
   }
 }

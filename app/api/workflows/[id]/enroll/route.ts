@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { workflowTemplateService, leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,11 +21,11 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const { id } = await params;
 
@@ -32,29 +33,20 @@ export async function POST(
     const workflow = await workflowTemplateService.findUnique(ctx, id);
 
     if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
     // Check if workflow is in enrollment mode
     const enrollmentMode = (workflow as any).enrollmentMode;
     if (!enrollmentMode && (workflow as any).executionMode !== 'DRIP') {
-      return NextResponse.json(
-        { error: 'This workflow is not configured for enrollment mode' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('This workflow is not configured for enrollment mode');
     }
 
     const body = await request.json();
     const { leadIds } = body;
 
     if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
-      return NextResponse.json(
-        { error: 'leadIds array is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('leadIds array is required');
     }
 
     // Verify leads belong to user
@@ -63,10 +55,7 @@ export async function POST(
     });
 
     if (leads.length !== leadIds.length) {
-      return NextResponse.json(
-        { error: 'Some leads were not found or do not belong to you' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Some leads were not found or do not belong to you');
     }
 
     // Check for existing enrollments
@@ -79,10 +68,7 @@ export async function POST(
     const leadsToEnroll = leads.filter(l => !existingLeadIds.has(l.id));
 
     if (leadsToEnroll.length === 0) {
-      return NextResponse.json(
-        { error: 'All leads are already enrolled in this workflow' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('All leads are already enrolled in this workflow');
     }
 
     // Get first task to calculate next send time
@@ -131,10 +117,7 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error enrolling leads:', error);
-    return NextResponse.json(
-      { error: 'Failed to enroll leads' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to enroll leads');
   }
 }
 
@@ -146,11 +129,11 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const { id } = await params;
 
@@ -158,10 +141,7 @@ export async function GET(
     const workflow = await workflowTemplateService.findUnique(ctx, id);
 
     if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
     // Get enrollments using Prisma client
@@ -212,9 +192,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching enrollments:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch enrollments' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch enrollments');
   }
 }

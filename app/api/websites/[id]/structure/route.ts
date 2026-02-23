@@ -10,6 +10,7 @@ import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteService, getCrmDb } from '@/lib/dal';
 import { updateSectionLayout } from '@/lib/website-builder/granular-tools';
 import { triggerWebsiteDeploy } from '@/lib/website-builder/deploy-trigger';
+import { apiErrors } from '@/lib/api-error';
 
 export async function PATCH(
   request: NextRequest,
@@ -19,13 +20,13 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const body = await request.json();
@@ -137,12 +138,9 @@ export async function PATCH(
       return NextResponse.json({ success: true, deploy: deployResult });
     }
 
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    return apiErrors.badRequest('Invalid request');
   } catch (error: any) {
     console.error('Structure update error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update structure' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update structure');
   }
 }

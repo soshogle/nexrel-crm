@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { ReferralStatus } from '@prisma/client'
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs';
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const referral = await prisma.referral.findUnique({
@@ -28,16 +29,13 @@ export async function GET(
     })
 
     if (!referral) {
-      return NextResponse.json({ error: 'Referral not found' }, { status: 404 })
+      return apiErrors.notFound('Referral not found')
     }
 
     return NextResponse.json({ referral })
   } catch (error) {
     console.error('Error fetching referral:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch referral' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to fetch referral')
   }
 }
 
@@ -49,7 +47,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const body = await request.json()
@@ -61,7 +59,7 @@ export async function PATCH(
     })
 
     if (!existing) {
-      return NextResponse.json({ error: 'Referral not found' }, { status: 404 })
+      return apiErrors.notFound('Referral not found')
     }
 
     // Update referral
@@ -84,10 +82,7 @@ export async function PATCH(
     return NextResponse.json({ referral })
   } catch (error) {
     console.error('Error updating referral:', error)
-    return NextResponse.json(
-      { error: 'Failed to update referral' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to update referral')
   }
 }
 
@@ -99,7 +94,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     // Verify ownership
@@ -108,7 +103,7 @@ export async function DELETE(
     })
 
     if (!existing) {
-      return NextResponse.json({ error: 'Referral not found' }, { status: 404 })
+      return apiErrors.notFound('Referral not found')
     }
 
     await prisma.referral.delete({
@@ -118,9 +113,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting referral:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete referral' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to delete referral')
   }
 }

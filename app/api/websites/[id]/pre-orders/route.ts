@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { websitePreOrderService } from '@/lib/website-builder/pre-order-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(
   request: NextRequest,
@@ -17,10 +18,7 @@ export async function POST(
     const { productId, customerEmail, customerName, customerPhone, quantity, expectedRestockDate, notes } = body;
 
     if (!productId || !customerEmail || !customerName || !quantity) {
-      return NextResponse.json(
-        { error: 'productId, customerEmail, customerName, and quantity are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('productId, customerEmail, customerName, and quantity are required');
     }
 
     const preOrder = await websitePreOrderService.createPreOrder({
@@ -40,10 +38,7 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Error creating pre-order:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create pre-order' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create pre-order');
   }
 }
 
@@ -54,7 +49,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const preOrders = await websitePreOrderService.getWebsitePreOrders(params.id);
@@ -65,9 +60,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching pre-orders:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch pre-orders' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch pre-orders');
   }
 }

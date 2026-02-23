@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { monitorLeadsForTasks } from '@/lib/lead-generation/task-automation';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/lead-generation/tasks/auto-create
@@ -16,10 +17,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     const result = await monitorLeadsForTasks(session.user.id);
@@ -30,9 +28,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error auto-creating tasks:', error);
-    return NextResponse.json(
-      { error: 'Failed to create tasks' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create tasks');
   }
 }

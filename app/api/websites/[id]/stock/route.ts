@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -15,7 +16,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const status = await websiteStockSyncService.getWebsiteStockStatus(params.id);
@@ -30,10 +31,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching stock status:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch stock status' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch stock status');
   }
 }
 
@@ -44,7 +42,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -63,9 +61,6 @@ export async function PATCH(
     });
   } catch (error: any) {
     console.error('Error updating stock settings:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update stock settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update stock settings');
   }
 }

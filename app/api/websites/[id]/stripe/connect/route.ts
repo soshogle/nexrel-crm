@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { websiteStripeConnect } from '@/lib/website-builder/stripe-connect';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(
   request: NextRequest,
@@ -14,7 +15,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -42,16 +43,10 @@ export async function POST(
       });
     }
 
-    return NextResponse.json(
-      { error: 'Invalid action' },
-      { status: 400 }
-    );
+    return apiErrors.badRequest('Invalid action');
   } catch (error: any) {
     console.error('Stripe Connect error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to process request' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to process request');
   }
 }
 
@@ -62,7 +57,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const status = await websiteStripeConnect.getAccountStatus(params.id);
@@ -73,9 +68,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error getting Stripe status:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to get status' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to get status');
   }
 }

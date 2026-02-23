@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { getCrmDb } from "@/lib/dal/db";
 import { createDalContext } from "@/lib/context/industry-context";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
     const secret = process.env.LANDING_ADMIN_SECRET;
     const authHeader = request.headers.get("authorization");
     if (!secret || !authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const token = authHeader.replace("Bearer ", "");
@@ -19,24 +20,24 @@ export async function GET(request: Request) {
     try {
       decoded = Buffer.from(token, "base64url").toString("utf8");
     } catch {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const parts = decoded.split(".");
     if (parts.length !== 3) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const [username, expiresAtRaw, signature] = parts;
     const payload = `${username}.${expiresAtRaw}`;
     const expectedSig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
     if (expectedSig !== signature) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const expiresAt = Number(expiresAtRaw);
     if (!expiresAt || Date.now() > expiresAt) {
-      return NextResponse.json({ error: "Token expired" }, { status: 401 });
+      return apiErrors.unauthorized("Token expired");
     }
 
     const leadOwnerId = process.env.DEMO_LEAD_OWNER_ID;
@@ -89,6 +90,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ leads, calls });
   } catch (error) {
     console.error("Error loading landing admin summary:", error);
-    return NextResponse.json({ error: "Failed to load admin data" }, { status: 500 });
+    return apiErrors.internal("Failed to load admin data");
   }
 }

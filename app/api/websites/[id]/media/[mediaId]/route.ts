@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb, websiteService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export async function PATCH(
   request: NextRequest,
@@ -15,17 +16,17 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await websiteService.findUnique(ctx, params.id);
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const db = getCrmDb(ctx);
@@ -36,7 +37,7 @@ export async function PATCH(
       where: { id: params.mediaId, websiteId: params.id },
     });
     if (!existing) {
-      return NextResponse.json({ error: 'Media not found' }, { status: 404 });
+      return apiErrors.notFound('Media not found');
     }
 
     const updateData: Record<string, unknown> = {};
@@ -56,9 +57,6 @@ export async function PATCH(
     return NextResponse.json({ media });
   } catch (error: any) {
     console.error('Media update error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update media' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update media');
   }
 }

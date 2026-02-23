@@ -10,6 +10,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteService } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
 
 const EYAL_DARKSWORD_WEBSITE_ID = 'cmlkk9awe0002puiqm64iqw7t';
 const EYAL_PRODUCTS_ENABLED = process.env.EYAL_PRODUCTS_API_ENABLED === 'true';
@@ -18,7 +19,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 async function proxyToOwnerSite(
-  ctx: { userId: string; industry?: string | null },
+  ctx: any,
   websiteId: string,
   method: string,
   path: string,
@@ -26,19 +27,16 @@ async function proxyToOwnerSite(
 ): Promise<NextResponse> {
   const website = await websiteService.findUnique(ctx, websiteId);
   if (!website) {
-    return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+    return apiErrors.notFound('Website not found');
   }
 
   if (website.templateType !== 'PRODUCT') {
-    return NextResponse.json({ error: 'Products API only available for PRODUCT template sites' }, { status: 400 });
+    return apiErrors.badRequest('Products API only available for PRODUCT template sites');
   }
 
   const baseUrl = website.vercelDeploymentUrl?.replace(/\/$/, '');
   if (!baseUrl) {
-    return NextResponse.json(
-      { error: 'Site not deployed yet. Deploy your site first.' },
-      { status: 400 }
-    );
+    return apiErrors.badRequest('Site not deployed yet. Deploy your site first.');
   }
 
   const authSecret = website.websiteSecret || process.env.WEBSITE_VOICE_CONFIG_SECRET;
@@ -74,24 +72,21 @@ export async function GET(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const websiteId = params.id;
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID required');
     }
 
     if (websiteId === EYAL_DARKSWORD_WEBSITE_ID && !EYAL_PRODUCTS_ENABLED) {
-      return NextResponse.json(
-        { error: 'This site uses a different setup. Product editing is not available via this API.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('This site uses a different setup. Product editing is not available via this API.');
     }
 
     const website = await websiteService.findUnique(ctx, websiteId);
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const { searchParams } = new URL(request.url);
@@ -102,7 +97,7 @@ export async function GET(
     return proxyToOwnerSite(ctx, websiteId, 'GET', path);
   } catch (error: unknown) {
     console.error('[products GET]', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrors.internal();
   }
 }
 
@@ -114,30 +109,27 @@ export async function POST(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const websiteId = params.id;
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID required');
     }
 
     if (websiteId === EYAL_DARKSWORD_WEBSITE_ID && !EYAL_PRODUCTS_ENABLED) {
-      return NextResponse.json(
-        { error: 'This site uses a different setup. Product editing is not available via this API.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('This site uses a different setup. Product editing is not available via this API.');
     }
 
     const website = await websiteService.findUnique(ctx, websiteId);
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const body = await request.json().catch(() => ({}));
     return proxyToOwnerSite(ctx, websiteId, 'POST', '/api/nexrel/products', body);
   } catch (error: unknown) {
     console.error('[products POST]', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrors.internal();
   }
 }

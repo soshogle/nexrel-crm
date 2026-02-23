@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { documentExtractor } from '@/lib/document-extractor';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,24 +14,21 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
     if (!file) {
-      return NextResponse.json({ error: 'File is required' }, { status: 400 });
+      return apiErrors.badRequest('File is required');
     }
 
     // Extract text from document
     const extractedDoc = await documentExtractor.extractText(file);
 
     if (!extractedDoc.success || !extractedDoc.text || extractedDoc.text.trim().length === 0) {
-      return NextResponse.json(
-        { error: extractedDoc.error || 'Could not extract text from document' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(extractedDoc.error || 'Could not extract text from document');
     }
 
     const extractedText = extractedDoc.text;
@@ -78,9 +76,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Document upload error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to process document' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to process document');
   }
 }

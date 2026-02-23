@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get Meta credentials from user settings
@@ -26,10 +27,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!metaSettings?.appId || !metaSettings?.appSecret) {
-      return NextResponse.json(
-        { error: 'Meta App credentials not configured. Please add your App ID and App Secret first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Meta App credentials not configured. Please add your App ID and App Secret first.');
     }
 
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
@@ -60,9 +58,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ url: authUrl.toString() });
   } catch (error: any) {
     console.error('❌ Meta OAuth error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to initiate Meta OAuth' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to initiate Meta OAuth');
   }
 }

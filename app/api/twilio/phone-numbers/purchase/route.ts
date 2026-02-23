@@ -6,6 +6,7 @@ import { purchasePhoneNumber } from '@/lib/twilio-phone-numbers';
 import { prisma } from '@/lib/db';
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
 import { VOICE_AGENT_LIMIT } from '@/lib/voice-agent-templates';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,20 +16,14 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
     const { phoneNumber, friendlyName, voiceUrl, smsUrl, autoCreateAgent = true, twilioAccountId } = body;
 
     if (!phoneNumber) {
-      return NextResponse.json(
-        { error: 'Phone number is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Phone number is required');
     }
 
     // Get base URL for webhooks - CRITICAL for SMS to work!
@@ -46,10 +41,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(result.error!);
     }
 
     let voiceAgentId: string | null = null;
@@ -57,14 +49,14 @@ export async function POST(req: NextRequest) {
     // Auto-create VoiceAgent with industry-specific prompt when requested
     if (autoCreateAgent && result.phoneNumber) {
       try {
-        const user = await prisma.user.findUnique({
+        const user: any = await prisma.user.findUnique({
           where: { id: session.user.id },
           select: { businessName: true, industry: true, businessDescription: true, language: true, role: true },
-        });
+        } as any);
 
         if (user) {
           const isSuperAdmin = user.role === 'SUPER_ADMIN';
-          const existingCount = await prisma.voiceAgent.count({ where: { userId: session.user.id } });
+          const existingCount = await (prisma as any).voiceAgent.count({ where: { userId: session.user.id } });
           if (!isSuperAdmin && existingCount >= VOICE_AGENT_LIMIT) {
             console.warn('⚠️  Voice agent limit reached, skipping auto-creation');
           } else {
@@ -72,7 +64,7 @@ export async function POST(req: NextRequest) {
             const industry = user.industry || null;
             const industryLabel = industry ? industry.replace(/_/g, ' ').toLowerCase() : 'general business';
 
-            const voiceAgent = await prisma.voiceAgent.create({
+            const voiceAgent = await (prisma as any).voiceAgent.create({
               data: {
                 userId: session.user.id,
                 name: `${businessName} Receptionist`,
@@ -132,9 +124,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('Error in purchase phone number API:', error);
-    return NextResponse.json(
-      { error: 'Failed to purchase phone number' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to purchase phone number');
   }
 }

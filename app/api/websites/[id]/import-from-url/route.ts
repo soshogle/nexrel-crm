@@ -14,6 +14,7 @@ import { websiteService, getCrmDb } from '@/lib/dal';
 import { websiteScraper } from '@/lib/website-builder/scraper';
 import { convertScrapedToComponents } from '@/lib/website-builder/convert-scraped-to-structure';
 import { downloadExternalImagesInStructure } from '@/lib/website-builder/download-external-images';
+import { apiErrors } from '@/lib/api-error';
 
 function normalizeUrl(url: string): string {
   let u = url.trim();
@@ -131,35 +132,32 @@ export async function POST(
   try {
     const { id: websiteId } = typeof (params as any).then === 'function' ? await (params as Promise<{ id: string }>) : (params as { id: string });
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID is required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID is required');
     }
 
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await websiteService.findUnique(ctx, websiteId);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     let body: { url?: string; pagePath?: string };
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+      return apiErrors.badRequest('Invalid JSON body');
     }
     const { url, pagePath: reqPagePath } = body || {};
     const pagePath = reqPagePath ?? '/';
 
     if (!url || typeof url !== 'string') {
-      return NextResponse.json(
-        { error: 'URL is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('URL is required');
     }
 
     const normalizedUrl = normalizeUrl(url);
@@ -196,9 +194,6 @@ export async function POST(
   } catch (error: any) {
     console.error('[Import from URL]', error);
     const message = error?.message || 'Failed to start import';
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    return apiErrors.internal(message);
   }
 }

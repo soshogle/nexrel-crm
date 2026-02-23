@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { emailService } from "@/lib/email-service";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,11 +12,11 @@ export async function POST(request: Request) {
     const { fullName, email, language, source } = await request.json();
 
     if (!fullName || !email) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return apiErrors.badRequest("Missing required fields");
     }
 
     if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+      return apiErrors.badRequest("Invalid email format");
     }
 
     const notifyEmail = process.env.DEMO_LEAD_NOTIFY_EMAIL || "info@soshogle.com";
@@ -39,6 +40,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error sending demo lead notification:", error);
-    return NextResponse.json({ error: "Failed to send notification" }, { status: 500 });
+    return apiErrors.internal("Failed to send notification");
   }
 }

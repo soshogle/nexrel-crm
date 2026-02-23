@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { workflowTemplateService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,11 +19,11 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Get user's industry
     const user = await getCrmDb(ctx).user.findUnique({
@@ -31,18 +32,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user?.industry || user.industry === 'REAL_ESTATE') {
-      return NextResponse.json(
-        { error: 'This feature is not available for this industry' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('This feature is not available for this industry');
     }
 
     const industryConfig = getIndustryConfig(user.industry);
     if (!industryConfig) {
-      return NextResponse.json(
-        { error: 'Workflow system not configured for this industry' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Workflow system not configured for this industry');
     }
 
     // Get user's workflow templates
@@ -119,10 +114,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching workflows:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to fetch workflows' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error?.message || 'Failed to fetch workflows');
   }
 }
 
@@ -131,11 +123,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Get user's industry
     const user = await getCrmDb(ctx).user.findUnique({
@@ -144,18 +136,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user?.industry || user.industry === 'REAL_ESTATE') {
-      return NextResponse.json(
-        { error: 'This feature is not available for this industry' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('This feature is not available for this industry');
     }
 
     const industryConfig = getIndustryConfig(user.industry);
     if (!industryConfig) {
-      return NextResponse.json(
-        { error: 'Workflow system not configured for this industry' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Workflow system not configured for this industry');
     }
 
     const body = await request.json();
@@ -165,10 +151,7 @@ export async function POST(request: NextRequest) {
     if (fromTemplate) {
       const template = industryConfig.templates.find(t => t.id === fromTemplate);
       if (!template) {
-        return NextResponse.json(
-          { error: 'Invalid template ID' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Invalid template ID');
       }
 
       // Create workflow from template
@@ -249,10 +232,7 @@ export async function POST(request: NextRequest) {
 
     // Create custom workflow
     if (!name) {
-      return NextResponse.json(
-        { error: 'Name is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Name is required');
     }
 
     const workflow = await getCrmDb(ctx).workflowTemplate.create({
@@ -347,9 +327,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating workflow:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to create workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error?.message || 'Failed to create workflow');
   }
 }

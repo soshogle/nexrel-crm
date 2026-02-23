@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getMessagingProvider } from '@/lib/messaging';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/messaging/channels - Get all connected channels
 
@@ -14,7 +15,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
     
     const channels = await prisma.channelConnection.findMany({
@@ -29,10 +30,7 @@ export async function GET() {
     return NextResponse.json({ channels });
   } catch (error) {
     console.error('Error fetching channels:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch channels' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch channels');
   }
 }
 
@@ -41,14 +39,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
     
     const body = await request.json();
     const { channelType, credentials } = body;
     
     if (!channelType) {
-      return NextResponse.json({ error: 'Channel type is required' }, { status: 400 });
+      return apiErrors.badRequest('Channel type is required');
     }
     
     const provider = getMessagingProvider(session.user.id);
@@ -58,10 +56,7 @@ export async function POST(request: NextRequest) {
     });
     
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || 'Failed to connect channel' },
-        { status: 500 }
-      );
+      return apiErrors.internal(result.error || 'Failed to connect channel');
     }
     
     return NextResponse.json({ 
@@ -70,9 +65,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error connecting channel:', error);
-    return NextResponse.json(
-      { error: 'Failed to connect channel' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to connect channel');
   }
 }

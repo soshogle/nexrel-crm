@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { soshoglePay } from '@/lib/payments';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -34,9 +35,6 @@ export async function POST(
     return NextResponse.json({ success: true, paymentIntent });
   } catch (error: any) {
     console.error('❌ Payment capture error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to capture payment' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to capture payment');
   }
 }

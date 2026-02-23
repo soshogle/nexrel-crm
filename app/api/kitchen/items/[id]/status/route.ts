@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * UPDATE KITCHEN ITEM STATUS
@@ -19,7 +20,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -27,10 +28,7 @@ export async function PATCH(
 
     // Validate required fields
     if (!status) {
-      return NextResponse.json(
-        { error: 'Status is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Status is required');
     }
 
     // Get current item
@@ -42,10 +40,7 @@ export async function PATCH(
     });
 
     if (!item) {
-      return NextResponse.json(
-        { error: 'Kitchen item not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Kitchen item not found');
     }
 
     // Build update data
@@ -107,10 +102,7 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('❌ Kitchen item status update error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update status' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update status');
   }
 }
 

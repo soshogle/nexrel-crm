@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getMessagingProvider } from '@/lib/messaging';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/messaging/conversations/[id]/messages - Get messages for a conversation
 
@@ -16,7 +17,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
     
     const searchParams = request.nextUrl.searchParams;
@@ -33,10 +34,7 @@ export async function GET(
     return NextResponse.json({ messages });
   } catch (error) {
     console.error('Error fetching messages:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch messages' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch messages');
   }
 }
 
@@ -48,21 +46,21 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
     
     const body = await request.json();
     const { content, attachments } = body;
     
     if (!content || content.trim() === '') {
-      return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
+      return apiErrors.badRequest('Message content is required');
     }
     
     // Get conversation details
     const { getCrmDb } = await import('@/lib/dal');
     const { getDalContextFromSession } = await import('@/lib/context/industry-context');
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
     const db = getCrmDb(ctx);
     const conversation = await db.conversation.findFirst({
       where: {
@@ -75,7 +73,7 @@ export async function POST(
     });
     
     if (!conversation) {
-      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+      return apiErrors.notFound('Conversation not found');
     }
     
     const provider = getMessagingProvider(session.user.id);
@@ -87,10 +85,7 @@ export async function POST(
     });
     
     if (result.status === 'FAILED') {
-      return NextResponse.json(
-        { error: result.error || 'Failed to send message' },
-        { status: 500 }
-      );
+      return apiErrors.internal(result.error || 'Failed to send message');
     }
     
     return NextResponse.json({ 
@@ -99,9 +94,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error sending message:', error);
-    return NextResponse.json(
-      { error: 'Failed to send message' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to send message');
   }
 }

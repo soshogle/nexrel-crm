@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { workflowTemplateService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,16 +20,16 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const existing = await workflowTemplateService.findUnique(ctx, params.id);
 
     if (!existing) {
-      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+      return apiErrors.notFound('Workflow not found');
     }
 
     const body = await request.json();
@@ -42,7 +43,7 @@ export async function POST(
     } = body;
 
     if (!name) {
-      return NextResponse.json({ error: 'Task name is required' }, { status: 400 });
+      return apiErrors.badRequest('Task name is required');
     }
 
     const maxOrder = existing.tasks.length > 0
@@ -80,9 +81,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('[workflows/tasks] Error:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to add task' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error?.message || 'Failed to add task');
   }
 }

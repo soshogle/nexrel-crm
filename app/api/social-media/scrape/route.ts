@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { createDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal';
 import fs from 'fs';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -39,26 +40,20 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body: ScrapeRequest = await request.json();
     const { platform, scraperType, searchQuery, maxResults, templateId } = body;
 
     if (!platform || !scraperType || !searchQuery) {
-      return NextResponse.json(
-        { error: 'Missing required fields: platform, scraperType, searchQuery' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: platform, scraperType, searchQuery');
     }
 
     // Get Apify token
     const apifyToken = getApifyToken();
     if (!apifyToken) {
-      return NextResponse.json(
-        { error: 'Soshogle AI Lead Finder is not configured. Please configure it in the system.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Soshogle AI Lead Finder is not configured. Please configure it in the system.');
     }
 
     console.log(`🔍 Starting ${platform} scrape:`, { scraperType, searchQuery, maxResults });
@@ -108,10 +103,7 @@ export async function POST(request: NextRequest) {
     if (!actorResponse.ok) {
       const errorText = await actorResponse.text();
       console.error('Apify API error:', errorText);
-      return NextResponse.json(
-        { error: 'Soshogle AI Lead Finder failed' },
-        { status: 500 }
-      );
+      return apiErrors.internal('Soshogle AI Lead Finder failed');
     }
 
     const runData = await actorResponse.json();
@@ -217,9 +209,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Social media scraping error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to scrape social media' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to scrape social media');
   }
 }

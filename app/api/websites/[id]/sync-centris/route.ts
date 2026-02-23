@@ -12,6 +12,7 @@ import { getCrmDb, websiteService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { runCentralCentrisSync, type BrokerOverride } from '@/lib/centris-sync';
 import { runRealtorSync } from '@/lib/realtor-sync';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -23,25 +24,22 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     if (website.templateType !== 'SERVICE') {
-      return NextResponse.json(
-        { error: 'Centris sync is only for real estate service websites' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Centris sync is only for real estate service websites');
     }
 
     let databaseUrls: string[] = [];

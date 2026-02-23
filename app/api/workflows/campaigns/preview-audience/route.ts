@@ -12,22 +12,23 @@ import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { Prisma } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const { filters, websiteId } = body;
 
     if (!filters) {
-      return NextResponse.json({ error: 'Filters are required' }, { status: 400 });
+      return apiErrors.badRequest('Filters are required');
     }
 
     // Build Prisma query based on filters (leadService adds userId)
@@ -89,9 +90,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ count });
   } catch (error: any) {
     console.error('Error previewing audience:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to preview audience' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to preview audience');
   }
 }

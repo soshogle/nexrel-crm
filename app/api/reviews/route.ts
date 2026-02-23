@@ -6,6 +6,8 @@ import { ReviewSource } from '@prisma/client';
 import { processIncomingReview } from '@/lib/reviews/review-intelligence-service';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { campaignService } from '@/lib/dal/campaign-service';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,7 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -25,6 +27,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const needsResponse = searchParams.get('needsResponse');
 
+    const pagination = parsePagination(request);
     const where: any = { userId: session.user.id };
 
     if (source && source !== 'ALL') where.source = source;
@@ -42,23 +45,28 @@ export async function GET(request: NextRequest) {
       where.aiResponseStatus = { not: 'PUBLISHED' };
     }
 
-    const reviews = await prisma.review.findMany({
-      where,
-      include: {
-        lead: {
-          select: { id: true, businessName: true, contactPerson: true, email: true },
+    const [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where,
+        include: {
+          lead: {
+            select: { id: true, businessName: true, contactPerson: true, email: true },
+          },
+          campaign: {
+            select: { id: true, name: true },
+          },
         },
-        campaign: {
-          select: { id: true, name: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        take: pagination.take,
+        skip: pagination.skip,
+      }),
+      prisma.review.count({ where }),
+    ]);
 
-    return NextResponse.json({ reviews });
+    return paginatedResponse(reviews, total, pagination);
   } catch (error) {
     console.error('Error fetching reviews:', error);
-    return NextResponse.json({ error: 'Failed to fetch reviews' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch reviews');
   }
 }
 
@@ -66,7 +74,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -76,22 +84,22 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!source || !rating) {
-      return NextResponse.json({ error: 'source and rating are required' }, { status: 400 });
+      return apiErrors.badRequest('source and rating are required');
     }
 
     if (rating < 1 || rating > 5) {
-      return NextResponse.json({ error: 'Rating must be between 1 and 5' }, { status: 400 });
+      return apiErrors.badRequest('Rating must be between 1 and 5');
     }
 
     // If campaignId provided, verify ownership
     if (campaignId) {
       const ctx = getDalContextFromSession(session);
       if (!ctx) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return apiErrors.unauthorized();
       }
       const campaign = await campaignService.findUnique(ctx, campaignId);
       if (!campaign) {
-        return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+        return apiErrors.notFound('Campaign not found');
       }
     }
 
@@ -132,6 +140,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ review: fullReview, triggered }, { status: 201 });
   } catch (error) {
     console.error('Error creating review:', error);
-    return NextResponse.json({ error: 'Failed to create review' }, { status: 500 });
+    return apiErrors.internal('Failed to create review');
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // DELETE - Delete a payment provider
 
@@ -16,7 +17,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -24,7 +25,7 @@ export async function DELETE(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     // Verify ownership
@@ -33,7 +34,7 @@ export async function DELETE(
     });
 
     if (!provider || provider.userId !== user.id) {
-      return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
+      return apiErrors.notFound('Provider not found');
     }
 
     await prisma.paymentProviderSettings.delete({
@@ -43,10 +44,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting payment provider:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete payment provider' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete payment provider');
   }
 }
 
@@ -58,7 +56,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -66,7 +64,7 @@ export async function PATCH(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
@@ -78,7 +76,7 @@ export async function PATCH(
     });
 
     if (!provider || provider.userId !== user.id) {
-      return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
+      return apiErrors.notFound('Provider not found');
     }
 
     // If setting as default, unset other defaults
@@ -113,9 +111,6 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('Error updating payment provider:', error);
-    return NextResponse.json(
-      { error: 'Failed to update payment provider' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update payment provider');
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createDalContext } from "@/lib/context/industry-context";
 import { leadService } from "@/lib/dal/lead-service";
 import { emailService } from "@/lib/email-service";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
     const { email } = await request.json();
 
     if (!email || !emailRegex.test(email)) {
-      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+      return apiErrors.badRequest("Invalid email");
     }
 
     const leadOwnerId = process.env.DEMO_LEAD_OWNER_ID || "";
@@ -48,6 +49,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, token });
   } catch (error) {
     console.error("Error unlocking pricing:", error);
-    return NextResponse.json({ error: "Failed to unlock pricing" }, { status: 500 });
+    return apiErrors.internal("Failed to unlock pricing");
   }
 }

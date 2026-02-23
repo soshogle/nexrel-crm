@@ -15,6 +15,7 @@ import { FacebookService } from '@/lib/messaging-sync/facebook-service';
 import { InstagramService } from '@/lib/messaging-sync/instagram-service';
 import { WhatsAppService } from '@/lib/messaging-sync/whatsapp-service';
 import { facebookMessengerService } from '@/lib/facebook-messenger-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -28,21 +29,18 @@ export async function POST(
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const conversationId = params.id;
     const { message, attachmentUrl, subject } = await req.json();
 
     if (!message && !attachmentUrl) {
-      return NextResponse.json(
-        { error: 'Message or attachment required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Message or attachment required');
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const db = getCrmDb(ctx);
     // Get conversation with channel connection
@@ -54,14 +52,11 @@ export async function POST(
     });
 
     if (!conversation) {
-      return NextResponse.json(
-        { error: 'Conversation not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Conversation not found');
     }
 
     if (conversation.userId !== ctx.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     const connection = conversation.channelConnection;
@@ -203,9 +198,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Error sending message:', error);
-    return NextResponse.json(
-      { error: 'Failed to send message', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to send message', error.message);
   }
 }

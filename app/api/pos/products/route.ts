@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET POS PRODUCTS
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -65,10 +66,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(filteredProducts);
   } catch (error) {
     console.error('❌ POS products fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch products' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch products');
   }
 }
 
@@ -80,7 +78,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -98,10 +96,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name || !sku || !category || !sellingPrice) {
-      return NextResponse.json(
-        { error: 'Name, SKU, category, and selling price are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Name, SKU, category, and selling price are required');
     }
 
     // Check if SKU already exists
@@ -110,10 +105,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingSku) {
-      return NextResponse.json(
-        { error: 'SKU already exists' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('SKU already exists');
     }
 
     // Create inventory item with selling price
@@ -139,9 +131,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error('❌ POS product creation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create product' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create product');
   }
 }

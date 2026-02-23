@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { InstagramService } from '@/lib/messaging-sync/instagram-service';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -92,9 +93,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'ok' });
   } catch (error: any) {
     console.error('Error processing Instagram webhook:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Internal server error', error.message);
   }
 }

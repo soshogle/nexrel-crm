@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
 import { websiteService, getCrmDb } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,7 +21,7 @@ export async function GET(
   try {
     const websiteId = params.id;
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID required');
     }
 
     // Auth: session (owner) or shared secret (template server)
@@ -29,7 +30,7 @@ export async function GET(
     const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
 
     if (!session?.user?.id && !(expectedSecret && secret === expectedSecret)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = session?.user?.id ? getDalContextFromSession(session) : null;
@@ -48,12 +49,12 @@ export async function GET(
         });
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     // If session auth, verify ownership
     if (session?.user?.id && website.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     const voiceAIConfig = (website.voiceAIConfig as { customPrompt?: string } | null) || {};
@@ -66,6 +67,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('[voice-config] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrors.internal();
   }
 }

@@ -8,6 +8,7 @@ import {
   exportCashTransactionsToCSV,
 } from '@/lib/payments/cash-service';
 import { CashTransactionType } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/payments/cash/transactions
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -59,10 +60,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching cash transactions:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch cash transactions', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch cash transactions', error.message);
   }
 }
 
@@ -74,7 +72,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -92,14 +90,11 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!type || !amount) {
-      return NextResponse.json(
-        { error: 'Type and amount are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Type and amount are required');
     }
 
     if (!['SALE', 'REFUND', 'EXPENSE', 'ADJUSTMENT'].includes(type)) {
-      return NextResponse.json({ error: 'Invalid transaction type' }, { status: 400 });
+      return apiErrors.badRequest('Invalid transaction type');
     }
 
     // Convert amount to cents if it's in dollars
@@ -126,9 +121,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating cash transaction:', error);
-    return NextResponse.json(
-      { error: 'Failed to create cash transaction', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create cash transaction', error.message);
   }
 }

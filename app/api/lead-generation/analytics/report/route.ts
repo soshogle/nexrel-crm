@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { generateDailyReport } from '@/lib/lead-generation/analytics';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/lead-generation/analytics/report
@@ -16,10 +17,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     const report = await generateDailyReport(session.user.id);
@@ -31,9 +29,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error generating daily report:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate report' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate report');
   }
 }

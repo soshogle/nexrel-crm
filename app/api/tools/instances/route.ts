@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { encrypt, decrypt } from '@/lib/encryption';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -55,10 +56,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, instances: sanitized });
   } catch (error: any) {
     console.error('Error fetching tool instances:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch tool instances' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch tool instances');
   }
 }
 
@@ -67,17 +65,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { definitionId, name, description, credentials, config } = body;
 
     if (!definitionId || !name || !credentials) {
-      return NextResponse.json(
-        { error: 'Missing required fields: definitionId, name, credentials' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: definitionId, name, credentials');
     }
 
     // Check if definition exists
@@ -86,10 +81,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!definition) {
-      return NextResponse.json(
-        { error: 'Tool definition not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Tool definition not found');
     }
 
     // Check if user already has this tool installed
@@ -103,10 +95,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'Tool already installed. Use update endpoint to modify.' },
-        { status: 409 }
-      );
+      return apiErrors.conflict('Tool already installed. Use update endpoint to modify.');
     }
 
     // Encrypt credentials
@@ -142,9 +131,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error installing tool:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to install tool' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to install tool');
   }
 }

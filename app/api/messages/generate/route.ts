@@ -8,29 +8,30 @@ import { prisma } from '@/lib/db'
 import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { leadService } from '@/lib/dal/lead-service'
 import { messageService } from '@/lib/dal/message-service'
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const { leadId } = await request.json()
 
     if (!leadId) {
-      return NextResponse.json({ error: 'Lead ID is required' }, { status: 400 })
+      return apiErrors.badRequest('Lead ID is required')
     }
 
     const ctx = getDalContextFromSession(session)
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
     const lead = await leadService.findUnique(ctx, leadId)
 
     if (!lead) {
-      return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
+      return apiErrors.notFound('Lead not found')
     }
 
     // Get user's language preference
@@ -80,7 +81,7 @@ The message should be suitable for email outreach and be around 150-200 words.`
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
+      return apiErrors.internal('OPENAI_API_KEY not configured');
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -193,9 +194,6 @@ The message should be suitable for email outreach and be around 150-200 words.`
 
   } catch (error) {
     console.error('Generate message error:', error)
-    return NextResponse.json(
-      { error: 'Failed to generate message' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to generate message')
   }
 }

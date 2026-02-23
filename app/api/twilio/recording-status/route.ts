@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { EmailService } from '@/lib/email-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     if (!callLog) {
       console.error('❌ Call log not found for CallSid:', callSid);
-      return NextResponse.json({ error: 'Call log not found' }, { status: 404 });
+      return apiErrors.notFound('Call log not found');
     }
 
     // Construct the full recording URL (Twilio provides relative URL)
@@ -138,10 +139,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Recording status webhook error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Internal server error', error.message);
   }
 }
 

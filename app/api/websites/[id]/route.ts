@@ -10,6 +10,7 @@ import { websiteService, getCrmDb } from '@/lib/dal';
 import { websiteVoiceAI } from '@/lib/website-builder/voice-ai';
 import { triggerWebsiteDeploy } from '@/lib/website-builder/deploy-trigger';
 import { resourceProvisioning } from '@/lib/website-builder/provisioning';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -19,12 +20,12 @@ export async function GET(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const websiteId = params.id;
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID is required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID is required');
     }
 
     let website;
@@ -41,7 +42,7 @@ export async function GET(
           },
           websiteIntegrations: true,
         },
-      });
+      } as any);
     } catch (queryError: any) {
       console.error('[Website GET] Prisma query error:', queryError);
       // Fallback: try without includes (can fail if structure/json is corrupted)
@@ -60,7 +61,7 @@ export async function GET(
     }
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     try {
@@ -102,8 +103,10 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
+
+    const ctx = getDalContextFromSession(session) ?? { userId: session?.user?.id || '', industry: null };
 
     const body = await request.json();
     const { name, structure, seoData, voiceAIEnabled, voiceAIConfig, enableTavusAvatar, status, agencyConfig, navConfig, pageLabels, neonDatabaseUrl, vercelDeployHookUrl } = body;
@@ -124,7 +127,7 @@ export async function PATCH(
       finalAgencyConfig = { ...existingConfig, ...agencyConfig };
     }
 
-    const website = await websiteService.update(ctx, params.id, {
+    const website: any = await websiteService.update(ctx, params.id, {
       ...(name && { name }),
       ...(structure && { structure }),
       ...(seoData && { seoData }),
@@ -137,7 +140,7 @@ export async function PATCH(
       ...(pageLabels !== undefined && { pageLabels }),
       ...(neonDatabaseUrl !== undefined && { neonDatabaseUrl: neonDatabaseUrl || null }),
       ...(vercelDeployHookUrl !== undefined && { vercelDeployHookUrl: (vercelDeployHookUrl as string)?.trim() || null }),
-    });
+    } as any);
 
     // Auto-sync owner's custom prompt to ElevenLabs agent (no manual {{custom_prompt}} setup needed)
     const customPrompt = (finalVoiceAIConfig as { customPrompt?: string })?.customPrompt;
@@ -172,10 +175,7 @@ export async function PATCH(
     return NextResponse.json({ website });
   } catch (error: any) {
     console.error('Error updating website:', error);
-    return NextResponse.json(
-      { error: 'Failed to update website' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update website');
   }
 }
 
@@ -187,21 +187,19 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     // Delete related records first (cascading deletes)
     // Use a transaction to ensure atomicity
     try {
-      await getCrmDb(ctx).$transaction(async (tx) => {
-        // Delete website stock settings first (has unique constraint)
-        // Check if exists to avoid errors
+      await getCrmDb(ctx).$transaction(async (tx: any) => {
         try {
           const stockSettings = await tx.websiteStockSettings.findUnique({
             where: { websiteId: params.id },
@@ -299,12 +297,7 @@ export async function DELETE(
       }
       
       if (deleteError.code === 'P2025') {
-        return NextResponse.json(
-          { 
-            error: 'Website not found or already deleted',
-          },
-          { status: 404 }
-        );
+        return apiErrors.notFound('Website not found or already deleted',);
       }
       
       // Return a more specific error message
@@ -324,9 +317,6 @@ export async function DELETE(
     }
   } catch (error: any) {
     console.error('Error deleting website:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete website' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete website');
   }
 }

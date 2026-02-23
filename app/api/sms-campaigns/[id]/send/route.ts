@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
 import { sendSMS } from '@/lib/twilio';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -63,11 +64,11 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const db = getCrmDb(ctx);
     // Get campaign
@@ -79,22 +80,16 @@ export async function POST(
     });
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Check if campaign can be sent
     if (campaign.status === 'SENT') {
-      return NextResponse.json(
-        { error: 'Campaign has already been sent' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign has already been sent');
     }
 
     if (campaign.status === 'SENDING') {
-      return NextResponse.json(
-        { error: 'Campaign is currently being sent' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Campaign is currently being sent');
     }
 
     // Check frequency caps
@@ -118,10 +113,7 @@ export async function POST(
     });
 
     if (!user?.smsProviderConfigured || !user?.smsProviderConfig) {
-      return NextResponse.json(
-        { error: 'SMS provider not configured. Please configure Twilio in Settings.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('SMS provider not configured. Please configure Twilio in Settings.');
     }
 
     // Parse Twilio config to set environment variables temporarily
@@ -137,10 +129,7 @@ export async function POST(
       fromNumber = config.phoneNumber || fromNumber;
     } catch (e) {
       console.error('Failed to parse SMS provider config:', e);
-      return NextResponse.json(
-        { error: 'Invalid SMS provider configuration' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid SMS provider configuration');
     }
 
     // Update campaign status to SENDING
@@ -313,9 +302,6 @@ export async function POST(
       console.error('Failed to update campaign status:', e);
     }
 
-    return NextResponse.json(
-      { error: error.message || 'Failed to send SMS campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to send SMS campaign');
   }
 }

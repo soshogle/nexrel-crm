@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { dataEnrichmentService } from '@/lib/data-enrichment-service';
 import { leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,21 +14,18 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { leadIds } = body;
 
     if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
-      return NextResponse.json(
-        { error: 'Missing or invalid leadIds array' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing or invalid leadIds array');
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Verify all leads belong to user
     const leads = await leadService.findMany(ctx, {
@@ -37,10 +35,7 @@ export async function POST(request: NextRequest) {
     } as any);
 
     if (leads.length !== leadIds.length) {
-      return NextResponse.json(
-        { error: 'Some leads not found or access denied' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Some leads not found or access denied');
     }
 
     console.log(`🔍 Starting bulk enrichment for ${leadIds.length} leads...`);
@@ -56,9 +51,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Bulk enrichment API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to enrich leads' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to enrich leads');
   }
 }

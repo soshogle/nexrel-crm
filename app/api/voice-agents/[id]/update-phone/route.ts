@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsService } from '@/lib/elevenlabs';
+import { apiErrors } from '@/lib/api-error';
 
 // PATCH /api/voice-agents/[id]/update-phone - Update voice agent phone number
 
@@ -18,7 +19,7 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -26,7 +27,7 @@ export async function PATCH(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     // Check if voice agent exists and belongs to user
@@ -38,14 +39,14 @@ export async function PATCH(
     });
 
     if (!agent) {
-      return NextResponse.json({ error: 'Voice agent not found' }, { status: 404 });
+      return apiErrors.notFound('Voice agent not found');
     }
 
     const body = await request.json();
     const { phoneNumber } = body;
 
     if (!phoneNumber) {
-      return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
+      return apiErrors.badRequest('Phone number is required');
     }
 
     // Step 1: Import phone number into ElevenLabs (Native Integration)
@@ -108,9 +109,6 @@ export async function PATCH(
 
   } catch (error: any) {
     console.error('Error updating voice agent phone number:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update phone number' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update phone number');
   }
 }

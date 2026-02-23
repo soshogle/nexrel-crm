@@ -3,6 +3,7 @@ import { getCrmDb } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
 import { prisma } from '@/lib/db';
 import crypto from 'crypto';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
       // Check if body is empty
       if (!rawBody || rawBody.trim().length === 0) {
         console.error('❌ [ElevenLabs Webhook] Body is empty!');
-        return NextResponse.json({ error: 'Empty request body' }, { status: 400 });
+        return apiErrors.badRequest('Empty request body');
       }
       
       body = JSON.parse(rawBody);
@@ -121,20 +122,14 @@ export async function POST(request: NextRequest) {
         if (!verifyWebhookSignature(rawBody, signature, webhookSecret)) {
           console.error('❌ [Webhook Security] Invalid signature - WEBHOOK REJECTED');
           console.error('❌ [Webhook Security] Expected secret starts with:', webhookSecret.substring(0, 10));
-          return NextResponse.json(
-            { error: 'Invalid signature' },
-            { status: 401 }
-          );
+          return apiErrors.unauthorized('Invalid signature');
         }
         
         console.log('✅ [Webhook Security] Signature verified successfully');
       } catch (signatureError: any) {
         console.error('❌ [Webhook Security] Signature verification failed with error:', signatureError.message);
         console.error('❌ [Webhook Security] Stack:', signatureError.stack);
-        return NextResponse.json(
-          { error: 'Signature verification failed' },
-          { status: 401 }
-        );
+        return apiErrors.unauthorized('Signature verification failed');
       }
     } else {
       console.warn('⚠️  [Webhook Security] No webhook secret configured - signature verification skipped');
@@ -152,13 +147,13 @@ export async function POST(request: NextRequest) {
 
     if (!data?.conversation_id) {
       console.error('❌ [ElevenLabs Webhook] Missing conversation_id');
-      return NextResponse.json({ error: 'Missing conversation_id' }, { status: 400 });
+      return apiErrors.badRequest('Missing conversation_id');
     }
 
     const conversationId = data.conversation_id;
 
     // Find the call log by ElevenLabs conversation ID or Twilio metadata
-    let callLog = await prisma.callLog.findFirst({
+    let callLog = await (prisma as any).callLog.findFirst({
       where: { elevenLabsConversationId: conversationId },
       include: {
         voiceAgent: true,
@@ -170,7 +165,7 @@ export async function POST(request: NextRequest) {
       const twilioCallSid = data.metadata?.body?.CallSid;
       if (twilioCallSid) {
         console.log('🔍 [ElevenLabs Webhook] Trying to find by Twilio SID:', twilioCallSid);
-        callLog = await prisma.callLog.findFirst({
+        callLog = await (prisma as any).callLog.findFirst({
           where: { twilioCallSid },
           include: {
             voiceAgent: true,
@@ -179,7 +174,7 @@ export async function POST(request: NextRequest) {
 
         // Update with ElevenLabs conversation ID if found
         if (callLog) {
-          await prisma.callLog.update({
+          await (prisma as any).callLog.update({
             where: { id: callLog.id },
             data: { elevenLabsConversationId: conversationId },
           });
@@ -198,17 +193,17 @@ export async function POST(request: NextRequest) {
       const twilioCallSid = data.metadata?.body?.CallSid;
 
       // Find voice agent by phone number
-      const voiceAgent = await prisma.voiceAgent.findFirst({
+      const voiceAgent = await (prisma as any).voiceAgent.findFirst({
         where: { twilioPhoneNumber: toNumber },
       });
 
       if (!voiceAgent) {
         console.error('❌ [ElevenLabs Webhook] No voice agent found for number:', toNumber);
-        return NextResponse.json({ error: 'Voice agent not found' }, { status: 404 });
+        return apiErrors.notFound('Voice agent not found');
       }
 
       // Create new call log
-      callLog = await prisma.callLog.create({
+      callLog = await (prisma as any).callLog.create({
         data: {
           voiceAgentId: voiceAgent.id,
           userId: voiceAgent.userId,
@@ -352,7 +347,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('❌ [ElevenLabs Webhook] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrors.internal();
   }
 }
 
@@ -360,7 +355,7 @@ export async function POST(request: NextRequest) {
  * Create a conversation in the messaging system from a completed call
  */
 async function createConversationFromCall(
-  ctx: { userId: string; industry?: string | null },
+  ctx: any,
   callLogId: string,
   params: {
     fromNumber: string;

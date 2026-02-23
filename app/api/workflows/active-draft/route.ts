@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,7 +16,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -24,10 +25,7 @@ export async function GET() {
     return NextResponse.json({ success: true, draftId: user?.activeWorkflowDraftId || null });
   } catch (error: any) {
     console.error('[workflows/active-draft] Error:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to get active draft' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error?.message || 'Failed to get active draft');
   }
 }
 
@@ -35,7 +33,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json().catch(() => ({}));
@@ -49,9 +47,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, draftId: draftId || null });
   } catch (error: any) {
     console.error('[workflows/active-draft] Error:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to set active draft' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error?.message || 'Failed to set active draft');
   }
 }

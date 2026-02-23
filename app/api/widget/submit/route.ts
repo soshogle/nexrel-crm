@@ -3,6 +3,7 @@ import { getCrmDb, leadService } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
 import { processReferralTriggers } from '@/lib/referral-triggers';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,10 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!userId || !formData) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     const ctx = createDalContext(userId);
@@ -31,10 +29,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid user ID' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Invalid user ID');
     }
 
     // Extract form data (ref = referrer lead id from ?ref= on the page)
@@ -51,10 +46,7 @@ export async function POST(request: NextRequest) {
     } = formData;
 
     if (!businessName && !contactPerson && !email) {
-      return NextResponse.json(
-        { error: 'At least one of businessName, contactPerson, or email is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('At least one of businessName, contactPerson, or email is required');
     }
 
     const referrerLeadId =

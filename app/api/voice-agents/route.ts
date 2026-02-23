@@ -5,6 +5,8 @@ import { prisma } from '@/lib/db';
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
 import { generateReservationSystemPrompt } from '@/lib/voice-reservation-helper';
 import { VOICE_AGENT_LIMIT } from '@/lib/voice-agent-templates';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,7 +17,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -23,10 +25,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
-    const agents = await prisma.voiceAgent.findMany({
+    const pagination = parsePagination(request);
+
+    const agents = await (prisma as any).voiceAgent.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -38,10 +42,12 @@ export async function GET(request: NextRequest) {
           },
         },
       },
+      take: pagination.take,
+      skip: pagination.skip,
     });
 
     // Include Industry AI Employee agents (Dental, Medical, etc.) for preview
-    const industryAgents = await prisma.industryAIEmployeeAgent.findMany({
+    const industryAgents = await (prisma as any).industryAIEmployeeAgent.findMany({
       where: {
         userId: user.id,
         elevenLabsAgentId: { not: null },
@@ -49,7 +55,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const industryAgentsForPreview = industryAgents.map((a) => ({
+    const industryAgentsForPreview = industryAgents.map((a: any) => ({
       id: a.id,
       name: a.name,
       elevenLabsAgentId: a.elevenLabsAgentId,
@@ -60,7 +66,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Get AI employee counts per agent
-    const aiEmployeeCounts = await prisma.userAIEmployee.groupBy({
+    const aiEmployeeCounts = await (prisma as any).userAIEmployee.groupBy({
       by: ['voiceAgentId'],
       where: {
         userId: user.id,
@@ -69,14 +75,14 @@ export async function GET(request: NextRequest) {
       _count: { voiceAgentId: true },
     });
     const aiCountByAgent = Object.fromEntries(
-      aiEmployeeCounts.map((r) => [r.voiceAgentId, r._count.voiceAgentId])
+      aiEmployeeCounts.map((r: any) => [r.voiceAgentId, r._count.voiceAgentId])
     );
 
     // Fetch call counts from ElevenLabs for each agent
     const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
     
     const enrichedAgents = await Promise.all(
-      agents.map(async (agent) => {
+      agents.map(async (agent: any) => {
         let elevenLabsCallCount = 0;
         
         // Only fetch if agent has ElevenLabs agent ID and API key is configured
@@ -135,11 +141,12 @@ export async function GET(request: NextRequest) {
     const allAgents = [
       ...enrichedAgents,
       ...industryAgentsForPreview.filter(
-        (ia) => ia.elevenLabsAgentId
+        (ia: any) => ia.elevenLabsAgentId
       ),
     ];
 
-    return NextResponse.json(allAgents || []);
+    const total = await (prisma as any).voiceAgent.count({ where: { userId: user.id } });
+    return paginatedResponse(allAgents, total, pagination);
   } catch (error: any) {
     console.error('Error fetching voice agents:', error);
     console.error('Error details:', {
@@ -160,7 +167,7 @@ export async function POST(request: NextRequest) {
 
     if (!session?.user?.email) {
       console.log('❌ Unauthorized - no session');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     console.log('✅ Session found:', session.user.email);
@@ -171,7 +178,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       console.log('❌ User not found:', session.user.email);
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     console.log('✅ User found:', user.id);
@@ -179,7 +186,7 @@ export async function POST(request: NextRequest) {
     // Enforce 12-agent limit (super admins bypass)
     const isSuperAdmin = user.role === 'SUPER_ADMIN';
     if (!isSuperAdmin) {
-      const existingCount = await prisma.voiceAgent.count({ where: { userId: user.id } });
+      const existingCount = await (prisma as any).voiceAgent.count({ where: { userId: user.id } });
       if (existingCount >= VOICE_AGENT_LIMIT) {
         return NextResponse.json(
           { error: `Voice agent limit reached. Maximum ${VOICE_AGENT_LIMIT} agents per account.` },
@@ -222,7 +229,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
     console.log('💾 Creating agent in database...');
     // Create agent in database
     const agentType = body.type || 'INBOUND';
-    const agent = await prisma.voiceAgent.create({
+    const agent = await (prisma as any).voiceAgent.create({
       data: {
         userId: user.id,
         name: body.name,
@@ -309,7 +316,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
         console.log('File IDs to associate:', body.knowledgeBaseFileIds);
         
         // Verify user owns these files
-        const ownedFiles = await prisma.knowledgeBaseFile.findMany({
+        const ownedFiles = await (prisma as any).knowledgeBaseFile.findMany({
           where: {
             id: { in: body.knowledgeBaseFileIds },
             userId: user.id,
@@ -321,14 +328,14 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
 
         if (ownedFiles.length > 0) {
           // Create junction table entries for file associations
-          const associationData = ownedFiles.map(file => ({
+          const associationData = ownedFiles.map((file: any) => ({
             voiceAgentId: agent.id,
             knowledgeBaseFileId: file.id,
           }));
           
           console.log('Creating associations:', associationData);
           
-          await prisma.voiceAgentKnowledgeBaseFile.createMany({
+          await (prisma as any).voiceAgentKnowledgeBaseFile.createMany({
             data: associationData,
             skipDuplicates: true, // Skip if association already exists
           });
@@ -367,7 +374,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
         console.log(`📋 Filtering to ${knowledgeBaseFileIds.length} specific file(s)`);
       }
       
-      const userKnowledgeBaseFiles = await prisma.knowledgeBaseFile.findMany({
+      const userKnowledgeBaseFiles = await (prisma as any).knowledgeBaseFile.findMany({
         where: whereClause,
         orderBy: { createdAt: 'desc' },
       });
@@ -377,8 +384,8 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
         
         // Add each file's extracted text to the knowledge base
         const kbFileTexts = userKnowledgeBaseFiles
-          .filter((file) => file.extractedText && file.extractedText.trim())
-          .map((file, idx) => {
+          .filter((file: any) => file.extractedText && file.extractedText.trim())
+          .map((file: any, idx: any) => {
             knowledgeBaseFiles.push({
               name: file.fileName,
               type: file.fileType,
@@ -401,10 +408,10 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
 
       // 2️⃣ CHECK FOR ONBOARDING DOCUMENTS
       console.log('📚 Checking for onboarding documents to import...');
-      const userWithProgress = await prisma.user.findUnique({
+      const userWithProgress: any = await prisma.user.findUnique({
         where: { id: user.id },
         select: { onboardingProgress: true },
-      });
+      } as any);
 
       if (userWithProgress?.onboardingProgress) {
         let progress: any = {};
@@ -444,7 +451,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
 
       // 3️⃣ UPDATE AGENT WITH ALL KNOWLEDGE BASE CONTENT
       if (enhancedKnowledgeBase) {
-        await prisma.voiceAgent.update({
+        await (prisma as any).voiceAgent.update({
           where: { id: agent.id },
           data: {
             knowledgeBase: enhancedKnowledgeBase,
@@ -485,7 +492,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
       }
       
       // Update the agent with the final system prompt
-      await prisma.voiceAgent.update({
+      await (prisma as any).voiceAgent.update({
         where: { id: agent.id },
         data: { systemPrompt: finalSystemPrompt },
       });
@@ -508,7 +515,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
           console.error('❌ ElevenLabs plan does not support phone numbers');
           
           // Delete the agent from database since we can't provision it
-          await prisma.voiceAgent.delete({
+          await (prisma as any).voiceAgent.delete({
             where: { id: agent.id },
           });
           
@@ -574,7 +581,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
         console.error('🗑️  Rolling back database agent due to provisioning failure');
         
         try {
-          await prisma.voiceAgent.delete({
+          await (prisma as any).voiceAgent.delete({
             where: { id: agent.id },
           });
         } catch (deleteError: any) {
@@ -601,7 +608,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
       
       // Rollback the database agent
       try {
-        await prisma.voiceAgent.delete({
+        await (prisma as any).voiceAgent.delete({
           where: { id: agent.id },
         });
         console.log('🗑️  Rolled back database agent');
@@ -620,7 +627,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
     }
 
     // Fetch the updated agent with the ElevenLabs ID
-    const updatedAgent = await prisma.voiceAgent.findUnique({
+    const updatedAgent = await (prisma as any).voiceAgent.findUnique({
       where: { id: agent.id },
     });
 

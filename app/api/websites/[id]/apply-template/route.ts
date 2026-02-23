@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteService, getCrmDb } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(
   request: NextRequest,
@@ -17,35 +18,27 @@ export async function POST(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const body = await request.json();
-    const { templateId, pagePath: reqPagePath } = body;
-    const pagePath = reqPagePath ?? '/';
-
-    if (!templateId || typeof templateId !== 'string') {
-      return NextResponse.json(
-        { error: 'Template ID is required' },
-        { status: 400 }
-      );
+    const { templateId, pagePath = '/' } = body;
+    if (!templateId) {
+      return apiErrors.badRequest('Template ID is required');
     }
 
-    const template = await getCrmDb(ctx).websiteTemplate.findUnique({
+    const template = await (getCrmDb(ctx) as any).websiteTemplate.findUnique({
       where: { id: templateId },
-    });
+    } as any);
 
     if (!template) {
-      return NextResponse.json(
-        { error: 'Template not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Template not found');
     }
 
     const templateStructure = template.structure as any;
@@ -55,10 +48,7 @@ export async function POST(
     ) || templatePages[0];
 
     if (!homePage?.components?.length) {
-      return NextResponse.json(
-        { error: 'Template has no components to apply' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Template has no components to apply');
     }
 
     const structure = (website.structure || {}) as any;
@@ -76,10 +66,7 @@ export async function POST(
     const newStructure = JSON.parse(JSON.stringify(structure));
     const targetPage = newStructure.pages[pageIndex];
     if (!targetPage) {
-      return NextResponse.json(
-        { error: 'Page not found in website structure' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Page not found in website structure');
     }
 
     // Add template components with fresh IDs to avoid collisions
@@ -104,9 +91,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('[Apply template]', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to apply template' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error?.message || 'Failed to apply template');
   }
 }

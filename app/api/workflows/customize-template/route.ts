@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getTemplateById } from '@/lib/workflow-templates';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/workflows/customize-template
@@ -16,34 +17,25 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { templateId, customization } = body;
 
     if (!templateId) {
-      return NextResponse.json(
-        { error: 'Template ID is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Template ID is required');
     }
 
     const template = getTemplateById(templateId);
     if (!template) {
-      return NextResponse.json(
-        { error: 'Template not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Template not found');
     }
 
     // Use AI to customize the template based on user's business
     const llmApiKey = process.env.OPENAI_API_KEY;
     if (!llmApiKey) {
-      return NextResponse.json(
-        { error: 'OPENAI_API_KEY not configured' },
-        { status: 500 }
-      );
+      return apiErrors.internal('OPENAI_API_KEY not configured');
     }
 
     const customizationPrompt = `
@@ -128,9 +120,6 @@ Be specific and actionable. Use the user's industry, products, and business goal
 
   } catch (error) {
     console.error('Error customizing template:', error);
-    return NextResponse.json(
-      { error: 'Failed to customize template' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to customize template');
   }
 }

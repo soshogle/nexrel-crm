@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { workflowTemplateService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,11 +17,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const user = await getCrmDb(ctx).user.findUnique({
       where: { id: ctx.userId },
@@ -29,10 +30,7 @@ export async function POST(request: NextRequest) {
 
     // Draft creation only for industries using WorkflowTemplate (not REAL_ESTATE)
     if (!user?.industry || user.industry === 'REAL_ESTATE') {
-      return NextResponse.json(
-        { error: 'Draft creation not available for this industry' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Draft creation not available for this industry');
     }
 
     const workflow = await workflowTemplateService.create(ctx, {
@@ -56,9 +54,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('[workflows/draft] Error:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to create draft' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error?.message || 'Failed to create draft');
   }
 }

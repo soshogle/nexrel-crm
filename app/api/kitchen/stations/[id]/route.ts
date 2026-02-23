@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET STATION BY ID
@@ -18,7 +19,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const station = await prisma.kitchenStation.findFirst({
@@ -36,16 +37,13 @@ export async function GET(
     });
 
     if (!station) {
-      return NextResponse.json({ error: 'Station not found' }, { status: 404 });
+      return apiErrors.notFound('Station not found');
     }
 
     return NextResponse.json(station);
   } catch (error) {
     console.error('❌ Station fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch station' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch station');
   }
 }
 
@@ -59,7 +57,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -82,7 +80,7 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Station not found' }, { status: 404 });
+      return apiErrors.notFound('Station not found');
     }
 
     // Build update data
@@ -105,10 +103,7 @@ export async function PATCH(
     return NextResponse.json(updatedStation);
   } catch (error) {
     console.error('❌ Station update error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update station' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update station');
   }
 }
 
@@ -122,7 +117,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify station exists
@@ -147,15 +142,12 @@ export async function DELETE(
     });
 
     if (!station) {
-      return NextResponse.json({ error: 'Station not found' }, { status: 404 });
+      return apiErrors.notFound('Station not found');
     }
 
     // Check if station has active items
     if (station._count.kitchenItems > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete station with active orders' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete station with active orders');
     }
 
     // Mark as inactive instead of deleting
@@ -169,9 +161,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('❌ Station delete error:', error);
-    return NextResponse.json(
-      { error: 'Failed to deactivate station' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to deactivate station');
   }
 }

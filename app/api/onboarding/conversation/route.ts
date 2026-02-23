@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { onboardingConversation, onboardingSteps } from '@/lib/onboarding-conversation';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,19 +14,19 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get user's current progress
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { onboardingProgress: true },
-    });
+    } as any);
 
     let progress = {};
-    if (user?.onboardingProgress) {
+    if ((user as any)?.onboardingProgress) {
       try {
-        progress = JSON.parse(user.onboardingProgress as string);
+        progress = JSON.parse((user as any).onboardingProgress as string);
       } catch (e) {
         progress = {};
       }
@@ -56,10 +57,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Conversation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to get conversation state' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to get conversation state');
   }
 }
 
@@ -67,7 +65,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -77,12 +75,12 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { onboardingProgress: true },
-    });
+    } as any);
 
     let progress: any = {};
-    if (user?.onboardingProgress) {
+    if ((user as any)?.onboardingProgress) {
       try {
-        progress = JSON.parse(user.onboardingProgress as string);
+        progress = JSON.parse((user as any).onboardingProgress as string);
       } catch (e) {
         progress = {};
       }
@@ -102,7 +100,7 @@ export async function POST(request: NextRequest) {
           data: {
             onboardingProgress: JSON.stringify(progress),
           },
-        });
+        } as any);
         
         const question = onboardingConversation.formatQuestion(previousStep.question, progress);
         const completionPercentage = onboardingConversation.getCompletionPercentage(progress);
@@ -115,13 +113,13 @@ export async function POST(request: NextRequest) {
           message: "No problem! Let's update that.",
         });
       } else {
-        return NextResponse.json({ error: 'Already at first step' }, { status: 400 });
+        return apiErrors.badRequest('Already at first step');
       }
     }
 
     // Handle normal response
     if (!response || typeof response !== 'string' || response.trim() === '') {
-      return NextResponse.json({ error: 'Response is required' }, { status: 400 });
+      return apiErrors.badRequest('Response is required');
     }
 
     // Check if this is a bulk company profile submission
@@ -216,7 +214,7 @@ export async function POST(request: NextRequest) {
       await prisma.user.update({
         where: { id: session.user.id },
         data: profileUpdateData,
-      });
+      } as any);
 
       // Get the next step with conditional logic
       const nextStep = onboardingConversation.getNextStep('company_profile', progress);
@@ -245,7 +243,7 @@ export async function POST(request: NextRequest) {
     const currentStep = onboardingConversation.getStep(currentStepId);
 
     if (!currentStep) {
-      return NextResponse.json({ error: 'Unable to determine current step' }, { status: 400 });
+      return apiErrors.badRequest('Unable to determine current step');
     }
 
     // Parse and validate response
@@ -253,7 +251,7 @@ export async function POST(request: NextRequest) {
     const validation = onboardingConversation.validateResponse(currentStep, parsedValue);
 
     if (!validation.valid) {
-      return NextResponse.json({ error: validation.error }, { status: 400 });
+      return apiErrors.badRequest(validation.error!);
     }
 
     // Update progress
@@ -278,7 +276,7 @@ export async function POST(request: NextRequest) {
     await prisma.user.update({
       where: { id: session.user.id },
       data: profileUpdateData,
-    });
+    } as any);
 
     // Get next step with conditional logic
     const nextStep = onboardingConversation.getNextStep(currentStep.id, progress);
@@ -302,9 +300,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Conversation update error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update conversation' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update conversation');
   }
 }

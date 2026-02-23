@@ -3,6 +3,7 @@ import { getCrmDb } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
 import { aiResponseService } from '@/lib/ai-response-service';
 import { workflowEngine } from '@/lib/workflow-engine';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * Webhook endpoint for incoming messages from all channels
@@ -27,10 +28,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!userId || !messageContent || !channelType) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     const ctx = createDalContext(userId);
@@ -69,10 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!conversation) {
-      return NextResponse.json(
-        { error: 'Could not find or create conversation' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Could not find or create conversation');
     }
 
     // Store incoming message
@@ -277,10 +272,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('Webhook processing failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to process incoming message' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to process incoming message');
   }
 }
 

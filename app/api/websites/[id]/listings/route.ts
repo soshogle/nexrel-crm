@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/auth';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteService } from '@/lib/dal';
 import { getWebsiteListings } from '@/lib/website-builder/listings-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -17,13 +18,13 @@ export async function GET(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const { templateType, neonDatabaseUrl } = website;
@@ -45,9 +46,6 @@ export async function GET(
     return NextResponse.json({ listings });
   } catch (error: any) {
     console.error('Listings GET error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch listings' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch listings');
   }
 }

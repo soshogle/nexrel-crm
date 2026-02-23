@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { analyticsService } from '@/lib/payments/analytics-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get query parameters
@@ -27,10 +28,7 @@ export async function GET(req: NextRequest) {
 
     // Validate range
     if (!['7d', '30d', '90d', '1y'].includes(range)) {
-      return NextResponse.json(
-        { error: 'Invalid date range. Must be one of: 7d, 30d, 90d, 1y' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid date range. Must be one of: 7d, 30d, 90d, 1y');
     }
 
     // Get analytics data
@@ -42,10 +40,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(analytics);
   } catch (error) {
     console.error('[Analytics API] Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch analytics' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch analytics');
   }
 }
 
@@ -58,7 +53,7 @@ export async function POST(req: NextRequest) {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get query parameters
@@ -78,9 +73,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('[Analytics Export API] Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to export analytics' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to export analytics');
   }
 }

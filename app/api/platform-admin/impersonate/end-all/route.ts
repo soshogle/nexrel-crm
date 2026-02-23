@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/platform-admin/impersonate/end-all
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     
     if (!session?.user) {
       console.error('❌ No session found');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // If impersonating, use superAdminId, otherwise use the regular id
@@ -54,9 +55,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Error ending all impersonation sessions:', error);
-    return NextResponse.json(
-      { error: 'Failed to end impersonation sessions', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to end impersonation sessions', error.message);
   }
 }

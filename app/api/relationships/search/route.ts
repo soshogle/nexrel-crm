@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { relationshipService } from '@/lib/relationship-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/relationships/search
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -23,10 +24,7 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
     if (!query) {
-      return NextResponse.json(
-        { error: 'Search query is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Search query is required');
     }
 
     const results = await relationshipService.unifiedSearch(
@@ -38,9 +36,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(results);
   } catch (error) {
     console.error('Error performing search:', error);
-    return NextResponse.json(
-      { error: 'Failed to perform search' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to perform search');
   }
 }

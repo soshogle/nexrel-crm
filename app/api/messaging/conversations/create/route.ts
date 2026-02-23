@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -18,17 +19,14 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { channelType, contactName, contactIdentifier, fromPhoneNumber } = await req.json();
 
     // Validate required fields
     if (!channelType || !contactName || !contactIdentifier) {
-      return NextResponse.json(
-        { error: 'Missing required fields: channelType, contactName, contactIdentifier' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: channelType, contactName, contactIdentifier');
     }
 
     // Auto-create Lead if they don't exist
@@ -39,7 +37,7 @@ export async function POST(req: NextRequest) {
     const isPhone = contactIdentifier.match(/^\+?[\d\s\-()]+$/);
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const db = getCrmDb(ctx);
 
@@ -87,10 +85,7 @@ export async function POST(req: NextRequest) {
 
     // For SMS, require fromPhoneNumber
     if (channelType === 'SMS' && !fromPhoneNumber) {
-      return NextResponse.json(
-        { error: 'fromPhoneNumber is required for SMS' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('fromPhoneNumber is required for SMS');
     }
 
     // Get or create channel connection
@@ -106,10 +101,7 @@ export async function POST(req: NextRequest) {
       console.log('✅ Auth Token:', authToken ? 'Found' : 'Missing');
 
       if (!accountSid || !authToken) {
-        return NextResponse.json(
-          { error: 'Twilio credentials not configured in environment variables.' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Twilio credentials not configured in environment variables.');
       }
 
       // Find or create SMS channel connection for this phone number
@@ -149,10 +141,7 @@ export async function POST(req: NextRequest) {
       if (!channelConnection) {
         // If no Gmail connection exists, create a basic one
         // In a full implementation, this should be created via OAuth
-        return NextResponse.json(
-          { error: 'Gmail/Email connection not configured. Please connect your email in Settings.' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Gmail/Email connection not configured. Please connect your email in Settings.');
       }
     } else {
       return NextResponse.json(
@@ -198,9 +187,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating conversation:', error);
-    return NextResponse.json(
-      { error: 'Failed to create conversation', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create conversation', error.message);
   }
 }

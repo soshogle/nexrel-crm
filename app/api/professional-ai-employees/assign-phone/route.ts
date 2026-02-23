@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { ProfessionalAIEmployeeType } from '@prisma/client';
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json().catch(() => ({}));
@@ -27,10 +28,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!employeeType || !phoneNumber) {
-      return NextResponse.json(
-        { error: 'employeeType and phoneNumber are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('employeeType and phoneNumber are required');
     }
 
     const agent = await prisma.professionalAIEmployeeAgent.findUnique({
@@ -40,17 +38,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!agent) {
-      return NextResponse.json(
-        { error: 'Professional AI agent not provisioned. Please provision this agent first.' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Professional AI agent not provisioned. Please provision this agent first.');
     }
 
     if (!agent.elevenLabsAgentId) {
-      return NextResponse.json(
-        { error: 'Agent is not fully configured for voice calls.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Agent is not fully configured for voice calls.');
     }
 
     const formattedPhone = phoneNumber.trim().startsWith('+')
@@ -66,10 +58,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (!importResult.success) {
-      return NextResponse.json(
-        { error: importResult.error || 'Failed to assign phone to agent' },
-        { status: 500 }
-      );
+      return apiErrors.internal(importResult.error || 'Failed to assign phone to agent');
     }
 
     await prisma.professionalAIEmployeeAgent.update({
@@ -84,9 +73,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Professional assign-phone error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to assign phone' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to assign phone');
   }
 }

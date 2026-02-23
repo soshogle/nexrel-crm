@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -10,10 +11,10 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
-    const review = await prisma.review.findFirst({
+    const review = await (prisma as any).review.findFirst({
       where: { id: params.id, userId: session.user.id },
       include: {
         lead: { select: { id: true, name: true, businessName: true, contactPerson: true, email: true, phone: true } },
@@ -22,13 +23,13 @@ export async function GET(
     });
 
     if (!review) {
-      return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+      return apiErrors.notFound('Review not found');
     }
 
     return NextResponse.json({ review });
   } catch (error) {
     console.error('Error fetching review:', error);
-    return NextResponse.json({ error: 'Failed to fetch review' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch review');
   }
 }
 
@@ -39,15 +40,15 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
-    const review = await prisma.review.findFirst({
+    const review = await (prisma as any).review.findFirst({
       where: { id: params.id, userId: session.user.id },
     });
 
     if (!review) {
-      return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+      return apiErrors.notFound('Review not found');
     }
 
     const body = await request.json();
@@ -72,7 +73,7 @@ export async function PATCH(
       data.respondedAt = data.respondedAt || new Date();
     }
 
-    const updated = await prisma.review.update({
+    const updated = await (prisma as any).review.update({
       where: { id: params.id },
       data,
       include: {
@@ -84,7 +85,7 @@ export async function PATCH(
     return NextResponse.json({ review: updated });
   } catch (error) {
     console.error('Error updating review:', error);
-    return NextResponse.json({ error: 'Failed to update review' }, { status: 500 });
+    return apiErrors.internal('Failed to update review');
   }
 }
 
@@ -95,21 +96,21 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
-    const review = await prisma.review.findFirst({
+    const review = await (prisma as any).review.findFirst({
       where: { id: params.id, userId: session.user.id },
     });
 
     if (!review) {
-      return NextResponse.json({ error: 'Review not found' }, { status: 404 });
+      return apiErrors.notFound('Review not found');
     }
 
-    await prisma.review.delete({ where: { id: params.id } });
+    await (prisma as any).review.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting review:', error);
-    return NextResponse.json({ error: 'Failed to delete review' }, { status: 500 });
+    return apiErrors.internal('Failed to delete review');
   }
 }

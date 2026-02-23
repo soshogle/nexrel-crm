@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAvailability } from '@/lib/voice-reservation-helper';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -19,10 +20,7 @@ export async function POST(request: NextRequest) {
     const { userId, date, partySize } = body;
 
     if (!userId || !date || !partySize) {
-      return NextResponse.json(
-        { error: 'Missing required fields: userId, date, partySize' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: userId, date, partySize');
     }
 
     const result = await checkAvailability({

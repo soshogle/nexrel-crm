@@ -9,6 +9,7 @@ import { createOrder as createPayPalOrder } from '@/lib/payments/paypal-service'
 import { RateLimiters, getClientIdentifier, createRateLimitResponse } from '@/lib/security/rate-limiter';
 import { sanitizeEmail, sanitizeText, sanitizeNumber } from '@/lib/security/input-sanitizer';
 import { AuditLogger } from '@/lib/security/audit-logger';
+import { apiErrors } from '@/lib/api-error';
 
 // POST - Create a payment intent
 
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
@@ -55,10 +56,7 @@ export async function POST(request: NextRequest) {
     const invoiceId = body.invoiceId;
 
     if (!amount || !customerName || !customerEmail) {
-      return NextResponse.json(
-        { error: 'Missing or invalid required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing or invalid required fields');
     }
 
     let paymentIntent: any;
@@ -106,10 +104,7 @@ export async function POST(request: NextRequest) {
       });
       providerPaymentId = paymentIntent.id;
     } else {
-      return NextResponse.json(
-        { error: 'Unsupported payment provider' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Unsupported payment provider');
     }
 
     // Create payment record in database
@@ -176,9 +171,6 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    return NextResponse.json(
-      { error: error.message || 'Failed to create payment intent' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create payment intent');
   }
 }

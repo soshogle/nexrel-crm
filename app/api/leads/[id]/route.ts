@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth'
 import { leadService } from '@/lib/dal'
 import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { emitCRMEvent } from '@/lib/crm-event-emitter'
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -16,11 +17,11 @@ export async function GET(
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
 
     const lead = await leadService.findUnique(ctx, params.id, {
       notes: { orderBy: { createdAt: 'desc' } },
@@ -28,16 +29,13 @@ export async function GET(
     } as any)
 
     if (!lead) {
-      return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
+      return apiErrors.notFound('Lead not found')
     }
 
     return NextResponse.json(lead)
   } catch (error) {
     console.error('Get lead error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiErrors.internal()
   }
 }
 
@@ -49,17 +47,17 @@ export async function PUT(
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const data = await request.json()
     
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
 
     const lead = await leadService.findUnique(ctx, params.id)
     if (!lead) {
-      return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
+      return apiErrors.notFound('Lead not found')
     }
 
     const updatedLead = await leadService.update(ctx, params.id, data, { notes: true, messages: true } as any)
@@ -75,10 +73,7 @@ export async function PUT(
     return NextResponse.json(updatedLead)
   } catch (error) {
     console.error('Update lead error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiErrors.internal()
   }
 }
 
@@ -90,15 +85,15 @@ export async function DELETE(
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
 
     const lead = await leadService.findUnique(ctx, params.id)
     if (!lead) {
-      return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
+      return apiErrors.notFound('Lead not found')
     }
 
     await leadService.delete(ctx, params.id)
@@ -106,9 +101,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Lead deleted successfully' })
   } catch (error) {
     console.error('Delete lead error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiErrors.internal()
   }
 }

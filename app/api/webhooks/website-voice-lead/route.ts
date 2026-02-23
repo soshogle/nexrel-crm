@@ -10,6 +10,7 @@ import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers'
 import { processWebsiteTriggers } from '@/lib/website-triggers';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,21 +21,18 @@ export async function POST(request: NextRequest) {
     const expectedSecret = process.env.WEBSITE_VOICE_LEAD_SECRET;
 
     if (expectedSecret && secret !== expectedSecret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { websiteId, name, email, phone, transcript, notes, appointmentRequest, source } = body;
 
     if (!websiteId) {
-      return NextResponse.json({ error: 'websiteId required' }, { status: 400 });
+      return apiErrors.badRequest('websiteId required');
     }
 
     if (!name && !email && !phone) {
-      return NextResponse.json(
-        { error: 'At least name, email, or phone required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('At least name, email, or phone required');
     }
 
     const website = await getCrmDb(createDalContext('')).website.findUnique({
@@ -43,7 +41,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const ctx = createDalContext(website.userId);
@@ -87,7 +85,7 @@ export async function POST(request: NextRequest) {
     // Create booking appointment if requested
     if (appointmentRequest?.date && appointmentRequest?.time) {
       try {
-        await db.bookingAppointment.create({
+        await (db as any).bookingAppointment.create({
           data: {
             userId: leadOwnerId,
             leadId: lead.id,
@@ -148,9 +146,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, leadId: lead.id });
   } catch (error: any) {
     console.error('[website-voice-lead] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create lead' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create lead');
   }
 }

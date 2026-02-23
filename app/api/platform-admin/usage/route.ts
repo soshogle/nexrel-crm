@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,10 +14,7 @@ export async function GET(request: NextRequest) {
     
     // Verify super admin access
     if (!session?.user?.id || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized. Super Admin access required.' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Unauthorized. Super Admin access required.');
     }
 
     const { searchParams } = new URL(request.url);
@@ -92,10 +90,7 @@ export async function GET(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('Error fetching usage statistics:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch usage statistics', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch usage statistics', error.message);
   }
 }
 

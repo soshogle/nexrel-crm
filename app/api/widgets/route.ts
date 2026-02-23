@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { widgetService } from '@/lib/ecommerce/widget-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/widgets
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const widgets = await widgetService.listWidgets(session.user.id);
@@ -24,10 +25,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ widgets });
   } catch (error: any) {
     console.error('Error listing widgets:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to list widgets' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to list widgets');
   }
 }
 
@@ -39,7 +37,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -67,17 +65,11 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name) {
-      return NextResponse.json(
-        { error: 'Widget name is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Widget name is required');
     }
 
     if (!productIds || productIds.length === 0) {
-      return NextResponse.json(
-        { error: 'At least one product must be selected' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('At least one product must be selected');
     }
 
     const widget = await widgetService.createWidget({
@@ -113,9 +105,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating widget:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create widget' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create widget');
   }
 }

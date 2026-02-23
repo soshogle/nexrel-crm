@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify user is SUPER_ADMIN
@@ -21,10 +22,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (superAdmin?.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Forbidden: SUPER_ADMIN access required' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Forbidden: SUPER_ADMIN access required');
     }
 
     const { searchParams } = new URL(request.url);
@@ -100,9 +98,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching users:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch users' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch users');
   }
 }

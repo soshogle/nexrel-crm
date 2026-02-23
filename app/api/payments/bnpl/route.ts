@@ -10,6 +10,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { BnplService } from '@/lib/payments/bnpl-service';
 import { BnplStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -35,10 +36,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(applications);
   } catch (error) {
     console.error('Error fetching BNPL applications:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch BNPL applications' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch BNPL applications');
   }
 }
 
@@ -46,7 +44,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -64,17 +62,11 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!purchaseAmount || !installmentCount) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     if (![4, 6, 12, 24].includes(installmentCount)) {
-      return NextResponse.json(
-        { error: 'Invalid installment count. Must be 4, 6, 12, or 24' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid installment count. Must be 4, 6, 12, or 24');
     }
 
     // Create application
@@ -99,9 +91,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(application, { status: 201 });
   } catch (error) {
     console.error('Error creating BNPL application:', error);
-    return NextResponse.json(
-      { error: 'Failed to create BNPL application' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create BNPL application');
   }
 }

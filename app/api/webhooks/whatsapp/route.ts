@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WhatsAppService } from '@/lib/messaging-sync/whatsapp-service';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(challenge, { status: 200 });
   }
 
-  return NextResponse.json({ error: 'Invalid verification token' }, { status: 403 });
+  return apiErrors.forbidden('Invalid verification token');
 }
 
 export async function POST(req: NextRequest) {
@@ -88,9 +89,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'ok' });
   } catch (error: any) {
     console.error('Error processing WhatsApp webhook:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Internal server error', error.message);
   }
 }

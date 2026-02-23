@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCashStatistics } from '@/lib/payments/cash-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/payments/cash/statistics
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -45,9 +46,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error fetching cash statistics:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch cash statistics', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch cash statistics', error.message);
   }
 }

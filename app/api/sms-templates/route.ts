@@ -6,12 +6,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -19,27 +21,27 @@ export async function GET(req: NextRequest) {
       select: { id: true },
     });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const { searchParams } = new URL(req.url);
     const category = searchParams.get('category');
+    const pagination = parsePagination(req);
+
+    const where: any = { userId: user.id, ...(category && { category }) };
 
     const templates = await prisma.sMSTemplate.findMany({
-      where: {
-        userId: user.id,
-        ...(category && { category }),
-      },
+      where,
+      take: pagination.take,
+      skip: pagination.skip,
       orderBy: { name: 'asc' },
     });
 
-    return NextResponse.json({ success: true, templates });
+    const total = await prisma.sMSTemplate.count({ where });
+    return paginatedResponse(templates, total, pagination);
   } catch (error: any) {
     console.error('Error fetching SMS templates:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch templates' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch templates');
   }
 }
 
@@ -47,7 +49,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -55,17 +57,14 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await req.json();
     const { name, message, variables, category, isDefault } = body;
 
     if (!name || !message) {
-      return NextResponse.json(
-        { error: 'name and message are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('name and message are required');
     }
 
     const template = await prisma.sMSTemplate.create({
@@ -82,10 +81,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, template });
   } catch (error: any) {
     console.error('Error creating SMS template:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create template' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create template');
   }
 }
 
@@ -93,7 +89,7 @@ export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -101,21 +97,21 @@ export async function PUT(req: NextRequest) {
       select: { id: true },
     });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await req.json();
     const { id, name, message, variables, category, isDefault } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Template ID required' }, { status: 400 });
+      return apiErrors.badRequest('Template ID required');
     }
 
     const existing = await prisma.sMSTemplate.findFirst({
       where: { id, userId: user.id },
     });
     if (!existing) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return apiErrors.notFound('Template not found');
     }
 
     const template = await prisma.sMSTemplate.update({
@@ -132,10 +128,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: true, template });
   } catch (error: any) {
     console.error('Error updating SMS template:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update template' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update template');
   }
 }
 
@@ -143,7 +136,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -151,20 +144,20 @@ export async function DELETE(req: NextRequest) {
       select: { id: true },
     });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) {
-      return NextResponse.json({ error: 'Template ID required' }, { status: 400 });
+      return apiErrors.badRequest('Template ID required');
     }
 
     const existing = await prisma.sMSTemplate.findFirst({
       where: { id, userId: user.id },
     });
     if (!existing) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return apiErrors.notFound('Template not found');
     }
 
     await prisma.sMSTemplate.delete({ where: { id } });
@@ -172,9 +165,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting SMS template:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete template' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete template');
   }
 }

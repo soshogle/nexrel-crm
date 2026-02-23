@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET STAFF BY ID
@@ -19,7 +20,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const staff = await prisma.staff.findFirst({
@@ -45,7 +46,7 @@ export async function GET(
     });
 
     if (!staff) {
-      return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
+      return apiErrors.notFound('Staff not found');
     }
 
     const { pin, ...sanitizedStaff } = staff;
@@ -53,10 +54,7 @@ export async function GET(
     return NextResponse.json(sanitizedStaff);
   } catch (error) {
     console.error('❌ Staff fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch staff' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch staff');
   }
 }
 
@@ -70,7 +68,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -92,7 +90,7 @@ export async function PATCH(
     });
 
     if (!existingStaff) {
-      return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
+      return apiErrors.notFound('Staff not found');
     }
 
     // Build update data
@@ -106,10 +104,7 @@ export async function PATCH(
     // Update PIN if provided
     if (pin) {
       if (!/^\d{4}$/.test(pin)) {
-        return NextResponse.json(
-          { error: 'PIN must be 4 digits' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('PIN must be 4 digits');
       }
       updateData.pin = await bcrypt.hash(pin, 10);
     }
@@ -134,10 +129,7 @@ export async function PATCH(
     return NextResponse.json(sanitizedStaff);
   } catch (error) {
     console.error('❌ Staff update error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update staff' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update staff');
   }
 }
 
@@ -151,7 +143,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify staff exists and belongs to user
@@ -163,7 +155,7 @@ export async function DELETE(
     });
 
     if (!staff) {
-      return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
+      return apiErrors.notFound('Staff not found');
     }
 
     // Mark as inactive instead of deleting
@@ -180,9 +172,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('❌ Staff delete error:', error);
-    return NextResponse.json(
-      { error: 'Failed to deactivate staff' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to deactivate staff');
   }
 }

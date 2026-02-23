@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get user's industry
@@ -27,18 +28,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user?.industry || user.industry === 'REAL_ESTATE') {
-      return NextResponse.json(
-        { error: 'This feature is not available for this industry' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('This feature is not available for this industry');
     }
 
     const industryConfig = getIndustryConfig(user.industry);
     if (!industryConfig) {
-      return NextResponse.json(
-        { error: 'Workflow system not configured for this industry' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Workflow system not configured for this industry');
     }
 
     // Check if a specific template ID is requested
@@ -49,10 +44,7 @@ export async function GET(request: NextRequest) {
       // Return specific template
       const template = industryConfig.templates.find(t => t.id === templateId);
       if (!template) {
-        return NextResponse.json(
-          { error: 'Template not found' },
-          { status: 404 }
-        );
+        return apiErrors.notFound('Template not found');
       }
 
       // Transform template to match WorkflowTemplate interface
@@ -120,9 +112,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching templates:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch templates' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch templates');
   }
 }

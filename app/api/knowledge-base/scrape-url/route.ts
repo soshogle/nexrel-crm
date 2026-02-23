@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { documentExtractor } from '@/lib/document-extractor';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,23 +14,20 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { url, category } = await request.json();
 
     if (!url) {
-      return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+      return apiErrors.badRequest('URL is required');
     }
 
     // Extract text from URL
     const extracted = await documentExtractor.extractFromURL(url);
 
     if (!extracted.success) {
-      return NextResponse.json(
-        { error: extracted.error || 'Failed to extract content from URL' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest(extracted.error || 'Failed to extract content from URL');
     }
 
     // Save to knowledge base
@@ -51,9 +49,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('URL scrape error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to scrape URL' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to scrape URL');
   }
 }

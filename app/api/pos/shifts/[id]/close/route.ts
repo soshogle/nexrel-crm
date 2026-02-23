@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * CLOSE SHIFT (CLOCK OUT)
@@ -18,7 +19,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -26,10 +27,7 @@ export async function POST(
 
     // Validate required fields
     if (endingCash === undefined) {
-      return NextResponse.json(
-        { error: 'Ending cash is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Ending cash is required');
     }
 
     // Get shift
@@ -45,10 +43,7 @@ export async function POST(
     });
 
     if (!shift) {
-      return NextResponse.json(
-        { error: 'Active shift not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Active shift not found');
     }
 
     // Calculate sales during shift
@@ -119,9 +114,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('❌ Shift close error:', error);
-    return NextResponse.json(
-      { error: 'Failed to close shift' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to close shift');
   }
 }

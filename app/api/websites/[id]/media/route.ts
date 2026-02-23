@@ -12,6 +12,7 @@ import { websiteService, getCrmDb } from '@/lib/dal';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
 import crypto from 'crypto';
+import { apiErrors } from '@/lib/api-error';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
@@ -32,12 +33,12 @@ export async function GET(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await websiteService.findUnique(ctx, params.id);
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const { searchParams } = new URL(req.url);
@@ -56,10 +57,7 @@ export async function GET(
     return NextResponse.json({ media });
   } catch (error: any) {
     console.error('Error listing media:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to list media' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to list media');
   }
 }
 
@@ -71,12 +69,12 @@ export async function POST(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await websiteService.findUnique(ctx, params.id);
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const formData = await req.formData();
@@ -84,10 +82,7 @@ export async function POST(
     const alt = formData.get('alt') as string | null;
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'File is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('File is required');
     }
 
     const contentType = file.type || 'application/octet-stream';
@@ -95,10 +90,7 @@ export async function POST(
     const buffer = Buffer.from(arrayBuffer);
 
     if (buffer.length > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: 'File too large. Max 10MB.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('File too large. Max 10MB.');
     }
 
     let mediaType = 'FILE';
@@ -166,10 +158,7 @@ export async function POST(
       }
     } else {
       if (!process.env.BLOB_READ_WRITE_TOKEN) {
-        return NextResponse.json(
-          { error: 'BLOB_READ_WRITE_TOKEN not configured' },
-          { status: 500 }
-        );
+        return apiErrors.internal('BLOB_READ_WRITE_TOKEN not configured');
       }
       const blob = await put(storagePath, buffer, {
         access: 'public',
@@ -199,9 +188,6 @@ export async function POST(
     return NextResponse.json({ media });
   } catch (error: any) {
     console.error('Error uploading media:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to upload media' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to upload media');
   }
 }

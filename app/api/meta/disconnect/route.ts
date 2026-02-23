@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,7 +15,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Find and delete the connection
@@ -27,10 +28,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!connection) {
-      return NextResponse.json(
-        { error: 'No Meta connection found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('No Meta connection found');
     }
 
     await prisma.channelConnection.delete({
@@ -45,9 +43,6 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Meta disconnect error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to disconnect Meta account' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to disconnect Meta account');
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,25 +15,19 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { appId, appSecret } = body;
 
     if (!appId || !appSecret) {
-      return NextResponse.json(
-        { error: 'App ID and App Secret are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('App ID and App Secret are required');
     }
 
     // Validate App ID format (numeric)
     if (!/^\d+$/.test(appId)) {
-      return NextResponse.json(
-        { error: 'Invalid App ID format. It should be a numeric value.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid App ID format. It should be a numeric value.');
     }
 
     console.log('💾 Saving Meta credentials for user:', session.user.id);
@@ -75,10 +70,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Save Meta credentials error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to save credentials' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to save credentials');
   }
 }
 
@@ -90,7 +82,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const settings = await prisma.socialMediaSettings.findFirst({
@@ -117,9 +109,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Get Meta credentials error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to get credentials' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to get credentials');
   }
 }

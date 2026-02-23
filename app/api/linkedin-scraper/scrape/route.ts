@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { linkedInScraperService } from '@/lib/linkedin-scraper-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,17 +12,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { searchQuery, maxResults = 20, profileMode = 'Full' } = body;
 
     if (!searchQuery) {
-      return NextResponse.json(
-        { error: 'Missing required field: searchQuery' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required field: searchQuery');
     }
 
     const validModes = ['Short', 'Full', 'Full + email search'];
@@ -58,9 +56,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ LinkedIn scrape API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to scrape LinkedIn profiles' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to scrape LinkedIn profiles');
   }
 }

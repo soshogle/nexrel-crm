@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { alertId } = params;
@@ -23,10 +24,7 @@ export async function PATCH(
 
     // Validate status
     if (!['APPROVED', 'BLOCKED', 'REVIEWED'].includes(status)) {
-      return NextResponse.json(
-        { error: 'Invalid status value' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid status value');
     }
 
     // In production, this would update the fraud alert in the database
@@ -39,9 +37,6 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('Error updating fraud alert:', error);
-    return NextResponse.json(
-      { error: 'Failed to update fraud alert' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update fraud alert');
   }
 }

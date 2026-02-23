@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -68,9 +69,6 @@ export async function GET(
     }
   } catch (error: any) {
     console.error('Error fetching real-time stock:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch stock updates' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch stock updates');
   }
 }

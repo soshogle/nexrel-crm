@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { batchDeduplicateLeads, findPotentialDuplicates } from '@/lib/lead-generation/deduplication';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/lead-generation/deduplicate
@@ -16,10 +17,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     console.log(`[DEDUPE] Starting deduplication for user ${session.user.id}...`);
@@ -53,10 +51,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     const searchParams = request.nextUrl.searchParams;

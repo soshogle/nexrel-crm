@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET SHIFTS
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -57,10 +58,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(shifts);
   } catch (error) {
     console.error('❌ Shifts fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch shifts' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch shifts');
   }
 }
 
@@ -71,7 +69,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -79,10 +77,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!staffId || startingCash === undefined) {
-      return NextResponse.json(
-        { error: 'Staff ID and starting cash are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Staff ID and starting cash are required');
     }
 
     // Check if staff has an active shift
@@ -94,10 +89,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (activeShift) {
-      return NextResponse.json(
-        { error: 'Staff already has an active shift' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Staff already has an active shift');
     }
 
     // Create new shift
@@ -124,9 +116,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(shift, { status: 201 });
   } catch (error) {
     console.error('❌ Shift creation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to start shift' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to start shift');
   }
 }

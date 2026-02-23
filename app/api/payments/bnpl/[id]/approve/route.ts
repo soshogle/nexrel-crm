@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { BnplService } from '@/lib/payments/bnpl-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -20,17 +21,17 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const application = await BnplService.getApplication(params.id);
 
     if (!application) {
-      return NextResponse.json({ error: 'Application not found' }, { status: 404 });
+      return apiErrors.notFound('Application not found');
     }
 
     if (application.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     const result = await BnplService.processApplication(params.id);
@@ -38,9 +39,6 @@ export async function POST(
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error processing BNPL application:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to process application' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to process application');
   }
 }

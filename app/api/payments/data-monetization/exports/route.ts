@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { dataMonetizationService } from '@/lib/payments/data-monetization-service';
 import { DataExportFormat, DataExportStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -37,10 +38,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ exports });
   } catch (error: any) {
     console.error('Error fetching exports:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch exports', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch exports', error.message);
   }
 }
 
@@ -48,7 +46,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -64,10 +62,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!exportType || !format || !startDate || !endDate) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     const exportRecord = await dataMonetizationService.requestExport({
@@ -85,9 +80,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ export: exportRecord });
   } catch (error: any) {
     console.error('Error requesting export:', error);
-    return NextResponse.json(
-      { error: 'Failed to request export', details: error.message },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to request export', error.message);
   }
 }

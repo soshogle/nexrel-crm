@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { websiteOrderService } from '@/lib/website-builder/order-service';
 import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -17,7 +18,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -45,7 +46,7 @@ export async function GET(
         report = await generateCustomersReport(params.id, start, end);
         break;
       default:
-        return NextResponse.json({ error: 'Invalid report type' }, { status: 400 });
+        return apiErrors.badRequest('Invalid report type');
     }
 
     if (format === 'csv') {
@@ -67,10 +68,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error generating report:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate report' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to generate report');
   }
 }
 

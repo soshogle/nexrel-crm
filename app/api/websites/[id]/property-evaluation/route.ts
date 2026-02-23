@@ -19,6 +19,7 @@ import { noteService } from "@/lib/dal/note-service";
 import { runPropertyEvaluation } from "@/lib/real-estate/property-evaluation";
 import type { ComparableProperty } from "@/lib/real-estate/property-evaluation";
 import { Resend } from "resend";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -61,7 +62,7 @@ export async function POST(
     const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
 
     if (!expectedSecret || secret !== expectedSecret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
@@ -76,24 +77,18 @@ export async function POST(
     });
 
     if (!website) {
-      return NextResponse.json({ error: "Website not found" }, { status: 404 });
+      return apiErrors.notFound("Website not found");
     }
 
     const body = await request.json();
     const { propertyDetails, contact } = body;
 
     if (!propertyDetails?.address) {
-      return NextResponse.json(
-        { error: "Property address is required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("Property address is required");
     }
 
     if (!contact?.name || !contact?.email) {
-      return NextResponse.json(
-        { error: "Name and email are required to receive your evaluation" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("Name and email are required to receive your evaluation");
     }
 
     const evaluation = await runPropertyEvaluation(
@@ -179,10 +174,7 @@ export async function POST(
     });
   } catch (error: any) {
     console.error("[property-evaluation]", error);
-    return NextResponse.json(
-      { error: error.message || "Evaluation failed" },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || "Evaluation failed");
   }
 }
 

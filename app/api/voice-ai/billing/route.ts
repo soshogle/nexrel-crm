@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { voiceAIPlatform } from '@/lib/voice-ai-platform';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const billingRecords = await voiceAIPlatform.getAgencyBillingRecords(session.user.id);
@@ -26,9 +27,6 @@ export async function GET() {
     return NextResponse.json({ billingRecords });
   } catch (error: unknown) {
     console.error('[VoiceAI] Error fetching billing records:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch billing records' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to fetch billing records');
   }
 }

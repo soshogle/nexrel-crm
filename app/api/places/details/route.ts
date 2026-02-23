@@ -4,6 +4,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 // Global Google Maps API key for all users
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
@@ -12,19 +13,19 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const placeId = searchParams.get('placeId');
 
     if (!placeId) {
-      return NextResponse.json({ error: 'placeId required' }, { status: 400 });
+      return apiErrors.badRequest('placeId required');
     }
 
     if (!GOOGLE_MAPS_API_KEY) {
       console.error('GOOGLE_MAPS_API_KEY not configured');
-      return NextResponse.json({ error: 'API not configured' }, { status: 500 });
+      return apiErrors.internal('API not configured');
     }
 
     const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=place_id,name,formatted_address,address_components,geometry&key=${GOOGLE_MAPS_API_KEY}`;
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     if (data.status !== 'OK') {
       console.error('Google Place details error:', data.status, data.error_message);
-      return NextResponse.json({ error: data.status }, { status: 400 });
+      return apiErrors.badRequest(data.status);
     }
 
     const result = data.result;
@@ -57,6 +58,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ place: placeData });
   } catch (error) {
     console.error('Place details error:', error);
-    return NextResponse.json({ error: 'Failed to fetch details' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch details');
   }
 }

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCrmDb, leadService, noteService } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
 import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,25 +18,19 @@ export async function POST(request: NextRequest) {
     const expectedSecret = process.env.TAVUS_WEBHOOK_SECRET;
 
     if (expectedSecret && secret !== expectedSecret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const leadOwnerId = process.env.NEXREL_CRM_LEAD_OWNER_ID || process.env.DEMO_LEAD_OWNER_ID;
     if (!leadOwnerId) {
-      return NextResponse.json(
-        { error: 'NEXREL_CRM_LEAD_OWNER_ID or DEMO_LEAD_OWNER_ID not configured' },
-        { status: 500 }
-      );
+      return apiErrors.internal('NEXREL_CRM_LEAD_OWNER_ID or DEMO_LEAD_OWNER_ID not configured');
     }
 
     const body = await request.json();
     const { name, email, phone, transcript } = body;
 
     if (!name && !email) {
-      return NextResponse.json(
-        { error: 'At least name or email required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('At least name or email required');
     }
 
     const ctx = createDalContext(leadOwnerId);
@@ -48,7 +43,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'Invalid lead owner' }, { status: 404 });
+      return apiErrors.notFound('Invalid lead owner');
     }
 
     const lead = await leadService.create(ctx, {
@@ -90,9 +85,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, leadId: lead.id });
   } catch (error: any) {
     console.error('[Tavus webhook] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create lead' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create lead');
   }
 }

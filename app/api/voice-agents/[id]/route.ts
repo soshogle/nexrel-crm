@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { generateReservationSystemPrompt } from '@/lib/voice-reservation-helper';
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
 import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/voice-agents/[id] - Get single voice agent
 
@@ -20,7 +21,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -28,7 +29,7 @@ export async function GET(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const agent = await prisma.voiceAgent.findFirst({
@@ -56,16 +57,13 @@ export async function GET(
     });
 
     if (!agent) {
-      return NextResponse.json({ error: 'Voice agent not found' }, { status: 404 });
+      return apiErrors.notFound('Voice agent not found');
     }
 
     return NextResponse.json(agent);
   } catch (error: any) {
     console.error('Error fetching voice agent:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch voice agent' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch voice agent');
   }
 }
 
@@ -78,7 +76,7 @@ export async function PUT(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -86,7 +84,7 @@ export async function PUT(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
@@ -252,7 +250,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
     });
 
     if (agent.count === 0) {
-      return NextResponse.json({ error: 'Voice agent not found' }, { status: 404 });
+      return apiErrors.notFound('Voice agent not found');
     }
 
     const updatedAgent = await prisma.voiceAgent.findUnique({
@@ -379,10 +377,7 @@ ${body.greetingMessage ? `Start conversations with: ${body.greetingMessage}` : '
     return NextResponse.json(updatedAgent);
   } catch (error: any) {
     console.error('Error updating voice agent:', error);
-    return NextResponse.json(
-      { error: 'We couldn\'t save your changes. Please try again.' },
-      { status: 500 }
-    );
+    return apiErrors.internal('We couldn\'t save your changes. Please try again.');
   }
 }
 
@@ -395,7 +390,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -403,7 +398,7 @@ export async function DELETE(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     // First, get the agent to retrieve the ElevenLabs agent ID
@@ -415,7 +410,7 @@ export async function DELETE(
     });
 
     if (!agent) {
-      return NextResponse.json({ error: 'Voice agent not found' }, { status: 404 });
+      return apiErrors.notFound('Voice agent not found');
     }
 
     // Delete from ElevenLabs if elevenLabsAgentId exists
@@ -444,7 +439,7 @@ export async function DELETE(
     });
 
     if (result.count === 0) {
-      return NextResponse.json({ error: 'Voice agent not found' }, { status: 404 });
+      return apiErrors.notFound('Voice agent not found');
     }
 
     console.log(`✅ Successfully deleted voice agent ${params.id} from CRM`);
@@ -454,9 +449,6 @@ export async function DELETE(
     });
   } catch (error: any) {
     console.error('Error deleting voice agent:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete voice agent' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete voice agent');
   }
 }

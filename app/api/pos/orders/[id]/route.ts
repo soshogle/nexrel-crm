@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET ORDER BY ID
@@ -18,7 +19,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const order = await prisma.pOSOrder.findFirst({
@@ -40,16 +41,13 @@ export async function GET(
     });
 
     if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     return NextResponse.json(order);
   } catch (error) {
     console.error('❌ Order fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch order' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch order');
   }
 }
 
@@ -63,7 +61,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -78,7 +76,7 @@ export async function PATCH(
     });
 
     if (!existingOrder) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     // Build update data
@@ -132,10 +130,7 @@ export async function PATCH(
     return NextResponse.json(updatedOrder);
   } catch (error) {
     console.error('❌ Order update error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update order' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update order');
   }
 }
 
@@ -149,7 +144,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify order exists and belongs to user
@@ -161,7 +156,7 @@ export async function DELETE(
     });
 
     if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     // Mark as void instead of deleting
@@ -175,9 +170,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('❌ Order void error:', error);
-    return NextResponse.json(
-      { error: 'Failed to void order' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to void order');
   }
 }

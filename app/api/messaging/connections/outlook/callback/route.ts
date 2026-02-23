@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       ? new Date(Date.now() + tokenData.expires_in * 1000)
       : null;
 
-    const existing = await prisma.channelConnection.findFirst({
+    const existing = await (prisma as any).channelConnection.findFirst({
       where: {
         userId: user.id,
         channelType: 'EMAIL',
@@ -106,17 +106,16 @@ export async function GET(request: NextRequest) {
     };
 
     if (existing) {
-      await prisma.channelConnection.update({
+      await (prisma as any).channelConnection.update({
         where: { id: existing.id },
         data: connData,
       });
     } else {
-      await prisma.channelConnection.create({
+      await (prisma as any).channelConnection.create({
         data: {
           userId: user.id,
           channelType: 'EMAIL',
           channelIdentifier: email,
-          displayName: email,
           providerType: 'outlook',
           syncEnabled: true,
           ...connData,

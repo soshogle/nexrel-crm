@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { soshoglePay } from '@/lib/payments';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const customer = await soshoglePay.getCustomer(session.user.id);
@@ -30,10 +31,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, methods });
   } catch (error: any) {
     console.error('❌ Payment methods fetch error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch payment methods' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch payment methods');
   }
 }
 
@@ -41,15 +39,12 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const customer = await soshoglePay.getCustomer(session.user.id);
     if (!customer) {
-      return NextResponse.json(
-        { error: 'Please set up payments first' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Please set up payments first');
     }
 
     const body = await req.json();
@@ -65,10 +60,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, method });
   } catch (error: any) {
     console.error('❌ Payment method creation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create payment method' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create payment method');
   }
 }
 
@@ -76,17 +68,14 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
     const methodId = searchParams.get('methodId');
 
     if (!methodId) {
-      return NextResponse.json(
-        { error: 'Method ID is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Method ID is required');
     }
 
     await soshoglePay.deletePaymentMethod(methodId);
@@ -94,9 +83,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('❌ Payment method deletion error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete payment method' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete payment method');
   }
 }

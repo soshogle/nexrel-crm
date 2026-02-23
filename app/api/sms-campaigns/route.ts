@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,14 +14,14 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const db = getCrmDb(ctx);
     const where: any = {
@@ -29,6 +31,8 @@ export async function GET(request: NextRequest) {
     if (status && status !== 'ALL') {
       where.status = status;
     }
+
+    const pagination = parsePagination(request);
 
     const campaigns = await db.smsCampaign.findMany({
       where,
@@ -50,6 +54,8 @@ export async function GET(request: NextRequest) {
           },
         },
       },
+      take: pagination.take,
+      skip: pagination.skip,
       orderBy: {
         createdAt: 'desc',
       },
@@ -69,13 +75,11 @@ export async function GET(request: NextRequest) {
       },
     }));
 
-    return NextResponse.json({ campaigns: campaignsWithMetrics });
+    const total = await db.smsCampaign.count({ where });
+    return paginatedResponse(campaignsWithMetrics, total, pagination);
   } catch (error: any) {
     console.error('Error fetching SMS campaigns:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch SMS campaigns' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch SMS campaigns');
   }
 }
 
@@ -84,7 +88,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -100,21 +104,15 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!name || !message) {
-      return NextResponse.json(
-        { error: 'Name and message are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Name and message are required');
     }
 
     if (message.length > 160) {
-      return NextResponse.json(
-        { error: 'Message must be 160 characters or less for a single SMS' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Message must be 160 characters or less for a single SMS');
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const db = getCrmDb(ctx);
     // Get user's SMS provider (Twilio) phone number
@@ -172,9 +170,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ campaign }, { status: 201 });
   } catch (error: any) {
     console.error('Error creating SMS campaign:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create SMS campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create SMS campaign');
   }
 }

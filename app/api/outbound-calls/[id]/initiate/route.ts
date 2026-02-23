@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsService } from '@/lib/elevenlabs';
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ export async function POST(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -26,7 +27,7 @@ export async function POST(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const outboundCall = await prisma.outboundCall.findFirst({
@@ -40,32 +41,20 @@ export async function POST(
     });
 
     if (!outboundCall) {
-      return NextResponse.json(
-        { error: 'Outbound call not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Outbound call not found');
     }
 
     if (!outboundCall.voiceAgent) {
-      return NextResponse.json(
-        { error: 'Voice agent not found for this call' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Voice agent not found for this call');
     }
 
     if (!outboundCall.voiceAgent.elevenLabsAgentId) {
-      return NextResponse.json(
-        { error: 'Voice agent not configured. Please complete the voice AI configuration first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Voice agent not configured. Please complete the voice AI configuration first.');
     }
 
     // Check if Twilio credentials are configured
     if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
-      return NextResponse.json(
-        { error: 'Phone service not configured properly. Please contact support.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Phone service not configured properly. Please contact support.');
     }
 
     // Update status to in progress

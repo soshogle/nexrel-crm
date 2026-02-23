@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { googleSearchConsole } from '@/lib/website-builder/google-search-console';
 import { websiteService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET - Get authorization URL
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -58,10 +59,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error generating OAuth URL:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate OAuth URL' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to generate OAuth URL');
   }
 }
 
@@ -72,17 +70,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { code, state, websiteId } = body;
 
     if (!code) {
-      return NextResponse.json(
-        { error: 'Authorization code is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Authorization code is required');
     }
 
     // Parse state if provided
@@ -97,24 +92,18 @@ export async function POST(request: NextRequest) {
 
     const targetWebsiteId = websiteId || parsedState.websiteId;
     if (!targetWebsiteId) {
-      return NextResponse.json(
-        { error: 'Website ID is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Website ID is required');
     }
 
     // Verify website belongs to user
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
     const website = await websiteService.findUnique(ctx, targetWebsiteId);
 
     if (!website) {
-      return NextResponse.json(
-        { error: 'Website not found or access denied' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Website not found or access denied');
     }
 
     const googleClientId = process.env.GOOGLE_CLIENT_ID;
@@ -124,12 +113,7 @@ export async function POST(request: NextRequest) {
       `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/website-builder/google-oauth/callback`;
 
     if (!googleClientId || !googleClientSecret) {
-      return NextResponse.json(
-        {
-          error: 'Google OAuth not configured',
-        },
-        { status: 500 }
-      );
+      return apiErrors.internal('Google OAuth not configured',);
     }
 
     // Exchange code for tokens
@@ -154,9 +138,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error exchanging OAuth code:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to exchange authorization code' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to exchange authorization code');
   }
 }

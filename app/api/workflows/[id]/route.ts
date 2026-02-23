@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { workflowTemplateService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,21 +21,18 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const workflow = await workflowTemplateService.findUnique(ctx, params.id);
     if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
-    const instances = await getCrmDb(ctx).workflowInstance.findMany({
+    const instances = await (getCrmDb(ctx) as any).workflowInstance.findMany({
       where: { templateId: params.id },
       take: 10,
       orderBy: { createdAt: 'desc' },
@@ -48,7 +46,7 @@ export async function GET(
       }
     });
 
-    const _count = await getCrmDb(ctx).workflowInstance.count({
+    const _count = await (getCrmDb(ctx) as any).workflowInstance.count({
       where: { templateId: params.id },
     });
 
@@ -107,10 +105,7 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch workflow');
   }
 }
 
@@ -121,18 +116,15 @@ async function _putHandler(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   const ctx = getDalContextFromSession(session);
-  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!ctx) return apiErrors.unauthorized();
 
   const existing = await workflowTemplateService.findUnique(ctx, params.id);
   if (!existing) {
-    return NextResponse.json(
-      { error: 'Workflow not found' },
-      { status: 404 }
-    );
+    return apiErrors.notFound('Workflow not found');
   }
 
   const body = await request.json();
@@ -151,17 +143,17 @@ async function _putHandler(
   if (abTestConfig !== undefined) updateData.abTestConfig = abTestConfig;
 
   if (tasks && Array.isArray(tasks)) {
-    const taskIds = await getCrmDb(ctx).workflowTask.findMany({
+    const taskIds = await (getCrmDb(ctx) as any).workflowTask.findMany({
       where: { templateId: params.id },
       select: { id: true }
     });
-    const ids = taskIds.map(t => t.id);
+    const ids = taskIds.map((t: any) => t.id);
     if (ids.length > 0) {
-      await getCrmDb(ctx).taskExecution.deleteMany({
+      await (getCrmDb(ctx) as any).taskExecution.deleteMany({
         where: { taskId: { in: ids } }
       });
     }
-    await getCrmDb(ctx).workflowTask.deleteMany({
+    await (getCrmDb(ctx) as any).workflowTask.deleteMany({
       where: { templateId: params.id }
     });
     updateData.tasks = {
@@ -199,7 +191,7 @@ async function _putHandler(
     };
   }
 
-  const workflow = await getCrmDb(ctx).workflowTemplate.update({
+  const workflow = await (getCrmDb(ctx) as any).workflowTemplate.update({
     where: { id: params.id, userId: ctx.userId },
     data: updateData,
     include: {
@@ -218,7 +210,7 @@ async function _putHandler(
     executionMode: (workflow as any).executionMode || 'WORKFLOW',
     enrollmentMode: (workflow as any).enrollmentMode || false,
     enrollmentTriggers: (workflow as any).enrollmentTriggers || null,
-    tasks: workflow.tasks.map(t => {
+    tasks: workflow.tasks.map((t: any) => {
       const ac = (t.actionConfig as any) || {};
       return {
         id: t.id,
@@ -263,21 +255,18 @@ async function _deleteHandler(
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   const ctx = getDalContextFromSession(session);
-  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!ctx) return apiErrors.unauthorized();
 
   const existing = await workflowTemplateService.findUnique(ctx, params.id);
   if (!existing) {
-    return NextResponse.json(
-      { error: 'Workflow not found' },
-      { status: 404 }
-    );
+    return apiErrors.notFound('Workflow not found');
   }
 
-  const activeInstances = await getCrmDb(ctx).workflowInstance.count({
+  const activeInstances = await (getCrmDb(ctx) as any).workflowInstance.count({
     where: {
       templateId: params.id,
       status: 'ACTIVE'
@@ -305,13 +294,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    return _putHandler(request, params.id);
+    return _putHandler(request, params as any);
   } catch (error) {
     console.error('Error updating workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to update workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update workflow');
   }
 }
 
@@ -320,12 +306,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    return _deleteHandler(request, params.id);
+    return _deleteHandler(request, params as any);
   } catch (error) {
     console.error('Error deleting workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete workflow');
   }
 }

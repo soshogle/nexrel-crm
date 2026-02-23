@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb, websiteService } from '@/lib/dal';
 import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,7 +21,7 @@ export async function GET(
   try {
     const websiteId = params.id;
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID required');
     }
 
     const session = await getServerSession(authOptions);
@@ -28,7 +29,7 @@ export async function GET(
     const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
 
     if (!session?.user?.id && !(expectedSecret && secret === expectedSecret)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = session ? getDalContextFromSession(session) : null;
@@ -38,11 +39,11 @@ export async function GET(
       : await db.website.findUnique({ where: { id: websiteId } });
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     if (session?.user?.id && website.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     const content = (website.ecommerceContent as Record<string, unknown> | null) || {};
@@ -57,7 +58,7 @@ export async function GET(
     });
   } catch (error: unknown) {
     console.error('[ecommerce-content] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrors.internal();
   }
 }
 
@@ -73,23 +74,23 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const websiteId = params.id;
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID required');
     }
 
     const website = await websiteService.findUnique(ctx, websiteId);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const body = await request.json();
@@ -108,6 +109,6 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error('[ecommerce-content PATCH] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrors.internal();
   }
 }

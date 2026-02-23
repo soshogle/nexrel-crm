@@ -10,6 +10,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { AchSettlementService } from '@/lib/payments/ach-settlement-service';
 import { AchSettlementStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -35,10 +36,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(settlements);
   } catch (error) {
     console.error('Error fetching settlements:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch settlements' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch settlements');
   }
 }
 
@@ -46,7 +44,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -63,10 +61,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!settlementDate || !totalAmount || !transactionCount) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     // Create settlement
@@ -97,9 +92,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(fullSettlement, { status: 201 });
   } catch (error) {
     console.error('Error creating settlement:', error);
-    return NextResponse.json(
-      { error: 'Failed to create settlement' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create settlement');
   }
 }

@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { soshogleWebhookHandler, verifyWebhookSignature } from '@/lib/payments/webhook-handler';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -25,10 +26,7 @@ export async function POST(req: NextRequest) {
       
       if (!isValid) {
         console.error('❌ Invalid webhook signature');
-        return NextResponse.json(
-          { error: 'Invalid signature' },
-          { status: 401 }
-        );
+        return apiErrors.unauthorized('Invalid signature');
       }
     }
 
@@ -41,9 +39,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (error: any) {
     console.error('❌ Webhook processing error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Webhook processing failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Webhook processing failed');
   }
 }

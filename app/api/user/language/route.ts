@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/user/language - Get user's language preference
 
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -25,10 +26,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ language: user?.language || 'en' });
   } catch (error: any) {
     console.error('Error fetching user language:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch language' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch language');
   }
 }
 
@@ -38,26 +36,20 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { language } = body;
 
     if (!language) {
-      return NextResponse.json(
-        { error: 'Language is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Language is required');
     }
 
     // Validate language
     const supportedLanguages = ['en', 'fr', 'es', 'zh'];
     if (!supportedLanguages.includes(language)) {
-      return NextResponse.json(
-        { error: 'Unsupported language' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Unsupported language');
     }
 
     // Update user's language preference
@@ -74,9 +66,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error updating user language:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update language' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update language');
   }
 }

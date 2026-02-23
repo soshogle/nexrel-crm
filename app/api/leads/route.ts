@@ -11,6 +11,7 @@ import { detectLeadWorkflowTriggers } from '@/lib/real-estate/workflow-triggers'
 import { apiErrors } from '@/lib/api-error'
 import { LeadCreateBodySchema, LeadsGetQuerySchema } from '@/lib/api-validation'
 import { emitCRMEvent } from '@/lib/crm-event-emitter'
+import { parsePagination, paginatedResponse } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,10 +33,16 @@ export async function GET(request: NextRequest) {
       return apiErrors.validationError('Invalid query parameters', queryResult.error.flatten())
     }
     const { status, search } = queryResult.data
+    const pagination = parsePagination(request)
 
-    const leads = await leadService.findMany(ctx, { status, search })
+    const [leads, total] = await Promise.all([
+      leadService.findMany(ctx, { status, search, take: pagination.take, skip: pagination.skip }),
+      leadService.count(ctx, {
+        ...(status && status !== 'ALL' ? { status: status as any } : {}),
+      }),
+    ])
 
-    return NextResponse.json(leads)
+    return paginatedResponse(leads, total, pagination)
   } catch (error) {
     console.error('Get leads error:', error)
     return apiErrors.internal('Failed to fetch leads')

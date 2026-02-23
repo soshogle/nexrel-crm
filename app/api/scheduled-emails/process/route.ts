@@ -9,6 +9,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EmailService } from "@/lib/email-service";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
     if (!isCron) {
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return apiErrors.unauthorized();
       }
     }
 
@@ -81,9 +82,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[scheduled-emails] Error:", error);
-    return NextResponse.json(
-      { error: error?.message || "Failed to process" },
-      { status: 500 }
-    );
+    return apiErrors.internal(error?.message || "Failed to process");
   }
 }

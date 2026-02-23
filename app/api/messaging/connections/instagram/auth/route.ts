@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     // Instagram uses Facebook's OAuth (Instagram Business accounts are linked to Facebook Pages)
@@ -27,9 +28,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ authUrl })
   } catch (error) {
     console.error('Instagram auth init error:', error)
-    return NextResponse.json(
-      { error: 'Failed to initialize Instagram auth' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to initialize Instagram auth')
   }
 }

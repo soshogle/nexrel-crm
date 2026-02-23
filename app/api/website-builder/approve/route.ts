@@ -9,33 +9,31 @@ import { getCrmDb, websiteService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { changeApproval } from '@/lib/website-builder/approval';
 import { triggerWebsiteDeploy } from '@/lib/website-builder/deploy-trigger';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { websiteId, approvalId, action } = body; // action: 'approve' | 'reject'
 
     if (!websiteId || !approvalId || !action) {
-      return NextResponse.json(
-        { error: 'Website ID, approval ID, and action are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Website ID, approval ID, and action are required');
     }
 
     const website = await websiteService.findUnique(ctx, websiteId);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const db = getCrmDb(ctx);
@@ -44,7 +42,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!approval || approval.websiteId !== websiteId) {
-      return NextResponse.json({ error: 'Approval not found' }, { status: 404 });
+      return apiErrors.notFound('Approval not found');
     }
 
     if (action === 'approve') {
@@ -83,16 +81,10 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ success: true });
     } else {
-      return NextResponse.json(
-        { error: 'Invalid action. Use "approve" or "reject"' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid action. Use "approve" or "reject"');
     }
   } catch (error: any) {
     console.error('Error processing approval:', error);
-    return NextResponse.json(
-      { error: 'Failed to process approval' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to process approval');
   }
 }

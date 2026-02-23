@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma as db } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/reservations/tables - List all restaurant tables
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -38,10 +39,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ tables });
   } catch (error) {
     console.error('Error fetching tables:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch tables' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch tables');
   }
 }
 
@@ -50,7 +48,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -66,10 +64,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!tableName || !capacity) {
-      return NextResponse.json(
-        { error: 'Table name and capacity are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Table name and capacity are required');
     }
 
     const table = await db.restaurantTable.create({
@@ -92,9 +87,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error creating table:', error);
-    return NextResponse.json(
-      { error: 'Failed to create table' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create table');
   }
 }

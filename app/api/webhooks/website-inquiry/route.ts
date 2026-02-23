@@ -10,6 +10,7 @@ import { createDalContext } from '@/lib/context/industry-context';
 import { emailService } from '@/lib/email-service';
 import { processWebsiteTriggers } from '@/lib/website-triggers';
 import { processCampaignTriggers } from '@/lib/campaign-triggers';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,10 +22,10 @@ export async function POST(request: NextRequest) {
     const { websiteId, name, email, phone, message, propertyId, propertyAddress } = body;
 
     if (!websiteId) {
-      return NextResponse.json({ error: 'websiteId required' }, { status: 400 });
+      return apiErrors.badRequest('websiteId required');
     }
     if (!name || !email || !message) {
-      return NextResponse.json({ error: 'name, email, and message are required' }, { status: 400 });
+      return apiErrors.badRequest('name, email, and message are required');
     }
 
     const website = await getCrmDb(createDalContext('')).website.findUnique({
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const ctx = createDalContext(website.userId);
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
     if (expectedSecret && secret !== expectedSecret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const leadOwnerId = website.userId;
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     // Trigger workflows
     try {
-      await processWebsiteTriggers(leadOwnerId, lead.id, 'WEBSITE_CONTACT_FORM_LEAD', { websiteId });
+      await processWebsiteTriggers(leadOwnerId, lead.id, 'WEBSITE_CONTACT_FORM_LEAD' as any, { websiteId });
     } catch (wfErr) {
       console.warn('[website-inquiry] processWebsiteTriggers error:', wfErr);
     }
@@ -128,8 +129,8 @@ export async function POST(request: NextRequest) {
       await processCampaignTriggers({
         leadId: lead.id,
         userId: leadOwnerId,
-        triggerType: 'WEBSITE_CONTACT_FORM_LEAD',
-        metadata: { websiteId, propertyId },
+        triggerType: 'WEBSITE_CONTACT_FORM_LEAD' as any,
+        metadata: { websiteId, propertyId } as any,
       });
     } catch (campErr) {
       console.warn('[website-inquiry] processCampaignTriggers error:', campErr);
@@ -140,9 +141,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, leadId: lead.id });
   } catch (error: any) {
     console.error('[website-inquiry] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to process inquiry' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to process inquiry');
   }
 }

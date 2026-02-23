@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET KITCHEN STATIONS
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -51,10 +52,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(stations);
   } catch (error) {
     console.error('❌ Kitchen stations fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch stations' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch stations');
   }
 }
 
@@ -65,7 +63,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -81,10 +79,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!name || !displayName) {
-      return NextResponse.json(
-        { error: 'Station name and display name are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Station name and display name are required');
     }
 
     // Create station
@@ -106,9 +101,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(station, { status: 201 });
   } catch (error) {
     console.error('❌ Kitchen station creation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create station' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create station');
   }
 }

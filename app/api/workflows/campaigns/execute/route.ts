@@ -8,46 +8,41 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { workflowTemplateService, leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const { workflowId } = body;
 
     if (!workflowId) {
-      return NextResponse.json({ error: 'Workflow ID is required' }, { status: 400 });
+      return apiErrors.badRequest('Workflow ID is required');
     }
 
     // Fetch workflow template
     const workflow = await workflowTemplateService.findUnique(ctx, workflowId);
 
     if (!workflow) {
-      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+      return apiErrors.notFound('Workflow not found');
     }
 
     if ((workflow as any).executionMode !== 'CAMPAIGN') {
-      return NextResponse.json(
-        { error: 'Workflow is not in campaign mode' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Workflow is not in campaign mode');
     }
 
     const audience = (workflow as any).audience as any;
     const campaignSettings = (workflow as any).campaignSettings as any;
 
     if (!audience || (audience.type !== 'FILTERED' && audience.type !== 'WEBSITE_LEADS')) {
-      return NextResponse.json(
-        { error: 'Invalid audience configuration' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid audience configuration');
     }
 
     // Build lead query based on audience filters (leadService adds userId)
@@ -89,14 +84,11 @@ export async function POST(request: NextRequest) {
     const totalRecipients = leads.length;
 
     if (totalRecipients === 0) {
-      return NextResponse.json(
-        { error: 'No leads match the audience criteria' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('No leads match the audience criteria');
     }
 
     // Update workflow template with recipient count
-    await getCrmDb(ctx).workflowTemplate.update({
+    await (getCrmDb(ctx) as any).workflowTemplate.update({
       where: { id: workflowId, userId: ctx.userId },
       data: {
         totalRecipients: totalRecipients as any,
@@ -107,7 +99,7 @@ export async function POST(request: NextRequest) {
     // Create workflow instances for each lead
     const instances = await Promise.all(
       leads.map((lead) =>
-        getCrmDb(ctx).workflowInstance.create({
+        (getCrmDb(ctx) as any).workflowInstance.create({
           data: {
             templateId: workflow.id,
             userId: ctx.userId,
@@ -130,9 +122,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error executing campaign:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to execute campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to execute campaign');
   }
 }

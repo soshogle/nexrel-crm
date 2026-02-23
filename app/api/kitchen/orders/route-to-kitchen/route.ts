@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * ROUTE POS ORDER TO KITCHEN
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -24,10 +25,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!posOrderId) {
-      return NextResponse.json(
-        { error: 'POS Order ID is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('POS Order ID is required');
     }
 
     // Get POS order with items
@@ -42,10 +40,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!posOrder) {
-      return NextResponse.json(
-        { error: 'POS order not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('POS order not found');
     }
 
     // Check if order already routed to kitchen
@@ -54,10 +49,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingKitchenItems.length > 0) {
-      return NextResponse.json(
-        { error: 'Order already routed to kitchen' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Order already routed to kitchen');
     }
 
     // Get available stations
@@ -69,10 +61,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (stations.length === 0) {
-      return NextResponse.json(
-        { error: 'No active kitchen stations available' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('No active kitchen stations available');
     }
 
     // Auto-assign stations if not provided
@@ -133,10 +122,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('❌ Order routing error:', error);
-    return NextResponse.json(
-      { error: 'Failed to route order to kitchen' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to route order to kitchen');
   }
 }
 

@@ -7,6 +7,7 @@ import {
   getLeadScoreHistory
 } from '@/lib/lead-generation/lead-scoring-db';
 import { leadService } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/lead-generation/score
@@ -21,10 +22,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     const body = await request.json();
@@ -62,16 +60,10 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    return NextResponse.json(
-      { error: 'Missing leadId or batch parameter' },
-      { status: 400 }
-    );
+    return apiErrors.badRequest('Missing leadId or batch parameter');
   } catch (error) {
     console.error('Error scoring lead:', error);
-    return NextResponse.json(
-      { error: 'Failed to score lead' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to score lead');
   }
 }
 
@@ -84,20 +76,14 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     const searchParams = request.nextUrl.searchParams;
     const leadId = searchParams.get('leadId');
     
     if (!leadId) {
-      return NextResponse.json(
-        { error: 'Missing leadId parameter' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing leadId parameter');
     }
     
     const ctx = {
@@ -126,9 +112,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching lead score:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch lead score' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch lead score');
   }
 }

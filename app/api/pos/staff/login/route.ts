@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * STAFF LOGIN FOR POS
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -25,10 +26,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!employeeId || !pin) {
-      return NextResponse.json(
-        { error: 'Employee ID and PIN are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Employee ID and PIN are required');
     }
 
     // Find staff
@@ -49,20 +47,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (!staff) {
-      return NextResponse.json(
-        { error: 'Invalid employee ID or PIN' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized('Invalid employee ID or PIN');
     }
 
     // Verify PIN
     const isValidPin = await bcrypt.compare(pin, staff.pin);
 
     if (!isValidPin) {
-      return NextResponse.json(
-        { error: 'Invalid employee ID or PIN' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized('Invalid employee ID or PIN');
     }
 
     // Remove PIN from response
@@ -76,9 +68,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('❌ Staff login error:', error);
-    return NextResponse.json(
-      { error: 'Failed to log in' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to log in');
   }
 }

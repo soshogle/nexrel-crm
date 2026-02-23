@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(
   request: NextRequest,
@@ -15,17 +16,14 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { productId, sku, quantity, previousQuantity } = body;
 
     if (!productId || quantity === undefined) {
-      return NextResponse.json(
-        { error: 'productId and quantity are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('productId and quantity are required');
     }
 
     const updates = await websiteStockSyncService.syncStockToWebsites({
@@ -43,9 +41,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Error syncing stock:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to sync stock' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to sync stock');
   }
 }

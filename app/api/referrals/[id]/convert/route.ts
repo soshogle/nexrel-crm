@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { getCrmDb, leadService } from '@/lib/dal'
 import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { processReferralTriggers } from '@/lib/referral-triggers'
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs';
@@ -16,14 +17,14 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const body = await request.json()
     const { leadData } = body
 
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
 
     const db = getCrmDb(ctx)
     // Get referral
@@ -32,14 +33,11 @@ export async function POST(
     })
 
     if (!referral) {
-      return NextResponse.json({ error: 'Referral not found' }, { status: 404 })
+      return apiErrors.notFound('Referral not found')
     }
 
     if (referral.convertedLeadId) {
-      return NextResponse.json(
-        { error: 'Referral already converted' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Referral already converted')
     }
 
     // Create new lead from referral
@@ -77,9 +75,6 @@ export async function POST(
     return NextResponse.json({ referral: updatedReferral, lead: newLead })
   } catch (error) {
     console.error('Error converting referral:', error)
-    return NextResponse.json(
-      { error: 'Failed to convert referral' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to convert referral')
   }
 }

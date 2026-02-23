@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,17 +15,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { phoneNumberId, accessToken, businessAccountId } = body;
 
     if (!phoneNumberId || !accessToken || !businessAccountId) {
-      return NextResponse.json(
-        { error: 'Missing required fields: phoneNumberId, accessToken, businessAccountId' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: phoneNumberId, accessToken, businessAccountId');
     }
 
     // Verify the access token by fetching phone number details
@@ -35,10 +33,7 @@ export async function POST(request: NextRequest) {
     if (!verifyResponse.ok) {
       const errorData = await verifyResponse.json();
       console.error('WhatsApp verification error:', errorData);
-      return NextResponse.json(
-        { error: 'Failed to verify WhatsApp credentials. Please check your access token and phone number ID.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Failed to verify WhatsApp credentials. Please check your access token and phone number ID.');
     }
 
     const phoneData = await verifyResponse.json();
@@ -98,9 +93,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('WhatsApp connection error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to connect WhatsApp Business' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to connect WhatsApp Business');
   }
 }

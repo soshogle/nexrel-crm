@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * PROCESS PAYMENT FOR ORDER
@@ -19,7 +20,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -27,10 +28,7 @@ export async function POST(
 
     // Validate required fields
     if (!paymentMethod || !amountPaid) {
-      return NextResponse.json(
-        { error: 'Payment method and amount are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Payment method and amount are required');
     }
 
     // Get order
@@ -45,15 +43,12 @@ export async function POST(
     });
 
     if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     // Check if already paid
     if (order.paymentStatus === 'PAID') {
-      return NextResponse.json(
-        { error: 'Order is already paid' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Order is already paid');
     }
 
     // Determine payment status
@@ -99,9 +94,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('❌ Payment processing error:', error);
-    return NextResponse.json(
-      { error: 'Failed to process payment' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to process payment');
   }
 }

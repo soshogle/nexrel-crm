@@ -9,17 +9,23 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteService, getCrmDb } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
+import { parsePagination, paginatedResponse } from '@/lib/api-utils';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
+
+    const pagination = parsePagination(request);
 
     const websites = await getCrmDb(ctx).website.findMany({
       where: { userId: ctx.userId },
+      take: pagination.take,
+      skip: pagination.skip,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -50,12 +56,10 @@ export async function GET(request: NextRequest) {
       buildError: w.status === 'FAILED' && builds?.[0]?.error ? builds[0].error : null,
     }));
 
-    return NextResponse.json({ websites: websitesWithError, canCreateNew });
+    const total = await getCrmDb(ctx).website.count({ where: { userId: ctx.userId } });
+    return paginatedResponse(websitesWithError, total, pagination);
   } catch (error: any) {
     console.error('Error fetching websites:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch websites' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch websites');
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma as db } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/reservations/availability - Check available time slots
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -21,10 +22,7 @@ export async function GET(request: NextRequest) {
     const partySize = parseInt(searchParams.get('partySize') || '2');
 
     if (!date) {
-      return NextResponse.json(
-        { error: 'Date parameter is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Date parameter is required');
     }
 
     // Get reservation settings
@@ -146,9 +144,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error checking availability:', error);
-    return NextResponse.json(
-      { error: 'Failed to check availability' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to check availability');
   }
 }

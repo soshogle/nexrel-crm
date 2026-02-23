@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify user is SUPER_ADMIN
@@ -21,20 +22,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (superAdmin?.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Forbidden: SUPER_ADMIN access required' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Forbidden: SUPER_ADMIN access required');
     }
 
     const body = await request.json();
     const { userId } = body;
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('userId is required');
     }
 
     // Check if user exists and is pending approval
@@ -49,10 +44,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('User not found');
     }
 
     if (user.accountStatus !== 'PENDING_APPROVAL') {
@@ -116,9 +108,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error('❌ User approval error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to approve user' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to approve user');
   }
 }

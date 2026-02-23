@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { initiateOutboundCall } from '@/lib/twilio';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const { searchParams } = new URL(request.url);
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     const body = await request.json();
@@ -108,10 +109,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!voiceAgentId || !name || !phoneNumber) {
-      return NextResponse.json(
-        { error: 'Missing required fields: voiceAgentId, name, phoneNumber' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: voiceAgentId, name, phoneNumber');
     }
 
     // Verify voice agent exists and belongs to user
@@ -123,18 +121,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!voiceAgent) {
-      return NextResponse.json(
-        { error: 'Voice agent not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Voice agent not found');
     }
 
     // Check if agent has ElevenLabs agent ID
     if (!voiceAgent.elevenLabsAgentId) {
-      return NextResponse.json(
-        { error: 'Voice agent is not configured properly. Please complete the voice AI setup.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Voice agent is not configured properly. Please complete the voice AI setup.');
     }
 
     // Validate agent exists in ElevenLabs before trying to make a call
@@ -298,9 +290,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(outboundCall, { status: 201 });
   } catch (error: any) {
     console.error('Error creating outbound call:', error);
-    return NextResponse.json(
-      { error: 'Failed to create outbound call' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create outbound call');
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma as db } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // PATCH /api/reservations/tables/[id] - Update table details
 
@@ -16,7 +17,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -46,10 +47,7 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('Error updating table:', error);
-    return NextResponse.json(
-      { error: 'Failed to update table' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update table');
   }
 }
 
@@ -61,7 +59,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     await db.restaurantTable.delete({
@@ -77,9 +75,6 @@ export async function DELETE(
     });
   } catch (error) {
     console.error('Error deleting table:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete table' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete table');
   }
 }

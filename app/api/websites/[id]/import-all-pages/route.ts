@@ -16,6 +16,7 @@ import { websiteScraper } from '@/lib/website-builder/scraper';
 import { convertScrapedToComponents } from '@/lib/website-builder/convert-scraped-to-structure';
 import { downloadExternalImagesInStructure } from '@/lib/website-builder/download-external-images';
 import { getNavPagePaths } from '@/lib/website-builder/extract-pages';
+import { apiErrors } from '@/lib/api-error';
 
 function normalizeUrl(url: string): string {
   let u = url.trim();
@@ -178,7 +179,7 @@ export async function POST(
       : (params as { id: string });
 
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID is required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID is required');
     }
 
     const session = await getServerSession(authOptions);
@@ -187,7 +188,7 @@ export async function POST(
     const hasSecretAuth = !!(expectedSecret && secret === expectedSecret);
 
     if (!session?.user?.id && !hasSecretAuth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const db = getCrmDb(createDalContext('bootstrap'));
@@ -199,7 +200,7 @@ export async function POST(
       : await db.website.findFirst({ where: { id: websiteId } });
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     let body: { baseUrl?: string };
@@ -211,10 +212,7 @@ export async function POST(
 
     const baseUrl = body?.baseUrl?.trim() || (website.vercelDeploymentUrl || '').trim();
     if (!baseUrl) {
-      return NextResponse.json(
-        { error: 'Base URL is required. Provide baseUrl or set vercelDeploymentUrl on the website.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Base URL is required. Provide baseUrl or set vercelDeploymentUrl on the website.');
     }
 
     const normalizedUrl = normalizeUrl(baseUrl);
@@ -244,9 +242,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('[Import all]', error);
-    return NextResponse.json(
-      { error: error?.message || 'Failed to start import' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error?.message || 'Failed to start import');
   }
 }

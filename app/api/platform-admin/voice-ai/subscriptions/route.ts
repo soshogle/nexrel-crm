@@ -10,6 +10,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { voiceAIPlatform } from '@/lib/voice-ai-platform';
 import { VoiceAISubscriptionTier } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,12 +21,12 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Check for PLATFORM_ADMIN role
     if ((session.user as { role?: string }).role !== 'PLATFORM_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden - Platform Admin only' }, { status: 403 });
+      return apiErrors.forbidden('Forbidden - Platform Admin only');
     }
 
     const { searchParams } = new URL(request.url);
@@ -44,10 +45,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error: unknown) {
     console.error('[PlatformAdmin] Error fetching subscriptions:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch subscriptions' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to fetch subscriptions');
   }
 }
 
@@ -57,12 +55,12 @@ export async function PUT(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Check for PLATFORM_ADMIN role
     if ((session.user as { role?: string }).role !== 'PLATFORM_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden - Platform Admin only' }, { status: 403 });
+      return apiErrors.forbidden('Forbidden - Platform Admin only');
     }
 
     const body = await request.json();
@@ -78,7 +76,7 @@ export async function PUT(request: NextRequest) {
     } = body;
 
     if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+      return apiErrors.badRequest('userId is required');
     }
 
     const updatedSubscription = await voiceAIPlatform.updateAgencySubscription(userId, {
@@ -97,9 +95,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('[PlatformAdmin] Error updating subscription:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to update subscription' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to update subscription');
   }
 }

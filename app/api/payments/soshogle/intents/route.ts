@@ -10,6 +10,7 @@ import { authOptions } from '@/lib/auth';
 import { soshoglePay } from '@/lib/payments';
 import { fraudDetectionClient } from '@/lib/payments/fraud-detection-client';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -19,12 +20,12 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const customer = await soshoglePay.getCustomer(session.user.id);
     if (!customer) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+      return apiErrors.notFound('Customer not found');
     }
 
     const body = await req.json();
@@ -39,10 +40,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!amount || amount <= 0) {
-      return NextResponse.json(
-        { error: 'Valid amount is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Valid amount is required');
     }
 
     // Get payment method details for fraud detection
@@ -115,9 +113,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('❌ Payment intent creation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create payment intent' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create payment intent');
   }
 }

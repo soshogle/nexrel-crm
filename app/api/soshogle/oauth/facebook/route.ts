@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Facebook App credentials (should be in environment variables)
@@ -25,8 +26,7 @@ export async function GET(request: NextRequest) {
           error: 'Server configuration error',
           details: 'NEXTAUTH_URL environment variable is required'
         },
-        { status: 500 }
-      );
+        { status: 500 });
     }
     
     const redirectUri = `${baseUrl}/api/soshogle/oauth/facebook/callback`;
@@ -53,9 +53,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ authUrl: authUrl.toString() });
   } catch (error: any) {
     console.error('Error initiating Facebook OAuth:', error);
-    return NextResponse.json(
-      { error: 'Failed to initiate OAuth' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to initiate OAuth');
   }
 }

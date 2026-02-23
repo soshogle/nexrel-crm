@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsService } from '@/lib/elevenlabs';
 import { ProfessionalAIEmployeeType } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json().catch(() => ({}));
@@ -28,10 +29,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!employeeType || !contactName || !contactPhone) {
-      return NextResponse.json(
-        { error: 'employeeType, contactName, and contactPhone are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('employeeType, contactName, and contactPhone are required');
     }
 
     const agent = await prisma.professionalAIEmployeeAgent.findUnique({
@@ -41,17 +39,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!agent) {
-      return NextResponse.json(
-        { error: 'Professional AI agent not provisioned. Please provision this agent first.' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Professional AI agent not provisioned. Please provision this agent first.');
     }
 
     if (!agent.elevenLabsAgentId) {
-      return NextResponse.json(
-        { error: 'Agent is not fully configured for voice calls.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Agent is not fully configured for voice calls.');
     }
 
     let formattedPhone = contactPhone.trim().replace(/\D/g, '');
@@ -75,9 +67,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Professional one-off call error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to initiate call' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to initiate call');
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const rules = await prisma.taskAutomation.findMany({
@@ -23,10 +24,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ rules });
   } catch (error: any) {
     console.error('Error fetching automation rules:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch rules' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch rules');
   }
 }
 
@@ -35,7 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -50,10 +48,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!name || !triggerType || !actionType) {
-      return NextResponse.json(
-        { error: 'Missing required fields: name, triggerType, actionType' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: name, triggerType, actionType');
     }
 
     const rule = await prisma.taskAutomation.create({
@@ -72,9 +67,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ rule });
   } catch (error: any) {
     console.error('Error creating automation rule:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create rule' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create rule');
   }
 }

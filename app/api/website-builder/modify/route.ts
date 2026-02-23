@@ -10,6 +10,7 @@ import { getCrmDb, websiteService } from '@/lib/dal';
 import { getDalContextFromSession, createDalContext } from '@/lib/context/industry-context';
 import { changeApproval } from '@/lib/website-builder/approval';
 import { aiModificationService } from '@/lib/website-builder/ai-modification-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
       userId = internalUserId;
     } else {
       if (!session?.user?.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return apiErrors.unauthorized();
       }
       userId = session.user.id;
     }
@@ -32,18 +33,15 @@ export async function POST(request: NextRequest) {
     const { websiteId, message, imageUpload } = body; // imageUpload for image swapping
 
     if (!websiteId || !message) {
-      return NextResponse.json(
-        { error: 'Website ID and message are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Website ID and message are required');
     }
 
     const ctx = isInternalCall ? createDalContext(userId) : getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
     const website = await websiteService.findUnique(ctx, websiteId);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     // Handle image upload if provided (for image swapping)
@@ -150,10 +148,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error processing modification:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to process modification' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to process modification');
   }
 }
 

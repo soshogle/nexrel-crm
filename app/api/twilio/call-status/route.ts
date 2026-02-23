@@ -8,6 +8,7 @@ import {
   triggerCallCompletedWorkflow,
   triggerMissedCallWorkflow,
 } from '@/lib/dental/workflow-triggers';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!callSid) {
-      return NextResponse.json({ error: 'Missing CallSid' }, { status: 400 });
+      return apiErrors.badRequest('Missing CallSid');
     }
 
     // Find the call log by Twilio SID
@@ -172,7 +173,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('❌ [Twilio Call Status] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrors.internal();
   }
 }
 

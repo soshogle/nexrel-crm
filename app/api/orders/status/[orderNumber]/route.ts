@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET ORDER STATUS (PUBLIC)
@@ -35,10 +36,7 @@ export async function GET(
     });
 
     if (!posOrder) {
-      return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Order not found');
     }
 
     // Get kitchen items for this order
@@ -188,9 +186,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('❌ Order status fetch error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch order status' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch order status');
   }
 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { provisionAIEmployeesForUser } from '@/lib/ai-employee-auto-provision';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,19 +13,13 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const { industry } = await req.json();
 
     if (!industry) {
-      return NextResponse.json(
-        { error: 'Industry is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Industry is required');
     }
 
     // Validate industry enum value
@@ -46,10 +41,7 @@ export async function POST(req: NextRequest) {
     ];
 
     if (!validIndustries.includes(industry)) {
-      return NextResponse.json(
-        { error: 'Invalid industry value' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid industry value');
     }
 
     // Update user's industry
@@ -73,9 +65,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error saving industry:', error);
-    return NextResponse.json(
-      { error: 'Failed to save industry' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to save industry');
   }
 }

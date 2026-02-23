@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -28,10 +29,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -39,10 +37,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('User not found');
     }
 
     // Validate credentials
@@ -53,8 +48,7 @@ export async function POST(req: NextRequest) {
           error: 'Twilio credentials not configured',
           details: 'Please set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in environment variables'
         },
-        { status: 500 }
-      );
+        { status: 500 });
     }
 
     if (!ELEVENLABS_API_KEY) {

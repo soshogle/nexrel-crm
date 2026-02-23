@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,24 +18,21 @@ export async function POST(
   try {
     const websiteId = params.id;
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID required');
     }
 
     const secret = request.headers.get('x-website-secret');
     const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
 
     if (!expectedSecret || secret !== expectedSecret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { reportId, name, email, phone } = body;
 
     if (!reportId || !name?.trim() || !email?.trim() || !phone?.trim()) {
-      return NextResponse.json(
-        { error: 'reportId, name, email, and phone are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('reportId, name, email, and phone are required');
     }
 
     const ctx = createDalContext('bootstrap', null);
@@ -44,7 +42,7 @@ export async function POST(
     });
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const report = await getCrmDb(ctx).rEWebsiteReport.findFirst({
@@ -62,7 +60,7 @@ export async function POST(
     });
 
     if (!report) {
-      return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+      return apiErrors.notFound('Report not found');
     }
 
     const userCtx = createDalContext(website.userId);
@@ -97,9 +95,6 @@ export async function POST(
     return NextResponse.json({ report, leadId: lead.id });
   } catch (error: any) {
     console.error('[secret-reports/unlock] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

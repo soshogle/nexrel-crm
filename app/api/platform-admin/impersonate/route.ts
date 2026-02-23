@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { randomBytes } from 'crypto';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify user is SUPER_ADMIN
@@ -22,20 +23,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (superAdmin?.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Forbidden: SUPER_ADMIN access required' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Forbidden: SUPER_ADMIN access required');
     }
 
     const body = await request.json();
     const { targetUserId } = body;
 
     if (!targetUserId) {
-      return NextResponse.json(
-        { error: 'Target user ID required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Target user ID required');
     }
 
     // Verify target user exists
@@ -45,18 +40,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!targetUser) {
-      return NextResponse.json(
-        { error: 'Target user not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Target user not found');
     }
 
     // Prevent impersonating another super admin
     if (targetUser.role === 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Cannot impersonate another SUPER_ADMIN' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Cannot impersonate another SUPER_ADMIN');
     }
 
     // Check if there's an active impersonation session for this target user
@@ -128,10 +117,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error starting impersonation:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to start impersonation' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to start impersonation');
   }
 }
 
@@ -143,7 +129,7 @@ export async function DELETE(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       console.error('❌ No session found');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -153,10 +139,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!sessionToken) {
       console.error('❌ No session token provided');
-      return NextResponse.json(
-        { error: 'Session token required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Session token required');
     }
 
     // Find and end the impersonation session
@@ -173,10 +156,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!impersonationSession) {
       console.error('❌ Session not found in database');
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Session not found');
     }
 
     // Verify the session belongs to the current super admin
@@ -192,10 +172,7 @@ export async function DELETE(request: NextRequest) {
     
     if (impersonationSession.superAdminId !== actualSuperAdminId) {
       console.error('❌ Session does not belong to current super admin');
-      return NextResponse.json(
-        { error: 'Forbidden: Not your session' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Forbidden: Not your session');
     }
 
     // End the session
@@ -212,10 +189,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('❌ Error ending impersonation:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to end impersonation' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to end impersonation');
   }
 }
 
@@ -224,7 +198,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -271,9 +245,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error checking impersonation session:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to check session' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to check session');
   }
 }

@@ -6,6 +6,7 @@ import { batchScoreLeads } from '@/lib/lead-generation/lead-scoring-db';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal/db';
 import { leadService } from '@/lib/dal/lead-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/lead-generation/scrape/google-maps
@@ -20,10 +21,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     const body = await request.json();
@@ -77,15 +75,12 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
     const db = getCrmDb(ctx);
 
@@ -123,9 +118,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching Google Maps stats:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch stats' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch stats');
   }
 }

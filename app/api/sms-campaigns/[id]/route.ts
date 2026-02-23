@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,11 +16,11 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const db = getCrmDb(ctx);
     const campaign = await db.smsCampaign.findFirst({
@@ -49,16 +50,13 @@ export async function GET(
     });
 
     if (!campaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     return NextResponse.json({ campaign });
   } catch (error: any) {
     console.error('Error fetching SMS campaign:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch SMS campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch SMS campaign');
   }
 }
 
@@ -70,7 +68,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -86,7 +84,7 @@ export async function PUT(
     } = body;
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const db = getCrmDb(ctx);
     // Check if campaign exists and belongs to user
@@ -98,15 +96,12 @@ export async function PUT(
     });
 
     if (!existingCampaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Don't allow editing campaigns that have already been sent
     if (existingCampaign.status === 'SENT' || existingCampaign.status === 'SENDING') {
-      return NextResponse.json(
-        { error: 'Cannot edit a campaign that is sending or has been sent' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot edit a campaign that is sending or has been sent');
     }
 
     // Update the campaign
@@ -114,10 +109,7 @@ export async function PUT(
     if (name !== undefined) updateData.name = name;
     if (message !== undefined) {
       if (message.length > 160) {
-        return NextResponse.json(
-          { error: 'Message must be 160 characters or less' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Message must be 160 characters or less');
       }
       updateData.message = message;
     }
@@ -162,10 +154,7 @@ export async function PUT(
     return NextResponse.json({ campaign });
   } catch (error: any) {
     console.error('Error updating SMS campaign:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update SMS campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update SMS campaign');
   }
 }
 
@@ -177,11 +166,11 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const db = getCrmDb(ctx);
     // Check if campaign exists and belongs to user
@@ -193,15 +182,12 @@ export async function DELETE(
     });
 
     if (!existingCampaign) {
-      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+      return apiErrors.notFound('Campaign not found');
     }
 
     // Don't allow deleting campaigns that are currently sending
     if (existingCampaign.status === 'SENDING') {
-      return NextResponse.json(
-        { error: 'Cannot delete a campaign that is currently sending' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Cannot delete a campaign that is currently sending');
     }
 
     // Delete the campaign (this will cascade delete recipients)
@@ -212,9 +198,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Campaign deleted successfully' });
   } catch (error: any) {
     console.error('Error deleting SMS campaign:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete SMS campaign' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete SMS campaign');
   }
 }

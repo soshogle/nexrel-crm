@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { onboardingConfigService } from '@/lib/onboarding-config-service';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get user's collected data
@@ -23,21 +24,21 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user?.onboardingProgress) {
-      return NextResponse.json({ error: 'No onboarding data found' }, { status: 400 });
+      return apiErrors.badRequest('No onboarding data found');
     }
 
     let data;
     try {
       data = JSON.parse(user.onboardingProgress as string);
     } catch (e) {
-      return NextResponse.json({ error: 'Invalid onboarding data' }, { status: 400 });
+      return apiErrors.badRequest('Invalid onboarding data');
     }
 
     // Apply configuration
     const success = await onboardingConfigService.applyConfiguration(session.user.id, data);
 
     if (!success) {
-      return NextResponse.json({ error: 'Failed to apply configuration' }, { status: 500 });
+      return apiErrors.internal('Failed to apply configuration');
     }
 
     return NextResponse.json({
@@ -46,9 +47,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Configuration error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to apply configuration' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to apply configuration');
   }
 }

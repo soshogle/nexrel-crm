@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runDailyGoogleMapsScraping, testCronJob } from '@/lib/lead-generation/cron-scraper';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/lead-generation/cron/scrape-daily
@@ -20,10 +21,7 @@ export async function GET(request: NextRequest) {
     
     // In production, require authorization
     if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     // Check if test mode

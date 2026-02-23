@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -19,7 +20,7 @@ export async function GET(
     });
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const websiteProducts = await getCrmDb(ctx).websiteProduct.findMany({
@@ -53,9 +54,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching store products:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch products' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch products');
   }
 }

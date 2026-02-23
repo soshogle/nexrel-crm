@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { dataEnrichmentService } from '@/lib/data-enrichment-service';
 import { leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,30 +14,24 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { leadId } = body;
 
     if (!leadId) {
-      return NextResponse.json(
-        { error: 'Missing required field: leadId' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required field: leadId');
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Verify lead belongs to user
     const lead = await leadService.findUnique(ctx, leadId);
 
     if (!lead) {
-      return NextResponse.json(
-        { error: 'Lead not found or access denied' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Lead not found or access denied');
     }
 
     // Extract domain from website if available
@@ -61,9 +56,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('❌ Lead enrichment API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to enrich lead' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to enrich lead');
   }
 }

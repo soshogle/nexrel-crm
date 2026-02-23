@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -50,10 +51,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, definitions });
   } catch (error: any) {
     console.error('Error fetching tool definitions:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch tool definitions' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch tool definitions');
   }
 }
 
@@ -62,7 +60,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -83,10 +81,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!name || !slug || !description || !category || !authType) {
-      return NextResponse.json(
-        { error: 'Missing required fields: name, slug, description, category, authType' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: name, slug, description, category, authType');
     }
 
     // Check for duplicate slug
@@ -95,10 +90,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'Tool with this slug already exists' },
-        { status: 409 }
-      );
+      return apiErrors.conflict('Tool with this slug already exists');
     }
 
     const definition = await prisma.toolDefinition.create({
@@ -123,9 +115,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, definition });
   } catch (error: any) {
     console.error('Error creating tool definition:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create tool definition' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create tool definition');
   }
 }

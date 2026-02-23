@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteService, getCrmDb } from '@/lib/dal';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -20,33 +21,30 @@ export async function POST(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const websiteId = params.id;
     if (!websiteId) {
-      return NextResponse.json({ error: 'Website ID required' }, { status: 400 });
+      return apiErrors.badRequest('Website ID required');
     }
 
     const website = await websiteService.findUnique(ctx, websiteId);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const body = await request.json();
     const { reportType, title, region, content, executiveSummary, pdfUrl, sourceReportId } = body;
 
     if (!reportType || !title || !content) {
-      return NextResponse.json(
-        { error: 'reportType, title, and content required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('reportType, title, and content required');
     }
 
     const validTypes = ['BUYER_ATTRACTION', 'SELLER_ATTRACTION', 'MARKET_INSIGHT'];
     if (!validTypes.includes(reportType)) {
-      return NextResponse.json({ error: 'Invalid reportType' }, { status: 400 });
+      return apiErrors.badRequest('Invalid reportType');
     }
 
     const report = await getCrmDb(ctx).rEWebsiteReport.create({
@@ -66,6 +64,6 @@ export async function POST(
     return NextResponse.json({ report, success: true });
   } catch (error: any) {
     console.error('[secret-reports/publish] Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    return apiErrors.internal(error.message || 'Internal server error');
   }
 }

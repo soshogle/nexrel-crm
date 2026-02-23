@@ -8,6 +8,7 @@ import { getCrmDb, leadService } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
 import { workflowEngine } from '@/lib/workflow-engine';
 import { processWebsiteTriggers } from '@/lib/website-triggers';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,10 +20,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!websiteId || !eventType) {
-      return NextResponse.json(
-        { error: 'Website ID and event type are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Website ID and event type are required');
     }
 
     // Get website to find user (no session - fetch first to get userId)
@@ -31,7 +29,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     // Map event types to workflow triggers
@@ -127,9 +125,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Website webhook error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Webhook processing failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Webhook processing failed');
   }
 }

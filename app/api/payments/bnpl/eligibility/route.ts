@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { BnplService } from '@/lib/payments/bnpl-service';
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -17,17 +18,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { purchaseAmount } = body;
 
     if (!purchaseAmount) {
-      return NextResponse.json(
-        { error: 'Purchase amount is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Purchase amount is required');
     }
 
     const eligibility = await BnplService.calculateEligibility(
@@ -38,9 +36,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(eligibility);
   } catch (error) {
     console.error('Error checking BNPL eligibility:', error);
-    return NextResponse.json(
-      { error: 'Failed to check eligibility' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to check eligibility');
   }
 }

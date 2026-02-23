@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma as db } from '@/lib/db';
 import { ReservationStatus } from '@prisma/client';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/reservations - List reservations with filters
 
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -86,10 +87,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching reservations:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch reservations' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch reservations');
   }
 }
 
@@ -98,7 +96,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -121,10 +119,7 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!reservationDate || !reservationTime || !partySize || !customerName || !customerEmail || !customerPhone) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     // Check if customer exists or create new
@@ -219,9 +214,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error creating reservation:', error);
-    return NextResponse.json(
-      { error: 'Failed to create reservation' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create reservation');
   }
 }

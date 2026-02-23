@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,10 +16,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const fileId = params.id;
@@ -31,17 +29,11 @@ export async function DELETE(
     });
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'File not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('File not found');
     }
 
     if (file.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to delete this file' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Unauthorized to delete this file');
     }
 
     // Delete the file
@@ -57,9 +49,6 @@ export async function DELETE(
     });
   } catch (error: any) {
     console.error('❌ Error deleting knowledge base file:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete file' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete file');
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createABTest, getActiveTests } from '@/lib/lead-generation/ab-testing';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/lead-generation/ab-test
@@ -16,10 +17,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     const body = await request.json();
@@ -37,10 +35,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error creating A/B test:', error);
-    return NextResponse.json(
-      { error: 'Failed to create A/B test' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create A/B test');
   }
 }
 
@@ -53,10 +48,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     const tests = await getActiveTests(session.user.id);
@@ -67,9 +59,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching A/B tests:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch A/B tests' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch A/B tests');
   }
 }

@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { websiteStripeConnect } from '@/lib/website-builder/stripe-connect';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(
   request: NextRequest,
@@ -21,10 +22,7 @@ export async function POST(
     } = body;
 
     if (!amount || amount <= 0) {
-      return NextResponse.json(
-        { error: 'Amount is required and must be greater than 0' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Amount is required and must be greater than 0');
     }
 
     const result = await websiteStripeConnect.createPaymentIntent(params.id, {
@@ -46,9 +44,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Payment intent error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create payment intent' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to create payment intent');
   }
 }

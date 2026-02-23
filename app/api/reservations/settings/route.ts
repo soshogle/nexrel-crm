@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma as db } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/reservations/settings - Get reservation settings
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     let settings = await db.reservationSettings.findUnique({
@@ -41,10 +42,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ settings });
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch settings');
   }
 }
 
@@ -53,7 +51,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -105,9 +103,6 @@ export async function PATCH(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error updating settings:', error);
-    return NextResponse.json(
-      { error: 'Failed to update settings' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update settings');
   }
 }

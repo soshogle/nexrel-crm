@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { getCrmDb, websiteService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -17,19 +18,19 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get website to verify ownership
     const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website || website.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     // Get products needing restock
@@ -49,17 +50,17 @@ export async function GET(
       const allAlerts = await db.task.findMany({
         where: {
           userId: ctx.userId,
-          status: { in: ['PENDING', 'IN_PROGRESS'] },
+          status: { in: ['TODO', 'IN_PROGRESS'] as any },
         },
         orderBy: { createdAt: 'desc' },
         take: 100,
       });
       alertTasks = allAlerts.filter(
-        (t) =>
+        (t: any) =>
           t.metadata &&
           typeof t.metadata === 'object' &&
-          (t.metadata as any).type === 'LOW_STOCK_ALERT' &&
-          (t.metadata as any).websiteId === params.id
+          t.metadata.type === 'LOW_STOCK_ALERT' &&
+          t.metadata.websiteId === params.id
       );
     } catch (e) {
       console.warn('Failed to fetch alert tasks:', e);
@@ -82,9 +83,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching stock alerts:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch stock alerts' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch stock alerts');
   }
 }

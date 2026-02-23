@@ -10,6 +10,7 @@ import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { websiteService } from '@/lib/dal';
 import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
 import { websiteOrderService } from '@/lib/website-builder/order-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(
   request: NextRequest,
@@ -19,7 +20,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -29,7 +30,7 @@ export async function GET(
     const website = await websiteService.findUnique(ctx, params.id);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     const startDate = new Date();
@@ -124,9 +125,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching analytics:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch analytics' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch analytics');
   }
 }

@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import OpenAI from 'openai';
+import { apiErrors } from '@/lib/api-error';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
@@ -17,17 +18,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { businessDescription, websiteName, templateType, services, products } = body;
 
     if (!businessDescription || businessDescription.trim().length < 10) {
-      return NextResponse.json(
-        { error: 'Please provide at least 10 characters of business description' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Please provide at least 10 characters of business description');
     }
 
     // Get user's business context
@@ -108,9 +106,6 @@ Return as JSON:
     });
   } catch (error: any) {
     console.error('Error generating business description:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate description' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to generate description');
   }
 }

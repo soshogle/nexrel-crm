@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -11,12 +12,12 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const facebookAppId = process.env.FACEBOOK_APP_ID;
     if (!facebookAppId) {
-      return NextResponse.json({ error: 'Facebook App ID not configured' }, { status: 500 });
+      return apiErrors.internal('Facebook App ID not configured');
     }
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/messaging/connections/facebook/callback`
     
@@ -29,9 +30,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ authUrl })
   } catch (error) {
     console.error('Facebook auth init error:', error)
-    return NextResponse.json(
-      { error: 'Failed to initialize Facebook auth' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to initialize Facebook auth')
   }
 }

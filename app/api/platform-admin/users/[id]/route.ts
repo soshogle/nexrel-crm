@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/platform-admin/users/[id]
@@ -16,15 +17,12 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify SUPER_ADMIN access
     if (session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Super Admin access required' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Super Admin access required');
     }
 
     const user = await prisma.user.findUnique({
@@ -44,24 +42,18 @@ export async function GET(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     // Don't allow editing other SUPER_ADMINs
     if (user.role === 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Cannot edit Super Admin accounts' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Cannot edit Super Admin accounts');
     }
 
     return NextResponse.json({ user });
   } catch (error: any) {
     console.error('Error fetching user:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch user' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch user');
   }
 }
 
@@ -77,15 +69,12 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify SUPER_ADMIN access
     if (session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Super Admin access required' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Super Admin access required');
     }
 
     const body = await request.json();
@@ -97,15 +86,12 @@ export async function PATCH(
     });
 
     if (!existingUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     // Don't allow editing other SUPER_ADMINs
     if (existingUser.role === 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Cannot edit Super Admin accounts' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Cannot edit Super Admin accounts');
     }
 
     // Check if new email is already taken (if email is being changed)
@@ -115,10 +101,7 @@ export async function PATCH(
       });
 
       if (emailExists) {
-        return NextResponse.json(
-          { error: 'Email already in use' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Email already in use');
       }
     }
 
@@ -166,10 +149,7 @@ export async function PATCH(
     });
   } catch (error: any) {
     console.error('Error updating user:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update user' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update user');
   }
 }
 

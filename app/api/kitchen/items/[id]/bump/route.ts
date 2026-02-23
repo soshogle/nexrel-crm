@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * BUMP KITCHEN ITEM
@@ -19,7 +20,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -34,10 +35,7 @@ export async function POST(
     });
 
     if (!item) {
-      return NextResponse.json(
-        { error: 'Kitchen item not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Kitchen item not found');
     }
 
     // Update to BUMPED status
@@ -99,9 +97,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('❌ Kitchen item bump error:', error);
-    return NextResponse.json(
-      { error: 'Failed to bump item' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to bump item');
   }
 }

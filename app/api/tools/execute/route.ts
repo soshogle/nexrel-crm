@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { decrypt } from '@/lib/encryption';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,20 +15,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { instanceId, actionType, method, endpoint, payload, context } = body;
 
     if (!instanceId || !actionType || !method || !endpoint) {
-      return NextResponse.json(
-        {
-          error:
-            'Missing required fields: instanceId, actionType, method, endpoint',
-        },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields: instanceId, actionType, method, endpoint',);
     }
 
     // Get tool instance
@@ -37,15 +32,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (!instance) {
-      return NextResponse.json(
-        { error: 'Tool instance not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Tool instance not found');
     }
 
     // Verify ownership
     if (instance.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return apiErrors.forbidden();
     }
 
     // Check if tool is active
@@ -197,9 +189,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error executing tool action:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to execute tool action' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to execute tool action');
   }
 }

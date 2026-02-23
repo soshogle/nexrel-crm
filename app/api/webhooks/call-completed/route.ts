@@ -3,6 +3,7 @@ import { getCrmDb, leadService } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
 import { analyzeConversation, calculateLeadScoreAdjustment, determineNextLeadStatus } from '@/lib/conversation-intelligence';
 import { emitCRMEvent } from '@/lib/crm-event-emitter';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/webhooks/call-completed
@@ -17,10 +18,7 @@ export async function POST(req: NextRequest) {
     const { callLogId } = await req.json();
 
     if (!callLogId) {
-      return NextResponse.json(
-        { error: 'Call log ID is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Call log ID is required');
     }
 
     // Fetch the call log with lead data (no session - need prisma for initial lookup by id)
@@ -33,10 +31,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!callLog) {
-      return NextResponse.json(
-        { error: 'Call log not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Call log not found');
     }
 
     // Skip if already analyzed
@@ -49,10 +44,7 @@ export async function POST(req: NextRequest) {
 
     // Only analyze completed calls
     if (callLog.status !== 'COMPLETED') {
-      return NextResponse.json(
-        { error: 'Call is not completed yet' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Call is not completed yet');
     }
 
     // Get transcript - try both field names
@@ -120,9 +112,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error in call-completed webhook:', error);
-    return NextResponse.json(
-      { error: 'Failed to process webhook' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to process webhook');
   }
 }

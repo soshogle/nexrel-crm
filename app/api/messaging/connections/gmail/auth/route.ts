@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { apiErrors } from '@/lib/api-error';
 
 
 export const dynamic = 'force-dynamic';
@@ -11,12 +12,12 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_ID;
     if (!googleClientId) {
-      return NextResponse.json({ error: 'Google OAuth credentials not configured' }, { status: 500 });
+      return apiErrors.internal('Google OAuth credentials not configured');
     }
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/messaging/connections/gmail/callback`
     
@@ -31,9 +32,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ authUrl })
   } catch (error) {
     console.error('Gmail auth init error:', error)
-    return NextResponse.json(
-      { error: 'Failed to initialize Gmail auth' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to initialize Gmail auth')
   }
 }

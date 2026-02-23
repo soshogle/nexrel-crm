@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 // GET /api/subdomain/resolve/[subdomain] - Resolve subdomain to userId (public)
 
@@ -15,10 +16,7 @@ export async function GET(
     const { subdomain } = params;
 
     if (!subdomain) {
-      return NextResponse.json(
-        { error: 'Subdomain parameter is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Subdomain parameter is required');
     }
 
     // Look up user by subdomain
@@ -37,10 +35,7 @@ export async function GET(
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Business not found for this subdomain' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Business not found for this subdomain');
     }
 
     return NextResponse.json({
@@ -54,9 +49,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error resolving subdomain:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to resolve subdomain' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to resolve subdomain');
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -28,10 +29,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!voiceAgentId || !elevenLabsConversationId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
 
     // Verify the voice agent belongs to this user
@@ -40,7 +38,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!voiceAgent || voiceAgent.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     // Create a call log entry with PREVIEW category
@@ -68,9 +66,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error saving preview conversation:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to save preview conversation' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to save preview conversation');
   }
 }

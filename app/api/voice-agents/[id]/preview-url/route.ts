@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/voice-agents/[id]/preview-url
@@ -17,10 +18,7 @@ export async function GET(
     // Authenticate the user
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     // Fetch the voice agent from the database (VoiceAgent or IndustryAIEmployeeAgent)
@@ -41,10 +39,7 @@ export async function GET(
       });
       if (industryAgent) {
         if (industryAgent.userId !== session.user.id) {
-          return NextResponse.json(
-            { error: 'Unauthorized access to this voice agent' },
-            { status: 403 }
-          );
+          return apiErrors.forbidden('Unauthorized access to this voice agent');
         }
         elevenLabsAgentId = industryAgent.elevenLabsAgentId;
         agentName = industryAgent.name;
@@ -52,27 +47,18 @@ export async function GET(
     }
 
     if (!voiceAgent && !elevenLabsAgentId) {
-      return NextResponse.json(
-        { error: 'Voice agent not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Voice agent not found');
     }
 
     if (voiceAgent) {
       // Verify ownership for VoiceAgent
       if (voiceAgent.userId !== session.user.id) {
-        return NextResponse.json(
-          { error: 'Unauthorized access to this voice agent' },
-          { status: 403 }
-        );
+        return apiErrors.forbidden('Unauthorized access to this voice agent');
       }
     }
 
     if (!elevenLabsAgentId) {
-      return NextResponse.json(
-        { error: 'Voice agent is not configured. Please run auto-configuration first.' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Voice agent is not configured. Please run auto-configuration first.');
     }
 
     // Get the ElevenLabs API key from environment or key manager
@@ -80,10 +66,7 @@ export async function GET(
     const apiKey = await elevenLabsKeyManager.getActiveApiKey(session.user.id);
 
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Soshogle AI voice is not configured' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Soshogle AI voice is not configured');
     }
 
     // Fetch the signed WebSocket URL from ElevenLabs
@@ -114,10 +97,7 @@ export async function GET(
     // The response should contain a signed_url field
     if (!data.signed_url) {
       console.error('❌ No signed_url in ElevenLabs response:', data);
-      return NextResponse.json(
-        { error: 'Invalid response from Soshogle AI' },
-        { status: 500 }
-      );
+      return apiErrors.internal('Invalid response from Soshogle AI');
     }
 
     console.log('✅ Successfully fetched preview URL for agent:', elevenLabsAgentId);

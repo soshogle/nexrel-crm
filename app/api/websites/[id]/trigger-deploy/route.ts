@@ -8,6 +8,7 @@ import { authOptions } from "@/lib/auth";
 import { websiteService } from "@/lib/dal";
 import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { triggerWebsiteDeploy } from "@/lib/website-builder/deploy-trigger";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 
@@ -18,16 +19,16 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { id } = await params;
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
     const website = await websiteService.findUnique(ctx, id);
 
     if (!website) {
-      return NextResponse.json({ error: "Website not found" }, { status: 404 });
+      return apiErrors.notFound("Website not found");
     }
 
     const result = await triggerWebsiteDeploy(id);

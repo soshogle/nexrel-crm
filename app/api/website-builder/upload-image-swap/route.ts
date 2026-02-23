@@ -9,17 +9,18 @@ import { authOptions } from '@/lib/auth';
 import { aiModificationService } from '@/lib/website-builder/ai-modification-service';
 import { websiteService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const formData = await request.formData();
@@ -28,17 +29,14 @@ export async function POST(request: NextRequest) {
     const imagePath = formData.get('imagePath') as string; // Path to replace
 
     if (!file || !websiteId || !imagePath) {
-      return NextResponse.json(
-        { error: 'File, websiteId, and imagePath are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('File, websiteId, and imagePath are required');
     }
 
     // Verify website belongs to user
     const website = await websiteService.findUnique(ctx, websiteId);
 
     if (!website) {
-      return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+      return apiErrors.notFound('Website not found');
     }
 
     // Convert file to buffer
@@ -61,9 +59,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error uploading image swap:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to upload image' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to upload image');
   }
 }

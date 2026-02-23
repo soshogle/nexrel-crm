@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { widgetService } from '@/lib/ecommerce/widget-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET /api/widgets/[id]
@@ -19,13 +20,13 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const widget = await widgetService.getWidget(params.id, session.user.id);
 
     if (!widget) {
-      return NextResponse.json({ error: 'Widget not found' }, { status: 404 });
+      return apiErrors.notFound('Widget not found');
     }
 
     // Generate embed code
@@ -37,10 +38,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('Error fetching widget:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch widget' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch widget');
   }
 }
 
@@ -55,7 +53,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -76,10 +74,7 @@ export async function PATCH(
     });
   } catch (error: any) {
     console.error('Error updating widget:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to update widget' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to update widget');
   }
 }
 
@@ -94,7 +89,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     await widgetService.deleteWidget(params.id, session.user.id);
@@ -104,9 +99,6 @@ export async function DELETE(
     });
   } catch (error: any) {
     console.error('Error deleting widget:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete widget' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to delete widget');
   }
 }

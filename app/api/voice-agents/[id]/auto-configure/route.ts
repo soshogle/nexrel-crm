@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * Auto-configure ElevenLabs agent
@@ -25,10 +26,7 @@ export async function POST(
 
     if (!session?.user?.id) {
       console.log('❌ [Auto-Configure] Unauthorized - no session');
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
 
     const voiceAgentId = params.id;
@@ -44,19 +42,13 @@ export async function POST(
 
     if (!voiceAgent) {
       console.log('❌ [Auto-Configure] Voice agent not found:', voiceAgentId);
-      return NextResponse.json(
-        { error: 'Voice agent not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Voice agent not found');
     }
 
     // Check if user owns this agent
     if (voiceAgent.userId !== session.user.id) {
       console.log('❌ [Auto-Configure] Unauthorized - user does not own agent');
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Unauthorized');
     }
 
     // Check if already configured and validate it exists in ElevenLabs
@@ -135,10 +127,7 @@ export async function POST(
     });
 
     if (!reloadedAgent) {
-      return NextResponse.json(
-        { error: 'Agent not found after validation' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Agent not found after validation');
     }
 
     let result: any;

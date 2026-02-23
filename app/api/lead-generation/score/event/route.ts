@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { updateLeadScoreOnEvent } from '@/lib/lead-generation/lead-scoring-db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * POST /api/lead-generation/score/event
@@ -16,20 +17,14 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return apiErrors.unauthorized();
     }
     
     const body = await request.json();
     const { leadId, eventType, data } = body;
     
     if (!leadId || !eventType) {
-      return NextResponse.json(
-        { error: 'Missing leadId or eventType' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing leadId or eventType');
     }
     
     // Validate event type
@@ -43,10 +38,7 @@ export async function POST(request: NextRequest) {
     ];
     
     if (!validEvents.includes(eventType)) {
-      return NextResponse.json(
-        { error: 'Invalid event type' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Invalid event type');
     }
     
     // Update score
@@ -70,9 +62,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error updating lead score on event:', error);
-    return NextResponse.json(
-      { error: 'Failed to update lead score' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update lead score');
   }
 }

@@ -3,6 +3,7 @@ import { leadService } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
 import { validateLead } from '@/lib/lead-generation/data-validation';
 import { scoreAndSaveLead } from '@/lib/lead-generation/lead-scoring-db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -25,18 +26,12 @@ export async function POST(request: NextRequest) {
     
     // Validate required fields
     if (!fullName || !email || !phone) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing required fields');
     }
     
     // Validate user ID
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Missing user ID' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Missing user ID');
     }
     
     // Validate lead data
@@ -81,9 +76,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error capturing lead from voice AI:', error);
-    return NextResponse.json(
-      { error: 'Failed to capture lead' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to capture lead');
   }
 }

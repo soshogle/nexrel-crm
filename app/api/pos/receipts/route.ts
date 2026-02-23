@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GENERATE RECEIPT
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await req.json();
@@ -23,10 +24,7 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!orderId) {
-      return NextResponse.json(
-        { error: 'Order ID is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Order ID is required');
     }
 
     // Get order details
@@ -54,7 +52,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      return apiErrors.notFound('Order not found');
     }
 
     // Generate receipt number
@@ -95,10 +93,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('❌ Receipt generation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate receipt' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate receipt');
   }
 }
 

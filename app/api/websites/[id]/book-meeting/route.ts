@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCrmDb } from "@/lib/dal/db";
 import { createDalContext } from "@/lib/context/industry-context";
 import { leadService } from "@/lib/dal/lead-service";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export async function POST(
     const expectedSecret = process.env.WEBSITE_VOICE_CONFIG_SECRET;
 
     if (!expectedSecret || secret !== expectedSecret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const website = await getCrmDb(createDalContext('bootstrap')).website.findFirst({
@@ -30,17 +31,14 @@ export async function POST(
     });
 
     if (!website) {
-      return NextResponse.json({ error: "Website not found" }, { status: 404 });
+      return apiErrors.notFound("Website not found");
     }
 
     const body = await request.json();
     const { name, email, phone } = body;
 
     if (!name?.trim() || !email?.trim()) {
-      return NextResponse.json(
-        { error: "Name and email are required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("Name and email are required");
     }
 
     const ctx = createDalContext(website.userId);
@@ -56,9 +54,6 @@ export async function POST(
     return NextResponse.json({ success: true, message: "We'll be in touch to schedule your meeting." });
   } catch (error: any) {
     console.error("[book-meeting]", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to submit" },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || "Failed to submit");
   }
 }

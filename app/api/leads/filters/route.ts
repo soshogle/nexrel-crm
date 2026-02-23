@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { LeadStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,11 +19,11 @@ export async function GET() {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const statuses = Object.values(LeadStatus);
 
@@ -45,9 +46,6 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error('Error fetching lead filters:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch filters' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to fetch filters');
   }
 }

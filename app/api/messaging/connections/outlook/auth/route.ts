@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -9,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const clientId = process.env.MICROSOFT_CLIENT_ID || process.env.AZURE_CLIENT_ID || '';
@@ -33,9 +34,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ authUrl });
   } catch (error) {
     console.error('Outlook auth init error:', error);
-    return NextResponse.json(
-      { error: 'Failed to initialize Outlook auth' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to initialize Outlook auth');
   }
 }

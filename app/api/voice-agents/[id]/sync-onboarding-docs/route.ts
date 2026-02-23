@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { generateReservationSystemPrompt } from '@/lib/voice-reservation-helper';
 import { ensureMultilingualPrompt } from '@/lib/voice-languages';
 import { EASTERN_TIME_SYSTEM_INSTRUCTION } from '@/lib/voice-time-context';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -22,7 +23,7 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const user = await prisma.user.findUnique({
@@ -30,7 +31,7 @@ export async function PATCH(
     });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return apiErrors.notFound('User not found');
     }
 
     // Await params in Next.js 15+
@@ -42,12 +43,12 @@ export async function PATCH(
     });
 
     if (!agent) {
-      return NextResponse.json({ error: 'Voice agent not found' }, { status: 404 });
+      return apiErrors.notFound('Voice agent not found');
     }
 
     // Verify ownership
     if (agent.userId !== user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiErrors.forbidden('Unauthorized');
     }
 
     console.log('📚 Syncing onboarding documents to agent:', agent.name);
@@ -59,27 +60,18 @@ export async function PATCH(
     });
 
     if (!userWithProgress?.onboardingProgress) {
-      return NextResponse.json(
-        { error: 'No onboarding progress found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('No onboarding progress found');
     }
 
     let progress: any = {};
     try {
       progress = JSON.parse(userWithProgress.onboardingProgress as string);
     } catch (e) {
-      return NextResponse.json(
-        { error: 'Could not parse onboarding progress' },
-        { status: 500 }
-      );
+      return apiErrors.internal('Could not parse onboarding progress');
     }
 
     if (!progress.uploadedDocuments || progress.uploadedDocuments.length === 0) {
-      return NextResponse.json(
-        { error: 'No onboarding documents found to sync' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('No onboarding documents found to sync');
     }
 
     console.log(`📄 Found ${progress.uploadedDocuments.length} onboarding document(s)`);
@@ -302,10 +294,7 @@ ${
       });
     }
 
-    return NextResponse.json(
-      { error: 'No valid document texts found to import' },
-      { status: 400 }
-    );
+    return apiErrors.badRequest('No valid document texts found to import');
   } catch (error: any) {
     console.error('❌ Error syncing onboarding documents:', error);
     return NextResponse.json(

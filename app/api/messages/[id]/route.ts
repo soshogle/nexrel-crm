@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getDalContextFromSession } from '@/lib/context/industry-context'
 import { messageService } from '@/lib/dal/message-service'
+import { apiErrors } from '@/lib/api-error';
 
 export async function PUT(
   request: NextRequest,
@@ -15,31 +16,28 @@ export async function PUT(
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const { isUsed } = await request.json()
 
     if (typeof isUsed !== 'boolean') {
-      return NextResponse.json({ error: 'isUsed must be a boolean' }, { status: 400 })
+      return apiErrors.badRequest('isUsed must be a boolean')
     }
 
     const ctx = getDalContextFromSession(session)
     if (!ctx) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
     const message = await messageService.findFirst(ctx, { id: params.id })
     if (!message) {
-      return NextResponse.json({ error: 'Message not found' }, { status: 404 })
+      return apiErrors.notFound('Message not found')
     }
     const updatedMessage = await messageService.update(ctx, params.id, { isUsed })
 
     return NextResponse.json(updatedMessage)
   } catch (error) {
     console.error('Update message error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiErrors.internal()
   }
 }

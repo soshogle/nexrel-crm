@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * GET COMPREHENSIVE OVERVIEW REPORT
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(req.url);
@@ -230,9 +231,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('❌ Overview report error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate report' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate report');
   }
 }

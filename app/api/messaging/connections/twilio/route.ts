@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { encrypt, decrypt } from '@/lib/encryption'
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const user = await prisma.user.findUnique({
@@ -20,16 +21,13 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return apiErrors.notFound('User not found')
     }
 
     const { accountSid, authToken, phoneNumber } = await request.json()
 
     if (!accountSid || !authToken || !phoneNumber) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Missing required fields')
     }
 
     // Validate Twilio credentials by making a test API call
@@ -45,17 +43,11 @@ export async function POST(request: NextRequest) {
       )
 
       if (!response.ok) {
-        return NextResponse.json(
-          { error: 'Invalid Twilio credentials' },
-          { status: 400 }
-        )
+        return apiErrors.badRequest('Invalid Twilio credentials')
       }
     } catch (error) {
       console.error('Twilio validation error:', error)
-      return NextResponse.json(
-        { error: 'Failed to validate Twilio credentials' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Failed to validate Twilio credentials')
     }
 
     // Check if connection already exists
@@ -104,9 +96,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, connection })
   } catch (error) {
     console.error('Failed to connect Twilio:', error)
-    return NextResponse.json(
-      { error: 'Failed to connect Twilio' },
-      { status: 500 }
-    )
+    return apiErrors.internal('Failed to connect Twilio')
   }
 }
