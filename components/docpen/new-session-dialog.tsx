@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, Loader2 } from 'lucide-react';
 import { PreChartPanel } from './pre-chart-panel';
 import {
@@ -25,6 +25,8 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { getProfessionsForIndustry } from '@/lib/docpen/industry-professions';
+import type { Industry } from '@/lib/industry-menu-config';
 
 interface Lead {
   id: string;
@@ -40,22 +42,9 @@ interface NewSessionDialogProps {
   defaultChiefComplaint?: string;
   defaultProfession?: string;
   defaultOpen?: boolean;
+  /** User's industry - filters specialties to those relevant to the practice */
+  industry?: Industry | null;
 }
-
-const PROFESSIONS = [
-  { value: 'GENERAL_PRACTICE', label: 'General Practice / Family Medicine' },
-  { value: 'DENTIST', label: 'Dentistry' },
-  { value: 'ORTHODONTIC', label: 'Orthodontics' },
-  { value: 'OPTOMETRIST', label: 'Optometry' },
-  { value: 'DERMATOLOGIST', label: 'Dermatology' },
-  { value: 'CARDIOLOGIST', label: 'Cardiology' },
-  { value: 'PSYCHIATRIST', label: 'Psychiatry' },
-  { value: 'PEDIATRICIAN', label: 'Pediatrics' },
-  { value: 'ORTHOPEDIC', label: 'Orthopedics' },
-  { value: 'PHYSIOTHERAPIST', label: 'Physical Therapy' },
-  { value: 'CHIROPRACTOR', label: 'Chiropractic' },
-  { value: 'CUSTOM', label: 'Custom Specialty' },
-];
 
 export function NewSessionDialog({
   onSessionCreated,
@@ -64,6 +53,7 @@ export function NewSessionDialog({
   defaultChiefComplaint,
   defaultProfession,
   defaultOpen = false,
+  industry,
 }: NewSessionDialogProps) {
   const tPlaceholders = useTranslations('placeholders');
   const tToasts = useTranslations('toasts.general');
@@ -73,28 +63,51 @@ export function NewSessionDialog({
   const [searchQuery, setSearchQuery] = useState(defaultPatientName || '');
   const [isSearching, setIsSearching] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const professions = useMemo(
+    () => getProfessionsForIndustry(industry),
+    [industry]
+  );
+
+  const [formData, setFormData] = useState(() => ({
     leadId: defaultLeadId || '',
     patientName: defaultPatientName || '',
-    profession: (defaultProfession as any) || 'GENERAL_PRACTICE',
+    profession: (() => {
+      const preferred = (defaultProfession as string) || 'GENERAL_PRACTICE';
+      const allowed = getProfessionsForIndustry(industry).map((p) => p.value);
+      return allowed.includes(preferred as any) ? preferred : (allowed[0] || 'GENERAL_PRACTICE');
+    })(),
     customProfession: '',
     chiefComplaint: defaultChiefComplaint || '',
     consultantName: '',
-  });
+  }));
 
   useEffect(() => {
     if (defaultOpen || defaultLeadId || defaultPatientName) {
+      const allowed = professions.map((p) => p.value);
+      const preferred = defaultProfession as string;
+
       setFormData((prev) => ({
         ...prev,
         leadId: defaultLeadId || prev.leadId,
         patientName: defaultPatientName || prev.patientName,
         chiefComplaint: defaultChiefComplaint ?? prev.chiefComplaint,
-        ...(defaultProfession && { profession: defaultProfession as any }),
+        ...(defaultProfession && {
+          profession: allowed.includes(preferred as any) ? preferred : prev.profession,
+        }),
       }));
       setSearchQuery(defaultPatientName || '');
       if (defaultOpen) setOpen(true);
     }
-  }, [defaultOpen, defaultLeadId, defaultPatientName, defaultChiefComplaint, defaultProfession]);
+  }, [defaultOpen, defaultLeadId, defaultPatientName, defaultChiefComplaint, defaultProfession, professions]);
+
+  // When industry/professions change, ensure selected profession is still valid
+  useEffect(() => {
+    setFormData((prev) => {
+      const allowed = professions.map((p) => p.value);
+      if (allowed.includes(prev.profession as any)) return prev;
+      return { ...prev, profession: (allowed[0] || 'GENERAL_PRACTICE') as any };
+    });
+  }, [professions]);
 
   useEffect(() => {
     if (searchQuery.length >= 2) {
@@ -164,10 +177,11 @@ export function NewSessionDialog({
   };
 
   const resetForm = () => {
+    const firstProfession = professions[0]?.value || 'GENERAL_PRACTICE';
     setFormData({
       leadId: '',
       patientName: '',
-      profession: 'GENERAL_PRACTICE',
+      profession: firstProfession,
       customProfession: '',
       chiefComplaint: '',
       consultantName: '',
@@ -332,7 +346,7 @@ export function NewSessionDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PROFESSIONS.map(({ value, label }) => (
+                {professions.map(({ value, label }) => (
                   <SelectItem key={value} value={value}>
                     {label}
                   </SelectItem>

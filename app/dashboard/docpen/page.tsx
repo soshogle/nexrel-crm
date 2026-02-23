@@ -301,6 +301,7 @@ export default function DocpenPage() {
                 defaultChiefComplaint={chiefComplaintParam || undefined}
                 defaultProfession={fromParam === 'clinical' ? 'DENTIST' : undefined}
                 defaultOpen={!!(leadIdParam || patientNameParam)}
+                industry={userIndustry}
               />
             </>
           )}
