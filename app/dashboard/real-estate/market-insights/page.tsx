@@ -132,8 +132,8 @@ export default function MarketInsightsPage() {
       const data = await res.json();
 
       setLiveStats(data.liveStats || null);
-      setMonthlyTrends(data.monthlyTrends || []);
-      setLocations(data.locations || []);
+      setMonthlyTrends(Array.isArray(data?.monthlyTrends) ? data.monthlyTrends : []);
+      setLocations(Array.isArray(data?.locations) ? data.locations : []);
       setDataSource(data.dataSource || null);
     } catch {
       setLiveStats(null);

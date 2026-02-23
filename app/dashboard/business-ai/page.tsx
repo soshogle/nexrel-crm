@@ -190,7 +190,7 @@ function BusinessAIPageContent() {
       }
       if (workflowRes.status === 'fulfilled' && workflowRes.value.ok) {
         const data = await workflowRes.value.json();
-        setWorkflowRecommendations(data.recommendations || []);
+        setWorkflowRecommendations(Array.isArray(data?.recommendations) ? data.recommendations : []);
       }
     } catch (error) {
       console.error('Error loading analytical dashboard data:', error);

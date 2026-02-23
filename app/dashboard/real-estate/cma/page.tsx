@@ -113,7 +113,7 @@ export default function CMAToolsPage() {
       const res = await fetch('/api/real-estate/cma');
       if (res.ok) {
         const data = await res.json();
-        setReports(data.reports || []);
+        setReports(Array.isArray(data?.reports) ? data.reports : []);
       }
     } catch {
       // ignore

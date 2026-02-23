@@ -31,7 +31,7 @@ export default function AppointmentsPage() {
       const res = await fetch('/api/appointments');
       if (res.ok) {
         const data = await res.json();
-        setAppointments(data.appointments || []);
+        setAppointments(Array.isArray(data?.appointments) ? data.appointments : []);
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }

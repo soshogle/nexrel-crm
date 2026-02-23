@@ -87,21 +87,22 @@ export default function InventoryPage() {
       const itemsRes = await fetch('/api/inventory/items');
       if (itemsRes.ok) {
         const data = await itemsRes.json();
-        setItems(Array.isArray(data) ? data : (data.data ?? data.items ?? []));
+        const arr = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : Array.isArray(data?.items) ? data.items : [];
+        setItems(arr);
       }
 
       // Load suppliers
       const suppliersRes = await fetch('/api/inventory/suppliers?isActive=true');
       if (suppliersRes.ok) {
         const data = await suppliersRes.json();
-        setSuppliers(data);
+        setSuppliers(Array.isArray(data) ? data : []);
       }
 
       // Load alerts
       const alertsRes = await fetch('/api/inventory/alerts?isResolved=false');
       if (alertsRes.ok) {
         const data = await alertsRes.json();
-        setAlerts(data);
+        setAlerts(Array.isArray(data) ? data : []);
       }
 
       setLoading(false);

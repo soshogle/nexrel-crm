@@ -151,7 +151,7 @@ export default function DocpenPage() {
       const response = await fetch('/api/docpen/sessions');
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      const sessions = data.sessions || [];
+      const sessions = Array.isArray(data?.sessions) ? data.sessions : [];
       
       const activeSessions = sessions.filter((s: Session) => 
         s.status === 'RECORDING' || s.status === 'PROCESSING' || s.status === 'REVIEW_PENDING'

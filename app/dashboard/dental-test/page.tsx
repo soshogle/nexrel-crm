@@ -109,7 +109,7 @@ export default function DentalTestPage() {
           leads.map(async (lead) => {
             try {
               const res = await fetch(`/api/dental/treatment-plans?leadId=${lead.id}`);
-              if (res.ok) { const data = await res.json(); return data.plans || []; }
+              if (res.ok) { const data = await res.json(); return Array.isArray(data?.plans) ? data.plans : []; }
               return [];
             } catch { return []; }
           })
@@ -141,7 +141,7 @@ export default function DentalTestPage() {
       const response = await fetch('/api/leads');
       if (response.ok) {
         const data = await response.json();
-        const leadsArray = Array.isArray(data) ? data : (data.leads || []);
+        const leadsArray = Array.isArray(data) ? data : Array.isArray(data?.leads) ? data.leads : [];
         setLeads(leadsArray);
       }
     } catch (error) {
@@ -172,7 +172,7 @@ export default function DentalTestPage() {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/treatment-plans?leadId=${selectedLeadId}`);
-      if (response.ok) { const data = await response.json(); setTreatmentPlans(data.plans || []); }
+      if (response.ok) { const data = await response.json(); setTreatmentPlans(Array.isArray(data?.plans) ? data.plans : []); }
     } catch (error) { console.error('Error fetching treatment plans:', error); setTreatmentPlans([]); }
   }, [selectedLeadId]);
 
@@ -180,14 +180,14 @@ export default function DentalTestPage() {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/procedures?leadId=${selectedLeadId}`);
-      if (response.ok) { const data = await response.json(); setProcedures(data.procedures || []); }
+      if (response.ok) { const data = await response.json(); setProcedures(Array.isArray(data?.procedures) ? data.procedures : []); }
     } catch (error) { console.error('Error fetching procedures:', error); setProcedures([]); }
   }, [selectedLeadId]);
 
   const fetchForms = useCallback(async () => {
     try {
       const response = await fetch('/api/dental/forms?type=templates');
-      if (response.ok) { const data = await response.json(); setForms(data.forms || []); }
+      if (response.ok) { const data = await response.json(); setForms(Array.isArray(data?.forms) ? data.forms : []); }
     } catch (error) { console.error('Error fetching forms:', error); }
   }, []);
 
@@ -195,7 +195,7 @@ export default function DentalTestPage() {
     if (!selectedLeadId) return;
     try {
       const response = await fetch(`/api/dental/forms?type=responses&leadId=${selectedLeadId}`);
-      if (response.ok) { const data = await response.json(); setFormResponses(data.responses || []); }
+      if (response.ok) { const data = await response.json(); setFormResponses(Array.isArray(data?.responses) ? data.responses : []); }
     } catch (error) { console.error('Error fetching form responses:', error); setFormResponses([]); }
   }, [selectedLeadId]);
 

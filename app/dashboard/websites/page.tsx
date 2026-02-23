@@ -59,7 +59,7 @@ export default function WebsitesPage() {
       const response = await fetch('/api/websites');
       if (response.ok) {
         const data = await response.json();
-        setWebsites(data.websites || []);
+        setWebsites(Array.isArray(data?.websites) ? data.websites : []);
         setCanCreateNew(data.canCreateNew !== false);
       }
     } catch (error) {

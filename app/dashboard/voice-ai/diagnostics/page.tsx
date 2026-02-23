@@ -239,7 +239,7 @@ export default function VoiceAIDiagnosticsPage() {
                 <CardDescription>Last 10 reservations (Voice AI)</CardDescription>
               </CardHeader>
               <CardContent>
-                {diagnostics.diagnostics.reservations.filter((r: any) => r.source === 'VOICE_AI').length === 0 ? (
+                {!Array.isArray(diagnostics.diagnostics?.reservations) || diagnostics.diagnostics.reservations.filter((r: any) => r.source === 'VOICE_AI').length === 0 ? (
                   <p className="text-sm text-muted-foreground">No voice AI reservations yet</p>
                 ) : (
                   <div className="space-y-3">

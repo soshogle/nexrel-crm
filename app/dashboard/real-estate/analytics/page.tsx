@@ -109,22 +109,22 @@ export default function AnalyticsDashboard() {
       // Fetch priority contacts
       const contactsRes = await fetch('/api/real-estate/analytics/priority-contacts');
       const contactsData = contactsRes.ok ? await contactsRes.json() : { contacts: [] };
-      setPriorityContacts(contactsData.contacts || []);
+      setPriorityContacts(Array.isArray(contactsData?.contacts) ? contactsData.contacts : []);
 
       // Fetch closing predictions
       const predictorRes = await fetch('/api/real-estate/analytics/closing-predictor');
       const predictorData = predictorRes.ok ? await predictorRes.json() : { predictions: [] };
-      setClosingPredictions(predictorData.predictions || []);
+      setClosingPredictions(Array.isArray(predictorData?.predictions) ? predictorData.predictions : []);
 
       // Fetch at-risk items
       const riskRes = await fetch('/api/real-estate/analytics/at-risk');
       const riskData = riskRes.ok ? await riskRes.json() : { items: [] };
-      setAtRiskItems(riskData.items || []);
+      setAtRiskItems(Array.isArray(riskData?.items) ? riskData.items : []);
 
       // Fetch referral opportunities
       const referralRes = await fetch('/api/real-estate/analytics/reengaging');
       const referralData = referralRes.ok ? await referralRes.json() : { contacts: [], referrals: [] };
-      setReferralOpportunities(referralData.referrals || []);
+      setReferralOpportunities(Array.isArray(referralData?.referrals) ? referralData.referrals : []);
     } catch (error) {
       console.error('Error fetching analytics:', error);
     } finally {

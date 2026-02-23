@@ -78,15 +78,15 @@ export default function CampaignsPage() {
 
       if (voiceRes.ok) {
         const d = await voiceRes.json();
-        setVoiceCampaigns(d.campaigns || []);
+        setVoiceCampaigns(Array.isArray(d?.campaigns) ? d.campaigns : []);
       }
       if (emailRes.ok) {
         const d = await emailRes.json();
-        setEmailCampaigns(Array.isArray(d) ? d : d.campaigns || []);
+        setEmailCampaigns(Array.isArray(d) ? d : Array.isArray(d?.campaigns) ? d.campaigns : []);
       }
       if (smsRes.ok) {
         const d = await smsRes.json();
-        setSmsCampaigns(d.campaigns || []);
+        setSmsCampaigns(Array.isArray(d?.campaigns) ? d.campaigns : []);
       }
     } catch (e) {
       console.error(e);
@@ -131,7 +131,7 @@ export default function CampaignsPage() {
 
   const allCampaigns: CampaignItem[] = [
     ...(Array.isArray(voiceCampaigns) ? voiceCampaigns : []).map((d) => ({ type: 'voice' as const, data: d })),
-    ...emailCampaigns.map((d) => ({ type: 'email-drip' as const, data: d })),
+    ...(Array.isArray(emailCampaigns) ? emailCampaigns : []).map((d) => ({ type: 'email-drip' as const, data: d })),
     ...(Array.isArray(smsCampaigns) ? smsCampaigns : []).map((d) => ({ type: 'sms-drip' as const, data: d })),
   ].sort(
     (a, b) =>

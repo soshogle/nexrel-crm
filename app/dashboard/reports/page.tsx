@@ -44,7 +44,7 @@ export default function ReportsPage() {
       const res = await fetch('/api/reports/generated');
       if (res.ok) {
         const data = await res.json();
-        const reportList = data.reports || [];
+        const reportList = Array.isArray(data?.reports) ? data.reports : [];
         setReports(reportList);
         if (reportList.length > 0) {
           const toSelect = reportIdFromUrl

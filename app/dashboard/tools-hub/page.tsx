@@ -58,15 +58,15 @@ export default function ToolsHubPage() {
 
       if (instancesRes.ok) {
         const data = await instancesRes.json();
-        setToolInstances(data.instances || []);
+        setToolInstances(Array.isArray(data?.instances) ? data.instances : []);
       }
       if (definitionsRes.ok) {
         const data = await definitionsRes.json();
-        setToolDefinitions(data.definitions || []);
+        setToolDefinitions(Array.isArray(data?.definitions) ? data.definitions : []);
       }
       if (workflowsRes.ok) {
         const data = await workflowsRes.json();
-        setWorkflows(data.instances || []);
+        setWorkflows(Array.isArray(data?.instances) ? data.instances : []);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -81,7 +81,7 @@ export default function ToolsHubPage() {
       const res = await fetch('/api/tools/health/monitor', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
-        setHealthMetrics(data.healthMetrics || []);
+        setHealthMetrics(Array.isArray(data?.healthMetrics) ? data.healthMetrics : []);
         toast.success(`Monitored ${data.monitored} tools`);
       }
     } catch (error) {
@@ -94,8 +94,8 @@ export default function ToolsHubPage() {
       const res = await fetch('/api/tools/relationships/analyze', { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
-        setRelationships(data.relationships || []);
-        setPatterns(data.patterns || []);
+        setRelationships(Array.isArray(data?.relationships) ? data.relationships : []);
+        setPatterns(Array.isArray(data?.patterns) ? data.patterns : []);
         toast.success(`Found ${data.analysisResults.relationshipsCreated} relationships`);
       }
     } catch (error) {
