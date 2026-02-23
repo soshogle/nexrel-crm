@@ -373,7 +373,12 @@ export function RealEstateAIEmployees({ isAdmin = true }: { isAdmin?: boolean })
       }
     }
     if (agent?.id) {
-      window.location.href = `/dashboard/voice-agents/preview?agentId=${agent.id}`;
+      const params = new URLSearchParams({
+        agentId: agent.id,
+        returnTo: 'ai-employees',
+        agentName: agent.name || '',
+      });
+      window.location.href = `/dashboard/voice-agents/preview?${params.toString()}`;
     }
   };
 

@@ -259,7 +259,12 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
       }
     }
     if (agent?.id) {
-      window.location.href = `/dashboard/voice-agents/preview?agentId=${agent.id}`;
+      const params = new URLSearchParams({
+        agentId: agent.id,
+        returnTo: 'ai-employees',
+        agentName: agent.name || '',
+      });
+      window.location.href = `/dashboard/voice-agents/preview?${params.toString()}`;
     }
   };
 

@@ -138,7 +138,12 @@ export function ProfessionalAIEmployees() {
       }
     }
     if (agent?.id) {
-      window.location.href = `/dashboard/voice-agents/preview?agentId=${agent.id}`;
+      const params = new URLSearchParams({
+        agentId: agent.id,
+        returnTo: 'ai-employees',
+        agentName: agent.name || '',
+      });
+      window.location.href = `/dashboard/voice-agents/preview?${params.toString()}`;
     }
   };
 
@@ -147,7 +152,12 @@ export function ProfessionalAIEmployees() {
     try {
       const agent = getProvisionedAgent(employeeId);
       if (agent?.id) {
-        window.location.href = `/dashboard/voice-agents/preview?agentId=${agent.id}`;
+        const params = new URLSearchParams({
+          agentId: agent.id,
+          returnTo: 'ai-employees',
+          agentName: agent.name || '',
+        });
+        window.location.href = `/dashboard/voice-agents/preview?${params.toString()}`;
       } else {
         toast.info('Provision this agent first to run it');
       }

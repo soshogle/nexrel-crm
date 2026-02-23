@@ -33,6 +33,11 @@ export default function VoiceAgentPreviewPage() {
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
   const [loadingAgents, setLoadingAgents] = useState(true);
 
+  // URL params: agentId (required for direct link), returnTo, agentName
+  const [urlAgentId, setUrlAgentId] = useState<string | null>(null);
+  const [returnTo, setReturnTo] = useState<string>('voice-agents');
+  const [urlAgentName, setUrlAgentName] = useState<string>('');
+
   // SDK-based conversation (matches Voice AI Assistant flow)
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -42,20 +47,30 @@ export default function VoiceAgentPreviewPage() {
   const [duration, setDuration] = useState(0);
   const [recordingUrl, setRecordingUrl] = useState<string>('');
   const durationRef = useRef<NodeJS.Timeout | null>(null);
+  const autoStartedRef = useRef(false);
 
-  // Get agentId from URL if provided
+  // Parse URL params on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const agentId = params.get('agentId');
+    const rt = params.get('returnTo');
+    const name = params.get('agentName') || '';
     if (agentId) {
+      setUrlAgentId(agentId);
       setSelectedAgentId(agentId);
+      setUrlAgentName(decodeURIComponent(name));
     }
+    if (rt) setReturnTo(rt);
   }, []);
 
-  // Fetch available agents
+  // Fetch VoiceAgents only when NOT in direct-agent mode (no agentId in URL)
   useEffect(() => {
-    fetchAgents();
-  }, []);
+    if (!urlAgentId) {
+      fetchAgents();
+    } else {
+      setLoadingAgents(false);
+    }
+  }, [urlAgentId]);
 
   const fetchAgents = async () => {
     try {
@@ -69,11 +84,11 @@ export default function VoiceAgentPreviewPage() {
 
       setAgents(validAgents);
 
-      if (validAgents.length === 1) {
+      if (validAgents.length === 1 && !urlAgentId) {
         setSelectedAgentId(validAgents[0].id);
       }
 
-      if (agentsList.length > 0 && validAgents.length === 0) {
+      if (agentsList.length > 0 && validAgents.length === 0 && !urlAgentId) {
         toast.info('Agents need configuration', {
           description: 'Your agents need to be auto-configured before testing. Visit the Voice Agents page to configure them.',
           duration: 6000,
@@ -116,6 +131,14 @@ export default function VoiceAgentPreviewPage() {
       setIsConnecting(false);
     }
   }, [selectedAgentId]);
+
+  // When coming from "Talk to [name]" (AI Employees): auto-start conversation
+  useEffect(() => {
+    if (urlAgentId && selectedAgentId === urlAgentId && !signedUrl && !isConnecting && !autoStartedRef.current) {
+      autoStartedRef.current = true;
+      startConversation();
+    }
+  }, [urlAgentId, selectedAgentId, signedUrl, isConnecting, startConversation]);
 
   const handleConnect = useCallback(() => setIsConnected(true), []);
   const handleAgentSpeakingChange = useCallback((speaking: boolean) => setIsSpeaking(speaking), []);
@@ -170,29 +193,60 @@ export default function VoiceAgentPreviewPage() {
     setRecordingUrl('');
     setSignedUrl(null);
     setIsConnected(false);
+    autoStartedRef.current = false;
   };
+
+  const backHref = returnTo === 'ai-employees' ? '/dashboard/ai-employees' : '/dashboard/voice-agents';
+  const pageTitle = urlAgentName ? `Speak to ${urlAgentName}` : 'Voice Agent Preview';
+  const pageSubtitle = urlAgentName
+    ? 'Use your browser microphone to have a conversation.'
+    : 'Test your AI voice agent with browser microphone. Uses the same flow as the Voice AI Assistant.';
 
   return (
     <div className="min-h-screen bg-white p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold gradient-text">Voice Agent Preview</h1>
-            <p className="text-gray-600 mt-2">
-              Test your AI voice agent with browser microphone. Uses the same flow as the Voice AI Assistant.
-            </p>
+            <h1 className="text-3xl font-bold gradient-text">{pageTitle}</h1>
+            <p className="text-gray-600 mt-2">{pageSubtitle}</p>
           </div>
           <Button
             variant="outline"
-            onClick={() => router.push('/dashboard/voice-agents')}
+            onClick={() => router.push(backHref)}
             className="border-gray-300"
           >
             Back to Agents
           </Button>
         </div>
 
-        {/* Agent Selection - when not in active conversation */}
-        {!signedUrl && (
+        {/* Direct agent mode: show connecting state or retry when coming from Talk to [name] */}
+        {!signedUrl && urlAgentId && (
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <CardContent className="py-12 flex flex-col items-center justify-center gap-4">
+              {isConnecting ? (
+                <>
+                  <Loader2 className="h-12 w-12 animate-spin text-purple-600" />
+                  <p className="text-gray-600 font-medium">Connecting... Speak to {urlAgentName || 'agent'}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-600 font-medium">Speak to {urlAgentName || 'agent'}</p>
+                  <Button
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                    size="lg"
+                    onClick={() => { autoStartedRef.current = false; startConversation(); }}
+                  >
+                    <Mic className="mr-2 h-5 w-5" />
+                    Start Conversation
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Agent Selection - only when NOT in direct-agent mode and not in active conversation */}
+        {!signedUrl && !urlAgentId && (
           <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -200,7 +254,7 @@ export default function VoiceAgentPreviewPage() {
                 Select Voice Agent
               </CardTitle>
               <CardDescription className="text-gray-600">
-                Choose which agent to test
+                Choose which agent to speak with
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -212,7 +266,7 @@ export default function VoiceAgentPreviewPage() {
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800">
-                    No voice agents found. Please create one first.
+                    No voice agents found. Create one from Voice AI Agents, or use Talk to [agent] from AI Employees.
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -295,7 +349,7 @@ export default function VoiceAgentPreviewPage() {
           <PostConversationPanel
             recordingUrl={recordingUrl}
             onTestAgain={resetAndTestAgain}
-            onBackToAgents={() => router.push('/dashboard/voice-agents')}
+            onBackToAgents={() => router.push(backHref)}
           />
         )}
       </div>
