@@ -74,30 +74,36 @@ export async function POST(request: NextRequest) {
     const resolvedIndustry: Industry | null =
       source === 'industry' ? (industry as Industry) : source === 're' ? 'REAL_ESTATE' : null;
 
-    const schedule = await (prisma as any).aIEmployeeDailySchedule.upsert({
+    // Prisma compound unique with nullable industry rejects null in upsert where.
+    const existing = await (prisma as any).aIEmployeeDailySchedule.findFirst({
       where: {
-        userId_source_industry_employeeType: {
-          userId: session.user.id,
-          source,
-          industry: resolvedIndustry,
-          employeeType,
-        },
-      },
-      create: {
         userId: session.user.id,
-        employeeType,
         source,
         industry: resolvedIndustry,
-        runAtTime: runAtTime.replace(/^(\d):/, '0$1:'), // normalize 9:00 -> 09:00
-        runAtTimezone: runAtTimezone || 'America/New_York',
-        enabled: enabled ?? true,
-      },
-      update: {
-        runAtTime: runAtTime.replace(/^(\d):/, '0$1:'),
-        runAtTimezone: runAtTimezone || 'America/New_York',
-        enabled: enabled ?? true,
+        employeeType,
       },
     });
+
+    const scheduleData = {
+      runAtTime: runAtTime.replace(/^(\d):/, '0$1:'), // normalize 9:00 -> 09:00
+      runAtTimezone: runAtTimezone || 'America/New_York',
+      enabled: enabled ?? true,
+    };
+
+    const schedule = existing
+      ? await (prisma as any).aIEmployeeDailySchedule.update({
+          where: { id: existing.id },
+          data: scheduleData,
+        })
+      : await (prisma as any).aIEmployeeDailySchedule.create({
+          data: {
+            userId: session.user.id,
+            employeeType,
+            source,
+            industry: resolvedIndustry,
+            ...scheduleData,
+          },
+        });
 
     return NextResponse.json({ success: true, schedule });
   } catch (e: any) {

@@ -71,15 +71,14 @@ export async function isTaskEnabled(
   employeeType: string,
   taskKey: string
 ): Promise<boolean> {
-  const config = await (prisma as any).aIEmployeeTaskConfig.findUnique({
+  // findFirst: Prisma compound unique with nullable industry rejects null in findUnique where
+  const config = await (prisma as any).aIEmployeeTaskConfig.findFirst({
     where: {
-      userId_source_industry_employeeType_taskKey: {
-        userId,
-        source,
-        industry: source === 'industry' ? industry : null,
-        employeeType,
-        taskKey,
-      },
+      userId,
+      source,
+      industry: source === 'industry' ? industry : null,
+      employeeType,
+      taskKey,
     },
   });
 

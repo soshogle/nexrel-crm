@@ -21,15 +21,14 @@ export async function getTaskTemplate(
   employeeType: string,
   taskKey: string
 ): Promise<TaskTemplate | null> {
-  const template = await (prisma as any).aIEmployeeTaskTemplate.findUnique({
+  // findFirst: Prisma compound unique with nullable industry rejects null in findUnique where
+  const template = await (prisma as any).aIEmployeeTaskTemplate.findFirst({
     where: {
-      userId_source_industry_employeeType_taskKey: {
-        userId,
-        source,
-        industry: source === 'industry' ? industry : null,
-        employeeType,
-        taskKey,
-      },
+      userId,
+      source,
+      industry: source === 'industry' ? industry : null,
+      employeeType,
+      taskKey,
     },
   });
 

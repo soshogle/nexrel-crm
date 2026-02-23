@@ -195,26 +195,36 @@ export async function PATCH(request: NextRequest) {
     if (!ctx || ctx.userId !== session.user.id) return apiErrors.forbidden();
 
     const industryVal = ctx.source === 'industry' ? ctx.industry : null;
-    await (prisma as any).aIEmployeeTaskConfig.upsert({
+
+    // Prisma compound unique with nullable industry rejects null in upsert where.
+    // Use findFirst + update/create instead.
+    const existing = await (prisma as any).aIEmployeeTaskConfig.findFirst({
       where: {
-        userId_source_industry_employeeType_taskKey: {
-          userId: ctx.userId,
-          source: ctx.source,
-          industry: industryVal,
-          employeeType: ctx.employeeType,
-          taskKey,
-        },
-      },
-      create: {
         userId: ctx.userId,
         source: ctx.source,
         industry: industryVal,
         employeeType: ctx.employeeType,
         taskKey,
-        enabled: enabled ?? true,
       },
-      update: { enabled: enabled ?? true },
     });
+
+    if (existing) {
+      await (prisma as any).aIEmployeeTaskConfig.update({
+        where: { id: existing.id },
+        data: { enabled: enabled ?? true },
+      });
+    } else {
+      await (prisma as any).aIEmployeeTaskConfig.create({
+        data: {
+          userId: ctx.userId,
+          source: ctx.source,
+          industry: industryVal,
+          employeeType: ctx.employeeType,
+          taskKey,
+          enabled: enabled ?? true,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

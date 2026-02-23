@@ -272,26 +272,35 @@ async function updateTaskToggles(
   }
 
   const industryVal = ctx.source === 'industry' ? ctx.industry : null;
-  await (prisma as any).aIEmployeeTaskConfig.upsert({
+
+  // Prisma compound unique with nullable industry rejects null in upsert where.
+  const existing = await (prisma as any).aIEmployeeTaskConfig.findFirst({
     where: {
-      userId_source_industry_employeeType_taskKey: {
-        userId: ctx.userId,
-        source: ctx.source,
-        industry: industryVal,
-        employeeType: ctx.employeeType,
-        taskKey,
-      },
-    },
-    create: {
       userId: ctx.userId,
       source: ctx.source,
       industry: industryVal,
       employeeType: ctx.employeeType,
       taskKey,
-      enabled,
     },
-    update: { enabled },
   });
+
+  if (existing) {
+    await (prisma as any).aIEmployeeTaskConfig.update({
+      where: { id: existing.id },
+      data: { enabled },
+    });
+  } else {
+    await (prisma as any).aIEmployeeTaskConfig.create({
+      data: {
+        userId: ctx.userId,
+        source: ctx.source,
+        industry: industryVal,
+        employeeType: ctx.employeeType,
+        taskKey,
+        enabled,
+      },
+    });
+  }
 
   return {
     success: true,

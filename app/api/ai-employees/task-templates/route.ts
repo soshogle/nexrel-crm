@@ -60,32 +60,42 @@ export async function PATCH(request: NextRequest) {
 
     const industryVal = source === 'industry' ? industry : null;
 
-    const template = await (prisma as any).aIEmployeeTaskTemplate.upsert({
+    // Prisma compound unique with nullable industry rejects null in upsert where.
+    // Use findFirst + update/create instead.
+    const existing = await (prisma as any).aIEmployeeTaskTemplate.findFirst({
       where: {
-        userId_source_industry_employeeType_taskKey: {
-          userId: session.user.id,
-          source,
-          industry: industryVal,
-          employeeType,
-          taskKey,
-        },
-      },
-      create: {
         userId: session.user.id,
         source,
         industry: industryVal,
         employeeType,
         taskKey,
-        smsTemplate: smsTemplate ?? null,
-        emailSubject: emailSubject ?? null,
-        emailBody: emailBody ?? null,
-      },
-      update: {
-        ...(smsTemplate !== undefined && { smsTemplate: smsTemplate || null }),
-        ...(emailSubject !== undefined && { emailSubject: emailSubject || null }),
-        ...(emailBody !== undefined && { emailBody: emailBody || null }),
       },
     });
+
+    let template;
+    if (existing) {
+      template = await (prisma as any).aIEmployeeTaskTemplate.update({
+        where: { id: existing.id },
+        data: {
+          ...(smsTemplate !== undefined && { smsTemplate: smsTemplate || null }),
+          ...(emailSubject !== undefined && { emailSubject: emailSubject || null }),
+          ...(emailBody !== undefined && { emailBody: emailBody || null }),
+        },
+      });
+    } else {
+      template = await (prisma as any).aIEmployeeTaskTemplate.create({
+        data: {
+          userId: session.user.id,
+          source,
+          industry: industryVal,
+          employeeType,
+          taskKey,
+          smsTemplate: smsTemplate ?? null,
+          emailSubject: emailSubject ?? null,
+          emailBody: emailBody ?? null,
+        },
+      });
+    }
 
     return NextResponse.json({ success: true, template });
   } catch (e: any) {
