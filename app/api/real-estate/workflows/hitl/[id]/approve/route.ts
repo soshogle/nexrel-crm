@@ -29,8 +29,8 @@ export async function POST(
     }
 
     const rateKey = `hitl-approve:${session.user.id}`;
-    const rate = checkRateLimit(rateKey, 20, 60_000); // 20/min per user
-    if (!rate.success) {
+    const rate = await checkRateLimit(rateKey, { maxRequests: 20, windowMs: 60_000 });
+    if (!rate.allowed) {
       return apiErrors.rateLimited('Too many approval requests. Please wait a moment.');
     }
 
@@ -48,7 +48,7 @@ export async function POST(
     }
 
     // Find the task execution
-    const execution = await prisma.rETaskExecution.findFirst({
+    const execution = await (prisma as any).rETaskExecution.findFirst({
       where: {
         id: params.id,
         instance: {
@@ -80,7 +80,7 @@ export async function POST(
     await approveHITLGate(params.id, session.user.id, notes);
 
     // Get updated execution
-    const updatedExecution = await prisma.rETaskExecution.findUnique({
+    const updatedExecution = await (prisma as any).rETaskExecution.findUnique({
       where: { id: params.id },
       include: {
         task: true,

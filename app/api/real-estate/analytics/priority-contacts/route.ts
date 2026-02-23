@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth';
 import { leadService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { Lead, Note } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 // AI Contact Scoring Formula:
 // Score = (Engagement × 25) + (Timeline × 25) + (Activity × 20) + (Intent Signals × 20) + (Recency × 10)
@@ -155,14 +156,14 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Fetch leads (our contacts) with real estate tags or FSBO sources
-    const leads = await leadService.findMany(ctx, {
+    const leads: any[] = await leadService.findMany(ctx, {
       where: {
         OR: [
           { source: { contains: 'FSBO' } },
@@ -190,7 +191,7 @@ export async function GET(req: NextRequest) {
         updatedAt: 'desc',
       },
       take: 50,
-    });
+    } as any);
 
     // Score each lead
     const scoredContacts: ContactScore[] = leads.map((lead) => {
@@ -251,9 +252,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('Priority contacts error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch priority contacts', contacts: [] },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch priority contacts');
   }
 }

@@ -4,6 +4,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 function generatePresentationHTML(presentation: any): string {
   const slides = presentation.slides || [];
@@ -106,14 +107,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { presentation } = body;
 
     if (!presentation) {
-      return NextResponse.json({ error: 'Presentation data required' }, { status: 400 });
+      return apiErrors.badRequest('Presentation data required');
     }
 
     const html = generatePresentationHTML(presentation);
@@ -148,6 +149,6 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('Presentation PDF error:', error);
-    return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 });
+    return apiErrors.internal('Failed to generate PDF');
   }
 }

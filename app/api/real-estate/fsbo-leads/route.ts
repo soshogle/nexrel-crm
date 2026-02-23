@@ -6,12 +6,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { REFSBOSource, REFSBOStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ listings: fsboListings, stats });
   } catch (error) {
     console.error('FSBO Leads GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch FSBO leads' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch FSBO leads');
   }
 }
 
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -88,10 +89,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!source || !sourceUrl || !address || !city) {
-      return NextResponse.json(
-        { error: 'Source, sourceUrl, address, and city are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Source, sourceUrl, address, and city are required');
     }
 
     // Check if already exists
@@ -140,7 +138,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ listing, success: true });
   } catch (error) {
     console.error('FSBO Leads POST error:', error);
-    return NextResponse.json({ error: 'Failed to create FSBO lead' }, { status: 500 });
+    return apiErrors.internal('Failed to create FSBO lead');
   }
 }
 
@@ -148,14 +146,14 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { id, status, notes, sellerPhone, sellerEmail, sellerName, convertedLeadId, assignedUserId } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Listing ID required' }, { status: 400 });
+      return apiErrors.badRequest('Listing ID required');
     }
 
     const existing = await prisma.rEFSBOListing.findFirst({
@@ -163,7 +161,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'FSBO listing not found' }, { status: 404 });
+      return apiErrors.notFound('FSBO listing not found');
     }
 
     const listing = await prisma.rEFSBOListing.update({
@@ -183,7 +181,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ listing, success: true });
   } catch (error) {
     console.error('FSBO Leads PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update FSBO lead' }, { status: 500 });
+    return apiErrors.internal('Failed to update FSBO lead');
   }
 }
 
@@ -191,14 +189,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Listing ID required' }, { status: 400 });
+      return apiErrors.badRequest('Listing ID required');
     }
 
     const existing = await prisma.rEFSBOListing.findFirst({
@@ -206,7 +204,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'FSBO listing not found' }, { status: 404 });
+      return apiErrors.notFound('FSBO listing not found');
     }
 
     await prisma.rEFSBOListing.delete({ where: { id } });
@@ -214,6 +212,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('FSBO Leads DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete FSBO lead' }, { status: 500 });
+    return apiErrors.internal('Failed to delete FSBO lead');
   }
 }

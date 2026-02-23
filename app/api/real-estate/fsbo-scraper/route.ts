@@ -15,6 +15,7 @@ import {
   createScrapingJob,
   getScrapingJobs
 } from '@/lib/real-estate/scrapers';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -59,10 +60,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('[FSBO Scraper API] GET error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get Soshogle Lead Finder status' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to get Soshogle Lead Finder status');
   }
 }
 
@@ -71,7 +69,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();

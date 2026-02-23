@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { emailService } from '@/lib/email-service';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
     // Require authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get recipient from query params
@@ -23,10 +24,7 @@ export async function GET(request: Request) {
     const to = searchParams.get('to') || session.user.email;
 
     if (!to) {
-      return NextResponse.json(
-        { error: 'No recipient email provided' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('No recipient email provided');
     }
 
     // Send test email
@@ -67,16 +65,10 @@ export async function GET(request: Request) {
         timestamp: new Date().toISOString(),
       });
     } else {
-      return NextResponse.json(
-        { error: 'Failed to send test email' },
-        { status: 500 }
-      );
+      return apiErrors.internal('Failed to send test email');
     }
   } catch (error: any) {
     console.error('❌ Test email error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to send test email' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to send test email');
   }
 }

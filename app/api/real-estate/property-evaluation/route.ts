@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { leadService, websiteService } from "@/lib/dal";
 import { getDalContextFromSession } from "@/lib/context/industry-context";
 import { runPropertyEvaluation } from "@/lib/real-estate/property-evaluation";
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +16,11 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const leads = await leadService.findMany(ctx, {
       where: { source: "property_evaluation" },
@@ -56,10 +57,7 @@ export async function GET() {
     return NextResponse.json({ leads: formatted });
   } catch (error: unknown) {
     console.error("[property-evaluation GET]", error);
-    return NextResponse.json(
-      { error: "Failed to fetch evaluation leads" },
-      { status: 500 }
-    );
+    return apiErrors.internal("Failed to fetch evaluation leads");
   }
 }
 
@@ -72,21 +70,18 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const { websiteId, address, city, postalCode, latitude, longitude, bedrooms, bathrooms, propertyType } =
       body;
 
     if (!address?.trim()) {
-      return NextResponse.json(
-        { error: "Property address is required" },
-        { status: 400 }
-      );
+      return apiErrors.badRequest("Property address is required");
     }
 
     // Find a SERVICE website for the broker
@@ -100,21 +95,12 @@ export async function POST(request: NextRequest) {
     } else {
       const site = await websiteService.findUnique(ctx, targetWebsiteId);
       if (!site) {
-        return NextResponse.json(
-          { error: "Website not found" },
-          { status: 404 }
-        );
+        return apiErrors.notFound("Website not found");
       }
     }
 
     if (!targetWebsiteId) {
-      return NextResponse.json(
-        {
-          error:
-            "No SERVICE website with a listings database found. Publish a real estate site first.",
-        },
-        { status: 404 }
-      );
+      return apiErrors.notFound("No SERVICE website with a listings database found. Publish a real estate site first.",);
     }
 
     const evaluation = await runPropertyEvaluation(
@@ -136,9 +122,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ evaluation });
   } catch (error: unknown) {
     console.error("[property-evaluation POST]", error);
-    return NextResponse.json(
-      { error: "Evaluation failed" },
-      { status: 500 }
-    );
+    return apiErrors.internal("Evaluation failed");
   }
 }

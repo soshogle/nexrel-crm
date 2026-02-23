@@ -10,6 +10,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { Industry } from '@prisma/client';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -161,17 +162,14 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const industry = searchParams.get('industry') as Industry | null;
 
     if (!industry) {
-      return NextResponse.json(
-        { error: 'Industry query parameter is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Industry query parameter is required');
     }
 
     const module = getIndustryAIEmployeeModule(industry);
@@ -201,10 +199,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching industry AI Employee agents:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch agents' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch agents');
   }
 }
 
@@ -213,7 +208,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json().catch(() => ({}));
@@ -224,10 +219,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!industry) {
-      return NextResponse.json(
-        { error: 'Industry is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Industry is required');
     }
 
     const module = getIndustryAIEmployeeModule(industry);
@@ -244,20 +236,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (user?.industry !== industry) {
-      return NextResponse.json(
-        { error: 'Industry does not match your account' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('Industry does not match your account');
     }
 
     let apiKey: string;
     try {
       apiKey = getApiKey();
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Soshogle AI voice is not configured' },
-        { status: 500 }
-      );
+      return apiErrors.internal('Soshogle AI voice is not configured');
     }
 
     const typesToProvision: string[] =
@@ -328,11 +314,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error provisioning industry AI Employees:', error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Failed to provision agents',
-      },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to provision agents',);
   }
 }

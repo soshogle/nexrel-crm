@@ -5,12 +5,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -187,7 +188,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Market Stats GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch stats');
   }
 }
 
@@ -195,7 +196,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -311,7 +312,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!bodyRegion || !periodStart || !periodEnd) {
-      return NextResponse.json({ error: 'region, periodStart, periodEnd required' }, { status: 400 });
+      return apiErrors.badRequest('region, periodStart, periodEnd required');
     }
 
     const stat = await prisma.rEMarketStats.create({
@@ -340,7 +341,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, stat });
   } catch (error) {
     console.error('Market Stats POST error:', error);
-    return NextResponse.json({ error: 'Failed to save market stats' }, { status: 500 });
+    return apiErrors.internal('Failed to save market stats');
   }
 }
 

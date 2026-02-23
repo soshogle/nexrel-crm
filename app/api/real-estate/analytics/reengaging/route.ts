@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService, dealService } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 interface ReengagingContact {
   id: string;
@@ -53,16 +54,16 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // 1. Find leads who were inactive but recently became active
     const reengagingContacts: ReengagingContact[] = [];
     
-    const leadsWithRecentNotes = await leadService.findMany(ctx, {
+    const leadsWithRecentNotes: any[] = await leadService.findMany(ctx, {
       where: {
         notes: {
           some: {
@@ -110,7 +111,7 @@ export async function GET(req: NextRequest) {
     const referralOpportunities: ReferralOpportunity[] = [];
     
     // Get closed/won deals
-    const closedDeals = await dealService.findMany(ctx, {
+    const closedDeals: any[] = await dealService.findMany(ctx, {
       where: {
         actualCloseDate: {
           gte: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
@@ -204,9 +205,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('Reengaging contacts error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch reengaging contacts', contacts: [], referrals: [] },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch reengaging contacts');
   }
 }

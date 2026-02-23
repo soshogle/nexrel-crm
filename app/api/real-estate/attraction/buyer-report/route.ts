@@ -4,6 +4,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 interface BuyerReportRequest {
   region: string;
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body: BuyerReportRequest = await request.json();
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!region) {
-      return NextResponse.json({ error: 'Region is required' }, { status: 400 });
+      return apiErrors.badRequest('Region is required');
     }
 
     const systemPrompt = `You are a real estate market analyst creating a "Hidden Buyer Opportunities" report for a real estate agent. Your goal is to help them attract buyer leads by creating valuable, shareable content that positions them as market insiders.
@@ -140,7 +141,7 @@ Respond with raw JSON only (no markdown, no code blocks):
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
+      return apiErrors.internal('OPENAI_API_KEY not configured');
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -197,9 +198,6 @@ Respond with raw JSON only (no markdown, no code blocks):
     });
   } catch (error) {
     console.error('Buyer report error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate buyer report' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate buyer report');
   }
 }

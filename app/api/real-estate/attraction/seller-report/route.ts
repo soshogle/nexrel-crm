@@ -4,6 +4,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 interface SellerReportRequest {
   region: string;
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body: SellerReportRequest = await request.json();
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!region) {
-      return NextResponse.json({ error: 'Region is required' }, { status: 400 });
+      return apiErrors.badRequest('Region is required');
     }
 
     const systemPrompt = `You are a real estate market analyst creating a "Seller Demand & Equity Report" to help real estate agents attract listing leads. Create compelling, data-driven content that shows homeowners why now might be an excellent time to sell.
@@ -135,7 +136,7 @@ Respond with raw JSON only (no markdown, no code blocks):
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
+      return apiErrors.internal('OPENAI_API_KEY not configured');
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -194,9 +195,6 @@ Respond with raw JSON only (no markdown, no code blocks):
     });
   } catch (error) {
     console.error('Seller report error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate seller report' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate seller report');
   }
 }

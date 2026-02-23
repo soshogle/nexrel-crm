@@ -29,8 +29,8 @@ export async function POST(
     }
 
     const rateKey = `hitl-reject:${session.user.id}`;
-    const rate = checkRateLimit(rateKey, 20, 60_000); // 20/min per user
-    if (!rate.success) {
+    const rate = await checkRateLimit(rateKey, { maxRequests: 20, windowMs: 60_000 });
+    if (!rate.allowed) {
       return apiErrors.rateLimited('Too many rejection requests. Please wait a moment.');
     }
 
@@ -47,7 +47,7 @@ export async function POST(
     }
 
     // Find the task execution
-    const execution = await prisma.rETaskExecution.findFirst({
+    const execution = await (prisma as any).rETaskExecution.findFirst({
       where: {
         id: params.id,
         instance: {
@@ -67,7 +67,7 @@ export async function POST(
 
     // If pauseWorkflow is true, pause the entire workflow instance
     if (pauseWorkflow) {
-      await prisma.rEWorkflowInstance.update({
+      await (prisma as any).rEWorkflowInstance.update({
         where: { id: execution.instanceId },
         data: { status: 'PAUSED' }
       });
@@ -77,7 +77,7 @@ export async function POST(
     await rejectHITLGate(params.id, session.user.id, notes || 'Rejected by user');
 
     // Get updated execution
-    const updatedExecution = await prisma.rETaskExecution.findUnique({
+    const updatedExecution = await (prisma as any).rETaskExecution.findUnique({
       where: { id: params.id },
       include: {
         task: true,

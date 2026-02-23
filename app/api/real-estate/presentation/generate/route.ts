@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 interface SlideContent {
   id: string;
@@ -164,14 +165,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { presentationType, propertyData, areaResearch, agentInfo } = body;
 
     if (!propertyData?.address) {
-      return NextResponse.json({ error: 'Property address is required' }, { status: 400 });
+      return apiErrors.badRequest('Property address is required');
     }
 
     const slides = buildSlides(presentationType || 'listing', propertyData, agentInfo, areaResearch);
@@ -206,7 +207,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Presentation generate error:', error);
-    return NextResponse.json({ error: 'Failed to generate presentation' }, { status: 500 });
+    return apiErrors.internal('Failed to generate presentation');
   }
 }
 
@@ -214,7 +215,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const presentations = await prisma.rEListingPresentation.findMany({
@@ -226,7 +227,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ presentations });
   } catch (error) {
     console.error('Presentation list error:', error);
-    return NextResponse.json({ error: 'Failed to fetch presentations' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch presentations');
   }
 }
 
@@ -234,26 +235,26 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) {
-      return NextResponse.json({ error: 'Presentation ID required' }, { status: 400 });
+      return apiErrors.badRequest('Presentation ID required');
     }
 
     const existing = await prisma.rEListingPresentation.findFirst({
       where: { id, userId: session.user.id },
     });
     if (!existing) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      return apiErrors.notFound();
     }
 
     await prisma.rEListingPresentation.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Presentation delete error:', error);
-    return NextResponse.json({ error: 'Failed to delete presentation' }, { status: 500 });
+    return apiErrors.internal('Failed to delete presentation');
   }
 }

@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { DEFAULT_WORKFLOW_TEMPLATES } from '@/lib/real-estate/workflow-templates';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Check if user is in real estate industry
@@ -27,10 +28,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (user?.industry !== 'REAL_ESTATE') {
-      return NextResponse.json(
-        { error: 'This feature is only available for real estate agencies' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('This feature is only available for real estate agencies');
     }
 
     // Get user's workflow templates
@@ -59,10 +57,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching RE workflows:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch workflows' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch workflows');
   }
 }
 
@@ -71,7 +66,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Check if user is in real estate industry
@@ -81,10 +76,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (user?.industry !== 'REAL_ESTATE') {
-      return NextResponse.json(
-        { error: 'This feature is only available for real estate agencies' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('This feature is only available for real estate agencies');
     }
 
     const body = await request.json();
@@ -94,10 +86,7 @@ export async function POST(request: NextRequest) {
     if (fromTemplate) {
       const defaultTemplate = DEFAULT_WORKFLOW_TEMPLATES.find(t => t.type === fromTemplate);
       if (!defaultTemplate) {
-        return NextResponse.json(
-          { error: 'Invalid template type' },
-          { status: 400 }
-        );
+        return apiErrors.badRequest('Invalid template type');
       }
 
       // Create workflow from default template
@@ -141,10 +130,7 @@ export async function POST(request: NextRequest) {
 
     // Create custom workflow
     if (!name || !type) {
-      return NextResponse.json(
-        { error: 'Name and type are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Name and type are required');
     }
 
     const workflow = await prisma.rEWorkflowTemplate.create({
@@ -195,9 +181,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error creating RE workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to create workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create workflow');
   }
 }

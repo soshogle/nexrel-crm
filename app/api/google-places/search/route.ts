@@ -6,22 +6,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const { location, category } = await request.json()
 
     if (!location || !category) {
-      return NextResponse.json(
-        { error: 'Location and category are required' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Location and category are required')
     }
 
     // Get user's Google Places API key
@@ -34,10 +32,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Google Places API key not configured' },
-        { status: 400 }
-      )
+      return apiErrors.badRequest('Google Places API key not configured')
     }
 
     // Search for places using Google Places API
@@ -91,9 +86,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Google Places search error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiErrors.internal()
   }
 }

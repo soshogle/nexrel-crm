@@ -9,6 +9,8 @@ import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { startWorkflowInstance } from '@/lib/real-estate/workflow-engine';
+import { apiErrors } from '@/lib/api-error';
+import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,11 +23,13 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
+    const ctx = getDalContextFromSession(session) ?? { userId: session?.user?.id || '', industry: null };
+
     // Verify workflow ownership
-    const workflow = await prisma.rEWorkflowTemplate.findFirst({
+    const workflow = await (prisma as any).rEWorkflowTemplate.findFirst({
       where: {
         id: params.id,
         userId: ctx.userId
@@ -38,34 +42,22 @@ export async function POST(
     });
 
     if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
     if (!workflow.isActive) {
-      return NextResponse.json(
-        { error: 'Workflow is not active' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Workflow is not active');
     }
 
     if (workflow.tasks.length === 0) {
-      return NextResponse.json(
-        { error: 'Workflow has no tasks' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Workflow has no tasks');
     }
 
     const body = await request.json();
     const { leadId, dealId, metadata } = body;
 
     if (!leadId && !dealId) {
-      return NextResponse.json(
-        { error: 'Either leadId or dealId is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Either leadId or dealId is required');
     }
 
     // Verify lead/deal exists and belongs to user
@@ -73,10 +65,7 @@ export async function POST(
       const lead = await leadService.findUnique(ctx, leadId);
 
       if (!lead) {
-        return NextResponse.json(
-          { error: 'Lead not found' },
-          { status: 404 }
-        );
+        return apiErrors.notFound('Lead not found');
       }
     }
 
@@ -89,15 +78,12 @@ export async function POST(
       });
 
       if (!deal) {
-        return NextResponse.json(
-          { error: 'Deal not found' },
-          { status: 404 }
-        );
+        return apiErrors.notFound('Deal not found');
       }
     }
 
     // Check for existing active instance
-    const existingInstance = await getCrmDb(ctx).rEWorkflowInstance.findFirst({
+    const existingInstance = await (getCrmDb(ctx) as any).rEWorkflowInstance.findFirst({
       where: {
         templateId: params.id,
         ...(leadId && { leadId }),
@@ -107,10 +93,7 @@ export async function POST(
     });
 
     if (existingInstance) {
-      return NextResponse.json(
-        { error: 'An active workflow instance already exists for this lead/deal' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('An active workflow instance already exists for this lead/deal');
     }
 
     // Start workflow instance using the engine
@@ -122,7 +105,7 @@ export async function POST(
     });
 
     // Get the created instance with executions
-    const instance = await getCrmDb(ctx).rEWorkflowInstance.findUnique({
+    const instance = await (getCrmDb(ctx) as any).rEWorkflowInstance.findUnique({
       where: { id: instanceId },
       include: {
         template: true,
@@ -148,10 +131,7 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error starting workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to start workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to start workflow');
   }
 }
 
@@ -163,18 +143,18 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const limit = parseInt(searchParams.get('limit') || '20');
 
     // Verify workflow ownership
-    const workflow = await getCrmDb(ctx).rEWorkflowTemplate.findFirst({
+    const workflow = await (getCrmDb(ctx) as any).rEWorkflowTemplate.findFirst({
       where: {
         id: params.id,
         userId: ctx.userId
@@ -182,13 +162,10 @@ export async function GET(
     });
 
     if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
-    const instances = await getCrmDb(ctx).rEWorkflowInstance.findMany({
+    const instances = await (getCrmDb(ctx) as any).rEWorkflowInstance.findMany({
       where: {
         templateId: params.id,
         ...(status && { status: status as 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED' })
@@ -219,9 +196,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching workflow instances:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch instances' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch instances');
   }
 }

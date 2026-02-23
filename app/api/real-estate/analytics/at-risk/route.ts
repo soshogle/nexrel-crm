@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 interface AtRiskItem {
   id: string;
@@ -75,11 +76,11 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const atRiskItems: AtRiskItem[] = [];
 
@@ -212,9 +213,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('At-risk items error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch at-risk items', items: [] },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch at-risk items');
   }
 }

@@ -5,22 +5,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { generateCMA } from '@/lib/real-estate/cma';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { address, city, state, zip, beds, baths, sqft, yearBuilt } = body;
 
     if (!address) {
-      return NextResponse.json({ error: 'Property address is required' }, { status: 400 });
+      return apiErrors.badRequest('Property address is required');
     }
     if (!beds || !baths || !sqft) {
-      return NextResponse.json({ error: 'Beds, baths, and square footage are required' }, { status: 400 });
+      return apiErrors.badRequest('Beds, baths, and square footage are required');
     }
 
     const subject = {
@@ -40,6 +41,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('CMA generate error:', error);
-    return NextResponse.json({ error: 'Failed to generate CMA report' }, { status: 500 });
+    return apiErrors.internal('Failed to generate CMA report');
   }
 }

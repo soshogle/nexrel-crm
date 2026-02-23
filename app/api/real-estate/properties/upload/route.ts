@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { put } from '@vercel/blob';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,18 +14,18 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const formData = await request.formData();
     const files = formData.getAll('photos') as File[];
 
     if (!files || files.length === 0) {
-      return NextResponse.json({ error: 'No files provided' }, { status: 400 });
+      return apiErrors.badRequest('No files provided');
     }
 
     if (files.length > 20) {
-      return NextResponse.json({ error: 'Maximum 20 photos per upload' }, { status: 400 });
+      return apiErrors.badRequest('Maximum 20 photos per upload');
     }
 
     const urls: string[] = [];
@@ -58,9 +59,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, urls });
   } catch (error: any) {
     console.error('[Property Upload] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to upload photos' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error.message || 'Failed to upload photos');
   }
 }

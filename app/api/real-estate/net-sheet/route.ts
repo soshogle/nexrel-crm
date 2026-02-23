@@ -5,12 +5,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ netSheets });
   } catch (error) {
     console.error('Net Sheet GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch net sheets' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch net sheets');
   }
 }
 
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -63,10 +64,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!address || !salePrice) {
-      return NextResponse.json(
-        { error: 'Address and sale price are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Address and sale price are required');
     }
 
     const netSheet = await prisma.rESellerNetSheet.create({
@@ -96,7 +94,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ netSheet, success: true });
   } catch (error) {
     console.error('Net Sheet POST error:', error);
-    return NextResponse.json({ error: 'Failed to create net sheet' }, { status: 500 });
+    return apiErrors.internal('Failed to create net sheet');
   }
 }
 
@@ -104,14 +102,14 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { id, ...updateData } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Net sheet ID required' }, { status: 400 });
+      return apiErrors.badRequest('Net sheet ID required');
     }
 
     const existing = await prisma.rESellerNetSheet.findFirst({
@@ -119,7 +117,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Net sheet not found' }, { status: 404 });
+      return apiErrors.notFound('Net sheet not found');
     }
 
     const netSheet = await prisma.rESellerNetSheet.update({
@@ -135,7 +133,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ netSheet, success: true });
   } catch (error) {
     console.error('Net Sheet PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update net sheet' }, { status: 500 });
+    return apiErrors.internal('Failed to update net sheet');
   }
 }
 
@@ -143,14 +141,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Net sheet ID required' }, { status: 400 });
+      return apiErrors.badRequest('Net sheet ID required');
     }
 
     const existing = await prisma.rESellerNetSheet.findFirst({
@@ -158,7 +156,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Net sheet not found' }, { status: 404 });
+      return apiErrors.notFound('Net sheet not found');
     }
 
     await prisma.rESellerNetSheet.delete({ where: { id } });
@@ -166,6 +164,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Net Sheet DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete net sheet' }, { status: 500 });
+    return apiErrors.internal('Failed to delete net sheet');
   }
 }

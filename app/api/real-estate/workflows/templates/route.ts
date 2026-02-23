@@ -15,6 +15,7 @@ import {
   getWorkflowTemplateByType
 } from '@/lib/real-estate/workflow-templates';
 import { REWorkflowType } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Check if user is in real estate industry
@@ -34,10 +35,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (user?.industry !== 'REAL_ESTATE') {
-      return NextResponse.json(
-        { error: 'This feature is only available for real estate agencies' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('This feature is only available for real estate agencies');
     }
 
     // Check if a specific type is requested
@@ -112,9 +110,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching default templates:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch templates' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch templates');
   }
 }

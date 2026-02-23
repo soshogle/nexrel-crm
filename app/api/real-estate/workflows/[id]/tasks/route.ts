@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,7 +20,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify workflow ownership
@@ -31,10 +32,7 @@ export async function GET(
     });
 
     if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
     const tasks = await prisma.rEWorkflowTask.findMany({
@@ -48,10 +46,7 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching tasks:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch tasks' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch tasks');
   }
 }
 
@@ -63,7 +58,7 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify workflow ownership
@@ -75,10 +70,7 @@ export async function POST(
     });
 
     if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
     const body = await request.json();
@@ -99,10 +91,7 @@ export async function POST(
     } = body;
 
     if (!name || !taskType) {
-      return NextResponse.json(
-        { error: 'Name and taskType are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Name and taskType are required');
     }
 
     // Get the next display order if not provided
@@ -149,10 +138,7 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error creating task:', error);
-    return NextResponse.json(
-      { error: 'Failed to create task' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to create task');
   }
 }
 
@@ -164,7 +150,7 @@ export async function PATCH(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify workflow ownership
@@ -176,10 +162,7 @@ export async function PATCH(
     });
 
     if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
     const body = await request.json();
@@ -212,10 +195,7 @@ export async function PATCH(
     // Update single task
     const { taskId, ...updateData } = body;
     if (!taskId) {
-      return NextResponse.json(
-        { error: 'taskId is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('taskId is required');
     }
 
     // Verify task belongs to this workflow
@@ -227,10 +207,7 @@ export async function PATCH(
     });
 
     if (!existingTask) {
-      return NextResponse.json(
-        { error: 'Task not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Task not found');
     }
 
     const baseConfig = ((existingTask as any).actionConfig as object) || { actions: [] } as Record<string, unknown>;
@@ -274,10 +251,7 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('Error updating task:', error);
-    return NextResponse.json(
-      { error: 'Failed to update task' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update task');
   }
 }
 
@@ -289,17 +263,14 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const taskId = searchParams.get('taskId');
 
     if (!taskId) {
-      return NextResponse.json(
-        { error: 'taskId is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('taskId is required');
     }
 
     // Verify workflow ownership
@@ -311,10 +282,7 @@ export async function DELETE(
     });
 
     if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
     // Verify task belongs to this workflow
@@ -326,10 +294,7 @@ export async function DELETE(
     });
 
     if (!task) {
-      return NextResponse.json(
-        { error: 'Task not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Task not found');
     }
 
     // Delete the task
@@ -361,9 +326,6 @@ export async function DELETE(
     });
   } catch (error) {
     console.error('Error deleting task:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete task' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete task');
   }
 }

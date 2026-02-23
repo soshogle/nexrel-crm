@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { searchWebsiteListings } from '@/lib/website-builder/listings-service';
+import { apiErrors } from '@/lib/api-error';
 
 /**
  * Search the owner's website Neon DB for listings by MLS# or address.
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -34,6 +35,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ results });
   } catch (error: any) {
     console.error('Search website listings error:', error);
-    return NextResponse.json({ error: 'Search failed' }, { status: 500 });
+    return apiErrors.internal('Search failed');
   }
 }

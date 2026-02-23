@@ -4,6 +4,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { apiErrors } from '@/lib/api-error';
 
 function generateAreaResearch(address: string, city: string, state: string, propertyType: string) {
   const cityName = city || 'the area';
@@ -84,14 +85,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { address, city, state, propertyType } = body;
 
     if (!address && !city) {
-      return NextResponse.json({ error: 'Address or city required' }, { status: 400 });
+      return apiErrors.badRequest('Address or city required');
     }
 
     const research = generateAreaResearch(address || '', city || '', state || '', propertyType || 'Single Family');
@@ -99,6 +100,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, research });
   } catch (error) {
     console.error('Area research error:', error);
-    return NextResponse.json({ error: 'Failed to research area' }, { status: 500 });
+    return apiErrors.internal('Failed to research area');
   }
 }

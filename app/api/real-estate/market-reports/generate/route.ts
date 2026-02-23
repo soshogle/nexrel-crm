@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { REReportType } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 interface MarketReportRequest {
   region: string;
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Get user's language preference
@@ -49,10 +50,7 @@ export async function POST(request: NextRequest) {
     const { region, reportType, marketData, customPrompt } = body;
 
     if (!region || !reportType) {
-      return NextResponse.json(
-        { error: 'Region and report type are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Region and report type are required');
     }
 
     const currentDate = new Date();
@@ -139,7 +137,7 @@ IMPORTANT: Generate the entire report in ${userLanguage === 'en' ? 'English' : u
     // Call the LLM API
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
+      return apiErrors.internal('OPENAI_API_KEY not configured');
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -163,14 +161,14 @@ IMPORTANT: Generate the entire report in ${userLanguage === 'en' ? 'English' : u
     if (!response.ok) {
       const errorText = await response.text();
       console.error('LLM API error:', errorText);
-      return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 });
+      return apiErrors.internal('Failed to generate report');
     }
 
     const data = await response.json();
     const reportContent = data.choices?.[0]?.message?.content;
 
     if (!reportContent) {
-      return NextResponse.json({ error: 'No report generated' }, { status: 500 });
+      return apiErrors.internal('No report generated');
     }
 
     let report;
@@ -178,7 +176,7 @@ IMPORTANT: Generate the entire report in ${userLanguage === 'en' ? 'English' : u
       report = JSON.parse(reportContent);
     } catch (e) {
       console.error('Failed to parse LLM response:', reportContent);
-      return NextResponse.json({ error: 'Invalid report format' }, { status: 500 });
+      return apiErrors.internal('Invalid report format');
     }
 
     // Save the report to the database
@@ -206,6 +204,6 @@ IMPORTANT: Generate the entire report in ${userLanguage === 'en' ? 'English' : u
     });
   } catch (error) {
     console.error('Market report generate error:', error);
-    return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 });
+    return apiErrors.internal('Failed to generate report');
   }
 }

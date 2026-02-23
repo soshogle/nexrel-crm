@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 interface EnrichmentJob {
   id: string;
@@ -158,7 +159,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -182,7 +183,7 @@ export async function POST(request: NextRequest) {
     // Start new enrichment job
     const { listingIds } = body;
     if (!listingIds || !Array.isArray(listingIds) || listingIds.length === 0) {
-      return NextResponse.json({ error: 'listingIds array required' }, { status: 400 });
+      return apiErrors.badRequest('listingIds array required');
     }
 
     const listingId = listingIds[0]; // Process one at a time
@@ -209,6 +210,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, jobId });
   } catch (error) {
     console.error('FSBO enrich error:', error);
-    return NextResponse.json({ error: 'Failed to start enrichment' }, { status: 500 });
+    return apiErrors.internal('Failed to start enrichment');
   }
 }

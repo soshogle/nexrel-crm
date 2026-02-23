@@ -7,12 +7,13 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { REPropertyType, REListingStatus } from '@prisma/client';
 import { syncListingToWebsite, syncStatusToWebsite } from '@/lib/website-builder/listings-service';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ properties });
   } catch (error) {
     console.error('Properties GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch properties');
   }
 }
 
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -76,10 +77,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!address || !city || !state || !zip) {
-      return NextResponse.json(
-        { error: 'Address, city, state, and zip are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Address, city, state, and zip are required');
     }
 
     const property = await prisma.rEProperty.create({
@@ -128,7 +126,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ property, success: true });
   } catch (error) {
     console.error('Properties POST error:', error);
-    return NextResponse.json({ error: 'Failed to create property' }, { status: 500 });
+    return apiErrors.internal('Failed to create property');
   }
 }
 
@@ -136,14 +134,14 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { id, ...updateData } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Property ID required' }, { status: 400 });
+      return apiErrors.badRequest('Property ID required');
     }
 
     const existing = await prisma.rEProperty.findFirst({
@@ -151,7 +149,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+      return apiErrors.notFound('Property not found');
     }
 
     const property = await prisma.rEProperty.update({
@@ -215,7 +213,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ property, success: true });
   } catch (error) {
     console.error('Properties PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update property' }, { status: 500 });
+    return apiErrors.internal('Failed to update property');
   }
 }
 
@@ -223,14 +221,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Property ID required' }, { status: 400 });
+      return apiErrors.badRequest('Property ID required');
     }
 
     const existing = await prisma.rEProperty.findFirst({
@@ -238,7 +236,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+      return apiErrors.notFound('Property not found');
     }
 
     await prisma.rEProperty.delete({ where: { id } });
@@ -246,6 +244,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Properties DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete property' }, { status: 500 });
+    return apiErrors.internal('Failed to delete property');
   }
 }

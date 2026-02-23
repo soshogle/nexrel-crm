@@ -11,6 +11,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { REAIEmployeeType } from '@prisma/client';
 import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -156,7 +157,7 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify user is in Real Estate industry
@@ -166,10 +167,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (user?.industry !== 'REAL_ESTATE') {
-      return NextResponse.json(
-        { error: 'This feature is only available for Real Estate users' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('This feature is only available for Real Estate users');
     }
 
     const agents = await getExistingAgents(session.user.id);
@@ -188,10 +186,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching RE AI Employee agents:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch agents' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch agents');
   }
 }
 
@@ -200,7 +195,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify user is in Real Estate industry
@@ -210,10 +205,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (user?.industry !== 'REAL_ESTATE') {
-      return NextResponse.json(
-        { error: 'This feature is only available for Real Estate users' },
-        { status: 403 }
-      );
+      return apiErrors.forbidden('This feature is only available for Real Estate users');
     }
 
     const body = await request.json().catch(() => ({}));
@@ -224,10 +216,7 @@ export async function POST(request: NextRequest) {
     try {
       apiKey = getREApiKey();
     } catch (error) {
-      return NextResponse.json(
-        { error: 'ElevenLabs API key not configured for Real Estate' },
-        { status: 500 }
-      );
+      return apiErrors.internal('ElevenLabs API key not configured for Real Estate');
     }
 
     // Determine which types to provision
@@ -284,10 +273,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error provisioning RE AI Employees:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to provision agents' },
-      { status: 500 }
-    );
+    return apiErrors.internal(error instanceof Error ? error.message : 'Failed to provision agents');
   }
 }
 
@@ -296,17 +282,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const employeeType = searchParams.get('type') as REAIEmployeeType;
 
     if (!employeeType) {
-      return NextResponse.json(
-        { error: 'Employee type is required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Employee type is required');
     }
 
     // Find and delete the agent
@@ -320,10 +303,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!agent) {
-      return NextResponse.json(
-        { error: 'Agent not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Agent not found');
     }
 
     // Try to delete from ElevenLabs (optional - don't fail if this doesn't work)
@@ -350,9 +330,6 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error deleting RE AI Employee:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete agent' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete agent');
   }
 }

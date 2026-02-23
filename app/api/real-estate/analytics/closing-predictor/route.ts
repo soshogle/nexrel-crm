@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { Deal, Lead } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 interface ClosingPrediction {
   period: '30' | '60' | '90';
@@ -69,11 +70,11 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     // Fetch active deals
     const deals = await getCrmDb(ctx).deal.findMany({
@@ -168,9 +169,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('Closing predictor error:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate predictions', predictions: [] },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to generate predictions');
   }
 }

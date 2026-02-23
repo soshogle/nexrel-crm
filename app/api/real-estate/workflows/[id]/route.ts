@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -23,10 +24,10 @@ export async function GET(
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
-    const workflow = await prisma.rEWorkflowTemplate.findFirst({
+    const workflow = await (prisma as any).rEWorkflowTemplate.findFirst({
       where: {
         id: params.id,
         userId: session.user.id
@@ -54,10 +55,7 @@ export async function GET(
     });
 
     if (!workflow) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
     return NextResponse.json({
@@ -66,10 +64,7 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching RE workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to fetch workflow');
   }
 }
 
@@ -98,10 +93,10 @@ export async function PUT(
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
-    const existing = await prisma.rEWorkflowTemplate.findFirst({
+    const existing = await (prisma as any).rEWorkflowTemplate.findFirst({
       where: {
         id,
         userId: session.user.id
@@ -109,10 +104,7 @@ export async function PUT(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
     const body = await request.json();
@@ -130,18 +122,18 @@ export async function PUT(
     if (tasks && Array.isArray(tasks)) {
       // Delete RETaskExecution first (FK: taskId -> REWorkflowTask)
       // Executions reference tasks, so we must remove them before deleting tasks
-      const taskIds = await prisma.rEWorkflowTask.findMany({
+      const taskIds = await (prisma as any).rEWorkflowTask.findMany({
         where: { templateId: id },
         select: { id: true }
       });
-      const ids = taskIds.map(t => t.id);
+      const ids = taskIds.map((t: any) => t.id);
       if (ids.length > 0) {
-        await prisma.rETaskExecution.deleteMany({
+        await (prisma as any).rETaskExecution.deleteMany({
           where: { taskId: { in: ids } }
         });
       }
 
-      await prisma.rEWorkflowTask.deleteMany({
+      await (prisma as any).rEWorkflowTask.deleteMany({
         where: { templateId: id }
       });
 
@@ -163,7 +155,7 @@ export async function PUT(
           const position = typeof pos === 'object' && pos !== null
             ? { angle: Number(pos.angle) || 0, radius: Number(pos.radius) ?? 0.7 }
             : { angle: (index * 36) - 90, radius: 0.7 };
-          return prisma.rEWorkflowTask.create({
+          return (prisma as any).rEWorkflowTask.create({
             data: {
               templateId: id,
               name: (task.name as string) || 'Task',
@@ -193,7 +185,7 @@ export async function PUT(
         .map((task: any, i: number) => {
           const newParentId = task.parentTaskId ? oldIdToNewId[task.parentTaskId] : null;
           if (newParentId && createdTasks[i]) {
-            return prisma.rEWorkflowTask.update({
+            return (prisma as any).rEWorkflowTask.update({
               where: { id: createdTasks[i].id },
               data: { parentTaskId: newParentId },
             });
@@ -208,13 +200,13 @@ export async function PUT(
     }
 
     if (Object.keys(updateData).length > 0) {
-      await prisma.rEWorkflowTemplate.update({
+      await (prisma as any).rEWorkflowTemplate.update({
         where: { id },
         data: updateData as any,
       });
     }
 
-    const raw = await prisma.rEWorkflowTemplate.findFirst({
+    const raw = await (prisma as any).rEWorkflowTemplate.findFirst({
       where: { id },
       include: {
         tasks: { orderBy: { displayOrder: 'asc' } }
@@ -247,10 +239,7 @@ export async function PUT(
     const err = error as Error;
     console.error('Error updating RE workflow (PUT):', err);
     const message = err?.message || 'Failed to update workflow';
-    return NextResponse.json(
-      { error: message, details: process.env.NODE_ENV === 'development' ? err?.stack : undefined },
-      { status: 500 }
-    );
+    return apiErrors.internal(message, process.env.NODE_ENV === 'development' ? err?.stack : undefined);
   }
 }
 
@@ -266,11 +255,11 @@ export async function PATCH(
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify ownership
-    const existing = await prisma.rEWorkflowTemplate.findFirst({
+    const existing = await (prisma as any).rEWorkflowTemplate.findFirst({
       where: {
         id: params.id,
         userId: session.user.id
@@ -278,16 +267,13 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
     const body = await request.json();
     const { name, description, isActive } = body;
 
-    const workflow = await prisma.rEWorkflowTemplate.update({
+    const workflow = await (prisma as any).rEWorkflowTemplate.update({
       where: { id: params.id },
       data: {
         ...(name !== undefined && { name }),
@@ -307,10 +293,7 @@ export async function PATCH(
     });
   } catch (error) {
     console.error('Error updating RE workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to update workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to update workflow');
   }
 }
 
@@ -326,11 +309,11 @@ export async function DELETE(
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     // Verify ownership
-    const existing = await prisma.rEWorkflowTemplate.findFirst({
+    const existing = await (prisma as any).rEWorkflowTemplate.findFirst({
       where: {
         id: params.id,
         userId: session.user.id
@@ -343,14 +326,11 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Workflow not found' },
-        { status: 404 }
-      );
+      return apiErrors.notFound('Workflow not found');
     }
 
     // Check for active instances
-    const activeInstances = await prisma.rEWorkflowInstance.count({
+    const activeInstances = await (prisma as any).rEWorkflowInstance.count({
       where: {
         templateId: params.id,
         status: 'ACTIVE'
@@ -365,7 +345,7 @@ export async function DELETE(
     }
 
     // Delete workflow (cascade will delete tasks)
-    await prisma.rEWorkflowTemplate.delete({
+    await (prisma as any).rEWorkflowTemplate.delete({
       where: { id: params.id }
     });
 
@@ -375,9 +355,6 @@ export async function DELETE(
     });
   } catch (error) {
     console.error('Error deleting RE workflow:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete workflow' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Failed to delete workflow');
   }
 }

@@ -6,12 +6,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { REReportType } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ reports });
   } catch (error) {
     console.error('Market Reports GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch reports');
   }
 }
 
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -57,10 +58,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!type || !title || !region || !periodStart || !periodEnd) {
-      return NextResponse.json(
-        { error: 'Type, title, region, periodStart, and periodEnd are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Type, title, region, periodStart, and periodEnd are required');
     }
 
     const report = await prisma.rEMarketReport.create({
@@ -83,7 +81,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ report, success: true });
   } catch (error) {
     console.error('Market Reports POST error:', error);
-    return NextResponse.json({ error: 'Failed to create report' }, { status: 500 });
+    return apiErrors.internal('Failed to create report');
   }
 }
 
@@ -91,14 +89,14 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { id, ...updateData } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Report ID required' }, { status: 400 });
+      return apiErrors.badRequest('Report ID required');
     }
 
     const existing = await prisma.rEMarketReport.findFirst({
@@ -106,7 +104,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+      return apiErrors.notFound('Report not found');
     }
 
     const report = await prisma.rEMarketReport.update({
@@ -123,7 +121,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ report, success: true });
   } catch (error) {
     console.error('Market Reports PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update report' }, { status: 500 });
+    return apiErrors.internal('Failed to update report');
   }
 }
 
@@ -131,14 +129,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Report ID required' }, { status: 400 });
+      return apiErrors.badRequest('Report ID required');
     }
 
     const existing = await prisma.rEMarketReport.findFirst({
@@ -146,7 +144,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+      return apiErrors.notFound('Report not found');
     }
 
     await prisma.rEMarketReport.delete({ where: { id } });
@@ -154,6 +152,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Market Reports DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete report' }, { status: 500 });
+    return apiErrors.internal('Failed to delete report');
   }
 }

@@ -11,12 +11,13 @@ import {
   getScrapingJobs
 } from '@/lib/real-estate/scrapers';
 import { REFSBOSource } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const jobs = await getScrapingJobs(session.user.id);
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('[FSBO Scrape] GET error:', error);
-    return NextResponse.json({ error: 'Failed to get scrape status' }, { status: 500 });
+    return apiErrors.internal('Failed to get scrape status');
   }
 }
 
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();

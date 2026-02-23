@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { noteService } from '@/lib/dal'
 import { getDalContextFromSession } from '@/lib/context/industry-context'
+import { apiErrors } from '@/lib/api-error';
 
 export async function PUT(
   request: NextRequest,
@@ -16,23 +17,23 @@ export async function PUT(
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const { content } = await request.json()
 
     if (!content || !content.trim()) {
-      return NextResponse.json({ error: 'Content is required' }, { status: 400 })
+      return apiErrors.badRequest('Content is required')
     }
 
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
 
     // Verify note belongs to user
     const note = await noteService.findFirst(ctx, { id: params.id })
 
     if (!note) {
-      return NextResponse.json({ error: 'Note not found' }, { status: 404 })
+      return apiErrors.notFound('Note not found')
     }
 
     const updatedNote = await noteService.update(ctx, params.id, { content: content.trim() })
@@ -40,10 +41,7 @@ export async function PUT(
     return NextResponse.json(updatedNote)
   } catch (error) {
     console.error('Update note error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiErrors.internal()
   }
 }
 
@@ -55,17 +53,17 @@ export async function DELETE(
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiErrors.unauthorized()
     }
 
     const ctx = getDalContextFromSession(session)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!ctx) return apiErrors.unauthorized()
 
     // Verify note belongs to user
     const note = await noteService.findFirst(ctx, { id: params.id })
 
     if (!note) {
-      return NextResponse.json({ error: 'Note not found' }, { status: 404 })
+      return apiErrors.notFound('Note not found')
     }
 
     await noteService.delete(ctx, params.id)
@@ -73,9 +71,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Note deleted successfully' })
   } catch (error) {
     console.error('Delete note error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiErrors.internal()
   }
 }

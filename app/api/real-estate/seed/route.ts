@@ -6,16 +6,17 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
+import { apiErrors } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
     let created = { leads: 0, fsboListings: 0 };
 
     // Create sample RE leads
@@ -143,14 +144,14 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('RE Seed error:', error);
-    return NextResponse.json({ error: 'Failed to seed RE data' }, { status: 500 });
+    return apiErrors.internal('Failed to seed RE data');
   }
 }
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return apiErrors.unauthorized();
   }
 
   return NextResponse.json({

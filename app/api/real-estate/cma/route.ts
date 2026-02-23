@@ -5,12 +5,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ reports: cmaReports });
   } catch (error) {
     console.error('CMA GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch CMA reports' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch CMA reports');
   }
 }
 
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -60,10 +61,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!address) {
-      return NextResponse.json(
-        { error: 'Property address required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Property address required');
     }
 
     // Create CMA report - comparables stored as JSON
@@ -91,7 +89,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ report: cmaReport, success: true });
   } catch (error) {
     console.error('CMA POST error:', error);
-    return NextResponse.json({ error: 'Failed to create CMA report' }, { status: 500 });
+    return apiErrors.internal('Failed to create CMA report');
   }
 }
 
@@ -99,14 +97,14 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { id, ...updateData } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Report ID required' }, { status: 400 });
+      return apiErrors.badRequest('Report ID required');
     }
 
     const existing = await prisma.rECMAReport.findFirst({
@@ -114,7 +112,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'CMA report not found' }, { status: 404 });
+      return apiErrors.notFound('CMA report not found');
     }
 
     const report = await prisma.rECMAReport.update({
@@ -135,7 +133,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ report, success: true });
   } catch (error) {
     console.error('CMA PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update CMA report' }, { status: 500 });
+    return apiErrors.internal('Failed to update CMA report');
   }
 }
 
@@ -143,14 +141,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     
     if (!id) {
-      return NextResponse.json({ error: 'Report ID required' }, { status: 400 });
+      return apiErrors.badRequest('Report ID required');
     }
     
     const existing = await prisma.rECMAReport.findFirst({
@@ -158,7 +156,7 @@ export async function DELETE(request: NextRequest) {
     });
     
     if (!existing) {
-      return NextResponse.json({ error: 'CMA report not found' }, { status: 404 });
+      return apiErrors.notFound('CMA report not found');
     }
     
     await prisma.rECMAReport.delete({ where: { id } });
@@ -166,6 +164,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('CMA DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete CMA report' }, { status: 500 });
+    return apiErrors.internal('Failed to delete CMA report');
   }
 }

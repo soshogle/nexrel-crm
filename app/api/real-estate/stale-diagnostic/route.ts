@@ -6,12 +6,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { REDiagnosticStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ diagnostics });
   } catch (error) {
     console.error('Stale Diagnostic GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch diagnostics' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch diagnostics');
   }
 }
 
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
@@ -61,10 +62,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!address || daysOnMarket === undefined) {
-      return NextResponse.json(
-        { error: 'Address and daysOnMarket are required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Address and daysOnMarket are required');
     }
 
     const diagnostic = await prisma.rEStaleDiagnostic.create({
@@ -92,7 +90,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ diagnostic, success: true });
   } catch (error) {
     console.error('Stale Diagnostic POST error:', error);
-    return NextResponse.json({ error: 'Failed to create diagnostic' }, { status: 500 });
+    return apiErrors.internal('Failed to create diagnostic');
   }
 }
 
@@ -100,14 +98,14 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json();
     const { id, status, agentNotes, ...rest } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Diagnostic ID required' }, { status: 400 });
+      return apiErrors.badRequest('Diagnostic ID required');
     }
 
     const existing = await prisma.rEStaleDiagnostic.findFirst({
@@ -115,7 +113,7 @@ export async function PUT(request: NextRequest) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Diagnostic not found' }, { status: 404 });
+      return apiErrors.notFound('Diagnostic not found');
     }
 
     const diagnostic = await prisma.rEStaleDiagnostic.update({
@@ -131,7 +129,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ diagnostic, success: true });
   } catch (error) {
     console.error('Stale Diagnostic PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update diagnostic' }, { status: 500 });
+    return apiErrors.internal('Failed to update diagnostic');
   }
 }
 
@@ -139,14 +137,14 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Diagnostic ID required' }, { status: 400 });
+      return apiErrors.badRequest('Diagnostic ID required');
     }
 
     const existing = await prisma.rEStaleDiagnostic.findFirst({
@@ -154,7 +152,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: 'Diagnostic not found' }, { status: 404 });
+      return apiErrors.notFound('Diagnostic not found');
     }
 
     await prisma.rEStaleDiagnostic.delete({ where: { id } });
@@ -162,6 +160,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Stale Diagnostic DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete diagnostic' }, { status: 500 });
+    return apiErrors.internal('Failed to delete diagnostic');
   }
 }

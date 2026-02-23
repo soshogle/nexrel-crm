@@ -10,6 +10,7 @@ import enMessages from '@/messages/en.json';
 import frMessages from '@/messages/fr.json';
 import esMessages from '@/messages/es.json';
 import zhMessages from '@/messages/zh.json';
+import { apiErrors } from '@/lib/api-error';
 
 const pdfMessages = {
   en: enMessages,
@@ -362,7 +363,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const data: NetSheetData = await request.json();

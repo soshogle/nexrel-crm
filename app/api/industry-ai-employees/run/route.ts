@@ -14,6 +14,7 @@ import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService, dealService } from '@/lib/dal';
 import { Industry } from '@prisma/client';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
+import { apiErrors } from '@/lib/api-error';
 
 interface ExecutionResult {
   success: boolean;
@@ -45,7 +46,7 @@ async function executeAppointmentScheduler(
       status: { in: ['SCHEDULED', 'CONFIRMED'] },
     },
     take: 20,
-  });
+  } as any);
 
   return {
     success: true,
@@ -91,7 +92,7 @@ async function executeTreatmentCoordinator(
   const deals = await dealService.findMany(ctx, {
     where: { createdAt: { gte: thirtyDaysAgo }, status: { not: 'WON' } },
     take: 10,
-  });
+  } as any);
 
   return {
     success: true,
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const body = await request.json().catch(() => ({}));
@@ -152,10 +153,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (!industry || !employeeType) {
-      return NextResponse.json(
-        { error: 'Industry and employeeType required' },
-        { status: 400 }
-      );
+      return apiErrors.badRequest('Industry and employeeType required');
     }
 
     const module = getIndustryAIEmployeeModule(industry);
@@ -187,9 +185,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('Industry AI Employee execution error:', error);
-    return NextResponse.json(
-      { error: 'Execution failed' },
-      { status: 500 }
-    );
+    return apiErrors.internal('Execution failed');
   }
 }

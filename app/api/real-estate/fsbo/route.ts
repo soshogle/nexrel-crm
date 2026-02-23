@@ -7,16 +7,17 @@ import { authOptions } from '@/lib/auth';
 import { leadService, getCrmDb } from '@/lib/dal';
 import { getDalContextFromSession } from '@/lib/context/industry-context';
 import { REFSBOStatus } from '@prisma/client';
+import { apiErrors } from '@/lib/api-error';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') as REFSBOStatus | null;
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('[FSBO] GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch FSBO listings' }, { status: 500 });
+    return apiErrors.internal('Failed to fetch FSBO listings');
   }
 }
 
@@ -83,17 +84,17 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const body = await request.json();
     const { id, status, notes, assignedUserId } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Listing ID required' }, { status: 400 });
+      return apiErrors.badRequest('Listing ID required');
     }
 
     const data: any = {};
@@ -145,7 +146,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true, listing });
   } catch (error) {
     console.error('[FSBO] PUT error:', error);
-    return NextResponse.json({ error: 'Failed to update listing' }, { status: 500 });
+    return apiErrors.internal('Failed to update listing');
   }
 }
 
@@ -153,17 +154,17 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiErrors.unauthorized();
     }
 
     const ctx = getDalContextFromSession(session);
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!ctx) return apiErrors.unauthorized();
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Listing ID required' }, { status: 400 });
+      return apiErrors.badRequest('Listing ID required');
     }
 
     await getCrmDb(ctx).rEFSBOListing.delete({ where: { id } });
@@ -171,6 +172,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[FSBO] DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to delete listing' }, { status: 500 });
+    return apiErrors.internal('Failed to delete listing');
   }
 }
