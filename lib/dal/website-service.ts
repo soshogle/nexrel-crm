@@ -7,6 +7,7 @@ import { getCrmDb } from './db';
 import type { DalContext } from './types';
 import type { Prisma } from '@prisma/client';
 import { cached, invalidatePattern, TTL } from '@/lib/cache';
+import { getMetaDb } from '@/lib/db/meta-db';
 
 const cacheKey = (userId: string, suffix = 'list') => `website:${userId}:${suffix}`
 
@@ -43,6 +44,9 @@ export const websiteService = {
       data: { ...data, userId: ctx.userId },
     });
     await invalidatePattern(`website:${ctx.userId}:*`);
+    if (ctx.industry) {
+      upsertRouting(result.id, ctx.userId, ctx.industry);
+    }
     return result;
   },
 
@@ -60,6 +64,7 @@ export const websiteService = {
       where: { id: websiteId, userId: ctx.userId },
     });
     await invalidatePattern(`website:${ctx.userId}:*`);
+    deleteRouting(websiteId);
     return result;
   },
 
@@ -69,3 +74,20 @@ export const websiteService = {
     });
   },
 };
+
+/** Fire-and-forget routing table maintenance — never blocks the request */
+function upsertRouting(websiteId: string, userId: string, industry: string) {
+  getMetaDb()
+    .websiteRouting.upsert({
+      where: { websiteId },
+      create: { websiteId, userId, industry },
+      update: { userId, industry },
+    })
+    .catch(() => {});
+}
+
+function deleteRouting(websiteId: string) {
+  getMetaDb()
+    .websiteRouting.delete({ where: { websiteId } })
+    .catch(() => {});
+}

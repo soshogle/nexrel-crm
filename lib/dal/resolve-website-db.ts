@@ -4,13 +4,15 @@
  * Used by server-to-server routes (x-website-secret auth) where no user session
  * is available and therefore no industry is known for DB routing.
  *
- * Strategy: check main DB first, then each configured industry DB (deduplicated
- * by URL so we never hit the same host twice). A findUnique by PK is essentially
- * instant on each database.
+ * Strategy (fast path first):
+ *   1. Check the WebsiteRouting table in the meta DB — single indexed lookup.
+ *   2. Fallback: scan main DB then each configured industry DB (deduplicated
+ *      by URL). If found this way, backfill the routing table for next time.
  */
 
 import type { PrismaClient } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { getMetaDb } from '@/lib/db/meta-db';
 import { getIndustryDb } from '@/lib/db/industry-db';
 import type { IndustryDbKey } from '@/lib/db/industry-db';
 
@@ -39,7 +41,25 @@ export interface ResolvedWebsiteDb {
 export async function resolveWebsiteDb(
   websiteId: string,
 ): Promise<ResolvedWebsiteDb | null> {
-  // 1. Try main DB
+  // 1. Fast path: check the routing table in the meta DB
+  try {
+    const routing = await getMetaDb().websiteRouting.findUnique({
+      where: { websiteId },
+    });
+    if (routing?.industry) {
+      const key = routing.industry as IndustryDbKey;
+      const envVar = `DATABASE_URL_${key}`;
+      if (process.env[envVar]) {
+        return { db: getIndustryDb(key), industry: key };
+      }
+      // Industry env var not configured — fall through to scan
+    }
+  } catch {
+    // Table may not exist yet (pre-migration) — fall through to scan
+  }
+
+  // 2. Fallback: scan databases
+  // Try main DB
   try {
     const found = await prisma.website.findUnique({
       where: { id: websiteId },
@@ -47,10 +67,10 @@ export async function resolveWebsiteDb(
     });
     if (found) return { db: prisma, industry: null };
   } catch {
-    /* main DB may not have the table or may be unreachable — continue */
+    /* continue */
   }
 
-  // 2. Try each industry DB whose URL differs from what we already checked
+  // Try each industry DB with a unique URL
   const triedUrls = new Set<string>();
   if (process.env.DATABASE_URL) triedUrls.add(process.env.DATABASE_URL);
 
@@ -63,13 +83,30 @@ export async function resolveWebsiteDb(
       const db = getIndustryDb(key);
       const found = await db.website.findUnique({
         where: { id: websiteId },
-        select: { id: true },
+        select: { id: true, userId: true },
       });
-      if (found) return { db, industry: key };
+      if (found) {
+        // Backfill the routing table so future lookups are instant
+        backfillRouting(websiteId, (found as any).userId, key);
+        return { db, industry: key };
+      }
     } catch {
       /* skip unreachable DBs */
     }
   }
 
   return null;
+}
+
+/** Fire-and-forget backfill — never blocks the request */
+function backfillRouting(websiteId: string, userId: string, industry: string) {
+  getMetaDb()
+    .websiteRouting.upsert({
+      where: { websiteId },
+      create: { websiteId, userId, industry },
+      update: { userId, industry },
+    })
+    .catch(() => {
+      /* best-effort — ignore failures */
+    });
 }

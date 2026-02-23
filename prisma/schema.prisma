@@ -10010,6 +10010,17 @@ model TwilioBackupPhoneNumber {
 }
 
 // Landing page blog posts (auto-generated for social media)
+model WebsiteRouting {
+  websiteId String   @id
+  userId    String
+  industry  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([industry])
+}
+
 model BlogPost {
   id            String   @id @default(cuid())
   slug          String   @unique
