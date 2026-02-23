@@ -1,12 +1,16 @@
 /**
  * Execute RE AI Employee tasks (Speed to Lead, FSBO, etc.)
  * Used by: /api/ai-employees/real-estate/run and cron
+ * Phase 2: Actual outreach (SMS, calls)
  */
 
 import { prisma } from '@/lib/db';
 import { createDalContext } from '@/lib/context/industry-context';
 import { leadService } from '@/lib/dal/lead-service';
 import type { REAIEmployeeType } from '@prisma/client';
+import { sendSMSToLead } from '@/lib/ai-employees/outreach-helper';
+
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export interface REExecutionResult {
   success: boolean;
@@ -29,7 +33,15 @@ async function executeSpeedToLead(userId: string): Promise<REExecutionResult> {
     take: 10,
   });
 
+  let sent = 0;
+  const msg =
+    'Hi {firstName}! Thanks for your inquiry. A team member will reach out shortly. In the meantime, feel free to reply with any questions.';
   for (const lead of newLeads) {
+    if (lead.phone) {
+      const res = await sendSMSToLead(userId, lead.id, msg);
+      if (res.success) sent++;
+      await delay(200);
+    }
     await leadService.update(ctx, lead.id, {
       status: 'CONTACTED',
       lastContactedAt: new Date(),
@@ -39,9 +51,9 @@ async function executeSpeedToLead(userId: string): Promise<REExecutionResult> {
   return {
     success: true,
     employeeType: 'RE_SPEED_TO_LEAD',
-    tasksCompleted: newLeads.length,
-    summary: `Processed ${newLeads.length} new leads with instant response`,
-    details: { leadIds: newLeads.map((l) => l.id) },
+    tasksCompleted: sent,
+    summary: `Sent ${sent} instant responses to ${newLeads.length} new leads`,
+    details: { leadIds: newLeads.map((l) => l.id), sent },
   };
 }
 

@@ -8,6 +8,14 @@ import { getCrmDb, leadService, dealService } from '@/lib/dal';
 import { Industry } from '@prisma/client';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
 import { prisma } from '@/lib/db';
+import {
+  sendSMSToLead,
+  sendSMSToPhone,
+  sendEmailToLead,
+  sendEmailToAddress,
+} from '@/lib/ai-employees/outreach-helper';
+
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export interface ExecutionResult {
   success: boolean;
@@ -37,12 +45,31 @@ async function executeAppointmentScheduler(
     take: 20,
   } as any);
 
+  let sent = 0;
+  const msg =
+    'Hi {firstName}! This is a reminder about your appointment tomorrow. Please reply to confirm or reschedule.';
+  for (const apt of appointments) {
+    if (apt.customerPhone) {
+      const name = apt.customerName?.split(' ')[0] || 'there';
+      const res = await sendSMSToPhone(
+        apt.customerPhone,
+        msg.replace(/\{firstName\}/g, name)
+      );
+      if (res.success) sent++;
+      await delay(200);
+    } else if (apt.leadId) {
+      const res = await sendSMSToLead(userId, apt.leadId, msg);
+      if (res.success) sent++;
+      await delay(200);
+    }
+  }
+
   return {
     success: true,
     employeeType: 'APPOINTMENT_SCHEDULER',
-    tasksCompleted: appointments.length,
-    summary: `Identified ${appointments.length} appointments to confirm for tomorrow`,
-    details: { appointmentIds: appointments.map((a) => a.id) },
+    tasksCompleted: sent,
+    summary: `Sent ${sent} appointment reminders (${appointments.length} total)`,
+    details: { appointmentIds: appointments.map((a) => a.id), sent },
   };
 }
 
@@ -58,12 +85,23 @@ async function executePatientCoordinator(
     take: 15,
   });
 
+  let sent = 0;
+  const msg =
+    'Hi {firstName}! Thank you for choosing us. We wanted to check in — how was your experience? Reply anytime if you have questions.';
+  for (const lead of newPatients) {
+    if (lead.phone) {
+      const res = await sendSMSToLead(userId, lead.id, msg);
+      if (res.success) sent++;
+      await delay(200);
+    }
+  }
+
   return {
     success: true,
     employeeType: 'PATIENT_COORDINATOR',
-    tasksCompleted: newPatients.length,
-    summary: `Identified ${newPatients.length} new patients for intake follow-up`,
-    details: { leadIds: newPatients.map((c) => c.id) },
+    tasksCompleted: sent,
+    summary: `Sent ${sent} new patient follow-ups (${newPatients.length} total)`,
+    details: { leadIds: newPatients.map((c) => c.id), sent },
   };
 }
 
@@ -79,12 +117,24 @@ async function executeTreatmentCoordinator(
     take: 10,
   } as any);
 
+  let sent = 0;
+  const msg =
+    'Hi {firstName}! We wanted to follow up on your treatment plan. Do you have any questions or would you like to schedule? Reply anytime.';
+  for (const deal of deals) {
+    const leadId = (deal as any).leadId;
+    if (leadId) {
+      const res = await sendSMSToLead(userId, leadId, msg);
+      if (res.success) sent++;
+      await delay(200);
+    }
+  }
+
   return {
     success: true,
     employeeType: 'TREATMENT_COORDINATOR',
-    tasksCompleted: deals.length,
-    summary: `Identified ${deals.length} treatment plans for follow-up`,
-    details: { dealIds: deals.map((d) => d.id) },
+    tasksCompleted: sent,
+    summary: `Sent ${sent} treatment plan follow-ups (${deals.length} total)`,
+    details: { dealIds: deals.map((d) => d.id), sent },
   };
 }
 
@@ -101,12 +151,34 @@ async function executeBillingSpecialist(
     })
     .catch(() => []);
 
+  let sent = 0;
+  const subject = 'Friendly reminder: Invoice pending';
+  const body =
+    'Hi {firstName},\n\nThis is a friendly reminder that you have an outstanding invoice. Please let us know if you have any questions or need to arrange payment.\n\nThank you!';
+  for (const inv of invoices ?? []) {
+    const leadId = (inv as any).leadId;
+    const customerEmail = (inv as any).customerEmail;
+    if (leadId) {
+      const res = await sendEmailToLead(userId, leadId, subject, body);
+      if (res.success) sent++;
+    } else if (customerEmail) {
+      const res = await sendEmailToAddress(
+        userId,
+        customerEmail,
+        subject,
+        body.replace(/\{firstName\}/g, (inv as any).customerName?.split(' ')[0] || 'there')
+      );
+      if (res.success) sent++;
+    }
+    await delay(300);
+  }
+
   return {
     success: true,
     employeeType: 'BILLING_SPECIALIST',
-    tasksCompleted: invoices?.length ?? 0,
-    summary: `Identified ${invoices?.length ?? 0} pending invoices for follow-up`,
-    details: { invoiceIds: invoices?.map((i) => i.id) ?? [] },
+    tasksCompleted: sent,
+    summary: `Sent ${sent} invoice reminders (${invoices?.length ?? 0} total)`,
+    details: { invoiceIds: invoices?.map((i) => i.id) ?? [], sent },
   };
 }
 

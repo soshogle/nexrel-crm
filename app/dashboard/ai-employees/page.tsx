@@ -53,6 +53,8 @@ import { TechnologyWorkflowsTab } from '@/components/technology/workflows/techno
 import { SportsClubWorkflowsTab } from '@/components/sports-club/workflows/sports-club-workflows-tab';
 import { getIndustryConfig } from '@/lib/workflows/industry-configs';
 import { UnifiedMonitor } from '@/components/workflows/unified-monitor';
+import { UnifiedActivityFeed } from '@/components/ai-employees/unified-activity-feed';
+import { AdminStatsCard } from '@/components/ai-employees/admin-stats-card';
 import { JobResultsDialog } from '@/components/ai-employees/job-results-dialog';
 import { WorkflowResultsDialog } from '@/components/ai-employees/workflow-results-dialog';
 import { SetupDialog } from '@/components/ai-employees/setup-dialog';
@@ -590,7 +592,7 @@ export default function AIEmployeesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const initialTab = tabParam && ['ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks'].includes(tabParam) ? tabParam : 'ai-team';
+  const initialTab = tabParam && ['ai-team', 're-team', 'industry-team', 'workflows', 'monitor', 'tasks', 'activity'].includes(tabParam) ? tabParam : 'ai-team';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [selectedProfessionalForWorkflow, setSelectedProfessionalForWorkflow] = useState<string | null>(null);
 
@@ -1141,13 +1143,17 @@ export default function AIEmployeesPage() {
         </Button>
       </div>
 
+      {canProvisionAgents(session) && (
+        <AdminStatsCard />
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className={`grid w-full bg-black ${
-          isRealEstateUser && hasIndustryTeam ? 'grid-cols-6' :
-          isRealEstateUser ? 'grid-cols-5' : 
-          hasIndustryTeam ? 'grid-cols-5' :
-          hasWorkflowSystem ? 'grid-cols-4' : 
-          'grid-cols-3'
+          isRealEstateUser && hasIndustryTeam ? 'grid-cols-8' :
+          isRealEstateUser ? 'grid-cols-7' : 
+          hasIndustryTeam ? 'grid-cols-7' :
+          hasWorkflowSystem ? 'grid-cols-6' : 
+          'grid-cols-5'
         }`}>
           <TabsTrigger
             value="ai-team"
@@ -1190,6 +1196,12 @@ export default function AIEmployeesPage() {
             className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
           >
             Manage Tasks
+          </TabsTrigger>
+          <TabsTrigger
+            value="activity"
+            className="text-orange-500 data-[state=inactive]:hover:text-orange-400 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-violet-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
+          >
+            Activity
           </TabsTrigger>
         </TabsList>
 
@@ -1248,6 +1260,10 @@ export default function AIEmployeesPage() {
               <TasksEmbed />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-4">
+          <UnifiedActivityFeed />
         </TabsContent>
 
         {/* RE Team Tab - Only for Real Estate users */}

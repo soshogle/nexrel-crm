@@ -109,6 +109,22 @@ export async function GET(request: NextRequest) {
           success: result.success,
           summary: result.summary,
         });
+      } else if (schedule.source === 'professional') {
+        const { executeProfessionalEmployee } = await import('@/lib/ai-employees/run-professional-employee');
+        const result = await executeProfessionalEmployee(
+          schedule.userId,
+          schedule.employeeType as any,
+          { storeHistory: false }
+        );
+        results.push({
+          scheduleId: schedule.id,
+          userId: schedule.userId,
+          employeeType: schedule.employeeType,
+          source: schedule.source,
+          industry: null,
+          success: result.success,
+          summary: result.summary,
+        });
       } else {
         results.push({
           scheduleId: schedule.id,

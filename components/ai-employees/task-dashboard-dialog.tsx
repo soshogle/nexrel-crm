@@ -128,7 +128,7 @@ export function TaskDashboardDialog({
   const [running, setRunning] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
 
-  const canRun = source === 'industry' || source === 're';
+  const canRun = source === 'industry' || source === 're' || source === 'professional';
 
   const fetchConfig = async () => {
     if (!agentId) return;
@@ -169,6 +169,7 @@ export function TaskDashboardDialog({
       const params = new URLSearchParams({ source, employeeType });
       if (source === 'industry' && industry) params.set('industry', industry);
       if (source === 're') params.set('industry', 'REAL_ESTATE');
+      // professional: no industry param (industry=null in DB)
       const res = await fetch(`/api/ai-employees/daily-schedules?${params}`);
       const data = await res.json();
       if (res.ok && data.schedules?.length) {
@@ -229,6 +230,9 @@ export function TaskDashboardDialog({
         body = { industry, employeeType };
       } else if (source === 're') {
         url = '/api/ai-employees/real-estate/run';
+        body = { employeeType };
+      } else if (source === 'professional') {
+        url = '/api/ai-employees/professional/run';
         body = { employeeType };
       } else {
         toast.info('This employee is conversational only — no automated tasks to run.');
