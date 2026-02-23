@@ -296,6 +296,7 @@ model User {
   industryAIEmployeeExecutions IndustryAIEmployeeExecution[] @relation("IndustryAIEmployeeExecutionUser")
   aiEmployeeTaskConfigs       AIEmployeeTaskConfig[]       @relation("AIEmployeeTaskConfigUser")
   aiEmployeeTaskTemplates     AIEmployeeTaskTemplate[]    @relation("AIEmployeeTaskTemplateUser")
+  aiEmployeeCustomTasks       AIEmployeeCustomTask[]      @relation("AIEmployeeCustomTaskUser")
   industryAIEmployeeAgents    IndustryAIEmployeeAgent[]    @relation("IndustryAIEmployeeAgentUser")
   professionalAIEmployeeAgents ProfessionalAIEmployeeAgent[] @relation("ProfessionalAIEmployeeAgentUser")
   aiEmployeeAutoRuns          AIEmployeeAutoRun[]          @relation("AIEmployeeAutoRunUser")
@@ -7800,6 +7801,25 @@ model AIEmployeeTaskTemplate {
 
   @@unique([userId, source, industry, employeeType, taskKey])
   @@index([userId])
+}
+
+// Custom tasks added by users for industry AI employees (e.g. "Send insurance claims daily at 5pm")
+model AIEmployeeCustomTask {
+  id           String    @id @default(cuid())
+  userId       String
+  source       String    @default("industry") // "industry" only for now
+  industry     Industry? // for industry employees
+  employeeType String
+  taskKey      String    // slugified from description
+  description  String    // user-facing label (e.g. "Send insurance claims daily at 5pm")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User @relation("AIEmployeeCustomTaskUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, industry, employeeType, taskKey])
+  @@index([userId])
+  @@index([employeeType])
 }
 
 // Industry AI Employee Voice Agents (Dental, Medical, Restaurant, etc.)

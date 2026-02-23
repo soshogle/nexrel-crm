@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Play, Loader2, History, Settings, CheckCircle2, XCircle, Clock, FileText, ChevronDown, ChevronUp, Plus, Mic } from 'lucide-react';
+import { Play, Loader2, History, Settings, CheckCircle2, XCircle, Clock, FileText, ChevronDown, ChevronUp, Plus, Mic, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
 import { getREEmployeeConfig } from '@/lib/real-estate/ai-employees/configs';
@@ -33,6 +33,7 @@ interface Task {
   taskKey: string;
   enabled: boolean;
   description: string;
+  isCustom?: boolean;
 }
 
 /** Fallback tasks when API returns empty - ensures duties are always visible */
@@ -131,8 +132,12 @@ export function TaskDashboardDialog({
   const [template, setTemplate] = useState<{ smsTemplate?: string; emailSubject?: string; emailBody?: string } | null>(null);
   const [templateSaving, setTemplateSaving] = useState(false);
   const [templateDirty, setTemplateDirty] = useState(false);
+  const [customTaskDesc, setCustomTaskDesc] = useState('');
+  const [customTaskSaving, setCustomTaskSaving] = useState(false);
+  const [deletingTask, setDeletingTask] = useState<string | null>(null);
 
   const canRun = source === 'industry' || source === 're' || source === 'professional';
+  const canAddCustomTask = source === 'industry' && !!industry;
 
   /** Employees that support custom SMS/email templates */
   const supportsTemplates =
@@ -351,6 +356,72 @@ export function TaskDashboardDialog({
     }
   };
 
+  const handleAddCustomTask = async () => {
+    const desc = customTaskDesc.trim();
+    if (!desc) {
+      toast.error('Enter a task description');
+      return;
+    }
+    setCustomTaskSaving(true);
+    try {
+      const body: Record<string, unknown> = {
+        source,
+        employeeType,
+        description: desc,
+      };
+      if (agentId) body.agentId = agentId;
+      if (source === 'industry' && industry) body.industry = industry;
+      const res = await fetch('/api/ai-employees/task-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCustomTaskDesc('');
+        toast.success('Custom task added');
+        fetchConfig();
+        if (canRun) fetchSchedule();
+      } else {
+        toast.error(data.error || 'Failed to add task');
+      }
+    } catch {
+      toast.error('Failed to add custom task');
+    } finally {
+      setCustomTaskSaving(false);
+    }
+  };
+
+  const handleDeleteCustomTask = async (taskKey: string) => {
+    setDeletingTask(taskKey);
+    try {
+      const body: Record<string, unknown> = {
+        source,
+        employeeType,
+        taskKey,
+      };
+      if (agentId) body.agentId = agentId;
+      if (source === 'industry' && industry) body.industry = industry;
+      const res = await fetch('/api/ai-employees/task-config', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Custom task removed');
+        fetchConfig();
+        if (canRun) fetchSchedule();
+      } else {
+        toast.error(data.error || 'Failed to remove task');
+      }
+    } catch {
+      toast.error('Failed to remove custom task');
+    } finally {
+      setDeletingTask(null);
+    }
+  };
+
   const handleSaveTemplate = async () => {
     if (!supportsTemplates) return;
     setTemplateSaving(true);
@@ -444,12 +515,32 @@ export function TaskDashboardDialog({
                             )}
                           </div>
                         </button>
-                        <Switch
-                          checked={t.enabled}
-                          onCheckedChange={(checked) => handleToggle(t.taskKey, checked)}
-                          disabled={toggling === t.taskKey}
-                          onClick={(e) => e.stopPropagation()}
-                        />
+                        <div className="flex items-center gap-2">
+                          {t.isCustom && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-slate-400 hover:text-red-600"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCustomTask(t.taskKey);
+                              }}
+                              disabled={deletingTask === t.taskKey}
+                            >
+                              {deletingTask === t.taskKey ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </Button>
+                          )}
+                          <Switch
+                            checked={t.enabled}
+                            onCheckedChange={(checked) => handleToggle(t.taskKey, checked)}
+                            disabled={toggling === t.taskKey}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
                       </div>
                       {isExpanded && canRun && (
                         <div className="border-t border-slate-200 p-4 space-y-3 dark:border-slate-200">
@@ -616,16 +707,36 @@ export function TaskDashboardDialog({
             </a>
           </div>
 
-          {/* Add custom task */}
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-200 dark:bg-white">
-            <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
-              <Plus className="w-4 h-4 text-purple-600" />
-              Add custom task
-            </h4>
-            <p className="text-sm text-slate-500 dark:text-slate-500">
-              Add your own automated jobs (e.g. &quot;Send insurance claims daily at 5pm&quot;). This feature is in development — you can use the task toggles and per-task schedules above for now.
-            </p>
-          </div>
+          {/* Add custom task — industry employees only */}
+          {canAddCustomTask && (
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-200 dark:bg-white">
+              <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-800">
+                <Plus className="w-4 h-4 text-purple-600" />
+                Add custom task
+              </h4>
+              <p className="text-sm text-slate-500 dark:text-slate-500 mb-3">
+                Add your own automated jobs (e.g. &quot;Send insurance claims daily at 5pm&quot;). Custom tasks appear above with toggles and schedules.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customTaskDesc}
+                  onChange={(e) => setCustomTaskDesc(e.target.value)}
+                  placeholder="e.g. Send insurance claims daily at 5pm"
+                  className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddCustomTask()}
+                />
+                <Button
+                  size="sm"
+                  onClick={handleAddCustomTask}
+                  disabled={customTaskSaving || !customTaskDesc.trim()}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {customTaskSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Run button */}
           {canRun && (

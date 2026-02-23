@@ -16,8 +16,12 @@ import {
   sendEmailToAddress,
 } from '@/lib/ai-employees/outreach-helper';
 import { getTaskTemplate } from '@/lib/ai-employees/template-helper';
+import { isTaskEnabled } from '@/lib/ai-employees/task-config-helper';
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const DEFAULT_CUSTOM_TASK_MSG =
+  'Hi {firstName}! We wanted to reach out regarding your account. Please reply if you have any questions.';
 
 export interface ExecutionResult {
   success: boolean;
@@ -204,6 +208,43 @@ const EXECUTORS: Record<
   BILLING_SPECIALIST: executeBillingSpecialist,
 };
 
+/** Generic executor for custom tasks: sends SMS to recent leads using template */
+async function executeCustomTask(
+  userId: string,
+  industry: Industry,
+  employeeType: string,
+  taskKey: string,
+  description: string,
+  template?: { smsTemplate?: string | null } | null
+): Promise<ExecutionResult> {
+  const ctx = createDalContext(userId);
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const leads = await leadService.findMany(ctx, {
+    where: { createdAt: { gte: thirtyDaysAgo } },
+    take: 20,
+  });
+
+  let sent = 0;
+  const msg = template?.smsTemplate || DEFAULT_CUSTOM_TASK_MSG;
+  for (const lead of leads) {
+    if (lead.phone) {
+      const name = (lead as any).firstName || (lead as any).name?.split(' ')[0] || 'there';
+      const res = await sendSMSToLead(userId, lead.id, msg.replace(/\{firstName\}/g, name));
+      if (res.success) sent++;
+      await delay(200);
+    }
+  }
+
+  return {
+    success: true,
+    employeeType,
+    tasksCompleted: sent,
+    summary: `Custom task "${description}": sent ${sent} messages (${leads.length} leads)`,
+    details: { taskKey, leadIds: leads.map((l) => l.id), sent },
+  };
+}
+
 export async function executeIndustryEmployee(
   userId: string,
   industry: Industry,
@@ -231,7 +272,7 @@ export async function executeIndustryEmployee(
 
   const template = await getTaskTemplate(userId, 'industry', industry, employeeType, employeeType);
   const executor = EXECUTORS[employeeType];
-  const result = executor
+  let result = executor
     ? await executor(userId, industry, template)
     : {
         success: true,
@@ -240,6 +281,41 @@ export async function executeIndustryEmployee(
         summary: `${employeeType} execution queued. Full implementation coming soon.`,
         details: { status: 'queued' },
       };
+
+  // Run enabled custom tasks for this employee
+  const customTasks = await (prisma as any).aIEmployeeCustomTask.findMany({
+    where: {
+      userId,
+      source: 'industry',
+      industry,
+      employeeType,
+    },
+  });
+
+  for (const ct of customTasks) {
+    const enabled = await isTaskEnabled(userId, 'industry', industry, employeeType, ct.taskKey);
+    if (!enabled) continue;
+    const customTemplate = await getTaskTemplate(userId, 'industry', industry, employeeType, ct.taskKey);
+    const fallbackTemplate = customTemplate ?? template;
+    const customResult = await executeCustomTask(
+      userId,
+      industry,
+      employeeType,
+      ct.taskKey,
+      ct.description,
+      fallbackTemplate
+    );
+    result = {
+      success: result.success && customResult.success,
+      employeeType,
+      tasksCompleted: result.tasksCompleted + customResult.tasksCompleted,
+      summary: [result.summary, customResult.summary].filter(Boolean).join(' | '),
+      details: {
+        ...(result.details as object),
+        customTasks: [...((result.details as any)?.customTasks ?? []), customResult],
+      },
+    };
+  }
 
   if (options?.storeHistory !== false && result.success) {
     await (prisma as any).industryAIEmployeeExecution.create({
