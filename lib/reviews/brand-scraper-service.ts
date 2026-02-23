@@ -11,8 +11,10 @@
  * (and optionally imported into the Review table).
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { analyzeReviewSentiment, processIncomingReview } from './review-intelligence-service';
+const db = getCrmDb({ userId: '', industry: null })
 
 const APIFY_BASE = 'https://api.apify.com/v2';
 
@@ -361,7 +363,7 @@ export async function runBrandScan(opts: BrandScanOptions): Promise<string> {
     importAsReviews = true,
   } = opts;
 
-  const scan = await prisma.brandScan.create({
+  const scan = await db.brandScan.create({
     data: {
       userId,
       businessName,
@@ -413,7 +415,7 @@ async function _executeScan(
       for (const rev of normalized) {
         const analysis = await analyzeMentionSentiment(rev.snippet);
 
-        await prisma.brandMention.create({
+        await db.brandMention.create({
           data: {
             userId,
             scanId,
@@ -441,7 +443,7 @@ async function _executeScan(
               reviewerName: rev.authorName,
               reviewUrl: rev.sourceUrl,
             });
-            await prisma.brandMention.updateMany({
+            await db.brandMention.updateMany({
               where: { scanId, sourceUrl: rev.sourceUrl, snippet: rev.snippet },
               data: { importedAsReviewId: review.id },
             });
@@ -471,7 +473,7 @@ async function _executeScan(
         const textToAnalyze = fullText || mention.snippet;
         const analysis = await analyzeMentionSentiment(textToAnalyze);
 
-        await prisma.brandMention.create({
+        await db.brandMention.create({
           data: {
             userId,
             scanId,
@@ -497,7 +499,7 @@ async function _executeScan(
   }
 
   // ─── Finalise the scan record ────────────────────────────────────────
-  await prisma.brandScan.update({
+  await db.brandScan.update({
     where: { id: scanId },
     data: {
       status: errors.length > 0 && reviewsFound + mentionsFound === 0 ? 'FAILED' : 'COMPLETED',
@@ -516,7 +518,7 @@ async function _executeScan(
 // ── Get scan status ────────────────────────────────────────────────────────
 
 export async function getScanStatus(scanId: string) {
-  return prisma.brandScan.findUnique({
+  return db.brandScan.findUnique({
     where: { id: scanId },
     include: {
       _count: { select: { mentions: true } },
@@ -525,7 +527,7 @@ export async function getScanStatus(scanId: string) {
 }
 
 export async function getUserScans(userId: string) {
-  return prisma.brandScan.findMany({
+  return db.brandScan.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: 20,
@@ -537,7 +539,7 @@ export async function getUserMentions(
   userId: string,
   opts?: { source?: string; sentiment?: string; limit?: number; scanId?: string },
 ) {
-  return prisma.brandMention.findMany({
+  return db.brandMention.findMany({
     where: {
       userId,
       ...(opts?.source ? { source: opts.source } : {}),

@@ -3,10 +3,11 @@
  * Handles invoicing, customer sync, and payment tracking
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
-import { getCrmDb, leadService, noteService } from '@/lib/dal';
+import { leadService, noteService } from '@/lib/dal';
 import { decrypt } from '@/lib/encryption';
+const db = getCrmDb({ userId: '', industry: null })
 
 interface QuickBooksCredentials {
   realmId: string;
@@ -35,7 +36,7 @@ interface QuickBooksInvoice {
  * Get QuickBooks credentials for a user
  */
 async function getQuickBooksCredentials(userId: string): Promise<QuickBooksCredentials | null> {
-  const user = await prisma.user.findUnique({
+  const user = await db.user.findUnique({
     where: { id: userId },
     select: { quickbooksConfig: true }
   });
@@ -110,7 +111,7 @@ async function refreshAccessToken(
     const expiresAt = new Date(Date.now() + data.expires_in * 1000);
     
     // Save new tokens
-    await prisma.user.update({
+    await db.user.update({
       where: { id: userId },
       data: {
         quickbooksConfig: JSON.stringify({

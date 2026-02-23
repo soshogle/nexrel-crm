@@ -3,9 +3,11 @@
  * Executes RE AI employee tasks
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { REAIEmployeeType } from '@prisma/client';
 import { getREEmployeeConfig } from './configs';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface ExecutionResult {
   success: boolean;
@@ -38,7 +40,7 @@ export async function executeAIEmployee(
   }
 
   // Create execution record
-  const execution = await prisma.rEAIEmployeeExecution.create({
+  const execution = await db.rEAIEmployeeExecution.create({
     data: {
       userId,
       employeeType,
@@ -86,7 +88,7 @@ export async function executeAIEmployee(
     }
 
     // Update execution record
-    await prisma.rEAIEmployeeExecution.update({
+    await db.rEAIEmployeeExecution.update({
       where: { id: execution.id },
       data: {
         status: 'completed',
@@ -108,7 +110,7 @@ export async function executeAIEmployee(
     };
   } catch (error: any) {
     // Update execution with error
-    await prisma.rEAIEmployeeExecution.update({
+    await db.rEAIEmployeeExecution.update({
       where: { id: execution.id },
       data: {
         status: 'failed',
@@ -131,7 +133,7 @@ export async function executeAIEmployee(
  * Get execution history
  */
 export async function getExecutionHistory(userId: string, limit = 50) {
-  return prisma.rEAIEmployeeExecution.findMany({
+  return db.rEAIEmployeeExecution.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: limit
@@ -142,7 +144,7 @@ export async function getExecutionHistory(userId: string, limit = 50) {
  * Get executions by employee type
  */
 export async function getExecutionsByType(userId: string, type: REAIEmployeeType, limit = 20) {
-  return prisma.rEAIEmployeeExecution.findMany({
+  return db.rEAIEmployeeExecution.findMany({
     where: { userId, employeeType: type },
     orderBy: { createdAt: 'desc' },
     take: limit

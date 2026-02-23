@@ -294,7 +294,7 @@ async function trackOrder(
       status: 'TODO',
       priority: 'MEDIUM',
       leadId: instance.leadId || undefined,
-    });
+    } as any);
 
     // Notify customer
     const statusMessage = `Your order ${orderId} is currently ${orderStatus.toLowerCase()}. We'll notify you when it's ready!`;

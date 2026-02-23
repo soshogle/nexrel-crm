@@ -1,4 +1,5 @@
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 
 // Temporary stub for Square service - full implementation requires proper Square SDK setup
 export async function createPayment(

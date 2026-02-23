@@ -65,7 +65,7 @@ export class PredictiveRestockingService {
       where: {
         userId: website.userId,
         createdAt: { gte: ninetyDaysAgo },
-        status: { not: 'CANCELLED' },
+        status: { not: 'CANCELED' as any },
         items: {
           some: {
             productId: {
@@ -99,7 +99,7 @@ export class PredictiveRestockingService {
       };
 
       // Use AI to predict restocking needs
-      const prediction = await this.generateAIPrediction(product, trend, website.stockSettings?.lowStockThreshold || 10);
+      const prediction = await this.generateAIPrediction(product, trend, (website as any).stockSettings?.lowStockThreshold || 10);
 
       predictions.push(prediction);
     }

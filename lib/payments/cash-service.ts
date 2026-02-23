@@ -4,8 +4,10 @@
  * Handles all business logic for cash payment tracking and reconciliation
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { CashTransactionType, Prisma } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 /**
  * Generate a unique receipt number
@@ -34,7 +36,7 @@ export async function createCashTransaction(data: {
 }) {
   const receiptNumber = generateReceiptNumber();
 
-  return await prisma.cashTransaction.create({
+  return await db.cashTransaction.create({
     data: {
       ...data,
       receiptNumber,
@@ -72,7 +74,7 @@ export async function getCashTransactions(
     }
   }
 
-  return await prisma.cashTransaction.findMany({
+  return await db.cashTransaction.findMany({
     where,
     orderBy: { transactionDate: 'desc' },
     include: {
@@ -98,7 +100,7 @@ export async function updateCashTransaction(
     metadata?: any;
   }
 ) {
-  return await prisma.cashTransaction.update({
+  return await db.cashTransaction.update({
     where: { id },
     data: {
       ...data,
@@ -111,7 +113,7 @@ export async function updateCashTransaction(
  * Soft delete a cash transaction
  */
 export async function deleteCashTransaction(id: string, deletedBy: string) {
-  return await prisma.cashTransaction.update({
+  return await db.cashTransaction.update({
     where: { id },
     data: {
       deletedAt: new Date(),
@@ -143,7 +145,7 @@ export async function calculateReconciliationSummary(
     where.merchantId = merchantId;
   }
 
-  const transactions = await prisma.cashTransaction.findMany({
+  const transactions = await db.cashTransaction.findMany({
     where,
   });
 
@@ -209,7 +211,7 @@ export async function createCashReconciliation(data: {
   const discrepancy = data.actualCash - expectedCash;
 
   // Create reconciliation
-  const reconciliation = await prisma.cashReconciliation.create({
+  const reconciliation = await db.cashReconciliation.create({
     data: {
       userId: data.userId,
       merchantId: data.merchantId,
@@ -233,7 +235,7 @@ export async function createCashReconciliation(data: {
   });
 
   // Mark all transactions in the period as reconciled
-  await prisma.cashTransaction.updateMany({
+  await db.cashTransaction.updateMany({
     where: {
       userId: data.userId,
       deletedAt: null,
@@ -279,7 +281,7 @@ export async function getCashReconciliations(
     }
   }
 
-  return await prisma.cashReconciliation.findMany({
+  return await db.cashReconciliation.findMany({
     where,
     orderBy: { reconciliationDate: 'desc' },
     include: {
@@ -292,7 +294,7 @@ export async function getCashReconciliations(
  * Get a single reconciliation by ID
  */
 export async function getCashReconciliation(id: string) {
-  return await prisma.cashReconciliation.findUnique({
+  return await db.cashReconciliation.findUnique({
     where: { id },
     include: {
       transactions: {
@@ -314,7 +316,7 @@ export async function updateReconciliationStatus(
     updatedBy: string;
   }
 ) {
-  return await prisma.cashReconciliation.update({
+  return await db.cashReconciliation.update({
     where: { id },
     data: {
       status: data.status,
@@ -349,7 +351,7 @@ export async function getCashStatistics(
     where.merchantId = merchantId;
   }
 
-  const transactions = await prisma.cashTransaction.findMany({
+  const transactions = await db.cashTransaction.findMany({
     where,
   });
 

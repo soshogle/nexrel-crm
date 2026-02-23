@@ -109,10 +109,10 @@ export class RAMQInsuranceService {
         providerName: 'RAMQ',
         policyNumber: '',
         patientInfo: {
-          name: lead?.businessName || lead?.contactPerson || 'Unknown',
+          name: (lead as any)?.businessName || (lead as any)?.contactPerson || 'Unknown',
           email: lead?.email || '',
           phone: lead?.phone || '',
-          dateOfBirth: lead?.dateOfBirth?.toISOString() || '',
+          dateOfBirth: (lead as any)?.dateOfBirth?.toISOString() || '',
         },
         procedures: [{
           procedureCode: claim.procedureCode,
@@ -124,7 +124,7 @@ export class RAMQInsuranceService {
         submittedAmount: claim.amount,
         status: 'SUBMITTED',
         submittedAt: new Date(),
-      },
+      } as any,
     });
 
     return {
@@ -249,10 +249,10 @@ export class PrivateInsuranceService {
         providerName: providerConfig.name,
         policyNumber: '',
         patientInfo: {
-          name: lead?.businessName || lead?.contactPerson || 'Unknown',
+          name: (lead as any)?.businessName || (lead as any)?.contactPerson || 'Unknown',
           email: lead?.email || '',
           phone: lead?.phone || '',
-          dateOfBirth: lead?.dateOfBirth?.toISOString() || '',
+          dateOfBirth: (lead as any)?.dateOfBirth?.toISOString() || '',
         },
         procedures: [{
           procedureCode: claim.procedureCode,
@@ -264,7 +264,7 @@ export class PrivateInsuranceService {
         submittedAmount: claim.amount,
         status: 'SUBMITTED',
         submittedAt: new Date(),
-      },
+      } as any,
     });
 
     return {

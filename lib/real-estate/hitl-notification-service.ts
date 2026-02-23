@@ -3,7 +3,9 @@
  * Sends HITL (Human-In-The-Loop) notifications via dashboard, SMS, and email
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 interface HITLNotificationData {
   userId: string;
@@ -20,7 +22,7 @@ interface HITLNotificationData {
  */
 export async function createHITLNotification(data: HITLNotificationData): Promise<void> {
   // Create notification record
-  const notification = await prisma.rEHITLNotification.create({
+  const notification = await db.rEHITLNotification.create({
     data: {
       userId: data.userId,
       executionId: data.executionId,
@@ -33,7 +35,7 @@ export async function createHITLNotification(data: HITLNotificationData): Promis
   });
 
   // Get user contact info
-  const user = await prisma.user.findUnique({
+  const user = await db.user.findUnique({
     where: { id: data.userId },
     select: { email: true, phone: true },
   });
@@ -42,7 +44,7 @@ export async function createHITLNotification(data: HITLNotificationData): Promis
   if (user?.phone) {
     try {
       await sendSMSNotification(user.phone, data);
-      await prisma.rEHITLNotification.update({
+      await db.rEHITLNotification.update({
         where: { id: notification.id },
         data: { smsSent: true },
       });
@@ -55,7 +57,7 @@ export async function createHITLNotification(data: HITLNotificationData): Promis
   if (user?.email) {
     try {
       await sendEmailNotification(user.email, data);
-      await prisma.rEHITLNotification.update({
+      await db.rEHITLNotification.update({
         where: { id: notification.id },
         data: { emailSent: true },
       });
@@ -133,7 +135,7 @@ async function sendEmailNotification(email: string, data: HITLNotificationData):
  * Get pending HITL notifications for a user
  */
 export async function getPendingHITLNotifications(userId: string) {
-  return prisma.rEHITLNotification.findMany({
+  return db.rEHITLNotification.findMany({
     where: {
       userId,
       isActioned: false,

@@ -3,8 +3,10 @@
  * Provides caching for converted DICOM images to improve performance
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
+
+const db = getCrmDb({ userId: '', industry: null });
 import { DicomParser } from './dicom-parser';
 import { DicomToImageConverter } from './dicom-to-image';
 import { EncryptionKeyManager } from './encryption-key-manager';
@@ -31,7 +33,7 @@ export class DicomCache {
     windowWidth?: number
   ): Promise<string | null> {
     try {
-      const xray = await (prisma as any).dentalXRay.findUnique({
+      const xray = await (db as any).dentalXRay.findUnique({
         where: { id: xrayId },
         select: {
           id: true,
@@ -84,7 +86,7 @@ export class DicomCache {
       );
 
       // Update X-ray record with cached image URL
-      await (prisma as any).dentalXRay.update({
+      await (db as any).dentalXRay.update({
         where: { id: xrayId },
         data: {
           imageUrl: `/api/dental/xrays/${xrayId}/image`,
@@ -107,7 +109,7 @@ export class DicomCache {
     windowWidth: number
   ): Promise<string | null> {
     try {
-      const xray = await (prisma as any).dentalXRay.findUnique({
+      const xray = await (db as any).dentalXRay.findUnique({
         where: { id: xrayId },
         select: {
           dicomFile: true,

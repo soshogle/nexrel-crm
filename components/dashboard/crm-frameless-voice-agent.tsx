@@ -196,7 +196,7 @@ export function CrmFramelessVoiceAgent({ agentId, loading, error }: CrmFrameless
           setIsConnected(false);
           setIsAgentSpeaking(false);
           setAudioLevel(0);
-          if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current.stop();
+          if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current?.stop();
           streamRef.current?.getTracks().forEach((t) => t.stop());
           if (audioContextRef.current) {
             audioContextRef.current.close();
@@ -244,7 +244,7 @@ export function CrmFramelessVoiceAgent({ agentId, loading, error }: CrmFrameless
   }, [isAgentSpeaking]);
 
   const stopConversation = () => {
-    if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current.stop();
+    if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current?.stop();
     streamRef.current?.getTracks().forEach((t) => t.stop());
     if (audioContextRef.current) {
       audioContextRef.current.close();

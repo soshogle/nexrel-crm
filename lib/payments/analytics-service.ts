@@ -4,7 +4,9 @@
  * Calculate payment metrics and insights for the CRM
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface AnalyticsData {
   totalRevenue: number;
@@ -74,13 +76,13 @@ export class PaymentAnalyticsService {
     endDate: Date
   ): Promise<number> {
     // Get customer for this user
-    const customer = await prisma.soshoglePaymentCustomer.findUnique({
+    const customer = await db.soshoglePaymentCustomer.findUnique({
       where: { userId },
     });
 
     // Digital payments revenue
     const digitalRevenue = customer
-      ? await prisma.soshogleTransaction.aggregate({
+      ? await db.soshogleTransaction.aggregate({
           where: {
             customerId: customer.id,
             status: 'COMPLETED',
@@ -91,7 +93,7 @@ export class PaymentAnalyticsService {
       : { _sum: { amount: 0 } };
 
     // Cash payments revenue (sales only)
-    const cashRevenue = await prisma.cashTransaction.aggregate({
+    const cashRevenue = await db.cashTransaction.aggregate({
       where: {
         userId,
         type: 'SALE',
@@ -112,13 +114,13 @@ export class PaymentAnalyticsService {
     startDate: Date,
     endDate: Date
   ): Promise<number> {
-    const customer = await prisma.soshoglePaymentCustomer.findUnique({
+    const customer = await db.soshoglePaymentCustomer.findUnique({
       where: { userId },
     });
 
     // Digital payments count
     const digitalCount = customer
-      ? await prisma.soshogleTransaction.count({
+      ? await db.soshogleTransaction.count({
           where: {
             customerId: customer.id,
             status: 'COMPLETED',
@@ -128,7 +130,7 @@ export class PaymentAnalyticsService {
       : 0;
 
     // Cash payments count (all types)
-    const cashCount = await prisma.cashTransaction.count({
+    const cashCount = await db.cashTransaction.count({
       where: {
         userId,
         deletedAt: null,
@@ -143,13 +145,13 @@ export class PaymentAnalyticsService {
    * Get all transactions for period
    */
   private async getTransactions(userId: string, startDate: Date, endDate: Date) {
-    const customer = await prisma.soshoglePaymentCustomer.findUnique({
+    const customer = await db.soshoglePaymentCustomer.findUnique({
       where: { userId },
     });
 
     if (!customer) return [];
 
-    return await prisma.soshogleTransaction.findMany({
+    return await db.soshogleTransaction.findMany({
       where: {
         customerId: customer.id,
         status: 'COMPLETED',
@@ -228,21 +230,21 @@ export class PaymentAnalyticsService {
     startDate: Date,
     endDate: Date
   ): Promise<number> {
-    const customer = await prisma.soshoglePaymentCustomer.findUnique({
+    const customer = await db.soshoglePaymentCustomer.findUnique({
       where: { userId },
     });
 
     if (!customer) return 0;
 
     const [completed, total] = await Promise.all([
-      prisma.soshogleTransaction.count({
+      db.soshogleTransaction.count({
         where: {
           customerId: customer.id,
           status: 'COMPLETED',
           createdAt: { gte: startDate, lte: endDate },
         },
       }),
-      prisma.soshogleTransaction.count({
+      db.soshogleTransaction.count({
         where: {
           customerId: customer.id,
           createdAt: { gte: startDate, lte: endDate },
@@ -282,13 +284,13 @@ export class PaymentAnalyticsService {
     startDate: Date,
     endDate: Date
   ) {
-    const customer = await prisma.soshoglePaymentCustomer.findUnique({
+    const customer = await db.soshoglePaymentCustomer.findUnique({
       where: { userId },
     });
 
     if (!customer) return [];
 
-    const transactions = await prisma.soshogleTransaction.findMany({
+    const transactions = await db.soshogleTransaction.findMany({
       where: {
         customerId: customer.id,
         createdAt: { gte: startDate, lte: endDate },
@@ -320,7 +322,7 @@ export class PaymentAnalyticsService {
     startDate: Date,
     endDate: Date
   ) {
-    const customer = await prisma.soshoglePaymentCustomer.findUnique({
+    const customer = await db.soshoglePaymentCustomer.findUnique({
       where: { userId },
     });
 
@@ -333,14 +335,14 @@ export class PaymentAnalyticsService {
     }
 
     const [walletTransactions, totalTransactions] = await Promise.all([
-      prisma.soshogleTransaction.count({
+      db.soshogleTransaction.count({
         where: {
           customerId: customer.id,
           type: 'WALLET',
           createdAt: { gte: startDate, lte: endDate },
         },
       }),
-      prisma.soshogleTransaction.count({
+      db.soshogleTransaction.count({
         where: {
           customerId: customer.id,
           createdAt: { gte: startDate, lte: endDate },

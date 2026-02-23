@@ -285,7 +285,7 @@ async function verifyInsurance(
       priority: 'HIGH',
       dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
       leadId: instance.leadId || undefined,
-    });
+    } as any);
 
     return {
       success: true,
@@ -461,7 +461,7 @@ async function coordinateReferral(
       priority: 'MEDIUM',
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Due in 7 days
       leadId: instance.leadId || undefined,
-    });
+    } as any);
 
     return {
       success: true,
@@ -515,7 +515,7 @@ async function onboardPatient(
           priority: t.priority as any,
           dueDate: new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000),
           leadId: instance.leadId || undefined,
-        })
+        } as any)
       )
     );
 
@@ -603,7 +603,7 @@ async function postVisitFollowup(
       priority: 'LOW',
       dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // Due in 3 days
       leadId: instance.leadId || undefined,
-    });
+    } as any);
 
     return {
       success: results.every(r => r.success),

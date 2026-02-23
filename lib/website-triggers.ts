@@ -32,25 +32,23 @@ export async function processWebsiteTriggers(
       userId,
       isActive: true,
       enrollmentMode: true,
-      enrollmentTriggers: { not: null },
+      enrollmentTriggers: { not: null as any },
     },
     include: {
       tasks: { orderBy: { displayOrder: 'asc' } },
     },
   });
 
-  for (const workflow of workflows) {
+  for (const workflow of workflows as any[]) {
     const triggers = (workflow.enrollmentTriggers as Array<{ type: string; conditions?: { websiteId?: string } }>) || [];
-    const hasTrigger = triggers.some((t) => t.type === triggerType);
+    const hasTrigger = triggers.some((t: any) => t.type === triggerType);
     if (!hasTrigger) continue;
 
-    // Check websiteId filter if specified
-    const triggerConfig = triggers.find((t) => t.type === triggerType);
+    const triggerConfig = triggers.find((t: any) => t.type === triggerType);
     if (triggerConfig?.conditions?.websiteId && metadata?.websiteId) {
       if (triggerConfig.conditions.websiteId !== metadata.websiteId) continue;
     }
 
-    // Check existing enrollment
     const existing = await db.workflowTemplateEnrollment.findUnique({
       where: {
         workflowId_leadId: { workflowId: workflow.id, leadId },

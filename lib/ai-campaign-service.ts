@@ -3,7 +3,8 @@
  * Generates intelligent email and SMS content for marketing campaigns
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { chatCompletion } from '@/lib/openai-client';
 
 interface CampaignGenerationContext {

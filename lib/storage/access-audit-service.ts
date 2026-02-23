@@ -3,8 +3,10 @@
  * Logs all document access for compliance
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { DocumentAccessAction } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 export class AccessAuditService {
   /**
@@ -22,7 +24,7 @@ export class AccessAuditService {
                      undefined;
     const userAgent = request?.headers.get('user-agent') || undefined;
     
-    return prisma.documentAccessLog.create({
+    return db.documentAccessLog.create({
       data: {
         documentId,
         userId,
@@ -51,7 +53,7 @@ export class AccessAuditService {
                      undefined;
     const userAgent = request?.headers.get('user-agent') || undefined;
     
-    return prisma.documentAccessLog.create({
+    return db.documentAccessLog.create({
       data: {
         documentId,
         userId,
@@ -69,7 +71,7 @@ export class AccessAuditService {
    * Get access history for a document
    */
   async getAccessHistory(documentId: string) {
-    return prisma.documentAccessLog.findMany({
+    return db.documentAccessLog.findMany({
       where: { documentId },
       include: { 
         user: { 
@@ -87,7 +89,7 @@ export class AccessAuditService {
    * Get access history for a patient
    */
   async getPatientAccessHistory(leadId: string) {
-    const documents = await prisma.patientDocument.findMany({
+    const documents = await db.patientDocument.findMany({
       where: { leadId, deletedAt: null },
       select: { id: true },
     });
@@ -96,7 +98,7 @@ export class AccessAuditService {
       return [];
     }
     
-    return prisma.documentAccessLog.findMany({
+    return db.documentAccessLog.findMany({
       where: {
         documentId: { in: documents.map(d => d.id) },
       },
@@ -122,7 +124,7 @@ export class AccessAuditService {
    * Get recent access for user
    */
   async getRecentAccessForUser(userId: string, limit: number = 50) {
-    return prisma.documentAccessLog.findMany({
+    return db.documentAccessLog.findMany({
       where: { userId },
       include: {
         document: {

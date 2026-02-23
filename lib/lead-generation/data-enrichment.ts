@@ -82,7 +82,7 @@ export async function enrichLead(
   try {
     // Find email using Hunter.io (if requested and email is missing)
     if (options.findEmail !== false && !lead.email && lead.website) {
-      const emailData = await findEmailWithHunter(lead.website, lead.contactPerson || '');
+      const emailData = await findEmailWithHunter(lead.website, (lead as any).contactPerson || '');
       if (emailData) {
         enrichedData.email = emailData.email;
         enrichedData.emailVerified = emailData.verified;

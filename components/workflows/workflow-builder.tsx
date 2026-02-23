@@ -230,8 +230,8 @@ export const WorkflowBuilder = forwardRef<WorkflowBuilderHandle, WorkflowBuilder
       if (updated) {
         setWorkflow((prev) => {
           if (!prev || prev.id !== initialWorkflowId) return prev;
-          const prevTaskIds = (prev.tasks || []).map((t) => t.id).sort().join(',');
-          const newTaskIds = (updated.tasks || []).map((t) => t.id).sort().join(',');
+          const prevTaskIds = (prev.tasks || []).map((t: any) => t.id).sort().join(',');
+          const newTaskIds = (updated.tasks || []).map((t: any) => t.id).sort().join(',');
           return prevTaskIds !== newTaskIds ? updated : prev;
         });
       }

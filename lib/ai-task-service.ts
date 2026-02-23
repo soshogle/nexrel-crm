@@ -156,9 +156,10 @@ export class AITaskService {
 
     const suggestions: TaskSuggestion[] = [];
     const now = new Date();
+    const dealAny = deal as any;
 
     // Stage-specific suggestions
-    const stageName = deal.stage?.name?.toLowerCase() || '';
+    const stageName = dealAny.stage?.name?.toLowerCase() || '';
 
     if (stageName.includes('proposal') || stageName.includes('quote')) {
       suggestions.push({
@@ -174,7 +175,7 @@ export class AITaskService {
       });
 
       suggestions.push({
-        title: `Schedule proposal review with ${deal.lead?.businessName || 'client'}`,
+        title: `Schedule proposal review with ${dealAny.lead?.businessName || 'client'}`,
         description: `Book meeting to present and discuss proposal for ${deal.title}. Prepare to:\n- Walk through proposal details\n- Address questions and concerns\n- Discuss next steps`,
         priority: 'HIGH',
         category: 'SALES',
@@ -214,7 +215,7 @@ export class AITaskService {
       });
 
       suggestions.push({
-        title: `Prepare onboarding for ${deal.lead?.businessName || 'client'}`,
+        title: `Prepare onboarding for ${dealAny.lead?.businessName || 'client'}`,
         description: `Set up client onboarding process:\n- Welcome email and materials\n- Account setup\n- Project kickoff scheduling\n- Team introductions`,
         priority: 'HIGH',
         category: 'ADMIN',

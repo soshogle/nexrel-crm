@@ -3,8 +3,10 @@
  * Creates professional CMA reports with AI-powered insights
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import type { SubjectProperty, CMAComparable } from './types';
+const db = getCrmDb({ userId: '', industry: null })
 
 /**
  * Adjust a comparable property relative to the subject
@@ -218,7 +220,7 @@ export async function generateCMA(
   const analysis = await generateAnalysis(subject, comparables, priceRange);
 
   // Save to database
-  const report = await prisma.rECMAReport.create({
+  const report = await db.rECMAReport.create({
     data: {
       userId,
       address: subject.address,
@@ -255,7 +257,7 @@ export async function generateCMA(
  * Get user's CMA reports
  */
 export async function getUserCMAs(userId: string, limit = 10) {
-  return prisma.rECMAReport.findMany({
+  return db.rECMAReport.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: limit
@@ -266,7 +268,7 @@ export async function getUserCMAs(userId: string, limit = 10) {
  * Get a single CMA report
  */
 export async function getCMAById(id: string, userId: string) {
-  return prisma.rECMAReport.findFirst({
+  return db.rECMAReport.findFirst({
     where: { id, userId }
   });
 }

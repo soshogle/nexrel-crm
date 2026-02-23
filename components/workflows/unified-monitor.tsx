@@ -118,8 +118,8 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
         templateId: inst.templateId,
         workflowName: inst.workflowName || 'Workflow',
         status: inst.status,
-        startedAt: inst.startedAt,
-        completedAt: inst.completedAt,
+        startedAt: (inst as any).startedAt,
+        completedAt: (inst as any).completedAt,
         lead: inst.lead,
         deal: inst.deal,
         totalTasks: inst.totalTasks ?? 0,
@@ -336,7 +336,7 @@ export function UnifiedMonitor({ userId, industry }: UnifiedMonitorProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchMonitoringData}
+              onClick={() => fetchMonitoringData()}
               disabled={loading}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />

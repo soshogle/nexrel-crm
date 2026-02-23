@@ -103,7 +103,7 @@ async function generateEstimate(
       probability: estimateStage.probability,
       expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       description: projectDescription,
-    });
+    } as any);
 
     // Create task for estimate review
     await taskService.create(ctx, {
@@ -114,7 +114,7 @@ async function generateEstimate(
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       leadId: instance.leadId || undefined,
       dealId: estimate.id,
-    });
+    } as any);
 
     // Send estimate to client
     if (lead.email) {
@@ -211,7 +211,7 @@ async function scheduleProject(
       probability: scheduledStage.probability,
       expectedCloseDate: new Date(projectStartDate.getTime() + projectDuration * 24 * 60 * 60 * 1000),
       description: `Project scheduled to start on ${projectStartDate.toLocaleDateString()}`,
-    });
+    } as any);
 
     // Create calendar appointment for project kickoff
     try {
@@ -283,7 +283,7 @@ async function orderMaterials(
       dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // Due in 3 days
       dealId: instance.dealId || undefined,
       leadId: instance.leadId || undefined,
-    });
+    } as any);
 
     return {
       success: true,
@@ -434,7 +434,7 @@ async function createChangeOrder(
       dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       leadId: instance.leadId || undefined,
       dealId: instance.dealId || undefined,
-    });
+    } as any);
 
     // Notify client if available
     if (lead?.email) {
@@ -496,7 +496,7 @@ async function completeProject(
         await dealService.update(ctx, deal.id, {
           stageId: completedStage.id,
           probability: 100,
-        });
+        } as any);
       }
     }
 

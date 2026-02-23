@@ -4,9 +4,11 @@
  * Note: Actual scraping requires Apify API configuration
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { REFSBOSource, REFSBOStatus } from '@prisma/client';
 import { getApifyToken, normalizePhone, normalizeAddress } from './utils';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface ScrapingJobConfig {
   userId: string;
@@ -49,7 +51,7 @@ export interface FSBOListingInput {
  * Create a scraping job configuration
  */
 export async function createScrapingJob(config: ScrapingJobConfig) {
-  const job = await prisma.rEScrapingJob.create({
+  const job = await db.rEScrapingJob.create({
     data: {
       userId: config.userId,
       name: config.name || 'FSBO Scraping Job',
@@ -71,7 +73,7 @@ export async function createScrapingJob(config: ScrapingJobConfig) {
  * Get all scraping jobs for a user
  */
 export async function getScrapingJobs(userId: string) {
-  return prisma.rEScrapingJob.findMany({
+  return db.rEScrapingJob.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' }
   });
@@ -92,7 +94,7 @@ export async function updateJobStatus(
   if (results?.totalFound) data.totalListingsFound = results.totalFound;
   if (results?.newLeads) data.totalScraped = results.newLeads;
 
-  await prisma.rEScrapingJob.update({ where: { id: jobId }, data });
+  await db.rEScrapingJob.update({ where: { id: jobId }, data });
   return { success: true };
 }
 
@@ -101,7 +103,7 @@ export async function updateJobStatus(
  */
 export async function saveFSBOListing(userId: string, listing: FSBOListingInput) {
   // Check for duplicate by unique sourceUrl
-  const existing = await prisma.rEFSBOListing.findUnique({
+  const existing = await db.rEFSBOListing.findUnique({
     where: { sourceUrl: listing.sourceUrl }
   });
 
@@ -109,7 +111,7 @@ export async function saveFSBOListing(userId: string, listing: FSBOListingInput)
     return { success: true, listing: existing, duplicate: true };
   }
 
-  const newListing = await prisma.rEFSBOListing.create({
+  const newListing = await db.rEFSBOListing.create({
     data: {
       assignedUserId: userId,
       source: listing.source,
@@ -161,7 +163,7 @@ export async function getFSBOListings(userId: string, filters?: {
     if (filters.maxPrice) where.listPrice.lte = filters.maxPrice;
   }
 
-  return prisma.rEFSBOListing.findMany({
+  return db.rEFSBOListing.findMany({
     where,
     orderBy: { createdAt: 'desc' },
     take: filters?.limit || 100
@@ -172,7 +174,7 @@ export async function getFSBOListings(userId: string, filters?: {
  * Update FSBO listing status
  */
 export async function updateFSBOStatus(listingId: string, userId: string, status: REFSBOStatus) {
-  await prisma.rEFSBOListing.updateMany({
+  await db.rEFSBOListing.updateMany({
     where: { id: listingId, assignedUserId: userId },
     data: { status }
   });
@@ -183,7 +185,7 @@ export async function updateFSBOStatus(listingId: string, userId: string, status
  * Get stale listings (on market > X days)
  */
 export async function getStaleListings(userId: string, minDays = 30) {
-  return prisma.rEFSBOListing.findMany({
+  return db.rEFSBOListing.findMany({
     where: {
       assignedUserId: userId,
       daysOnMarket: { gte: minDays },

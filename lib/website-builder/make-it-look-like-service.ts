@@ -28,7 +28,7 @@ export async function analyzeReferenceAndSuggest(
   const referenceSummary = JSON.stringify({
     colors: scraped.styles?.colors || [],
     fonts: scraped.styles?.fonts || [],
-    layout: scraped.structure?.layout || 'unknown',
+    layout: (scraped.structure as any)?.layout || 'unknown',
     seo: scraped.seo,
     images: (scraped.images || []).length,
   }, null, 2);

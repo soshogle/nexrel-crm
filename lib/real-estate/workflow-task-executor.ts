@@ -42,7 +42,7 @@ export async function executeTask(
           result = await executeVoiceCall(task, instance, db);
           break;
         case 'sms':
-          result = await executeSMS(task, instance, db);
+          result = await executeSMS(task, instance);
           break;
         case 'email':
           result = await executeEmail(task, instance, db);

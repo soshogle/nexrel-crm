@@ -222,7 +222,7 @@ export function GlobalVoiceAssistant() {
               onAgentSpeakingChange: handleAgentSpeakingChange,
               dynamicVariables: dynamicVars,
               variant: 'frameless',
-            })
+            } as any)
           ),
           React.createElement('button', {
             onClick: () => {

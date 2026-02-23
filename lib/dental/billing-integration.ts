@@ -4,7 +4,9 @@
  */
 
 import Stripe from 'stripe';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 // Initialize Stripe
 const stripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder_for_build';
@@ -126,7 +128,7 @@ export class DentalBillingService {
       });
 
       // Create payment record in database
-      const payment = await prisma.payment.create({
+      const payment = await db.payment.create({
         data: {
           userId,
           provider: 'STRIPE',
@@ -210,7 +212,7 @@ export class DentalBillingService {
   ): Promise<PaymentResult> {
     try {
       // Fetch invoice
-      const invoice = await prisma.invoice.findUnique({
+      const invoice = await db.invoice.findUnique({
         where: { id: invoiceId },
       });
 
@@ -264,7 +266,7 @@ export class DentalBillingService {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
         // Find payment record
-        const payment = await prisma.payment.findFirst({
+        const payment = await db.payment.findFirst({
           where: {
             providerPaymentId: paymentIntent.id,
           },
@@ -272,7 +274,7 @@ export class DentalBillingService {
 
         if (payment) {
           // Update payment status
-          await prisma.payment.update({
+          await db.payment.update({
             where: { id: payment.id },
             data: {
               status: 'SUCCEEDED', // Payment succeeded
@@ -283,7 +285,7 @@ export class DentalBillingService {
 
           // Update invoice if linked
           if (payment.invoiceId) {
-            const invoice = await prisma.invoice.findUnique({
+            const invoice = await db.invoice.findUnique({
               where: { id: payment.invoiceId },
             });
 
@@ -291,7 +293,7 @@ export class DentalBillingService {
               const newPaidAmount = (invoice.paidAmount || 0) + payment.amount;
               const isFullyPaid = newPaidAmount >= invoice.totalAmount;
 
-              await prisma.invoice.update({
+              await db.invoice.update({
                 where: { id: invoice.id },
                 data: {
                   paidAmount: newPaidAmount,

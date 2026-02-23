@@ -4,12 +4,14 @@
  * Provides a single interface for all calendar providers
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { ICalendarProvider, CalendarCredentials, CalendarProvider as ProviderType } from './types';
 import { GoogleCalendarProvider } from './google-provider';
 import { MicrosoftCalendarProvider } from './microsoft-provider';
 import { AppleCalendarProvider } from './apple-provider';
 import { ExternalApiProvider } from './external-api-provider';
+const db = getCrmDb({ userId: '', industry: null })
 
 export class CalendarService {
   /**
@@ -39,7 +41,7 @@ export class CalendarService {
    */
   static async getProviderForConnection(connectionId: string): Promise<ICalendarProvider | null> {
     try {
-      const connection = await prisma.calendarConnection.findUnique({
+      const connection = await db.calendarConnection.findUnique({
         where: { id: connectionId },
       });
 
@@ -68,7 +70,7 @@ export class CalendarService {
    * Get all active calendar connections for a user
    */
   static async getUserConnections(userId: string) {
-    return await prisma.calendarConnection.findMany({
+    return await db.calendarConnection.findMany({
       where: {
         userId,
         syncEnabled: true,
@@ -84,7 +86,7 @@ export class CalendarService {
    */
   static async syncAppointmentToCalendar(appointmentId: string) {
     try {
-      const appointment = await prisma.bookingAppointment.findUnique({
+      const appointment = await db.bookingAppointment.findUnique({
         where: { id: appointmentId },
         include: {
           calendarConnection: true,
@@ -134,7 +136,7 @@ export class CalendarService {
       }
 
       if (result.success) {
-        await prisma.bookingAppointment.update({
+        await db.bookingAppointment.update({
           where: { id: appointmentId },
           data: {
             externalEventId: result.eventId,
@@ -144,7 +146,7 @@ export class CalendarService {
           },
         });
       } else {
-        await prisma.bookingAppointment.update({
+        await db.bookingAppointment.update({
           where: { id: appointmentId },
           data: {
             syncStatus: 'FAILED',
@@ -176,7 +178,7 @@ export class CalendarService {
         if (result.success) {
           totalSynced += result.syncedCount || 0;
 
-          await prisma.calendarConnection.update({
+          await db.calendarConnection.update({
             where: { id: connection.id },
             data: {
               lastSyncAt: new Date(),
@@ -184,7 +186,7 @@ export class CalendarService {
             },
           });
         } else {
-          await prisma.calendarConnection.update({
+          await db.calendarConnection.update({
             where: { id: connection.id },
             data: {
               syncStatus: 'FAILED',

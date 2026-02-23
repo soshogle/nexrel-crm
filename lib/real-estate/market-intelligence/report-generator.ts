@@ -3,8 +3,10 @@
  * Creates market analysis reports
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { REReportType } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface GenerateReportInput {
   userId: string;
@@ -28,7 +30,7 @@ export interface ReportContent {
  * Generate and save a market report
  */
 export async function generateMarketReport(input: GenerateReportInput, content: ReportContent) {
-  const report = await prisma.rEMarketReport.create({
+  const report = await db.rEMarketReport.create({
     data: {
       userId: input.userId,
       type: input.type,
@@ -51,7 +53,7 @@ export async function generateMarketReport(input: GenerateReportInput, content: 
  * Get user's market reports
  */
 export async function getUserReports(userId: string, limit = 50) {
-  return prisma.rEMarketReport.findMany({
+  return db.rEMarketReport.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: limit
@@ -62,7 +64,7 @@ export async function getUserReports(userId: string, limit = 50) {
  * Get a single report by ID
  */
 export async function getReportById(id: string, userId: string) {
-  return prisma.rEMarketReport.findFirst({
+  return db.rEMarketReport.findFirst({
     where: { id, userId }
   });
 }
@@ -71,7 +73,7 @@ export async function getReportById(id: string, userId: string) {
  * Delete a report
  */
 export async function deleteReport(id: string, userId: string) {
-  await prisma.rEMarketReport.deleteMany({
+  await db.rEMarketReport.deleteMany({
     where: { id, userId }
   });
   return { success: true };
@@ -81,7 +83,7 @@ export async function deleteReport(id: string, userId: string) {
  * Mark report as sent
  */
 export async function markReportSent(id: string, userId: string, recipients: string[]) {
-  await prisma.rEMarketReport.update({
+  await db.rEMarketReport.update({
     where: { id },
     data: {
       sentTo: recipients as any,

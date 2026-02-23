@@ -3,8 +3,10 @@
  * Manages patient consent for document collection/processing
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { ConsentType } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 export class ConsentService {
   /**
@@ -20,7 +22,7 @@ export class ConsentService {
     grantedBy?: string,
     consentExpiry?: Date
   ) {
-    return prisma.documentConsent.create({
+    return db.documentConsent.create({
       data: {
         leadId,
         userId,
@@ -44,7 +46,7 @@ export class ConsentService {
     userId: string,
     consentType: ConsentType
   ): Promise<boolean> {
-    const consent = await prisma.documentConsent.findFirst({
+    const consent = await db.documentConsent.findFirst({
       where: {
         leadId,
         userId,
@@ -65,7 +67,7 @@ export class ConsentService {
    * Get active consent for patient
    */
   async getActiveConsents(leadId: string, userId: string) {
-    return prisma.documentConsent.findMany({
+    return db.documentConsent.findMany({
       where: {
         leadId,
         userId,
@@ -87,7 +89,7 @@ export class ConsentService {
     consentId: string,
     reason: string
   ) {
-    return prisma.documentConsent.update({
+    return db.documentConsent.update({
       where: { id: consentId },
       data: {
         withdrawn: true,
@@ -101,7 +103,7 @@ export class ConsentService {
    * Get consent by ID
    */
   async getConsent(consentId: string) {
-    return prisma.documentConsent.findUnique({
+    return db.documentConsent.findUnique({
       where: { id: consentId },
       include: {
         lead: {

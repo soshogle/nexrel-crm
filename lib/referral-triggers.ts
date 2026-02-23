@@ -35,19 +35,18 @@ export async function processReferralTriggers(
       userId,
       isActive: true,
       enrollmentMode: true,
-      enrollmentTriggers: { not: null },
+      enrollmentTriggers: { not: null as any },
     },
     include: {
       tasks: { orderBy: { displayOrder: 'asc' } },
     },
   });
 
-  for (const workflow of workflows) {
+  for (const workflow of workflows as any[]) {
     const triggers = (workflow.enrollmentTriggers as Array<{ type: string }>) || [];
-    const hasTrigger = triggers.some((t) => t.type === triggerType);
+    const hasTrigger = triggers.some((t: any) => t.type === triggerType);
     if (!hasTrigger) continue;
 
-    // Check existing enrollment
     const existing = await db.workflowTemplateEnrollment.findUnique({
       where: {
         workflowId_leadId: { workflowId: workflow.id, leadId },

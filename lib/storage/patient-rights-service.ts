@@ -3,9 +3,11 @@
  * Handles access requests, deletion requests, data portability
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { CanadianStorageService } from './canadian-storage-service';
 import { DataRequestType, DataRequestStatus } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 export class PatientRightsService {
   private storageService = new CanadianStorageService();
@@ -19,7 +21,7 @@ export class PatientRightsService {
     requestedBy: string,
     reason?: string
   ) {
-    return prisma.dataAccessRequest.create({
+    return db.dataAccessRequest.create({
       data: {
         leadId,
         userId,
@@ -35,7 +37,7 @@ export class PatientRightsService {
    * Process access request - export all patient data
    */
   async processAccessRequest(requestId: string) {
-    const request = await prisma.dataAccessRequest.findUnique({
+    const request = await db.dataAccessRequest.findUnique({
       where: { id: requestId },
       include: { lead: true },
     });
@@ -43,7 +45,7 @@ export class PatientRightsService {
     if (!request) throw new Error('Request not found');
     
     // Get all documents for patient
-    const documents = await prisma.patientDocument.findMany({
+    const documents = await db.patientDocument.findMany({
       where: {
         leadId: request.leadId,
         deletedAt: null,
@@ -51,23 +53,23 @@ export class PatientRightsService {
     });
     
     // Get dental records
-    const odontograms = await prisma.dentalOdontogram.findMany({
+    const odontograms = await db.dentalOdontogram.findMany({
       where: { leadId: request.leadId },
     });
     
-    const periodontalCharts = await prisma.dentalPeriodontalChart.findMany({
+    const periodontalCharts = await db.dentalPeriodontalChart.findMany({
       where: { leadId: request.leadId },
     });
     
-    const treatmentPlans = await prisma.dentalTreatmentPlan.findMany({
+    const treatmentPlans = await db.dentalTreatmentPlan.findMany({
       where: { leadId: request.leadId },
     });
     
-    const procedures = await prisma.dentalProcedure.findMany({
+    const procedures = await db.dentalProcedure.findMany({
       where: { leadId: request.leadId },
     });
     
-    const formResponses = await prisma.dentalFormResponse.findMany({
+    const formResponses = await db.dentalFormResponse.findMany({
       where: { leadId: request.leadId },
     });
     
@@ -121,7 +123,7 @@ export class PatientRightsService {
     };
     
     // Update request status
-    await prisma.dataAccessRequest.update({
+    await db.dataAccessRequest.update({
       where: { id: requestId },
       data: {
         status: 'COMPLETED',
@@ -144,12 +146,12 @@ export class PatientRightsService {
     reason: string
   ) {
     // Check for legal holds
-    const documents = await prisma.patientDocument.findMany({
+    const documents = await db.patientDocument.findMany({
       where: { leadId, deletionBlocked: false },
     });
     
     // Mark for deletion
-    await prisma.patientDocument.updateMany({
+    await db.patientDocument.updateMany({
       where: { leadId, deletionBlocked: false },
       data: {
         deletionRequested: true,
@@ -159,7 +161,7 @@ export class PatientRightsService {
     });
     
     // Create deletion request record
-    return prisma.dataAccessRequest.create({
+    return db.dataAccessRequest.create({
       data: {
         leadId,
         userId,
@@ -175,7 +177,7 @@ export class PatientRightsService {
    * Process deletion requests (respecting retention policies)
    */
   async processDeletionRequests() {
-    const requests = await prisma.dataAccessRequest.findMany({
+    const requests = await db.dataAccessRequest.findMany({
       where: {
         requestType: 'DELETION',
         status: 'PENDING',
@@ -184,7 +186,7 @@ export class PatientRightsService {
     });
     
     for (const request of requests) {
-      const documents = await prisma.patientDocument.findMany({
+      const documents = await db.patientDocument.findMany({
         where: {
           leadId: request.leadId,
           deletionRequested: true,
@@ -200,7 +202,7 @@ export class PatientRightsService {
           await this.storageService.deleteDocument(doc.encryptedStoragePath);
           
           // Soft delete in database
-          await prisma.patientDocument.update({
+          await db.patientDocument.update({
             where: { id: doc.id },
             data: { deletedAt: new Date() },
           });
@@ -212,7 +214,7 @@ export class PatientRightsService {
       }
       
       // Update request status
-      await prisma.dataAccessRequest.update({
+      await db.dataAccessRequest.update({
         where: { id: request.id },
         data: {
           status: deletedCount > 0 ? 'COMPLETED' : 'IN_PROGRESS',
@@ -227,7 +229,7 @@ export class PatientRightsService {
    * Get all requests for a patient
    */
   async getPatientRequests(leadId: string) {
-    return prisma.dataAccessRequest.findMany({
+    return db.dataAccessRequest.findMany({
       where: { leadId },
       orderBy: { requestedAt: 'desc' },
     });
@@ -237,7 +239,7 @@ export class PatientRightsService {
    * Get request by ID
    */
   async getRequest(requestId: string) {
-    return prisma.dataAccessRequest.findUnique({
+    return db.dataAccessRequest.findUnique({
       where: { id: requestId },
       include: {
         lead: {

@@ -147,7 +147,7 @@ export function StockDashboard({ websiteId }: StockDashboardProps) {
                     <div className="font-medium">{product.name}</div>
                     <div className="text-sm text-muted-foreground">SKU: {product.sku} • Stock: {product.currentStock}</div>
                   </div>
-                  <Badge variant={product.status === 'OUT_OF_STOCK' ? 'destructive' : 'warning'}>
+                  <Badge variant={(product.status === 'OUT_OF_STOCK' ? 'destructive' : 'secondary') as any}>
                     {product.status}
                   </Badge>
                 </div>

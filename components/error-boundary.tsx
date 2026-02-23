@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
     // Sentry captures when @sentry/nextjs is configured (client-side)
     if (typeof window !== 'undefined') {
       import('@sentry/nextjs').then((Sentry) => {
-        Sentry.captureException(error, { extra: errorInfo });
+        Sentry.captureException(error, { extra: errorInfo } as any);
       }).catch(() => {});
     }
   }

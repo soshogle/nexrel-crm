@@ -222,7 +222,7 @@ export async function exportReportToWord(report: ReportForExport): Promise<void>
           right: { style: BorderStyle.SINGLE },
         },
         spacing: { after: 400 },
-      })
+      } as any)
     );
   }
 

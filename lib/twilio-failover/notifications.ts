@@ -3,8 +3,10 @@
  * Sends notifications for failover events
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { sendEmail } from '@/lib/email';
+const db = getCrmDb({ userId: '', industry: null })
 
 interface FailoverNotificationData {
   eventId: string;
@@ -21,7 +23,7 @@ export class TwilioFailoverNotifications {
    * Get admin email addresses
    */
   private async getAdminEmails(): Promise<string[]> {
-    const admins = await prisma.user.findMany({
+    const admins = await db.user.findMany({
       where: {
         role: 'SUPER_ADMIN',
       },

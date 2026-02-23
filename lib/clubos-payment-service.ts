@@ -5,8 +5,10 @@
  */
 
 import Stripe from 'stripe';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { clubOSCommunicationService } from '@/lib/clubos-communication-service';
+const db = getCrmDb({ userId: '', industry: null })
 
 // Initialize Stripe
 const stripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder_for_build';
@@ -28,7 +30,7 @@ export class ClubOSPaymentService {
     const { registrationId, householdId, amount, description, metadata } = params;
 
     // Get registration details
-    const registration = await prisma.clubOSRegistration.findUnique({
+    const registration = await db.clubOSRegistration.findUnique({
       where: { id: registrationId },
       include: {
         household: true,
@@ -66,7 +68,7 @@ export class ClubOSPaymentService {
     });
 
     // Create payment record in database
-    const payment = await prisma.clubOSPayment.create({
+    const payment = await db.clubOSPayment.create({
       data: {
         householdId,
         registrationId,
@@ -92,7 +94,7 @@ export class ClubOSPaymentService {
    */
   private async getOrCreateStripeCustomer(household: any): Promise<string> {
     // Check if household has existing payments with Stripe customer
-    const existingPayment = await prisma.clubOSPayment.findFirst({
+    const existingPayment = await db.clubOSPayment.findFirst({
       where: {
         householdId: household.id,
         stripeCustomerId: { not: null },
@@ -128,7 +130,7 @@ export class ClubOSPaymentService {
     });
 
     // Update payment record
-    const payment = await prisma.clubOSPayment.findFirst({
+    const payment = await db.clubOSPayment.findFirst({
       where: { stripePaymentId: paymentIntentId },
       include: { registration: true },
     });
@@ -145,7 +147,7 @@ export class ClubOSPaymentService {
     const receiptUrl = charges?.data?.[0]?.receipt_url;
 
     // Update payment status
-    await prisma.clubOSPayment.update({
+    await db.clubOSPayment.update({
       where: { id: payment.id },
       data: {
         status: 'PAID',
@@ -157,7 +159,7 @@ export class ClubOSPaymentService {
 
     // Update registration balance
     if (payment.registrationId) {
-      const registration = await prisma.clubOSRegistration.findUnique({
+      const registration = await db.clubOSRegistration.findUnique({
         where: { id: payment.registrationId },
         include: {
           household: true,
@@ -170,7 +172,7 @@ export class ClubOSPaymentService {
         const newAmountPaid = registration.amountPaid + payment.amount;
         const newBalanceDue = registration.totalAmount - newAmountPaid;
 
-        await prisma.clubOSRegistration.update({
+        await db.clubOSRegistration.update({
           where: { id: payment.registrationId },
           data: {
             amountPaid: newAmountPaid,
@@ -206,7 +208,7 @@ export class ClubOSPaymentService {
    * Handle payment failure
    */
   async handlePaymentFailure(paymentIntentId: string, error?: string) {
-    const payment = await prisma.clubOSPayment.findFirst({
+    const payment = await db.clubOSPayment.findFirst({
       where: { stripePaymentId: paymentIntentId },
     });
 
@@ -214,7 +216,7 @@ export class ClubOSPaymentService {
       throw new Error('Payment record not found');
     }
 
-    await prisma.clubOSPayment.update({
+    await db.clubOSPayment.update({
       where: { id: payment.id },
       data: {
         status: 'FAILED',
@@ -235,7 +237,7 @@ export class ClubOSPaymentService {
   }) {
     const { paymentId, amount, reason } = params;
 
-    const payment = await prisma.clubOSPayment.findUnique({
+    const payment = await db.clubOSPayment.findUnique({
       where: { id: paymentId },
       include: { registration: true },
     });
@@ -277,7 +279,7 @@ export class ClubOSPaymentService {
 
     // Update payment record
     const isPartial = amount && amount < payment.amount;
-    await prisma.clubOSPayment.update({
+    await db.clubOSPayment.update({
       where: { id: paymentId },
       data: {
         status: isPartial ? 'PARTIALLY_REFUNDED' : 'REFUNDED',
@@ -295,7 +297,7 @@ export class ClubOSPaymentService {
         const newAmountPaid = Math.max(0, registration.amountPaid - refundAmount);
         const newBalanceDue = registration.totalAmount - newAmountPaid;
 
-        await prisma.clubOSRegistration.update({
+        await db.clubOSRegistration.update({
           where: { id: payment.registrationId },
           data: {
             amountPaid: newAmountPaid,
@@ -326,7 +328,7 @@ export class ClubOSPaymentService {
    * Get payment history for household
    */
   async getHouseholdPayments(householdId: string) {
-    return await prisma.clubOSPayment.findMany({
+    return await db.clubOSPayment.findMany({
       where: { householdId },
       include: {
         registration: {
@@ -345,7 +347,7 @@ export class ClubOSPaymentService {
    * Get payment history for registration
    */
   async getRegistrationPayments(registrationId: string) {
-    return await prisma.clubOSPayment.findMany({
+    return await db.clubOSPayment.findMany({
       where: { registrationId },
       orderBy: { createdAt: 'desc' },
     });
@@ -369,13 +371,13 @@ export class ClubOSPaymentService {
     }
 
     const [totalRevenue, totalPayments, pendingPayments, failedPayments] = await Promise.all([
-      prisma.clubOSPayment.aggregate({
+      db.clubOSPayment.aggregate({
         where: { ...where, status: 'PAID' },
         _sum: { amount: true },
       }),
-      prisma.clubOSPayment.count({ where }),
-      prisma.clubOSPayment.count({ where: { ...where, status: 'PENDING' } }),
-      prisma.clubOSPayment.count({ where: { ...where, status: 'FAILED' } }),
+      db.clubOSPayment.count({ where }),
+      db.clubOSPayment.count({ where: { ...where, status: 'PENDING' } }),
+      db.clubOSPayment.count({ where: { ...where, status: 'FAILED' } }),
     ]);
 
     return {

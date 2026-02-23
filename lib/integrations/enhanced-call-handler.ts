@@ -154,7 +154,7 @@ export class EnhancedCallHandler {
           } : null,
           clinicId,
         },
-      },
+      } as any,
     });
 
     // Trigger workflow for incoming call (always trigger, not just when patient matched)

@@ -19,7 +19,7 @@ export interface BrainDataPoint {
   change?: number; // percentage change
   status: 'healthy' | 'warning' | 'critical' | 'excellent';
   confidence?: number;
-  timestamp: Date;
+  timestamp?: Date;
   metadata?: Record<string, any>;
 }
 
@@ -213,10 +213,10 @@ export class AIBrainEnhancedService {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      db.feedbackCollection.findMany({
+      (db as any).feedbackCollection.findMany({
         where: { userId },
         orderBy: { triggeredAt: 'desc' },
-      }),
+      } as any),
 
       // Workflow data
       db.workflow.findMany({
@@ -233,19 +233,19 @@ export class AIBrainEnhancedService {
         },
         orderBy: { enrolledAt: 'desc' },
         take: 500,
-      }),
+      } as any),
 
       // --- NEW DATA SOURCES ---
 
       // Email Drip Campaigns (detailed engagement stats)
-      db.emailDripCampaign.findMany({
+      (db as any).emailDripCampaign.findMany({
         where: { userId },
         select: {
           id: true, name: true, status: true,
           totalEnrolled: true, totalCompleted: true, totalUnsubscribed: true, totalBounced: true,
           avgOpenRate: true, avgClickRate: true, avgReplyRate: true,
           createdAt: true,
-        },
+        } as any,
       }),
 
       // Generic Campaigns (voice, multi-channel)
@@ -257,11 +257,11 @@ export class AIBrainEnhancedService {
           totalCalls: true, answeredCalls: true, voicemails: true, avgCallDuration: true,
           totalRecipients: true, openRate: true, clickRate: true,
           createdAt: true,
-        },
+        } as any,
       }),
 
       // Outbound Calls
-      db.outboundCall.findMany({
+      (db as any).outboundCall.findMany({
         where: { userId },
         select: {
           id: true, status: true, scheduledFor: true, completedAt: true,
@@ -269,7 +269,7 @@ export class AIBrainEnhancedService {
         },
         orderBy: { createdAt: 'desc' },
         take: 500,
-      }),
+      } as any),
 
       // SMS Drip Campaigns
       db.smsCampaign.findMany({
@@ -280,7 +280,7 @@ export class AIBrainEnhancedService {
           avgReplyRate: true,
           createdAt: true,
         },
-      }),
+      } as any),
 
       // Websites
       db.website.findMany({
@@ -289,140 +289,140 @@ export class AIBrainEnhancedService {
           id: true, name: true, status: true, type: true, buildProgress: true,
           createdAt: true,
         },
-      }),
+      } as any),
 
       // Lead scoring distribution
       db.lead.findMany({
         where: { userId, leadScore: { not: null } },
         select: { leadScore: true },
-      }),
+      } as any),
 
       // --- PHASE 1A: FINANCIAL & PAYMENT INTELLIGENCE ---
-      db.soshogleTransaction.findMany({
+      (db as any).soshogleTransaction.findMany({
         where: { merchantId: userId },
         select: { id: true, amount: true, currency: true, status: true, type: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 500,
-      }),
-      db.soshogleWallet.findMany({
+      } as any),
+      (db as any).soshogleWallet.findMany({
         where: { userId },
         select: { id: true, balance: true, currency: true },
-      }),
-      db.creditScore.findMany({
+      } as any),
+      (db as any).creditScore.findMany({
         where: { userId },
         select: { id: true, score: true, factors: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 10,
-      }),
-      db.achSettlement.findMany({
+      } as any),
+      (db as any).achSettlement.findMany({
         where: { userId },
         select: { id: true, amount: true, status: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 100,
-      }),
-      db.bnplApplication.findMany({
+      } as any),
+      (db as any).bnplApplication.findMany({
         where: { userId },
         select: { id: true, totalAmount: true, status: true, installmentCount: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 100,
-      }),
-      db.cashTransaction.findMany({
+      } as any),
+      (db as any).cashTransaction.findMany({
         where: { userId },
         select: { id: true, amount: true, type: true, status: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 500,
-      }),
-      db.fraudAlert.findMany({
+      } as any),
+      (db as any).fraudAlert.findMany({
         where: { userId },
         select: { id: true, severity: true, status: true, type: true, amount: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 100,
-      }),
+      } as any),
 
       // --- PHASE 1B: E-COMMERCE & INVENTORY ---
-      db.product.findMany({
+      (db as any).product.findMany({
         where: { userId },
         select: { id: true, name: true, price: true, stock: true, status: true, createdAt: true },
-      }),
-      db.order.findMany({
+      } as any),
+      (db as any).order.findMany({
         where: { userId },
         select: { id: true, total: true, status: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 500,
-      }),
-      db.storefront.findMany({
+      } as any),
+      (db as any).storefront.findMany({
         where: { userId },
         select: { id: true, name: true, status: true, createdAt: true },
-      }),
-      db.inventoryItem.findMany({
+      } as any),
+      (db as any).inventoryItem.findMany({
         where: { userId },
         select: { id: true, name: true, quantity: true, minQuantity: true, price: true, status: true },
-      }),
-      db.inventoryAlert.findMany({
+      } as any),
+      (db as any).inventoryAlert.findMany({
         where: { userId },
         select: { id: true, type: true, status: true, createdAt: true },
-      }),
+      } as any),
 
       // POS & Restaurant
-      db.reservation.findMany({
+      (db as any).reservation.findMany({
         where: { userId },
         select: { id: true, status: true, partySize: true, date: true, createdAt: true },
         orderBy: { date: 'desc' },
         take: 500,
-      }),
-      db.restaurantTable.findMany({
+      } as any),
+      (db as any).restaurantTable.findMany({
         where: { userId },
         select: { id: true, name: true, capacity: true, status: true },
-      }),
+      } as any),
 
       // --- PHASE 1C: TEAM, COMMS, VOICE, INTEGRATIONS ---
-      db.teamMember.findMany({
+      (db as any).teamMember.findMany({
         where: { userId },
         select: { id: true, role: true, status: true, createdAt: true },
-      }),
-      db.voiceAgent.findMany({
+      } as any),
+      (db as any).voiceAgent.findMany({
         where: { userId },
         select: { id: true, name: true, status: true, totalCalls: true, createdAt: true },
-      }),
-      db.voiceUsage.findMany({
+      } as any),
+      (db as any).voiceUsage.findMany({
         where: { userId },
         select: { id: true, minutes: true, cost: true, agentType: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 100,
-      }),
-      db.channelConnection.findMany({
+      } as any),
+      (db as any).channelConnection.findMany({
         where: { userId },
         select: { id: true, channel: true, status: true, lastSyncAt: true },
-      }),
-      db.calendarConnection.findMany({
+      } as any),
+      (db as any).calendarConnection.findMany({
         where: { userId },
         select: { id: true, provider: true, status: true, lastSyncAt: true },
-      }),
-      db.scheduledEmail.findMany({
+      } as any),
+      (db as any).scheduledEmail.findMany({
         where: { userId },
         select: { id: true, status: true, scheduledFor: true },
-      }),
-      db.scheduledSms.findMany({
+      } as any),
+      (db as any).scheduledSms.findMany({
         where: { userId },
         select: { id: true, status: true, scheduledFor: true },
-      }),
-      db.referral.findMany({
+      } as any),
+      (db as any).referral.findMany({
         where: { referrerId: userId },
         select: { id: true, status: true, rewardAmount: true, createdAt: true },
-      }),
-      db.pipeline.findMany({
+      } as any),
+      (db as any).pipeline.findMany({
         where: { userId },
         include: { stages: { select: { id: true, name: true, probability: true } } },
-      }),
-      db.auditLog.findMany({
+      } as any),
+      (db as any).auditLog.findMany({
         where: { userId },
         select: { id: true, action: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 100,
-      }),
-      db.message.count({
+      } as any),
+      (db as any).message.count({
         where: { lead: { userId } },
-      }),
+      } as any),
     ]);
 
     // Extract results, defaulting to empty arrays on failure with proper typing
@@ -512,7 +512,7 @@ export class AIBrainEnhancedService {
       if (industry === 'REAL_ESTATE') {
         const reResults = await Promise.allSettled([
           db.rEProperty.count({ where: { userId } }),
-          db.rEFSBOListing.count({ where: { userId } }),
+          db.rEFSBOListing.count({ where: { userId } } as any),
           db.rECMAReport.count({ where: { userId } }),
           db.rEListingPresentation.count({ where: { userId } }),
           db.rEMarketStats.count({ where: { userId } }),
@@ -527,7 +527,7 @@ export class AIBrainEnhancedService {
         industryData = { type: 'REAL_ESTATE', ...reData };
       }
 
-      if (industry === 'DENTAL' || industry === 'HEALTHCARE' || industry === 'MEDICAL') {
+      if ((industry as string) === 'DENTAL' || (industry as string) === 'HEALTHCARE' || (industry as string) === 'MEDICAL') {
         const dResults = await Promise.allSettled([
           db.bookingAppointment.count({ where: { userId, appointmentDate: { gte: new Date() } } }),
           db.bookingAppointment.count({ where: { userId, status: 'NO_SHOW' } }),
@@ -541,7 +541,7 @@ export class AIBrainEnhancedService {
         };
       }
 
-      if (industry === 'RESTAURANT' || industry === 'FOOD_SERVICE') {
+      if ((industry as string) === 'RESTAURANT' || (industry as string) === 'FOOD_SERVICE') {
         industryData = {
           type: industry,
           reservations: reservations.length,
@@ -552,11 +552,11 @@ export class AIBrainEnhancedService {
         };
       }
 
-      if (industry === 'SPORTS_CLUB' || industry === 'YOUTH_SPORTS') {
+      if ((industry as string) === 'SPORTS_CLUB' || (industry as string) === 'YOUTH_SPORTS') {
         const clubResults = await Promise.allSettled([
           db.clubOSRegistration.count({ where: { program: { userId } } }),
           db.clubOSProgram.count({ where: { userId } }),
-          db.clubOSTeam.count({ where: { division: { userId } } }),
+          db.clubOSTeam.count({ where: { division: { userId } } } as any),
           db.clubOSSchedule.count({ where: { userId } }),
         ]);
         industryData = {

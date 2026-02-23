@@ -3,8 +3,10 @@
  * Creates a minimal workflow when user enables Auto-Run for RE_SPEED_TO_LEAD
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { REAIEmployeeType, RETaskType, REWorkflowType } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 const SPEED_TO_LEAD_TASK = {
   name: 'Contact New Lead',
@@ -31,7 +33,7 @@ const SPEED_TO_LEAD_TASK = {
 export async function createDefaultSpeedToLeadWorkflow(
   userId: string
 ): Promise<{ id: string; name: string }> {
-  const workflow = await prisma.rEWorkflowTemplate.create({
+  const workflow = await db.rEWorkflowTemplate.create({
     data: {
       userId,
       name: 'Speed to Lead',
@@ -70,7 +72,7 @@ export async function createDefaultSpeedToLeadWorkflow(
  * Check if user has any workflow with RE_SPEED_TO_LEAD assigned
  */
 export async function hasSpeedToLeadWorkflow(userId: string): Promise<boolean> {
-  const count = await prisma.rEWorkflowTask.count({
+  const count = await db.rEWorkflowTask.count({
     where: {
       template: {
         userId,

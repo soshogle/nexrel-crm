@@ -114,8 +114,8 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
   const [importing, setImporting] = useState(false);
   const [importAllUrlOpen, setImportAllUrlOpen] = useState(false);
   const [importAllUrl, setImportAllUrl] = useState(vercelDeploymentUrl || '');
-  const needsImportAll = pagesDerivedFromNav && !vercelDeploymentUrl && !isImportAllInProgress && !importingAll;
   const [importingAll, setImportingAll] = useState(false);
+  const needsImportAll = pagesDerivedFromNav && !vercelDeploymentUrl && !isImportAllInProgress && !importingAll;
   const autoImportTriggeredRef = useRef(false);
 
   // Auto-trigger import-all when structure is empty, navConfig has pages, and we have a live URL
@@ -604,7 +604,7 @@ export function SectionContentEditor({ websiteId, pages, onStructureUpdate, page
                                         <div key={itemKey} className="space-y-1">
                                           <Label className="text-xs text-muted-foreground">{humanize(itemKey)}</Label>
                                           <div className="flex items-center gap-2">
-                                            {itemVal && typeof itemVal === 'string' && (
+                                            {typeof itemVal === 'string' && itemVal && (
                                               <div className="w-12 h-12 rounded overflow-hidden border bg-muted flex-shrink-0">
                                                 <img src={itemVal as string} alt="" className="w-full h-full object-cover" />
                                               </div>

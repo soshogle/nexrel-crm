@@ -271,7 +271,7 @@ export function AIBrainDashboard() {
               Traditional
             </Button>
           </div>
-          <Button onClick={fetchData} disabled={isRefreshing} className="gradient-button">
+          <Button onClick={() => fetchData()} disabled={isRefreshing} className="gradient-button">
             {isRefreshing ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (

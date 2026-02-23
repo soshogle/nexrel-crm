@@ -62,7 +62,7 @@ export async function summarizeCallAndAddNote(
     const noteContent = [
       `**Call Summary** (${new Date().toLocaleDateString()})`,
       summary,
-      actionItems.length > 0 ? `\n**Action items:**\n${actionItems.map((a) => `- ${a}`).join('\n')}` : '',
+      actionItems.length > 0 ? `\n**Action items:**\n${actionItems.map((a: any) => `- ${a}`).join('\n')}` : '',
       `\nSentiment: ${sentiment}`,
     ].join('\n');
 

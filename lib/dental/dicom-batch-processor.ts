@@ -8,6 +8,9 @@ import { DicomToImageConverter } from './dicom-to-image';
 import { DicomValidator } from './dicom-validator';
 import { DicomErrorHandler } from './dicom-error-handler';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
+import { getCrmDb } from '@/lib/dal';
+
+const db = getCrmDb({ userId: '', industry: null });
 
 export interface BatchJob {
   id: string;
@@ -174,7 +177,7 @@ export class DicomBatchProcessor {
         );
 
         // Create X-ray record
-        const xray = await (prisma as any).dentalXRay.create({
+        const xray = await (db as any).dentalXRay.create({
           data: {
             leadId,
             userId,
@@ -216,5 +219,3 @@ export class DicomBatchProcessor {
   }
 }
 
-// Import prisma
-import { prisma } from '@/lib/db';

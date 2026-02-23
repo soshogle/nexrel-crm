@@ -4,8 +4,10 @@
  * syncs to all websites that have the product.
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { websiteStockSyncService } from '@/lib/website-builder/stock-sync-service';
+const db = getCrmDb({ userId: '', industry: null })
 
 /**
  * Sync General Inventory quantity to Product and website stock.
@@ -19,7 +21,7 @@ export async function syncGeneralInventoryToProduct(
 ): Promise<{ synced: boolean; productId?: string }> {
   try {
     // Find Product by SKU and userId
-    const product = await prisma.product.findFirst({
+    const product = await db.product.findFirst({
       where: {
         userId,
         sku,
@@ -33,7 +35,7 @@ export async function syncGeneralInventoryToProduct(
     const prevQty = previousQuantity ?? product.inventory;
 
     // Update Product.inventory
-    await prisma.product.update({
+    await db.product.update({
       where: { id: product.id },
       data: {
         inventory: Math.max(0, quantityAfter),

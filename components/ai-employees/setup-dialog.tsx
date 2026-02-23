@@ -47,7 +47,7 @@ export function SetupDialog({ open, onOpenChange, onProvisionRefresh, onSwitchTo
     onOpenChange(isOpen);
     if (isOpen) {
       fetchProvisionedProfessionalAgents();
-      fetch('/api/twilio/phone-numbers/owned').then((r) => r.ok ? r.json() : {}).then((d) => setTwilioOwnedNumbers(d.numbers || []));
+      fetch('/api/twilio/phone-numbers/owned').then((r) => r.ok ? r.json() : {}).then((d: any) => setTwilioOwnedNumbers(d.numbers || []));
     }
   };
 

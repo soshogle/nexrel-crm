@@ -104,7 +104,7 @@ export function HITLNotificationBell() {
     const result: NormalizedApproval[] = [];
 
     // Primary: enriched notifications
-    const notifs = Array.isArray(data.notifications) ? data.notifications : [];
+    const notifs: any[] = Array.isArray(data.notifications) ? data.notifications : [];
     for (const n of notifs) {
       if (!n || !n.id) continue;
       const normalized = normalizeNotification(n);
@@ -113,7 +113,7 @@ export function HITLNotificationBell() {
     }
 
     // Secondary: pendingApprovals (task executions not already covered)
-    const pending = Array.isArray(data.pendingApprovals) ? data.pendingApprovals : [];
+    const pending: any[] = Array.isArray(data.pendingApprovals) ? data.pendingApprovals : [];
     for (const exec of pending) {
       if (!exec || !exec.id || seen.has(exec.id)) continue;
       result.push({

@@ -23,8 +23,8 @@ export async function processServiceCompletedTriggers(
   await processCampaignTriggers({
     leadId,
     userId,
-    triggerType: 'SERVICE_COMPLETED',
-    metadata,
+    triggerType: 'SERVICE_COMPLETED' as any,
+    metadata: metadata as any,
   });
 
   const ctx = createDalContext(userId);
@@ -35,16 +35,16 @@ export async function processServiceCompletedTriggers(
       userId,
       isActive: true,
       enrollmentMode: true,
-      enrollmentTriggers: { not: null },
+      enrollmentTriggers: { not: null as any },
     },
     include: {
       tasks: { orderBy: { displayOrder: 'asc' } },
     },
   });
 
-  for (const workflow of workflows) {
+  for (const workflow of workflows as any[]) {
     const triggers = (workflow.enrollmentTriggers as Array<{ type: string }>) || [];
-    const hasTrigger = triggers.some((t) => t.type === 'SERVICE_COMPLETED');
+    const hasTrigger = triggers.some((t: any) => t.type === 'SERVICE_COMPLETED');
     if (!hasTrigger) continue;
 
     const existing = await db.workflowTemplateEnrollment.findUnique({

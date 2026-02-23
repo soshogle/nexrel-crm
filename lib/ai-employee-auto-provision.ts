@@ -4,12 +4,14 @@
  * Triggered by: set-industry, onboarding completion, profile industry change
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { Industry, ProfessionalAIEmployeeType, REAIEmployeeType } from '@prisma/client';
 import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
 import { PROFESSIONAL_EMPLOYEE_CONFIGS } from '@/lib/professional-ai-employees/config';
 import { PROFESSIONAL_EMPLOYEE_PROMPTS } from '@/lib/professional-ai-employees/prompts';
+const db = getCrmDb({ userId: '', industry: null })
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
@@ -72,7 +74,7 @@ async function provisionREAgents(userId: string): Promise<{ success: number; fai
     return { success: 0, failed: 0 };
   }
 
-  const existing = await prisma.rEAIEmployeeAgent.findMany({
+  const existing = await db.rEAIEmployeeAgent.findMany({
     where: { userId },
     select: { employeeType: true },
   });
@@ -100,7 +102,7 @@ async function provisionREAgents(userId: string): Promise<{ success: number; fai
         voiceId: promptConfig.voiceId,
       });
 
-      await prisma.rEAIEmployeeAgent.upsert({
+      await db.rEAIEmployeeAgent.upsert({
         where: { userId_employeeType: { userId, employeeType } },
         create: {
           userId,
@@ -142,7 +144,7 @@ async function provisionIndustryAgents(
     return { success: 0, failed: 0 };
   }
 
-  const existing = await prisma.industryAIEmployeeAgent.findMany({
+  const existing = await db.industryAIEmployeeAgent.findMany({
     where: { userId, industry },
     select: { employeeType: true },
   });
@@ -169,7 +171,7 @@ async function provisionIndustryAgents(
         voiceId: promptConfig.voiceId,
       });
 
-      await prisma.industryAIEmployeeAgent.upsert({
+      await db.industryAIEmployeeAgent.upsert({
         where: {
           userId_industry_employeeType: { userId, industry, employeeType },
         },
@@ -208,7 +210,7 @@ async function provisionProfessionalAgents(userId: string): Promise<{ success: n
     return { success: 0, failed: 0 };
   }
 
-  const existing = await prisma.professionalAIEmployeeAgent.findMany({
+  const existing = await db.professionalAIEmployeeAgent.findMany({
     where: { userId },
     select: { employeeType: true },
   });
@@ -237,7 +239,7 @@ async function provisionProfessionalAgents(userId: string): Promise<{ success: n
         voiceId: promptConfig.voiceId,
       });
 
-      await prisma.professionalAIEmployeeAgent.upsert({
+      await db.professionalAIEmployeeAgent.upsert({
         where: { userId_employeeType: { userId, employeeType } },
         create: {
           userId,
@@ -274,7 +276,7 @@ async function provisionProfessionalAgents(userId: string): Promise<{ success: n
 export function provisionAIEmployeesForUser(userId: string): void {
   (async () => {
     try {
-      const user = await prisma.user.findUnique({
+      const user = await db.user.findUnique({
         where: { id: userId },
         select: { industry: true },
       });

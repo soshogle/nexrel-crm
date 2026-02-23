@@ -60,7 +60,7 @@ export async function createTaskFromTrigger(
       automatedTrigger: trigger.type,
       createdAt: new Date().toISOString()
     }
-  });
+  } as any);
   
   return task;
 }

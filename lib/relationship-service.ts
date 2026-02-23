@@ -7,6 +7,8 @@ import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { EntityType, RelationshipType } from '@prisma/client';
 
+const db = getCrmDb({ userId: '', industry: null });
+
 interface CreateRelationshipParams {
   userId: string;
   sourceType: EntityType;
@@ -44,7 +46,7 @@ export class RelationshipService {
     } = params;
 
     // Check if relationship already exists
-    const existing = await prisma.relationshipGraph.findUnique({
+    const existing = await db.relationshipGraph.findUnique({
       where: {
         userId_sourceType_sourceId_targetType_targetId_relationshipType: {
           userId,
@@ -70,7 +72,7 @@ export class RelationshipService {
     }
 
     // Create new relationship
-    return await prisma.relationshipGraph.create({
+    return await db.relationshipGraph.create({
       data: {
         userId,
         sourceType,
@@ -92,7 +94,7 @@ export class RelationshipService {
   async updateRelationshipStrength(params: UpdateStrengthParams) {
     const { userId, sourceType, sourceId, targetType, targetId, relationshipType } = params;
 
-    const relationship = await prisma.relationshipGraph.findUnique({
+    const relationship = await db.relationshipGraph.findUnique({
       where: {
         userId_sourceType_sourceId_targetType_targetId_relationshipType: {
           userId,
@@ -129,7 +131,7 @@ export class RelationshipService {
     const frequencyFactor = Math.log10(newInteractionCount + 1) * 2; // Logarithmic growth
     const newStrength = Math.min(10, frequencyFactor * recencyFactor * 1.5);
 
-    return await prisma.relationshipGraph.update({
+    return await db.relationshipGraph.update({
       where: {
         userId_sourceType_sourceId_targetType_targetId_relationshipType: {
           userId,
@@ -158,7 +160,7 @@ export class RelationshipService {
   ) {
     const [outgoing, incoming] = await Promise.all([
       // Outgoing relationships (this entity is the source)
-      prisma.relationshipGraph.findMany({
+      db.relationshipGraph.findMany({
         where: {
           userId,
           sourceType: entityType,
@@ -167,7 +169,7 @@ export class RelationshipService {
         orderBy: { strength: 'desc' },
       }),
       // Incoming relationships (this entity is the target)
-      prisma.relationshipGraph.findMany({
+      db.relationshipGraph.findMany({
         where: {
           userId,
           targetType: entityType,
@@ -240,7 +242,7 @@ export class RelationshipService {
     const totalRelations = allRelations.length;
 
     if (totalRelations === 0) {
-      await prisma.relationshipMetrics.deleteMany({
+      await db.relationshipMetrics.deleteMany({
         where: { userId, entityType, entityId },
       });
       return null;
@@ -256,7 +258,7 @@ export class RelationshipService {
     });
     const strongestType = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
 
-    return await prisma.relationshipMetrics.upsert({
+    return await db.relationshipMetrics.upsert({
       where: {
         userId_entityType_entityId: { userId, entityType, entityId },
       },

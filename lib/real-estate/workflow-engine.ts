@@ -3,9 +3,8 @@
  * Handles workflow instance creation, task scheduling, and execution
  */
 
-import { prisma } from '@/lib/db';
-import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb } from '@/lib/dal';
+import { createDalContext } from '@/lib/context/industry-context';
 import { REAIEmployeeType, RETaskExecutionStatus, REWorkflowInstanceStatus } from '@prisma/client';
 import { executeTask } from './workflow-task-executor';
 import { createHITLNotification } from './hitl-notification-service';
@@ -40,7 +39,7 @@ export async function startWorkflowInstance(
   }
 
   // Create workflow instance
-  const instance = await prisma.rEWorkflowInstance.create({
+  const instance = await db.rEWorkflowInstance.create({
     data: {
       templateId,
       userId,
@@ -54,7 +53,7 @@ export async function startWorkflowInstance(
   // Create task executions for all tasks
   const executions = await Promise.all(
     template.tasks.map((task, index) =>
-      prisma.rETaskExecution.create({
+      db.rETaskExecution.create({
         data: {
           instanceId: instance.id,
           taskId: task.id,
@@ -82,7 +81,8 @@ export async function processTaskExecution(
   executionId: string,
   ctx?: { userId: string; industry?: string | null }
 ): Promise<void> {
-  const execution = await prisma.rETaskExecution.findUnique({
+  const _db = getCrmDb((ctx ?? { userId: '', industry: null }) as any);
+  const execution = await _db.rETaskExecution.findUnique({
     where: { id: executionId },
     include: {
       task: {
@@ -102,7 +102,7 @@ export async function processTaskExecution(
   }
 
   const dbCtx = ctx ?? createDalContext(execution.instance.userId, null);
-  const db = getCrmDb(dbCtx);
+  const db = getCrmDb(dbCtx as any);
 
   // Check if task is scheduled for future
   if (execution.scheduledFor && execution.scheduledFor > new Date()) {
@@ -187,7 +187,7 @@ export async function processTaskExecution(
   try {
     const result = await executeTask(execution.task, execution.instance);
 
-    await prisma.rETaskExecution.update({
+    await db.rETaskExecution.update({
       where: { id: executionId },
       data: {
         status: RETaskExecutionStatus.COMPLETED,
@@ -199,7 +199,7 @@ export async function processTaskExecution(
     // Process next task
     await processNextTask(execution.instanceId);
   } catch (error: any) {
-    await prisma.rETaskExecution.update({
+    await db.rETaskExecution.update({
       where: { id: executionId },
       data: {
         status: RETaskExecutionStatus.FAILED,
@@ -216,7 +216,8 @@ async function processNextTask(
   instanceId: string,
   ctx?: { userId: string; industry?: string | null }
 ): Promise<void> {
-  const instance = await prisma.rEWorkflowInstance.findUnique({
+  const _db = getCrmDb((ctx ?? { userId: '', industry: null }) as any);
+  const instance = await _db.rEWorkflowInstance.findUnique({
     where: { id: instanceId },
     include: {
       template: {
@@ -229,7 +230,7 @@ async function processNextTask(
   if (!instance) return;
 
   const dbCtx = ctx ?? createDalContext(instance.userId, null);
-  const db = getCrmDb(dbCtx);
+  const db = getCrmDb(dbCtx as any);
 
   // Find next pending task
   const completedTaskIds = new Set(

@@ -5,11 +5,13 @@
  * for hands-free medical assistant functionality during clinical consultations.
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { elevenLabsKeyManager } from '@/lib/elevenlabs-key-manager';
 import { ensureMultilingualPrompt } from '@/lib/voice-languages';
 import { VOICE_AGENT_PROMPTS } from './voice-prompts';
 import type { DocpenProfessionType } from './prompts';
+const db = getCrmDb({ userId: '', industry: null })
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
@@ -62,7 +64,7 @@ class DocpenAgentProvisioning {
       // Check if agent already exists for this user + profession
       console.log(`🔍 [Docpen] Checking for existing agent: userId=${config.userId}, profession=${config.profession}, customProfession=${config.customProfession || 'null'}`);
       
-      const existingAgent = await prisma.docpenVoiceAgent.findFirst({
+      const existingAgent = await db.docpenVoiceAgent.findFirst({
         where: {
           userId: config.userId,
           profession: config.profession,
@@ -85,14 +87,14 @@ class DocpenAgentProvisioning {
             if (verifyResponse.status === 404) {
               console.warn(`⚠️ [Docpen] Agent ${existingAgent.elevenLabsAgentId} NOT FOUND in ElevenLabs (404) - marking inactive and creating new one`);
               // Mark as inactive and create a new agent
-              await prisma.docpenVoiceAgent.update({
+              await db.docpenVoiceAgent.update({
                 where: { id: existingAgent.id },
                 data: { isActive: false },
               });
               // Continue to create new agent below
             } else if (!verifyResponse.ok) {
               console.warn(`⚠️ [Docpen] Failed to verify agent (${verifyResponse.status}) - creating new one anyway`);
-              await prisma.docpenVoiceAgent.update({
+              await db.docpenVoiceAgent.update({
                 where: { id: existingAgent.id },
                 data: { isActive: false },
               });
@@ -125,7 +127,7 @@ class DocpenAgentProvisioning {
           } catch (verifyError: any) {
             console.error(`❌ [Docpen] Error verifying agent:`, verifyError.message);
             // On error, mark inactive and create new one to be safe
-            await prisma.docpenVoiceAgent.update({
+            await db.docpenVoiceAgent.update({
               where: { id: existingAgent.id },
               data: { isActive: false },
             }).catch(() => {}); // Ignore update errors
@@ -134,7 +136,7 @@ class DocpenAgentProvisioning {
         } else {
           console.warn(`⚠️ [Docpen] No API key available to verify agent - creating new one`);
           // No API key - mark inactive and create new
-          await prisma.docpenVoiceAgent.update({
+          await db.docpenVoiceAgent.update({
             where: { id: existingAgent.id },
             data: { isActive: false },
           }).catch(() => {}); // Ignore update errors
@@ -181,7 +183,7 @@ class DocpenAgentProvisioning {
     console.log(`🔑 [Docpen] API key preview: ...${apiKey.slice(-8)}`);
 
     // Fetch user's language preference and industry
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: config.userId },
       select: { language: true, industry: true },
     });
@@ -325,7 +327,7 @@ class DocpenAgentProvisioning {
     }
 
     // Save to database only after successful verification
-    await prisma.docpenVoiceAgent.create({
+    await db.docpenVoiceAgent.create({
       data: {
         userId: config.userId,
         profession: config.profession,
@@ -351,7 +353,7 @@ class DocpenAgentProvisioning {
     if (!apiKey) return;
 
     // Fetch user's language preference and industry
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: config.userId },
       select: { language: true, industry: true },
     });
@@ -703,7 +705,7 @@ Use these for any time-sensitive responses.`;
         },
       });
 
-      await prisma.docpenVoiceAgent.updateMany({
+      await db.docpenVoiceAgent.updateMany({
         where: { elevenLabsAgentId: agentId },
         data: { isActive: false },
       });
@@ -719,7 +721,7 @@ Use these for any time-sensitive responses.`;
    * List all active agents for a user
    */
   async listAgents(userId: string) {
-    return prisma.docpenVoiceAgent.findMany({
+    return db.docpenVoiceAgent.findMany({
       where: { userId, isActive: true },
       orderBy: { createdAt: 'desc' },
     });

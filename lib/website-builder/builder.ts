@@ -103,10 +103,10 @@ export class WebsiteBuilder {
               id: 'blog-cta',
               type: 'CTASection',
               props: {
-                title: answers.blog.ctaText || 'Ready to Get Started?',
+                title: answers.blog?.ctaText || 'Ready to Get Started?',
                 description: `Contact ${answers.businessName} today to learn more`,
-                ctaText: answers.blog.ctaText || 'Contact Us',
-                ctaLink: answers.blog.ctaLink || '/contact',
+                ctaText: answers.blog?.ctaText || 'Contact Us',
+                ctaLink: answers.blog?.ctaLink || '/contact',
                 variant: 'primary',
               },
             });

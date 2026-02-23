@@ -567,6 +567,10 @@ export default function AIEmployeesPage() {
   // ElevenLabs voices for voice customization
   const [elevenLabsVoices, setElevenLabsVoices] = useState<Array<{ voice_id: string; name: string; category?: string }>>([]);
   const [loadingVoices, setLoadingVoices] = useState(false);
+  
+  // New AI employee form state
+  const [newAiEmployee, setNewAiEmployee] = useState<{ profession: string; customName: string; voiceAgentId: string; voiceConfig: any }>({ profession: '', customName: '', voiceAgentId: '', voiceConfig: null });
+  const [showCreateAiEmployee, setShowCreateAiEmployee] = useState(false);
 
   // Session for industry check
   const { data: session } = useSession() || {};

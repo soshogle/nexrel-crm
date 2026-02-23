@@ -2,7 +2,9 @@
  * Docpen workflow audit logging
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 export const DOCPEN_AUDIT_EVENTS = {
   SESSION_CREATED: 'session_created',
@@ -19,8 +21,8 @@ export async function logDocpenAudit(
   metadata?: Record<string, unknown>
 ) {
   try {
-    await prisma.docpenSessionAuditLog.create({
-      data: { sessionId, event, metadata: metadata ?? undefined },
+    await db.docpenSessionAuditLog.create({
+      data: { sessionId, event, metadata: (metadata ?? undefined) as any },
     });
   } catch (err) {
     console.warn('[Docpen Audit] Failed to log:', event, err);

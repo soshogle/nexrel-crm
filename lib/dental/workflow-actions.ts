@@ -581,7 +581,7 @@ async function updateTreatmentPlan(config: any, context: ExecutionContextWithDb)
   if (config.procedures) updateData.procedures = config.procedures;
   if (config.notes) updateData.notes = config.notes;
 
-  await (prisma as any).dentalTreatmentPlan.update({
+  await (context.db as any).dentalTreatmentPlan.update({
     where: { id: treatmentPlanId },
     data: updateData,
   });
@@ -593,7 +593,7 @@ async function updateTreatmentPlan(config: any, context: ExecutionContextWithDb)
  * Log procedure
  */
 async function logProcedure(config: any, context: ExecutionContextWithDb) {
-  const procedure = await (prisma as any).dentalProcedure.create({
+  const procedure = await (context.db as any).dentalProcedure.create({
     data: {
       userId: context.userId,
       leadId: context.leadId!,

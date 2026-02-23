@@ -4,13 +4,15 @@
  * Used by: Run Now, Test Agent, Workflows, Campaigns
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { Industry } from '@prisma/client';
 import { REAIEmployeeType } from '@prisma/client';
 import { RE_AI_EMPLOYEE_PROMPTS } from '@/lib/real-estate/ai-employee-prompts';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
 import { PROFESSIONAL_EMPLOYEE_PROMPTS } from '@/lib/professional-ai-employees/prompts';
 import type { ProfessionalAIEmployeeType } from '@/lib/professional-ai-employees/config';
+const db = getCrmDb({ userId: '', industry: null })
 
 const ELEVENLABS_BASE_URL = 'https://api.elevenlabs.io/v1';
 
@@ -79,7 +81,7 @@ export async function ensureREAgentProvisioned(
   userId: string,
   employeeType: REAIEmployeeType
 ): Promise<{ id: string; elevenLabsAgentId: string } | null> {
-  const existing = await prisma.rEAIEmployeeAgent.findUnique({
+  const existing = await db.rEAIEmployeeAgent.findUnique({
     where: {
       userId_employeeType: { userId, employeeType },
     },
@@ -101,7 +103,7 @@ export async function ensureREAgentProvisioned(
       voiceId: promptConfig.voiceId,
     });
 
-    const created = await prisma.rEAIEmployeeAgent.upsert({
+    const created = await db.rEAIEmployeeAgent.upsert({
       where: {
         userId_employeeType: { userId, employeeType },
       },
@@ -135,7 +137,7 @@ export async function ensureIndustryAgentProvisioned(
   industry: Industry,
   employeeType: string
 ): Promise<{ id: string; elevenLabsAgentId: string } | null> {
-  const existing = await prisma.industryAIEmployeeAgent.findUnique({
+  const existing = await db.industryAIEmployeeAgent.findUnique({
     where: {
       userId_industry_employeeType: { userId, industry, employeeType },
     },
@@ -160,7 +162,7 @@ export async function ensureIndustryAgentProvisioned(
       voiceId: promptConfig.voiceId,
     });
 
-    const created = await prisma.industryAIEmployeeAgent.upsert({
+    const created = await db.industryAIEmployeeAgent.upsert({
       where: {
         userId_industry_employeeType: { userId, industry, employeeType },
       },
@@ -196,7 +198,7 @@ export async function ensureProfessionalAgentProvisioned(
   employeeType: ProfessionalAIEmployeeType,
   jurisdiction?: string
 ): Promise<{ id: string; elevenLabsAgentId: string } | null> {
-  const existing = await prisma.professionalAIEmployeeAgent.findUnique({
+  const existing = await db.professionalAIEmployeeAgent.findUnique({
     where: {
       userId_employeeType: { userId, employeeType },
     },
@@ -226,7 +228,7 @@ export async function ensureProfessionalAgentProvisioned(
       voiceId: promptConfig.voiceId,
     });
 
-    const created = await prisma.professionalAIEmployeeAgent.upsert({
+    const created = await db.professionalAIEmployeeAgent.upsert({
       where: {
         userId_employeeType: { userId, employeeType },
       },

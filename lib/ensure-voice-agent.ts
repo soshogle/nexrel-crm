@@ -3,10 +3,12 @@
  * Auto-creates a default agent if none exist.
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { getTemplateById } from '@/lib/voice-agent-templates';
 import { LANGUAGE_PROMPT_SECTION } from '@/lib/voice-languages';
 import type { Industry } from '@/lib/industry-menu-config';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface EnsureVoiceAgentResult {
   agentId: string;
@@ -25,7 +27,7 @@ export async function ensureUserHasVoiceAgent(
     preferredName?: string;
   }
 ): Promise<EnsureVoiceAgentResult> {
-  const existing = await prisma.voiceAgent.findFirst({
+  const existing = await db.voiceAgent.findFirst({
     where: { userId },
     orderBy: { createdAt: 'asc' },
   });
@@ -34,7 +36,7 @@ export async function ensureUserHasVoiceAgent(
     return { agentId: existing.id, created: false, agent: existing };
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await db.user.findUnique({
     where: { id: userId },
     select: {
       name: true,
@@ -56,7 +58,7 @@ export async function ensureUserHasVoiceAgent(
   const businessName = user.name || 'Your Business';
 
   // Create VoiceAgent record - ElevenLabs provisioning happens via existing flow
-  const agent = await prisma.voiceAgent.create({
+  const agent = await db.voiceAgent.create({
     data: {
       userId,
       name: agentName,

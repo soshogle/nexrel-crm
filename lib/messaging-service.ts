@@ -3,8 +3,7 @@
  * Send SMS and email to single contacts or bulk by criteria
  */
 
-import { prisma } from '@/lib/db';
-import { getCrmDb } from '@/lib/dal/db';
+import { getCrmDb } from '@/lib/dal';
 import { createDalContext } from '@/lib/context/industry-context';
 import { EmailService } from '@/lib/email-service';
 
@@ -97,7 +96,7 @@ export async function sendSMS(params: SendSMSParams): Promise<{ success: boolean
     });
 
     if (lead) {
-      finalPhone = lead.phone || null;
+      finalPhone = lead.phone ?? undefined;
       resolvedLeadId = lead.id;
     } else {
       return {
@@ -170,7 +169,7 @@ export async function sendEmail(params: SendEmailParams): Promise<{ success: boo
     });
 
     if (lead) {
-      finalEmail = lead.email || null;
+      finalEmail = lead.email ?? undefined;
       resolvedLeadId = lead.id;
     } else {
       return {

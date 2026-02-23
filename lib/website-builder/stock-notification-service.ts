@@ -81,7 +81,7 @@ export class WebsiteStockNotificationService {
       }
 
       // Send SMS if phone number available
-      if (user.phone && (alert.status === 'OUT_OF_STOCK' || alert.status === 'CRITICAL')) {
+      if (user.phone && (alert.status === 'OUT_OF_STOCK' || (alert.status as string) === 'CRITICAL')) {
         try {
           await sendSMS(user.phone, smsBody);
           smsSent = true;

@@ -3,10 +3,12 @@
  * Handles failover detection, approval window, and execution
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { twilioHealthMonitor } from './health-monitor';
 import { elevenLabsService } from '@/lib/elevenlabs';
 import twilio from 'twilio';
+const db = getCrmDb({ userId: '', industry: null })
 
 const APPROVAL_WINDOW_MINUTES = 10;
 const TEST_INTERVAL_SECONDS = 30; // Test every 30 seconds during approval window
@@ -21,7 +23,7 @@ export class TwilioFailoverService {
     adminUserId?: string
   ) {
     // Get accounts
-    const fromAccount = await prisma.twilioAccount.findUnique({
+    const fromAccount = await db.twilioAccount.findUnique({
       where: { id: fromAccountId },
     });
 
@@ -30,7 +32,7 @@ export class TwilioFailoverService {
     }
 
     // Find backup account
-    const backupAccount = await prisma.twilioAccount.findFirst({
+    const backupAccount = await db.twilioAccount.findFirst({
       where: {
         isActive: true,
         id: { not: fromAccountId },
@@ -50,7 +52,7 @@ export class TwilioFailoverService {
     );
 
     // Create failover event
-    const failoverEvent = await prisma.twilioFailoverEvent.create({
+    const failoverEvent = await db.twilioFailoverEvent.create({
       data: {
         triggerType,
         status: triggerType === 'CRITICAL' ? 'APPROVED' : 'PENDING_APPROVAL',
@@ -61,7 +63,7 @@ export class TwilioFailoverService {
         approvedBy: triggerType === 'CRITICAL' ? 'AUTO' : adminUserId || null,
         approvalWindowStarted: triggerType === 'DEGRADED' ? new Date() : null,
         approvedAt: triggerType === 'CRITICAL' ? new Date() : null,
-        testResultsDuringWindow: triggerType === 'DEGRADED' ? [] : null,
+        testResultsDuringWindow: (triggerType === 'DEGRADED' ? [] : null) as any,
       },
     });
 
@@ -90,7 +92,7 @@ export class TwilioFailoverService {
     // Test loop during approval window
     const testInterval = setInterval(async () => {
       try {
-        const event = await prisma.twilioFailoverEvent.findUnique({
+        const event = await db.twilioFailoverEvent.findUnique({
           where: { id: failoverEventId },
         });
 
@@ -112,7 +114,7 @@ export class TwilioFailoverService {
         testResults.push(testResult);
 
         // Update event with test results
-        await prisma.twilioFailoverEvent.update({
+        await db.twilioFailoverEvent.update({
           where: { id: failoverEventId },
           data: {
             testResultsDuringWindow: testResults,
@@ -145,7 +147,7 @@ export class TwilioFailoverService {
    * Approve failover (manual or auto after timeout)
    */
   async approveFailover(failoverEventId: string, approvedBy: string) {
-    const event = await prisma.twilioFailoverEvent.findUnique({
+    const event = await db.twilioFailoverEvent.findUnique({
       where: { id: failoverEventId },
     });
 
@@ -162,7 +164,7 @@ export class TwilioFailoverService {
     }
 
     // Update event
-    await prisma.twilioFailoverEvent.update({
+    await db.twilioFailoverEvent.update({
       where: { id: failoverEventId },
       data: {
         status: 'APPROVED',
@@ -179,7 +181,7 @@ export class TwilioFailoverService {
    * Cancel failover
    */
   async cancelFailover(failoverEventId: string, reason: string) {
-    await prisma.twilioFailoverEvent.update({
+    await db.twilioFailoverEvent.update({
       where: { id: failoverEventId },
       data: {
         status: 'CANCELLED',
@@ -192,7 +194,7 @@ export class TwilioFailoverService {
    * Execute failover
    */
   async executeFailover(failoverEventId: string) {
-    const event = await prisma.twilioFailoverEvent.findUnique({
+    const event = await db.twilioFailoverEvent.findUnique({
       where: { id: failoverEventId },
       include: {
         fromAccount: true,
@@ -205,7 +207,7 @@ export class TwilioFailoverService {
     }
 
     // Update status to executing
-    await prisma.twilioFailoverEvent.update({
+    await db.twilioFailoverEvent.update({
       where: { id: failoverEventId },
       data: {
         status: 'EXECUTING',
@@ -214,7 +216,7 @@ export class TwilioFailoverService {
 
     try {
       // Get affected agents
-      const agents = await prisma.voiceAgent.findMany({
+      const agents = await db.voiceAgent.findMany({
         where: {
           twilioAccountId: event.fromAccountId,
           status: 'ACTIVE',
@@ -224,9 +226,9 @@ export class TwilioFailoverService {
       });
 
       // Get backup phone numbers
-      const backupNumbers = await prisma.twilioBackupPhoneNumber.findMany({
+      const backupNumbers = await db.twilioBackupPhoneNumber.findMany({
         where: {
-          twilioAccountId: event.toAccountId,
+          twilioAccountId: event.toAccountId!,
           isAssigned: false,
         },
         take: agents.length,
@@ -242,7 +244,7 @@ export class TwilioFailoverService {
         const backupNumber = backupNumbers[i];
 
         // Update agent with backup number
-        await prisma.voiceAgent.update({
+        await db.voiceAgent.update({
           where: { id: agent.id },
           data: {
             twilioAccountId: event.toAccountId,
@@ -252,7 +254,7 @@ export class TwilioFailoverService {
         });
 
         // Mark backup number as assigned
-        await prisma.twilioBackupPhoneNumber.update({
+        await db.twilioBackupPhoneNumber.update({
           where: { id: backupNumber.id },
           data: {
             isAssigned: true,
@@ -277,7 +279,7 @@ export class TwilioFailoverService {
             );
 
             // Update agent with new ElevenLabs phone ID
-            await prisma.voiceAgent.update({
+            await db.voiceAgent.update({
               where: { id: agent.id },
               data: {
                 elevenLabsPhoneNumberId: importResult.phone_number_id,
@@ -292,8 +294,8 @@ export class TwilioFailoverService {
         // Update Twilio webhook
         try {
           const twilioClient = twilio(
-            event.toAccount.accountSid,
-            event.toAccount.authToken // Should decrypt
+            event.toAccount!.accountSid,
+            event.toAccount!.authToken || undefined
           );
 
           const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL || '';
@@ -312,7 +314,7 @@ export class TwilioFailoverService {
       }
 
       // Mark failover as completed
-      await prisma.twilioFailoverEvent.update({
+      await db.twilioFailoverEvent.update({
         where: { id: failoverEventId },
         data: {
           status: 'COMPLETED',
@@ -326,7 +328,7 @@ export class TwilioFailoverService {
       return { success: true, agentsSwitched: agents.length };
     } catch (error: any) {
       // Mark as failed
-      await prisma.twilioFailoverEvent.update({
+      await db.twilioFailoverEvent.update({
         where: { id: failoverEventId },
         data: {
           status: 'CANCELLED',
@@ -342,7 +344,7 @@ export class TwilioFailoverService {
    * Rollback failover
    */
   async rollbackFailover(failoverEventId: string, rollbackBy: string) {
-    const event = await prisma.twilioFailoverEvent.findUnique({
+    const event = await db.twilioFailoverEvent.findUnique({
       where: { id: failoverEventId },
       include: {
         fromAccount: true,
@@ -355,7 +357,7 @@ export class TwilioFailoverService {
     }
 
     // Get agents that were switched
-    const agents = await prisma.voiceAgent.findMany({
+    const agents = await db.voiceAgent.findMany({
       where: {
         twilioAccountId: event.toAccountId,
         backupPhoneNumber: { not: null },
@@ -364,7 +366,7 @@ export class TwilioFailoverService {
 
     // Switch back to original account and numbers
     for (const agent of agents) {
-      await prisma.voiceAgent.update({
+      await db.voiceAgent.update({
         where: { id: agent.id },
         data: {
           twilioAccountId: event.fromAccountId,
@@ -374,7 +376,7 @@ export class TwilioFailoverService {
       });
 
       // Unassign backup number
-      await prisma.twilioBackupPhoneNumber.updateMany({
+      await db.twilioBackupPhoneNumber.updateMany({
         where: {
           assignedToAgentId: agent.id,
         },
@@ -387,7 +389,7 @@ export class TwilioFailoverService {
     }
 
     // Update event
-    await prisma.twilioFailoverEvent.update({
+    await db.twilioFailoverEvent.update({
       where: { id: failoverEventId },
       data: {
         rollbackAt: new Date(),

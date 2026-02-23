@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getRouteDb } from '@/lib/dal/get-route-db';
 import { getWorkflowTabForIndustry, isIndustryFallbackTab } from '@/lib/industry-registry';
 import type { Industry } from '@/lib/industry-menu-config';
 import { WorkflowsPageWrapper } from '@/components/workflows/workflows-page-wrapper';
@@ -15,7 +15,8 @@ export default async function WorkflowsPageRoute() {
   }
 
   // Get user's industry (from DB - session may not have it on first load)
-  const user = await prisma.user.findUnique({
+  const db = getRouteDb(session);
+  const user = await db.user.findUnique({
     where: { id: session.user.id },
     select: { industry: true },
   });
@@ -30,7 +31,7 @@ export default async function WorkflowsPageRoute() {
     );
   }
 
-  const TabComponent = getWorkflowTabForIndustry(userIndustry);
+  const TabComponent: any = getWorkflowTabForIndustry(userIndustry);
 
   return (
     <WorkflowsPageWrapper>

@@ -3,11 +3,13 @@
  * Supports Gmail OAuth, SendGrid, and console fallback
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import sgMail from '@sendgrid/mail';
 import { CallSummaryExtractor } from '@/lib/call-summary-extractor';
 import { getEmailTemplates, replaceEmailPlaceholders, formatDateForLocale } from '@/lib/email-templates';
 import { decrypt } from '@/lib/encryption';
+const db = getCrmDb({ userId: '', industry: null })
 
 interface EmailOptions {
   to: string;
@@ -91,7 +93,7 @@ export class EmailService {
 
       // Update the connection with new token and expiry
       const expiresAt = new Date(Date.now() + expires_in * 1000);
-      await prisma.channelConnection.update({
+      await db.channelConnection.update({
         where: { id: connectionId },
         data: {
           accessToken: access_token,
@@ -116,7 +118,7 @@ export class EmailService {
       console.log('📧 [Gmail OAuth] Attempting to send email for user:', userId);
 
       // Get Gmail connection for this user
-      let gmailConnection = await prisma.channelConnection.findFirst({
+      let gmailConnection = await db.channelConnection.findFirst({
         where: {
           userId,
           channelType: 'EMAIL',
@@ -347,7 +349,7 @@ export class EmailService {
     } = params;
 
     // Get user/business info
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true, businessCategory: true }
     });
@@ -727,7 +729,7 @@ ${recordingUrl ? `RECORDING: ${recordingUrl}` : ''}
     let userLanguage: 'en' | 'fr' | 'es' | 'zh' = 'en';
     if (userId) {
       try {
-        const user = await prisma.user.findUnique({
+        const user = await db.user.findUnique({
           where: { id: userId },
           select: { language: true },
         });

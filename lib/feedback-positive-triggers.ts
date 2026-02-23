@@ -21,8 +21,8 @@ export async function processFeedbackPositiveTriggers(
   await processCampaignTriggers({
     leadId,
     userId,
-    triggerType: 'FEEDBACK_POSITIVE',
-    metadata,
+    triggerType: 'FEEDBACK_POSITIVE' as any,
+    metadata: metadata as any,
   });
 
   const ctx = createDalContext(userId);
@@ -32,16 +32,16 @@ export async function processFeedbackPositiveTriggers(
       userId,
       isActive: true,
       enrollmentMode: true,
-      enrollmentTriggers: { not: null },
+      enrollmentTriggers: { not: null as any },
     },
     include: {
       tasks: { orderBy: { displayOrder: 'asc' } },
     },
   });
 
-  for (const workflow of workflows) {
+  for (const workflow of workflows as any[]) {
     const triggers = (workflow.enrollmentTriggers as Array<{ type: string }>) || [];
-    const hasTrigger = triggers.some((t) => t.type === 'FEEDBACK_POSITIVE');
+    const hasTrigger = triggers.some((t: any) => t.type === 'FEEDBACK_POSITIVE');
     if (!hasTrigger) continue;
 
     const existing = await db.workflowTemplateEnrollment.findUnique({

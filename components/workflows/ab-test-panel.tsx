@@ -235,7 +235,7 @@ export function ABTestPanel({
                 <Label className="text-sm font-medium">Performance Metric</Label>
                 <Select
                   value={localConfig.metric || 'open_rate'}
-                  onValueChange={(value: ABTestConfig['metric']) =>
+                  onValueChange={(value: any) =>
                     handleConfigUpdate({ metric: value })
                   }
                 >

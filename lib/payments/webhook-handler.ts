@@ -4,8 +4,10 @@
  * Processes incoming webhook events from Soshogle Pay
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import crypto from 'crypto';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface WebhookEvent {
   id: string;
@@ -105,7 +107,7 @@ export class SoshogleWebhookHandler {
     const { id: intentId, amount, currency, customer } = event.data;
 
     // Update payment intent in database
-    await prisma.soshoglePaymentIntent.updateMany({
+    await db.soshoglePaymentIntent.updateMany({
       where: { soshogleIntentId: intentId },
       data: {
         status: 'SUCCEEDED' as any,
@@ -116,18 +118,18 @@ export class SoshogleWebhookHandler {
     // Award loyalty points (e.g., 1 point per dollar)
     const points = Math.floor(amount / 100);
     if (points > 0) {
-      const paymentCustomer = await prisma.soshoglePaymentCustomer.findFirst({
+      const paymentCustomer = await db.soshoglePaymentCustomer.findFirst({
         where: { soshogleCustomerId: customer },
       });
 
       if (paymentCustomer) {
         // Find active loyalty program
-        const loyaltyProgram = await prisma.soshogleLoyaltyProgram.findFirst({
+        const loyaltyProgram = await db.soshogleLoyaltyProgram.findFirst({
           where: { isActive: true },
         });
 
         if (loyaltyProgram) {
-          const loyaltyPoints = await prisma.soshogleLoyaltyPoints.findFirst({
+          const loyaltyPoints = await db.soshogleLoyaltyPoints.findFirst({
             where: {
               customerId: paymentCustomer.id,
               programId: loyaltyProgram.id,
@@ -135,7 +137,7 @@ export class SoshogleWebhookHandler {
           });
 
           if (loyaltyPoints) {
-            await prisma.soshogleLoyaltyPoints.update({
+            await db.soshogleLoyaltyPoints.update({
               where: { id: loyaltyPoints.id },
               data: {
                 points: { increment: points },
@@ -156,7 +158,7 @@ export class SoshogleWebhookHandler {
   private async handlePaymentFailure(event: WebhookEvent): Promise<void> {
     const { id: intentId, last_payment_error } = event.data;
 
-    await prisma.soshoglePaymentIntent.updateMany({
+    await db.soshoglePaymentIntent.updateMany({
       where: { soshogleIntentId: intentId },
       data: {
         status: 'FAILED' as any,
@@ -173,7 +175,7 @@ export class SoshogleWebhookHandler {
   private async handlePaymentCanceled(event: WebhookEvent): Promise<void> {
     const { id: intentId } = event.data;
 
-    await prisma.soshoglePaymentIntent.updateMany({
+    await db.soshoglePaymentIntent.updateMany({
       where: { soshogleIntentId: intentId },
       data: {
         status: 'CANCELED' as any,
@@ -191,7 +193,7 @@ export class SoshogleWebhookHandler {
     const { id: refundId, payment_intent, amount, status } = event.data;
 
     // Update payment intent status
-    await prisma.soshoglePaymentIntent.updateMany({
+    await db.soshoglePaymentIntent.updateMany({
       where: { soshogleIntentId: payment_intent },
       data: { status: 'REFUNDED' as any },
     });
@@ -213,7 +215,7 @@ export class SoshogleWebhookHandler {
   private async handleCustomerUpdated(event: WebhookEvent): Promise<void> {
     const { id: customerId, email, phone, metadata } = event.data;
 
-    await prisma.soshoglePaymentCustomer.updateMany({
+    await db.soshoglePaymentCustomer.updateMany({
       where: { soshogleCustomerId: customerId },
       data: {
         email: email || undefined,
@@ -239,7 +241,7 @@ export class SoshogleWebhookHandler {
   private async handlePaymentMethodDetached(event: WebhookEvent): Promise<void> {
     const { id: methodId } = event.data;
 
-    await prisma.soshoglePaymentMethod.updateMany({
+    await db.soshoglePaymentMethod.updateMany({
       where: { soshogleMethodId: methodId },
       data: { isActive: false },
     });
@@ -254,7 +256,7 @@ export class SoshogleWebhookHandler {
     const { id: disputeId, amount, reason, status } = event.data;
 
     // Create dispute record
-    await prisma.soshogleDispute.create({
+    await db.soshogleDispute.create({
       data: {
         soshogleDisputeId: disputeId,
         paymentIntentId: event.data.payment_intent,
@@ -285,7 +287,7 @@ export class SoshogleWebhookHandler {
     status: string,
     error?: Error
   ): Promise<void> {
-    await prisma.soshogleWebhook.create({
+    await db.soshogleWebhook.create({
       data: {
         eventId: event.id,
         eventType: event.type,

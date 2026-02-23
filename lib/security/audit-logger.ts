@@ -4,8 +4,10 @@
  * Tracks sensitive operations and security events
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { AuditAction, AuditSeverity } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface AuditLogData {
   userId?: string;
@@ -25,7 +27,7 @@ export interface AuditLogData {
  */
 export async function createAuditLog(data: AuditLogData): Promise<void> {
   try {
-    await prisma.auditLog.create({
+    await db.auditLog.create({
       data: {
         userId: data.userId,
         action: data.action,
@@ -263,7 +265,7 @@ export async function getAuditLogs(filters: {
   }
 
   const [logs, total] = await Promise.all([
-    prisma.auditLog.findMany({
+    db.auditLog.findMany({
       where,
       include: {
         user: {
@@ -280,7 +282,7 @@ export async function getAuditLogs(filters: {
       take: filters.limit || 100,
       skip: filters.offset || 0,
     }),
-    prisma.auditLog.count({ where }),
+    db.auditLog.count({ where }),
   ]);
 
   return { logs, total };

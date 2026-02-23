@@ -6,8 +6,10 @@
  * across the CRM platform.
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { PageResource, PermissionAction } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 // Role presets - define default permissions for each role
 export const ROLE_PRESETS = {
@@ -75,7 +77,7 @@ export async function hasPermission(
   action: 'READ' | 'WRITE' | 'DELETE'
 ): Promise<boolean> {
   try {
-    const permission = await prisma.userPermission.findUnique({
+    const permission = await db.userPermission.findUnique({
       where: {
         userId_resource: {
           userId,
@@ -116,7 +118,7 @@ export async function hasPermission(
  */
 export async function getUserPermissions(userId: string) {
   try {
-    const permissions = await prisma.userPermission.findMany({
+    const permissions = await db.userPermission.findMany({
       where: { userId },
       orderBy: { resource: 'asc' },
     });
@@ -143,12 +145,12 @@ export async function applyRolePreset(
     }
 
     // Delete existing permissions
-    await prisma.userPermission.deleteMany({
+    await db.userPermission.deleteMany({
       where: { userId },
     });
 
     // Create new permissions based on preset
-    const permissions = await prisma.userPermission.createMany({
+    const permissions = await db.userPermission.createMany({
       data: preset.permissions.map(p => ({
         userId,
         resource: p.resource,
@@ -180,7 +182,7 @@ export async function grantPermission(
   grantedBy: string
 ) {
   try {
-    const permission = await prisma.userPermission.upsert({
+    const permission = await db.userPermission.upsert({
       where: {
         userId_resource: {
           userId,
@@ -215,7 +217,7 @@ export async function grantPermission(
  */
 export async function revokeAllPermissions(userId: string) {
   try {
-    await prisma.userPermission.deleteMany({
+    await db.userPermission.deleteMany({
       where: { userId },
     });
   } catch (error) {
@@ -229,7 +231,7 @@ export async function revokeAllPermissions(userId: string) {
  */
 export async function hasValidAdminSession(userId: string): Promise<boolean> {
   try {
-    const session = await prisma.adminSession.findFirst({
+    const session = await db.adminSession.findFirst({
       where: {
         userId,
         isActive: true,
@@ -262,7 +264,7 @@ export async function createAdminSession(
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
     const sessionToken = crypto.randomUUID();
 
-    await prisma.adminSession.create({
+    await db.adminSession.create({
       data: {
         userId,
         sessionToken,
@@ -284,7 +286,7 @@ export async function createAdminSession(
  */
 export async function invalidateAdminSession(sessionToken: string) {
   try {
-    await prisma.adminSession.update({
+    await db.adminSession.update({
       where: { sessionToken },
       data: { isActive: false },
     });
@@ -301,7 +303,7 @@ export async function updateAdminSessionActivity(sessionToken: string) {
   try {
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
     
-    await prisma.adminSession.update({
+    await db.adminSession.update({
       where: { sessionToken },
       data: {
         lastActivity: new Date(),

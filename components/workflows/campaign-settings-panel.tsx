@@ -185,7 +185,7 @@ export function CampaignSettingsPanel({
           </Label>
           <Select
             value={localSettings.tone || 'professional'}
-            onValueChange={(value: CampaignSettings['tone']) =>
+            onValueChange={(value: any) =>
               handleChange('tone', value)
             }
           >

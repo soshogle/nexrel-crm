@@ -32,7 +32,7 @@ export class RootErrorBoundary extends Component<Props, State> {
     console.error('[RootErrorBoundary] Caught error:', error.message, errorInfo.componentStack);
     if (typeof window !== 'undefined') {
       import('@sentry/nextjs').then((Sentry) => {
-        Sentry.captureException(error, { extra: errorInfo });
+        Sentry.captureException(error, { extra: errorInfo as any });
       }).catch(() => {});
     }
   }

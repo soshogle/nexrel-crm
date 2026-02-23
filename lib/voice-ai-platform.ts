@@ -12,8 +12,10 @@
  * - Agent prefix generation for multi-tenant isolation
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { VoiceAISubscriptionTier, VoiceAICallDirection, VoiceAICallStatus, VoiceAIBillingStatus } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 // Tier configurations
 const TIER_CONFIGS: Record<VoiceAISubscriptionTier, { minutes: number; pricePerMin: number }> = {
@@ -30,7 +32,7 @@ export class VoiceAIPlatformService {
    */
   async getMasterApiKey(): Promise<string | null> {
     try {
-      const config = await prisma.platformVoiceAIConfig.findFirst({
+      const config = await db.platformVoiceAIConfig.findFirst({
         where: { isActive: true },
       });
       
@@ -50,13 +52,13 @@ export class VoiceAIPlatformService {
    * Get platform configuration
    */
   async getPlatformConfig() {
-    let config = await prisma.platformVoiceAIConfig.findFirst({
+    let config = await db.platformVoiceAIConfig.findFirst({
       where: { isActive: true },
     });
     
     // Create default config if none exists
     if (!config && process.env.ELEVENLABS_API_KEY) {
-      config = await prisma.platformVoiceAIConfig.create({
+      config = await db.platformVoiceAIConfig.create({
         data: {
           masterElevenLabsKey: process.env.ELEVENLABS_API_KEY,
           defaultPricePerMin: 0.50,
@@ -82,18 +84,18 @@ export class VoiceAIPlatformService {
     defaultOverageRate?: number;
     totalMonthlyQuota?: number;
   }) {
-    const existing = await prisma.platformVoiceAIConfig.findFirst({
+    const existing = await db.platformVoiceAIConfig.findFirst({
       where: { isActive: true },
     });
 
     if (existing) {
-      return prisma.platformVoiceAIConfig.update({
+      return db.platformVoiceAIConfig.update({
         where: { id: existing.id },
         data,
       });
     }
 
-    return prisma.platformVoiceAIConfig.create({
+    return db.platformVoiceAIConfig.create({
       data: {
         masterElevenLabsKey: data.masterElevenLabsKey || '',
         masterTwilioSid: data.masterTwilioSid,
@@ -110,7 +112,7 @@ export class VoiceAIPlatformService {
    * Get or create an agency's Voice AI subscription
    */
   async getAgencySubscription(userId: string) {
-    let subscription = await prisma.voiceAISubscription.findUnique({
+    let subscription = await db.voiceAISubscription.findUnique({
       where: { userId },
     });
 
@@ -119,7 +121,7 @@ export class VoiceAIPlatformService {
       const platformConfig = await this.getPlatformConfig();
       const tierConfig = TIER_CONFIGS.STARTER;
       
-      subscription = await prisma.voiceAISubscription.create({
+      subscription = await db.voiceAISubscription.create({
         data: {
           userId,
           tier: 'STARTER',
@@ -156,7 +158,7 @@ export class VoiceAIPlatformService {
       quota = TIER_CONFIGS[data.tier].minutes;
     }
 
-    return prisma.voiceAISubscription.update({
+    return db.voiceAISubscription.update({
       where: { id: subscription.id },
       data: {
         ...data,
@@ -257,7 +259,7 @@ export class VoiceAIPlatformService {
     const cost = durationMinutes * rate;
 
     // Create usage log
-    const usageLog = await prisma.voiceAIUsageLog.create({
+    const usageLog = await db.voiceAIUsageLog.create({
       data: {
         userId: data.userId,
         subscriptionId: subscription.id,
@@ -280,7 +282,7 @@ export class VoiceAIPlatformService {
 
     // Update subscription usage
     if (data.status === 'COMPLETED' || data.status === 'IN_PROGRESS') {
-      await prisma.voiceAISubscription.update({
+      await db.voiceAISubscription.update({
         where: { id: subscription.id },
         data: {
           minutesUsedThisMonth: {
@@ -292,7 +294,7 @@ export class VoiceAIPlatformService {
       // Update platform total usage
       const platformConfig = await this.getPlatformConfig();
       if (platformConfig) {
-        await prisma.platformVoiceAIConfig.update({
+        await db.platformVoiceAIConfig.update({
           where: { id: platformConfig.id },
           data: {
             usedThisMonth: {
@@ -324,13 +326,13 @@ export class VoiceAIPlatformService {
     }
 
     const [logs, total] = await Promise.all([
-      prisma.voiceAIUsageLog.findMany({
+      db.voiceAIUsageLog.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         take: options?.limit ?? 50,
         skip: options?.offset ?? 0,
       }),
-      prisma.voiceAIUsageLog.count({ where }),
+      db.voiceAIUsageLog.count({ where }),
     ]);
 
     return { logs, total };
@@ -343,14 +345,14 @@ export class VoiceAIPlatformService {
     const subscription = await this.getAgencySubscription(userId);
     
     const [totalCalls, totalMinutes, totalCost] = await Promise.all([
-      prisma.voiceAIUsageLog.count({
+      db.voiceAIUsageLog.count({
         where: { userId, subscriptionId: subscription.id },
       }),
-      prisma.voiceAIUsageLog.aggregate({
+      db.voiceAIUsageLog.aggregate({
         where: { userId, subscriptionId: subscription.id },
         _sum: { durationMinutes: true },
       }),
-      prisma.voiceAIUsageLog.aggregate({
+      db.voiceAIUsageLog.aggregate({
         where: { userId, subscriptionId: subscription.id },
         _sum: { cost: true },
       }),
@@ -375,7 +377,7 @@ export class VoiceAIPlatformService {
     const subscription = await this.getAgencySubscription(userId);
     
     // Get usage for the period
-    const usage = await prisma.voiceAIUsageLog.aggregate({
+    const usage = await db.voiceAIUsageLog.aggregate({
       where: {
         userId,
         createdAt: {
@@ -399,7 +401,7 @@ export class VoiceAIPlatformService {
     // Generate invoice number
     const invoiceNumber = `VAI-${userId.slice(0, 6).toUpperCase()}-${Date.now()}`;
 
-    return prisma.voiceAIBillingRecord.create({
+    return db.voiceAIBillingRecord.create({
       data: {
         userId,
         subscriptionId: subscription.id,
@@ -421,7 +423,7 @@ export class VoiceAIPlatformService {
    * Get billing records for an agency
    */
   async getAgencyBillingRecords(userId: string) {
-    return prisma.voiceAIBillingRecord.findMany({
+    return db.voiceAIBillingRecord.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
     });
@@ -434,7 +436,7 @@ export class VoiceAIPlatformService {
     const now = new Date();
     
     // Reset all subscriptions
-    await prisma.voiceAISubscription.updateMany({
+    await db.voiceAISubscription.updateMany({
       where: { isActive: true },
       data: {
         minutesUsedThisMonth: 0,
@@ -443,7 +445,7 @@ export class VoiceAIPlatformService {
     });
 
     // Reset platform usage
-    await prisma.platformVoiceAIConfig.updateMany({
+    await db.platformVoiceAIConfig.updateMany({
       where: { isActive: true },
       data: {
         usedThisMonth: 0,
@@ -468,7 +470,7 @@ export class VoiceAIPlatformService {
     if (options?.isActive !== undefined) where.isActive = options.isActive;
 
     const [subscriptions, total] = await Promise.all([
-      prisma.voiceAISubscription.findMany({
+      db.voiceAISubscription.findMany({
         where,
         include: {
           user: {
@@ -484,7 +486,7 @@ export class VoiceAIPlatformService {
         take: options?.limit ?? 50,
         skip: options?.offset ?? 0,
       }),
-      prisma.voiceAISubscription.count({ where }),
+      db.voiceAISubscription.count({ where }),
     ]);
 
     return { subscriptions, total };
@@ -496,10 +498,10 @@ export class VoiceAIPlatformService {
   async getPlatformStats() {
     const [config, totalAgencies, activeAgencies, totalMinutes, totalCost] = await Promise.all([
       this.getPlatformConfig(),
-      prisma.voiceAISubscription.count(),
-      prisma.voiceAISubscription.count({ where: { isActive: true } }),
-      prisma.voiceAIUsageLog.aggregate({ _sum: { durationMinutes: true } }),
-      prisma.voiceAIUsageLog.aggregate({ _sum: { cost: true } }),
+      db.voiceAISubscription.count(),
+      db.voiceAISubscription.count({ where: { isActive: true } }),
+      db.voiceAIUsageLog.aggregate({ _sum: { durationMinutes: true } }),
+      db.voiceAIUsageLog.aggregate({ _sum: { cost: true } }),
     ]);
 
     return {

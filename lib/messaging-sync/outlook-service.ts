@@ -139,7 +139,7 @@ export class OutlookService {
 
         if (!conversation) {
           let lead = await leadService.findMany(ctx, { where: { email: contactEmail }, take: 1 }).then((l) => l[0]);
-          if (lead) lead = { id: lead.id };
+          if (lead) lead = { id: lead.id } as any;
 
           if (!lead && contactEmail?.includes('@')) {
             const newLead = await leadService.create(ctx, {
@@ -148,7 +148,7 @@ export class OutlookService {
               email: contactEmail,
               source: 'email_sync',
             });
-            lead = { id: newLead.id };
+            lead = { id: newLead.id } as any;
           }
 
           conversation = await conversationService.create(ctx, {
@@ -162,7 +162,7 @@ export class OutlookService {
         } else if (!conversation.leadId) {
           const lead = await leadService.findMany(ctx, { where: { email: contactEmail }, take: 1 }).then((l) => l[0]);
           if (lead) {
-            await conversationService.update(ctx, conversation.id, { leadId: lead.id });
+            await conversationService.update(ctx, conversation.id, { leadId: lead.id } as any);
             conversation.leadId = lead.id;
           }
         }

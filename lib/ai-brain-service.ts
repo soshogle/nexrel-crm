@@ -100,8 +100,8 @@ export class AIBrainService {
     const db = getCrmDb(ctx);
     // Fetch all relevant data with error handling
     const results = await Promise.allSettled([
-      leadService.findMany(ctx, { include: { notes: true } }),
-      dealService.findMany(ctx, { include: { stage: true } }),
+      leadService.findMany(ctx, { include: { notes: true } } as any),
+      dealService.findMany(ctx, { include: { stage: true } } as any),
       taskService.findMany(ctx),
       db.bookingAppointment.findMany({
         where: { userId },
@@ -130,8 +130,8 @@ export class AIBrainService {
       }
     };
 
-    const leads = getResult(results[0], 'leads');
-    const deals = getResult(results[1], 'deals');
+    const leads: any[] = getResult(results[0], 'leads');
+    const deals: any[] = getResult(results[1], 'deals');
     const tasks = getResult(results[2], 'tasks');
     const appointments = getResult(results[3], 'appointments');
     const callLogs = getResult(results[4], 'callLogs');
@@ -347,7 +347,7 @@ export class AIBrainService {
     // 7. Positive Momentum Detection
     const recentWins = deals.filter(
       (d) =>
-        d.stage.name.includes('Won') &&
+        d.stage?.name?.includes('Won') &&
         d.actualCloseDate &&
         d.actualCloseDate > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     );
@@ -475,7 +475,7 @@ Respond ONLY with valid JSON array, no markdown.`;
     // Fetch data with error handling
     const results = await Promise.allSettled([
       leadService.findMany(ctx),
-      dealService.findMany(ctx, { include: { lead: true, stage: true } }),
+      dealService.findMany(ctx, { include: { lead: true, stage: true } } as any),
     ]);
 
     // Extract results with error handling
@@ -493,8 +493,8 @@ Respond ONLY with valid JSON array, no markdown.`;
       }
     };
 
-    const leads = getResult(results[0], 'leads');
-    const deals = getResult(results[1], 'deals');
+    const leads: any[] = getResult(results[0], 'leads');
+    const deals: any[] = getResult(results[1], 'deals');
 
     // Calculate recent trends
     const last30DaysLeads = leads.filter(
@@ -510,7 +510,7 @@ Respond ONLY with valid JSON array, no markdown.`;
       (d) =>
         d.actualCloseDate &&
         d.actualCloseDate > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) &&
-        d.stage.name.includes('Won')
+        d.stage?.name?.includes('Won')
     );
 
     // Calculate growth rate

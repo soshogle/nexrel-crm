@@ -3,7 +3,8 @@
  * Placeholder for MLS data access (requires MLS API credentials)
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 
 export interface MLSListing {
   mlsNumber: string;

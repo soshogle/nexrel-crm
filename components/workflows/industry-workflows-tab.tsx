@@ -393,7 +393,7 @@ export function IndustryWorkflowsTab({ industry, preSelectedAgent }: IndustryWor
                         </div>
                         <ul className="text-sm text-gray-600 space-y-1 mb-4">
                           {tasks.slice(0, 5).map((t, i) => (
-                            <li key={t.id || i}>• {t.name}</li>
+                            <li key={(t as any).id || i}>• {t.name}</li>
                           ))}
                           {tasks.length > 5 && <li>• +{tasks.length - 5} more steps</li>}
                         </ul>

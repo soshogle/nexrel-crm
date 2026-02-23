@@ -75,24 +75,26 @@ export function AudiencePanel({
     { value: 'messaging', label: 'Messaging' },
   ];
 
-  // Only show if campaign mode
-  if (executionMode !== 'CAMPAIGN') {
-    return null;
-  }
-
   useEffect(() => {
+    if (executionMode !== 'CAMPAIGN') return;
     fetchRecipientCount();
     fetchAvailableFilters();
-  }, [localAudience]);
+  }, [localAudience, executionMode]);
 
   useEffect(() => {
+    if (executionMode !== 'CAMPAIGN') return;
     if (localAudience.type === 'WEBSITE_LEADS') {
       fetch('/api/websites')
         .then((r) => r.ok ? r.json() : { websites: [] })
         .then((d) => setWebsites(d.websites || []))
         .catch(() => setWebsites([]));
     }
-  }, [localAudience.type]);
+  }, [localAudience.type, executionMode]);
+
+  // Only show if campaign mode
+  if (executionMode !== 'CAMPAIGN') {
+    return null;
+  }
 
   const fetchRecipientCount = async () => {
     if (localAudience.type !== 'FILTERED' && localAudience.type !== 'WEBSITE_LEADS') {
@@ -138,7 +140,7 @@ export function AudiencePanel({
     }
   };
 
-  const handleFilterChange = (key: keyof AudienceConfig['filters'], value: any) => {
+  const handleFilterChange = (key: keyof NonNullable<AudienceConfig['filters']>, value: any) => {
     const newFilters = {
       ...localAudience.filters,
       [key]: value,

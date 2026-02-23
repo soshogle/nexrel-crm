@@ -357,9 +357,9 @@ export function ChartVisualization({
     const pieData = data.labels.map((label: string, index: number) => ({
       name: label,
       value: data.datasets[0]?.data[index] || 0,
-    })).filter(item => item.value > 0);
+    })).filter((item: any) => item.value > 0);
     
-    const total = pieData.reduce((sum, item) => sum + item.value, 0);
+    const total = pieData.reduce((sum: any, item: any) => sum + item.value, 0);
     const COLORS = PROFESSIONAL_COLORS.slice(0, pieData.length);
 
     return (
@@ -384,14 +384,14 @@ export function ChartVisualization({
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
                     outerRadius={100}
                     fill="#8884d8"
                     dataKey="value"
                     animationDuration={1000}
                     animationBegin={0}
                   >
-                    {pieData.map((entry, index) => (
+                    {pieData.map((entry: any, index: number) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={COLORS[index % COLORS.length]}
@@ -401,15 +401,15 @@ export function ChartVisualization({
                     ))}
                   </Pie>
                   <Tooltip 
-                    content={({ active, payload }) => {
+                    content={({ active, payload }: any) => {
                       if (active && payload && payload.length) {
-                        const data = payload[0];
-                        const percentage = total > 0 ? ((data.value as number) / total * 100) : 0;
+                        const entry = payload[0];
+                        const percentage = total > 0 ? ((entry.value as number) / total * 100) : 0;
                         return (
                           <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-xl p-3">
-                            <p className="font-semibold text-sm mb-1">{data.name}</p>
+                            <p className="font-semibold text-sm mb-1">{entry.name}</p>
                             <p className="text-sm text-gray-600">
-                              Value: <span className="font-bold">{data.value?.toLocaleString()}</span>
+                              Value: <span className="font-bold">{entry.value?.toLocaleString()}</span>
                             </p>
                             <p className="text-sm text-gray-600">
                               Percentage: <span className="font-bold">{percentage.toFixed(1)}%</span>
@@ -423,7 +423,7 @@ export function ChartVisualization({
                   <Legend 
                     verticalAlign="bottom" 
                     height={36}
-                    formatter={(value) => (
+                    formatter={(value: any) => (
                       <span className="text-sm text-gray-700">{value}</span>
                     )}
                   />
@@ -433,7 +433,7 @@ export function ChartVisualization({
 
             {/* Legend with values */}
             <div className="flex flex-col justify-center space-y-3">
-              {pieData.map((item, index) => {
+              {pieData.map((item: any, index: number) => {
                 const percentage = total > 0 ? (item.value / total * 100) : 0;
                 return (
                   <div key={index} className="space-y-2">

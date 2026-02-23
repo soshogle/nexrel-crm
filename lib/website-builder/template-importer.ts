@@ -4,7 +4,9 @@
  */
 
 import { websiteScraper } from './scraper';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 export class WebsiteTemplateImporter {
   /**
@@ -33,7 +35,7 @@ export class WebsiteTemplateImporter {
     const previewImage = this.extractPreviewImage(scrapedData);
 
     // Save as template (previewUrl = source URL for live iframe preview)
-    const template = await prisma.websiteTemplate.create({
+    const template = await db.websiteTemplate.create({
       data: {
         name,
         type: templateType,
@@ -226,7 +228,7 @@ export class WebsiteTemplateImporter {
    * Set a template as default for its type
    */
   async setDefaultTemplate(templateId: string) {
-    const template = await prisma.websiteTemplate.findUnique({
+    const template = await db.websiteTemplate.findUnique({
       where: { id: templateId },
     });
 
@@ -235,7 +237,7 @@ export class WebsiteTemplateImporter {
     }
 
     // Unset other defaults of the same type
-    await prisma.websiteTemplate.updateMany({
+    await db.websiteTemplate.updateMany({
       where: {
         type: template.type,
         isDefault: true,
@@ -246,7 +248,7 @@ export class WebsiteTemplateImporter {
     });
 
     // Set this one as default
-    await prisma.websiteTemplate.update({
+    await db.websiteTemplate.update({
       where: { id: templateId },
       data: { isDefault: true },
     });
@@ -258,7 +260,7 @@ export class WebsiteTemplateImporter {
    * Get all templates of a specific type
    */
   async getTemplatesByType(type: 'SERVICE' | 'PRODUCT') {
-    return prisma.websiteTemplate.findMany({
+    return db.websiteTemplate.findMany({
       where: { type },
       orderBy: [
         { isDefault: 'desc' },

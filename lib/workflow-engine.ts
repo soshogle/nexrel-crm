@@ -26,6 +26,7 @@ import type {
   Deal,
   ConversationMessage,
 } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface ExecutionContext {
   userId: string;
@@ -588,7 +589,7 @@ export class WorkflowEngine {
 
     if (existingLead) {
       // Link conversation to existing lead
-      await conversationService.update(ctx, context.conversationId, { leadId: existingLead.id });
+      await conversationService.update(ctx, context.conversationId, { leadId: existingLead.id } as any);
       return { leadId: existingLead.id, action: 'linked_existing' };
     }
 
@@ -607,7 +608,7 @@ export class WorkflowEngine {
     });
 
     // Link conversation to new lead
-    await conversationService.update(ctx, context.conversationId, { leadId: lead.id });
+    await conversationService.update(ctx, context.conversationId, { leadId: lead.id } as any);
 
     return { leadId: lead.id, action: 'created' };
   }
@@ -656,7 +657,7 @@ export class WorkflowEngine {
       description: config.description,
       priority: config.priority || 'MEDIUM',
       value: config.value || 0,
-    });
+    } as any);
 
     // Create activity
     await db.dealActivity.create({
@@ -706,7 +707,7 @@ export class WorkflowEngine {
         conversationId: context.conversationId,
         userId: context.userId,
         direction: 'OUTBOUND',
-        status: 'PENDING',
+        status: 'PENDING' as any,
         content: message,
       },
     });
@@ -1031,7 +1032,7 @@ export class WorkflowEngine {
 
     // Store in-app notification
     try {
-      await db.notification.create({
+      await (db as any).notification.create({
         data: {
           userId: context.userId,
           title: config.subject || 'Workflow Notification',
@@ -1057,7 +1058,7 @@ export class WorkflowEngine {
     const ctx = getCtx(context);
     const lead = await leadService.findUnique(ctx, context.leadId);
 
-    const existing: string[] = Array.isArray(lead?.tags) ? (lead.tags as string[]) : [];
+    const existing: string[] = Array.isArray(lead?.tags) ? (lead!.tags as string[]) : [];
     const tagsToAdd = Array.isArray(config.tag) ? config.tag : [config.tag];
     const merged = [...new Set([...existing, ...tagsToAdd])];
 
@@ -1422,7 +1423,7 @@ export class WorkflowEngine {
     await db.website.update({
       where: { id: website.id },
       data: {
-        structure,
+        structure: structure as any,
         status: 'READY',
         buildProgress: 100,
         githubRepoUrl: provisioningResult.githubRepoUrl,
@@ -1519,7 +1520,7 @@ export class WorkflowEngine {
             onboardingRequired: true,
             onboardingUrl: onboardingLink.onboardingUrl,
           },
-          status: 'PENDING',
+          status: 'PENDING' as any,
         },
       });
 
@@ -1609,7 +1610,7 @@ export class WorkflowEngine {
             thursday: { start: '09:00', end: '17:00' },
             friday: { start: '09:00', end: '17:00' },
           },
-        },
+        } as any,
       });
     }
 

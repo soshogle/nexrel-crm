@@ -1,8 +1,10 @@
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 export async function getPayPalConfig(userId: string) {
-  const settings = await prisma.paymentProviderSettings.findUnique({
+  const settings = await db.paymentProviderSettings.findUnique({
     where: {
       userId_provider: {
         userId,

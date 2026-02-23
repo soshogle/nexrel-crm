@@ -47,12 +47,12 @@ export function parseBannerNotifications(data: HITLPendingResponse): BannerNotif
     id: approval?.id ?? '',
     executionId: approval?.id ?? '',
     taskName: approval?.task?.name || 'Unknown Task',
-    contactName: approval?.instance?.lead?.businessName || approval?.instance?.lead?.contactPerson,
+    contactName: (approval?.instance?.lead?.businessName || approval?.instance?.lead?.contactPerson) ?? undefined,
     dealAddress: approval?.instance?.deal?.title,
     message: approval?.task?.description || 'Requires your approval',
     urgency: 'HIGH' as const,
     createdAt: approval?.createdAt ?? '',
-  }));
+  })) as BannerNotification[];
 }
 
 /** Parsed notifications for bell/panel (from notifications) */

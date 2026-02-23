@@ -4,8 +4,10 @@
  * Checks inventory levels and sends alerts via email/SMS
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import twilio from 'twilio';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface LowStockItem {
   id: string;
@@ -34,7 +36,7 @@ export class LowStockAlertService {
    * Check inventory and get low stock items for a user
    */
   async checkInventory(userId: string): Promise<LowStockItem[]> {
-    const items = await prisma.generalInventoryItem.findMany({
+    const items = await db.generalInventoryItem.findMany({
       where: {
         userId,
         isActive: true,
@@ -92,7 +94,7 @@ export class LowStockAlertService {
 
     try {
       // Get alert settings
-      const settings = await prisma.lowStockAlertSettings.findUnique({
+      const settings = await db.lowStockAlertSettings.findUnique({
         where: { userId },
       });
 
@@ -120,7 +122,7 @@ export class LowStockAlertService {
       }
 
       // Get user info
-      const user = await prisma.user.findUnique({
+      const user = await db.user.findUnique({
         where: { id: userId },
         select: { name: true, email: true },
       });
@@ -155,7 +157,7 @@ export class LowStockAlertService {
       }
 
       // Update last alert sent time
-      await prisma.lowStockAlertSettings.update({
+      await db.lowStockAlertSettings.update({
         where: { id: settings.id },
         data: { lastAlertSent: new Date() },
       });

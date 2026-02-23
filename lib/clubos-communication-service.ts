@@ -6,7 +6,8 @@
 
 import { sendSMS } from '@/lib/twilio';
 import { emailService } from '@/lib/email-service';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { format } from 'date-fns';
 
 interface RegistrationConfirmationData {

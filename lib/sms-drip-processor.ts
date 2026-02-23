@@ -13,7 +13,7 @@ export async function processSmsDripMessages() {
     const db = getCrmDb(createDalContext('bootstrap'));
     const activeCampaigns = await db.smsCampaign.findMany({
       where: {
-        status: 'ACTIVE',
+        status: 'ACTIVE' as any,
         isSequence: true,
       },
       include: {

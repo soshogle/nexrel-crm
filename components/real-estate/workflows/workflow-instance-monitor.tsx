@@ -76,7 +76,7 @@ export function WorkflowInstanceMonitor() {
           .filter((inst) => inst?.id)
           .map((inst) => {
             const executions = parseWorkflowExecutions(inst.executions);
-            const tasks = (inst.template?.tasks ?? []).map((t: { id?: string; name?: string; displayOrder?: number }) => ({
+            const tasks = (inst.template?.tasks ?? []).map((t: any) => ({
               id: t.id ?? '',
               name: t.name ?? 'Task',
               order: t.displayOrder ?? 0,
@@ -214,7 +214,7 @@ export function WorkflowInstanceMonitor() {
         </div>
         <Button 
           variant="outline" 
-          onClick={fetchInstances}
+          onClick={() => fetchInstances()}
           className="border-purple-200 text-gray-700 hover:bg-purple-50"
         >
           <Loader2 className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />

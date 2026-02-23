@@ -4,7 +4,9 @@
  * Comprehensive payment processing service for the CRM
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 import type {
   SoshoglePaymentIntent,
   SoshoglePaymentCustomer,
@@ -146,7 +148,7 @@ export class SoshoglePayService {
    */
   async createCustomer(params: CreateCustomerParams): Promise<SoshoglePaymentCustomer> {
     // Check if customer already exists
-    const existingCustomer = await prisma.soshoglePaymentCustomer.findUnique({
+    const existingCustomer = await db.soshoglePaymentCustomer.findUnique({
       where: { userId: params.userId },
     });
 
@@ -163,7 +165,7 @@ export class SoshoglePayService {
     });
 
     // Save to database
-    const customer = await prisma.soshoglePaymentCustomer.create({
+    const customer = await db.soshoglePaymentCustomer.create({
       data: {
         userId: params.userId,
         soshogleCustomerId: apiCustomer.id,
@@ -181,7 +183,7 @@ export class SoshoglePayService {
    * Get customer by user ID
    */
   async getCustomer(userId: string): Promise<SoshoglePaymentCustomer | null> {
-    return await prisma.soshoglePaymentCustomer.findUnique({
+    return await db.soshoglePaymentCustomer.findUnique({
       where: { userId },
       include: {
         paymentMethods: true,
@@ -209,7 +211,7 @@ export class SoshoglePayService {
     }
 
     // Update in database
-    return await prisma.soshoglePaymentCustomer.update({
+    return await db.soshoglePaymentCustomer.update({
       where: { userId },
       data: {
         email: updates.email,
@@ -225,7 +227,7 @@ export class SoshoglePayService {
    * Add a payment method for a customer
    */
   async addPaymentMethod(params: CreatePaymentMethodParams): Promise<SoshoglePaymentMethod> {
-    const customer = await prisma.soshoglePaymentCustomer.findUnique({
+    const customer = await db.soshoglePaymentCustomer.findUnique({
       where: { id: params.customerId },
     });
 
@@ -241,7 +243,7 @@ export class SoshoglePayService {
     });
 
     // Save to database
-    const paymentMethod = await prisma.soshoglePaymentMethod.create({
+    const paymentMethod = await db.soshoglePaymentMethod.create({
       data: {
         customerId: params.customerId,
         soshogleMethodId: apiMethod.id,
@@ -257,7 +259,7 @@ export class SoshoglePayService {
 
     // Set as default if requested
     if (params.isDefault) {
-      await prisma.soshoglePaymentCustomer.update({
+      await db.soshoglePaymentCustomer.update({
         where: { id: params.customerId },
         data: { defaultPaymentMethodId: paymentMethod.id },
       });
@@ -270,7 +272,7 @@ export class SoshoglePayService {
    * Get all payment methods for a customer
    */
   async getPaymentMethods(customerId: string): Promise<SoshoglePaymentMethod[]> {
-    return await prisma.soshoglePaymentMethod.findMany({
+    return await db.soshoglePaymentMethod.findMany({
       where: { customerId, isActive: true },
       orderBy: { isDefault: 'desc' },
     });
@@ -281,18 +283,18 @@ export class SoshoglePayService {
    */
   async setDefaultPaymentMethod(customerId: string, methodId: string): Promise<void> {
     // Remove default from all methods
-    await prisma.soshoglePaymentMethod.updateMany({
+    await db.soshoglePaymentMethod.updateMany({
       where: { customerId },
       data: { isDefault: false },
     });
 
     // Set new default
-    await prisma.soshoglePaymentMethod.update({
+    await db.soshoglePaymentMethod.update({
       where: { id: methodId },
       data: { isDefault: true },
     });
 
-    await prisma.soshoglePaymentCustomer.update({
+    await db.soshoglePaymentCustomer.update({
       where: { id: customerId },
       data: { defaultPaymentMethodId: methodId },
     });
@@ -302,7 +304,7 @@ export class SoshoglePayService {
    * Delete a payment method
    */
   async deletePaymentMethod(methodId: string): Promise<void> {
-    const method = await prisma.soshoglePaymentMethod.findUnique({
+    const method = await db.soshoglePaymentMethod.findUnique({
       where: { id: methodId },
     });
 
@@ -316,7 +318,7 @@ export class SoshoglePayService {
     }
 
     // Soft delete in database
-    await prisma.soshoglePaymentMethod.update({
+    await db.soshoglePaymentMethod.update({
       where: { id: methodId },
       data: { isActive: false },
     });
@@ -346,7 +348,7 @@ export class SoshoglePayService {
     });
 
     // Save to database
-    const paymentIntent = await prisma.soshoglePaymentIntent.create({
+    const paymentIntent = await db.soshoglePaymentIntent.create({
       data: {
         customerId: customer.id,
         soshogleIntentId: apiIntent.id,
@@ -368,7 +370,7 @@ export class SoshoglePayService {
    * Confirm and process a payment
    */
   async confirmPayment(params: ProcessPaymentParams): Promise<SoshoglePaymentIntent> {
-    const intent = await prisma.soshoglePaymentIntent.findUnique({
+    const intent = await db.soshoglePaymentIntent.findUnique({
       where: { id: params.paymentIntentId },
     });
 
@@ -387,7 +389,7 @@ export class SoshoglePayService {
     );
 
     // Update in database
-    const updatedIntent = await prisma.soshoglePaymentIntent.update({
+    const updatedIntent = await db.soshoglePaymentIntent.update({
       where: { id: params.paymentIntentId },
       data: {
         status: apiIntent.status,
@@ -414,7 +416,7 @@ export class SoshoglePayService {
    * Capture a payment (for manual capture)
    */
   async capturePayment(paymentIntentId: string, amount?: number): Promise<SoshoglePaymentIntent> {
-    const intent = await prisma.soshoglePaymentIntent.findUnique({
+    const intent = await db.soshoglePaymentIntent.findUnique({
       where: { id: paymentIntentId },
     });
 
@@ -430,7 +432,7 @@ export class SoshoglePayService {
     );
 
     // Update in database
-    return await prisma.soshoglePaymentIntent.update({
+    return await db.soshoglePaymentIntent.update({
       where: { id: paymentIntentId },
       data: {
         status: apiIntent.status,
@@ -443,7 +445,7 @@ export class SoshoglePayService {
    * Cancel a payment intent
    */
   async cancelPayment(paymentIntentId: string, reason?: string): Promise<SoshoglePaymentIntent> {
-    const intent = await prisma.soshoglePaymentIntent.findUnique({
+    const intent = await db.soshoglePaymentIntent.findUnique({
       where: { id: paymentIntentId },
     });
 
@@ -459,7 +461,7 @@ export class SoshoglePayService {
     );
 
     // Update in database
-    return await prisma.soshoglePaymentIntent.update({
+    return await db.soshoglePaymentIntent.update({
       where: { id: paymentIntentId },
       data: {
         status: 'CANCELED' as any,
@@ -476,7 +478,7 @@ export class SoshoglePayService {
     amount?: number,
     reason?: string
   ): Promise<any> {
-    const intent = await prisma.soshoglePaymentIntent.findUnique({
+    const intent = await db.soshoglePaymentIntent.findUnique({
       where: { id: paymentIntentId },
     });
 
@@ -517,7 +519,7 @@ export class SoshoglePayService {
     status: string;
     type: string;
   }): Promise<SoshogleTransaction> {
-    return await prisma.soshogleTransaction.create({
+    return await db.soshogleTransaction.create({
       data: {
         paymentIntentId: data.paymentIntentId,
         customerId: data.customerId,
@@ -535,7 +537,7 @@ export class SoshoglePayService {
    * Get transaction history for a customer
    */
   async getTransactions(customerId: string, limit = 50): Promise<SoshogleTransaction[]> {
-    return await prisma.soshogleTransaction.findMany({
+    return await db.soshogleTransaction.findMany({
       where: { customerId },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -551,12 +553,12 @@ export class SoshoglePayService {
    * Get or create wallet for a customer
    */
   async getOrCreateWallet(customerId: string): Promise<SoshogleWallet> {
-    let wallet = await prisma.soshogleWallet.findUnique({
+    let wallet = await db.soshogleWallet.findUnique({
       where: { customerId },
     });
 
     if (!wallet) {
-      wallet = await prisma.soshogleWallet.create({
+      wallet = await db.soshogleWallet.create({
         data: {
           customerId,
           balance: 0,
@@ -573,7 +575,7 @@ export class SoshoglePayService {
    * Add funds to wallet
    */
   async addToWallet(params: WalletOperationParams): Promise<SoshogleWallet> {
-    const wallet = await prisma.soshogleWallet.findUnique({
+    const wallet = await db.soshogleWallet.findUnique({
       where: { id: params.walletId },
     });
 
@@ -583,7 +585,7 @@ export class SoshoglePayService {
 
     const newBalance = wallet.balance + params.amount;
 
-    const updatedWallet = await prisma.soshogleWallet.update({
+    const updatedWallet = await db.soshogleWallet.update({
       where: { id: params.walletId },
       data: {
         balance: newBalance,
@@ -592,7 +594,7 @@ export class SoshoglePayService {
     });
 
     // Create transaction record
-    await prisma.soshogleWalletTransaction.create({
+    await db.soshogleWalletTransaction.create({
       data: {
         walletId: params.walletId,
         amount: params.amount,
@@ -611,7 +613,7 @@ export class SoshoglePayService {
    * Deduct from wallet
    */
   async deductFromWallet(params: WalletOperationParams): Promise<SoshogleWallet> {
-    const wallet = await prisma.soshogleWallet.findUnique({
+    const wallet = await db.soshogleWallet.findUnique({
       where: { id: params.walletId },
     });
 
@@ -625,7 +627,7 @@ export class SoshoglePayService {
 
     const newBalance = wallet.balance - params.amount;
 
-    const updatedWallet = await prisma.soshogleWallet.update({
+    const updatedWallet = await db.soshogleWallet.update({
       where: { id: params.walletId },
       data: {
         balance: newBalance,
@@ -634,7 +636,7 @@ export class SoshoglePayService {
     });
 
     // Create transaction record
-    await prisma.soshogleWalletTransaction.create({
+    await db.soshogleWalletTransaction.create({
       data: {
         walletId: params.walletId,
         amount: -params.amount,
@@ -661,7 +663,7 @@ export class SoshoglePayService {
     }
 
     // Get or create loyalty points record
-    let loyaltyPoints = await prisma.soshogleLoyaltyPoints.findFirst({
+    let loyaltyPoints = await db.soshogleLoyaltyPoints.findFirst({
       where: {
         customerId: customer.id,
         programId: params.programId,
@@ -669,7 +671,7 @@ export class SoshoglePayService {
     });
 
     if (!loyaltyPoints) {
-      loyaltyPoints = await prisma.soshogleLoyaltyPoints.create({
+      loyaltyPoints = await db.soshogleLoyaltyPoints.create({
         data: {
           customerId: customer.id,
           programId: params.programId,
@@ -678,7 +680,7 @@ export class SoshoglePayService {
         },
       });
     } else {
-      loyaltyPoints = await prisma.soshogleLoyaltyPoints.update({
+      loyaltyPoints = await db.soshogleLoyaltyPoints.update({
         where: { id: loyaltyPoints.id },
         data: {
           points: { increment: params.points },
@@ -698,7 +700,7 @@ export class SoshoglePayService {
     programId: string,
     points: number
   ): Promise<any> {
-    const loyaltyPoints = await prisma.soshogleLoyaltyPoints.findFirst({
+    const loyaltyPoints = await db.soshogleLoyaltyPoints.findFirst({
       where: { customerId, programId },
     });
 
@@ -710,7 +712,7 @@ export class SoshoglePayService {
       throw new Error('Insufficient loyalty points');
     }
 
-    return await prisma.soshogleLoyaltyPoints.update({
+    return await db.soshogleLoyaltyPoints.update({
       where: { id: loyaltyPoints.id },
       data: {
         points: { decrement: points },
@@ -737,7 +739,7 @@ export class SoshoglePayService {
     });
 
     // Save fraud check result
-    await prisma.soshoglefraudDetection.create({
+    await db.soshoglefraudDetection.create({
       data: {
         customerId,
         riskScore: fraudCheck.risk_score,

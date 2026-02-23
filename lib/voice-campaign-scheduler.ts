@@ -208,7 +208,7 @@ export class VoiceCampaignScheduler {
       console.log(`✅ Call initiated successfully:`, callData.outboundCall?.id);
 
       // Update campaign lead
-      await prisma.campaignLead.update({
+      await db.campaignLead.update({
         where: { id: campaignLead.id },
         data: {
           status: 'SENT',

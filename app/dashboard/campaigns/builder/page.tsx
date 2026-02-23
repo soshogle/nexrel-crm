@@ -106,7 +106,7 @@ export default function CampaignBuilderPage() {
   const selectedStep = campaign.steps.find((s) => s.id === selectedStepId) || null;
 
   const addStep = (type: CampaignStep['type'], customName?: string) => {
-    if (!allowedStepTypes.includes(type)) return;
+    if (!(allowedStepTypes as readonly string[]).includes(type)) return;
     const nextOrder = campaign.steps.length + 1;
     const step = createStep(type, nextOrder);
     if (customName?.trim()) {
@@ -373,16 +373,16 @@ export default function CampaignBuilderPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {allowedStepTypes.includes('EMAIL') && (
+                      {(allowedStepTypes as readonly string[]).includes('EMAIL') && (
                         <SelectItem value="EMAIL">📧 Email</SelectItem>
                       )}
-                      {allowedStepTypes.includes('SMS') && (
+                      {(allowedStepTypes as readonly string[]).includes('SMS') && (
                         <SelectItem value="SMS">💬 SMS</SelectItem>
                       )}
-                      {allowedStepTypes.includes('VOICE') && (
+                      {(allowedStepTypes as readonly string[]).includes('VOICE') && (
                         <SelectItem value="VOICE">📞 Voice</SelectItem>
                       )}
-                      {allowedStepTypes.includes('DELAY') && (
+                      {(allowedStepTypes as readonly string[]).includes('DELAY') && (
                         <SelectItem value="DELAY">⏱️ Delay</SelectItem>
                       )}
                     </SelectContent>

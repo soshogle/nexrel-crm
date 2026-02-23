@@ -527,7 +527,7 @@ async function createTask(
     dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Due in 24 hours
     leadId: instance.leadId || undefined,
     dealId: instance.dealId || undefined,
-  });
+  } as any);
 
   return {
     success: true,

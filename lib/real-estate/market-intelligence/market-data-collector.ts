@@ -3,8 +3,10 @@
  * Stores and retrieves market statistics
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { REPeriodType } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface MarketDataInput {
   userId: string;
@@ -34,7 +36,7 @@ export interface MarketStats {
  * Save market statistics
  */
 export async function collectMarketStats(input: MarketDataInput, stats: MarketStats) {
-  const record = await prisma.rEMarketStats.create({
+  const record = await db.rEMarketStats.create({
     data: {
       userId: input.userId,
       region: input.region,
@@ -63,7 +65,7 @@ export async function collectMarketStats(input: MarketDataInput, stats: MarketSt
  * Get market stats history
  */
 export async function getMarketStats(userId: string, region: string, limit = 52) {
-  return prisma.rEMarketStats.findMany({
+  return db.rEMarketStats.findMany({
     where: { userId, region },
     orderBy: { periodStart: 'desc' },
     take: limit
@@ -74,7 +76,7 @@ export async function getMarketStats(userId: string, region: string, limit = 52)
  * Get latest market stats for a region
  */
 export async function getLatestMarketStats(userId: string, region: string) {
-  return prisma.rEMarketStats.findFirst({
+  return db.rEMarketStats.findFirst({
     where: { userId, region },
     orderBy: { periodStart: 'desc' }
   });

@@ -4,12 +4,14 @@
  * Coordinates syncing messages from all connected channels
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { GmailService } from './gmail-service';
 import { OutlookService } from './outlook-service';
 import { TwilioService } from './twilio-service';
 import { syncLogger } from './sync-logger';
 import { decrypt } from '@/lib/encryption';
+const db = getCrmDb({ userId: '', industry: null })
 
 export class MessageSyncOrchestrator {
   /**
@@ -24,7 +26,7 @@ export class MessageSyncOrchestrator {
 
     try {
       // Get all connected and enabled channels for this user
-      const connections = await prisma.channelConnection.findMany({
+      const connections = await db.channelConnection.findMany({
         where: {
           userId,
           status: 'CONNECTED',
@@ -78,7 +80,7 @@ export class MessageSyncOrchestrator {
           errors.push(errorMsg);
 
           // Update connection error status
-          await prisma.channelConnection.update({
+          await db.channelConnection.update({
             where: { id: connection.id },
             data: {
               status: 'ERROR',
@@ -169,7 +171,7 @@ export class MessageSyncOrchestrator {
 
     try {
       // Get all users who have at least one connected channel
-      const users = await prisma.user.findMany({
+      const users = await db.user.findMany({
         where: {
           channelConnections: {
             some: {

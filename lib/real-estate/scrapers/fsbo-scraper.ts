@@ -3,7 +3,8 @@
  * Uses Apify to scrape FSBO listings from multiple sources
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { REFSBOSource } from '@prisma/client';
 import { runApifyActor, APIFY_ACTORS, getDatasetItems, getRunStatus } from './apify-client';
 import { saveFSBOListing, updateJobStatus, FSBOListingInput } from './scraper-service';

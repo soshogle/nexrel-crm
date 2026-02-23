@@ -5,7 +5,9 @@
  * Admins can override these defaults via UserFeatureToggle
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 export type Industry =
   | 'ACCOUNTING'
@@ -257,11 +259,26 @@ const INDUSTRY_MENU_CONFIG: Record<Industry, MenuItemId[]> = {
 
   TECHNOLOGY: [
     ...CORE_MENU_ITEMS,
-    'general-inventory', // For hardware, equipment
-    'ecommerce', // For software/products
+    'general-inventory',
+    'ecommerce',
     'payments',
     'widgets',
     'referrals',
+  ],
+  ACCOUNTING: [
+    ...CORE_MENU_ITEMS,
+    'payments',
+    'widgets',
+  ],
+  LAW: [
+    ...CORE_MENU_ITEMS,
+    'payments',
+    'widgets',
+  ],
+  ORTHODONTIST: [
+    ...CORE_MENU_ITEMS,
+    'payments',
+    'widgets',
   ],
 };
 
@@ -314,6 +331,9 @@ export function getIndustryDisplayName(industry: Industry): string {
     REAL_ESTATE: 'Real Estate',
     HOSPITAL: 'Hospital',
     TECHNOLOGY: 'Technology',
+    ACCOUNTING: 'Accounting',
+    LAW: 'Law',
+    ORTHODONTIST: 'Orthodontist',
   };
 
   return displayNames[industry];
@@ -332,7 +352,7 @@ export async function getMenuItemsForUser(
     const industryItems = industry ? INDUSTRY_MENU_CONFIG[industry] : CORE_MENU_ITEMS;
     
     // Get user's feature toggles
-    const featureToggles = await prisma.userFeatureToggle.findMany({
+    const featureToggles = await db.userFeatureToggle.findMany({
       where: { userId },
     });
 

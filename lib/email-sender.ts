@@ -1,5 +1,6 @@
 import * as nodemailer from 'nodemailer';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 
 interface SendEmailOptions {
   to: string;

@@ -247,14 +247,15 @@ export default function OnboardingClientWrapper() {
       setWebsiteUrl(formattedUrl);
 
       // Update company profile with extracted data
-      setCompanyProfile({
+      setCompanyProfile((prev) => ({
+        ...prev,
         name: extracted.companyName || companyProfile.name,
         email: extracted.email || companyProfile.email,
         phone: extracted.phone || companyProfile.phone,
         address: extracted.address || companyProfile.address,
         website: formattedUrl,
         businessDescription: extracted.description || companyProfile.businessDescription
-      });
+      }));
 
       if (extractedFields > 0) {
         toast.success(`Successfully extracted ${extractedFields} field(s) from the website!`);

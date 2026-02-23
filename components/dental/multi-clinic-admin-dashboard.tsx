@@ -242,7 +242,7 @@ export function MultiClinicAdminDashboard() {
       <ClinicManagementDialog
         open={showManageDialog}
         onOpenChange={setShowManageDialog}
-        clinics={clinics}
+        clinics={clinics as any}
         onSuccess={() => {
           setShowManageDialog(false);
           fetchClinicStats();

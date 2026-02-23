@@ -223,7 +223,7 @@ export class BusinessDataPipeline {
     const lastMonthRevenue = lastPeriodPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
     // Get revenue by product
-    const orders = await db.order.findMany({
+    const orders: any[] = await db.order.findMany({
       where: {
         userId: ctx.userId,
         createdAt: { gte: periodStart, lte: periodEnd },
@@ -236,11 +236,11 @@ export class BusinessDataPipeline {
           },
         },
       },
-    });
+    } as any);
 
     const revenueByProduct = new Map<string, { productId: string; productName: string; revenue: number }>();
     orders.forEach(order => {
-      order.items.forEach(item => {
+      order.items.forEach((item: any) => {
         const existing = revenueByProduct.get(item.productId) || {
           productId: item.productId,
           productName: item.productName,
@@ -285,7 +285,7 @@ export class BusinessDataPipeline {
       lastYear: lastMonthRevenue,
       byProduct: Array.from(revenueByProduct.values()),
       byPeriod: revenueByPeriod,
-      trend: growthRate > 5 ? 'up' : growthRate < -5 ? 'down' : 'stable',
+      trend: (growthRate > 5 ? 'up' : growthRate < -5 ? 'down' : 'stable') as 'up' | 'down' | 'stable',
       growthRate,
     };
   }
@@ -326,8 +326,8 @@ export class BusinessDataPipeline {
     const lastPeriodLeads = allLeads.filter(
       l => l.createdAt < periodStart && l.createdAt >= new Date(periodStart.getTime() - (periodEnd.getTime() - periodStart.getTime()))
     );
-    const trend = periodLeads.length > lastPeriodLeads.length ? 'up' : 
-                  periodLeads.length < lastPeriodLeads.length ? 'down' : 'stable';
+    const trend = (periodLeads.length > lastPeriodLeads.length ? 'up' : 
+                  periodLeads.length < lastPeriodLeads.length ? 'down' : 'stable') as 'up' | 'down' | 'stable';
 
     return {
       total,
@@ -410,8 +410,8 @@ export class BusinessDataPipeline {
     const lastPeriodDeals = deals.filter(
       d => d.createdAt < periodStart && d.createdAt >= new Date(periodStart.getTime() - (periodEnd.getTime() - periodStart.getTime()))
     );
-    const trend = periodDeals.length > lastPeriodDeals.length ? 'up' :
-                  periodDeals.length < lastPeriodDeals.length ? 'down' : 'stable';
+    const trend = (periodDeals.length > lastPeriodDeals.length ? 'up' :
+                  periodDeals.length < lastPeriodDeals.length ? 'down' : 'stable') as 'up' | 'down' | 'stable';
 
     return {
       total: deals.length,
@@ -445,7 +445,7 @@ export class BusinessDataPipeline {
     const orders = await db.order.findMany({
       where: { userId: ctx.userId },
       distinct: ['customerEmail'],
-    });
+    } as any);
 
     const uniqueCustomers = new Set([
       ...convertedLeads.map(l => l.email).filter(Boolean),
@@ -490,20 +490,20 @@ export class BusinessDataPipeline {
    */
   private async getProductsData(ctx: { userId: string; industry?: Industry | null }) {
     const db = getCrmDb(ctx);
-    const products = await db.product.findMany({
+    const products: any[] = await db.product.findMany({
       where: { userId: ctx.userId },
       include: {
         orders: true,
       },
-    });
+    } as any);
 
     const activeProducts = products.filter(p => p.active);
     const lowStock = products.filter(p => p.inventory > 0 && p.inventory < 10);
     const outOfStock = products.filter(p => p.inventory === 0);
 
     const productSales = products.map(product => {
-      const sales = product.orders.reduce((sum, item) => sum + item.quantity, 0);
-      const revenue = product.orders.reduce((sum, item) => sum + item.total, 0);
+      const sales = product.orders.reduce((sum: number, item: any) => sum + item.quantity, 0);
+      const revenue = product.orders.reduce((sum: number, item: any) => sum + item.total, 0);
       return {
         productId: product.id,
         productName: product.name,
@@ -701,7 +701,7 @@ export class BusinessDataPipeline {
     const now = new Date();
     const upcoming = appointments.filter(a => a.appointmentDate > now).length;
     const completed = appointments.filter(a => a.status === 'COMPLETED').length;
-    const canceled = appointments.filter(a => a.status === 'CANCELED').length;
+    const canceled = appointments.filter(a => (a.status as string) === 'CANCELED').length;
 
     const noShowRate = appointments.length > 0
       ? (appointments.filter(a => a.status === 'NO_SHOW').length / appointments.length) * 100
@@ -729,10 +729,10 @@ export class BusinessDataPipeline {
     const db = getCrmDb(ctx);
     const data: Record<string, any> = {};
 
-    switch (industry) {
+    switch (industry as string) {
       case 'REAL_ESTATE':
         // Real estate specific metrics
-        const reProperties = await db.rEProperty.findMany({
+        const reProperties: any[] = await (db as any).rEProperty.findMany({
           where: { userId: ctx.userId },
         });
         data.properties = {
@@ -759,7 +759,7 @@ export class BusinessDataPipeline {
 
       case 'RESTAURANT':
         // Restaurant specific metrics
-        const reservations = await db.reservation.findMany({
+        const reservations: any[] = await (db as any).reservation.findMany({
           where: { userId: ctx.userId },
         });
         data.reservations = {

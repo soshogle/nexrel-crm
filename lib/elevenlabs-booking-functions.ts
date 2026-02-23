@@ -3,9 +3,11 @@
  * These functions are called by the AI agent during phone conversations
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { emailService } from '@/lib/email-service';
 import { addDays, addMinutes, parse, format, isValid } from 'date-fns';
+const db = getCrmDb({ userId: '', industry: null })
 
 interface BookingContext {
   userId: string;
@@ -39,7 +41,7 @@ export async function checkAvailability(params: {
     }
 
     // Get user's booking settings
-    const settings = await prisma.bookingSettings.findUnique({
+    const settings = await db.bookingSettings.findUnique({
       where: { userId }
     });
 
@@ -88,7 +90,7 @@ export async function checkAvailability(params: {
     const endOfDay = new Date(requestedDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const existingAppointments = await prisma.bookingAppointment.findMany({
+    const existingAppointments = await db.bookingAppointment.findMany({
       where: {
         userId,
         appointmentDate: {
@@ -222,7 +224,7 @@ export async function createBooking(params: BookingContext & {
     }
 
     // Get booking settings for duration
-    const settings = await prisma.bookingSettings.findUnique({
+    const settings = await db.bookingSettings.findUnique({
       where: { userId }
     });
 
@@ -230,7 +232,7 @@ export async function createBooking(params: BookingContext & {
     const confirmationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     // Create the appointment
-    const appointment = await prisma.bookingAppointment.create({
+    const appointment = await db.bookingAppointment.create({
       data: {
         userId,
         customerName,
@@ -247,7 +249,7 @@ export async function createBooking(params: BookingContext & {
     });
 
     // Get user details for notifications
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
       select: { name: true, businessCategory: true }
     });
@@ -365,7 +367,7 @@ export async function modifyBooking(params: {
     const { userId, confirmationCode, action, newDate, newTime } = params;
 
     // Find the appointment
-    const appointments = await prisma.bookingAppointment.findMany({
+    const appointments = await db.bookingAppointment.findMany({
       where: {
         userId,
         status: {
@@ -384,7 +386,7 @@ export async function modifyBooking(params: {
     }
 
     if (action === 'cancel') {
-      await prisma.bookingAppointment.update({
+      await db.bookingAppointment.update({
         where: { id: appointment.id },
         data: {
           status: 'CANCELLED',
@@ -417,7 +419,7 @@ export async function modifyBooking(params: {
       const [hours, minutes] = newTime.split(':').map(Number);
       newAppointmentDate.setHours(hours, minutes, 0, 0);
 
-      await prisma.bookingAppointment.update({
+      await db.bookingAppointment.update({
         where: { id: appointment.id },
         data: {
           appointmentDate: newAppointmentDate,

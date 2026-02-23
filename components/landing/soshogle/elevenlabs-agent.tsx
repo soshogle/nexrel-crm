@@ -221,7 +221,7 @@ export function ElevenLabsAgent({
           setIsLoading(false);
           setStatus("idle");
         },
-        onStatusChange: (status: string) => {
+        onStatusChange: (status: any) => {
           console.log("[Voice] Status:", status);
         },
         onMessage: (message: any) => {

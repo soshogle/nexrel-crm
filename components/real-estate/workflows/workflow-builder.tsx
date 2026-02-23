@@ -102,7 +102,7 @@ export const WorkflowBuilder = forwardRef<REWorkflowBuilderHandle, WorkflowBuild
         isHITL: false,
         delayMinutes: 0,
         actionConfig: { actions: [], assignedProfessionalType: preSelectedAgent },
-      }],
+      } as any],
       isDefault: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -545,7 +545,7 @@ export const WorkflowBuilder = forwardRef<REWorkflowBuilderHandle, WorkflowBuild
           {hasUnsavedChanges && (
             <Button
               size="sm"
-              onClick={handleSaveWorkflow}
+              onClick={() => handleSaveWorkflow()}
               disabled={isSaving}
               className="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white"
             >

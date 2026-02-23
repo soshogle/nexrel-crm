@@ -84,7 +84,7 @@ export class WebsiteVisitorTrackingService {
               },
             ],
           },
-          ...(event.formData && { formData: event.formData }),
+          ...((event as any).formData && { formData: (event as any).formData }),
         },
       });
     } else {
@@ -117,7 +117,7 @@ export class WebsiteVisitorTrackingService {
               },
             ],
           },
-          ...(event.formData && { formData: event.formData }),
+          ...((event as any).formData && { formData: (event as any).formData }),
         },
       });
 

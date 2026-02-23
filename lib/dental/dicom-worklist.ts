@@ -3,8 +3,10 @@
  * Manages scheduled studies and worklist queries
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { DicomServerService } from './dicom-server';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface WorklistItem {
   id: string;
@@ -32,7 +34,7 @@ export class DicomWorklistService {
   ): Promise<WorklistItem[]> {
     try {
       // Get appointments from database
-      const appointments = await prisma.bookingAppointment.findMany({
+      const appointments = await db.bookingAppointment.findMany({
         where: {
           userId,
           appointmentDate: {
@@ -73,7 +75,7 @@ export class DicomWorklistService {
     userId: string
   ): Promise<boolean> {
     try {
-      const appointment = await prisma.bookingAppointment.findUnique({
+      const appointment = await db.bookingAppointment.findUnique({
         where: { id: appointmentId, userId },
         include: { lead: true },
       });

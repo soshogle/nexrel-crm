@@ -3,8 +3,10 @@
  * Calculates estimated proceeds from a home sale
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import type { NetSheetInput } from './types';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface NetSheetResult {
   id: string;
@@ -68,7 +70,7 @@ export async function calculateNetSheet(
   const netPercentage = (estimatedNet / salePrice) * 100;
 
   // Save to database
-  const netSheet = await prisma.rESellerNetSheet.create({
+  const netSheet = await db.rESellerNetSheet.create({
     data: {
       userId,
       propertyId,
@@ -114,7 +116,7 @@ export async function calculateNetSheet(
  * Get user's net sheets
  */
 export async function getUserNetSheets(userId: string, limit = 10) {
-  return prisma.rESellerNetSheet.findMany({
+  return db.rESellerNetSheet.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: limit
@@ -125,7 +127,7 @@ export async function getUserNetSheets(userId: string, limit = 10) {
  * Get a single net sheet
  */
 export async function getNetSheetById(id: string, userId: string) {
-  return prisma.rESellerNetSheet.findFirst({
+  return db.rESellerNetSheet.findFirst({
     where: { id, userId }
   });
 }

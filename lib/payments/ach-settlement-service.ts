@@ -4,8 +4,10 @@
  * Handles ACH batch processing, settlement tracking, and payout management
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { AchSettlementStatus, AchTransactionType } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface CreateSettlementParams {
   userId: string;
@@ -54,7 +56,7 @@ export class AchSettlementService {
     );
     const netAmount = params.totalAmount - processingFee;
 
-    const settlement = await prisma.achSettlement.create({
+    const settlement = await db.achSettlement.create({
       data: {
         userId: params.userId,
         batchId,
@@ -78,7 +80,7 @@ export class AchSettlementService {
    * Add transaction to settlement batch
    */
   static async addTransaction(params: CreateTransactionParams) {
-    const transaction = await prisma.achSettlementTransaction.create({
+    const transaction = await db.achSettlementTransaction.create({
       data: {
         settlementId: params.settlementId,
         transactionType: params.transactionType,
@@ -99,7 +101,7 @@ export class AchSettlementService {
    * Process settlement batch (simulation)
    */
   static async processSettlement(settlementId: string): Promise<ProcessSettlementResult> {
-    const settlement = await prisma.achSettlement.findUnique({
+    const settlement = await db.achSettlement.findUnique({
       where: { id: settlementId },
       include: { transactions: true },
     });
@@ -113,7 +115,7 @@ export class AchSettlementService {
     }
 
     // Update settlement to processing
-    await prisma.achSettlement.update({
+    await db.achSettlement.update({
       where: { id: settlementId },
       data: {
         status: AchSettlementStatus.PROCESSING,
@@ -132,7 +134,7 @@ export class AchSettlementService {
         const isSuccess = Math.random() > 0.05;
 
         if (isSuccess) {
-          await prisma.achSettlementTransaction.update({
+          await db.achSettlementTransaction.update({
             where: { id: transaction.id },
             data: {
               status: AchSettlementStatus.COMPLETED,
@@ -151,7 +153,7 @@ export class AchSettlementService {
           ];
           const failureReason = failureReasons[Math.floor(Math.random() * failureReasons.length)];
 
-          await prisma.achSettlementTransaction.update({
+          await db.achSettlementTransaction.update({
             where: { id: transaction.id },
             data: {
               status: AchSettlementStatus.FAILED,
@@ -175,7 +177,7 @@ export class AchSettlementService {
         ? AchSettlementStatus.FAILED
         : AchSettlementStatus.COMPLETED; // Partial success still marked as completed
 
-    await prisma.achSettlement.update({
+    await db.achSettlement.update({
       where: { id: settlementId },
       data: {
         status: finalStatus,
@@ -200,7 +202,7 @@ export class AchSettlementService {
    * Get settlement by ID with transactions
    */
   static async getSettlement(settlementId: string) {
-    return await prisma.achSettlement.findUnique({
+    return await db.achSettlement.findUnique({
       where: { id: settlementId },
       include: {
         transactions: {
@@ -230,7 +232,7 @@ export class AchSettlementService {
       where.status = options.status;
     }
 
-    return await prisma.achSettlement.findMany({
+    return await db.achSettlement.findMany({
       where,
       include: {
         transactions: {
@@ -256,13 +258,13 @@ export class AchSettlementService {
    */
   static async getSettlementStats(userId: string) {
     const [totalSettlements, completedSettlements, pendingSettlements, failedSettlements] = await Promise.all([
-      prisma.achSettlement.count({ where: { userId } }),
-      prisma.achSettlement.count({ where: { userId, status: AchSettlementStatus.COMPLETED } }),
-      prisma.achSettlement.count({ where: { userId, status: { in: [AchSettlementStatus.PENDING, AchSettlementStatus.PROCESSING] } } }),
-      prisma.achSettlement.count({ where: { userId, status: AchSettlementStatus.FAILED } }),
+      db.achSettlement.count({ where: { userId } }),
+      db.achSettlement.count({ where: { userId, status: AchSettlementStatus.COMPLETED } }),
+      db.achSettlement.count({ where: { userId, status: { in: [AchSettlementStatus.PENDING, AchSettlementStatus.PROCESSING] } } }),
+      db.achSettlement.count({ where: { userId, status: AchSettlementStatus.FAILED } }),
     ]);
 
-    const totalAmountResult = await prisma.achSettlement.aggregate({
+    const totalAmountResult = await db.achSettlement.aggregate({
       where: { userId, status: AchSettlementStatus.COMPLETED },
       _sum: { netAmount: true },
     });
@@ -282,7 +284,7 @@ export class AchSettlementService {
    * Cancel a pending settlement
    */
   static async cancelSettlement(settlementId: string) {
-    const settlement = await prisma.achSettlement.findUnique({
+    const settlement = await db.achSettlement.findUnique({
       where: { id: settlementId },
     });
 
@@ -294,7 +296,7 @@ export class AchSettlementService {
       throw new Error(`Cannot cancel settlement with status: ${settlement.status}`);
     }
 
-    return await prisma.achSettlement.update({
+    return await db.achSettlement.update({
       where: { id: settlementId },
       data: {
         status: AchSettlementStatus.CANCELLED,

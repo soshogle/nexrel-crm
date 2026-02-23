@@ -383,7 +383,7 @@ export function CreateWorkflowDialog({ open, onOpenChange, onSuccess, template }
               </div>
 
               {/* Trigger Configuration */}
-              {triggerType && triggerTypes.find(t => t.value === triggerType)?.requiresConfig && (
+              {triggerType && (triggerTypes.find(t => t.value === triggerType) as any)?.requiresConfig && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
                   <Label className="text-sm font-semibold">Trigger Configuration</Label>
                   

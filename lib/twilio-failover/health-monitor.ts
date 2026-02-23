@@ -4,9 +4,11 @@
  * Only monitors active ElevenLabs agents
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { elevenLabsService } from '@/lib/elevenlabs';
 import twilio from 'twilio';
+const db = getCrmDb({ userId: '', industry: null })
 
 interface HealthCheckResult {
   type: 'API' | 'WEBHOOK' | 'PHONE_NUMBER' | 'AGENT' | 'ACCOUNT_STATUS';
@@ -34,7 +36,7 @@ export class TwilioHealthMonitor {
    */
   async getActiveEligibleAgents() {
     // Get agents from database
-    const dbAgents = await prisma.voiceAgent.findMany({
+    const dbAgents = await db.voiceAgent.findMany({
       where: {
         status: 'ACTIVE',
         elevenLabsAgentId: { not: null },
@@ -291,7 +293,7 @@ export class TwilioHealthMonitor {
     };
   }> {
     // Get Twilio account
-    const account = await prisma.twilioAccount.findUnique({
+    const account = await db.twilioAccount.findUnique({
       where: { id: twilioAccountId },
     });
 
@@ -302,7 +304,7 @@ export class TwilioHealthMonitor {
     // Check account health
     const accountHealth = await this.checkAccountHealth(
       account.accountSid,
-      account.authToken // Note: Should decrypt this
+      account.authToken! // Note: Should decrypt this
     );
 
     // Get eligible agents
@@ -326,7 +328,7 @@ export class TwilioHealthMonitor {
     const failureRate = totalAgents > 0 ? (failedAgents + degradedAgents) / totalAgents : 0;
 
     // Store health check results
-    await prisma.twilioHealthCheck.createMany({
+    await db.twilioHealthCheck.createMany({
       data: [
         {
           twilioAccountId: account.id,
@@ -349,7 +351,7 @@ export class TwilioHealthMonitor {
     });
 
     // Update account health status
-    await prisma.twilioAccount.update({
+    await db.twilioAccount.update({
       where: { id: twilioAccountId },
       data: {
         lastHealthCheck: new Date(),
@@ -359,7 +361,7 @@ export class TwilioHealthMonitor {
 
     // Update agent health status
     for (const agentHealth of agentsHealth) {
-      await prisma.voiceAgent.update({
+      await db.voiceAgent.update({
         where: { id: agentHealth.agentId },
         data: {
           lastHealthCheck: agentHealth.lastCheck,

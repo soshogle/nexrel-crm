@@ -129,7 +129,7 @@ async function coordinateAdmission(task: WorkflowTask, instance: WorkflowInstanc
       status: 'TODO',
       priority: 'HIGH',
       leadId: instance.leadId || undefined,
-    });
+    } as any);
 
     return { success: true, data: { admissionTaskCreated: true } };
   } catch (error: any) {
@@ -154,7 +154,7 @@ async function planDischarge(task: WorkflowTask, instance: WorkflowInstance): Pr
       status: 'TODO',
       priority: 'HIGH',
       leadId: instance.leadId || undefined,
-    });
+    } as any);
 
     return { success: true, data: { dischargeTaskCreated: true } };
   } catch (error: any) {
@@ -285,7 +285,7 @@ async function startOnboarding(task: WorkflowTask, instance: WorkflowInstance): 
           priority: t.priority as any,
           dueDate: new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000),
           leadId: instance.leadId || undefined,
-        })
+        } as any)
       )
     );
 
@@ -358,7 +358,7 @@ async function enrollMember(task: WorkflowTask, instance: WorkflowInstance): Pro
       status: 'TODO',
       priority: 'HIGH',
       leadId: instance.leadId || undefined,
-    });
+    } as any);
 
     if (lead.email) {
       const emailService = new EmailService();
@@ -444,7 +444,7 @@ async function reserveEquipment(task: WorkflowTask, instance: WorkflowInstance):
       priority: 'MEDIUM',
       dueDate: reservationDate,
       leadId: instance.leadId || undefined,
-    });
+    } as any);
 
     return {
       success: true,

@@ -26,8 +26,7 @@ export const metadata: Metadata = {
     shortcut: '/soshogle-logo.png',
   },
   openGraph: {
-  title: 'Soshogle AI Business Automation Ecosystem',
-    title: '',
+    title: 'Soshogle AI Business Automation Ecosystem',
     description: 'Power your businesswith Soshogle AI CRM. AI-powered lead management, automated outreach, and smart reputation management tools to close more deals.',
     images: [
       {

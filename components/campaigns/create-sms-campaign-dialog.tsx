@@ -20,7 +20,6 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Send, Sparkles, Wand2, MessageSquare, Target, Clock, Lightbulb, FileText } from 'lucide-react';
 import { PersonalizationVariables } from '@/components/workflows/personalization-variables';
-import { PersonalizationVariables } from '@/components/workflows/personalization-variables';
 
 interface CreateSmsCampaignDialogProps {
   open: boolean;

@@ -4,7 +4,9 @@
  */
 
 import { WorkflowEngine } from '@/lib/workflow-engine';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 const workflowEngine = new WorkflowEngine();
 
@@ -18,7 +20,7 @@ export async function triggerXrayUploadedWorkflow(
   xrayType: string
 ) {
   try {
-    const xray = await (prisma as any).dentalXRay.findUnique({
+    const xray = await (db as any).dentalXRay.findUnique({
       where: { id: xrayId },
       include: { lead: true },
     });
@@ -58,7 +60,7 @@ export async function triggerAppointmentScheduledWorkflow(
   appointmentDate: Date
 ) {
   try {
-    const appointment = await prisma.bookingAppointment.findUnique({
+    const appointment = await db.bookingAppointment.findUnique({
       where: { id: appointmentId },
       include: { lead: true },
     });
@@ -97,7 +99,7 @@ export async function triggerTreatmentPlanCreatedWorkflow(
   userId: string
 ) {
   try {
-    const treatmentPlan = await (prisma as any).dentalTreatmentPlan.findUnique({
+    const treatmentPlan = await (db as any).dentalTreatmentPlan.findUnique({
       where: { id: treatmentPlanId },
       include: { lead: true },
     });
@@ -164,7 +166,7 @@ export async function triggerProcedureCompletedWorkflow(
   userId: string
 ) {
   try {
-    const procedure = await (prisma as any).dentalProcedure.findUnique({
+    const procedure = await (db as any).dentalProcedure.findUnique({
       where: { id: procedureId },
       include: { lead: true },
     });

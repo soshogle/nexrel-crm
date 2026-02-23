@@ -5,8 +5,10 @@
  * Integrates with AI Trust Score for credit decisioning
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { BnplStatus, BnplInstallmentStatus, RiskLevel } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface CreateBnplApplicationParams {
   userId: string;
@@ -54,7 +56,7 @@ export class BnplService {
     const totalRepayment = financedAmount + totalInterest;
     const installmentAmount = Math.ceil(totalRepayment / params.installmentCount);
 
-    const application = await prisma.bnplApplication.create({
+    const application = await db.bnplApplication.create({
       data: {
         userId: params.userId,
         purchaseAmount: params.purchaseAmount,
@@ -80,7 +82,7 @@ export class BnplService {
    * Process BNPL application with AI Trust Score credit check
    */
   static async processApplication(applicationId: string): Promise<BnplApprovalResult> {
-    const application = await prisma.bnplApplication.findUnique({
+    const application = await db.bnplApplication.findUnique({
       where: { id: applicationId },
       include: { user: true },
     });
@@ -95,7 +97,7 @@ export class BnplService {
 
     try {
       // Try to get credit score from database
-      const existingScore = await prisma.creditScore.findUnique({
+      const existingScore = await db.creditScore.findUnique({
         where: { userId: application.userId },
       });
 
@@ -138,7 +140,7 @@ export class BnplService {
     }
 
     // Update application
-    const updatedApplication = await prisma.bnplApplication.update({
+    const updatedApplication = await db.bnplApplication.update({
       where: { id: applicationId },
       data: {
         status: approved ? BnplStatus.APPROVED : BnplStatus.CANCELLED,
@@ -154,18 +156,18 @@ export class BnplService {
       // Create installment schedule
       await this.createInstallmentSchedule(applicationId);
       
-      const firstInstallment = await prisma.bnplInstallment.findFirst({
+      const firstInstallment = await db.bnplInstallment.findFirst({
         where: { bnplApplicationId: applicationId },
         orderBy: { installmentNumber: 'asc' },
       });
 
-      const lastInstallment = await prisma.bnplInstallment.findFirst({
+      const lastInstallment = await db.bnplInstallment.findFirst({
         where: { bnplApplicationId: applicationId },
         orderBy: { installmentNumber: 'desc' },
       });
 
       // Update application with payment dates
-      await prisma.bnplApplication.update({
+      await db.bnplApplication.update({
         where: { id: applicationId },
         data: {
           firstPaymentDate: firstInstallment?.dueDate,
@@ -202,7 +204,7 @@ export class BnplService {
    * Create installment schedule
    */
   private static async createInstallmentSchedule(applicationId: string) {
-    const application = await prisma.bnplApplication.findUnique({
+    const application = await db.bnplApplication.findUnique({
       where: { id: applicationId },
     });
 
@@ -234,7 +236,7 @@ export class BnplService {
       });
     }
 
-    await prisma.bnplInstallment.createMany({
+    await db.bnplInstallment.createMany({
       data: installments,
     });
   }
@@ -243,7 +245,7 @@ export class BnplService {
    * Process installment payment
    */
   static async processInstallmentPayment(params: ProcessInstallmentParams) {
-    const installment = await prisma.bnplInstallment.findUnique({
+    const installment = await db.bnplInstallment.findUnique({
       where: { id: params.installmentId },
       include: { bnplApplication: true },
     });
@@ -257,7 +259,7 @@ export class BnplService {
     }
 
     // Update installment
-    const updatedInstallment = await prisma.bnplInstallment.update({
+    const updatedInstallment = await db.bnplInstallment.update({
       where: { id: params.installmentId },
       data: {
         status: BnplInstallmentStatus.PAID,
@@ -275,7 +277,7 @@ export class BnplService {
 
     const isCompleted = newPaidInstallments === installment.bnplApplication.installmentCount;
 
-    await prisma.bnplApplication.update({
+    await db.bnplApplication.update({
       where: { id: installment.bnplApplicationId },
       data: {
         remainingBalance: newRemainingBalance,
@@ -294,7 +296,7 @@ export class BnplService {
    * Get next unpaid installment
    */
   private static async getNextUnpaidInstallment(applicationId: string) {
-    return await prisma.bnplInstallment.findFirst({
+    return await db.bnplInstallment.findFirst({
       where: {
         bnplApplicationId: applicationId,
         status: { in: [BnplInstallmentStatus.SCHEDULED, BnplInstallmentStatus.PENDING] },
@@ -307,7 +309,7 @@ export class BnplService {
    * Get BNPL application with installments
    */
   static async getApplication(applicationId: string) {
-    return await prisma.bnplApplication.findUnique({
+    return await db.bnplApplication.findUnique({
       where: { id: applicationId },
       include: {
         installments: {
@@ -337,7 +339,7 @@ export class BnplService {
       where.status = options.status;
     }
 
-    return await prisma.bnplApplication.findMany({
+    return await db.bnplApplication.findMany({
       where,
       include: {
         installments: {
@@ -364,23 +366,23 @@ export class BnplService {
    */
   static async getBnplStats(userId: string) {
     const [totalApplications, activeApplications, completedApplications, defaultedApplications] = await Promise.all([
-      prisma.bnplApplication.count({ where: { userId } }),
-      prisma.bnplApplication.count({ where: { userId, status: BnplStatus.ACTIVE } }),
-      prisma.bnplApplication.count({ where: { userId, status: BnplStatus.COMPLETED } }),
-      prisma.bnplApplication.count({ where: { userId, status: BnplStatus.DEFAULTED } }),
+      db.bnplApplication.count({ where: { userId } }),
+      db.bnplApplication.count({ where: { userId, status: BnplStatus.ACTIVE } }),
+      db.bnplApplication.count({ where: { userId, status: BnplStatus.COMPLETED } }),
+      db.bnplApplication.count({ where: { userId, status: BnplStatus.DEFAULTED } }),
     ]);
 
-    const totalFinancedResult = await prisma.bnplApplication.aggregate({
+    const totalFinancedResult = await db.bnplApplication.aggregate({
       where: { userId, status: { in: [BnplStatus.ACTIVE, BnplStatus.COMPLETED] } },
       _sum: { financedAmount: true },
     });
 
-    const totalPaidResult = await prisma.bnplApplication.aggregate({
+    const totalPaidResult = await db.bnplApplication.aggregate({
       where: { userId },
       _sum: { totalPaid: true },
     });
 
-    const remainingBalanceResult = await prisma.bnplApplication.aggregate({
+    const remainingBalanceResult = await db.bnplApplication.aggregate({
       where: { userId, status: BnplStatus.ACTIVE },
       _sum: { remainingBalance: true },
     });
@@ -402,7 +404,7 @@ export class BnplService {
   static async markOverdueInstallments() {
     const now = new Date();
 
-    const overdueInstallments = await prisma.bnplInstallment.findMany({
+    const overdueInstallments = await db.bnplInstallment.findMany({
       where: {
         status: { in: [BnplInstallmentStatus.SCHEDULED, BnplInstallmentStatus.PENDING] },
         overdueDate: { lte: now },
@@ -410,7 +412,7 @@ export class BnplService {
     });
 
     for (const installment of overdueInstallments) {
-      await prisma.bnplInstallment.update({
+      await db.bnplInstallment.update({
         where: { id: installment.id },
         data: {
           status: BnplInstallmentStatus.OVERDUE,
@@ -419,7 +421,7 @@ export class BnplService {
       });
 
       // Update application
-      await prisma.bnplApplication.update({
+      await db.bnplApplication.update({
         where: { id: installment.bnplApplicationId },
         data: {
           missedPayments: { increment: 1 },
@@ -435,7 +437,7 @@ export class BnplService {
    * Calculate BNPL eligibility for a user
    */
   static async calculateEligibility(userId: string, purchaseAmount: number) {
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
       include: { creditScore: true },
     });

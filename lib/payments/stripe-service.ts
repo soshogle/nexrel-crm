@@ -1,11 +1,13 @@
 
 import Stripe from 'stripe';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 let stripeClient: Stripe | null = null;
 
 export async function getStripeClient(userId: string): Promise<Stripe | null> {
-  const settings = await prisma.paymentProviderSettings.findUnique({
+  const settings = await db.paymentProviderSettings.findUnique({
     where: {
       userId_provider: {
         userId,

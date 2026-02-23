@@ -1,4 +1,6 @@
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 interface TriggerContext {
   leadId: string;
@@ -38,7 +40,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
     const { leadId, userId, triggerType, metadata } = context;
 
     // Find all active campaigns with matching trigger types
-    const emailCampaigns = await prisma.emailDripCampaign.findMany({
+    const emailCampaigns = await db.emailDripCampaign.findMany({
       where: {
         userId,
         status: 'ACTIVE',
@@ -52,7 +54,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
       },
     });
 
-    const smsCampaigns = await prisma.smsCampaign.findMany({
+    const smsCampaigns = await db.smsCampaign.findMany({
       where: {
         userId,
         status: 'ACTIVE' as any,
@@ -75,7 +77,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
       }
 
       // Check if already enrolled
-      const existingEnrollment = await prisma.emailDripEnrollment.findUnique({
+      const existingEnrollment = await db.emailDripEnrollment.findUnique({
         where: {
           campaignId_leadId: {
             campaignId: campaign.id,
@@ -112,7 +114,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
       }
 
       // Enroll lead
-      await prisma.emailDripEnrollment.create({
+      await db.emailDripEnrollment.create({
         data: {
           campaignId: campaign.id,
           leadId,
@@ -125,7 +127,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
       });
 
       // Update campaign stats
-      await prisma.emailDripCampaign.update({
+      await db.emailDripCampaign.update({
         where: { id: campaign.id },
         data: {
           totalEnrolled: { increment: 1 },
@@ -146,7 +148,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
       // }
 
       // Check if already enrolled
-      const existingEnrollment = await prisma.smsEnrollment.findUnique({
+      const existingEnrollment = await db.smsEnrollment.findUnique({
         where: {
           campaignId_leadId: {
             campaignId: campaign.id,
@@ -175,7 +177,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
       }
 
       // Enroll lead
-      await prisma.smsEnrollment.create({
+      await db.smsEnrollment.create({
         data: {
           campaignId: campaign.id,
           leadId,
@@ -187,7 +189,7 @@ export async function processCampaignTriggers(context: TriggerContext) {
       });
 
       // Update campaign stats
-      await prisma.smsCampaign.update({
+      await db.smsCampaign.update({
         where: { id: campaign.id },
         data: {
           totalEnrolled: { increment: 1 },
@@ -268,7 +270,7 @@ export async function triggerCampaignEnrollment(
 
     for (const leadId of leadIds) {
       if (campaignType === 'email') {
-        const campaign = await prisma.emailDripCampaign.findUnique({
+        const campaign = await db.emailDripCampaign.findUnique({
           where: { id: campaignId },
           include: {
             sequences: {
@@ -283,7 +285,7 @@ export async function triggerCampaignEnrollment(
         }
 
         // Check if already enrolled
-        const existing = await prisma.emailDripEnrollment.findUnique({
+        const existing = await db.emailDripEnrollment.findUnique({
           where: {
             campaignId_leadId: {
               campaignId,
@@ -314,7 +316,7 @@ export async function triggerCampaignEnrollment(
           abTestGroup = random < (config.splitPercentage || 50) ? 'A' : 'B';
         }
 
-        await prisma.emailDripEnrollment.create({
+        await db.emailDripEnrollment.create({
           data: {
             campaignId,
             leadId,
@@ -329,7 +331,7 @@ export async function triggerCampaignEnrollment(
         enrolled++;
       } else {
         // SMS enrollment logic
-        const campaign = await prisma.smsCampaign.findUnique({
+        const campaign = await db.smsCampaign.findUnique({
           where: { id: campaignId },
           include: {
             sequences: {
@@ -343,7 +345,7 @@ export async function triggerCampaignEnrollment(
           continue;
         }
 
-        const existing = await prisma.smsEnrollment.findUnique({
+        const existing = await db.smsEnrollment.findUnique({
           where: {
             campaignId_leadId: {
               campaignId,
@@ -366,7 +368,7 @@ export async function triggerCampaignEnrollment(
           nextSendAt.setHours(nextSendAt.getHours() + firstSequence.delayHours);
         }
 
-        await prisma.smsEnrollment.create({
+        await db.smsEnrollment.create({
           data: {
             campaignId,
             leadId,

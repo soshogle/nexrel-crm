@@ -4,9 +4,11 @@
  * These are high-value prospects for real estate agents
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { runApifyActor, APIFY_ACTORS } from './apify-client';
 import { normalizePhone } from './utils';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface ExpiredListingInput {
   mlsNumber?: string;
@@ -201,7 +203,7 @@ async function scrapeOffMarketListings(config: ExpiredScrapingConfig) {
  */
 async function saveExpiredListing(userId: string, listing: ExpiredListingInput) {
   // Check for duplicate
-  const existing = await prisma.rEExpiredListing.findFirst({
+  const existing = await db.rEExpiredListing.findFirst({
     where: {
       assignedUserId: userId,
       address: listing.address,
@@ -213,7 +215,7 @@ async function saveExpiredListing(userId: string, listing: ExpiredListingInput) 
     return { success: true, listing: existing, duplicate: true };
   }
 
-  const newListing = await prisma.rEExpiredListing.create({
+  const newListing = await db.rEExpiredListing.create({
     data: {
       assignedUserId: userId,
       source: 'SCRAPED',

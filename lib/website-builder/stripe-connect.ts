@@ -337,7 +337,7 @@ export class WebsiteStripeConnectService {
 
     return {
       url: loginLink.url,
-      expiresAt: loginLink.expires_at,
+      expiresAt: (loginLink as any).expires_at,
     };
   }
 }

@@ -110,7 +110,7 @@ export function ClinicSelector({ onClinicChange }: ClinicSelectorProps) {
         <ClinicManagementDialog
           open={showManageDialog}
           onOpenChange={setShowManageDialog}
-          clinics={clinics}
+          clinics={clinics as any}
           onSuccess={handleManageSuccess}
         />
       </>
@@ -158,7 +158,7 @@ export function ClinicSelector({ onClinicChange }: ClinicSelectorProps) {
       <ClinicManagementDialog
         open={showManageDialog}
         onOpenChange={setShowManageDialog}
-        clinics={clinics}
+        clinics={clinics as any}
         onSuccess={handleManageSuccess}
       />
     </>

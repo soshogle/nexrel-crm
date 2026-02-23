@@ -69,7 +69,7 @@ export class WebsiteOrderService {
    * Create or update Lead from customer data
    */
   private async createOrUpdateLead(
-    ctx: { userId: string; industry?: string | null },
+    ctx: any,
     customer: CustomerData,
     websiteId: string,
     orderTotal: number
@@ -192,10 +192,10 @@ export class WebsiteOrderService {
           customerName: customer.name,
           customerEmail: customer.email,
           customerPhone: customer.phone || null,
-          shippingAddress: customer.shippingAddress || null,
-          billingAddress: customer.billingAddress || customer.shippingAddress || null,
+          shippingAddress: (customer.shippingAddress || null) as any,
+          billingAddress: (customer.billingAddress || customer.shippingAddress || null) as any,
           status: 'PENDING',
-          paymentStatus: 'PAID',
+          paymentStatus: 'PAID' as any,
           paymentMethod,
           subtotal,
           tax,
@@ -353,7 +353,7 @@ export class WebsiteOrderService {
    * Fulfill digital products: assign access codes, email download links
    */
   private async fulfillDigitalProducts(
-    ctx: { userId: string; industry?: string | null },
+    ctx: any,
     params: {
       orderId: string;
       orderNumber: string;

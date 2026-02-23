@@ -3,8 +3,10 @@
  * Analyzes why listings aren't selling and provides action plans
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { REDiagnosticStatus } from '@prisma/client';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface DiagnosticInput {
   userId: string;
@@ -28,7 +30,7 @@ export interface DiagnosticAnalysis {
  * Create a stale listing diagnostic
  */
 export async function createStaleDiagnostic(input: DiagnosticInput, analysis: DiagnosticAnalysis) {
-  const diagnostic = await prisma.rEStaleDiagnostic.create({
+  const diagnostic = await db.rEStaleDiagnostic.create({
     data: {
       userId: input.userId,
       address: input.address,
@@ -53,7 +55,7 @@ export async function createStaleDiagnostic(input: DiagnosticInput, analysis: Di
  * Analyze a listing and generate diagnostic
  */
 export async function analyzeStaleListing(userId: string, listingId: string) {
-  const listing = await prisma.rEFSBOListing.findFirst({
+  const listing = await db.rEFSBOListing.findFirst({
     where: { id: listingId, assignedUserId: userId }
   });
 
@@ -125,7 +127,7 @@ export async function analyzeStaleListing(userId: string, listingId: string) {
  * Get user's diagnostics
  */
 export async function getUserDiagnostics(userId: string, limit = 50) {
-  return prisma.rEStaleDiagnostic.findMany({
+  return db.rEStaleDiagnostic.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: limit
@@ -140,7 +142,7 @@ export async function updateDiagnosticStatus(id: string, userId: string, status:
   if (status === 'REVIEWED') data.reviewedAt = new Date();
   if (status === 'ACTIONED') data.actionedAt = new Date();
 
-  await prisma.rEStaleDiagnostic.updateMany({
+  await db.rEStaleDiagnostic.updateMany({
     where: { id, userId },
     data
   });

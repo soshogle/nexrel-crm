@@ -6,7 +6,9 @@
  */
 
 import Stripe from 'stripe';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 // Initialize Stripe with agency credentials
 // Use a fallback key during build time to prevent initialization errors
@@ -76,7 +78,7 @@ export class StripeSubscriptionService {
    * Create or retrieve Stripe customer for a user
    */
   async createOrGetCustomer(userId: string) {
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
       include: { subscription: true },
     });
@@ -100,7 +102,7 @@ export class StripeSubscriptionService {
     });
 
     // Update database with Stripe customer ID
-    await prisma.userSubscription.upsert({
+    await db.userSubscription.upsert({
       where: { userId },
       create: {
         userId,
@@ -161,7 +163,7 @@ export class StripeSubscriptionService {
    * Create billing portal session
    */
   async createPortalSession(userId: string, returnUrl: string) {
-    const subscription = await prisma.userSubscription.findUnique({
+    const subscription = await db.userSubscription.findUnique({
       where: { userId },
     });
 
@@ -181,7 +183,7 @@ export class StripeSubscriptionService {
    * Update subscription tier
    */
   async updateSubscription(userId: string, newTier: 'PRO' | 'ENTERPRISE') {
-    const subscription = await prisma.userSubscription.findUnique({
+    const subscription = await db.userSubscription.findUnique({
       where: { userId },
     });
 
@@ -210,7 +212,7 @@ export class StripeSubscriptionService {
         proration_behavior: 'create_prorations',
       });
 
-      await prisma.userSubscription.update({
+      await db.userSubscription.update({
         where: { userId },
         data: {
           tier: newTier,
@@ -226,7 +228,7 @@ export class StripeSubscriptionService {
    * Cancel subscription
    */
   async cancelSubscription(userId: string, immediate: boolean = false) {
-    const subscription = await prisma.userSubscription.findUnique({
+    const subscription = await db.userSubscription.findUnique({
       where: { userId },
     });
 
@@ -238,7 +240,7 @@ export class StripeSubscriptionService {
       // Cancel immediately
       await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
 
-      await prisma.userSubscription.update({
+      await db.userSubscription.update({
         where: { userId },
         data: {
           tier: 'PRO',
@@ -254,7 +256,7 @@ export class StripeSubscriptionService {
         cancel_at_period_end: true,
       });
 
-      await prisma.userSubscription.update({
+      await db.userSubscription.update({
         where: { userId },
         data: {
           cancelAtPeriodEnd: true,
@@ -321,7 +323,7 @@ export class StripeSubscriptionService {
     const subscriptionId = session.subscription as string;
     const customerId = session.customer as string;
 
-    await prisma.userSubscription.update({
+    await db.userSubscription.update({
       where: { userId },
       data: {
         tier,
@@ -338,7 +340,7 @@ export class StripeSubscriptionService {
   private async handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const customerId = subscription.customer as string;
 
-    const userSub = await prisma.userSubscription.findFirst({
+    const userSub = await db.userSubscription.findFirst({
       where: { stripeCustomerId: customerId },
     });
 
@@ -369,7 +371,7 @@ export class StripeSubscriptionService {
       ? new Date(subscriptionData.cancel_at * 1000) 
       : null;
 
-    await prisma.userSubscription.update({
+    await db.userSubscription.update({
       where: { id: userSub.id },
       data: {
         tier,
@@ -389,7 +391,7 @@ export class StripeSubscriptionService {
   private async handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     const customerId = subscription.customer as string;
 
-    const userSub = await prisma.userSubscription.findFirst({
+    const userSub = await db.userSubscription.findFirst({
       where: { stripeCustomerId: customerId },
     });
 
@@ -398,7 +400,7 @@ export class StripeSubscriptionService {
       return;
     }
 
-    await prisma.userSubscription.update({
+    await db.userSubscription.update({
       where: { id: userSub.id },
       data: {
         tier: 'PRO',
@@ -415,13 +417,13 @@ export class StripeSubscriptionService {
   private async handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
     const customerId = invoice.customer as string;
 
-    const userSub = await prisma.userSubscription.findFirst({
+    const userSub = await db.userSubscription.findFirst({
       where: { stripeCustomerId: customerId },
     });
 
     if (!userSub) return;
 
-    await prisma.userSubscription.update({
+    await db.userSubscription.update({
       where: { id: userSub.id },
       data: {
         lastPaymentStatus: 'succeeded',
@@ -436,13 +438,13 @@ export class StripeSubscriptionService {
   private async handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     const customerId = invoice.customer as string;
 
-    const userSub = await prisma.userSubscription.findFirst({
+    const userSub = await db.userSubscription.findFirst({
       where: { stripeCustomerId: customerId },
     });
 
     if (!userSub) return;
 
-    await prisma.userSubscription.update({
+    await db.userSubscription.update({
       where: { id: userSub.id },
       data: {
         lastPaymentStatus: 'failed',
@@ -460,7 +462,7 @@ export class StripeSubscriptionService {
    * Get subscription details
    */
   async getSubscription(userId: string) {
-    return await prisma.userSubscription.findUnique({
+    return await db.userSubscription.findUnique({
       where: { userId },
       include: {
         user: {
@@ -478,7 +480,7 @@ export class StripeSubscriptionService {
    * Track voice AI usage
    */
   async trackVoiceUsage(userId: string, minutesUsed: number) {
-    const subscription = await prisma.userSubscription.findUnique({
+    const subscription = await db.userSubscription.findUnique({
       where: { userId },
     });
 
@@ -489,7 +491,7 @@ export class StripeSubscriptionService {
     const newMinutesUsed = subscription.minutesUsed + minutesUsed;
     const overage = Math.max(0, newMinutesUsed - subscription.monthlyMinutes);
 
-    await prisma.userSubscription.update({
+    await db.userSubscription.update({
       where: { userId },
       data: {
         minutesUsed: newMinutesUsed,
@@ -504,7 +506,7 @@ export class StripeSubscriptionService {
    * Reset monthly usage
    */
   async resetMonthlyUsage(userId: string) {
-    await prisma.userSubscription.update({
+    await db.userSubscription.update({
       where: { userId },
       data: {
         minutesUsed: 0,

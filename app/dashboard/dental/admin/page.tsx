@@ -542,7 +542,6 @@ export default function AdministrativeDashboardPage() {
                     return;
                   }
                   setOpenModal('lab-orders');
-                  setShowLabOrderForm(true);
                 }}
               >
                 <Building2 className="w-3 h-3 mr-1" />

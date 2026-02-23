@@ -4,8 +4,10 @@
  * In production, consider using AWS KMS or similar key management service
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal';
 import { encryptData, decryptData } from '@/lib/docpen/security';
+
+const db = getCrmDb({ userId: '', industry: null });
 import crypto from 'crypto';
 
 export class EncryptionKeyManager {
@@ -22,7 +24,7 @@ export class EncryptionKeyManager {
     try {
       // Store keyId in X-ray record metadata
       // In production, use proper key management service
-      await (prisma as any).dentalXRay.update({
+      await (db as any).dentalXRay.update({
         where: { id: xrayId },
         data: {
           // Store keyId in notes or create separate key storage table
@@ -41,7 +43,7 @@ export class EncryptionKeyManager {
    */
   static async retrieveKey(xrayId: string, keyId: string): Promise<string | null> {
     try {
-      const xray = await (prisma as any).dentalXRay.findUnique({
+      const xray = await (db as any).dentalXRay.findUnique({
         where: { id: xrayId },
         select: {
           id: true,

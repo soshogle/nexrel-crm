@@ -1,6 +1,7 @@
 import { createDalContext } from '@/lib/context/industry-context';
 import { getCrmDb, leadService } from '@/lib/dal';
 import { sendDripEmail } from '@/lib/email-sender';
+const db = getCrmDb({ userId: '', industry: null })
 
 /**
  * Process scheduled drip emails
@@ -222,7 +223,7 @@ async function processEnrollment(enrollment: any, campaign: any) {
       }
     } catch (sendError) {
       console.error(`[Drip Processor] Error sending email:`, sendError);
-      await prisma.emailDripMessage.update({
+      await db.emailDripMessage.update({
         where: { id: message.id },
         data: {
           status: 'FAILED',
@@ -261,7 +262,7 @@ async function moveToNextSequence(
     nextSendAt.setDate(nextSendAt.getDate() + nextSequence.delayDays);
     nextSendAt.setHours(nextSendAt.getHours() + nextSequence.delayHours);
 
-    await prisma.emailDripEnrollment.update({
+    await db.emailDripEnrollment.update({
       where: { id: enrollment.id },
       data: {
         currentSequenceId: nextSequence.id,
@@ -271,7 +272,7 @@ async function moveToNextSequence(
     });
   } else {
     // No more sequences
-    await prisma.emailDripEnrollment.update({
+    await db.emailDripEnrollment.update({
       where: { id: enrollment.id },
       data: {
         status: 'COMPLETED',
@@ -279,7 +280,7 @@ async function moveToNextSequence(
       },
     });
 
-    await prisma.emailDripCampaign.update({
+    await db.emailDripCampaign.update({
       where: { id: campaign.id },
       data: {
         totalCompleted: { increment: 1 },

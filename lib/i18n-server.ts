@@ -5,13 +5,15 @@
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 
 // Import translation files
 import enMessages from '@/messages/en.json';
 import frMessages from '@/messages/fr.json';
 import esMessages from '@/messages/es.json';
 import zhMessages from '@/messages/zh.json';
+const db = getCrmDb({ userId: '', industry: null })
 
 type Locale = 'en' | 'fr' | 'es' | 'zh';
 
@@ -28,7 +30,7 @@ const messages: Record<Locale, any> = {
  */
 async function getUserLanguage(userId: string): Promise<Locale> {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
       select: { language: true },
     });

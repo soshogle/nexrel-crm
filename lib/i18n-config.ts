@@ -2,7 +2,9 @@
 import { getRequestConfig } from 'next-intl/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 // Supported locales
 export const locales = ['en', 'fr', 'es', 'zh'] as const;
@@ -16,7 +18,7 @@ async function getUserLanguage(): Promise<Locale> {
     const session = await getServerSession(authOptions);
     
     if (session?.user?.id) {
-      const user = await prisma.user.findUnique({
+      const user = await db.user.findUnique({
         where: { id: session.user.id },
         select: { language: true },
       });

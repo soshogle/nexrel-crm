@@ -206,7 +206,7 @@ export class GmailService {
         if (!conversation) {
           // Try to link to existing Lead by email; if none, auto-create Lead for unknown addresses
           let lead = await leadService.findMany(ctx, { where: { email: contactEmail }, take: 1 }).then((l) => l[0]);
-          if (lead) lead = { id: lead.id };
+          if (lead) lead = { id: lead.id } as any;
 
           if (!lead && contactEmail && contactEmail.includes('@')) {
             // Auto-create Lead for unknown email addresses (email sync creates contacts)
@@ -216,7 +216,7 @@ export class GmailService {
               email: contactEmail,
               source: 'email_sync',
             });
-            lead = { id: newLead.id };
+            lead = { id: newLead.id } as any;
           }
 
           conversation = await conversationService.create(ctx, {
@@ -231,7 +231,7 @@ export class GmailService {
           // Auto-link to Lead if not already linked
           const lead = await leadService.findMany(ctx, { where: { email: contactEmail }, take: 1 }).then((l) => l[0]);
           if (lead) {
-            await conversationService.update(ctx, conversation.id, { leadId: lead.id });
+            await conversationService.update(ctx, conversation.id, { leadId: lead.id } as any);
             conversation.leadId = lead.id;
           }
         }
@@ -262,11 +262,10 @@ export class GmailService {
 
           // Update conversation
           await conversationService.update(ctx, conversation.id, {
-            where: { id: conversation.id },
             lastMessageAt: parsed.date,
             lastMessagePreview: parsed.subject || parsed.body.substring(0, 100),
             ...(parsed.isInbound && { unreadCount: { increment: 1 } }),
-          });
+          } as any);
 
           syncedCount++;
         }

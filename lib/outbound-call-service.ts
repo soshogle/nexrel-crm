@@ -141,7 +141,7 @@ export async function makeOutboundCall(params: MakeOutboundCallParams): Promise<
     const lead = leads[0];
 
     if (lead) {
-      finalPhoneNumber = lead.phone || null;
+      finalPhoneNumber = lead.phone ?? undefined;
       finalLeadId = lead.id;
     } else {
       return {
@@ -324,7 +324,7 @@ export async function makeBulkOutboundCalls(params: BulkCallParams): Promise<{
     immediate = true,
   } = params;
 
-  let leads: { id: string; contactPerson: string; businessName: string; phone: string | null }[] = [];
+  let leads: { id: string; contactPerson: string | null; businessName: string; phone: string | null }[] = [];
 
   const bulkCtx = createDalContext(userId);
   const bulkDb = getCrmDb(bulkCtx);
@@ -332,7 +332,7 @@ export async function makeBulkOutboundCalls(params: BulkCallParams): Promise<{
     leads = await bulkDb.lead.findMany({
       where: { id: { in: leadIds }, userId },
       select: { id: true, contactPerson: true, businessName: true, phone: true },
-    });
+    }) as any;
   } else if (criteria) {
     const now = new Date();
     let startDate: Date | undefined;
@@ -365,7 +365,7 @@ export async function makeBulkOutboundCalls(params: BulkCallParams): Promise<{
       take: criteria?.limit || 50,
       orderBy: { createdAt: 'desc' },
       select: { id: true, contactPerson: true, businessName: true, phone: true },
-    });
+    }) as any;
   }
 
   const withPhone = leads.filter((l) => l.phone);

@@ -3,7 +3,9 @@
  * Handles integration with external lab systems for electronic order submission
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 export interface LabSystemConfig {
   name: string;
@@ -79,7 +81,7 @@ export async function submitLabOrderToExternalSystem(
 ): Promise<{ success: boolean; trackingNumber?: string; error?: string }> {
   try {
     // Get lab order from database
-    const order = await prisma.dentalLabOrder.findUnique({
+    const order = await db.dentalLabOrder.findUnique({
       where: { id: orderId },
       include: {
         lead: true,
@@ -109,17 +111,17 @@ export async function submitLabOrderToExternalSystem(
     }
 
     // Get user's lab system credentials
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
-      select: { labSystemConfigs: true },
+      select: { labSystemConfigs: true } as any,
     });
 
     let apiKey: string | undefined;
     let apiSecret: string | undefined;
 
-    if (user?.labSystemConfigs) {
+    if ((user as any)?.labSystemConfigs) {
       try {
-        const configs = JSON.parse(user.labSystemConfigs);
+        const configs = JSON.parse((user as any).labSystemConfigs);
         const systemConfig = configs[labSystem.toLowerCase()];
         if (systemConfig) {
           apiKey = systemConfig.apiKey;
@@ -177,7 +179,7 @@ export async function submitLabOrderToExternalSystem(
     const result = await response.json();
 
     // Update order status
-    await prisma.dentalLabOrder.update({
+    await db.dentalLabOrder.update({
       where: { id: orderId },
       data: {
         status: 'SUBMITTED',
@@ -209,7 +211,7 @@ export async function checkLabOrderStatus(
   labSystem: string
 ): Promise<{ success: boolean; status?: LabOrderStatus; error?: string }> {
   try {
-    const order = await prisma.dentalLabOrder.findUnique({
+    const order = await db.dentalLabOrder.findUnique({
       where: { id: orderId },
     });
 
@@ -229,15 +231,15 @@ export async function checkLabOrderStatus(
     }
 
     // Get API credentials (similar to submitLabOrderToExternalSystem)
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
-      select: { labSystemConfigs: true },
+      select: { labSystemConfigs: true } as any,
     });
 
     let apiKey: string | undefined;
-    if (user?.labSystemConfigs) {
+    if ((user as any)?.labSystemConfigs) {
       try {
-        const configs = JSON.parse(user.labSystemConfigs);
+        const configs = JSON.parse((user as any).labSystemConfigs);
         const systemConfig = configs[labSystem.toLowerCase()];
         apiKey = systemConfig?.apiKey;
       } catch (error) {
@@ -314,7 +316,7 @@ export async function checkLabOrderStatus(
       updateData.deliveredAt = new Date();
     }
 
-    await prisma.dentalLabOrder.update({
+    await db.dentalLabOrder.update({
       where: { id: orderId },
       data: updateData,
     });

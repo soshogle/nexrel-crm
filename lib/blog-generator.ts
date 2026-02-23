@@ -4,8 +4,10 @@
  * Uses OpenAI for content, DALL-E for problem images
  */
 
-import { prisma } from "@/lib/db";
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
 import { put } from "@vercel/blob";
+const db = getCrmDb({ userId: '', industry: null })
 
 interface IndustryProblem {
   industry: string;
@@ -258,12 +260,12 @@ Return JSON:
     }
 
     const slug = slugify(parsed.title);
-    const existingSlug = await prisma.blogPost.findUnique({
+    const existingSlug = await db.blogPost.findUnique({
       where: { slug },
     });
     const finalSlug = existingSlug ? `${slug}-${Date.now()}` : slug;
 
-    const post = await prisma.blogPost.create({
+    const post = await db.blogPost.create({
       data: {
         slug: finalSlug,
         title: parsed.title,

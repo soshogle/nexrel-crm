@@ -3,7 +3,9 @@
  * Handles permission checks for multi-clinic operations
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 export type ClinicRole = 'OWNER' | 'ADMIN' | 'MEMBER';
 
@@ -22,7 +24,7 @@ export async function getUserClinicRole(
   userId: string,
   clinicId: string
 ): Promise<ClinicRole | null> {
-  const userClinic = await prisma.userClinic.findFirst({
+  const userClinic = await db.userClinic.findFirst({
     where: {
       userId,
       clinicId,
@@ -39,7 +41,7 @@ export async function hasClinicAccess(
   userId: string,
   clinicId: string
 ): Promise<boolean> {
-  const userClinic = await prisma.userClinic.findFirst({
+  const userClinic = await db.userClinic.findFirst({
     where: {
       userId,
       clinicId,
@@ -146,7 +148,7 @@ export async function verifyClinicPermission(
  * Get all clinics user has access to with their roles
  */
 export async function getUserClinics(userId: string) {
-  return prisma.userClinic.findMany({
+  return db.userClinic.findMany({
     where: { userId },
     include: {
       clinic: true,

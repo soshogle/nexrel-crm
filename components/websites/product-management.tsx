@@ -203,7 +203,7 @@ export function ProductManagement({ websiteId }: ProductManagementProps) {
                     ) : (
                       <Badge variant="secondary">Hidden</Badge>
                     )}
-                    <Badge variant={product.status === 'OUT_OF_STOCK' ? 'destructive' : product.status === 'LOW_STOCK' ? 'warning' : 'default'}>
+                    <Badge variant={(product.status === 'OUT_OF_STOCK' ? 'destructive' : product.status === 'LOW_STOCK' ? 'secondary' : 'default') as any}>
                       {product.status}
                     </Badge>
                   </div>

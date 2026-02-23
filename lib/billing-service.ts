@@ -3,7 +3,9 @@
  * Fetches actual billing data from Twilio and ElevenLabs APIs
  */
 
-import { prisma } from '@/lib/db';
+import { getCrmDb } from '@/lib/dal'
+import { createDalContext } from '@/lib/context/industry-context';
+const db = getCrmDb({ userId: '', industry: null })
 
 // Twilio credentials
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
@@ -266,7 +268,7 @@ export class BillingService {
       let aiSuggestionTokens = 0;
 
       // 1. Calculate tokens from chat messages (AI Chat Assistant)
-      const chatMessages = await prisma.conversationMessage.findMany({
+      const chatMessages = await db.conversationMessage.findMany({
         where: {
           conversation: {
             userId,
@@ -288,7 +290,7 @@ export class BillingService {
       }
 
       // 2. Calculate tokens from call transcriptions
-      const callLogs = await prisma.callLog.findMany({
+      const callLogs = await db.callLog.findMany({
         where: {
           voiceAgent: {
             userId,
@@ -314,7 +316,7 @@ export class BillingService {
 
       // 3. Calculate tokens from AI task suggestions and categorizations
       // Check TaskActivity records where AI was involved
-      const aiTaskActivities = await prisma.taskActivity.findMany({
+      const aiTaskActivities = await db.taskActivity.findMany({
         where: {
           userId,
           createdAt: {
@@ -375,7 +377,7 @@ export class BillingService {
   private async getStorageCosts(userId: string, startDate: Date, endDate: Date) {
     try {
       // Get call logs with recordings
-      const callLogs = await prisma.callLog.findMany({
+      const callLogs = await db.callLog.findMany({
         where: {
           voiceAgent: {
             userId,
@@ -427,7 +429,7 @@ export class BillingService {
     endDate: Date
   ): Promise<BillingData> {
     // Get call logs
-    const callLogs = await prisma.callLog.findMany({
+    const callLogs = await db.callLog.findMany({
       where: {
         voiceAgent: {
           userId,
@@ -446,7 +448,7 @@ export class BillingService {
     const callCost = totalMinutes * 0.02; // Estimated $0.02/min
 
     // Get SMS messages
-    const smsMessages = await prisma.conversationMessage.findMany({
+    const smsMessages = await db.conversationMessage.findMany({
       where: {
         conversation: {
           userId,
@@ -505,7 +507,7 @@ export class BillingService {
    * Fallback: Get Twilio estimates from database
    */
   private async getTwilioEstimates(userId: string, startDate: Date, endDate: Date) {
-    const callLogs = await prisma.callLog.findMany({
+    const callLogs = await db.callLog.findMany({
       where: {
         voiceAgent: {
           userId,
@@ -523,7 +525,7 @@ export class BillingService {
     );
     const callCost = totalMinutes * 0.02;
 
-    const smsMessages = await prisma.conversationMessage.findMany({
+    const smsMessages = await db.conversationMessage.findMany({
       where: {
         conversation: {
           userId,
@@ -559,7 +561,7 @@ export class BillingService {
    * Fallback: Get ElevenLabs estimates from database
    */
   private async getElevenLabsEstimates(userId: string, startDate: Date, endDate: Date) {
-    const callLogs = await prisma.callLog.findMany({
+    const callLogs = await db.callLog.findMany({
       where: {
         voiceAgent: {
           userId,
