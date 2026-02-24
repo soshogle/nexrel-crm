@@ -14,6 +14,7 @@ export interface RateLimitConfig {
 
 export const RATE_LIMITS = {
   api: { maxRequests: 100, windowMs: 60_000 } as RateLimitConfig,
+  apiHeavy: { maxRequests: 300, windowMs: 60_000 } as RateLimitConfig, // dental, clinical, treatment plans
   auth: { maxRequests: 30, windowMs: 60_000 } as RateLimitConfig,
   webhook: { maxRequests: 200, windowMs: 60_000 } as RateLimitConfig,
   public: { maxRequests: 30, windowMs: 60_000 } as RateLimitConfig,
@@ -33,6 +34,7 @@ function createLimiter(config: RateLimitConfig): Ratelimit | null {
 
 const limiters = {
   api: createLimiter(RATE_LIMITS.api),
+  apiHeavy: createLimiter(RATE_LIMITS.apiHeavy),
   auth: createLimiter(RATE_LIMITS.auth),
   webhook: createLimiter(RATE_LIMITS.webhook),
   public: createLimiter(RATE_LIMITS.public),
@@ -86,6 +88,7 @@ export async function checkRateLimit(
     config === RATE_LIMITS.auth ? limiters.auth
     : config === RATE_LIMITS.webhook ? limiters.webhook
     : config === RATE_LIMITS.public ? limiters.public
+    : config === RATE_LIMITS.apiHeavy ? limiters.apiHeavy
     : limiters.api
 
   if (limiter) {

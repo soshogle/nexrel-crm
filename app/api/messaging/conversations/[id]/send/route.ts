@@ -163,6 +163,13 @@ export async function POST(
         });
         break;
 
+      case 'GOOGLE_BUSINESS':
+      case 'WEBSITE_CHAT':
+        // Demo/mock support: store message locally without external send.
+        // Used by orthodontist and other industry demos with mock data.
+        externalMessageId = `demo-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        break;
+
       default:
         return NextResponse.json(
           { error: `Unsupported channel type: ${connection.channelType}` },

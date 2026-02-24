@@ -97,10 +97,12 @@ export async function middleware(request: NextRequest) {
     const isPublicPath = request.nextUrl.pathname.startsWith('/api/widget')
       || request.nextUrl.pathname.startsWith('/api/appointments/public')
       || request.nextUrl.pathname.startsWith('/api/booking/')
+    const isDentalPath = request.nextUrl.pathname.startsWith('/api/dental')
 
     const config = isAuthPath ? RATE_LIMITS.auth
       : isWebhookPath ? RATE_LIMITS.webhook
       : isPublicPath ? RATE_LIMITS.public
+      : isDentalPath ? RATE_LIMITS.apiHeavy
       : RATE_LIMITS.api
 
     const rlKey = getRateLimitKey(ip, isAuthPath ? '/api/auth' : request.nextUrl.pathname)
