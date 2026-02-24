@@ -256,6 +256,13 @@ export default function DentalTestPage() {
     return () => clearInterval(interval);
   }, [openModal, selectedLeadId, fetchPeriodontalChart]);
 
+  // Poll odontogram when modal is open (X-ray AI or import may have updated)
+  useEffect(() => {
+    if (openModal !== 'odontogram' || !selectedLeadId) return;
+    const interval = setInterval(fetchOdontogram, 5000);
+    return () => clearInterval(interval);
+  }, [openModal, selectedLeadId, fetchOdontogram]);
+
   const handleSaveOdontogram = async (toothData: any) => {
     if (!selectedLeadId) { toast.error('Please select a patient first'); return; }
     try {

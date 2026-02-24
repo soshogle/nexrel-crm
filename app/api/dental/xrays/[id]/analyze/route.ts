@@ -10,6 +10,8 @@ import { prisma } from '@/lib/db';
 import { CanadianStorageService } from '@/lib/storage/canadian-storage-service';
 import { DicomParser } from '@/lib/dental/dicom-parser';
 import { DicomToImageConverter } from '@/lib/dental/dicom-to-image';
+import { parseXrayFindingsToToothData } from '@/lib/dental/xray-findings-parser';
+import { upsertOdontogram } from '@/lib/dental/odontogram-import';
 import OpenAI from 'openai';
 import { t } from '@/lib/i18n-server';
 import { apiErrors } from '@/lib/api-error';
@@ -218,6 +220,29 @@ Provide a comprehensive analysis including findings, recommendations, and confid
         aiModel: 'gpt-4-vision-preview',
       },
     });
+
+    // Parse findings and update odontogram (X-ray AI → odontogram)
+    try {
+      const existingOdontogram = await prisma.dentalOdontogram.findFirst({
+        where: { leadId: xray.leadId, userId: session.user.id },
+        orderBy: { chartDate: 'desc' },
+      });
+      const existingToothData = (existingOdontogram?.toothData as Record<string, unknown>) || null;
+      const parsedToothData = parseXrayFindingsToToothData(analysisText, existingToothData);
+
+      if (Object.keys(parsedToothData).length > 0) {
+        await upsertOdontogram({
+          leadId: xray.leadId,
+          userId: session.user.id,
+          toothData: parsedToothData,
+          notes: `Auto-updated from X-ray analysis (${xray.xrayType})`,
+          clinicId: xray.clinicId || undefined,
+          chartedBy: session.user.id,
+        });
+      }
+    } catch (odontogramError) {
+      console.warn('[X-ray Analyze] Odontogram update failed (non-fatal):', odontogramError);
+    }
 
     return NextResponse.json({
       success: true,

@@ -294,6 +294,13 @@ function ClinicalDashboardPageContent() {
     }
   }, [selectedLeadId, fetchOdontogram, fetchPeriodontalChart, fetchTreatmentPlans, fetchXrays]);
 
+  // Poll odontogram when modal open (X-ray AI or import may have updated)
+  useEffect(() => {
+    if (openModal !== 'odontogram' || !selectedLeadId) return;
+    const interval = setInterval(fetchOdontogram, 5000);
+    return () => clearInterval(interval);
+  }, [openModal, selectedLeadId, fetchOdontogram]);
+
   useEffect(() => {
     fetchProcedures();
   }, [fetchProcedures]);
