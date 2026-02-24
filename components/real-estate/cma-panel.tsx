@@ -344,14 +344,14 @@ export function CMAPanel() {
             className="space-y-6"
           >
             {/* Input Form */}
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl overflow-hidden">
+            <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-500" />
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
+                <CardTitle className="text-gray-900 flex items-center gap-2">
                   <Brain className="w-6 h-6 text-violet-400" />
                   AI-Powered CMA Generator
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-gray-600">
                   Generate comprehensive market analysis with AI insights
                 </CardDescription>
               </CardHeader>
@@ -363,8 +363,8 @@ export function CMAPanel() {
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition-all ${
                           step >= s
-                            ? 'bg-gradient-to-br from-violet-500 to-purple-500 text-white'
-                            : 'bg-slate-800 text-slate-500 border border-slate-700'
+                            ? 'bg-gradient-to-br from-violet-500 to-purple-500 text-gray-900'
+                            : 'bg-gray-100 text-slate-500 border border-purple-200'
                         }`}
                       >
                         {step > s ? <Check className="w-5 h-5" /> : s}
@@ -372,7 +372,7 @@ export function CMAPanel() {
                       {s < 3 && (
                         <div
                           className={`w-24 md:w-32 h-1 mx-2 rounded ${
-                            step > s ? 'bg-gradient-to-r from-violet-500 to-purple-500' : 'bg-slate-800'
+                            step > s ? 'bg-gradient-to-r from-violet-500 to-purple-500' : 'bg-gray-100'
                           }`}
                         />
                       )}
@@ -387,10 +387,10 @@ export function CMAPanel() {
                     animate={{ opacity: 1, x: 0 }}
                     className="space-y-4"
                   >
-                    <h3 className="text-lg font-semibold text-white">Property Address</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Property Address</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2 relative">
-                        <Label className="text-slate-300">Street Address</Label>
+                        <Label className="text-gray-700">Street Address</Label>
                         <Input
                           ref={addressInputRef}
                           placeholder="Start typing an address..."
@@ -398,19 +398,19 @@ export function CMAPanel() {
                           onChange={(e) => handleAddressChange(e.target.value)}
                           onFocus={() => addressPredictions.length > 0 && setShowAddressPredictions(true)}
                           onBlur={() => setTimeout(() => setShowAddressPredictions(false), 200)}
-                          className="mt-1 bg-slate-800/50 border-slate-700 text-white"
+                          className="mt-1 bg-white/80 border-purple-200 text-gray-900"
                           autoComplete="off"
                         />
                         {showAddressPredictions && addressPredictions.length > 0 && (
-                          <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-md shadow-lg max-h-60 overflow-auto">
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-purple-200 rounded-md shadow-lg max-h-60 overflow-auto">
                             {addressPredictions.map((prediction) => (
                               <button
                                 key={prediction.place_id}
                                 type="button"
-                                className="w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-700 flex items-center gap-2"
+                                className="w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-slate-700 flex items-center gap-2"
                                 onMouseDown={() => handleSelectPrediction(prediction)}
                               >
-                                <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                <MapPin className="w-4 h-4 text-gray-600 flex-shrink-0" />
                                 <span>{prediction.description}</span>
                               </button>
                             ))}
@@ -418,31 +418,31 @@ export function CMAPanel() {
                         )}
                       </div>
                       <div>
-                        <Label className="text-slate-300">City</Label>
+                        <Label className="text-gray-700">City</Label>
                         <Input
                           placeholder="City"
                           value={propertyData.city}
                           onChange={(e) => setPropertyData({ ...propertyData, city: e.target.value })}
-                          className="mt-1 bg-slate-800/50 border-slate-700 text-white"
+                          className="mt-1 bg-white/80 border-purple-200 text-gray-900"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-slate-300">State</Label>
+                          <Label className="text-gray-700">State</Label>
                           <Input
                             placeholder="CA"
                             value={propertyData.state}
                             onChange={(e) => setPropertyData({ ...propertyData, state: e.target.value })}
-                            className="mt-1 bg-slate-800/50 border-slate-700 text-white"
+                            className="mt-1 bg-white/80 border-purple-200 text-gray-900"
                           />
                         </div>
                         <div>
-                          <Label className="text-slate-300">ZIP</Label>
+                          <Label className="text-gray-700">ZIP</Label>
                           <Input
                             placeholder="90210"
                             value={propertyData.zip}
                             onChange={(e) => setPropertyData({ ...propertyData, zip: e.target.value })}
-                            className="mt-1 bg-slate-800/50 border-slate-700 text-white"
+                            className="mt-1 bg-white/80 border-purple-200 text-gray-900"
                           />
                         </div>
                       </div>
@@ -466,15 +466,15 @@ export function CMAPanel() {
                     animate={{ opacity: 1, x: 0 }}
                     className="space-y-6"
                   >
-                    <h3 className="text-lg font-semibold text-white">Property Details</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Property Details</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <Label className="text-slate-300">Property Type</Label>
+                        <Label className="text-gray-700">Property Type</Label>
                         <Select
                           value={propertyData.propertyType}
                           onValueChange={(v) => setPropertyData({ ...propertyData, propertyType: v })}
                         >
-                          <SelectTrigger className="mt-1 bg-slate-800/50 border-slate-700 text-white">
+                          <SelectTrigger className="mt-1 bg-white/80 border-purple-200 text-gray-900">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -485,12 +485,12 @@ export function CMAPanel() {
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-slate-300">Bedrooms</Label>
+                        <Label className="text-gray-700">Bedrooms</Label>
                         <Select
                           value={propertyData.beds.toString()}
                           onValueChange={(v) => setPropertyData({ ...propertyData, beds: parseInt(v) })}
                         >
-                          <SelectTrigger className="mt-1 bg-slate-800/50 border-slate-700 text-white">
+                          <SelectTrigger className="mt-1 bg-white/80 border-purple-200 text-gray-900">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -501,12 +501,12 @@ export function CMAPanel() {
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-slate-300">Bathrooms</Label>
+                        <Label className="text-gray-700">Bathrooms</Label>
                         <Select
                           value={propertyData.baths.toString()}
                           onValueChange={(v) => setPropertyData({ ...propertyData, baths: parseFloat(v) })}
                         >
-                          <SelectTrigger className="mt-1 bg-slate-800/50 border-slate-700 text-white">
+                          <SelectTrigger className="mt-1 bg-white/80 border-purple-200 text-gray-900">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -517,45 +517,45 @@ export function CMAPanel() {
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-slate-300">Year Built</Label>
+                        <Label className="text-gray-700">Year Built</Label>
                         <Input
                           type="number"
                           placeholder="2000"
                           value={propertyData.yearBuilt}
                           onChange={(e) => setPropertyData({ ...propertyData, yearBuilt: parseInt(e.target.value) || 2000 })}
-                          className="mt-1 bg-slate-800/50 border-slate-700 text-white"
+                          className="mt-1 bg-white/80 border-purple-200 text-gray-900"
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <Label className="text-slate-300">Square Feet</Label>
+                        <Label className="text-gray-700">Square Feet</Label>
                         <Input
                           type="number"
                           placeholder="1800"
                           value={propertyData.sqft}
                           onChange={(e) => setPropertyData({ ...propertyData, sqft: parseInt(e.target.value) || 0 })}
-                          className="mt-1 bg-slate-800/50 border-slate-700 text-white"
+                          className="mt-1 bg-white/80 border-purple-200 text-gray-900"
                         />
                       </div>
                       <div>
-                        <Label className="text-slate-300">Lot Size (acres)</Label>
+                        <Label className="text-gray-700">Lot Size (acres)</Label>
                         <Input
                           type="number"
                           step="0.01"
                           placeholder="0.25"
                           value={propertyData.lotSize}
                           onChange={(e) => setPropertyData({ ...propertyData, lotSize: parseFloat(e.target.value) || 0 })}
-                          className="mt-1 bg-slate-800/50 border-slate-700 text-white"
+                          className="mt-1 bg-white/80 border-purple-200 text-gray-900"
                         />
                       </div>
                       <div>
-                        <Label className="text-slate-300">Garage Spaces</Label>
+                        <Label className="text-gray-700">Garage Spaces</Label>
                         <Select
                           value={propertyData.garage.toString()}
                           onValueChange={(v) => setPropertyData({ ...propertyData, garage: parseInt(v) })}
                         >
-                          <SelectTrigger className="mt-1 bg-slate-800/50 border-slate-700 text-white">
+                          <SelectTrigger className="mt-1 bg-white/80 border-purple-200 text-gray-900">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -566,12 +566,12 @@ export function CMAPanel() {
                         </Select>
                       </div>
                       <div>
-                        <Label className="text-slate-300">Condition</Label>
+                        <Label className="text-gray-700">Condition</Label>
                         <Select
                           value={propertyData.condition}
                           onValueChange={(v) => setPropertyData({ ...propertyData, condition: v })}
                         >
-                          <SelectTrigger className="mt-1 bg-slate-800/50 border-slate-700 text-white">
+                          <SelectTrigger className="mt-1 bg-white/80 border-purple-200 text-gray-900">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -588,13 +588,13 @@ export function CMAPanel() {
                         checked={propertyData.pool}
                         onCheckedChange={(v) => setPropertyData({ ...propertyData, pool: v })}
                       />
-                      <Label className="text-slate-300">Has Pool</Label>
+                      <Label className="text-gray-700">Has Pool</Label>
                     </div>
                     <div className="flex justify-between">
                       <Button
                         variant="outline"
                         onClick={() => setStep(1)}
-                        className="border-slate-700"
+                        className="border-purple-200"
                       >
                         Back
                       </Button>
@@ -616,7 +616,7 @@ export function CMAPanel() {
                     animate={{ opacity: 1, x: 0 }}
                     className="space-y-6"
                   >
-                    <h3 className="text-lg font-semibold text-white">Features & Upgrades</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Features & Upgrades</h3>
                     <div className="flex flex-wrap gap-2">
                       {propertyFeatures.map((feature) => (
                         <Button
@@ -627,7 +627,7 @@ export function CMAPanel() {
                           className={`transition-all ${
                             propertyData.features.includes(feature)
                               ? 'bg-violet-500/20 border-violet-500 text-violet-300'
-                              : 'border-slate-700 text-slate-400 hover:border-slate-600'
+                              : 'border-purple-200 text-gray-600 hover:border-slate-600'
                           }`}
                         >
                           {propertyData.features.includes(feature) && (
@@ -639,23 +639,23 @@ export function CMAPanel() {
                     </div>
 
                     {/* Analysis Options */}
-                    <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 space-y-4">
-                      <h4 className="font-medium text-white flex items-center gap-2">
+                    <div className="p-4 rounded-lg bg-gray-100/50 border border-purple-200/50 space-y-4">
+                      <h4 className="font-medium text-gray-900 flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-amber-400" />
                         AI Analysis Options
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="flex items-center gap-2">
                           <Switch defaultChecked />
-                          <Label className="text-slate-300 text-sm">Include market trends</Label>
+                          <Label className="text-gray-700 text-sm">Include market trends</Label>
                         </div>
                         <div className="flex items-center gap-2">
                           <Switch defaultChecked />
-                          <Label className="text-slate-300 text-sm">Generate recommendations</Label>
+                          <Label className="text-gray-700 text-sm">Generate recommendations</Label>
                         </div>
                         <div className="flex items-center gap-2">
                           <Switch defaultChecked />
-                          <Label className="text-slate-300 text-sm">Pricing strategy analysis</Label>
+                          <Label className="text-gray-700 text-sm">Pricing strategy analysis</Label>
                         </div>
                       </div>
                     </div>
@@ -664,7 +664,7 @@ export function CMAPanel() {
                       <Button
                         variant="outline"
                         onClick={() => setStep(2)}
-                        className="border-slate-700"
+                        className="border-purple-200"
                       >
                         Back
                       </Button>
@@ -701,14 +701,14 @@ export function CMAPanel() {
             {/* Results Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-white">CMA Results</h2>
-                <p className="text-slate-400">{propertyData.address}, {propertyData.city}, {propertyData.state}</p>
+                <h2 className="text-2xl font-bold text-gray-900">CMA Results</h2>
+                <p className="text-gray-600">{propertyData.address}, {propertyData.city}, {propertyData.state}</p>
               </div>
               <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
                   onClick={() => { setShowResults(false); setStep(1); }}
-                  className="border-slate-700"
+                  className="border-purple-200"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   New Analysis
@@ -716,7 +716,7 @@ export function CMAPanel() {
                 <Button
                   variant="outline"
                   onClick={() => setShowNetSheet(true)}
-                  className="border-slate-700"
+                  className="border-purple-200"
                 >
                   <Calculator className="w-4 h-4 mr-2" />
                   Net Sheet
@@ -740,8 +740,8 @@ export function CMAPanel() {
                           <Target className="w-8 h-8 text-violet-400" />
                         </div>
                         <div>
-                          <p className="text-slate-400 text-sm">Suggested List Price</p>
-                          <p className="text-4xl font-bold text-white">
+                          <p className="text-gray-600 text-sm">Suggested List Price</p>
+                          <p className="text-4xl font-bold text-gray-900">
                             ${cmaResult.suggestedListPrice.toLocaleString()}
                           </p>
                         </div>
@@ -749,12 +749,12 @@ export function CMAPanel() {
                       <div className="flex items-center gap-4">
                         <div className="flex-1">
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-400">Price Range</span>
-                            <span className="text-white">
+                            <span className="text-gray-600">Price Range</span>
+                            <span className="text-gray-900">
                               ${cmaResult.priceRangeLow.toLocaleString()} - ${cmaResult.priceRangeHigh.toLocaleString()}
                             </span>
                           </div>
-                          <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-violet-500 to-purple-500"
                               style={{ width: '50%', marginLeft: '25%' }}
@@ -763,8 +763,8 @@ export function CMAPanel() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
-                      <p className="text-slate-400 text-sm mb-2">Confidence Score</p>
+                    <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-gray-100/50 border border-purple-200/50">
+                      <p className="text-gray-600 text-sm mb-2">Confidence Score</p>
                       <div className="relative w-24 h-24">
                         <svg className="w-full h-full -rotate-90">
                           <circle
@@ -793,7 +793,7 @@ export function CMAPanel() {
                           </defs>
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-2xl font-bold text-white">{cmaResult.confidence}%</span>
+                          <span className="text-2xl font-bold text-gray-900">{cmaResult.confidence}%</span>
                         </div>
                       </div>
                     </div>
@@ -804,9 +804,9 @@ export function CMAPanel() {
 
             {/* Comparables Grid */}
             {cmaResult && (
-              <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl">
+              <Card className="bg-white/50 border-purple-200/50 backdrop-blur-xl">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
+                  <CardTitle className="text-gray-900 flex items-center gap-2">
                     <Home className="w-5 h-5 text-violet-400" />
                     Comparable Properties ({cmaResult.comparables.length})
                   </CardTitle>
@@ -814,12 +814,12 @@ export function CMAPanel() {
                 <CardContent>
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     {cmaResult.comparables.map((comp) => (
-                      <Card key={comp.id} className="bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 transition-all">
+                      <Card key={comp.id} className="bg-white/80 border-purple-200/50 hover:border-slate-600/50 transition-all">
                         <CardContent className="p-4 space-y-3">
                           <div className="flex items-start justify-between">
                             <div>
-                              <p className="font-medium text-white">{comp.address}</p>
-                              <p className="text-sm text-slate-400">{comp.distance} mi away</p>
+                              <p className="font-medium text-gray-900">{comp.address}</p>
+                              <p className="text-sm text-gray-600">{comp.distance} mi away</p>
                             </div>
                             <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30">
                               {comp.similarity}% match
@@ -827,40 +827,40 @@ export function CMAPanel() {
                           </div>
                           <div className="grid grid-cols-4 gap-2 text-center">
                             <div>
-                              <Bed className="w-4 h-4 mx-auto text-slate-400" />
-                              <p className="text-sm text-white">{comp.beds}</p>
+                              <Bed className="w-4 h-4 mx-auto text-gray-600" />
+                              <p className="text-sm text-gray-900">{comp.beds}</p>
                             </div>
                             <div>
-                              <Bath className="w-4 h-4 mx-auto text-slate-400" />
-                              <p className="text-sm text-white">{comp.baths}</p>
+                              <Bath className="w-4 h-4 mx-auto text-gray-600" />
+                              <p className="text-sm text-gray-900">{comp.baths}</p>
                             </div>
                             <div>
-                              <Square className="w-4 h-4 mx-auto text-slate-400" />
-                              <p className="text-sm text-white">{comp.sqft.toLocaleString()}</p>
+                              <Square className="w-4 h-4 mx-auto text-gray-600" />
+                              <p className="text-sm text-gray-900">{comp.sqft.toLocaleString()}</p>
                             </div>
                             <div>
-                              <Calendar className="w-4 h-4 mx-auto text-slate-400" />
-                              <p className="text-sm text-white">{comp.yearBuilt}</p>
+                              <Calendar className="w-4 h-4 mx-auto text-gray-600" />
+                              <p className="text-sm text-gray-900">{comp.yearBuilt}</p>
                             </div>
                           </div>
-                          <div className="pt-3 border-t border-slate-700">
+                          <div className="pt-3 border-t border-purple-200">
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-400">Sale Price</span>
-                              <span className="text-white font-medium">${comp.salePrice.toLocaleString()}</span>
+                              <span className="text-gray-600">Sale Price</span>
+                              <span className="text-gray-900 font-medium">${comp.salePrice.toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-400">$/sqft</span>
-                              <span className="text-white">${comp.pricePerSqft}</span>
+                              <span className="text-gray-600">$/sqft</span>
+                              <span className="text-gray-900">${comp.pricePerSqft}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                              <span className="text-slate-400">Adjusted</span>
+                              <span className="text-gray-600">Adjusted</span>
                               <span className="text-emerald-400 font-medium">${comp.adjustedPrice.toLocaleString()}</span>
                             </div>
                           </div>
                           {comp.adjustments.length > 0 && (
                             <div className="text-xs space-y-1">
                               {comp.adjustments.slice(0, 2).map((adj, i) => (
-                                <div key={i} className="flex justify-between text-slate-400">
+                                <div key={i} className="flex justify-between text-gray-600">
                                   <span>{adj.category}</span>
                                   <span className={adj.amount > 0 ? 'text-emerald-400' : 'text-red-400'}>
                                     {adj.amount > 0 ? '+' : ''}${adj.amount.toLocaleString()}
@@ -883,7 +883,7 @@ export function CMAPanel() {
                 {/* Main AI Analysis Card */}
                 <Card className="bg-white border border-gray-200 shadow-lg">
                   <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-t-lg">
-                    <CardTitle className="text-white flex items-center gap-2">
+                    <CardTitle className="text-gray-900 flex items-center gap-2">
                       <Brain className="w-5 h-5" />
                       AI Market Analysis
                     </CardTitle>
@@ -928,7 +928,7 @@ export function CMAPanel() {
                   {/* Market Stats - Black Card */}
                   <Card className="bg-gray-900 border-0 shadow-xl">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-white text-sm flex items-center gap-2">
+                      <CardTitle className="text-gray-900 text-sm flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-violet-400" />
                         Market Stats
                       </CardTitle>
@@ -936,15 +936,15 @@ export function CMAPanel() {
                     <CardContent className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 text-sm">Avg Days on Market</span>
-                        <span className="text-white font-semibold">{cmaResult.comparables.length > 0 ? Math.round(cmaResult.comparables.reduce((a, c) => a + c.daysOnMarket, 0) / cmaResult.comparables.length) : 21} days</span>
+                        <span className="text-gray-900 font-semibold">{cmaResult.comparables.length > 0 ? Math.round(cmaResult.comparables.reduce((a, c) => a + c.daysOnMarket, 0) / cmaResult.comparables.length) : 21} days</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 text-sm">Active Listings</span>
-                        <span className="text-white font-semibold">{cmaResult.comparables.filter(c => c.source === 'active').length || 1}</span>
+                        <span className="text-gray-900 font-semibold">{cmaResult.comparables.filter(c => c.source === 'active').length || 1}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 text-sm">Recent Sales</span>
-                        <span className="text-white font-semibold">{cmaResult.comparables.filter(c => c.source !== 'active').length || cmaResult.comparables.length}</span>
+                        <span className="text-gray-900 font-semibold">{cmaResult.comparables.filter(c => c.source !== 'active').length || cmaResult.comparables.length}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 text-sm">Price/Sqft Avg</span>
@@ -956,7 +956,7 @@ export function CMAPanel() {
                   {/* Key Strengths - Purple Gradient Card */}
                   <Card className="bg-gradient-to-br from-violet-600 to-purple-700 border-0 shadow-xl">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-white text-sm flex items-center gap-2">
+                      <CardTitle className="text-gray-900 text-sm flex items-center gap-2">
                         <CheckCircle className="w-4 h-4" />
                         Property Strengths
                       </CardTitle>
@@ -965,8 +965,8 @@ export function CMAPanel() {
                       <ul className="space-y-2">
                         {cmaResult.recommendations.slice(0, 4).map((rec, i) => (
                           <li key={i} className="flex items-start gap-2">
-                            <Check className="w-4 h-4 text-white mt-0.5 flex-shrink-0" />
-                            <span className="text-white/90 text-sm">{rec}</span>
+                            <Check className="w-4 h-4 text-gray-900 mt-0.5 flex-shrink-0" />
+                            <span className="text-gray-900/90 text-sm">{rec}</span>
                           </li>
                         ))}
                       </ul>
@@ -976,7 +976,7 @@ export function CMAPanel() {
                   {/* Recommended Actions - Black Card */}
                   <Card className="bg-gray-900 border-0 shadow-xl">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-white text-sm flex items-center gap-2">
+                      <CardTitle className="text-gray-900 text-sm flex items-center gap-2">
                         <Zap className="w-4 h-4 text-violet-400" />
                         Action Items
                       </CardTitle>
@@ -986,7 +986,7 @@ export function CMAPanel() {
                         {['Professional photography', 'Deep clean & declutter', 'Minor repairs', 'Stage key rooms'].map((action, i) => (
                           <li key={i} className="flex items-start gap-2">
                             <div className="w-5 h-5 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <span className="text-white text-xs font-bold">{i + 1}</span>
+                              <span className="text-gray-900 text-xs font-bold">{i + 1}</span>
                             </div>
                             <span className="text-gray-300 text-sm">{action}</span>
                           </li>
@@ -1003,9 +1003,9 @@ export function CMAPanel() {
 
       {/* Net Sheet Dialog */}
       <Dialog open={showNetSheet} onOpenChange={setShowNetSheet}>
-        <DialogContent className="max-w-4xl bg-slate-900 border-slate-700">
+        <DialogContent className="max-w-4xl bg-white border-purple-200">
           <DialogHeader>
-            <DialogTitle className="text-white">Seller Net Sheet Calculator</DialogTitle>
+            <DialogTitle className="text-gray-900">Seller Net Sheet Calculator</DialogTitle>
           </DialogHeader>
           <SellerNetSheetCalculator
             initialPrice={cmaResult?.suggestedListPrice || 485000}

@@ -369,10 +369,10 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
             variant={selectedCategory === cat.id ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedCategory(cat.id)}
-            className={selectedCategory === cat.id ? 'bg-purple-600 hover:bg-purple-700' : 'border-slate-700 hover:bg-slate-800'}
+            className={selectedCategory === cat.id ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'border-purple-200 hover:bg-purple-50'}
           >
             {cat.label}
-            <Badge variant="secondary" className="ml-2 bg-slate-700">{cat.count}</Badge>
+            <Badge variant="secondary" className="ml-2 bg-purple-100 text-purple-700">{cat.count}</Badge>
           </Button>
         ))}
       </div>
@@ -393,7 +393,7 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
                 transition={{ delay: index * 0.05 }}
               >
                 <Card
-                  className={`bg-black border-slate-700 hover:border-slate-500 transition-all cursor-pointer group ${employee.borderColor}`}
+                  className={`border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm hover:border-purple-300 transition-all cursor-pointer group ${employee.borderColor}`}
                   onClick={() => { setSelectedEmployee(employee); setShowDetailDialog(true); }}
                 >
                   <CardContent className="p-4">
@@ -448,7 +448,7 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
 
       {/* Employee Detail Dialog */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="bg-black border-slate-700 max-w-2xl">
+        <DialogContent className="bg-white border-2 border-purple-200/50 max-w-2xl">
           {selectedEmployee && (
             <>
               <DialogHeader>
@@ -470,13 +470,13 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
                   <h4 className="text-sm font-medium text-slate-300 mb-3">Capabilities</h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedEmployee.capabilities.map((cap, i) => (
-                      <Badge key={i} variant="secondary" className="bg-slate-900 text-slate-200 border border-slate-700">
+                      <Badge key={i} variant="secondary" className="bg-purple-50 text-gray-700 border border-purple-200">
                         <CheckCircle2 className="w-3 h-3 mr-1 text-green-400" />{cap}
                       </Badge>
                     ))}
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-4 bg-slate-900 rounded-lg border border-slate-700">
+                <div className="flex items-center justify-between p-4 bg-white/80 rounded-lg border-2 border-purple-200/50">
                   <div className="flex items-center gap-3">
                     <Settings className="w-5 h-5 text-slate-400" />
                     <div>
@@ -491,7 +491,7 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
                   />
                 </div>
                 {selectedEmployee.voiceEnabled && (
-                  <div className={`p-4 rounded-lg border ${isAgentProvisioned(selectedEmployee.id) ? 'bg-green-500/10 border-green-500/30' : 'bg-slate-800/50 border-slate-600'}`}>
+                  <div className={`p-4 rounded-lg border ${isAgentProvisioned(selectedEmployee.id) ? 'bg-green-500/10 border-green-500/30' : 'bg-purple-50/50 border-purple-200'}`}>
                     <h4 className="text-sm font-medium text-slate-200 mb-2 flex items-center gap-2">
                       <Mic className="w-4 h-4" />
                       Setup — Voice Agent
@@ -514,7 +514,7 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
                         : 'Click Test Voice Agent to set up automatically on first use.'}
                     </p>
                     {isAgentProvisioned(selectedEmployee.id) && !getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber && (
-                      <div className="mt-3 pt-3 border-t border-slate-600">
+                      <div className="mt-3 pt-3 border-t border-purple-200">
                         {isAdmin ? (
                           <>
                             <p className="text-xs text-amber-400 mb-2">This agent can make phone calls. Assign a number from your Soshogle Call account:</p>
@@ -544,7 +544,7 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
                       </div>
                     )}
                     {isAgentProvisioned(selectedEmployee.id) && getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber && (
-                      <div className="mt-3 pt-3 border-t border-slate-600">
+                      <div className="mt-3 pt-3 border-t border-purple-200">
                         <TwilioPhoneSelector
                           value={getProvisionedAgent(selectedEmployee.id)?.twilioPhoneNumber || ''}
                           onChange={(v) => handleAssignPhone(selectedEmployee.id, v)}
@@ -588,7 +588,7 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
                     </div>
                   </div>
                 )}
-                <div className="p-4 bg-slate-900 rounded-lg border border-slate-700">
+                <div className="p-4 bg-white/80 rounded-lg border-2 border-purple-200/50">
                   <div className="flex items-center gap-2 mb-2">
                     <Award className="w-4 h-4 text-purple-400" />
                     <span className="text-purple-400 font-medium">{compliance.title}</span>
@@ -597,7 +597,7 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
                 </div>
               </div>
               <DialogFooter className="mt-6">
-                <Button variant="outline" onClick={() => setShowDetailDialog(false)} className="border-slate-700 text-white hover:bg-slate-800">Close</Button>
+                <Button variant="outline" onClick={() => setShowDetailDialog(false)} className="border-purple-200 text-gray-700 hover:bg-purple-50">Close</Button>
                 {isAgentProvisioned(selectedEmployee.id) && (
                   <Button variant="outline" className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10" onClick={() => setShowTaskDashboard(true)}>
                     <Settings className="w-4 h-4 mr-2" />Manage Tasks

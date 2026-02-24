@@ -74,7 +74,7 @@ export function UnifiedActivityFeed() {
   };
 
   return (
-    <Card>
+    <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
           <Bot className="w-5 h-5" />
@@ -83,13 +83,13 @@ export function UnifiedActivityFeed() {
         <button
           onClick={fetchActivity}
           disabled={loading}
-          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="p-2 rounded-lg hover:bg-purple-50 transition-colors"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+        <p className="text-sm text-gray-600 mb-4">
           Work completed by AI employees and your team in the last 7 days.
         </p>
         {loading ? (
@@ -97,7 +97,7 @@ export function UnifiedActivityFeed() {
             <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-12 text-slate-500">
+          <div className="text-center py-12 text-gray-500">
             <Bot className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>No activity yet.</p>
             <p className="text-sm mt-1">Run AI employees or complete tasks to see them here.</p>
@@ -107,29 +107,29 @@ export function UnifiedActivityFeed() {
             {items.map((item) => (
               <div
                 key={`${item.type}-${item.id}`}
-                className="flex items-start gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3 bg-white dark:bg-slate-900"
+                className="flex items-start gap-3 rounded-lg border border-purple-200/50 p-3 bg-white/80"
               >
-                <div className="mt-0.5 text-slate-500">
+                <div className="mt-0.5 text-gray-500">
                   {getTypeIcon(item.type)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-slate-900 dark:text-slate-100">
+                    <span className="font-medium text-gray-900">
                       {item.title}
                     </span>
                     {getTypeBadge(item.type)}
                     {item.tasksCompleted != null && item.tasksCompleted > 0 && (
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-gray-500">
                         {item.tasksCompleted} completed
                       </span>
                     )}
                   </div>
                   {item.summary && (
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">
+                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                       {item.summary}
                     </p>
                   )}
-                  <p className="text-xs text-slate-500 mt-1">{formatDate(item.date)}</p>
+                  <p className="text-xs text-gray-500 mt-1">{formatDate(item.date)}</p>
                 </div>
               </div>
             ))}

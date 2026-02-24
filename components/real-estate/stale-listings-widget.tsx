@@ -151,7 +151,7 @@ This property has been on the market for ${listing.daysOnMarket || 0} days, whic
       case 'warning': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
       case 'critical': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
       case 'severe': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+      default: return 'bg-slate-500/20 text-gray-600 border-slate-500/30';
     }
   };
 
@@ -163,10 +163,10 @@ This property has been on the market for ${listing.daysOnMarket || 0} days, whic
   };
 
   return (
-    <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl">
+    <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-white flex items-center gap-2">
+          <CardTitle className="text-gray-900 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-400" />
             Stale Listings
             {listings.length > 0 && (
@@ -180,7 +180,7 @@ This property has been on the market for ${listing.daysOnMarket || 0} days, whic
             size="sm"
             onClick={fetchStaleListings}
             disabled={isLoading}
-            className="border-slate-700 bg-slate-800/50"
+            className="border-purple-200 bg-white/80"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
@@ -190,39 +190,39 @@ This property has been on the market for ${listing.daysOnMarket || 0} days, whic
         <ScrollArea className="h-[300px]">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+              <Loader2 className="w-8 h-8 animate-spin text-gray-600" />
             </div>
           ) : listings.length === 0 ? (
             <div className="text-center py-8">
-              <Clock className="w-12 h-12 mx-auto text-slate-500 mb-3" />
-              <p className="text-slate-400">No stale listings detected</p>
-              <p className="text-slate-500 text-sm">All listings are performing well</p>
+              <Clock className="w-12 h-12 mx-auto text-gray-500 mb-3" />
+              <p className="text-gray-600">No stale listings detected</p>
+              <p className="text-gray-500 text-sm">All listings are performing well</p>
             </div>
           ) : (
             <div className="space-y-3">
               {listings.map((listing) => (
                 <div
                   key={listing.id}
-                  className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-slate-600/50 transition-colors"
+                  className="p-4 rounded-lg bg-white/80 border-2 border-purple-200/50 hover:border-purple-300 transition-colors"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <h4 className="text-white font-medium">{listing.address}</h4>
+                        <h4 className="text-gray-900 font-medium">{listing.address}</h4>
                         <Badge className={getStalenessColor(listing.staleness)}>
                           {listing.staleness}
                         </Badge>
                       </div>
-                      <p className="text-slate-400 text-sm">
+                      <p className="text-gray-600 text-sm">
                         {listing.city}, {listing.state}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-white font-medium">
+                      <p className="text-gray-900 font-medium">
                         ${(listing.price || 0).toLocaleString()}
                       </p>
                       {listing.originalPrice && listing.originalPrice > listing.price && (
-                        <p className="text-slate-500 text-sm line-through">
+                        <p className="text-gray-500 text-sm line-through">
                           ${(listing.originalPrice || 0).toLocaleString()}
                         </p>
                       )}
@@ -230,7 +230,7 @@ This property has been on the market for ${listing.daysOnMarket || 0} days, whic
                   </div>
 
                   <div className="flex items-center gap-4 text-sm mb-3">
-                    <span className="text-slate-400">
+                    <span className="text-gray-600">
                       {listing.beds || 0} bed · {listing.baths || 0} bath · {(listing.sqft || 0).toLocaleString()} sqft
                     </span>
                     <span className="text-red-400 font-medium">
@@ -245,12 +245,12 @@ This property has been on the market for ${listing.daysOnMarket || 0} days, whic
 
                   <div className="mb-3">
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-slate-400">Staleness Level</span>
-                      <span className="text-slate-400">{listing.daysOnMarket}/90+ days</span>
+                      <span className="text-gray-600">Staleness Level</span>
+                      <span className="text-gray-600">{listing.daysOnMarket}/90+ days</span>
                     </div>
                     <Progress
                       value={getStalenessProgress(listing.daysOnMarket)}
-                      className="h-2 bg-slate-700"
+                      className="h-2 bg-purple-200"
                     />
                   </div>
 
@@ -298,18 +298,18 @@ This property has been on the market for ${listing.daysOnMarket || 0} days, whic
       <Dialog open={showDiagnosticDialog} onOpenChange={setShowDiagnosticDialog}>
         <DialogContent className="max-w-2xl bg-slate-900 border-slate-700">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
+            <DialogTitle className="text-gray-900 flex items-center gap-2">
               <Brain className="w-5 h-5 text-violet-400" />
               AI Listing Diagnostic
             </DialogTitle>
           </DialogHeader>
           {selectedListing && (
             <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50">
+              <div className="p-4 rounded-lg bg-white/80 border-2 border-purple-200/50">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h4 className="text-white font-medium">{selectedListing.address}</h4>
-                    <p className="text-slate-400 text-sm">
+                    <h4 className="text-gray-900 font-medium">{selectedListing.address}</h4>
+                    <p className="text-gray-600 text-sm">
                       {selectedListing.city}, {selectedListing.state}
                     </p>
                   </div>
@@ -318,7 +318,7 @@ This property has been on the market for ${listing.daysOnMarket || 0} days, whic
                   </Badge>
                 </div>
                 <div className="flex items-center gap-4 mt-3 text-sm">
-                  <span className="text-white">Current: ${(selectedListing.price || 0).toLocaleString()}</span>
+                  <span className="text-gray-900">Current: ${(selectedListing.price || 0).toLocaleString()}</span>
                   {selectedListing.suggestedPrice && (
                     <span className="text-emerald-400">
                       Suggested: ${(selectedListing.suggestedPrice || 0).toLocaleString()}
@@ -331,7 +331,7 @@ This property has been on the market for ${listing.daysOnMarket || 0} days, whic
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
                     <Loader2 className="w-8 h-8 animate-spin text-violet-400 mx-auto mb-3" />
-                    <p className="text-slate-400">Analyzing listing data...</p>
+                    <p className="text-gray-600">Analyzing listing data...</p>
                   </div>
                 </div>
               ) : selectedListing.aiRecommendation ? (

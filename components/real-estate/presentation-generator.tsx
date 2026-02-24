@@ -445,18 +445,18 @@ export function PresentationGenerator() {
         className={`relative aspect-video rounded-lg border-2 transition-all cursor-pointer overflow-hidden ${
           isActive
             ? 'border-orange-500 shadow-lg shadow-orange-500/20'
-            : 'border-slate-700 hover:border-slate-600'
+            : 'border-purple-200 hover:border-purple-300'
         }`}
         onClick={() => setCurrentSlideIndex(index)}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-800 p-4">
-          <div className="text-xs text-orange-400 font-medium mb-1">{slide.type.toUpperCase()}</div>
-          <div className="text-sm text-white font-semibold truncate">{slide.title}</div>
+          <div className="text-xs text-purple-600 font-medium mb-1">{slide.type.toUpperCase()}</div>
+          <div className="text-sm text-gray-900 font-semibold truncate">{slide.title}</div>
           {slide.subtitle && (
-            <div className="text-xs text-slate-400 truncate mt-1">{slide.subtitle}</div>
+            <div className="text-xs text-gray-600 truncate mt-1">{slide.subtitle}</div>
           )}
         </div>
-        <div className="absolute bottom-2 right-2 text-xs text-slate-500">
+        <div className="absolute bottom-2 right-2 text-xs text-gray-500">
           {index + 1}
         </div>
       </div>
@@ -466,7 +466,7 @@ export function PresentationGenerator() {
   return (
     <div className="space-y-6">
       {/* Progress Steps */}
-      <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl">
+      <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             {[
@@ -478,15 +478,15 @@ export function PresentationGenerator() {
               <div key={s.num} className="flex items-center">
                 <div
                   className={`flex items-center gap-2 cursor-pointer transition-all ${
-                    step >= s.num ? 'text-orange-400' : 'text-slate-500'
+                    step >= s.num ? 'text-purple-600' : 'text-gray-500'
                   }`}
                   onClick={() => s.num < step && setStep(s.num)}
                 >
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                       step >= s.num
-                        ? 'bg-gradient-to-br from-orange-500 to-amber-500 text-white'
-                        : 'bg-slate-800 border border-slate-700'
+                        ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-gray-900'
+                        : 'bg-white border border-purple-200'
                     }`}
                   >
                     {step > s.num ? <Check className="w-5 h-5" /> : <s.icon className="w-5 h-5" />}
@@ -496,7 +496,7 @@ export function PresentationGenerator() {
                 {i < 3 && (
                   <div
                     className={`w-16 md:w-24 h-1 mx-4 rounded ${
-                      step > s.num ? 'bg-gradient-to-r from-orange-500 to-amber-500' : 'bg-slate-800'
+                      step > s.num ? 'bg-gradient-to-r from-purple-500 to-purple-600' : 'bg-gray-100'
                     }`}
                   />
                 )}
@@ -509,11 +509,11 @@ export function PresentationGenerator() {
       {/* Step 1: Template Selection */}
       {step === 1 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500" />
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700" />
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <LayoutTemplate className="w-6 h-6 text-orange-400" />
+              <CardTitle className="text-gray-900 flex items-center gap-2">
+                <LayoutTemplate className="w-6 h-6 text-purple-600" />
                 Choose a Template
               </CardTitle>
               <CardDescription>Select a presentation style for your property</CardDescription>
@@ -525,26 +525,26 @@ export function PresentationGenerator() {
                     key={template.id}
                     className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all hover:scale-[1.02] ${
                       selectedTemplate?.id === template.id
-                        ? 'border-orange-500 bg-orange-500/10'
-                        : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                        ? 'border-orange-500 bg-purple-600/10'
+                        : 'border-purple-200 bg-white/80 hover:border-purple-300'
                     }`}
                     onClick={() => setSelectedTemplate(template)}
                   >
                     {template.popular && (
-                      <Badge className="absolute -top-2 -right-2 bg-orange-500">Popular</Badge>
+                      <Badge className="absolute -top-2 -right-2 bg-purple-600">Popular</Badge>
                     )}
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center mb-4">
-                      <template.icon className="w-6 h-6 text-orange-400" />
+                      <template.icon className="w-6 h-6 text-purple-600" />
                     </div>
-                    <h3 className="text-white font-semibold mb-1">{template.name}</h3>
-                    <p className="text-slate-400 text-sm mb-3">{template.description}</p>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <h3 className="text-gray-900 font-semibold mb-1">{template.name}</h3>
+                    <p className="text-gray-600 text-sm mb-3">{template.description}</p>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
                       <FileText className="w-4 h-4" />
                       {template.slides} slides
                     </div>
                     {selectedTemplate?.id === template.id && (
                       <div className="absolute top-4 right-4">
-                        <Check className="w-5 h-5 text-orange-400" />
+                        <Check className="w-5 h-5 text-purple-600" />
                       </div>
                     )}
                   </div>
@@ -555,7 +555,7 @@ export function PresentationGenerator() {
                 <Button
                   onClick={() => setStep(2)}
                   disabled={!selectedTemplate}
-                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
                 >
                   Continue
                   <ChevronRight className="w-4 h-4 ml-2" />
@@ -569,11 +569,11 @@ export function PresentationGenerator() {
       {/* Step 2: Property Info */}
       {step === 2 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500" />
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700" />
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Home className="w-6 h-6 text-orange-400" />
+              <CardTitle className="text-gray-900 flex items-center gap-2">
+                <Home className="w-6 h-6 text-purple-600" />
                 Property Information
               </CardTitle>
               <CardDescription>Enter the property details for your presentation</CardDescription>
@@ -582,7 +582,7 @@ export function PresentationGenerator() {
               {/* Address Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2 relative">
-                  <Label className="text-slate-300">Street Address *</Label>
+                  <Label className="text-gray-700">Street Address *</Label>
                   <Input
                     ref={addressInputRef}
                     value={propertyInfo.address}
@@ -590,19 +590,19 @@ export function PresentationGenerator() {
                     onFocus={() => addressPredictions.length > 0 && setShowAddressPredictions(true)}
                     onBlur={() => setTimeout(() => setShowAddressPredictions(false), 200)}
                     placeholder="Start typing an address..."
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     autoComplete="off"
                   />
                   {showAddressPredictions && addressPredictions.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-md shadow-lg max-h-60 overflow-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-purple-200 rounded-md shadow-lg max-h-60 overflow-auto">
                       {addressPredictions.map((prediction) => (
                         <button
                           key={prediction.place_id}
                           type="button"
-                          className="w-full px-4 py-2 text-left text-sm text-white hover:bg-slate-700 flex items-center gap-2"
+                          className="w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-purple-50 flex items-center gap-2"
                           onMouseDown={() => handleSelectPrediction(prediction)}
                         >
-                          <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                          <MapPin className="w-4 h-4 text-gray-600 flex-shrink-0" />
                           <span>{prediction.description}</span>
                         </button>
                       ))}
@@ -610,31 +610,31 @@ export function PresentationGenerator() {
                   )}
                 </div>
                 <div>
-                  <Label className="text-slate-300">City *</Label>
+                  <Label className="text-gray-700">City *</Label>
                   <Input
                     value={propertyInfo.city}
                     onChange={(e) => setPropertyInfo(prev => ({ ...prev, city: e.target.value }))}
                     placeholder="Los Angeles"
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-slate-300">State</Label>
+                    <Label className="text-gray-700">State</Label>
                     <Input
                       value={propertyInfo.state}
                       onChange={(e) => setPropertyInfo(prev => ({ ...prev, state: e.target.value }))}
                       placeholder="CA"
-                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                      className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-300">ZIP</Label>
+                    <Label className="text-gray-700">ZIP</Label>
                     <Input
                       value={propertyInfo.zipCode}
                       onChange={(e) => setPropertyInfo(prev => ({ ...prev, zipCode: e.target.value }))}
                       placeholder="90210"
-                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                      className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     />
                   </div>
                 </div>
@@ -643,67 +643,67 @@ export function PresentationGenerator() {
               {/* Property Details */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <Label className="text-slate-300">Price</Label>
+                  <Label className="text-gray-700">Price</Label>
                   <Input
                     value={propertyInfo.price}
                     onChange={(e) => setPropertyInfo(prev => ({ ...prev, price: e.target.value }))}
                     placeholder="$500,000"
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-300">Beds</Label>
+                  <Label className="text-gray-700">Beds</Label>
                   <Input
                     type="number"
                     value={propertyInfo.beds}
                     onChange={(e) => setPropertyInfo(prev => ({ ...prev, beds: e.target.value }))}
                     placeholder="4"
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-300">Baths</Label>
+                  <Label className="text-gray-700">Baths</Label>
                   <Input
                     value={propertyInfo.baths}
                     onChange={(e) => setPropertyInfo(prev => ({ ...prev, baths: e.target.value }))}
                     placeholder="2.5"
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-300">Sq Ft</Label>
+                  <Label className="text-gray-700">Sq Ft</Label>
                   <Input
                     value={propertyInfo.sqft}
                     onChange={(e) => setPropertyInfo(prev => ({ ...prev, sqft: e.target.value }))}
                     placeholder="2,500"
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-300">Year Built</Label>
+                  <Label className="text-gray-700">Year Built</Label>
                   <Input
                     value={propertyInfo.yearBuilt}
                     onChange={(e) => setPropertyInfo(prev => ({ ...prev, yearBuilt: e.target.value }))}
                     placeholder="2005"
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-300">Lot Size</Label>
+                  <Label className="text-gray-700">Lot Size</Label>
                   <Input
                     value={propertyInfo.lotSize}
                     onChange={(e) => setPropertyInfo(prev => ({ ...prev, lotSize: e.target.value }))}
                     placeholder="0.25 acres"
-                    className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                    className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="text-slate-300">Property Type</Label>
+                  <Label className="text-gray-700">Property Type</Label>
                   <Select
                     value={propertyInfo.propertyType}
                     onValueChange={(value) => setPropertyInfo(prev => ({ ...prev, propertyType: value }))}
                   >
-                    <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white mt-1">
+                    <SelectTrigger className="bg-white/80 border-purple-200 text-gray-900 mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -720,18 +720,18 @@ export function PresentationGenerator() {
 
               {/* Description */}
               <div>
-                <Label className="text-slate-300">Property Description</Label>
+                <Label className="text-gray-700">Property Description</Label>
                 <Textarea
                   value={propertyInfo.description}
                   onChange={(e) => setPropertyInfo(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Describe the property highlights, upgrades, and unique features..."
-                  className="bg-slate-800/50 border-slate-700 text-white mt-1 min-h-[100px]"
+                  className="bg-white/80 border-purple-200 text-gray-900 mt-1 min-h-[100px]"
                 />
               </div>
 
               {/* Features */}
               <div>
-                <Label className="text-slate-300 mb-3 block">Property Features</Label>
+                <Label className="text-gray-700 mb-3 block">Property Features</Label>
                 <div className="flex flex-wrap gap-2">
                   {propertyFeatures.map((feature) => (
                     <Badge
@@ -739,8 +739,8 @@ export function PresentationGenerator() {
                       variant="outline"
                       className={`cursor-pointer transition-all ${
                         propertyInfo.features.includes(feature)
-                          ? 'bg-orange-500/20 border-orange-500 text-orange-300'
-                          : 'border-slate-600 text-slate-400 hover:border-slate-500'
+                          ? 'bg-purple-600/20 border-orange-500 text-orange-300'
+                          : 'border-purple-300 text-gray-600 hover:border-slate-500'
                       }`}
                       onClick={() => toggleFeature(feature)}
                     >
@@ -752,69 +752,69 @@ export function PresentationGenerator() {
               </div>
 
               {/* Agent Info */}
-              <div className="border-t border-slate-700 pt-6">
-                <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                  <PresentationIcon className="w-5 h-5 text-orange-400" />
+              <div className="border-t border-purple-200 pt-6">
+                <h3 className="text-gray-900 font-semibold mb-4 flex items-center gap-2">
+                  <PresentationIcon className="w-5 h-5 text-purple-600" />
                   Agent Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-slate-300">Your Name</Label>
+                    <Label className="text-gray-700">Your Name</Label>
                     <Input
                       value={agentInfo.name}
                       onChange={(e) => setAgentInfo(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="John Smith"
-                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                      className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-300">Phone</Label>
+                    <Label className="text-gray-700">Phone</Label>
                     <Input
                       value={agentInfo.phone}
                       onChange={(e) => setAgentInfo(prev => ({ ...prev, phone: e.target.value }))}
                       placeholder="(555) 123-4567"
-                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                      className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-300">Email</Label>
+                    <Label className="text-gray-700">Email</Label>
                     <Input
                       value={agentInfo.email}
                       onChange={(e) => setAgentInfo(prev => ({ ...prev, email: e.target.value }))}
                       placeholder="john@realestate.com"
-                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                      className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <Label className="text-slate-300">Company</Label>
+                    <Label className="text-gray-700">Company</Label>
                     <Input
                       value={agentInfo.company}
                       onChange={(e) => setAgentInfo(prev => ({ ...prev, company: e.target.value }))}
                       placeholder="ABC Realty"
-                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                      className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     />
                   </div>
                   <div>
-                    <Label className="text-slate-300">Title</Label>
+                    <Label className="text-gray-700">Title</Label>
                     <Input
                       value={agentInfo.title}
                       onChange={(e) => setAgentInfo(prev => ({ ...prev, title: e.target.value }))}
                       placeholder="Real Estate Agent"
-                      className="bg-slate-800/50 border-slate-700 text-white mt-1"
+                      className="bg-white/80 border-purple-200 text-gray-900 mt-1"
                     />
                   </div>
                 </div>
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep(1)} className="border-slate-700">
+                <Button variant="outline" onClick={() => setStep(1)} className="border-purple-200">
                   <ChevronLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
                 <Button
                   onClick={() => setStep(3)}
                   disabled={!propertyInfo.address || !propertyInfo.city}
-                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
                 >
                   Continue
                   <ChevronRight className="w-4 h-4 ml-2" />
@@ -828,13 +828,13 @@ export function PresentationGenerator() {
       {/* Step 3: Area Research */}
       {step === 3 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500" />
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700" />
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <MapPin className="w-6 h-6 text-orange-400" />
+                  <CardTitle className="text-gray-900 flex items-center gap-2">
+                    <MapPin className="w-6 h-6 text-purple-600" />
                     Area Research
                   </CardTitle>
                   <CardDescription>AI-powered neighborhood research for your presentation</CardDescription>
@@ -854,13 +854,13 @@ export function PresentationGenerator() {
             </CardHeader>
             <CardContent className="space-y-6">
               {!areaResearch ? (
-                <div className="text-center py-12 bg-slate-800/30 rounded-xl border border-slate-700/50">
+                <div className="text-center py-12 bg-gray-100/30 rounded-xl border border-purple-200/50">
                   <MapPin className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                  <h3 className="text-white font-semibold mb-2">Research the Neighborhood</h3>
-                  <p className="text-slate-400 mb-4 max-w-md mx-auto">
+                  <h3 className="text-gray-900 font-semibold mb-2">Research the Neighborhood</h3>
+                  <p className="text-gray-600 mb-4 max-w-md mx-auto">
                     Click "Research Area" to automatically gather information about schools, shopping, parks, transportation, and more for your presentation.
                   </p>
-                  <Badge variant="outline" className="border-slate-600 text-slate-400">
+                  <Badge variant="outline" className="border-purple-300 text-gray-600">
                     {propertyInfo.address}, {propertyInfo.city}
                   </Badge>
                 </div>
@@ -868,7 +868,7 @@ export function PresentationGenerator() {
                 <div className="space-y-6">
                   {/* Summary */}
                   <div className="p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-xl border border-emerald-500/20">
-                    <p className="text-slate-300">{areaResearch.summary}</p>
+                    <p className="text-gray-700">{areaResearch.summary}</p>
                   </div>
 
                   {/* Scores */}
@@ -886,9 +886,9 @@ export function PresentationGenerator() {
                       value: areaResearch.bikeScore,
                       color: 'amber'
                     }].map(score => (
-                      <div key={score.label} className="bg-slate-800/50 rounded-xl p-4 text-center border border-slate-700/50">
+                      <div key={score.label} className="bg-gray-100/50 rounded-xl p-4 text-center border border-purple-200/50">
                         <div className={`text-3xl font-bold text-${score.color}-400`}>{score.value || '—'}</div>
-                        <div className="text-sm text-slate-400">{score.label}</div>
+                        <div className="text-sm text-gray-600">{score.label}</div>
                       </div>
                     ))}
                   </div>
@@ -897,15 +897,15 @@ export function PresentationGenerator() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Schools */}
                     {areaResearch.schools?.length > 0 && (
-                      <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50">
-                        <h4 className="text-white font-semibold flex items-center gap-2 mb-3">
+                      <div className="bg-gray-100/30 rounded-xl p-4 border border-purple-200/50">
+                        <h4 className="text-gray-900 font-semibold flex items-center gap-2 mb-3">
                           <GraduationCap className="w-5 h-5 text-blue-400" /> Schools
                         </h4>
                         <div className="space-y-2">
                           {areaResearch.schools.slice(0, 4).map((school, i) => (
                             <div key={i} className="flex justify-between text-sm">
-                              <span className="text-slate-300">{school.name}</span>
-                              <span className="text-slate-500">{school.distance}</span>
+                              <span className="text-gray-700">{school.name}</span>
+                              <span className="text-gray-500">{school.distance}</span>
                             </div>
                           ))}
                         </div>
@@ -914,15 +914,15 @@ export function PresentationGenerator() {
 
                     {/* Shopping */}
                     {areaResearch.shopping?.length > 0 && (
-                      <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50">
-                        <h4 className="text-white font-semibold flex items-center gap-2 mb-3">
+                      <div className="bg-gray-100/30 rounded-xl p-4 border border-purple-200/50">
+                        <h4 className="text-gray-900 font-semibold flex items-center gap-2 mb-3">
                           <ShoppingBag className="w-5 h-5 text-pink-400" /> Shopping
                         </h4>
                         <div className="space-y-2">
                           {areaResearch.shopping.slice(0, 4).map((shop, i) => (
                             <div key={i} className="flex justify-between text-sm">
-                              <span className="text-slate-300">{shop.name}</span>
-                              <span className="text-slate-500">{shop.distance}</span>
+                              <span className="text-gray-700">{shop.name}</span>
+                              <span className="text-gray-500">{shop.distance}</span>
                             </div>
                           ))}
                         </div>
@@ -931,15 +931,15 @@ export function PresentationGenerator() {
 
                     {/* Parks */}
                     {areaResearch.parks?.length > 0 && (
-                      <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50">
-                        <h4 className="text-white font-semibold flex items-center gap-2 mb-3">
+                      <div className="bg-gray-100/30 rounded-xl p-4 border border-purple-200/50">
+                        <h4 className="text-gray-900 font-semibold flex items-center gap-2 mb-3">
                           <Trees className="w-5 h-5 text-green-400" /> Parks & Recreation
                         </h4>
                         <div className="space-y-2">
                           {areaResearch.parks.slice(0, 4).map((park, i) => (
                             <div key={i} className="flex justify-between text-sm">
-                              <span className="text-slate-300">{park.name}</span>
-                              <span className="text-slate-500">{park.distance}</span>
+                              <span className="text-gray-700">{park.name}</span>
+                              <span className="text-gray-500">{park.distance}</span>
                             </div>
                           ))}
                         </div>
@@ -948,15 +948,15 @@ export function PresentationGenerator() {
 
                     {/* Transportation */}
                     {areaResearch.transportation?.length > 0 && (
-                      <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50">
-                        <h4 className="text-white font-semibold flex items-center gap-2 mb-3">
+                      <div className="bg-gray-100/30 rounded-xl p-4 border border-purple-200/50">
+                        <h4 className="text-gray-900 font-semibold flex items-center gap-2 mb-3">
                           <Train className="w-5 h-5 text-purple-400" /> Transportation
                         </h4>
                         <div className="space-y-2">
                           {areaResearch.transportation.slice(0, 4).map((trans, i) => (
                             <div key={i} className="flex justify-between text-sm">
-                              <span className="text-slate-300">{trans.name}</span>
-                              <span className="text-slate-500">{trans.distance}</span>
+                              <span className="text-gray-700">{trans.name}</span>
+                              <span className="text-gray-500">{trans.distance}</span>
                             </div>
                           ))}
                         </div>
@@ -965,15 +965,15 @@ export function PresentationGenerator() {
 
                     {/* Dining */}
                     {areaResearch.dining?.length > 0 && (
-                      <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50">
-                        <h4 className="text-white font-semibold flex items-center gap-2 mb-3">
-                          <Utensils className="w-5 h-5 text-orange-400" /> Dining
+                      <div className="bg-gray-100/30 rounded-xl p-4 border border-purple-200/50">
+                        <h4 className="text-gray-900 font-semibold flex items-center gap-2 mb-3">
+                          <Utensils className="w-5 h-5 text-purple-600" /> Dining
                         </h4>
                         <div className="space-y-2">
                           {areaResearch.dining.slice(0, 4).map((restaurant, i) => (
                             <div key={i} className="flex justify-between text-sm">
-                              <span className="text-slate-300">{restaurant.name}</span>
-                              <span className="text-slate-500">{restaurant.distance}</span>
+                              <span className="text-gray-700">{restaurant.name}</span>
+                              <span className="text-gray-500">{restaurant.distance}</span>
                             </div>
                           ))}
                         </div>
@@ -982,15 +982,15 @@ export function PresentationGenerator() {
 
                     {/* Healthcare */}
                     {areaResearch.healthcare?.length > 0 && (
-                      <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50">
-                        <h4 className="text-white font-semibold flex items-center gap-2 mb-3">
+                      <div className="bg-gray-100/30 rounded-xl p-4 border border-purple-200/50">
+                        <h4 className="text-gray-900 font-semibold flex items-center gap-2 mb-3">
                           <Heart className="w-5 h-5 text-red-400" /> Healthcare
                         </h4>
                         <div className="space-y-2">
                           {areaResearch.healthcare.slice(0, 4).map((facility, i) => (
                             <div key={i} className="flex justify-between text-sm">
-                              <span className="text-slate-300">{facility.name}</span>
-                              <span className="text-slate-500">{facility.distance}</span>
+                              <span className="text-gray-700">{facility.name}</span>
+                              <span className="text-gray-500">{facility.distance}</span>
                             </div>
                           ))}
                         </div>
@@ -1001,14 +1001,14 @@ export function PresentationGenerator() {
               )}
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep(2)} className="border-slate-700">
+                <Button variant="outline" onClick={() => setStep(2)} className="border-purple-200">
                   <ChevronLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
                 <Button
                   onClick={handleGenerate}
                   disabled={isGenerating}
-                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
                 >
                   {isGenerating ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
@@ -1025,13 +1025,13 @@ export function PresentationGenerator() {
       {/* Step 4: Generated Presentation */}
       {step === 4 && generatedPresentation && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500" />
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700" />
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Sparkles className="w-6 h-6 text-orange-400" />
+                  <CardTitle className="text-gray-900 flex items-center gap-2">
+                    <Sparkles className="w-6 h-6 text-purple-600" />
                     Your Presentation is Ready!
                   </CardTitle>
                   <CardDescription>{generatedPresentation.title}</CardDescription>
@@ -1040,7 +1040,7 @@ export function PresentationGenerator() {
                   <Button
                     variant="outline"
                     onClick={() => setShowPreview(true)}
-                    className="border-slate-700"
+                    className="border-purple-200"
                   >
                     <Eye className="w-4 h-4 mr-2" />
                     Preview
@@ -1068,7 +1068,7 @@ export function PresentationGenerator() {
                     setGeneratedPresentation(null);
                     setStep(1);
                   }}
-                  className="border-slate-700"
+                  className="border-purple-200"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Create New
@@ -1081,9 +1081,9 @@ export function PresentationGenerator() {
 
       {/* Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-5xl h-[80vh] bg-slate-900 border-slate-700">
+        <DialogContent className="max-w-5xl h-[80vh] bg-white border-2 border-purple-200/50">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center justify-between">
+            <DialogTitle className="text-gray-900 flex items-center justify-between">
               <span>Presentation Preview</span>
               <div className="flex items-center gap-2">
                 <Button
@@ -1091,11 +1091,11 @@ export function PresentationGenerator() {
                   size="sm"
                   onClick={() => setCurrentSlideIndex(Math.max(0, currentSlideIndex - 1))}
                   disabled={currentSlideIndex === 0}
-                  className="border-slate-700"
+                  className="border-purple-200"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <span className="text-slate-400 text-sm">
+                <span className="text-gray-600 text-sm">
                   {currentSlideIndex + 1} / {generatedPresentation?.slides.length || 0}
                 </span>
                 <Button
@@ -1103,7 +1103,7 @@ export function PresentationGenerator() {
                   size="sm"
                   onClick={() => setCurrentSlideIndex(Math.min((generatedPresentation?.slides.length || 1) - 1, currentSlideIndex + 1))}
                   disabled={currentSlideIndex >= (generatedPresentation?.slides.length || 1) - 1}
-                  className="border-slate-700"
+                  className="border-purple-200"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -1113,23 +1113,23 @@ export function PresentationGenerator() {
           <div className="flex-1 bg-slate-950 rounded-lg p-8 overflow-auto">
             {generatedPresentation && generatedPresentation.slides[currentSlideIndex] && (
               <div className="aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-8 flex flex-col">
-                <div className="text-orange-400 text-sm font-medium mb-2">
+                <div className="text-purple-600 text-sm font-medium mb-2">
                   {(generatedPresentation.slides[currentSlideIndex] as any).type?.toUpperCase()}
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-2">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
                   {generatedPresentation.slides[currentSlideIndex].title}
                 </h2>
                 {generatedPresentation.slides[currentSlideIndex].subtitle && (
-                  <p className="text-xl text-orange-400 mb-6">
+                  <p className="text-xl text-purple-600 mb-6">
                     {generatedPresentation.slides[currentSlideIndex].subtitle}
                   </p>
                 )}
                 {(generatedPresentation.slides[currentSlideIndex] as any).stats && (
                   <div className="grid grid-cols-3 gap-4 mb-6">
                     {(generatedPresentation.slides[currentSlideIndex] as any).stats.map((stat: any, i: number) => (
-                      <div key={i} className="bg-slate-800/50 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-orange-400">{stat.value}</div>
-                        <div className="text-sm text-slate-400">{stat.label}</div>
+                      <div key={i} className="bg-gray-100/50 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-purple-600">{stat.value}</div>
+                        <div className="text-sm text-gray-600">{stat.label}</div>
                       </div>
                     ))}
                   </div>
@@ -1137,15 +1137,15 @@ export function PresentationGenerator() {
                 {(generatedPresentation.slides[currentSlideIndex] as any).bulletPoints && (
                   <ul className="space-y-2">
                     {(generatedPresentation.slides[currentSlideIndex] as any).bulletPoints.map((point: string, i: number) => (
-                      <li key={i} className="text-slate-300 flex items-start gap-2">
-                        <Check className="w-5 h-5 text-orange-400 mt-0.5 flex-shrink-0" />
+                      <li key={i} className="text-gray-700 flex items-start gap-2">
+                        <Check className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
                         {point}
                       </li>
                     ))}
                   </ul>
                 )}
                 {generatedPresentation.slides[currentSlideIndex].content && (
-                  <p className="text-slate-300 whitespace-pre-line">
+                  <p className="text-gray-700 whitespace-pre-line">
                     {generatedPresentation.slides[currentSlideIndex].content}
                   </p>
                 )}

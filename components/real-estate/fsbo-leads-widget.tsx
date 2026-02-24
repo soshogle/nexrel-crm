@@ -522,19 +522,19 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'contacted': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-      case 'qualified': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      case 'converted': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+      case 'new': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'contacted': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'qualified': return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'converted': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
   const getDNCColor = (status?: string) => {
     switch (status) {
-      case 'clear': return 'text-emerald-400';
-      case 'blocked': return 'text-red-400';
-      default: return 'text-slate-400';
+      case 'clear': return 'text-emerald-600';
+      case 'blocked': return 'text-red-600';
+      default: return 'text-gray-500';
     }
   };
 
@@ -546,14 +546,14 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
 
   return (
     
-      <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl">
+      <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <CardTitle className="text-white flex items-center gap-2">
-              <Target className="w-5 h-5 text-blue-400" />
+            <CardTitle className="text-gray-900 flex items-center gap-2">
+              <Target className="w-5 h-5 text-purple-600" />
               FSBO Leads
               {leads.length > 0 && (
-                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 ml-2">
+                <Badge className="bg-purple-100 text-purple-700 border-purple-200 ml-2">
                   {leads.filter(l => l.status === 'new').length} new
                 </Badge>
               )}
@@ -562,16 +562,16 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
               {expanded && (
                 <>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     <Input
                       placeholder="Search leads..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 bg-slate-800/50 border-slate-700 text-white w-48"
+                      className="pl-9 bg-white/80 border-purple-200 text-gray-900 w-48"
                     />
                   </div>
                   <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                    <SelectTrigger className="w-36 bg-slate-800/50 border-slate-700 text-white">
+                    <SelectTrigger className="w-36 bg-white/80 border-purple-200 text-gray-900">
                       <Filter className="w-4 h-4 mr-2" />
                       <SelectValue placeholder="Source" />
                     </SelectTrigger>
@@ -583,7 +583,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                     </SelectContent>
                   </Select>
                   <Select value={staleFilter} onValueChange={(v) => setStaleFilter(v as 'all' | 'stale' | 'fresh')}>
-                    <SelectTrigger className="w-36 bg-slate-800/50 border-slate-700 text-white">
+                    <SelectTrigger className="w-36 bg-white/80 border-purple-200 text-gray-900">
                       <SelectValue placeholder="Age" />
                     </SelectTrigger>
                     <SelectContent>
@@ -596,7 +596,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
               )}
               {summary && (
                 <div className="hidden lg:flex items-center gap-3 text-xs">
-                  <span className="text-slate-500">
+                  <span className="text-gray-500">
                     {summary.total} total
                   </span>
                   {summary.stale > 0 && (
@@ -617,7 +617,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                       resetFilters();
                       setShowNewScrapeDialog(true);
                     }}
-                    className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
                   >
                     {isScraping ? (
                       <>
@@ -632,17 +632,17 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                     )}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-slate-950 border-slate-700 max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="bg-white border-2 border-purple-200/50 max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle className="text-white flex items-center gap-2">
-                      <Target className="w-5 h-5 text-blue-400" />
+                    <DialogTitle className="text-gray-900 flex items-center gap-2">
+                      <Target className="w-5 h-5 text-purple-600" />
                       Find FSBO Leads
                     </DialogTitle>
                   </DialogHeader>
                   <div className="space-y-6 pt-4">
                     {/* Source Selection */}
                     <div>
-                      <Label className="text-slate-300 flex items-center gap-2 mb-3">
+                      <Label className="text-gray-700 flex items-center gap-2 mb-3">
                         <Globe className="w-4 h-4" />
                         Select Source(s)
                       </Label>
@@ -661,17 +661,17 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                               disabled={isDisabled}
                               className={`p-2 rounded-lg border text-left transition-all ${
                                 isSelected
-                                  ? 'bg-blue-500/20 border-blue-500 text-white'
+                                  ? 'bg-purple-100 border-purple-500 text-gray-900'
                                   : isDisabled
-                                  ? 'bg-slate-900/50 border-slate-800 text-slate-600 cursor-not-allowed opacity-50'
-                                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
+                                  ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+                                  : 'bg-white border-purple-200 text-gray-700 hover:border-purple-300'
                               }`}
                             >
                               <div className="flex items-center justify-between">
                                 <span className="font-medium text-xs">{source.name}</span>
-                                {isSelected && <Check className="w-3 h-3 text-blue-400" />}
+                                {isSelected && <Check className="w-3 h-3 text-purple-600" />}
                               </div>
-                              <div className="text-[10px] text-slate-500 mt-1">
+                              <div className="text-[10px] text-gray-500 mt-1">
                                 {source.countryNames.join(', ')}
                               </div>
                             </button>
@@ -679,8 +679,8 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                         })}
                       </div>
                       {filters.sources.length > 0 && (
-                        <p className="text-xs text-slate-500 mt-2">
-                          🌍 Searching in: <span className="text-blue-400">
+                        <p className="text-xs text-gray-500 mt-2">
+                          🌍 Searching in: <span className="text-purple-600">
                             {[...new Set(filters.sources.flatMap(s => FSBO_SOURCES[s]?.countryNames || []))].join(', ')}
                           </span>
                         </p>
@@ -689,11 +689,11 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
 
                     {/* Location Search */}
                     <div>
-                      <Label className="text-slate-300 flex items-center gap-2 mb-3">
+                      <Label className="text-gray-700 flex items-center gap-2 mb-3">
                         <MapPin className="w-4 h-4" />
                         Location
                         {filters.location && (
-                          <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400">
+                          <Badge variant="outline" className="text-xs border-purple-200 text-purple-600">
                             {filters.location.country}
                           </Badge>
                         )}
@@ -708,14 +708,14 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                         countryRestriction={getCountryRestriction()}
                       />
                       {filters.location && (
-                        <div className="mt-2 p-2 rounded bg-slate-900 border border-slate-700">
+                        <div className="mt-2 p-2 rounded bg-purple-50/50 border border-purple-200">
                           <div className="flex items-center gap-2 text-sm">
                             <Check className="w-4 h-4 text-emerald-400" />
                             <span className="text-white">{filters.location.city}</span>
                             {filters.location.state && (
-                              <span className="text-slate-400">, {filters.location.state}</span>
+                              <span className="text-gray-500">, {filters.location.state}</span>
                             )}
-                            <span className="text-slate-500">• {filters.location.country}</span>
+                            <span className="text-gray-500">• {filters.location.country}</span>
                           </div>
                         </div>
                       )}
@@ -724,7 +724,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                     {/* Property Filters */}
                     <Collapsible open={showFilters} onOpenChange={setShowFilters}>
                       <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="w-full justify-between text-slate-300 hover:text-white">
+                        <Button variant="ghost" className="w-full justify-between text-gray-700 hover:bg-purple-50">
                           <span className="flex items-center gap-2">
                             <Filter className="w-4 h-4" />
                             Property Filters
@@ -735,7 +735,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                       <CollapsibleContent className="space-y-4 pt-4">
                         {/* Property Types */}
                         <div>
-                          <Label className="text-slate-400 text-xs mb-2 block">Property Type</Label>
+                          <Label className="text-gray-600 text-xs mb-2 block">Property Type</Label>
                           <div className="grid grid-cols-3 gap-2">
                             {PROPERTY_TYPES.map(type => {
                               const Icon = type.icon;
@@ -754,8 +754,8 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                                   }}
                                   className={`p-2 rounded border flex items-center gap-2 text-xs transition-all ${
                                     isSelected
-                                      ? 'bg-blue-500/20 border-blue-500 text-blue-400'
-                                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'
+                                      ? 'bg-blue-500/20 border-blue-500 text-purple-600'
+                                      : 'bg-white border-purple-200 text-gray-500 hover:border-purple-300'
                                   }`}
                                 >
                                   <Icon className="w-3 h-3" />
@@ -769,8 +769,8 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                         {/* Price Range */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <Label className="text-slate-400 text-xs">Price Range</Label>
-                            <span className="text-xs text-blue-400">
+                            <Label className="text-gray-600 text-xs">Price Range</Label>
+                            <span className="text-xs text-purple-600">
                               {formatPrice(filters.priceMin)} - {formatPrice(filters.priceMax)}
                             </span>
                           </div>
@@ -781,7 +781,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                                 placeholder="Min"
                                 value={filters.priceMin || ''}
                                 onChange={(e) => setFilters(prev => ({ ...prev, priceMin: parseInt(e.target.value) || 0 }))}
-                                className="bg-slate-900 border-slate-700 text-white text-sm"
+                                className="bg-white border-purple-200 text-white text-sm"
                               />
                             </div>
                             <div>
@@ -790,7 +790,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                                 placeholder="Max"
                                 value={filters.priceMax || ''}
                                 onChange={(e) => setFilters(prev => ({ ...prev, priceMax: parseInt(e.target.value) || 5000000 }))}
-                                className="bg-slate-900 border-slate-700 text-white text-sm"
+                                className="bg-white border-purple-200 text-white text-sm"
                               />
                             </div>
                           </div>
@@ -799,13 +799,13 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                         {/* Beds & Baths */}
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <Label className="text-slate-400 text-xs mb-2 block">Min Beds</Label>
+                            <Label className="text-gray-600 text-xs mb-2 block">Min Beds</Label>
                             <Select 
                               value={filters.bedsMin.toString()} 
                               onValueChange={(v) => setFilters(prev => ({ ...prev, bedsMin: parseInt(v) }))}
                             >
-                              <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                                <BedDouble className="w-4 h-4 mr-2 text-slate-400" />
+                              <SelectTrigger className="bg-white border-purple-200 text-white">
+                                <BedDouble className="w-4 h-4 mr-2 text-gray-500" />
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -818,13 +818,13 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                             </Select>
                           </div>
                           <div>
-                            <Label className="text-slate-400 text-xs mb-2 block">Min Baths</Label>
+                            <Label className="text-gray-600 text-xs mb-2 block">Min Baths</Label>
                             <Select 
                               value={filters.bathsMin.toString()} 
                               onValueChange={(v) => setFilters(prev => ({ ...prev, bathsMin: parseInt(v) }))}
                             >
-                              <SelectTrigger className="bg-slate-900 border-slate-700 text-white">
-                                <Bath className="w-4 h-4 mr-2 text-slate-400" />
+                              <SelectTrigger className="bg-white border-purple-200 text-white">
+                                <Bath className="w-4 h-4 mr-2 text-gray-500" />
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -841,11 +841,11 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                         {/* Square Footage */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <Label className="text-slate-400 text-xs flex items-center gap-1">
+                            <Label className="text-gray-600 text-xs flex items-center gap-1">
                               <Ruler className="w-3 h-3" />
                               Square Footage
                             </Label>
-                            <span className="text-xs text-blue-400">
+                            <span className="text-xs text-purple-600">
                               {(filters.sqftMin || 0).toLocaleString()} - {(filters.sqftMax || 10000).toLocaleString()} sqft
                             </span>
                           </div>
@@ -855,21 +855,21 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                               placeholder="Min sqft"
                               value={filters.sqftMin || ''}
                               onChange={(e) => setFilters(prev => ({ ...prev, sqftMin: parseInt(e.target.value) || 0 }))}
-                              className="bg-slate-900 border-slate-700 text-white text-sm"
+                              className="bg-white border-purple-200 text-white text-sm"
                             />
                             <Input
                               type="number"
                               placeholder="Max sqft"
                               value={filters.sqftMax || ''}
                               onChange={(e) => setFilters(prev => ({ ...prev, sqftMax: parseInt(e.target.value) || 10000 }))}
-                              className="bg-slate-900 border-slate-700 text-white text-sm"
+                              className="bg-white border-purple-200 text-white text-sm"
                             />
                           </div>
                         </div>
 
                         {/* Amenities */}
                         <div>
-                          <Label className="text-slate-400 text-xs mb-2 block">Must Have</Label>
+                          <Label className="text-gray-600 text-xs mb-2 block">Must Have</Label>
                           <div className="flex flex-wrap gap-2">
                             {AMENITIES.map(amenity => {
                               const Icon = amenity.icon;
@@ -889,7 +889,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                                   className={`px-3 py-1.5 rounded-full border flex items-center gap-1.5 text-xs transition-all ${
                                     isSelected
                                       ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
-                                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'
+                                      : 'bg-white border-purple-200 text-gray-500 hover:border-purple-300'
                                   }`}
                                 >
                                   <Icon className="w-3 h-3" />
@@ -903,7 +903,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                         {/* Days on Market */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <Label className="text-slate-400 text-xs">Max Days on Market</Label>
+                            <Label className="text-gray-600 text-xs">Max Days on Market</Label>
                             <span className="text-xs text-amber-400">{filters.daysOnMarketMax} days</span>
                           </div>
                           <Slider
@@ -935,14 +935,14 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                       <Button
                         variant="outline"
                         onClick={resetFilters}
-                        className="border-slate-700 text-slate-400 hover:text-white"
+                        className="border-purple-200 text-gray-600 hover:bg-purple-50"
                       >
                         Reset
                       </Button>
                       <Button
                         onClick={startScraping}
                         disabled={!filters.location || filters.sources.length === 0 || !!sourceValidationError}
-                        className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50"
+                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
                       >
                         <Search className="w-4 h-4 mr-2" />
                         Find FSBO Leads {filters.location ? `in ${filters.location.city}` : ''}
@@ -958,13 +958,13 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
           <ScrollArea className={expanded ? 'h-[600px]' : 'h-[300px]'}>
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
               </div>
             ) : filteredLeads.length === 0 ? (
               <div className="text-center py-8">
-                <Search className="w-12 h-12 mx-auto text-slate-500 mb-3" />
-                <p className="text-slate-400">No FSBO leads found</p>
-                <p className="text-slate-500 text-sm">Start a search to find new leads</p>
+                <Search className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                <p className="text-gray-600">No FSBO leads found</p>
+                <p className="text-gray-500 text-sm">Start a search to find new leads</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -975,41 +975,41 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                   return (
                     <div
                       key={lead.id}
-                      className={`p-4 rounded-lg bg-slate-800/50 border transition-colors ${
+                      className={`p-4 rounded-lg bg-white/80 border-2 border-purple-200/50 transition-colors ${
                         isStale 
-                          ? 'border-amber-500/30 hover:border-amber-500/50' 
-                          : 'border-slate-700/50 hover:border-slate-600/50'
+                          ? 'border-amber-300 hover:border-amber-400' 
+                          : 'hover:border-purple-300'
                       }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h4 className="text-white font-medium">{lead.address}</h4>
+                            <h4 className="text-gray-900 font-medium">{lead.address}</h4>
                             <Badge className={getStatusColor(lead.status)}>
                               {lead.status}
                             </Badge>
                             {isStale && (
-                              <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                              <Badge className="bg-amber-100 text-amber-700 border-amber-200">
                                 🔥 Stale ({lead.daysOnMarket}d)
                               </Badge>
                             )}
                             {!hasContact && (
-                              <Badge className="bg-slate-600/20 text-slate-400 border-slate-600/30">
+                              <Badge className="bg-gray-100 text-gray-600 border-gray-200">
                                 No Contact
                               </Badge>
                             )}
                           </div>
-                          <p className="text-slate-400 text-sm">
+                          <p className="text-gray-600 text-sm">
                             {lead.city}, {lead.state} · {lead.source}
                           </p>
                           <div className="flex items-center gap-4 mt-2 text-sm flex-wrap">
-                            <span className="text-emerald-400 font-medium">
+                            <span className="text-emerald-600 font-medium">
                               ${(lead.price || 0).toLocaleString()}
                             </span>
-                            <span className="text-slate-400">
+                            <span className="text-gray-600">
                               {lead.beds || 0} bed · {lead.baths || 0} bath · {(lead.sqft || 0).toLocaleString()} sqft
                             </span>
-                            <span className={isStale ? 'text-amber-400' : 'text-slate-400'}>
+                            <span className={isStale ? 'text-amber-600' : 'text-gray-500'}>
                               📅 Listed: {formatDate(lead.firstSeenAt)} ({lead.daysOnMarket || 0} days)
                             </span>
                           </div>
@@ -1017,7 +1017,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                           {/* Contact Info Section */}
                           <div className="flex items-center gap-4 mt-2 text-sm flex-wrap">
                             {lead.sellerName && (
-                              <span className="text-slate-300 flex items-center gap-1">
+                              <span className="text-gray-700 flex items-center gap-1">
                                 <User className="w-3 h-3" />
                                 {lead.sellerName}
                               </span>
@@ -1042,7 +1042,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                             {lead.email && (
                               <a 
                                 href={`mailto:${lead.email}`}
-                                className="text-blue-400 hover:underline"
+                                className="text-purple-600 hover:underline"
                               >
                                 {lead.email}
                               </a>
@@ -1057,7 +1057,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                               size="sm"
                               variant="outline"
                               asChild
-                              className="border-slate-600 text-slate-400 hover:text-white"
+                              className="border-purple-200 text-gray-600 hover:bg-purple-50"
                             >
                               <a href={lead.listingUrl} target="_blank" rel="noopener noreferrer">
                                 <Globe className="w-4 h-4" />
@@ -1102,7 +1102,7 @@ export function FSBOLeadsWidget({ expanded = false }: FSBOLeadsWidgetProps) {
                           <Button
                             size="sm"
                             onClick={() => convertToLead(lead)}
-                            className="bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                            className="bg-purple-100 text-purple-600 hover:bg-purple-200"
                           >
                             <Plus className="w-4 h-4 mr-1" />
                             Add to CRM

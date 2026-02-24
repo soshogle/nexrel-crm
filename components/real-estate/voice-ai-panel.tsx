@@ -317,32 +317,32 @@ export function VoiceAIPanel() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'contacted': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-      case 'qualified': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      case 'appointment': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      case 'listing': return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30';
-      default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+      case 'new': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'contacted': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'qualified': return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'appointment': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'listing': return 'bg-cyan-100 text-cyan-700 border-cyan-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-900/50 border border-slate-700/50">
-          <TabsTrigger value="dialer" className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+        <TabsList className="bg-white/80 border border-purple-200 backdrop-blur-sm">
+          <TabsTrigger value="dialer" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
             <Phone className="w-4 h-4 mr-2" />
             Soshogle AI Dialer
           </TabsTrigger>
-          <TabsTrigger value="leads" className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+          <TabsTrigger value="leads" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
             <Users className="w-4 h-4 mr-2" />
             Lead Queue
           </TabsTrigger>
-          <TabsTrigger value="scripts" className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+          <TabsTrigger value="scripts" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
             <FileText className="w-4 h-4 mr-2" />
             Scripts
           </TabsTrigger>
-          <TabsTrigger value="history" className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-300">
+          <TabsTrigger value="history" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
             <Clock className="w-4 h-4 mr-2" />
             Call History
           </TabsTrigger>
@@ -352,32 +352,32 @@ export function VoiceAIPanel() {
         <TabsContent value="dialer" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Dialer Card */}
-            <Card className="lg:col-span-2 bg-slate-900/50 border-slate-700/50 backdrop-blur-xl overflow-hidden">
+            <Card className="lg:col-span-2 border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <PhoneCall className="w-6 h-6 text-emerald-400" />
+                <CardTitle className="text-gray-900 flex items-center gap-2">
+                  <PhoneCall className="w-6 h-6 text-purple-600" />
                   Soshogle AI Voice Dialer
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-gray-600">
                   Smart calling with real-time AI coaching
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Selected Lead */}
                 {selectedLead ? (
-                  <div className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                  <div className="p-4 rounded-lg bg-white/80 border-2 border-purple-200/50">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <Avatar className="w-12 h-12">
-                          <AvatarFallback className="bg-emerald-500/20 text-emerald-300">
+                          <AvatarFallback className="bg-purple-100 text-purple-600">
                             {selectedLead.name.split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h3 className="text-white font-medium">{selectedLead.name}</h3>
-                          <p className="text-slate-400 text-sm">{selectedLead.phone}</p>
-                          <p className="text-slate-500 text-xs">{selectedLead.address}</p>
+                          <h3 className="text-gray-900 font-medium">{selectedLead.name}</h3>
+                          <p className="text-gray-600 text-sm">{selectedLead.phone}</p>
+                          <p className="text-gray-500 text-xs">{selectedLead.address}</p>
                         </div>
                       </div>
                       <Badge className={getStatusColor(selectedLead.status)}>
@@ -385,37 +385,37 @@ export function VoiceAIPanel() {
                       </Badge>
                     </div>
                     {selectedLead.listedPrice && (
-                      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-700/50">
+                      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-purple-200/50">
                         <div className="flex items-center gap-1 text-sm">
-                          <DollarSign className="w-4 h-4 text-emerald-400" />
-                          <span className="text-white">${selectedLead.listedPrice.toLocaleString()}</span>
+                          <DollarSign className="w-4 h-4 text-purple-600" />
+                          <span className="text-gray-900">${selectedLead.listedPrice.toLocaleString()}</span>
                         </div>
                         <div className="flex items-center gap-1 text-sm">
-                          <Clock className="w-4 h-4 text-amber-400" />
-                          <span className="text-slate-400">{selectedLead.daysOnMarket} days on market</span>
+                          <Clock className="w-4 h-4 text-purple-600" />
+                          <span className="text-gray-600">{selectedLead.daysOnMarket} days on market</span>
                         </div>
                         <div className="flex items-center gap-1 text-sm">
-                          <Building className="w-4 h-4 text-violet-400" />
-                          <span className="text-slate-400">{selectedLead.source}</span>
+                          <Building className="w-4 h-4 text-purple-600" />
+                          <span className="text-gray-600">{selectedLead.source}</span>
                         </div>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="p-8 rounded-lg bg-slate-800/30 border border-dashed border-slate-700 text-center">
-                    <Users className="w-12 h-12 mx-auto text-slate-500 mb-3" />
-                    <p className="text-slate-400">Select a lead from the queue to start calling</p>
+                  <div className="p-8 rounded-lg bg-purple-50/50 border-2 border-dashed border-purple-200 text-center">
+                    <Users className="w-12 h-12 mx-auto text-gray-500 mb-3" />
+                    <p className="text-gray-600">Select a lead from the queue to start calling</p>
                   </div>
                 )}
 
                 {/* Call Script Selection */}
                 <div>
-                  <Label className="text-slate-300 mb-2 block">Call Script</Label>
+                  <Label className="text-gray-700 mb-2 block">Call Script</Label>
                   <Select
                     value={selectedScript?.id || ''}
                     onValueChange={(v) => setSelectedScript(callScripts.find(s => s.id === v) || null)}
                   >
-                    <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+                    <SelectTrigger className="bg-white/80 border-purple-200 text-gray-900">
                       <SelectValue placeholder="Select a call script" />
                     </SelectTrigger>
                     <SelectContent>
@@ -432,14 +432,14 @@ export function VoiceAIPanel() {
                 </div>
 
                 {/* AI Assist Toggle */}
-                <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-white/80 border-2 border-purple-200/50">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-violet-500/20">
-                      <Brain className="w-5 h-5 text-violet-400" />
+                      <Brain className="w-5 h-5 text-purple-600" />
                     </div>
                     <div>
-                    <p className="text-white font-medium">Soshogle AI Call Assistant</p>
-                    <p className="text-slate-400 text-sm">Real-time suggestions & coaching</p>
+                    <p className="text-gray-900 font-medium">Soshogle AI Call Assistant</p>
+                    <p className="text-gray-600 text-sm">Real-time suggestions & coaching</p>
                     </div>
                   </div>
                   <Switch
@@ -468,16 +468,16 @@ export function VoiceAIPanel() {
                   ) : (
                     <div className="flex items-center gap-4">
                       <div className="text-center">
-                        <p className="text-3xl font-mono text-emerald-400">
+                        <p className="text-3xl font-mono text-purple-600">
                           {formatDuration(callDuration)}
                         </p>
-                        <p className="text-slate-400 text-sm">Duration</p>
+                        <p className="text-gray-600 text-sm">Duration</p>
                       </div>
                       <Button
                         size="icon"
                         variant="outline"
                         onClick={() => setIsMuted(!isMuted)}
-                        className={`w-14 h-14 rounded-full ${isMuted ? 'bg-red-500/20 border-red-500' : 'border-slate-700'}`}
+                        className={`w-14 h-14 rounded-full ${isMuted ? 'bg-red-500/20 border-red-500' : 'border-purple-200'}`}
                       >
                         {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
                       </Button>
@@ -497,10 +497,10 @@ export function VoiceAIPanel() {
             </Card>
 
             {/* AI Assistant & Transcript */}
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl">
+            <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-400" />
+                <CardTitle className="text-gray-900 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
                   Live Transcript
                 </CardTitle>
               </CardHeader>
@@ -508,7 +508,7 @@ export function VoiceAIPanel() {
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-4">
                     {transcript.length === 0 ? (
-                      <div className="text-center text-slate-500 py-8">
+                      <div className="text-center text-gray-500 py-8">
                         <MessageSquare className="w-8 h-8 mx-auto mb-2" />
                         <p>Transcript will appear here during the call</p>
                       </div>
@@ -519,15 +519,15 @@ export function VoiceAIPanel() {
                           className={`p-3 rounded-lg ${
                             msg.role === 'assistant'
                               ? 'bg-emerald-500/10 border border-emerald-500/30'
-                              : 'bg-slate-800/50 border border-slate-700/30'
+                              : 'bg-purple-50/50 border border-purple-200/50'
                           }`}
                         >
                           <p className={`text-xs mb-1 ${
-                            msg.role === 'assistant' ? 'text-emerald-400' : 'text-slate-400'
+                            msg.role === 'assistant' ? 'text-purple-600' : 'text-gray-600'
                           }`}>
                             {msg.role === 'assistant' ? 'Soshogle AI' : 'Lead'}
                           </p>
-                          <p className="text-white text-sm">{msg.text}</p>
+                          <p className="text-gray-900 text-sm">{msg.text}</p>
                         </div>
                       ))
                     )}
@@ -539,11 +539,11 @@ export function VoiceAIPanel() {
                         animate={{ opacity: 1, y: 0 }}
                         className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/30"
                       >
-                        <p className="text-xs text-violet-400 mb-1 flex items-center gap-1">
+                        <p className="text-xs text-purple-600 mb-1 flex items-center gap-1">
                           <Brain className="w-3 h-3" />
                           AI Suggestion
                         </p>
-                        <p className="text-white text-sm">{aiSuggestion}</p>
+                        <p className="text-gray-900 text-sm">{aiSuggestion}</p>
                       </motion.div>
                     )}
                   </div>
@@ -554,10 +554,10 @@ export function VoiceAIPanel() {
 
           {/* Script Preview */}
           {selectedScript && (
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl">
+            <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-violet-400" />
+                <CardTitle className="text-gray-900 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-purple-600" />
                   {selectedScript.name}
                 </CardTitle>
                 <CardDescription>{selectedScript.description}</CardDescription>
@@ -567,15 +567,15 @@ export function VoiceAIPanel() {
                   {selectedScript.prompts.map((prompt, i) => (
                     <div
                       key={i}
-                      className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-violet-500/30 transition-colors cursor-pointer"
+                      className="p-4 rounded-lg bg-white/80 border-2 border-purple-200/50 hover:border-violet-500/30 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="w-6 h-6 rounded-full bg-violet-500/20 text-violet-300 text-xs flex items-center justify-center">
+                        <span className="w-6 h-6 rounded-full bg-violet-500/20 text-purple-600 text-xs flex items-center justify-center">
                           {i + 1}
                         </span>
-                        <span className="text-slate-400 text-xs">Step {i + 1}</span>
+                        <span className="text-gray-600 text-xs">Step {i + 1}</span>
                       </div>
-                      <p className="text-white text-sm">{prompt}</p>
+                      <p className="text-gray-900 text-sm">{prompt}</p>
                     </div>
                   ))}
                 </div>
@@ -586,22 +586,22 @@ export function VoiceAIPanel() {
 
         {/* Lead Queue Tab */}
         <TabsContent value="leads" className="space-y-6">
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl">
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <CardTitle className="text-white">Lead Queue</CardTitle>
+                <CardTitle className="text-gray-900">Lead Queue</CardTitle>
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
                     <Input
                       placeholder="Search leads..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 bg-slate-800/50 border-slate-700 text-white w-64"
+                      className="pl-9 bg-white/80 border-purple-200 text-gray-900 w-64"
                     />
                   </div>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-36 bg-slate-800/50 border-slate-700 text-white">
+                    <SelectTrigger className="w-36 bg-white/80 border-purple-200 text-gray-900">
                       <Filter className="w-4 h-4 mr-2" />
                       <SelectValue />
                     </SelectTrigger>
@@ -624,25 +624,25 @@ export function VoiceAIPanel() {
                     onClick={() => { setSelectedLead(lead); setActiveTab('dialer'); }}
                     className={`p-4 rounded-lg border transition-all cursor-pointer ${
                       selectedLead?.id === lead.id
-                        ? 'bg-emerald-500/10 border-emerald-500/50'
-                        : 'bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50'
+                        ? 'bg-purple-100 border-purple-300'
+                        : 'bg-white/80 border-purple-200/50 hover:border-purple-300'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                         <Avatar>
-                          <AvatarFallback className="bg-slate-700">
+                          <AvatarFallback className="bg-purple-100">
                             {lead.name.split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h4 className="text-white font-medium">{lead.name}</h4>
-                          <p className="text-slate-400 text-sm">{lead.address}</p>
+                          <h4 className="text-gray-900 font-medium">{lead.name}</h4>
+                          <p className="text-gray-600 text-sm">{lead.address}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         {lead.listedPrice && (
-                          <span className="text-emerald-400 font-medium">
+                          <span className="text-purple-600 font-medium">
                             ${lead.listedPrice.toLocaleString()}
                           </span>
                         )}
@@ -651,7 +651,7 @@ export function VoiceAIPanel() {
                         </Badge>
                         <Button
                           size="sm"
-                          className="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                          className="bg-purple-100 text-purple-600 hover:bg-emerald-500/30"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedLead(lead);
@@ -676,19 +676,19 @@ export function VoiceAIPanel() {
             {callScripts.map((script) => (
               <Card
                 key={script.id}
-                className="bg-slate-900/50 border-slate-700/50 hover:border-emerald-500/30 transition-colors cursor-pointer"
+                className="bg-slate-900/50 border-purple-200/50 hover:border-purple-300 transition-colors cursor-pointer"
                 onClick={() => { setSelectedScript(script); setActiveTab('dialer'); }}
               >
                 <CardHeader>
-                  <CardTitle className="text-white text-lg flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-emerald-400" />
+                  <CardTitle className="text-gray-900 text-lg flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-purple-600" />
                     {script.name}
                   </CardTitle>
                   <CardDescription>{script.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Badge className="mb-3">{script.category}</Badge>
-                  <p className="text-slate-400 text-sm">
+                  <p className="text-gray-600 text-sm">
                     {script.prompts.length} conversation prompts
                   </p>
                 </CardContent>
@@ -699,38 +699,38 @@ export function VoiceAIPanel() {
 
         {/* Call History Tab */}
         <TabsContent value="history" className="space-y-6">
-          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-xl">
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader>
-              <CardTitle className="text-white">Call History</CardTitle>
+              <CardTitle className="text-gray-900">Call History</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {callLogs.map((log) => (
                   <div
                     key={log.id}
-                    className="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50"
+                    className="p-4 rounded-lg bg-white/80 border-2 border-purple-200/50"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="p-2 rounded-lg bg-emerald-500/20">
-                          <Phone className="w-5 h-5 text-emerald-400" />
+                        <div className="p-2 rounded-lg bg-purple-100">
+                          <Phone className="w-5 h-5 text-purple-600" />
                         </div>
                         <div>
-                          <h4 className="text-white font-medium">{log.leadName}</h4>
-                          <p className="text-slate-400 text-sm">{log.notes}</p>
+                          <h4 className="text-gray-900 font-medium">{log.leadName}</h4>
+                          <p className="text-gray-600 text-sm">{log.notes}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <p className="text-white">{formatDuration(log.duration)}</p>
-                          <p className="text-slate-400 text-xs">
+                          <p className="text-gray-900">{formatDuration(log.duration)}</p>
+                          <p className="text-gray-600 text-xs">
                             {log.timestamp.toLocaleDateString()}
                           </p>
                         </div>
                         <Badge className={`${
-                          log.outcome === 'appointment' ? 'bg-emerald-500/20 text-emerald-400' :
-                          log.outcome === 'callback' ? 'bg-amber-500/20 text-amber-400' :
-                          'bg-slate-500/20 text-slate-400'
+                          log.outcome === 'appointment' ? 'bg-purple-100 text-purple-600' :
+                          log.outcome === 'callback' ? 'bg-amber-100 text-amber-700' :
+                          'bg-gray-100 text-gray-600'
                         }`}>
                           {log.outcome}
                         </Badge>
