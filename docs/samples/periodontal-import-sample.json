@@ -1,0 +1,51 @@
+{
+  "userId": "REPLACE_WITH_PRACTICE_OWNER_USER_ID",
+  "patientName": "Jim Halpert",
+  "measurements": {
+    "1": {
+      "mesial": { "pd": 3, "bop": false },
+      "buccal": { "pd": 2, "bop": false },
+      "distal": { "pd": 3, "bop": true },
+      "lingual": { "pd": 2, "bop": false }
+    },
+    "2": {
+      "mesial": { "pd": 2, "bop": false },
+      "buccal": { "pd": 2, "bop": false },
+      "distal": { "pd": 3, "bop": false },
+      "lingual": { "pd": 2, "bop": false }
+    },
+    "3": {
+      "mesial": { "pd": 4, "bop": true },
+      "buccal": { "pd": 3, "bop": false },
+      "distal": { "pd": 4, "bop": true },
+      "lingual": { "pd": 3, "bop": false }
+    },
+    "14": {
+      "mesial": { "pd": 5, "bop": true },
+      "buccal": { "pd": 4, "bop": true },
+      "distal": { "pd": 6, "bop": true },
+      "lingual": { "pd": 4, "bop": false }
+    },
+    "19": {
+      "mesial": { "pd": 2, "bop": false },
+      "buccal": { "pd": 2, "bop": false },
+      "distal": { "pd": 2, "bop": false },
+      "lingual": { "pd": 2, "bop": false }
+    },
+    "29": {
+      "mesial": { "pd": 3, "bop": false },
+      "buccal": { "pd": 2, "bop": false },
+      "distal": { "pd": 3, "bop": false },
+      "lingual": { "pd": 2, "bop": false }
+    },
+    "30": {
+      "mesial": { "pd": 3, "bop": false },
+      "buccal": { "pd": 2, "bop": false },
+      "distal": { "pd": 3, "bop": false },
+      "lingual": { "pd": 2, "bop": false }
+    }
+  },
+  "notes": "Sample periodontal chart from Florida Probe",
+  "chartDate": "2025-02-24T12:00:00Z",
+  "source": "florida_probe"
+}

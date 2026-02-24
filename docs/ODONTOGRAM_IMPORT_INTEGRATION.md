@@ -66,3 +66,9 @@ All endpoints accept: `leadId`, `patientId`, `patientName`, or `patientEmail`
 ## Real-time Display
 
 When the Odontogram modal is open, the UI polls every 5 seconds. New data from any source appears automatically.
+
+---
+
+## Sample File
+
+See `docs/samples/odontogram-import-sample.json` for a full example. Replace `userId` and `patientName` with real values before testing.

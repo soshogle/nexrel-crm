@@ -1,0 +1,16 @@
+{
+  "userId": "REPLACE_WITH_PRACTICE_OWNER_USER_ID",
+  "patientName": "Jim Halpert",
+  "toothData": {
+    "1": { "condition": "crown", "treatment": "Crown", "completed": false },
+    "2": { "condition": "healthy" },
+    "3": { "condition": "filling", "treatment": "Composite filling", "completed": true, "date": "2024-01-15" },
+    "14": { "condition": "caries", "treatment": "Crown", "completed": false },
+    "18": { "condition": "missing", "treatment": "Extraction", "completed": true },
+    "19": { "condition": "implant", "treatment": "Implant", "completed": true },
+    "29": { "condition": "implant", "treatment": "Implant", "completed": true },
+    "30": { "condition": "implant", "treatment": "Implant", "completed": true }
+  },
+  "notes": "Sample odontogram from charting software",
+  "source": "charting_software"
+}

@@ -83,6 +83,10 @@ Provide at least one of:
 
 When the Periodontal Charting modal is open, the UI polls every 5 seconds for new data. Probe data pushed via this endpoint will appear automatically.
 
+## Sample File
+
+See `docs/samples/periodontal-import-sample.json` for a full example. Replace `userId` and `patientName` with real values before testing.
+
 ## Related
 
 - [Curve Dental Perio Checklist](https://www.curvedental.com/dental-blog/essential-periodontal-charting-checklist)
