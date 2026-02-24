@@ -46,10 +46,12 @@ import {
 import { toast } from 'sonner';
 import { Industry } from '@prisma/client';
 import { TwilioPhoneSelector } from '@/components/shared/twilio-phone-selector';
+import { ConnectPhoneDialog } from '@/components/shared/connect-phone-dialog';
 import PurchasePhoneNumberDialog from '@/components/voice-agents/purchase-phone-number-dialog';
 import { TaskDashboardDialog } from '@/components/ai-employees/task-dashboard-dialog';
 import type { IndustryEmployeeConfig } from '@/lib/industry-ai-employees/types';
 import { getIndustryAIEmployeeModule } from '@/lib/industry-ai-employees/registry';
+import { cn } from '@/lib/utils';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Calendar,
@@ -171,6 +173,8 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
   const [phoneRefreshTrigger, setPhoneRefreshTrigger] = useState(0);
   const [assigningPhone, setAssigningPhone] = useState<string | null>(null);
   const [showTaskDashboard, setShowTaskDashboard] = useState(false);
+  const [showConnectPhone, setShowConnectPhone] = useState(false);
+  const [connectPhoneEmployee, setConnectPhoneEmployee] = useState<(typeof employees)[0] | null>(null);
 
   useEffect(() => {
     fetchProvisionedAgents();
@@ -414,10 +418,25 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
                     <p className="text-xs text-slate-400 mb-4 line-clamp-2">{employee.description}</p>
                     <div className="flex items-center justify-between">
                       <Badge className={`text-xs ${getPriorityColor(employee.priority)}`}>{employee.priority}</Badge>
-                      <Button size="sm" variant="ghost" className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 p-2"
-                        onClick={(e) => { e.stopPropagation(); handleRunEmployee(employee.id); }} disabled={isRunning}>
-                        {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        {isAgentProvisioned(employee.id) && employee.voiceEnabled && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setConnectPhoneEmployee(employee); setShowConnectPhone(true); }}
+                            className={cn(
+                              'p-2 rounded-lg',
+                              getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'text-green-400 hover:bg-green-500/10' : 'text-slate-400 hover:bg-slate-700'
+                            )}
+                            title={getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'Change phone' : 'Connect phone'}
+                          >
+                            <Phone className="w-4 h-4" />
+                          </button>
+                        )}
+                        <Button size="sm" variant="ghost" className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 p-2"
+                          onClick={(e) => { e.stopPropagation(); handleRunEmployee(employee.id); }} disabled={isRunning}>
+                          {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -604,6 +623,25 @@ export function IndustryAIEmployees({ industry, isAdmin = true }: { industry: In
           }
         }}
       />
+      {connectPhoneEmployee && (
+        <ConnectPhoneDialog
+          open={showConnectPhone}
+          onOpenChange={(open) => { if (!open) setConnectPhoneEmployee(null); setShowConnectPhone(open); }}
+          agent={{
+            source: 'industry',
+            agentName: connectPhoneEmployee.name,
+            industry,
+            employeeType: connectPhoneEmployee.id,
+            currentPhone: getProvisionedAgent(connectPhoneEmployee.id)?.twilioPhoneNumber,
+          }}
+          onSuccess={() => {
+            fetchProvisionedAgents();
+            setShowConnectPhone(false);
+            setConnectPhoneEmployee(null);
+          }}
+          onPurchaseClick={() => { setShowConnectPhone(false); setConnectPhoneEmployee(null); setShowPurchaseDialog(true); }}
+        />
+      )}
 
       {selectedEmployee && getProvisionedAgent(selectedEmployee.id)?.id && (
         <TaskDashboardDialog

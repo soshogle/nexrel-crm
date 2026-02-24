@@ -59,6 +59,9 @@ export async function GET(request: NextRequest) {
     const industryAgentsForPreview = industryAgents.map((a: any) => ({
       id: a.id,
       name: a.name,
+      industry: a.industry,
+      employeeType: a.employeeType,
+      twilioPhoneNumber: a.twilioPhoneNumber,
       elevenLabsAgentId: a.elevenLabsAgentId,
       _count: { callLogs: a.callCount, outboundCalls: 0, campaigns: 0 },
       elevenLabsCallCount: a.callCount,
@@ -73,6 +76,8 @@ export async function GET(request: NextRequest) {
     const reAgentsForPreview = reAgents.map((a: any) => ({
       id: a.id,
       name: a.name,
+      employeeType: a.employeeType,
+      twilioPhoneNumber: a.twilioPhoneNumber,
       elevenLabsAgentId: a.elevenLabsAgentId,
       _count: { callLogs: 0, outboundCalls: 0, campaigns: 0 },
       elevenLabsCallCount: 0,
@@ -87,6 +92,8 @@ export async function GET(request: NextRequest) {
     const profAgentsForPreview = profAgents.map((a: any) => ({
       id: a.id,
       name: a.name,
+      employeeType: a.employeeType,
+      twilioPhoneNumber: a.twilioPhoneNumber,
       elevenLabsAgentId: a.elevenLabsAgentId,
       _count: { callLogs: 0, outboundCalls: 0, campaigns: 0 },
       elevenLabsCallCount: 0,

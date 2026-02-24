@@ -17,9 +17,12 @@ export async function GET(req: NextRequest) {
       return apiErrors.unauthorized();
     }
 
+    const { searchParams } = new URL(req.url);
+    const includePlatformPool = searchParams.get('platformPool') === 'true';
+
     console.log('📞 Fetching phone numbers for user:', session.user.id);
     
-    const result = await getOwnedPhoneNumbers(session.user.id);
+    const result = await getOwnedPhoneNumbers(session.user.id, { includePlatformPool });
 
     if (!result.success) {
       console.error('❌ Failed to get phone numbers:', result.error);

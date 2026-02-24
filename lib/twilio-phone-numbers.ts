@@ -294,17 +294,69 @@ export async function purchasePhoneNumber(
 }
 
 /**
+ * Get phone numbers from both platform Twilio accounts (PRIMARY + BACKUP)
+ * Used for Connect Phone pool - shows all numbers the platform has access to
+ */
+export async function getPhoneNumbersFromPlatformAccounts(): Promise<{
+  success: boolean;
+  numbers?: Array<{ phoneNumber: string; friendlyName?: string; twilioAccountId?: string }>;
+  error?: string;
+}> {
+  const results: Array<{ phoneNumber: string; friendlyName?: string; twilioAccountId?: string }> = [];
+  const seen = new Set<string>();
+
+  const fetchForAccount = async (creds: { accountSid: string; authToken: string; twilioAccountId?: string }) => {
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/IncomingPhoneNumbers.json?PageSize=100`;
+    const res = await fetch(url, {
+      headers: {
+        Authorization: 'Basic ' + Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64'),
+      },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = data.incoming_phone_numbers || [];
+    for (const p of list) {
+      const num = p.phone_number || p.number;
+      if (num && !seen.has(num)) {
+        seen.add(num);
+        results.push({
+          phoneNumber: num,
+          friendlyName: p.friendly_name || num,
+          twilioAccountId: creds.twilioAccountId,
+        });
+      }
+    }
+  };
+
+  try {
+    const { getPrimaryCredentials, getBackupCredentials } = await import('./twilio-credentials');
+    const primary = await getPrimaryCredentials();
+    if (primary) await fetchForAccount(primary);
+    const backup = await getBackupCredentials();
+    if (backup) await fetchForAccount(backup);
+    return { success: true, numbers: results };
+  } catch (err) {
+    console.error('getPhoneNumbersFromPlatformAccounts error:', err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Failed to fetch platform numbers',
+    };
+  }
+}
+
+/**
  * Get list of owned phone numbers for a specific user
  * Uses PurchasedPhoneNumber table for proper multi-tenancy
+ * Optionally merges with platform pool (numbers from PRIMARY + BACKUP Twilio accounts)
  */
 export async function getOwnedPhoneNumbers(
-  userId: string
+  userId: string,
+  options?: { includePlatformPool?: boolean }
 ): Promise<{ success: boolean; numbers?: any[]; error?: string }> {
   try {
     console.log('📞 Getting owned phone numbers for user:', userId);
     
     // Fetch numbers from PurchasedPhoneNumber table for THIS USER ONLY
-    // This ensures proper isolation - users only see their own numbers
     const purchasedNumbers = await prisma.purchasedPhoneNumber.findMany({
       where: {
         userId: userId,
@@ -315,21 +367,42 @@ export async function getOwnedPhoneNumbers(
       }
     });
 
-    console.log(`✅ Found ${purchasedNumbers.length} phone numbers owned by user`);
-    
-    if (purchasedNumbers.length > 0) {
-      console.log('📋 User phone numbers:', purchasedNumbers.map((n) => n.phoneNumber).join(', '));
+    const seen = new Set<string>();
+    const formattedNumbers = purchasedNumbers.map((number) => {
+      seen.add(number.phoneNumber);
+      return {
+        phoneNumber: number.phoneNumber,
+        friendlyName: number.friendlyName || number.phoneNumber,
+        sid: number.twilioSid,
+        twilioAccountId: number.twilioAccountId,
+        capabilities: number.capabilities as any,
+        country: number.country || 'US',
+        dateCreated: number.createdAt
+      };
+    });
+
+    // Optionally merge with platform pool (PRIMARY + BACKUP Twilio accounts)
+    if (options?.includePlatformPool) {
+      const platform = await getPhoneNumbersFromPlatformAccounts();
+      if (platform.success && platform.numbers?.length) {
+        for (const p of platform.numbers) {
+          if (!seen.has(p.phoneNumber)) {
+            seen.add(p.phoneNumber);
+            formattedNumbers.push({
+              phoneNumber: p.phoneNumber,
+              friendlyName: p.friendlyName || p.phoneNumber,
+              sid: null,
+              twilioAccountId: p.twilioAccountId,
+              capabilities: null,
+              country: 'US',
+              dateCreated: null
+            });
+          }
+        }
+      }
     }
 
-    // Format response to match frontend expectations
-    const formattedNumbers = purchasedNumbers.map((number) => ({
-      phoneNumber: number.phoneNumber,
-      friendlyName: number.friendlyName || number.phoneNumber,
-      sid: number.twilioSid,
-      capabilities: number.capabilities as any,
-      country: number.country || 'US',
-      dateCreated: number.createdAt
-    }));
+    console.log(`✅ Found ${formattedNumbers.length} phone numbers for user`);
 
     return {
       success: true,

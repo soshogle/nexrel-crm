@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Mic,
   Settings,
+  Phone,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -31,12 +32,15 @@ import {
   type ProfessionalAIEmployeeType,
 } from '@/lib/professional-ai-employees/config';
 import { TaskDashboardDialog } from '@/components/ai-employees/task-dashboard-dialog';
+import { ConnectPhoneDialog } from '@/components/shared/connect-phone-dialog';
+import PurchasePhoneNumberDialog from '@/components/voice-agents/purchase-phone-number-dialog';
 
 interface ProvisionedAgent {
   id: string;
   employeeType: string;
   name: string;
   elevenLabsAgentId: string;
+  twilioPhoneNumber?: string;
   status: string;
   callCount: number;
   createdAt: string;
@@ -89,6 +93,10 @@ export function ProfessionalAIEmployees() {
   const [runningEmployee, setRunningEmployee] = useState<string | null>(null);
   const [testingAgentId, setTestingAgentId] = useState<string | null>(null);
   const [showTaskDashboard, setShowTaskDashboard] = useState(false);
+  const [showConnectPhone, setShowConnectPhone] = useState(false);
+  const [connectPhoneEmployee, setConnectPhoneEmployee] = useState<(typeof PROFESSIONAL_EMPLOYEES)[0] | null>(null);
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
+  const [phoneRefreshTrigger, setPhoneRefreshTrigger] = useState(0);
 
   useEffect(() => {
     fetchProvisionedAgents();
@@ -274,18 +282,30 @@ export function ProfessionalAIEmployees() {
                     <p className="text-xs text-slate-400 mb-4 line-clamp-2">{employee.description}</p>
                     <div className="flex items-center justify-between">
                       <Badge className={`text-xs ${getPriorityColor(employee.priority)}`}>{employee.priority}</Badge>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 p-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRunEmployee(employee.id);
-                        }}
-                        disabled={isRunning}
-                      >
-                        {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        {isAgentProvisioned(employee.id) && employee.voiceEnabled && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setConnectPhoneEmployee(employee); setShowConnectPhone(true); }}
+                            className={`p-2 rounded-lg ${getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'text-green-400 hover:bg-green-500/10' : 'text-slate-400 hover:bg-slate-700'}`}
+                            title={getProvisionedAgent(employee.id)?.twilioPhoneNumber ? 'Change phone' : 'Connect phone'}
+                          >
+                            <Phone className="w-4 h-4" />
+                          </button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 p-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRunEmployee(employee.id);
+                          }}
+                          disabled={isRunning}
+                        >
+                          {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -351,6 +371,33 @@ export function ProfessionalAIEmployees() {
         </DialogContent>
       </Dialog>
 
+      <PurchasePhoneNumberDialog
+        open={showPurchaseDialog}
+        onClose={() => setShowPurchaseDialog(false)}
+        onSuccess={() => {
+          setShowPurchaseDialog(false);
+          setPhoneRefreshTrigger((n) => n + 1);
+          fetchProvisionedAgents();
+        }}
+      />
+      {connectPhoneEmployee && (
+        <ConnectPhoneDialog
+          open={showConnectPhone}
+          onOpenChange={(open) => { if (!open) setConnectPhoneEmployee(null); setShowConnectPhone(open); }}
+          agent={{
+            source: 'professional',
+            agentName: connectPhoneEmployee.name,
+            employeeType: connectPhoneEmployee.id,
+            currentPhone: getProvisionedAgent(connectPhoneEmployee.id)?.twilioPhoneNumber,
+          }}
+          onSuccess={() => {
+            fetchProvisionedAgents();
+            setShowConnectPhone(false);
+            setConnectPhoneEmployee(null);
+          }}
+          onPurchaseClick={() => { setShowConnectPhone(false); setConnectPhoneEmployee(null); setShowPurchaseDialog(true); }}
+        />
+      )}
       {selectedEmployee && getProvisionedAgent(selectedEmployee.id)?.id && (
         <TaskDashboardDialog
           open={showTaskDashboard}

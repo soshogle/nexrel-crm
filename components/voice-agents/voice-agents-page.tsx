@@ -32,6 +32,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CreateVoiceAgentDialog } from './create-voice-agent-dialog';
 import PurchasePhoneNumberDialog from './purchase-phone-number-dialog';
 import { EditVoiceAgentDialog } from './edit-voice-agent-dialog';
+import { ConnectPhoneDialog, type ConnectPhoneAgentConfig } from '@/components/shared/connect-phone-dialog';
 import { VoiceAIUsageDashboard } from '../voice-ai/usage-dashboard';
 import {
   DropdownMenu,
@@ -69,6 +70,7 @@ export function VoiceAgentsPage() {
   const [historyTimeSpan, setHistoryTimeSpan] = useState<'7d' | '30d' | '90d'>('30d');
   const [ownerPromptAddition, setOwnerPromptAddition] = useState('');
   const [savingOwnerPrompt, setSavingOwnerPrompt] = useState(false);
+  const [showConnectPhone, setShowConnectPhone] = useState(false);
 
   useEffect(() => {
     if (session !== undefined) {
@@ -400,6 +402,7 @@ export function VoiceAgentsPage() {
                 ) : (
                   agents.map((agent) => {
                     const isActive = agent.status === 'ACTIVE' && (agent.aiEmployeeCount > 0 || agent._count?.campaigns > 0 || agent._count?.callLogs > 0);
+                    const canCall = agent.elevenLabsAgentId && agent.source !== 'crm-assistant';
                     return (
                       <button
                         key={agent.id}
@@ -433,6 +436,19 @@ export function VoiceAgentsPage() {
                             {isActive ? 'In use' : 'Idle'}
                           </p>
                         </div>
+                        {canCall && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setSelectedAgent(agent); setShowConnectPhone(true); }}
+                            className={cn(
+                              'p-1.5 rounded-lg flex-shrink-0',
+                              agent.twilioPhoneNumber ? 'text-green-600 hover:bg-green-50' : 'text-slate-400 hover:bg-slate-100'
+                            )}
+                            title={agent.twilioPhoneNumber ? 'Change phone' : 'Connect phone'}
+                          >
+                            <Phone className="w-4 h-4" />
+                          </button>
+                        )}
                       </button>
                     );
                   })
@@ -472,13 +488,25 @@ export function VoiceAgentsPage() {
                               <CardDescription className="text-gray-600">{selectedAgent.businessName}</CardDescription>
                             </div>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="w-4 h-4" />
+                          <div className="flex items-center gap-1">
+                            {selectedAgent.elevenLabsAgentId && selectedAgent.source !== 'crm-assistant' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowConnectPhone(true)}
+                                title={selectedAgent.twilioPhoneNumber ? 'Change phone number' : 'Connect phone number'}
+                                className={selectedAgent.twilioPhoneNumber ? 'text-green-600' : 'text-slate-500'}
+                              >
+                                <Phone className="w-4 h-4" />
                               </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-white border-purple-200">
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-white border-purple-200">
                               <DropdownMenuItem onClick={() => window.location.href = `/dashboard/voice-agents/preview?agentId=${selectedAgent.id}`}>
                                 <TestTube2 className="w-4 h-4 mr-2" />
                                 Test
@@ -514,7 +542,8 @@ export function VoiceAgentsPage() {
                                 </>
                               )}
                             </DropdownMenuContent>
-                          </DropdownMenu>
+                            </DropdownMenu>
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent className="relative">
@@ -727,6 +756,30 @@ export function VoiceAgentsPage() {
           onOpenChange={setShowEditDialog}
           onAgentUpdated={() => { fetchAgents(); setShowEditDialog(false); setEditingAgent(null); }}
           agent={editingAgent}
+        />
+      )}
+      {selectedAgent && selectedAgent.elevenLabsAgentId && selectedAgent.source !== 'crm-assistant' && (
+        <ConnectPhoneDialog
+          open={showConnectPhone}
+          onOpenChange={setShowConnectPhone}
+          agent={(() => {
+            const cfg: ConnectPhoneAgentConfig = {
+              source: selectedAgent.source || 'voice',
+              agentName: selectedAgent.name || 'Agent',
+              currentPhone: selectedAgent.twilioPhoneNumber,
+            };
+            if (selectedAgent.source === 'voice' || !selectedAgent.source) {
+              cfg.agentId = selectedAgent.id;
+            } else if (selectedAgent.source === 'industry') {
+              cfg.industry = selectedAgent.industry;
+              cfg.employeeType = selectedAgent.employeeType;
+            } else if (selectedAgent.source === 're' || selectedAgent.source === 'professional') {
+              cfg.employeeType = selectedAgent.employeeType;
+            }
+            return cfg;
+          })()}
+          onSuccess={() => fetchAgents()}
+          onPurchaseClick={() => { setShowConnectPhone(false); setShowPurchaseDialog(true); }}
         />
       )}
     </div>

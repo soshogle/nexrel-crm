@@ -1,9 +1,8 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { elevenLabsService } from '@/lib/elevenlabs';
+import { elevenLabsProvisioning } from '@/lib/elevenlabs-provisioning';
 import { apiErrors } from '@/lib/api-error';
 
 // PATCH /api/voice-agents/[id]/update-phone - Update voice agent phone number
@@ -57,22 +56,21 @@ export async function PATCH(
     if (agent.elevenLabsAgentId) {
       try {
         console.log(`📞 Importing phone ${phoneNumber} into ElevenLabs for agent ${agent.name}`);
-        
-        // Import the phone number into ElevenLabs
-        const importResult = await elevenLabsService.importTwilioPhoneNumber(
+
+        const importResult = await elevenLabsProvisioning.importPhoneNumber(
           phoneNumber,
-          `${agent.name} - ${agent.businessName}`
-        );
-        elevenLabsPhoneNumberId = importResult.phone_number_id;
-
-        // Assign the phone number to the agent
-        await elevenLabsService.assignPhoneNumberToAgent(
-          elevenLabsPhoneNumberId,
-          agent.elevenLabsAgentId
+          agent.elevenLabsAgentId,
+          user.id,
+          agent.twilioAccountId ?? undefined
         );
 
-        elevenLabsRegistered = true;
-        console.log('✅ Phone number successfully imported and assigned in ElevenLabs');
+        if (importResult.success && importResult.phoneNumberId) {
+          elevenLabsPhoneNumberId = importResult.phoneNumberId;
+          elevenLabsRegistered = true;
+          console.log('✅ Phone number successfully imported and assigned in ElevenLabs');
+        } else {
+          throw new Error(importResult.error || 'Import failed');
+        }
       } catch (elevenLabsErr: any) {
         console.error('⚠️ ElevenLabs import failed:', elevenLabsErr);
         elevenLabsError = elevenLabsErr.message;
