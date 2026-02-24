@@ -122,12 +122,16 @@ export function ProductCatalog() {
   };
 
   const formatPrice = (cents: number, currency?: string | null) => {
-    const currencyCode = currency?.trim() || 'USD';
+    const currencyCode = (typeof currency === 'string' ? currency.trim() : '') || 'USD';
     const amount = Number.isFinite(cents) ? cents / 100 : 0;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currencyCode,
-    }).format(amount);
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currencyCode,
+      }).format(amount);
+    } catch {
+      return `$${amount.toFixed(2)}`;
+    }
   };
 
   if (loading) {
