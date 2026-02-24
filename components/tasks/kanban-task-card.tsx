@@ -81,7 +81,7 @@ export default function KanbanTaskCard({ task, onClick }: KanbanTaskCardProps) {
       {...attributes}
       {...listeners}
       onClick={onClick}
-      className="p-3 bg-gray-800/50 border border-gray-700 rounded-lg hover:border-purple-500/50 transition-all cursor-move space-y-2"
+      className="p-3 border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm rounded-lg hover:border-purple-300 transition-all cursor-move space-y-2 shadow-sm"
     >
       {/* Priority Badge */}
       <div className="flex items-start justify-between gap-2">
@@ -89,18 +89,18 @@ export default function KanbanTaskCard({ task, onClick }: KanbanTaskCardProps) {
           {task.priority}
         </Badge>
         {task.category && (
-          <Badge variant="outline" className="border-gray-700 text-gray-400 text-xs">
+          <Badge variant="outline" className="border-purple-200 text-gray-600 text-xs">
             {task.category}
           </Badge>
         )}
       </div>
 
       {/* Task Title */}
-      <h4 className="font-medium text-white text-sm line-clamp-2">{task.title}</h4>
+      <h4 className="font-medium text-gray-900 text-sm line-clamp-2">{task.title}</h4>
 
       {/* Task Description */}
       {task.description && (
-        <p className="text-xs text-gray-400 line-clamp-2">{task.description}</p>
+        <p className="text-xs text-gray-600 line-clamp-2">{task.description}</p>
       )}
 
       {/* Tags */}
@@ -109,7 +109,7 @@ export default function KanbanTaskCard({ task, onClick }: KanbanTaskCardProps) {
           {task.tags.slice(0, 2).map((tag, index) => (
             <span
               key={index}
-              className="text-xs px-1.5 py-0.5 bg-gray-700/50 text-gray-300 rounded"
+              className="text-xs px-1.5 py-0.5 bg-purple-100/80 text-gray-600 rounded"
             >
               #{tag}
             </span>
@@ -121,7 +121,7 @@ export default function KanbanTaskCard({ task, onClick }: KanbanTaskCardProps) {
       )}
 
       {/* Metadata */}
-      <div className="flex items-center gap-3 text-xs text-gray-500">
+      <div className="flex items-center gap-3 text-xs text-gray-600">
         {task.dueDate && (
           <div className={`flex items-center gap-1 ${isOverdue ? 'text-red-500' : ''}`}>
             <Calendar className="h-3 w-3" />
@@ -138,7 +138,7 @@ export default function KanbanTaskCard({ task, onClick }: KanbanTaskCardProps) {
 
       {/* Related Entities */}
       {(task.lead || task.deal) && (
-        <div className="flex items-center gap-1 text-xs text-gray-500">
+        <div className="flex items-center gap-1 text-xs text-gray-600">
           <LinkIcon className="h-3 w-3" />
           <span className="truncate">
             {task.lead?.businessName || task.deal?.title}
@@ -148,7 +148,7 @@ export default function KanbanTaskCard({ task, onClick }: KanbanTaskCardProps) {
 
       {/* Counts */}
       {task._count && (task._count.subtasks > 0 || task._count.comments > 0 || task._count.attachments > 0) && (
-        <div className="flex items-center gap-3 text-xs text-gray-500 pt-1 border-t border-gray-700/50">
+        <div className="flex items-center gap-3 text-xs text-gray-600 pt-1 border-t border-purple-200/50">
           {task._count.subtasks > 0 && (
             <div className="flex items-center gap-1">
               <ListTodo className="h-3 w-3" />

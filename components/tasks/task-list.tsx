@@ -129,7 +129,7 @@ export default function TaskList({
         <div
           key={task.id}
           onClick={() => onTaskClick(task)}
-          className="group p-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-purple-500/50 rounded-lg cursor-pointer transition-all"
+          className="group p-4 border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm hover:border-purple-300 rounded-lg cursor-pointer transition-all shadow-sm"
         >
           <div className="flex items-start gap-3">
             {/* Checkbox */}
@@ -138,7 +138,7 @@ export default function TaskList({
                 checked={task.status === 'COMPLETED'}
                 onCheckedChange={(checked) => handleToggleComplete(task, {} as any)}
                 onClick={(e) => e.stopPropagation()}
-                className="border-gray-600"
+                className="border-purple-300"
               />
             </div>
 
@@ -147,14 +147,14 @@ export default function TaskList({
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex-1 min-w-0">
                   <h3
-                    className={`font-medium text-white truncate ${
+                    className={`font-medium text-gray-900 truncate ${
                       task.status === 'COMPLETED' ? 'line-through text-gray-500' : ''
                     }`}
                   >
                     {task.title}
                   </h3>
                   {task.description && (
-                    <p className="text-sm text-gray-400 line-clamp-1 mt-1">
+                    <p className="text-sm text-gray-600 line-clamp-1 mt-1">
                       {task.description}
                     </p>
                   )}
@@ -170,7 +170,7 @@ export default function TaskList({
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+                  <DropdownMenuContent align="end" className="bg-white/95 border border-purple-200/50 backdrop-blur-sm">
                     <DropdownMenuItem onClick={(e) => {
                       e.stopPropagation();
                       onTaskClick(task);
@@ -178,7 +178,7 @@ export default function TaskList({
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-gray-700" />
+                    <DropdownMenuSeparator className="bg-purple-100" />
                     <DropdownMenuItem
                       onClick={(e) => handleDelete(task, e)}
                       className="text-red-500"
@@ -191,7 +191,7 @@ export default function TaskList({
               </div>
 
               {/* Metadata */}
-              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600">
                 <Badge className={getPriorityColor(task.priority)}>
                   {task.priority}
                 </Badge>
@@ -202,7 +202,7 @@ export default function TaskList({
                 </div>
 
                 {task.category && (
-                  <Badge variant="outline" className="border-gray-700 text-gray-400">
+                  <Badge variant="outline" className="border-purple-200 text-gray-600">
                     {task.category}
                   </Badge>
                 )}

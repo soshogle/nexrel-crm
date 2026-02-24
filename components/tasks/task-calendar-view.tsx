@@ -168,10 +168,10 @@ export function TaskCalendarView({
   };
 
   const priorityColors: Record<string, string> = {
-    URGENT: 'bg-red-500/10 text-red-400 border-red-500/50',
-    HIGH: 'bg-orange-500/10 text-orange-400 border-orange-500/50',
-    MEDIUM: 'bg-blue-500/10 text-blue-400 border-blue-500/50',
-    LOW: 'bg-gray-500/10 text-gray-400 border-gray-500/50',
+    URGENT: 'bg-red-500/10 text-red-600 border-red-500/30',
+    HIGH: 'bg-orange-500/10 text-orange-600 border-orange-500/30',
+    MEDIUM: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
+    LOW: 'bg-gray-500/10 text-gray-600 border-gray-500/30',
   };
 
   // Don't render until mounted and date initialized
@@ -200,7 +200,7 @@ export function TaskCalendarView({
           <Button variant="outline" size="icon" onClick={handlePreviousMonth}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h2 className="text-2xl font-bold text-white">{format(currentMonth, 'MMMM yyyy')}</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{format(currentMonth, 'MMMM yyyy')}</h2>
           <Button variant="outline" size="icon" onClick={handleNextMonth}>
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -208,7 +208,7 @@ export function TaskCalendarView({
 
         {/* Legend */}
         <div className="flex items-center gap-4 text-sm">
-          <span className="text-gray-400">Priority:</span>
+          <span className="text-gray-600">Priority:</span>
           <Badge className={priorityColors.URGENT}>Urgent</Badge>
           <Badge className={priorityColors.HIGH}>High</Badge>
           <Badge className={priorityColors.MEDIUM}>Medium</Badge>
@@ -216,11 +216,11 @@ export function TaskCalendarView({
         </div>
 
         {/* Calendar Grid */}
-        <Card className="p-6 bg-gray-900 border-gray-800">
+        <Card className="p-6 border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
           {/* Weekday Headers */}
           <div className="grid grid-cols-7 gap-2 mb-4">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-              <div key={day} className="text-center text-sm font-semibold text-gray-400 py-2">
+              <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
                 {day}
               </div>
             ))}
@@ -244,15 +244,15 @@ export function TaskCalendarView({
                   id={droppableId}
                   className={`
                     aspect-square border rounded-lg p-2 cursor-pointer transition-all
-                    ${isCurrentMonth ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-900'}
-                    ${isTodayDate ? 'border-purple-500 border-2' : 'border-gray-700'}
+                    ${isCurrentMonth ? 'bg-white/80 hover:bg-purple-50/80 border-purple-200/50' : 'bg-purple-50/30 border-purple-100/50'}
+                    ${isTodayDate ? 'border-purple-500 border-2' : ''}
                   `}
                   onClick={() => onDateClick(date)}
                 >
                   <div className="flex flex-col h-full">
                     <div
                       className={`text-sm font-medium mb-1 ${
-                        isTodayDate ? 'text-purple-400' : 'text-gray-300'
+                        isTodayDate ? 'text-purple-600' : 'text-gray-700'
                       }`}
                     >
                       {format(date, 'd')}

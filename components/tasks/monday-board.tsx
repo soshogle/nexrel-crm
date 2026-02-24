@@ -49,11 +49,11 @@ interface MondayBoardProps {
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  'TODO': { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300', dot: 'bg-gray-400' },
-  'IN_PROGRESS': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300', dot: 'bg-blue-500' },
-  'REVIEW': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300', dot: 'bg-purple-500' },
-  'COMPLETED': { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', dot: 'bg-green-500' },
-  'BLOCKED': { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300', dot: 'bg-red-500' },
+  'TODO': { bg: 'bg-gray-100', text: 'text-gray-700', dot: 'bg-gray-400' },
+  'IN_PROGRESS': { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+  'REVIEW': { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
+  'COMPLETED': { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
+  'BLOCKED': { bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
 };
 
 const PRIORITY_COLORS: Record<string, { bg: string; border: string }> = {
@@ -198,7 +198,7 @@ export default function MondayBoard({ isAdmin = false }: MondayBoardProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
       </div>
     );
   }
@@ -208,7 +208,7 @@ export default function MondayBoard({ isAdmin = false }: MondayBoardProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
           <Input
             placeholder="Search tasks..."
             value={searchQuery}
@@ -216,7 +216,7 @@ export default function MondayBoard({ isAdmin = false }: MondayBoardProps) {
             className="pl-9"
           />
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
           <span>{tasks.length} tasks</span>
           {!isAdmin && (
             <Badge variant="outline" className="text-amber-600 border-amber-300">
@@ -227,9 +227,9 @@ export default function MondayBoard({ isAdmin = false }: MondayBoardProps) {
       </div>
 
       {/* Monday-style Table */}
-      <div className="border rounded-lg overflow-hidden bg-background">
+      <div className="border-2 border-purple-200/50 rounded-lg overflow-hidden bg-white/80 backdrop-blur-sm shadow-sm">
         {/* Table Header */}
-        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-muted/50 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-purple-50/80 border-b border-purple-200/50 text-xs font-medium text-gray-600 uppercase tracking-wider">
           <div className="col-span-5">Task</div>
           <div className="col-span-2 text-center">Status</div>
           <div className="col-span-2 text-center">Priority</div>
@@ -246,7 +246,7 @@ export default function MondayBoard({ isAdmin = false }: MondayBoardProps) {
             <div key={status} className="border-b last:border-b-0">
               {/* Group Header */}
               <div 
-                className={`flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-muted/30 ${colors.bg}`}
+                className={`flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-purple-50/50 ${colors.bg}`}
                 onClick={() => toggleGroup(status)}
               >
                 {isCollapsed ? (
@@ -265,9 +265,9 @@ export default function MondayBoard({ isAdmin = false }: MondayBoardProps) {
 
               {/* Group Tasks */}
               {!isCollapsed && (
-                <div className="divide-y divide-border/50">
+                <div className="divide-y divide-purple-200/50">
                   {groupTasks.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                    <div className="px-4 py-6 text-center text-sm text-gray-500">
                       No tasks in this group
                     </div>
                   ) : (
@@ -276,15 +276,15 @@ export default function MondayBoard({ isAdmin = false }: MondayBoardProps) {
                       return (
                         <div 
                           key={task.id} 
-                          className={`grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-muted/20 border-l-4 ${priorityColors.border}`}
+                          className={`grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-purple-50/50 border-l-4 ${priorityColors.border}`}
                         >
                           {/* Task Title */}
                           <div className="col-span-5 flex items-center gap-2">
-                            <GripVertical className="h-4 w-4 text-muted-foreground/40 cursor-grab" />
+                            <GripVertical className="h-4 w-4 text-gray-400 cursor-grab" />
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{task.title}</p>
+                              <p className="font-medium text-sm truncate text-gray-900">{task.title}</p>
                               {task.description && (
-                                <p className="text-xs text-muted-foreground truncate">{task.description}</p>
+                                <p className="text-xs text-gray-600 truncate">{task.description}</p>
                               )}
                             </div>
                           </div>
@@ -331,12 +331,12 @@ export default function MondayBoard({ isAdmin = false }: MondayBoardProps) {
                           {/* Due Date */}
                           <div className="col-span-2 flex justify-center">
                             {task.dueDate ? (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <span className="text-xs text-gray-600 flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
                                 {new Date(task.dueDate).toLocaleDateString()}
                               </span>
                             ) : (
-                              <span className="text-xs text-muted-foreground">—</span>
+                              <span className="text-xs text-gray-500">—</span>
                             )}
                           </div>
 

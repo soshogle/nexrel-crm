@@ -75,7 +75,7 @@ const STATUS_COLUMNS = [
     id: 'TODO',
     title: 'To Do',
     icon: Circle,
-    color: 'text-gray-400',
+    color: 'text-gray-600',
     bgColor: 'bg-gray-500/10',
     borderColor: 'border-gray-500/20',
   },
@@ -83,7 +83,7 @@ const STATUS_COLUMNS = [
     id: 'IN_PROGRESS',
     title: 'In Progress',
     icon: Clock,
-    color: 'text-blue-400',
+    color: 'text-blue-600',
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
   },
@@ -91,7 +91,7 @@ const STATUS_COLUMNS = [
     id: 'BLOCKED',
     title: 'Blocked',
     icon: AlertCircle,
-    color: 'text-red-400',
+    color: 'text-red-600',
     bgColor: 'bg-red-500/10',
     borderColor: 'border-red-500/20',
   },
@@ -99,7 +99,7 @@ const STATUS_COLUMNS = [
     id: 'REVIEW',
     title: 'In Review',
     icon: XCircle,
-    color: 'text-yellow-400',
+    color: 'text-yellow-600',
     bgColor: 'bg-yellow-500/10',
     borderColor: 'border-yellow-500/20',
   },
@@ -107,7 +107,7 @@ const STATUS_COLUMNS = [
     id: 'COMPLETED',
     title: 'Completed',
     icon: CheckCircle2,
-    color: 'text-green-400',
+    color: 'text-green-600',
     bgColor: 'bg-green-500/10',
     borderColor: 'border-green-500/20',
   },
@@ -200,12 +200,12 @@ export default function TaskKanbanBoard({
 
           return (
             <div key={column.id} className="flex flex-col">
-              <Card className={`bg-gray-900 border-gray-800 ${isDragging ? 'ring-2 ring-purple-500/20' : ''}`}>
+              <Card className={`border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm ${isDragging ? 'ring-2 ring-purple-500/20' : ''}`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
                       <Icon className={`h-4 w-4 ${column.color}`} />
-                      <span className="text-white">{column.title}</span>
+                      <span className="text-gray-900">{column.title}</span>
                       <Badge
                         variant="outline"
                         className={`${column.bgColor} ${column.borderColor} ${column.color} text-xs`}
@@ -217,7 +217,7 @@ export default function TaskKanbanBoard({
                       variant="ghost"
                       size="sm"
                       onClick={() => onCreateTask(column.id)}
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                      className="h-6 w-6 p-0 text-gray-600 hover:text-purple-600"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>

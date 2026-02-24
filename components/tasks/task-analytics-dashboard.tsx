@@ -72,17 +72,17 @@ export default function TaskAnalyticsDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold gradient-text">Analytics & AI Insights</h2>
-          <p className="text-gray-400 mt-1">
+          <h2 className="text-2xl font-bold text-gray-900">Analytics & AI Insights</h2>
+          <p className="text-gray-600 mt-1">
             Track performance and discover patterns with AI-powered intelligence
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[140px] bg-gray-800 border-gray-700">
+            <SelectTrigger className="w-[140px] bg-white/80 border border-purple-200">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700">
+            <SelectContent className="bg-white/95 border border-purple-200/50 backdrop-blur-sm">
               <SelectItem value="7d">Last 7 days</SelectItem>
               <SelectItem value="30d">Last 30 days</SelectItem>
               <SelectItem value="90d">Last 90 days</SelectItem>
@@ -98,30 +98,30 @@ export default function TaskAnalyticsDashboard() {
       {/* Key Metrics */}
       {analytics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
                 <Activity className="h-4 w-4" />
                 Total Tasks
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{analytics.summary.total}</div>
-              <p className="text-xs text-gray-500 mt-1">
+              <div className="text-2xl font-bold text-gray-900">{analytics.summary.total}</div>
+              <p className="text-xs text-gray-600 mt-1">
                 {analytics.summary.completed} completed
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                 Completion Rate
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-2xl font-bold text-gray-900">
                 {analytics.summary.completionRate.toFixed(0)}%
               </div>
               <Progress
@@ -142,22 +142,22 @@ export default function TaskAnalyticsDashboard() {
               <div className="text-2xl font-bold text-white">
                 {analytics.productivityMetrics.avgCompletionTime.toFixed(1)}h
               </div>
-              <p className="text-xs text-gray-500 mt-1">Average time to complete</p>
+              <p className="text-xs text-gray-600 mt-1">Average time to complete</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-red-500" />
                 Overdue Tasks
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-2xl font-bold text-gray-900">
                 {analytics.overdueAnalysis.count}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-600 mt-1">
                 {analytics.overdueAnalysis.byPriority.URGENT} urgent
               </p>
             </CardContent>
@@ -167,13 +167,13 @@ export default function TaskAnalyticsDashboard() {
 
       {/* AI Insights */}
       {patterns && patterns.insights && patterns.insights.length > 0 && (
-        <Card className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500/20">
+        <Card className="border-2 border-purple-200/50 bg-gradient-to-br from-purple-50/80 to-pink-50/80 backdrop-blur-sm shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Sparkles className="h-5 w-5 text-purple-400" />
+            <CardTitle className="flex items-center gap-2 text-gray-900">
+              <Sparkles className="h-5 w-5 text-purple-600" />
               AI-Powered Insights
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-gray-600">
               Intelligent predictions and recommendations
             </CardDescription>
           </CardHeader>
@@ -181,7 +181,7 @@ export default function TaskAnalyticsDashboard() {
             {patterns.insights.map((insight: any, index: number) => (
               <div
                 key={index}
-                className="p-3 bg-gray-800/50 border border-gray-700 rounded-lg"
+                className="p-3 border border-purple-200/50 bg-white/80 rounded-lg"
               >
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
@@ -199,10 +199,10 @@ export default function TaskAnalyticsDashboard() {
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className="text-white text-sm">{insight.message}</p>
+                    <p className="text-gray-900 text-sm">{insight.message}</p>
                     <Badge
                       variant="outline"
-                      className="mt-2 border-purple-500/30 text-purple-400 text-xs"
+                      className="mt-2 border-purple-300 text-purple-600 text-xs"
                     >
                       {insight.confidence}% confidence
                     </Badge>
@@ -217,10 +217,10 @@ export default function TaskAnalyticsDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Priority Distribution */}
         {analytics && (
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-purple-400" />
+              <CardTitle className="text-gray-900 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-purple-600" />
                 Priority Distribution
               </CardTitle>
             </CardHeader>
@@ -235,8 +235,8 @@ export default function TaskAnalyticsDashboard() {
                 return (
                   <div key={priority} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-400">{priority}</span>
-                      <span className="text-white font-medium">{count}</span>
+                      <span className="text-gray-600">{priority}</span>
+                      <span className="text-gray-900 font-medium">{count}</span>
                     </div>
                     <Progress value={percentage} className="h-2" />
                   </div>
@@ -248,10 +248,10 @@ export default function TaskAnalyticsDashboard() {
 
         {/* Category Performance */}
         {analytics && analytics.categoryPerformance.length > 0 && (
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Activity className="h-5 w-5 text-blue-400" />
+              <CardTitle className="text-gray-900 flex items-center gap-2">
+                <Activity className="h-5 w-5 text-blue-600" />
                 Category Performance
               </CardTitle>
             </CardHeader>
@@ -259,13 +259,13 @@ export default function TaskAnalyticsDashboard() {
               {analytics.categoryPerformance.map((category: any) => (
                 <div key={category.category} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">{category.category}</span>
-                    <span className="text-white font-medium">
+                    <span className="text-gray-600">{category.category}</span>
+                    <span className="text-gray-900 font-medium">
                       {category.completed}/{category.total}
                     </span>
                   </div>
                   <Progress value={category.completionRate} className="h-2" />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-600">
                     {category.completionRate.toFixed(0)}% completion rate
                   </p>
                 </div>
@@ -276,27 +276,27 @@ export default function TaskAnalyticsDashboard() {
 
         {/* Team Performance */}
         {analytics && analytics.teamPerformance.length > 0 && (
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Users className="h-5 w-5 text-green-400" />
+              <CardTitle className="text-gray-900 flex items-center gap-2">
+                <Users className="h-5 w-5 text-green-600" />
                 Team Performance
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {analytics.teamPerformance.map((member: any) => (
-                <div key={member.id} className="p-3 bg-gray-800/50 border border-gray-700 rounded-lg">
+                <div key={member.id} className="p-3 border border-purple-200/50 bg-white/80 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-white font-medium">{member.name || member.email || 'Unknown'}</span>
+                    <span className="text-gray-900 font-medium">{member.name || member.email || 'Unknown'}</span>
                     <Badge
                       variant="outline"
-                      className="border-gray-700 text-gray-400"
+                      className="border-purple-200 text-gray-600"
                     >
                       {member.totalAssigned} tasks
                     </Badge>
                   </div>
                   <Progress value={member.completionRate} className="h-2 mb-2" />
-                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <div className="flex items-center gap-3 text-xs text-gray-600">
                     <span>{member.completed} completed</span>
                     <span>{member.inProgress} in progress</span>
                     <span className="text-red-500">{member.overdue} overdue</span>
@@ -309,13 +309,13 @@ export default function TaskAnalyticsDashboard() {
 
         {/* Peak Productivity Hours */}
         {patterns && patterns.peakProductivityHours && (
-          <Card className="bg-gray-900 border-gray-800">
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Clock className="h-5 w-5 text-orange-400" />
+              <CardTitle className="text-gray-900 flex items-center gap-2">
+                <Clock className="h-5 w-5 text-orange-600" />
                 Peak Productivity Hours
               </CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardDescription className="text-gray-600">
                 Times when you create the most tasks
               </CardDescription>
             </CardHeader>
@@ -330,7 +330,7 @@ export default function TaskAnalyticsDashboard() {
                   </Badge>
                 ))}
               </div>
-              <p className="text-sm text-gray-500 mt-3">
+              <p className="text-sm text-gray-600 mt-3">
                 Schedule important tasks during these hours for maximum productivity
               </p>
             </CardContent>
@@ -340,13 +340,13 @@ export default function TaskAnalyticsDashboard() {
 
       {/* Predictions */}
       {analytics && analytics.predictions && analytics.predictions.length > 0 && (
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Brain className="h-5 w-5 text-purple-400" />
+            <CardTitle className="text-gray-900 flex items-center gap-2">
+              <Brain className="h-5 w-5 text-purple-600" />
               Predictive Analysis
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-gray-600">
               AI-generated forecasts based on historical patterns
             </CardDescription>
           </CardHeader>
@@ -354,7 +354,7 @@ export default function TaskAnalyticsDashboard() {
             {analytics.predictions.map((prediction: any, index: number) => (
               <div
                 key={index}
-                className="p-3 bg-gray-800/50 border border-gray-700 rounded-lg flex items-start gap-3"
+                className="p-3 border border-purple-200/50 bg-white/80 rounded-lg flex items-start gap-3"
               >
                 <div className="flex-shrink-0">
                   {prediction.type === 'warning' && (
@@ -368,10 +368,10 @@ export default function TaskAnalyticsDashboard() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-white text-sm">{prediction.message}</p>
+                  <p className="text-gray-900 text-sm">{prediction.message}</p>
                   <Badge
                     variant="outline"
-                    className="mt-2 border-purple-500/30 text-purple-400 text-xs"
+                    className="mt-2 border-purple-300 text-purple-600 text-xs"
                   >
                     {prediction.confidence}% confidence
                   </Badge>

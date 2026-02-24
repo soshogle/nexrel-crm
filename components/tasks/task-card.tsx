@@ -112,7 +112,7 @@ export default function TaskCard({
   return (
     <Card
       onClick={onClick}
-      className="bg-gray-800/50 hover:bg-gray-800 border-gray-700 hover:border-purple-500/50 cursor-pointer transition-all group"
+      className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm hover:border-purple-300 cursor-pointer transition-all group shadow-sm"
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
@@ -121,7 +121,7 @@ export default function TaskCard({
               checked={task.status === 'COMPLETED'}
               onCheckedChange={(checked) => handleToggleComplete({} as any)}
               onClick={(e) => e.stopPropagation()}
-              className="mt-0.5 border-gray-600"
+              className="mt-0.5 border-purple-300"
             />
             <div className="flex-1 min-w-0">
               <h3
@@ -144,7 +144,7 @@ export default function TaskCard({
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+            <DropdownMenuContent align="end" className="bg-white/95 border border-purple-200/50 backdrop-blur-sm">
               <DropdownMenuItem onClick={(e) => {
                 e.stopPropagation();
                 onClick();
@@ -152,7 +152,7 @@ export default function TaskCard({
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-gray-700" />
+              <DropdownMenuSeparator className="bg-purple-100" />
               <DropdownMenuItem
                 onClick={(e) => handleDelete(e)}
                 className="text-red-500"
@@ -168,7 +168,7 @@ export default function TaskCard({
           <Badge className={getPriorityColor(task.priority)}>
             {task.priority}
           </Badge>
-          <div className="flex items-center gap-1 text-xs text-gray-400">
+          <div className="flex items-center gap-1 text-xs text-gray-600">
             {getStatusIcon(task.status)}
             <span>{task.status.replace('_', ' ')}</span>
           </div>
@@ -177,12 +177,12 @@ export default function TaskCard({
 
       <CardContent>
         {task.description && (
-          <p className="text-sm text-gray-400 line-clamp-2 mb-3">
+          <p className="text-sm text-gray-600 line-clamp-2 mb-3">
             {task.description}
           </p>
         )}
 
-        <div className="space-y-2 text-xs text-gray-400">
+        <div className="space-y-2 text-xs text-gray-600">
           {task.dueDate && (
             <div
               className={`flex items-center gap-1 ${
@@ -202,7 +202,7 @@ export default function TaskCard({
           )}
 
           {task.category && (
-            <Badge variant="outline" className="border-gray-700 text-gray-400">
+            <Badge variant="outline" className="border-purple-200 text-gray-600">
               {task.category}
             </Badge>
           )}
