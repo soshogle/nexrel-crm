@@ -219,7 +219,8 @@
     "not dead"
   ],
   "resolutions": {
-    "@smithy/middleware-endpoint": "4.4.14",
-    "@smithy/config-resolver": "4.4.6"
+    "@smithy/middleware-endpoint": "4.4.19",
+    "@smithy/config-resolver": "4.4.8",
+    "@mediapipe/tasks-vision": "0.10.32"
   }
 }
