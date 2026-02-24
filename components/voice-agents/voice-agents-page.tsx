@@ -216,7 +216,7 @@ export function VoiceAgentsPage() {
   };
 
   const handleSaveOwnerPrompt = async () => {
-    if (!selectedAgent?.id || selectedAgent.source) return;
+    if (!selectedAgent?.id || selectedAgent.source === 'professional') return;
     setSavingOwnerPrompt(true);
     const toastId = toast.loading('Formatting and saving to Soshogle Voice...');
     try {
@@ -523,7 +523,7 @@ export function VoiceAgentsPage() {
                             <TabsTrigger value="profile" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                               Profile
                             </TabsTrigger>
-                            {!selectedAgent.source && (
+                            {selectedAgent.source !== 'professional' && (
                               <TabsTrigger value="prompt" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                                 <Sparkles className="w-4 h-4 mr-1.5" />
                                 Prompt
@@ -552,7 +552,7 @@ export function VoiceAgentsPage() {
                               </div>
                             </div>
                           </TabsContent>
-                          {!selectedAgent.source && (
+                          {selectedAgent.source !== 'professional' && (
                             <TabsContent value="prompt" className="space-y-4">
                               <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/50">
                                 <p className="text-sm font-medium text-gray-900 mb-1">Add or Edit Prompt</p>
