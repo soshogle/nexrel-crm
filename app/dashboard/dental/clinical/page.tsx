@@ -267,7 +267,8 @@ function ClinicalDashboardPageContent() {
       const appointmentsRes = await fetch(
         `/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`
       );
-      const appointments = appointmentsRes.ok ? await appointmentsRes.json() : [];
+      const res = appointmentsRes.ok ? await appointmentsRes.json() : {};
+      const appointments = res?.appointments ?? res?.data ?? [];
 
       setStats({
         totalPatients: leads.length,

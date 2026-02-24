@@ -87,7 +87,8 @@ export default function DentalTestPage() {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const appointmentsRes = await fetch(`/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`);
-      const appointmentsData = appointmentsRes.ok ? await appointmentsRes.json() : [];
+      const res = appointmentsRes.ok ? await appointmentsRes.json() : {};
+      const appointmentsData = res?.appointments ?? res?.data ?? [];
 
       let pendingClaims = 0;
       if (session?.user?.id) {
@@ -242,7 +243,7 @@ export default function DentalTestPage() {
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
         const response = await fetch(`/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`);
-        if (response.ok) { const data = await response.json(); setAppointments(Array.isArray(data) ? data : []); }
+        if (response.ok) { const data = await response.json(); setAppointments(data?.appointments ?? data?.data ?? []); }
       } catch (error) { console.error('Error fetching appointments:', error); }
     };
     if (session?.user?.id) { fetchAppointmentsData(); }

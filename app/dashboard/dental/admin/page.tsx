@@ -117,7 +117,7 @@ export default function AdministrativeDashboardPage() {
       );
       if (response.ok) {
         const data = await response.json();
-        setAppointments(Array.isArray(data) ? data : []);
+        setAppointments(data?.appointments ?? data?.data ?? []);
       }
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -263,7 +263,8 @@ export default function AdministrativeDashboardPage() {
       const appointmentsRes = await fetch(
         `/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`
       );
-      const appointments = appointmentsRes.ok ? await appointmentsRes.json() : [];
+      const res = appointmentsRes.ok ? await appointmentsRes.json() : {};
+      const appointments = res?.appointments ?? res?.data ?? [];
 
       let pendingClaims = 0;
       if (session?.user?.id) {

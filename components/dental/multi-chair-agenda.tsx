@@ -94,9 +94,10 @@ export function MultiChairAgenda({ userId, selectedDate, onAppointmentUpdated }:
         `/api/appointments?startDate=${startOfSelectedDay.toISOString()}&endDate=${endOfSelectedDay.toISOString()}`
       );
       const data = await response.json();
+      const list = data?.appointments ?? data?.data ?? [];
       
-      if (Array.isArray(data)) {
-        setAppointments(data.map((apt: any) => ({
+      if (Array.isArray(list) && list.length > 0) {
+        setAppointments(list.map((apt: any) => ({
           id: apt.id,
           customerName: apt.customerName || apt.lead?.contactPerson || 'Unknown',
           appointmentDate: apt.appointmentDate || apt.startTime,
@@ -108,6 +109,8 @@ export function MultiChairAgenda({ userId, selectedDate, onAppointmentUpdated }:
           appointmentType: apt.appointmentType?.name || 'General',
           notes: apt.notes,
         })));
+      } else {
+        setAppointments([]);
       }
     } catch (error) {
       console.error('Error fetching appointments:', error);

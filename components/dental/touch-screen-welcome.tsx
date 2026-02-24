@@ -70,9 +70,10 @@ export function TouchScreenWelcome({ userId, onCheckIn }: TouchScreenWelcomeProp
         `/api/appointments?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}`
       );
       const data = await response.json();
+      const list = data?.appointments ?? data?.data ?? [];
       
-      if (Array.isArray(data)) {
-        setAppointments(data.map((apt: any) => ({
+      if (Array.isArray(list) && list.length > 0) {
+        setAppointments(list.map((apt: any) => ({
           id: apt.id,
           customerName: apt.customerName || apt.lead?.contactPerson || 'Unknown',
           customerEmail: apt.customerEmail || apt.lead?.email,
@@ -81,6 +82,8 @@ export function TouchScreenWelcome({ userId, onCheckIn }: TouchScreenWelcomeProp
           status: apt.status,
           duration: apt.duration || 30,
         })));
+      } else {
+        setAppointments([]);
       }
     } catch (error) {
       console.error('Error fetching appointments:', error);
