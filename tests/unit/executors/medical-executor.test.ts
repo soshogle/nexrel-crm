@@ -44,6 +44,7 @@ describe('Medical Executor', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (prisma.lead.findFirst as any).mockResolvedValue(mockLead);
     (prisma.lead.findUnique as any).mockResolvedValue(mockLead);
     (prisma.bookingAppointment.create as any).mockResolvedValue({
       id: 'appointment-1',
@@ -67,6 +68,7 @@ describe('Medical Executor', () => {
     });
 
     it('should fail if no lead found', async () => {
+      (prisma.lead.findFirst as any).mockResolvedValue(null);
       (prisma.lead.findUnique as any).mockResolvedValue(null);
 
       const result = await executeMedicalAction(

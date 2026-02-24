@@ -41,8 +41,13 @@ describe('Restaurant Executor', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (prisma.lead.findFirst as any).mockResolvedValue(mockLead);
     (prisma.lead.findUnique as any).mockResolvedValue(mockLead);
     (prisma.bookingAppointment.create as any).mockResolvedValue({
+      id: 'reservation-1',
+      appointmentDate: new Date('2024-12-25T19:00:00Z'),
+    });
+    (prisma.bookingAppointment.findFirst as any).mockResolvedValue({
       id: 'reservation-1',
       appointmentDate: new Date('2024-12-25T19:00:00Z'),
     });

@@ -48,6 +48,7 @@ describe('Real Estate Executor', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    (prisma.lead.findFirst as any).mockResolvedValue(mockLead);
     (prisma.lead.findUnique as any).mockResolvedValue(mockLead);
     // ensureREAgentProvisioned uses findUnique (compound key userId_employeeType)
     (prisma.rEAIEmployeeAgent.findUnique as any).mockResolvedValue({
@@ -80,6 +81,10 @@ describe('Real Estate Executor', () => {
     });
 
     it('should fail if no phone number', async () => {
+      (prisma.lead.findFirst as any).mockResolvedValue({
+        ...mockLead,
+        phone: null,
+      });
       (prisma.lead.findUnique as any).mockResolvedValue({
         ...mockLead,
         phone: null,
@@ -131,6 +136,10 @@ describe('Real Estate Executor', () => {
     });
 
     it('should fail if address missing', async () => {
+      (prisma.lead.findFirst as any).mockResolvedValue({
+        ...mockLead,
+        address: null,
+      });
       (prisma.lead.findUnique as any).mockResolvedValue({
         ...mockLead,
         address: null,
