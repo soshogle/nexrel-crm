@@ -7,6 +7,7 @@ import {
   Bell, Shield, Clock, User, CheckCircle, XCircle, Loader2,
   ChevronRight, Building2, X, AlertTriangle, ExternalLink,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -209,8 +210,25 @@ export function HITLNotificationBell() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5 text-gray-600" />
+        <Button variant="ghost" size="icon" className="relative overflow-visible">
+          {/* Alert ribbon: unrolls left and retracts every few seconds when HITL pending */}
+          {pendingCount > 0 && (
+            <motion.div
+              className={`absolute right-full top-1/2 -translate-y-1/2 h-6 w-7 rounded-l pointer-events-none ${HITL_ACCENT} opacity-90 shadow-sm`}
+              style={{ transformOrigin: 'right center' }}
+              initial={false}
+              animate={{
+                scaleX: [0, 1, 1, 0],
+              }}
+              transition={{
+                duration: 3.5,
+                repeat: Infinity,
+                repeatDelay: 2,
+                times: [0, 0.2, 0.5, 0.7],
+              }}
+            />
+          )}
+          <Bell className={`h-5 w-5 text-gray-600 ${pendingCount > 0 ? 'text-purple-600' : ''}`} />
           {pendingCount > 0 && (
             <Badge className={`absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 ${HITL_ACCENT} text-white text-xs`}>
               {pendingCount > 9 ? '9+' : pendingCount}
