@@ -81,22 +81,22 @@ export default function EcommerceSyncTab() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-semibold mb-2">E-Commerce Integration</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">E-Commerce Integration</h3>
+        <p className="text-sm text-gray-600">
           Connect your inventory with e-commerce platforms for automatic stock synchronization
         </p>
       </div>
 
       <Tabs defaultValue="export" className="w-full">
-        <TabsList className={isAdmin ? 'grid w-full grid-cols-3' : 'grid w-full grid-cols-2'}>
-          <TabsTrigger value="export">CSV Export</TabsTrigger>
-          {isAdmin && <TabsTrigger value="webhook">Webhook Sync</TabsTrigger>}
-          <TabsTrigger value="internal">Internal Store</TabsTrigger>
+        <TabsList className={`bg-white/80 border border-purple-200 backdrop-blur-sm ${isAdmin ? 'grid w-full grid-cols-3' : 'grid w-full grid-cols-2'}`}>
+          <TabsTrigger value="export" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-600">CSV Export</TabsTrigger>
+          {isAdmin && <TabsTrigger value="webhook" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-600">Webhook Sync</TabsTrigger>}
+          <TabsTrigger value="internal" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-600">Internal Store</TabsTrigger>
         </TabsList>
 
         {/* CSV Export Tab */}
         <TabsContent value="export" className="space-y-4">
-          <Card>
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Download className="h-5 w-5" />
@@ -109,7 +109,7 @@ export default function EcommerceSyncTab() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Shopify */}
-                <Card className="border-2 hover:border-purple-500/50 transition-colors cursor-pointer">
+                <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm hover:border-purple-300 transition-colors cursor-pointer">
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -118,7 +118,7 @@ export default function EcommerceSyncTab() {
                         </div>
                         <div>
                           <h4 className="font-semibold">Shopify</h4>
-                          <p className="text-xs text-muted-foreground">Product CSV format</p>
+                          <p className="text-xs text-gray-500">Product CSV format</p>
                         </div>
                       </div>
                     </div>
@@ -134,7 +134,7 @@ export default function EcommerceSyncTab() {
                 </Card>
 
                 {/* WooCommerce */}
-                <Card className="border-2 hover:border-purple-500/50 transition-colors cursor-pointer">
+                <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm hover:border-purple-300 transition-colors cursor-pointer">
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -143,7 +143,7 @@ export default function EcommerceSyncTab() {
                         </div>
                         <div>
                           <h4 className="font-semibold">WooCommerce</h4>
-                          <p className="text-xs text-muted-foreground">WordPress plugin format</p>
+                          <p className="text-xs text-gray-600">WordPress plugin format</p>
                         </div>
                       </div>
                     </div>
@@ -159,7 +159,7 @@ export default function EcommerceSyncTab() {
                 </Card>
 
                 {/* BigCommerce */}
-                <Card className="border-2 hover:border-purple-500/50 transition-colors cursor-pointer">
+                <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm hover:border-purple-300 transition-colors cursor-pointer">
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -168,7 +168,7 @@ export default function EcommerceSyncTab() {
                         </div>
                         <div>
                           <h4 className="font-semibold">BigCommerce</h4>
-                          <p className="text-xs text-muted-foreground">BigCommerce CSV format</p>
+                          <p className="text-xs text-gray-600">BigCommerce CSV format</p>
                         </div>
                       </div>
                     </div>
@@ -184,7 +184,7 @@ export default function EcommerceSyncTab() {
                 </Card>
 
                 {/* Generic */}
-                <Card className="border-2 hover:border-purple-500/50 transition-colors cursor-pointer">
+                <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm hover:border-purple-300 transition-colors cursor-pointer">
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -193,7 +193,7 @@ export default function EcommerceSyncTab() {
                         </div>
                         <div>
                           <h4 className="font-semibold">Generic Format</h4>
-                          <p className="text-xs text-muted-foreground">Universal CSV format</p>
+                          <p className="text-xs text-gray-600">Universal CSV format</p>
                         </div>
                       </div>
                     </div>
@@ -223,7 +223,7 @@ export default function EcommerceSyncTab() {
         {/* Webhook Tab - Admin only */}
         {isAdmin && (
         <TabsContent value="webhook" className="space-y-4">
-          <Card>
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Webhook className="h-5 w-5" />
@@ -248,7 +248,7 @@ export default function EcommerceSyncTab() {
                       {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600">
                     Copy this URL and add it to your e-commerce platform's webhook settings
                   </p>
                 </div>
@@ -266,7 +266,7 @@ export default function EcommerceSyncTab() {
                       {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600">
                     Include this API key in all webhook requests for authentication
                   </p>
                 </div>
@@ -274,7 +274,7 @@ export default function EcommerceSyncTab() {
                 {/* Webhook Payload Example */}
                 <div className="space-y-2">
                   <Label>Webhook Payload Example</Label>
-                  <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
+                  <pre className="bg-purple-50/50 border border-purple-200 p-4 rounded-lg text-xs overflow-x-auto text-gray-900">
 {`{
   "api_key": "${apiKey}",
   "action": "order_created",
@@ -307,48 +307,48 @@ export default function EcommerceSyncTab() {
           </Card>
 
           {/* Platform-Specific Instructions */}
-          <Card>
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader>
               <CardTitle>Platform Setup Guides</CardTitle>
               <CardDescription>Quick setup instructions for popular platforms</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-                <div className="border rounded-lg p-4">
+                <div className="border-2 border-purple-200/50 rounded-lg p-4 bg-white/80">
                   <h4 className="font-semibold mb-2 flex items-center gap-2">
                     <ShoppingCart className="h-4 w-4 text-green-500" />
                     Shopify
                   </h4>
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <p className="text-sm text-gray-600 mb-2">
                     Settings → Notifications → Webhooks → Create webhook
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600">
                     Subscribe to: Order creation, Order cancelled, Inventory levels update
                   </p>
                 </div>
 
-                <div className="border rounded-lg p-4">
+                <div className="border-2 border-purple-200/50 rounded-lg p-4 bg-white/80">
                   <h4 className="font-semibold mb-2 flex items-center gap-2">
                     <ShoppingCart className="h-4 w-4 text-purple-500" />
                     WooCommerce
                   </h4>
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <p className="text-sm text-gray-600 mb-2">
                     Install "WooCommerce Webhooks" plugin → Add new webhook
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600">
                     Topics: order.created, order.updated, product.updated
                   </p>
                 </div>
 
-                <div className="border rounded-lg p-4">
+                <div className="border-2 border-purple-200/50 rounded-lg p-4 bg-white/80">
                   <h4 className="font-semibold mb-2 flex items-center gap-2">
                     <ShoppingCart className="h-4 w-4 text-blue-500" />
                     BigCommerce
                   </h4>
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <p className="text-sm text-gray-600 mb-2">
                     Advanced Settings → Webhooks → Create a Webhook
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-600">
                     Scope: store/order/created, store/product/inventory/updated
                   </p>
                 </div>
@@ -360,7 +360,7 @@ export default function EcommerceSyncTab() {
 
         {/* Internal Store Tab */}
         <TabsContent value="internal" className="space-y-4">
-          <Card>
+          <Card className="border-2 border-purple-200/50 bg-white/80 backdrop-blur-sm shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <LinkIcon className="h-5 w-5" />
@@ -380,40 +380,40 @@ export default function EcommerceSyncTab() {
               </Alert>
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center justify-between p-4 border-2 border-purple-200/50 rounded-lg bg-white/80">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-purple-500/10 rounded-lg">
                       <Package className="h-5 w-5 text-purple-500" />
                     </div>
                     <div>
                       <h4 className="font-semibold">Stock Synchronization</h4>
-                      <p className="text-sm text-muted-foreground">Real-time inventory updates</p>
+                      <p className="text-sm text-gray-600">Real-time inventory updates</p>
                     </div>
                   </div>
                   <Badge className="bg-green-500">Active</Badge>
                 </div>
 
-                <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center justify-between p-4 border-2 border-purple-200/50 rounded-lg bg-white/80">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-500/10 rounded-lg">
                       <RefreshCw className="h-5 w-5 text-blue-500" />
                     </div>
                     <div>
                       <h4 className="font-semibold">Order Processing</h4>
-                      <p className="text-sm text-muted-foreground">Auto-deduct on sale</p>
+                      <p className="text-sm text-gray-600">Auto-deduct on sale</p>
                     </div>
                   </div>
                   <Badge className="bg-green-500">Active</Badge>
                 </div>
 
-                <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center justify-between p-4 border-2 border-purple-200/50 rounded-lg bg-white/80">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-orange-500/10 rounded-lg">
                       <AlertTriangle className="h-5 w-5 text-orange-500" />
                     </div>
                     <div>
                       <h4 className="font-semibold">Low Stock Alerts</h4>
-                      <p className="text-sm text-muted-foreground">Automatic notifications</p>
+                      <p className="text-sm text-gray-600">Automatic notifications</p>
                     </div>
                   </div>
                   <Badge className="bg-green-500">Active</Badge>
